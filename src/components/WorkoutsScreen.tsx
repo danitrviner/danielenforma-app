@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Exercise, Workout, WorkoutExercise } from '../types';
-import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises } from '../dbService';
+import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises, seedExercisesIfEmpty } from '../dbService';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -56,10 +56,18 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
   useEffect(() => { loadWorkouts(); }, [loadWorkouts]);
 
-  const openEditor = async (workout?: Workout) => {
-    if (allExercises.length === 0) {
-      try { setAllExercises(await getExercises()); } catch (e) {}
+  const ensureExercisesLoaded = async () => {
+    if (allExercises.length > 0) return;
+    try {
+      await seedExercisesIfEmpty();
+      setAllExercises(await getExercises());
+    } catch (err) {
+      console.error('Error cargando ejercicios:', err);
     }
+  };
+
+  const openEditor = async (workout?: Workout) => {
+    await ensureExercisesLoaded();
     if (workout) {
       setEditingId(workout.id);
       setEditorName(workout.name);
@@ -116,9 +124,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
   // ── Exercise picker ───────────────────────────────────────────────────────
   const openPicker = async () => {
-    if (allExercises.length === 0) {
-      try { setAllExercises(await getExercises()); } catch (e) {}
-    }
+    await ensureExercisesLoaded();
     setPickerSearch('');
     setPickerFocus('');
     setPickerType('');
