@@ -1,17 +1,19 @@
-import { 
-  db, 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  where, 
-  orderBy 
+import {
+  db,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise } from './types';
+import { SYSTEM_EXERCISES } from './data';
 
 // Let's have a state flag for Local Storage fallback
 let forceLocalOnly = false;
@@ -602,5 +604,125 @@ export async function seedInitialCheckinsIfEmpty(userId: string, email: string):
   } catch (err) {
     console.warn('Firestore checkins seed failed, saving local copy:', err);
     saveLocalCheckIns(seedData);
+  }
+}
+
+// ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
+
+const EXERCISES_LOCAL_KEY = 'enforma_exercises';
+
+function getLocalExercises(): Exercise[] {
+  try {
+    const raw = localStorage.getItem(EXERCISES_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as Exercise[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalExercises(exercises: Exercise[]) {
+  try {
+    localStorage.setItem(EXERCISES_LOCAL_KEY, JSON.stringify(exercises));
+  } catch (e) {}
+}
+
+export async function getExercises(): Promise<Exercise[]> {
+  if (forceLocalOnly) return getLocalExercises();
+  try {
+    const snap = await getDocs(collection(db, 'exercises'));
+    const exercises = snap.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
+    saveLocalExercises(exercises);
+    return exercises;
+  } catch (err) {
+    console.warn('getExercises Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalExercises();
+  }
+}
+
+export async function createExercise(data: Omit<Exercise, 'id'>): Promise<Exercise> {
+  if (forceLocalOnly) {
+    const newEx: Exercise = { ...data, id: `local_ex_${Date.now()}` };
+    const list = getLocalExercises();
+    list.push(newEx);
+    saveLocalExercises(list);
+    return newEx;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'exercises'), data);
+    const newEx: Exercise = { ...data, id: ref.id };
+    const list = getLocalExercises();
+    list.push(newEx);
+    saveLocalExercises(list);
+    return newEx;
+  } catch (err) {
+    console.warn('createExercise Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const newEx: Exercise = { ...data, id: `local_ex_${Date.now()}` };
+    const list = getLocalExercises();
+    list.push(newEx);
+    saveLocalExercises(list);
+    return newEx;
+  }
+}
+
+export async function updateExercise(id: string, updates: Partial<Exercise>): Promise<void> {
+  if (forceLocalOnly) {
+    const list = getLocalExercises().map(ex => (ex.id === id ? { ...ex, ...updates } : ex));
+    saveLocalExercises(list);
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'exercises', id), updates as Record<string, unknown>);
+    const list = getLocalExercises().map(ex => (ex.id === id ? { ...ex, ...updates } : ex));
+    saveLocalExercises(list);
+  } catch (err) {
+    console.warn('updateExercise Firestore failed, updating local:', err);
+    setLocalBypassMode(true);
+    const list = getLocalExercises().map(ex => (ex.id === id ? { ...ex, ...updates } : ex));
+    saveLocalExercises(list);
+  }
+}
+
+export async function deleteExercise(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'exercises', id));
+    saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
+  } catch (err) {
+    console.warn('deleteExercise Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
+  }
+}
+
+export async function seedExercisesIfEmpty(): Promise<void> {
+  if (forceLocalOnly) {
+    if (getLocalExercises().length === 0) {
+      const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
+      saveLocalExercises(seeded);
+    }
+    return;
+  }
+  try {
+    const snap = await getDocs(collection(db, 'exercises'));
+    if (snap.empty) {
+      for (const ex of SYSTEM_EXERCISES) {
+        await addDoc(collection(db, 'exercises'), ex);
+      }
+    }
+    const after = await getDocs(collection(db, 'exercises'));
+    const seeded = after.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
+    saveLocalExercises(seeded);
+  } catch (err) {
+    console.warn('seedExercises Firestore failed, seeding local:', err);
+    setLocalBypassMode(true);
+    if (getLocalExercises().length === 0) {
+      const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
+      saveLocalExercises(seeded);
+    }
   }
 }

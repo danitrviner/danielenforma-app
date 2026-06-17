@@ -6,11 +6,12 @@ import {
   getDoc, 
   setDoc, 
   getDocs, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  where, 
-  orderBy, 
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   onSnapshot
 } from 'firebase/firestore';
 import { 
@@ -48,6 +49,7 @@ export {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,

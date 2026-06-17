@@ -16,6 +16,7 @@ import ProgressScreen from './components/ProgressScreen';
 // Coach screens
 import ClientsScreen from './components/ClientsScreen';
 import ReviewsScreen from './components/ReviewsScreen';
+import ExerciseLibraryScreen from './components/ExerciseLibraryScreen';
 
 type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'progress' | 'clients' | 'reviews' | 'profile';
 
@@ -28,8 +29,9 @@ const ATHLETE_TABS: { id: NavTab; label: string; icon: string }[] = [
 ];
 
 const COACH_TABS: { id: NavTab; label: string; icon: string }[] = [
-  { id: 'clients',  label: 'Clientes',    icon: 'group' },
-  { id: 'reviews',  label: 'Revisiones',  icon: 'pending_actions' },
+  { id: 'clients',  label: 'Clientes',      icon: 'group' },
+  { id: 'reviews',  label: 'Revisiones',    icon: 'pending_actions' },
+  { id: 'training', label: 'Ejercicios',    icon: 'fitness_center' },
 ];
 
 export default function App() {
@@ -240,6 +242,7 @@ export default function App() {
         {/* COACH */}
         {isCoach && activeTab === 'clients'  && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
         {isCoach && activeTab === 'reviews'  && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
+        {isCoach && activeTab === 'training' && <ExerciseLibraryScreen coachId={profile.userId} />}
 
         {/* SHARED */}
         {activeTab === 'profile' && (

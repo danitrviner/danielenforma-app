@@ -48,6 +48,19 @@ export interface MealState {
   comida5: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
 }
 
+export interface Exercise {
+  id: string;
+  ownerId: string; // 'system' for preloaded, coachId for custom
+  name: string;
+  primaryFocus: string; // muscle group: 'pecho', 'espalda', etc.
+  type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
+  level: 'principiante' | 'intermedio' | 'avanzado';
+  videoUrl?: string;
+  imageUrl?: string;
+  instructions?: string;
+  isCustom: boolean;
+}
+
 export interface Recipe {
   id: string;
   title: string;
