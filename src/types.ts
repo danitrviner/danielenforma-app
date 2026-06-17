@@ -108,6 +108,33 @@ export interface WorkoutAssignment {
   status: 'pending' | 'completed' | 'skipped';
 }
 
+export interface NutritionMealSlot {
+  category: 'HC' | 'proteina' | 'grasa' | 'verdura';
+  portions: number;
+}
+
+export interface NutritionMeal {
+  id: string;
+  name: string;
+  slots: NutritionMealSlot[];
+}
+
+export interface NutritionPlan {
+  id: string;
+  ownerId: string;
+  name: string;
+  targetCalories: number;
+  macros: { carbs: number; protein: number; fats: number };
+  meals: NutritionMeal[];
+}
+
+export interface NutritionAssignment {
+  id: string;
+  athleteId: string; // email
+  planId: string;
+  startDate: string; // YYYY-MM-DD
+}
+
 export interface Recipe {
   id: string;
   title: string;

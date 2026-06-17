@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, MealState, MealItem } from '../types';
+import { UserProfile, MealState, MealItem, NutritionPlan } from '../types';
 import { FOOD_ITEMS } from '../data';
-import { getOrCreateMealState, updateMealState } from '../dbService';
+import { getOrCreateMealState, updateMealState, getActiveNutritionAssignment } from '../dbService';
 
 interface NutritionScreenProps {
   profile: UserProfile;
@@ -16,7 +16,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
   const [mealState, setMealState] = useState<MealState | null>(null);
   const [activeMealIdForPicker, setActiveMealIdForPicker] = useState<number | null>(null);
   const [activeCategoryForPicker, setActiveCategoryForPicker] = useState<'carbs' | 'protein' | 'fat'>('carbs');
-  
+  const [activePlan, setActivePlan] = useState<NutritionPlan | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +26,13 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
     month: 'short',
     year: 'numeric'
   });
+
+  // Load active nutrition plan once
+  useEffect(() => {
+    getActiveNutritionAssignment(profile.email)
+      .then(result => setActivePlan(result?.plan ?? null))
+      .catch(() => {});
+  }, [profile.email]);
 
   // Fetch or create Meal State on date change
   useEffect(() => {
@@ -71,6 +78,18 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
     const date = new Date(selectedDate + 'T12:00:00');
     date.setDate(date.getDate() + days);
     setSelectedDate(date.toISOString().split('T')[0]);
+  };
+
+  // Derive picker category from plan meal slot (or fallback to old hardcoded logic)
+  const getMealPickerCategory = (mealNum: number): 'carbs' | 'protein' | 'fat' => {
+    const meal = activePlan?.meals[mealNum - 1];
+    if (meal && meal.slots.length > 0) {
+      const cat = meal.slots[0].category;
+      if (cat === 'proteina') return 'protein';
+      if (cat === 'grasa') return 'fat';
+      return 'carbs'; // HC and verdura both use carbs filter
+    }
+    return mealNum === 1 || mealNum === 4 ? 'carbs' : 'protein';
   };
 
   // Open food picker bottom sheet
@@ -142,7 +161,9 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
         <div className="text-center select-none">
           <span className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest font-bold">FECHA REGISTRADA</span>
           <span className="block font-sans font-bold text-lg text-white mt-0.5">{displayDateStr}</span>
-          <span className="block font-mono text-[9px] text-[#00eefc] uppercase mt-1 tracking-wider">Plan de macros optimizado</span>
+          <span className="block font-mono text-[9px] text-[#00eefc] uppercase mt-1 tracking-wider">
+            {activePlan ? activePlan.name : 'Plan de macros optimizado'}
+          </span>
         </div>
         
         <button 
@@ -179,40 +200,46 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
           ([1, 2, 3, 4, 5] as const).map((num) => {
             const key = `comida${num}` as keyof MealState;
             const data = mealState[key] as any;
-            
+            const planMeal = activePlan?.meals[num - 1];
+            const mealName = planMeal?.name ?? `Comida ${num}`;
+            const slotsSummary = planMeal
+              ? planMeal.slots.map(s => `${s.portions} ${s.category === 'HC' ? 'HC' : s.category === 'proteina' ? 'Prot' : s.category === 'grasa' ? 'Gras' : 'Verd'}`).join(' · ')
+              : null;
+            const pickerCat = getMealPickerCategory(num);
+            const pickerLabel = pickerCat === 'carbs' ? 'HC' : pickerCat === 'protein' ? 'PROTEÍNA' : 'GRASA';
+
             return (
-              <div 
-                key={num} 
+              <div
+                key={num}
                 className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${data?.completed ? 'border-[#e2ff00]/40 bg-[#121212]' : 'border-[#2a2a2a]'}`}
               >
-                {/* Expandable/Click Header */}
+                {/* Header */}
                 <div className="w-full flex items-center justify-between p-4 bg-[#1c1b1b]/80">
                   <div className="flex items-center gap-3">
-                    <button 
+                    <button
                       onClick={() => handleToggleMealComplete(num)}
                       className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${data?.completed ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 text-transparent hover:border-[#e2ff00]'}`}
                     >
                       <span className="material-symbols-outlined text-sm font-black">check</span>
                     </button>
                     <div>
-                      <span className="font-sans font-bold text-white text-base">Comida {num}</span>
-                      <p className="text-[10px] text-[#c6c9ab] font-mono mt-0.5">Definida según requerimiento específico</p>
+                      <span className="font-sans font-bold text-white text-base">{mealName}</span>
+                      <p className="text-[10px] text-[#c6c9ab] font-mono mt-0.5">
+                        {slotsSummary ?? 'Definida según requerimiento específico'}
+                      </p>
                     </div>
                   </div>
-
-                  {data ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-[#2a2a2a] text-[#c6c9ab] px-2 py-1 rounded font-mono uppercase tracking-wider">{data.specs}</span>
-                    </div>
-                  ) : null}
+                  {data && (
+                    <span className="text-[10px] bg-[#2a2a2a] text-[#c6c9ab] px-2 py-1 rounded font-mono uppercase tracking-wider">{data.specs}</span>
+                  )}
                 </div>
 
-                {/* Sub details block */}
+                {/* Sub details */}
                 <div className="p-4 border-t border-[#2a2a2a]/60 space-y-3 bg-[#131313]/40">
                   {data ? (
                     <div className="flex items-center justify-between bg-[#121212] p-3 rounded-lg border border-[#2a2a2a]">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded bg-[#2a2a2a] flex items-center justify-center text-white font-mono text-xs uppercase font-extrabold text-[#e2ff00]">
+                        <div className="w-9 h-9 rounded bg-[#2a2a2a] flex items-center justify-center font-mono text-xs font-extrabold text-[#e2ff00]">
                           {data.title[0]}
                         </div>
                         <div>
@@ -220,10 +247,8 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                           <span className="block font-mono text-[10px] text-[#c6c9ab]">{data.portion} ({data.specs})</span>
                         </div>
                       </div>
-
-                      {/* Swap button option to exchange food items! */}
-                      <button 
-                        onClick={() => handleOpenPicker(num, num === 1 || num === 4 ? 'carbs' : num === 2 || num === 5 ? 'protein' : 'protein')}
+                      <button
+                        onClick={() => handleOpenPicker(num, pickerCat)}
                         className="text-xs text-[#00eefc] hover:underline font-mono flex items-center gap-1 hover:text-white transition-colors"
                       >
                         <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
@@ -231,13 +256,12 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                       </button>
                     </div>
                   ) : (
-                    /* Slot is empty! Create Click trigger */
-                    <button 
-                      onClick={() => handleOpenPicker(num, num === 1 || num === 4 ? 'carbs' : num === 2 || num === 5 ? 'protein' : 'protein')}
+                    <button
+                      onClick={() => handleOpenPicker(num, pickerCat)}
                       className="w-full flex items-center justify-center gap-2 bg-[#201f1f]/50 border border-dashed border-[#2a2a2a] py-3.5 rounded-lg text-xs font-mono text-[#c6c9ab] hover:border-[#e2ff00] hover:text-[#e2ff00] transition-colors"
                     >
                       <span className="material-symbols-outlined text-sm">add_circle</span>
-                      ELEGIR ALIMENTO ({num === 1 || num === 4 ? 'HC' : num === 2 || num === 5 ? 'PROTEÍNA' : 'PROTEÍNA'})
+                      ELEGIR ALIMENTO ({pickerLabel})
                     </button>
                   )}
                 </div>

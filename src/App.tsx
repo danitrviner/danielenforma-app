@@ -17,6 +17,7 @@ import ProgressScreen from './components/ProgressScreen';
 import ClientsScreen from './components/ClientsScreen';
 import ReviewsScreen from './components/ReviewsScreen';
 import TrainingCoachScreen from './components/TrainingCoachScreen';
+import NutritionCoachScreen from './components/NutritionCoachScreen';
 
 type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'progress' | 'clients' | 'reviews' | 'profile';
 
@@ -29,9 +30,10 @@ const ATHLETE_TABS: { id: NavTab; label: string; icon: string }[] = [
 ];
 
 const COACH_TABS: { id: NavTab; label: string; icon: string }[] = [
-  { id: 'clients',  label: 'Clientes',      icon: 'group' },
-  { id: 'reviews',  label: 'Revisiones',    icon: 'pending_actions' },
-  { id: 'training', label: 'Ejercicios',    icon: 'fitness_center' },
+  { id: 'clients',   label: 'Clientes',   icon: 'group' },
+  { id: 'reviews',   label: 'Revisiones', icon: 'pending_actions' },
+  { id: 'training',  label: 'Ejercicios', icon: 'fitness_center' },
+  { id: 'nutrition', label: 'Nutrición',  icon: 'restaurant' },
 ];
 
 export default function App() {
@@ -240,9 +242,10 @@ export default function App() {
         {!isCoach && activeTab === 'progress'  && <ProgressScreen profile={profile} checkins={checkins} />}
 
         {/* COACH */}
-        {isCoach && activeTab === 'clients'  && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
-        {isCoach && activeTab === 'reviews'  && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
-        {isCoach && activeTab === 'training' && <TrainingCoachScreen coachId={profile.userId} />}
+        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
+        {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
+        {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
+        {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
 
         {/* SHARED */}
         {activeTab === 'profile' && (

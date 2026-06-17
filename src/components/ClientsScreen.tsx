@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, NutritionPlan, NutritionAssignment } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionPlans, getNutritionAssignments, createNutritionAssignment, deleteNutritionAssignment, getMealStatesForWeek } from '../dbService';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -31,6 +31,15 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [histExerciseId, setHistExerciseId] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+
+  // Nutrition state
+  const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([]);
+  const [nutritionAssignments, setNutritionAssignments] = useState<NutritionAssignment[]>([]);
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [assignNutritionPlanId, setAssignNutritionPlanId] = useState('');
+  const [assignNutritionDate, setAssignNutritionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isAssigningNutrition, setIsAssigningNutrition] = useState(false);
+  const [macroAdherence, setMacroAdherence] = useState<number | null>(null);
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
@@ -65,21 +74,50 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setSuccessMsg('');
   };
 
-  // Load assignments, logs, workouts and exercises whenever an athlete is selected
+  // Load assignments, logs, workouts, exercises, and nutrition data when athlete selected
   useEffect(() => {
     if (!selectedAthlete) return;
     setAssignments([]);
     setAthleteLogs([]);
+    setNutritionAssignments([]);
+    setMacroAdherence(null);
     setHistExerciseId('');
     setShowHistory(false);
+
     getWorkoutAssignments(selectedAthlete.email).then(setAssignments).catch(console.error);
     getWorkoutLogs(selectedAthlete.email).then(setAthleteLogs).catch(console.error);
+    getNutritionAssignments(selectedAthlete.email).then(setNutritionAssignments).catch(console.error);
+
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
+    if (nutritionPlans.length === 0) getNutritionPlans().then(setNutritionPlans).catch(console.error);
     if (exercises.length === 0) {
       (async () => {
         await seedExercisesIfEmpty();
         getExercises().then(setExercises).catch(console.error);
       })();
+    }
+
+    // Macro adherence from athlete's meal state records this week
+    const today = new Date();
+    const day = today.getDay();
+    const daysFromMonday = day === 0 ? 6 : day - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    const weekDates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
+    const states = getMealStatesForWeek(selectedAthlete.userId, weekDates);
+    if (states.length > 0) {
+      let total = 0, completed = 0;
+      states.forEach(ms => {
+        (['comida1','comida2','comida3','comida4','comida5'] as const).forEach(key => {
+          const slot = ms[key] as any;
+          if (slot) { total++; if (slot.completed) completed++; }
+        });
+      });
+      setMacroAdherence(total > 0 ? Math.round((completed / total) * 100) : null);
     }
   }, [selectedAthlete]);
 
@@ -180,6 +218,34 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     try {
       await deleteWorkoutAssignment(id);
       setAssignments(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAssignNutritionPlan = async () => {
+    if (!selectedAthlete || !assignNutritionPlanId || !assignNutritionDate) return;
+    setIsAssigningNutrition(true);
+    try {
+      const newA = await createNutritionAssignment({
+        athleteId: selectedAthlete.email,
+        planId: assignNutritionPlanId,
+        startDate: assignNutritionDate,
+      });
+      setNutritionAssignments(prev => [...prev, newA]);
+      setShowNutritionModal(false);
+      setAssignNutritionPlanId('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAssigningNutrition(false);
+    }
+  };
+
+  const handleDeleteNutritionAssignment = async (id: string) => {
+    try {
+      await deleteNutritionAssignment(id);
+      setNutritionAssignments(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -478,12 +544,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 <div>
                   <div className="flex justify-between mb-1.5 font-mono text-[10px]">
                     <span className="text-[#c6c9ab] uppercase">Adherencia Macros</span>
-                    <span className="text-[#c6c9ab]">—</span>
+                    <span className="text-white">{macroAdherence !== null ? `${macroAdherence}%` : '—'}</span>
                   </div>
                   <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#e2ff00] w-0 rounded-full" />
+                    <div
+                      className="h-full bg-[#e2ff00] rounded-full shadow-[0_0_6px_rgba(226,255,0,0.3)] transition-all"
+                      style={{ width: macroAdherence !== null ? `${macroAdherence}%` : '0%' }}
+                    />
                   </div>
-                  <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Datos de nutrición próximamente</p>
+                  {macroAdherence === null && (
+                    <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Sin registros de nutrición esta semana</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -745,6 +816,103 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 </div>
               )}
             </div>
+            {/* ── NUTRITION PLAN ASSIGNMENT ──────────────────────────────────── */}
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const activeNutrition = nutritionAssignments
+                .filter(a => a.startDate <= today)
+                .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+              const activePlan = activeNutrition ? nutritionPlans.find(p => p.id === activeNutrition.planId) : null;
+
+              return (
+                <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#e2ff00] text-sm">restaurant</span>
+                      Plan Nutricional
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setAssignNutritionPlanId(nutritionPlans[0]?.id || '');
+                        setAssignNutritionDate(new Date().toISOString().split('T')[0]);
+                        setShowNutritionModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-[#e2ff00] hover:bg-[#e2ff00]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Asignar plan
+                    </button>
+                  </div>
+
+                  {activePlan ? (
+                    <div className="bg-[#171717] border border-[#e2ff00]/20 rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-sans font-bold text-white">{activePlan.name}</p>
+                          <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                            Desde {activeNutrition!.startDate} · {activePlan.targetCalories} kcal
+                          </p>
+                          <div className="flex gap-3 mt-1.5 text-[10px] font-mono">
+                            <span className="text-amber-300">CH {activePlan.macros.carbs}g</span>
+                            <span className="text-blue-300">Prot {activePlan.macros.protein}g</span>
+                            <span className="text-orange-300">Gras {activePlan.macros.fats}g</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNutritionAssignment(activeNutrition!.id)}
+                          className="text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors flex-shrink-0"
+                          title="Quitar plan"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
+                      <div className="pt-2 border-t border-[#2a2a2a] space-y-1">
+                        {activePlan.meals.map((meal, mi) => (
+                          <div key={mi} className="flex items-center gap-2 text-[10px] font-mono">
+                            <span className="text-[#c6c9ab] w-16 truncate">{meal.name}</span>
+                            <div className="flex gap-1 flex-wrap">
+                              {meal.slots.map((slot, si) => (
+                                <span key={si} className="bg-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded">
+                                  {slot.portions} {slot.category === 'HC' ? 'HC' : slot.category === 'proteina' ? 'Prot' : slot.category === 'grasa' ? 'Gras' : 'Verd'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center">
+                      <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">restaurant</span>
+                      <p className="text-xs text-[#c6c9ab]">Sin plan nutricional asignado.</p>
+                    </div>
+                  )}
+
+                  {nutritionAssignments.length > 1 && (
+                    <div className="pt-2 border-t border-[#2a2a2a] space-y-1">
+                      <p className="font-mono text-[9px] text-[#c6c9ab] uppercase mb-1.5">Historial de planes</p>
+                      {nutritionAssignments
+                        .filter(a => a.id !== activeNutrition?.id)
+                        .sort((a, b) => b.startDate.localeCompare(a.startDate))
+                        .map(a => {
+                          const plan = nutritionPlans.find(p => p.id === a.planId);
+                          return (
+                            <div key={a.id} className="flex items-center justify-between text-[10px] font-mono text-[#c6c9ab]">
+                              <span>{plan?.name || 'Plan eliminado'}</span>
+                              <div className="flex items-center gap-2">
+                                <span>{a.startDate}</span>
+                                <button onClick={() => handleDeleteNutritionAssignment(a.id)} className="hover:text-red-400 transition-colors">
+                                  <span className="material-symbols-outlined text-xs">close</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </section>
         </div>
       )}
@@ -808,6 +976,71 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                   <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>
                 ) : (
                   <><span className="material-symbols-outlined text-sm">event_available</span>Confirmar</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── ASSIGN NUTRITION PLAN MODAL ─────────────────────────────────── */}
+      {showNutritionModal && selectedAthlete && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Asignar plan nutricional</h2>
+              <button onClick={() => setShowNutritionModal(false)} className="text-[#c6c9ab] hover:text-white transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-[#c6c9ab] font-mono flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-[#e2ff00]">person</span>
+              Atleta: <strong className="text-white">{selectedAthlete.displayName}</strong>
+            </p>
+
+            <div>
+              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Plan *</label>
+              {nutritionPlans.length === 0 ? (
+                <p className="text-xs text-[#c6c9ab] font-mono italic">No hay planes disponibles. Crea uno primero en la pestaña Nutrición.</p>
+              ) : (
+                <select
+                  value={assignNutritionPlanId}
+                  onChange={e => setAssignNutritionPlanId(e.target.value)}
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                >
+                  {nutritionPlans.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} · {p.targetCalories} kcal</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Fecha de inicio *</label>
+              <input
+                type="date"
+                value={assignNutritionDate}
+                onChange={e => setAssignNutritionDate(e.target.value)}
+                className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowNutritionModal(false)}
+                className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAssignNutritionPlan}
+                disabled={isAssigningNutrition || !assignNutritionPlanId || !assignNutritionDate || nutritionPlans.length === 0}
+                className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {isAssigningNutrition ? (
+                  <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>
+                ) : (
+                  <><span className="material-symbols-outlined text-sm">restaurant</span>Confirmar</>
                 )}
               </button>
             </div>
