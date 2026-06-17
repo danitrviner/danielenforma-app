@@ -1,4 +1,4 @@
-import { Recipe, MealItem, Exercise } from './types';
+import { Recipe, Exercise } from './types';
 
 export const SYSTEM_EXERCISES: Omit<Exercise, 'id'>[] = [
   // PIERNAS
@@ -167,33 +167,4 @@ export const RECIPES: Recipe[] = [
       'Sacea la base de la tortilla, acomoda el filete de ternera y las verduras salteadas, y rólalo bien apretado para cortarlo transversalmente.'
     ]
   }
-];
-
-export const FOOD_ITEMS: MealItem[] = [
-  // CARBOHIDRATOS
-  { id: 'avena-integral', name: 'Avena en hojuelas', category: 'carbs', portionSize: '100g', exchangeInfo: '1 Intercambio (HC)' },
-  { id: 'arroz-integral', name: 'Arroz integral', category: 'carbs', portionSize: '120g', exchangeInfo: '1 Intercambio (HC)' },
-  { id: 'patata-cocida', name: 'Patata cocida', category: 'carbs', portionSize: '150g', exchangeInfo: '1 Intercambio (HC)' },
-  { id: 'boniato-horno', name: 'Boniato al horno', category: 'carbs', portionSize: '130g', exchangeInfo: '1 Intercambio (HC)' },
-  { id: 'pan-integral', name: 'Pan integral', category: 'carbs', portionSize: '40g', exchangeInfo: '1 Intercambio (HC)' },
-  { id: 'pasta-integral', name: 'Pasta integral cocida', category: 'carbs', portionSize: '100g', exchangeInfo: '1 Intercambio (HC)' },
-
-  // PROTEINAS
-  { id: 'pechuga-pollo', name: 'Pechuga de Pollo', category: 'protein', portionSize: '200g', exchangeInfo: '2 Intercambios (Prot)' },
-  { id: 'claras-huevo', name: 'Claras de huevo', category: 'protein', portionSize: '200g', exchangeInfo: '1 Intercambio (Prot)' },
-  { id: 'tilapia-blanca', name: 'Filete de Tilapia', category: 'protein', portionSize: '120g', exchangeInfo: '1 Intercambio (Prot)' },
-  { id: 'whey-protein', name: 'Whey Protein Isolate', category: 'protein', portionSize: '30g', exchangeInfo: '1 Intercambio (Prot)' },
-  { id: 'lomo-cerdo', name: 'Lomo de cerdo magro', category: 'protein', portionSize: '110g', exchangeInfo: '1 Intercambio (Prot)' },
-  { id: 'atun-lata', name: 'Atún al natural', category: 'protein', portionSize: '100g', exchangeInfo: '1 Intercambio (Prot)' },
-
-  // GRASAS
-  { id: 'almendras-raw', name: 'Almendras enteras', category: 'fat', portionSize: '15g', exchangeInfo: '1 Intercambio (Grasa)' },
-  { id: 'aceite-oliva', name: 'Aceite de oliva extra', category: 'fat', portionSize: '10g', exchangeInfo: '1 Intercambio (Grasa)' },
-  { id: 'aguacate-grasa', name: 'Aguacate fresco', category: 'fat', portionSize: '50g', exchangeInfo: '1 Intercambio (Grasa)' },
-  { id: 'nueces-grasa', name: 'Nueces de nogal', category: 'fat', portionSize: '15g', exchangeInfo: '1 Intercambio (Grasa)' },
-
-  // VEGETALES
-  { id: 'espinaca-veg', name: 'Espinacas frescas', category: 'veg', portionSize: '150g', exchangeInfo: '1 Intercambio (Veg)' },
-  { id: 'brocoli-veg', name: 'Brócoli al vapor', category: 'veg', portionSize: '120g', exchangeInfo: '1 Intercambio (Veg)' },
-  { id: 'tomate-veg', name: 'Tomate de ensalada', category: 'veg', portionSize: '150g', exchangeInfo: '1 Intercambio (Veg)' }
 ];

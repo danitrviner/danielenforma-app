@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, NutritionPlan, NutritionAssignment } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionPlans, getNutritionAssignments, createNutritionAssignment, deleteNutritionAssignment, getMealStatesForWeek } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, NutritionPlan, NutritionAssignment, AthleteNutritionConfig, DietMode } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionPlans, getNutritionAssignments, createNutritionAssignment, deleteNutritionAssignment, getMealStatesForWeek, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
+
+const DIET_MODE_LABELS: Record<DietMode, string> = {
+  OMNIVORO:  'Omnívoro',
+  VEGANO:    'Vegano',
+  SIN_PESAR: 'Sin pesar',
+};
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -40,6 +46,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [assignNutritionDate, setAssignNutritionDate] = useState(new Date().toISOString().split('T')[0]);
   const [isAssigningNutrition, setIsAssigningNutrition] = useState(false);
   const [macroAdherence, setMacroAdherence] = useState<number | null>(null);
+  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
@@ -81,12 +88,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setAthleteLogs([]);
     setNutritionAssignments([]);
     setMacroAdherence(null);
+    setNutritionConfig(null);
     setHistExerciseId('');
     setShowHistory(false);
 
     getWorkoutAssignments(selectedAthlete.email).then(setAssignments).catch(console.error);
     getWorkoutLogs(selectedAthlete.email).then(setAthleteLogs).catch(console.error);
     getNutritionAssignments(selectedAthlete.email).then(setNutritionAssignments).catch(console.error);
+    getAthleteNutritionConfig(selectedAthlete.email).then(setNutritionConfig).catch(console.error);
 
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
     if (nutritionPlans.length === 0) getNutritionPlans().then(setNutritionPlans).catch(console.error);
@@ -240,6 +249,18 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     } finally {
       setIsAssigningNutrition(false);
     }
+  };
+
+  const handleToggleDietMode = async (mode: DietMode) => {
+    if (!selectedAthlete || !nutritionConfig) return;
+    const already = nutritionConfig.enabledModes.includes(mode);
+    const updated = already
+      ? nutritionConfig.enabledModes.filter(m => m !== mode)
+      : [...nutritionConfig.enabledModes, mode];
+    if (updated.length === 0) return; // at least one must be active
+    const next: AthleteNutritionConfig = { ...nutritionConfig, enabledModes: updated };
+    setNutritionConfig(next);
+    await saveAthleteNutritionConfig(next).catch(console.error);
   };
 
   const handleDeleteNutritionAssignment = async (id: string) => {
@@ -873,7 +894,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                             <div className="flex gap-1 flex-wrap">
                               {meal.slots.map((slot, si) => (
                                 <span key={si} className="bg-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded">
-                                  {slot.portions} {slot.category === 'HC' ? 'HC' : slot.category === 'proteina' ? 'Prot' : slot.category === 'grasa' ? 'Gras' : 'Verd'}
+                                  {slot.portions}× {slot.category.replace('_', ' ')}
                                 </span>
                               ))}
                             </div>
@@ -913,6 +934,45 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 </div>
               );
             })()}
+
+            {/* ── NUTRITION MODE CONFIG ─────────────────────────────────────── */}
+            {nutritionConfig && (
+              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#00eefc] text-sm">tune</span>
+                  Modos de alimentación habilitados
+                </h3>
+                <p className="text-[10px] text-[#c6c9ab] font-mono">
+                  Selecciona qué modos puede usar este atleta. Si hay varios activos, el atleta podrá elegir entre ellos en su tracker.
+                </p>
+                <div className="flex gap-3 flex-wrap">
+                  {(['OMNIVORO', 'VEGANO', 'SIN_PESAR'] as DietMode[]).map(mode => {
+                    const active = nutritionConfig.enabledModes.includes(mode);
+                    return (
+                      <button
+                        key={mode}
+                        onClick={() => handleToggleDietMode(mode)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                          active
+                            ? 'bg-[#e2ff00]/10 border-[#e2ff00]/40 text-[#e2ff00]'
+                            : 'bg-[#1c1b1b] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#c6c9ab]/30 hover:text-white'
+                        }`}
+                      >
+                        <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'}`}>
+                          {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
+                        </span>
+                        {DIET_MODE_LABELS[mode]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {nutritionConfig.enabledModes.length > 1 && (
+                  <p className="text-[10px] text-amber-300/70 font-mono">
+                    Con varios modos activos, el atleta verá un selector en su tracker.
+                  </p>
+                )}
+              </div>
+            )}
           </section>
         </div>
       )}

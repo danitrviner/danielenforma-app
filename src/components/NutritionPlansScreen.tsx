@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { NutritionPlan, NutritionMeal, NutritionMealSlot } from '../types';
+import { NutritionPlan, NutritionMeal, NutritionMealSlot, FoodCategory } from '../types';
 import { getNutritionPlans, createNutritionPlan, updateNutritionPlan, deleteNutritionPlan } from '../dbService';
 
-type SlotCat = NutritionMealSlot['category'];
+type SlotCat = FoodCategory;
 
 const SLOT_LABEL: Record<SlotCat, string> = {
-  HC:       'HC',
-  proteina: 'Proteína',
-  grasa:    'Grasa',
-  verdura:  'Verdura',
+  HC:        'HC',
+  PROT:      'Proteína',
+  GRASA:     'Grasa',
+  MIX_HC:    '½ Prot + ½ HC',
+  MIX_GRASA: '½ Prot + ½ Grasa',
 };
 
 const SLOT_COLOR: Record<SlotCat, string> = {
-  HC:       'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-  proteina: 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
-  grasa:    'bg-orange-500/10 text-orange-300 border border-orange-500/20',
-  verdura:  'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+  HC:        'bg-amber-500/10 text-amber-300 border border-amber-500/20',
+  PROT:      'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+  GRASA:     'bg-orange-500/10 text-orange-300 border border-orange-500/20',
+  MIX_HC:    'bg-violet-500/10 text-violet-300 border border-violet-500/20',
+  MIX_GRASA: 'bg-pink-500/10 text-pink-300 border border-pink-500/20',
 };
 
 function makeDefaultMeals(): NutritionMeal[] {
   return [1, 2, 3, 4, 5].map(n => ({
     id: `meal_${Date.now()}_${n}`,
     name: `Comida ${n}`,
-    slots: [{ category: 'HC' as SlotCat, portions: 2 }],
+    slots: [{ category: 'HC' as FoodCategory, portions: 2 }],
   }));
 }
 
@@ -124,7 +126,7 @@ export default function NutritionPlansScreen({ coachId }: Props) {
     setForm(f => {
       const meals = f.meals.map((m, i) => {
         if (i !== mealIdx) return m;
-        return { ...m, slots: [...m.slots, { category: 'HC' as SlotCat, portions: 1 }] };
+        return { ...m, slots: [...m.slots, { category: 'HC' as FoodCategory, portions: 1 }] };
       });
       return { ...f, meals };
     });
@@ -157,7 +159,7 @@ export default function NutritionPlansScreen({ coachId }: Props) {
     const n = form.meals.length + 1;
     setForm(f => ({
       ...f,
-      meals: [...f.meals, { id: `meal_${Date.now()}`, name: `Comida ${n}`, slots: [{ category: 'HC' as SlotCat, portions: 2 }] }],
+      meals: [...f.meals, { id: `meal_${Date.now()}`, name: `Comida ${n}`, slots: [{ category: 'HC' as FoodCategory, portions: 2 }] }],
     }));
   };
 
@@ -372,10 +374,10 @@ export default function NutritionPlansScreen({ coachId }: Props) {
                 <div key={si} className="flex items-center gap-2">
                   <select
                     value={slot.category}
-                    onChange={e => updateSlot(mi, si, { category: e.target.value as SlotCat })}
+                    onChange={e => updateSlot(mi, si, { category: e.target.value as FoodCategory })}
                     className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
                   >
-                    {(['HC', 'proteina', 'grasa', 'verdura'] as SlotCat[]).map(cat => (
+                    {(['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] as FoodCategory[]).map(cat => (
                       <option key={cat} value={cat}>{SLOT_LABEL[cat]}</option>
                     ))}
                   </select>
@@ -391,7 +393,7 @@ export default function NutritionPlansScreen({ coachId }: Props) {
                     <span className="text-[10px] text-[#c6c9ab] font-mono">porción{slot.portions !== 1 ? 'es' : ''}</span>
                   </div>
                   <span className={`text-[9px] font-mono px-2 py-1 rounded ${SLOT_COLOR[slot.category]}`}>
-                    {slot.portions} {slot.category === 'HC' ? 'HC' : slot.category === 'proteina' ? 'Prot' : slot.category === 'grasa' ? 'Gras' : 'Verd'}
+                    {slot.portions}× {slot.category.replace('_', ' ')}
                   </span>
                   {meal.slots.length > 1 && (
                     <button onClick={() => removeSlot(mi, si)} className="text-[#c6c9ab] hover:text-red-400 transition-colors">

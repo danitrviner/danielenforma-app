@@ -12,8 +12,9 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionPlan, NutritionAssignment } from './types';
-import { SYSTEM_EXERCISES, FOOD_ITEMS } from './data';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionPlan, NutritionAssignment, AthleteNutritionConfig, DietMode } from './types';
+import { SYSTEM_EXERCISES } from './data';
+import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
 // Let's have a state flag for Local Storage fallback
 let forceLocalOnly = false;
@@ -996,7 +997,7 @@ export async function deleteWorkoutLog(id: string): Promise<void> {
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
-const FOOD_ITEMS_LOCAL_KEY = 'enforma_food_items';
+const FOOD_ITEMS_LOCAL_KEY = 'enforma_food_items_v2';
 
 function getLocalFoodItems(): MealItem[] {
   try {
@@ -1078,16 +1079,23 @@ export async function deleteFoodItem(id: string): Promise<void> {
 }
 
 export async function seedFoodItemsIfEmpty(): Promise<void> {
+  const seeded: MealItem[] = SYSTEM_FOODS.map((f, i) => ({
+    id: `system_food_${i + 1}`,
+    mode: f.mode,
+    category: f.category,
+    label: f.label,
+  }));
+
   if (forceLocalOnly) {
     if (getLocalFoodItems().length === 0) {
-      saveLocalFoodItems(FOOD_ITEMS);
+      saveLocalFoodItems(seeded);
     }
     return;
   }
   try {
     const snap = await getDocs(collection(db, 'foodItems'));
     if (snap.empty) {
-      for (const item of FOOD_ITEMS) {
+      for (const item of seeded) {
         const { id, ...data } = item;
         await addDoc(collection(db, 'foodItems'), data);
       }
@@ -1098,7 +1106,7 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
     console.warn('seedFoodItems Firestore failed, seeding local:', err);
     setLocalBypassMode(true);
     if (getLocalFoodItems().length === 0) {
-      saveLocalFoodItems(FOOD_ITEMS);
+      saveLocalFoodItems(seeded);
     }
   }
 }
@@ -1282,6 +1290,53 @@ export async function getActiveNutritionAssignment(athleteEmail: string): Promis
 }
 
 // ─── MEAL STATE WEEK SUMMARY (for coach macro adherence) ──────────────────────
+
+// ─── ATHLETE NUTRITION CONFIG ─────────────────────────────────────────────────
+
+export async function getAthleteNutritionConfig(athleteEmail: string): Promise<AthleteNutritionConfig> {
+  const defaultConfig: AthleteNutritionConfig = { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
+  const localKey = `enforma_nutri_config_${athleteEmail}`;
+  if (forceLocalOnly) {
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? (JSON.parse(raw) as AthleteNutritionConfig) : defaultConfig;
+    } catch (e) { return defaultConfig; }
+  }
+  try {
+    const docRef = doc(db, 'athleteNutritionConfigs', athleteEmail);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data() as AthleteNutritionConfig;
+      localStorage.setItem(localKey, JSON.stringify(data));
+      return data;
+    }
+    return defaultConfig;
+  } catch (err) {
+    console.warn('getAthleteNutritionConfig Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? (JSON.parse(raw) as AthleteNutritionConfig) : defaultConfig;
+    } catch (e) { return defaultConfig; }
+  }
+}
+
+export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig): Promise<void> {
+  const localKey = `enforma_nutri_config_${config.athleteId}`;
+  const data = { ...config };
+  if (forceLocalOnly) {
+    localStorage.setItem(localKey, JSON.stringify(data));
+    return;
+  }
+  try {
+    await setDoc(doc(db, 'athleteNutritionConfigs', config.athleteId), data);
+    localStorage.setItem(localKey, JSON.stringify(data));
+  } catch (err) {
+    console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    localStorage.setItem(localKey, JSON.stringify(data));
+  }
+}
 
 export function getMealStatesForWeek(userId: string, dates: string[]): MealState[] {
   const results: MealState[] = [];

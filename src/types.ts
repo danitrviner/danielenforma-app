@@ -28,14 +28,19 @@ export interface WeightCheckIn {
   approvedAt?: Date;
 }
 
+export type FoodCategory = 'HC' | 'PROT' | 'GRASA' | 'MIX_HC' | 'MIX_GRASA';
+export type DietMode = 'OMNIVORO' | 'VEGANO' | 'SIN_PESAR';
+
 export interface MealItem {
   id: string;
-  name: string;
-  category: 'carbs' | 'protein' | 'fat' | 'veg';
-  portionSize: string; // e.g., "60g", "1 ud"
-  exchangeInfo: string; // e.g., "2 HC", "1 Prot"
-  imageUrl?: string;
-  calories?: number;
+  mode: DietMode;
+  category: FoodCategory;
+  label: string; // texto completo "1 intercambio = ..."
+}
+
+export interface AthleteNutritionConfig {
+  athleteId: string; // email
+  enabledModes: DietMode[];
 }
 
 export interface MealState {
@@ -109,7 +114,7 @@ export interface WorkoutAssignment {
 }
 
 export interface NutritionMealSlot {
-  category: 'HC' | 'proteina' | 'grasa' | 'verdura';
+  category: FoodCategory;
   portions: number;
 }
 
