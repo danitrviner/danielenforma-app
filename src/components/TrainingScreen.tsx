@@ -92,9 +92,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setLoading(true);
     try {
       const [asn, wos, logs] = await Promise.all([
-        getWorkoutAssignments(profile.userId),
+        getWorkoutAssignments(profile.email),
         getWorkouts(),
-        getWorkoutLogs(profile.userId),
+        getWorkoutLogs(profile.email),
       ]);
       setAssignments(asn);
       setWorkouts(wos);
@@ -108,7 +108,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     } finally {
       setLoading(false);
     }
-  }, [profile.userId]);
+  }, [profile.email]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -199,7 +199,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
       const now = new Date().toISOString();
       const newLog = await createWorkoutLog({
-        athleteId: profile.userId,
+        athleteId: profile.email,
         workoutId: activeWorkout.id,
         assignmentId: activeAssignment.id,
         date: activeAssignment.date,

@@ -72,8 +72,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setAthleteLogs([]);
     setHistExerciseId('');
     setShowHistory(false);
-    getWorkoutAssignments(selectedAthlete.userId).then(setAssignments).catch(console.error);
-    getWorkoutLogs(selectedAthlete.userId).then(setAthleteLogs).catch(console.error);
+    getWorkoutAssignments(selectedAthlete.email).then(setAssignments).catch(console.error);
+    getWorkoutLogs(selectedAthlete.email).then(setAthleteLogs).catch(console.error);
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
     if (exercises.length === 0) {
       (async () => {
@@ -162,7 +162,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     try {
       const newA = await createWorkoutAssignment({
         workoutId: assignWorkoutId,
-        athleteId: selectedAthlete.userId,
+        athleteId: selectedAthlete.email,
         date: assignDate,
         status: 'pending',
       });

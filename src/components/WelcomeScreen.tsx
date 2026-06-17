@@ -97,7 +97,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       setLocalBypassMode(true);
       
       const mockUser = {
-        uid: role === 'coach' ? 'coach_dani_local' : 'client_local_user',
+        uid: role === 'coach' ? 'coach_dani_local' : 'client_alex_default',
         email: sandboxEmail,
         displayName: role === 'coach' ? 'Dani Coach (En Forma)' : 'Atleta En Forma',
       };
