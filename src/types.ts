@@ -79,6 +79,27 @@ export interface Workout {
   exercises: WorkoutExercise[];
 }
 
+export interface WorkoutSetLog {
+  weight: number;   // kg lifted
+  repsDone: number; // actual reps completed
+  rir: number;      // perceived reps in reserve
+}
+
+export interface WorkoutEntryLog {
+  exerciseId: string;
+  sets: WorkoutSetLog[];
+}
+
+export interface WorkoutLog {
+  id: string;
+  athleteId: string;
+  workoutId: string;
+  assignmentId: string;
+  date: string;        // YYYY-MM-DD
+  completedAt: string; // ISO timestamp string
+  entries: WorkoutEntryLog[];
+}
+
 export interface WorkoutAssignment {
   id: string;
   workoutId: string;

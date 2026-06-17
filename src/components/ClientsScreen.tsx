@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty } from '../dbService';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -25,6 +25,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [assignWorkoutId, setAssignWorkoutId] = useState('');
   const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // Workout logs + exercises for history
+  const [athleteLogs, setAthleteLogs] = useState<WorkoutLog[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [histExerciseId, setHistExerciseId] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
@@ -59,14 +65,21 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setSuccessMsg('');
   };
 
-  // Load assignments + workouts whenever an athlete is selected
+  // Load assignments, logs, workouts and exercises whenever an athlete is selected
   useEffect(() => {
     if (!selectedAthlete) return;
-    getWorkoutAssignments(selectedAthlete.userId)
-      .then(setAssignments)
-      .catch(console.error);
-    if (workouts.length === 0) {
-      getWorkouts().then(setWorkouts).catch(console.error);
+    setAssignments([]);
+    setAthleteLogs([]);
+    setHistExerciseId('');
+    setShowHistory(false);
+    getWorkoutAssignments(selectedAthlete.userId).then(setAssignments).catch(console.error);
+    getWorkoutLogs(selectedAthlete.userId).then(setAthleteLogs).catch(console.error);
+    if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
+    if (exercises.length === 0) {
+      (async () => {
+        await seedExercisesIfEmpty();
+        getExercises().then(setExercises).catch(console.error);
+      })();
     }
   }, [selectedAthlete]);
 
@@ -96,6 +109,52 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
       setIsSubmitting(false);
     }
   };
+
+  // ── Weekly compliance (real data) ──────────────────────────────────────────
+  const getWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const daysFromMonday = day === 0 ? 6 : day - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return {
+      start: monday.toISOString().split('T')[0],
+      end: sunday.toISOString().split('T')[0],
+    };
+  };
+
+  const { start: weekStart, end: weekEnd } = getWeekRange();
+  const weekAssignments = assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
+  const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
+  const weekTotal = weekAssignments.length;
+  const weekPct = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
+
+  // ── Exercise history helpers ────────────────────────────────────────────────
+  const getExercise = (id: string) => exercises.find(e => e.id === id);
+  const getWorkout = (id: string) => workouts.find(w => w.id === id);
+
+  const loggedExerciseIds = Array.from(new Set<string>(athleteLogs.flatMap(l => l.entries.map(e => e.exerciseId))));
+  const loggedExercises = loggedExerciseIds.map(id => getExercise(id)).filter(Boolean) as Exercise[];
+
+  const getExerciseHistory = (exerciseId: string) =>
+    athleteLogs
+      .filter(log => log.entries.some(e => e.exerciseId === exerciseId))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(log => {
+        const entry = log.entries.find(e => e.exerciseId === exerciseId)!;
+        const maxWeight = Math.max(...entry.sets.map(s => s.weight), 0);
+        const totalReps = entry.sets.reduce((acc, s) => acc + s.repsDone, 0);
+        return { date: log.date, workoutName: getWorkout(log.workoutId)?.name || '—', sets: entry.sets, maxWeight, totalReps };
+      });
+
+  function formatDate(dateStr: string) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+  }
 
   const handleCreateAssignment = async () => {
     if (!selectedAthlete || !assignWorkoutId || !assignDate) return;
@@ -404,20 +463,27 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 <div>
                   <div className="flex justify-between mb-1.5 font-mono text-[10px]">
                     <span className="text-[#c6c9ab] uppercase">Entrenamientos</span>
-                    <span className="text-white">4 / 5</span>
+                    <span className="text-white">{weekCompleted} / {weekTotal > 0 ? weekTotal : '—'}</span>
                   </div>
                   <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#00eefc] w-[80%] rounded-full shadow-[0_0_6px_rgba(0,238,252,0.3)]"></div>
+                    <div
+                      className="h-full bg-[#00eefc] rounded-full shadow-[0_0_6px_rgba(0,238,252,0.3)] transition-all"
+                      style={{ width: weekTotal > 0 ? `${weekPct}%` : '0%' }}
+                    />
                   </div>
+                  {weekTotal === 0 && (
+                    <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Sin entrenamientos programados esta semana</p>
+                  )}
                 </div>
                 <div>
                   <div className="flex justify-between mb-1.5 font-mono text-[10px]">
                     <span className="text-[#c6c9ab] uppercase">Adherencia Macros</span>
-                    <span className="text-white">92%</span>
+                    <span className="text-[#c6c9ab]">—</span>
                   </div>
                   <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#e2ff00] w-[92%] rounded-full shadow-[0_0_6px_rgba(226,255,0,0.3)]"></div>
+                    <div className="h-full bg-[#e2ff00] w-0 rounded-full" />
                   </div>
+                  <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Datos de nutrición próximamente</p>
                 </div>
               </div>
             </div>
@@ -535,6 +601,92 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 </button>
               </div>
             </form>
+            {/* ── EXERCISE LOAD HISTORY ───────────────────────────────── */}
+            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#00eefc] text-sm">trending_up</span>
+                  Historial de Carga
+                </h3>
+                {loggedExercises.length > 0 && (
+                  <button
+                    onClick={() => setShowHistory(h => !h)}
+                    className="text-[#c6c9ab] hover:text-white font-mono text-[10px] uppercase flex items-center gap-1 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">{showHistory ? 'expand_less' : 'expand_more'}</span>
+                    {showHistory ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                )}
+              </div>
+
+              {loggedExercises.length === 0 ? (
+                <p className="text-xs text-[#c6c9ab] font-mono text-center py-3">Sin entrenos registrados todavía.</p>
+              ) : showHistory && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">Ejercicio:</label>
+                    <select
+                      value={histExerciseId || loggedExercises[0]?.id || ''}
+                      onChange={e => setHistExerciseId(e.target.value)}
+                      className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc] cursor-pointer"
+                    >
+                      {loggedExercises.map(ex => (
+                        <option key={ex.id} value={ex.id}>{ex.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(() => {
+                    const selectedId = histExerciseId || loggedExercises[0]?.id || '';
+                    const history = getExerciseHistory(selectedId);
+                    if (history.length === 0) return <p className="text-xs text-[#c6c9ab] font-mono">Sin datos.</p>;
+                    return (
+                      <div className="overflow-x-auto rounded-lg border border-[#2a2a2a]/50">
+                        <table className="w-full text-left min-w-[380px]">
+                          <thead>
+                            <tr className="bg-[#111111] border-b border-[#2a2a2a]/40">
+                              <th className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase">Fecha</th>
+                              <th className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase">Peso máx.</th>
+                              <th className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase">Reps</th>
+                              <th className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase">Series</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {history.map((entry, i) => {
+                              const prevMax = i > 0 ? history[i - 1].maxWeight : null;
+                              const improved = prevMax !== null && entry.maxWeight > prevMax;
+                              return (
+                                <tr key={i} className="border-b border-[#2a2a2a]/20 hover:bg-[#1a1a1a]">
+                                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#c6c9ab]">{formatDate(entry.date)}</td>
+                                  <td className="px-3 py-2.5">
+                                    <span className={`font-mono text-sm font-bold ${improved ? 'text-emerald-400' : 'text-white'}`}>
+                                      {entry.maxWeight > 0 ? `${entry.maxWeight} kg` : '—'}
+                                    </span>
+                                    {improved && <span className="ml-1 font-mono text-[9px] text-emerald-400">↑</span>}
+                                  </td>
+                                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#c6c9ab]">{entry.totalReps}</td>
+                                  <td className="px-3 py-2.5">
+                                    <div className="flex flex-wrap gap-1">
+                                      {entry.sets.slice(0, 4).map((s, si) => (
+                                        <span key={si} className="font-mono text-[9px] bg-[#1e1e1e] border border-[#2a2a2a] px-1.5 py-0.5 rounded text-[#c6c9ab]">
+                                          {s.weight}×{s.repsDone}
+                                        </span>
+                                      ))}
+                                      {entry.sets.length > 4 && <span className="font-mono text-[9px] text-[#c6c9ab]">+{entry.sets.length - 4}</span>}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
             {/* ── WORKOUT ASSIGNMENTS ─────────────────────────────────── */}
             <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
               <div className="flex items-center justify-between">

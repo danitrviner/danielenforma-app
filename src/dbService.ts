@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog } from './types';
 import { SYSTEM_EXERCISES } from './data';
 
 // Let's have a state flag for Local Storage fallback
@@ -910,5 +910,86 @@ export async function deleteWorkoutAssignment(id: string): Promise<void> {
     console.warn('deleteWorkoutAssignment Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
+  }
+}
+
+// ─── WORKOUT LOGS ─────────────────────────────────────────────────────────────
+
+const WORKOUT_LOGS_LOCAL_KEY = 'enforma_workout_logs';
+
+function getLocalWorkoutLogs(): WorkoutLog[] {
+  try {
+    const raw = localStorage.getItem(WORKOUT_LOGS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as WorkoutLog[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalWorkoutLogs(logs: WorkoutLog[]) {
+  try {
+    localStorage.setItem(WORKOUT_LOGS_LOCAL_KEY, JSON.stringify(logs));
+  } catch (e) {}
+}
+
+export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> {
+  if (forceLocalOnly) {
+    const all = getLocalWorkoutLogs();
+    return athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+  }
+  try {
+    const colRef = collection(db, 'workoutLogs');
+    const q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : colRef;
+    const snap = await getDocs(q);
+    const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutLog));
+    const local = getLocalWorkoutLogs().filter(l => !logs.find(b => b.id === l.id));
+    saveLocalWorkoutLogs([...local, ...logs]);
+    return logs;
+  } catch (err) {
+    console.warn('getWorkoutLogs Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    const all = getLocalWorkoutLogs();
+    return athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+  }
+}
+
+export async function createWorkoutLog(data: Omit<WorkoutLog, 'id'>): Promise<WorkoutLog> {
+  if (forceLocalOnly) {
+    const newL: WorkoutLog = { ...data, id: `local_log_${Date.now()}` };
+    const list = getLocalWorkoutLogs();
+    list.push(newL);
+    saveLocalWorkoutLogs(list);
+    return newL;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'workoutLogs'), data);
+    const newL: WorkoutLog = { ...data, id: ref.id };
+    const list = getLocalWorkoutLogs();
+    list.push(newL);
+    saveLocalWorkoutLogs(list);
+    return newL;
+  } catch (err) {
+    console.warn('createWorkoutLog Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const newL: WorkoutLog = { ...data, id: `local_log_${Date.now()}` };
+    const list = getLocalWorkoutLogs();
+    list.push(newL);
+    saveLocalWorkoutLogs(list);
+    return newL;
+  }
+}
+
+export async function deleteWorkoutLog(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'workoutLogs', id));
+    saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
+  } catch (err) {
+    console.warn('deleteWorkoutLog Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
   }
 }
