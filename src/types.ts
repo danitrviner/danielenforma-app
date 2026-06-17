@@ -61,6 +61,32 @@ export interface Exercise {
   isCustom: boolean;
 }
 
+export interface WorkoutExercise {
+  exerciseId: string;
+  order: number;
+  sets: number;
+  reps: string;        // "8-10", "AMRAP", "12", etc.
+  restSeconds: number;
+  rir: number;         // reps in reserve (0-5)
+  notes?: string;
+}
+
+export interface Workout {
+  id: string;
+  ownerId: string;
+  name: string;
+  tags?: string[];
+  exercises: WorkoutExercise[];
+}
+
+export interface WorkoutAssignment {
+  id: string;
+  workoutId: string;
+  athleteId: string;   // userId of the athlete
+  date: string;        // YYYY-MM-DD
+  status: 'pending' | 'completed' | 'skipped';
+}
+
 export interface Recipe {
   id: string;
   title: string;

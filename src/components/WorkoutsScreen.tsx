@@ -1,0 +1,579 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Exercise, Workout, WorkoutExercise } from '../types';
+import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises } from '../dbService';
+
+interface WorkoutsScreenProps {
+  coachId: string;
+}
+
+type View = 'list' | 'editor';
+
+const TYPE_CHIP: Record<string, string> = {
+  fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
+  cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
+  estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+  pliometría:   'bg-[#e2ff00]/10 text-[#e2ff00] border border-[#e2ff00]/20',
+};
+
+const DEFAULT_WE: Omit<WorkoutExercise, 'exerciseId' | 'order'> = {
+  sets: 3,
+  reps: '8-10',
+  restSeconds: 90,
+  rir: 2,
+  notes: '',
+};
+
+export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
+  const [view, setView] = useState<View>('list');
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Editor state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorName, setEditorName] = useState('');
+  const [editorExercises, setEditorExercises] = useState<WorkoutExercise[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Exercise picker state
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerFocus, setPickerFocus] = useState('');
+  const [pickerType, setPickerType] = useState('');
+
+  const loadWorkouts = useCallback(async () => {
+    setLoading(true);
+    try {
+      setWorkouts(await getWorkouts());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadWorkouts(); }, [loadWorkouts]);
+
+  const openEditor = async (workout?: Workout) => {
+    if (allExercises.length === 0) {
+      try { setAllExercises(await getExercises()); } catch (e) {}
+    }
+    if (workout) {
+      setEditingId(workout.id);
+      setEditorName(workout.name);
+      setEditorExercises([...workout.exercises].sort((a, b) => a.order - b.order));
+    } else {
+      setEditingId(null);
+      setEditorName('');
+      setEditorExercises([]);
+    }
+    setView('editor');
+  };
+
+  const handleSave = async () => {
+    if (!editorName.trim()) return;
+    setIsSaving(true);
+    try {
+      const data: Omit<Workout, 'id'> = {
+        ownerId: coachId,
+        name: editorName.trim(),
+        exercises: editorExercises.map((ex, i) => ({ ...ex, order: i })),
+      };
+      if (editingId) {
+        await updateWorkout(editingId, data);
+        setWorkouts(prev => prev.map(w => w.id === editingId ? { ...w, ...data } : w));
+        flash('Rutina actualizada.');
+      } else {
+        const newW = await createWorkout(data);
+        setWorkouts(prev => [...prev, newW]);
+        flash('Rutina creada.');
+      }
+      setView('list');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteWorkout(id);
+      setWorkouts(prev => prev.filter(w => w.id !== id));
+      setDeleteConfirm(null);
+      flash('Rutina eliminada.');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  function flash(msg: string) {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 3000);
+  }
+
+  // ── Exercise picker ───────────────────────────────────────────────────────
+  const openPicker = async () => {
+    if (allExercises.length === 0) {
+      try { setAllExercises(await getExercises()); } catch (e) {}
+    }
+    setPickerSearch('');
+    setPickerFocus('');
+    setPickerType('');
+    setShowPicker(true);
+  };
+
+  const addExerciseToWorkout = (ex: Exercise) => {
+    const newWE: WorkoutExercise = {
+      ...DEFAULT_WE,
+      exerciseId: ex.id,
+      order: editorExercises.length,
+    };
+    setEditorExercises(prev => [...prev, newWE]);
+    setShowPicker(false);
+  };
+
+  const pickerFiltered = allExercises.filter(ex => {
+    if (pickerSearch && !ex.name.toLowerCase().includes(pickerSearch.toLowerCase())) return false;
+    if (pickerFocus && ex.primaryFocus !== pickerFocus) return false;
+    if (pickerType && ex.type !== pickerType) return false;
+    // exclude already added
+    if (editorExercises.find(we => we.exerciseId === ex.id)) return false;
+    return true;
+  });
+
+  const FOCUS_OPTIONS = Array.from(new Set<string>(allExercises.map(e => e.primaryFocus))).sort();
+  const TYPE_OPTIONS = Array.from(new Set<string>(allExercises.map(e => e.type))).sort();
+
+  // ── Editor helpers ────────────────────────────────────────────────────────
+  const updateWE = (idx: number, field: keyof WorkoutExercise, value: string | number) => {
+    setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, [field]: value } : we));
+  };
+
+  const moveWE = (idx: number, dir: -1 | 1) => {
+    const next = idx + dir;
+    if (next < 0 || next >= editorExercises.length) return;
+    setEditorExercises(prev => {
+      const arr = [...prev];
+      [arr[idx], arr[next]] = [arr[next], arr[idx]];
+      return arr;
+    });
+  };
+
+  const removeWE = (idx: number) => {
+    setEditorExercises(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const getExerciseInfo = (exerciseId: string) =>
+    allExercises.find(e => e.id === exerciseId);
+
+  // ── Render: LIST ──────────────────────────────────────────────────────────
+  if (view === 'list') {
+    return (
+      <div className="space-y-6">
+        <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-[#2a2a2a]/60 gap-4">
+          <div>
+            <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Rutinas</h1>
+            <p className="text-[#c6c9ab] text-sm mt-1">
+              {workouts.length} rutinas creadas
+            </p>
+          </div>
+          <button
+            onClick={() => openEditor()}
+            className="flex items-center gap-2 h-[42px] px-5 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all shadow-md shadow-[#e2ff00]/10 self-start md:self-auto"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            Nueva rutina
+          </button>
+        </header>
+
+        {successMsg && (
+          <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/25 text-white p-3 rounded-xl text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#e2ff00] text-base">check_circle</span>
+            {successMsg}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <span className="material-symbols-outlined text-2xl animate-spin text-[#e2ff00] mr-3">refresh</span>
+            <span className="font-mono text-xs uppercase tracking-widest text-[#c6c9ab]">Cargando rutinas...</span>
+          </div>
+        ) : workouts.length === 0 ? (
+          <div className="bg-[#121212] border border-dashed border-[#2a2a2a] rounded-xl p-16 text-center">
+            <span className="material-symbols-outlined text-4xl text-[#e2ff00]/40 block mb-3">format_list_bulleted</span>
+            <p className="text-white font-bold text-sm">Sin rutinas todavía</p>
+            <p className="text-[#c6c9ab] text-xs mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
+            <button
+              onClick={() => openEditor()}
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-[#e2ff00] font-mono text-xs uppercase rounded-lg hover:bg-[#e2ff00]/20 transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              Crear primera rutina
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {workouts.map(w => (
+              <div
+                key={w.id}
+                className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#e2ff00]/30 transition-all group relative overflow-hidden"
+              >
+                <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-[#e2ff00]/5 rounded-bl-full pointer-events-none" />
+
+                <h3 className="font-sans font-bold text-white text-base mb-1 group-hover:text-[#e2ff00] transition-colors pr-4">
+                  {w.name}
+                </h3>
+                <p className="font-mono text-[11px] text-[#c6c9ab] mb-3">
+                  {w.exercises.length} {w.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+                </p>
+
+                {w.exercises.length > 0 && (
+                  <div className="space-y-1 mb-4">
+                    {w.exercises.slice(0, 4).map((we, i) => {
+                      const ex = getExerciseInfo(we.exerciseId);
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-xs font-mono text-[#c6c9ab]">
+                          <span className="text-[#2a2a2a] font-bold w-4 text-center">{i + 1}</span>
+                          <span className="truncate">{ex?.name || 'Ejercicio'}</span>
+                          <span className="flex-shrink-0 text-[10px]">{we.sets}×{we.reps}</span>
+                        </div>
+                      );
+                    })}
+                    {w.exercises.length > 4 && (
+                      <p className="text-[10px] text-[#c6c9ab]/60 font-mono pl-6">
+                        +{w.exercises.length - 4} más...
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-3 border-t border-[#2a2a2a]/60">
+                  <button
+                    onClick={() => openEditor(w)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#1a1a1a] hover:bg-[#e2ff00]/10 border border-[#2a2a2a] hover:border-[#e2ff00]/30 text-[#c6c9ab] hover:text-[#e2ff00] rounded-lg font-mono text-[10px] uppercase font-bold transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(w.id)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1a1a1a] hover:bg-red-500/10 border border-[#2a2a2a] hover:border-red-500/30 text-[#c6c9ab] hover:text-red-400 rounded-lg font-mono text-[10px] uppercase font-bold transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Delete confirm */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#1a1a1a] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
+                <h3 className="font-sans font-bold text-white text-lg">¿Eliminar rutina?</h3>
+              </div>
+              <p className="text-sm text-[#c6c9ab]">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-lg transition-all">
+                  Cancelar
+                </button>
+                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-mono font-bold text-xs uppercase rounded-lg transition-all">
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Render: EDITOR ────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      {/* Editor header */}
+      <header className="flex items-center gap-4 pb-4 border-b border-[#2a2a2a]/60">
+        <button
+          onClick={() => setView('list')}
+          className="flex items-center gap-1.5 text-xs font-mono text-[#c6c9ab] hover:text-white border border-[#2a2a2a] hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all"
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          Volver
+        </button>
+        <h1 className="font-sans font-black text-2xl tracking-tight text-white uppercase">
+          {editingId ? 'Editar rutina' : 'Nueva rutina'}
+        </h1>
+      </header>
+
+      {/* Name */}
+      <div>
+        <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">Nombre de la rutina *</label>
+        <input
+          type="text"
+          autoFocus
+          value={editorName}
+          onChange={e => setEditorName(e.target.value)}
+          placeholder="ej. Fullbody A — Semana 1"
+          className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3.5 text-lg font-sans font-bold text-white placeholder-[#c6c9ab]/30 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+        />
+      </div>
+
+      {/* Exercise list */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
+            Ejercicios ({editorExercises.length})
+          </h2>
+          <button
+            onClick={openPicker}
+            className="flex items-center gap-1.5 text-xs font-mono text-[#e2ff00] hover:text-white border border-[#e2ff00]/30 hover:border-[#e2ff00] px-3 py-1.5 rounded-lg transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            Añadir ejercicio
+          </button>
+        </div>
+
+        {editorExercises.length === 0 ? (
+          <div
+            onClick={openPicker}
+            className="bg-[#121212] border border-dashed border-[#2a2a2a] hover:border-[#e2ff00]/30 rounded-xl p-10 text-center cursor-pointer transition-all group"
+          >
+            <span className="material-symbols-outlined text-3xl text-[#e2ff00]/30 group-hover:text-[#e2ff00]/60 transition-all block mb-2">add_circle</span>
+            <p className="text-xs text-[#c6c9ab] group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {editorExercises.map((we, idx) => {
+              const ex = getExerciseInfo(we.exerciseId);
+              return (
+                <div key={`${we.exerciseId}-${idx}`} className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
+                  {/* Exercise info bar */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-[#161616] border-b border-[#2a2a2a]/50">
+                    <span className="font-mono text-[10px] text-[#c6c9ab]/50 w-5 text-center flex-shrink-0 font-bold">{idx + 1}</span>
+                    {ex?.imageUrl ? (
+                      <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-md object-cover border border-[#2a2a2a] flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-md bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-xs text-[#c6c9ab]">fitness_center</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-sans font-bold text-sm text-white truncate">{ex?.name || we.exerciseId}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-mono text-[9px] text-[#c6c9ab] capitalize">{ex?.primaryFocus}</span>
+                        {ex?.type && (
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => moveWE(idx, -1)}
+                        disabled={idx === 0}
+                        className="p-1 text-[#c6c9ab] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        title="Subir"
+                      >
+                        <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                      </button>
+                      <button
+                        onClick={() => moveWE(idx, 1)}
+                        disabled={idx === editorExercises.length - 1}
+                        className="p-1 text-[#c6c9ab] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        title="Bajar"
+                      >
+                        <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                      </button>
+                      <button
+                        onClick={() => removeWE(idx)}
+                        className="p-1 text-[#c6c9ab] hover:text-red-400 transition-colors ml-1"
+                        title="Eliminar"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Parameters */}
+                  <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Series</label>
+                      <input
+                        type="number"
+                        min={1} max={20}
+                        value={we.sets}
+                        onChange={e => updateWE(idx, 'sets', parseInt(e.target.value) || 1)}
+                        className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Reps</label>
+                      <input
+                        type="text"
+                        value={we.reps}
+                        onChange={e => updateWE(idx, 'reps', e.target.value)}
+                        placeholder="8-10"
+                        className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Descanso (s)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={we.restSeconds}
+                        onChange={e => updateWE(idx, 'restSeconds', parseInt(e.target.value) || 0)}
+                        className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">RIR</label>
+                      <input
+                        type="number"
+                        min={0} max={5}
+                        value={we.rir}
+                        onChange={e => updateWE(idx, 'rir', parseInt(e.target.value) || 0)}
+                        className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="px-4 pb-3">
+                    <input
+                      type="text"
+                      value={we.notes || ''}
+                      onChange={e => updateWE(idx, 'notes', e.target.value)}
+                      placeholder="Notas opcionales (técnica, variante, carga...)"
+                      className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-md px-3 py-1.5 text-xs text-[#c6c9ab] placeholder-[#c6c9ab]/30 font-sans focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add more */}
+            <button
+              onClick={openPicker}
+              className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#2a2a2a] hover:border-[#e2ff00]/40 text-[#c6c9ab] hover:text-[#e2ff00] rounded-xl font-mono text-xs uppercase transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              Añadir ejercicio
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Save / Cancel */}
+      <div className="flex gap-3 pt-2 border-t border-[#2a2a2a]/60">
+        <button
+          onClick={() => setView('list')}
+          className="flex-1 md:flex-none md:px-8 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving || !editorName.trim()}
+          className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-[#e2ff00]/10"
+        >
+          {isSaving ? (
+            <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
+          ) : (
+            <><span className="material-symbols-outlined text-sm">save</span>{editingId ? 'Guardar cambios' : 'Crear rutina'}</>
+          )}
+        </button>
+      </div>
+
+      {/* Exercise picker modal */}
+      {showPicker && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="bg-[#191919] border border-[#2a2a2a] rounded-t-2xl md:rounded-2xl w-full md:max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
+            {/* Picker header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#2a2a2a] flex-shrink-0">
+              <h3 className="font-sans font-bold text-white text-lg">Seleccionar ejercicio</h3>
+              <button onClick={() => setShowPicker(false)} className="text-[#c6c9ab] hover:text-white transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Picker filters */}
+            <div className="p-4 border-b border-[#2a2a2a] space-y-3 flex-shrink-0">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Buscar por nombre..."
+                  value={pickerSearch}
+                  onChange={e => setPickerSearch(e.target.value)}
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#c6c9ab]/50 focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={pickerFocus}
+                  onChange={e => setPickerFocus(e.target.value)}
+                  className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                >
+                  <option value="">Todos los músculos</option>
+                  {FOCUS_OPTIONS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
+                </select>
+                <select
+                  value={pickerType}
+                  onChange={e => setPickerType(e.target.value)}
+                  className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                >
+                  <option value="">Todos los tipos</option>
+                  {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Picker list */}
+            <div className="overflow-y-auto flex-1 divide-y divide-[#2a2a2a]/40">
+              {pickerFiltered.length === 0 ? (
+                <div className="py-12 text-center text-[#c6c9ab] text-sm">
+                  {allExercises.length === 0 ? 'Cargando ejercicios...' : 'Sin resultados para los filtros actuales.'}
+                </div>
+              ) : (
+                pickerFiltered.map(ex => (
+                  <button
+                    key={ex.id}
+                    onClick={() => addExerciseToWorkout(ex)}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#1e1e1e] text-left transition-colors group"
+                  >
+                    {ex.imageUrl ? (
+                      <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-[#2a2a2a] flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors truncate">{ex.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-[10px] text-[#c6c9ab] capitalize">{ex.primaryFocus}</span>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                      </div>
+                    </div>
+                    <span className="material-symbols-outlined text-[#e2ff00]/50 group-hover:text-[#e2ff00] transition-colors flex-shrink-0">add_circle</span>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[#2a2a2a] flex-shrink-0">
+              <p className="font-mono text-[10px] text-[#c6c9ab] text-center">{pickerFiltered.length} ejercicios disponibles</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

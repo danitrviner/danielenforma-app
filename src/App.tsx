@@ -16,7 +16,7 @@ import ProgressScreen from './components/ProgressScreen';
 // Coach screens
 import ClientsScreen from './components/ClientsScreen';
 import ReviewsScreen from './components/ReviewsScreen';
-import ExerciseLibraryScreen from './components/ExerciseLibraryScreen';
+import TrainingCoachScreen from './components/TrainingCoachScreen';
 
 type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'progress' | 'clients' | 'reviews' | 'profile';
 
@@ -242,7 +242,7 @@ export default function App() {
         {/* COACH */}
         {isCoach && activeTab === 'clients'  && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
         {isCoach && activeTab === 'reviews'  && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
-        {isCoach && activeTab === 'training' && <ExerciseLibraryScreen coachId={profile.userId} />}
+        {isCoach && activeTab === 'training' && <TrainingCoachScreen coachId={profile.userId} />}
 
         {/* SHARED */}
         {activeTab === 'profile' && (

@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment } from './types';
 import { SYSTEM_EXERCISES } from './data';
 
 // Let's have a state flag for Local Storage fallback
@@ -724,5 +724,191 @@ export async function seedExercisesIfEmpty(): Promise<void> {
       const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
       saveLocalExercises(seeded);
     }
+  }
+}
+
+// ─── WORKOUTS ─────────────────────────────────────────────────────────────────
+
+const WORKOUTS_LOCAL_KEY = 'enforma_workouts';
+
+function getLocalWorkouts(): Workout[] {
+  try {
+    const raw = localStorage.getItem(WORKOUTS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as Workout[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalWorkouts(workouts: Workout[]) {
+  try {
+    localStorage.setItem(WORKOUTS_LOCAL_KEY, JSON.stringify(workouts));
+  } catch (e) {}
+}
+
+export async function getWorkouts(): Promise<Workout[]> {
+  if (forceLocalOnly) return getLocalWorkouts();
+  try {
+    const snap = await getDocs(collection(db, 'workouts'));
+    const workouts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Workout));
+    saveLocalWorkouts(workouts);
+    return workouts;
+  } catch (err) {
+    console.warn('getWorkouts Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalWorkouts();
+  }
+}
+
+export async function createWorkout(data: Omit<Workout, 'id'>): Promise<Workout> {
+  if (forceLocalOnly) {
+    const newW: Workout = { ...data, id: `local_w_${Date.now()}` };
+    const list = getLocalWorkouts();
+    list.push(newW);
+    saveLocalWorkouts(list);
+    return newW;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'workouts'), data);
+    const newW: Workout = { ...data, id: ref.id };
+    const list = getLocalWorkouts();
+    list.push(newW);
+    saveLocalWorkouts(list);
+    return newW;
+  } catch (err) {
+    console.warn('createWorkout Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const newW: Workout = { ...data, id: `local_w_${Date.now()}` };
+    const list = getLocalWorkouts();
+    list.push(newW);
+    saveLocalWorkouts(list);
+    return newW;
+  }
+}
+
+export async function updateWorkout(id: string, updates: Partial<Workout>): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'workouts', id), updates as Record<string, unknown>);
+    saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
+  } catch (err) {
+    console.warn('updateWorkout Firestore failed, updating local:', err);
+    setLocalBypassMode(true);
+    saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
+  }
+}
+
+export async function deleteWorkout(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'workouts', id));
+    saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
+  } catch (err) {
+    console.warn('deleteWorkout Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
+  }
+}
+
+// ─── WORKOUT ASSIGNMENTS ──────────────────────────────────────────────────────
+
+const ASSIGNMENTS_LOCAL_KEY = 'enforma_workout_assignments';
+
+function getLocalAssignments(): WorkoutAssignment[] {
+  try {
+    const raw = localStorage.getItem(ASSIGNMENTS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as WorkoutAssignment[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalAssignments(assignments: WorkoutAssignment[]) {
+  try {
+    localStorage.setItem(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(assignments));
+  } catch (e) {}
+}
+
+export async function getWorkoutAssignments(athleteId?: string): Promise<WorkoutAssignment[]> {
+  if (forceLocalOnly) {
+    const all = getLocalAssignments();
+    return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
+  }
+  try {
+    const colRef = collection(db, 'workoutAssignments');
+    const q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : colRef;
+    const snap = await getDocs(q);
+    const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
+    // Merge into local cache
+    const local = getLocalAssignments().filter(a => !assignments.find(b => b.id === a.id));
+    saveLocalAssignments([...local, ...assignments]);
+    return assignments;
+  } catch (err) {
+    console.warn('getWorkoutAssignments Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    const all = getLocalAssignments();
+    return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
+  }
+}
+
+export async function createWorkoutAssignment(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
+  if (forceLocalOnly) {
+    const newA: WorkoutAssignment = { ...data, id: `local_a_${Date.now()}` };
+    const list = getLocalAssignments();
+    list.push(newA);
+    saveLocalAssignments(list);
+    return newA;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'workoutAssignments'), data);
+    const newA: WorkoutAssignment = { ...data, id: ref.id };
+    const list = getLocalAssignments();
+    list.push(newA);
+    saveLocalAssignments(list);
+    return newA;
+  } catch (err) {
+    console.warn('createWorkoutAssignment Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const newA: WorkoutAssignment = { ...data, id: `local_a_${Date.now()}` };
+    const list = getLocalAssignments();
+    list.push(newA);
+    saveLocalAssignments(list);
+    return newA;
+  }
+}
+
+export async function updateWorkoutAssignment(id: string, updates: Partial<WorkoutAssignment>): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'workoutAssignments', id), updates as Record<string, unknown>);
+    saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
+  } catch (err) {
+    console.warn('updateWorkoutAssignment Firestore failed, updating local:', err);
+    setLocalBypassMode(true);
+    saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
+  }
+}
+
+export async function deleteWorkoutAssignment(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'workoutAssignments', id));
+    saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
+  } catch (err) {
+    console.warn('deleteWorkoutAssignment Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
   }
 }

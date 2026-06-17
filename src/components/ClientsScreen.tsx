@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn } from '../types';
-import { getAllUserProfiles, submitCoachFeedback } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment } from '../dbService';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -17,6 +17,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Assignment state
+  const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignWorkoutId, setAssignWorkoutId] = useState('');
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
@@ -36,6 +44,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
 
   const handleSelectAthlete = (athlete: UserProfile) => {
     setSelectedAthlete(athlete);
+    setAssignments([]);
     const athleteChecks = checkins.filter(
       c => c.userId === athlete.userId || c.email.toLowerCase() === athlete.email.toLowerCase()
     );
@@ -49,6 +58,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setErrorMsg('');
     setSuccessMsg('');
   };
+
+  // Load assignments + workouts whenever an athlete is selected
+  useEffect(() => {
+    if (!selectedAthlete) return;
+    getWorkoutAssignments(selectedAthlete.userId)
+      .then(setAssignments)
+      .catch(console.error);
+    if (workouts.length === 0) {
+      getWorkouts().then(setWorkouts).catch(console.error);
+    }
+  }, [selectedAthlete]);
 
   const handleSelectCheckIn = (id: string, initialFeedback: string) => {
     setActiveCheckInId(id);
@@ -75,6 +95,47 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCreateAssignment = async () => {
+    if (!selectedAthlete || !assignWorkoutId || !assignDate) return;
+    setIsAssigning(true);
+    try {
+      const newA = await createWorkoutAssignment({
+        workoutId: assignWorkoutId,
+        athleteId: selectedAthlete.userId,
+        date: assignDate,
+        status: 'pending',
+      });
+      setAssignments(prev => [...prev, newA].sort((a, b) => a.date.localeCompare(b.date)));
+      setShowAssignModal(false);
+      setAssignWorkoutId('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleDeleteAssignment = async (id: string) => {
+    try {
+      await deleteWorkoutAssignment(id);
+      setAssignments(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
+    pending:   'Pendiente',
+    completed: 'Completado',
+    skipped:   'Saltado',
+  };
+
+  const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
+    pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
+    completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+    skipped:   'bg-[#2a2a2a] text-[#c6c9ab] border border-[#3a3a3a]',
   };
 
   const currentAthleteCheckins = selectedAthlete
@@ -474,7 +535,131 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 </button>
               </div>
             </form>
+            {/* ── WORKOUT ASSIGNMENTS ─────────────────────────────────── */}
+            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#e2ff00] text-sm">fitness_center</span>
+                  Entrenamientos asignados
+                </h3>
+                <button
+                  onClick={() => {
+                    setAssignWorkoutId(workouts[0]?.id || '');
+                    setAssignDate(new Date().toISOString().split('T')[0]);
+                    setShowAssignModal(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-[#e2ff00] hover:bg-[#e2ff00]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                  Asignar entrenamiento
+                </button>
+              </div>
+
+              {assignments.length === 0 ? (
+                <div className="py-6 text-center">
+                  <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">calendar_today</span>
+                  <p className="text-xs text-[#c6c9ab]">Sin entrenamientos asignados todavía.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assignments.sort((a, b) => a.date.localeCompare(b.date)).map(a => {
+                    const wo = workouts.find(w => w.id === a.workoutId);
+                    return (
+                      <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-[#171717] border border-[#2a2a2a]/50 rounded-lg">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="material-symbols-outlined text-base text-[#c6c9ab] flex-shrink-0">event</span>
+                          <div className="min-w-0">
+                            <p className="font-sans font-bold text-sm text-white truncate">
+                              {wo?.name || <span className="italic text-[#c6c9ab]">Rutina eliminada</span>}
+                            </p>
+                            <p className="font-mono text-[10px] text-[#c6c9ab]">{a.date} · {wo ? `${wo.exercises.length} ejercicios` : ''}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded ${STATUS_STYLE[a.status]}`}>
+                            {STATUS_LABEL[a.status]}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteAssignment(a.id)}
+                            className="text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors"
+                            title="Eliminar asignación"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </section>
+        </div>
+      )}
+
+      {/* ── ASSIGN MODAL ────────────────────────────────────────────────── */}
+      {showAssignModal && selectedAthlete && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Asignar entrenamiento</h2>
+              <button onClick={() => setShowAssignModal(false)} className="text-[#c6c9ab] hover:text-white transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-[#c6c9ab] font-mono flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-[#e2ff00]">person</span>
+              Atleta: <strong className="text-white">{selectedAthlete.displayName}</strong>
+            </p>
+
+            <div>
+              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Rutina *</label>
+              {workouts.length === 0 ? (
+                <p className="text-xs text-[#c6c9ab] font-mono italic">No hay rutinas disponibles. Crea una primero en la pestaña Entrenamiento.</p>
+              ) : (
+                <select
+                  value={assignWorkoutId}
+                  onChange={e => setAssignWorkoutId(e.target.value)}
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                >
+                  {workouts.map(w => (
+                    <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Fecha *</label>
+              <input
+                type="date"
+                value={assignDate}
+                onChange={e => setAssignDate(e.target.value)}
+                className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateAssignment}
+                disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
+                className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {isAssigning ? (
+                  <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>
+                ) : (
+                  <><span className="material-symbols-outlined text-sm">event_available</span>Confirmar</>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
