@@ -45,9 +45,27 @@ export default function App() {
   const [roleSessionKey, setRoleSessionKey] = useState(0);
 
   const loadUserSession = async (user: any) => {
+    // Read synchronously, BEFORE any await, so both concurrent callers
+    // (handleLoginSuccess + onAuthStateChanged) capture the hint before it's removed.
+    // This ensures a sandbox button press always lands on the correct role regardless
+    // of what Firestore has stored from a previous "Presenciar" toggle.
+    const roleHint = localStorage.getItem('enforma_sandbox_role_hint') as 'client' | 'coach' | null;
+
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
-    setProfile(userProfile);
-    setActiveTab(userProfile.role === 'coach' ? 'clients' : 'home');
+
+    const effectiveRole = roleHint ?? userProfile.role;
+
+    if (roleHint && roleHint !== userProfile.role) {
+      // Persist the forced role so future reloads (without the hint) are correct too
+      updateUserProfile(userProfile.userId, { role: roleHint }).catch(console.error);
+    }
+
+    // Consume the hint (idempotent — whichever concurrent caller gets here second is a no-op)
+    if (roleHint) localStorage.removeItem('enforma_sandbox_role_hint');
+
+    const finalProfile = { ...userProfile, role: effectiveRole };
+    setProfile(finalProfile);
+    setActiveTab(finalProfile.role === 'coach' ? 'clients' : 'home');
     await seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com');
     const checks = await getCheckIns();
     setCheckins(checks);
@@ -254,7 +272,10 @@ export default function App() {
           <ProfileScreen
             profile={profile}
             onRefreshProfile={handleRefreshData}
-            onLogOut={() => setCurrentUser(null)}
+            onLogOut={() => {
+              localStorage.removeItem('enforma_sandbox_role_hint');
+              setCurrentUser(null);
+            }}
             onToggleRole={handleToggleUserRole}
           />
         )}

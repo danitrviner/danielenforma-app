@@ -67,10 +67,10 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     }
   };
 
-  // High-fidelity instant developer sandbox login with immediate local backup bypass
+  // Sandbox login: always resets any in-progress loading state first
   const handleSandboxLogin = async (role: 'client' | 'coach') => {
     setError('');
-    setLoading(true);
+    setLoading(true); // grab the lock (cancels any concurrent form submission visually)
     const sandboxEmail = role === 'coach' ? 'danitrviner@gmail.com' : 'atleta@enforma.com';
     const sandboxPassword = 'enforma_sandbox_123';
     
@@ -88,20 +88,20 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           throw loginErr;
         }
       }
-      // Successfully authenticated with Firebase! Disable fallback if it was active
       setLocalBypassMode(false);
+      // Signal the intended role so loadUserSession can override whatever Firestore has
+      // (the toggle "Presenciar" may have left the profile with the wrong role)
+      localStorage.setItem('enforma_sandbox_role_hint', role);
       onLoginSuccess(user);
     } catch (err: any) {
       console.warn('Firebase Auth blocked or misconfigured in Console. Entering through Offline Local Bypass:', err);
-      // ENABLE LOCAL FALLBACK
       setLocalBypassMode(true);
-      
+      localStorage.setItem('enforma_sandbox_role_hint', role);
       const mockUser = {
         uid: role === 'coach' ? 'coach_dani_local' : 'client_alex_default',
         email: sandboxEmail,
         displayName: role === 'coach' ? 'Dani Coach (En Forma)' : 'Atleta En Forma',
       };
-      
       onLoginSuccess(mockUser);
     } finally {
       setLoading(false);
