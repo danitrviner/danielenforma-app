@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, updateUserProfile, setLocalBypassMode } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, updateUserProfile } from './dbService';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfileScreen from './components/ProfileScreen';
@@ -118,18 +118,14 @@ export default function App() {
   const handleToggleUserRole = async () => {
     if (!profile) return;
     const nextRole = profile.role === 'client' ? 'coach' : 'client';
-    // Reset bypass flag so the incoming view always tries Firestore fresh.
-    // Without this, a prior getOrCreateUserProfile failure could leave
-    // forceLocalOnly=true, causing diet/config reads to hit empty localStorage.
-    setLocalBypassMode(false);
     try {
       await updateUserProfile(profile.userId, { role: nextRole });
+      setProfile(prev => prev ? { ...prev, role: nextRole } : null);
+      setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
+      setRoleSessionKey(k => k + 1);
     } catch (err) {
       console.error(err);
     }
-    setProfile(prev => prev ? { ...prev, role: nextRole } : null);
-    setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
-    setRoleSessionKey(k => k + 1);
   };
 
   if (loading) {
