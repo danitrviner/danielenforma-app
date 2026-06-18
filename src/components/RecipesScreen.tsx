@@ -1,366 +1,376 @@
-import React, { useState } from 'react';
-import { UserProfile, Recipe } from '../types';
-import { RECIPES } from '../data';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode } from '../types';
+import { getRecipes, getRecipeFavorites, saveRecipeFavorites, getAthleteNutritionConfig } from '../dbService';
 
-interface RecipesScreenProps {
+const CAT_LABELS: Record<FoodCategory, string> = {
+  HC: 'HC', PROT: 'PROT', GRASA: 'GRASA', MIX_HC: 'MIX·HC', MIX_GRASA: 'MIX·GRASA',
+};
+
+const CAT_COLORS: Record<FoodCategory, string> = {
+  HC:        'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  PROT:      'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  GRASA:     'text-orange-400 border-orange-400/30 bg-orange-400/10',
+  MIX_HC:    'text-violet-400 border-violet-400/30 bg-violet-400/10',
+  MIX_GRASA: 'text-pink-400 border-pink-400/30 bg-pink-400/10',
+};
+
+function calcExchanges(recipe: Recipe): Partial<Record<FoodCategory, number>> {
+  const totals: Partial<Record<FoodCategory, number>> = {};
+  for (const ing of recipe.ingredients) {
+    totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity;
+  }
+  return totals;
+}
+
+function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
+  const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
+  return CATS.filter(c => (exch[c] ?? 0) > 0)
+    .map(c => `${exch[c]} ${CAT_LABELS[c]}`)
+    .join(' · ') || '—';
+}
+
+function RecipePlaceholder({ name, categories }: { name: string; categories: string[] }) {
+  const colors = ['from-[#e2ff00]/20', 'from-blue-500/20', 'from-orange-500/20', 'from-violet-500/20'];
+  const idx = name.charCodeAt(0) % colors.length;
+  return (
+    <div className={`w-full h-full bg-gradient-to-br ${colors[idx]} to-transparent flex items-center justify-center`}>
+      <span className="material-symbols-outlined text-4xl text-[#c6c9ab]/40">skillet</span>
+    </div>
+  );
+}
+
+interface Props {
   profile: UserProfile;
 }
 
-export default function RecipesScreen({ profile }: RecipesScreenProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+export default function RecipesScreen({ profile }: Props) {
+  const [recipes, setRecipes]           = useState<Recipe[]>([]);
+  const [favorites, setFavorites]       = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [] });
+  const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
+  const [loading, setLoading]           = useState(true);
+  const [selectedCat, setSelectedCat]   = useState<string>('all');
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
-  
-  // Track checklist states for the details view
-  const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
-  const [addedToast, setAddedToast] = useState(false);
+  const [savingFav, setSavingFav]       = useState(false);
 
-  // Filter recipes based on tab selection
-  const filteredRecipes = selectedCategory === 'all' 
-    ? RECIPES 
-    : RECIPES.filter(r => r.category === selectedCategory);
+  useEffect(() => {
+    Promise.all([
+      getRecipes(),
+      getRecipeFavorites(profile.email),
+      getAthleteNutritionConfig(profile.email),
+    ]).then(([recs, favs, nutCfg]) => {
+      setRecipes(recs);
+      setFavorites(favs);
+      setEnabledModes(nutCfg.enabledModes);
+      setLoading(false);
+    });
+  }, [profile.email]);
 
-  const handleOpenRecipeDetail = (recipe: Recipe) => {
+  // Deduplicate categories present across all recipes
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of recipes) r.categories.forEach(c => set.add(c));
+    return Array.from(set);
+  }, [recipes]);
+
+  const filteredRecipes = useMemo(() => {
+    if (selectedCat === 'Favoritas') return recipes.filter(r => favorites.recipeIds.includes(r.id));
+    if (selectedCat === 'all') return recipes;
+    return recipes.filter(r => r.categories.includes(selectedCat));
+  }, [recipes, favorites, selectedCat]);
+
+  const openRecipe = (recipe: Recipe) => {
     setActiveRecipe(recipe);
-    setCheckedIngredients({});
     setCheckedSteps({});
-    setAddedToast(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleIngredient = (ing: string) => {
-    setCheckedIngredients(prev => ({
-      ...prev,
-      [ing]: !prev[ing]
-    }));
+  const toggleFavorite = async (recipeId: string) => {
+    const isFav = favorites.recipeIds.includes(recipeId);
+    const nextIds = isFav
+      ? favorites.recipeIds.filter(id => id !== recipeId)
+      : [...favorites.recipeIds, recipeId];
+    const nextFavs: RecipeFavorites = { athleteId: profile.email, recipeIds: nextIds };
+    setFavorites(nextFavs);
+    setSavingFav(true);
+    try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
   };
 
-  const toggleStep = (idx: number) => {
-    setCheckedSteps(prev => ({
-      ...prev,
-      [idx]: !prev[idx]
-    }));
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas…</span>
+      </div>
+    );
+  }
 
-  const triggerAddToMyDay = () => {
-    setAddedToast(true);
-    setTimeout(() => {
-      setAddedToast(false);
-    }, 2500);
-  };
+  // ── DETAIL VIEW ────────────────────────────────────────────────────────────
+  if (activeRecipe) {
+    const exch = calcExchanges(activeRecipe);
+    const isFav = favorites.recipeIds.includes(activeRecipe.id);
+    // Filter ingredients by athlete's enabled modes
+    const visibleIngredients = activeRecipe.ingredients.filter(ing =>
+      enabledModes.includes(ing.mode)
+    );
 
-  return (
-    <div className="space-y-6">
-      {!activeRecipe ? (
-        /* RECIPE EXPLORER HUB SCREEN */
-        <>
-          <div>
-            <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Recipe Explorer</h1>
-            <p className="text-[#c6c9ab] text-sm mt-1">Alimenta tu musculatura y optimiza tu digestión con platos altos en proteínas.</p>
-          </div>
+    return (
+      <div className="space-y-5">
+        {/* Back bar */}
+        <div className="flex items-center justify-between bg-[#1c1b1b] px-4 py-3 rounded-xl border border-[#2a2a2a]">
+          <button
+            onClick={() => setActiveRecipe(null)}
+            className="flex items-center gap-2 text-[#c6c9ab] hover:text-[#e2ff00] transition-colors font-mono text-xs uppercase tracking-wider"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            Recetas
+          </button>
+          <button
+            onClick={() => toggleFavorite(activeRecipe.id)}
+            disabled={savingFav}
+            className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            style={{ color: isFav ? '#e2ff00' : '#c6c9ab' }}
+          >
+            <span
+              className="material-symbols-outlined text-xl"
+              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#e2ff00' : '#c6c9ab' }}
+            >
+              favorite
+            </span>
+            {isFav ? 'Favorita' : 'Guardar'}
+          </button>
+        </div>
 
-          {/* Categories Pill Scroll */}
-          <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="flex gap-2.5 w-max">
-              {[
-                { id: 'all', name: 'Todos' },
-                { id: 'high-protein', name: 'Alto en Proteína' },
-                { id: 'fast-prep', name: 'Preparación Rápida' },
-                { id: 'pre-workout', name: 'Pre-Entreno' },
-                { id: 'recovery', name: 'Recuperación / Post' }
-              ].map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold uppercase transition-all tracking-wider whitespace-nowrap ${selectedCategory === category.id ? 'bg-[#e2ff00] text-black shadow-md' : 'bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] hover:border-[#c6c9ab]/40'}`}
-                >
-                  {category.name}
-                </button>
+        {/* Photo */}
+        <div className="w-full aspect-[16/7] rounded-2xl overflow-hidden bg-[#1c1b1b] border border-[#2a2a2a]">
+          {activeRecipe.photoUrl
+            ? <img src={activeRecipe.photoUrl} alt={activeRecipe.name} className="w-full h-full object-cover" />
+            : <RecipePlaceholder name={activeRecipe.name} categories={activeRecipe.categories} />
+          }
+        </div>
+
+        {/* Title + exchanges */}
+        <div className="space-y-3">
+          <h1 className="font-sans font-black text-2xl text-white tracking-tight">{activeRecipe.name}</h1>
+          {activeRecipe.categories.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {activeRecipe.categories.map(c => (
+                <span key={c} className="px-2.5 py-0.5 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[9px] uppercase tracking-wider">{c}</span>
               ))}
             </div>
-          </div>
-
-          {/* Bento Grid Gallery */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            {/* Featured Large Card */}
-            {filteredRecipes.length > 0 && (
-              <article 
-                onClick={() => handleOpenRecipeDetail(filteredRecipes[0])}
-                className="col-span-1 md:col-span-8 group relative rounded-xl overflow-hidden bg-[#201f1f] border border-[#2a2a2a] min-h-[310px] md:min-h-[380px] flex flex-col justify-end p-6 cursor-pointer hover:border-[#e2ff00]/40 transition-all shadow-md"
-              >
-                <img 
-                  alt={filteredRecipes[0].title}
-                  src={filteredRecipes[0].imageUrl} 
-                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-                
-                <div className="relative z-10 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1 bg-[#e2ff00] text-black px-2 py-0.5 rounded font-mono text-[9px] font-bold uppercase tracking-wider">
-                      <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                      Cumple con tus MACROS
-                    </span>
-                    <span className="inline-block bg-[#121212]/80 backdrop-blur-sm text-white px-2 py-0.5 rounded font-mono text-[9px] font-bold uppercase tracking-wider border border-[#2a2a2a]">
-                      Alto en Proteínas
-                    </span>
-                  </div>
-                  <h3 className="font-sans font-black text-2xl text-white group-hover:text-[#e2ff00] transition-colors">{filteredRecipes[0].title}</h3>
-                  <div className="flex items-center gap-4 text-xs font-mono text-[#c6c9ab]">
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-[#e2ff00]">schedule</span>
-                      <span>{filteredRecipes[0].time}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-[#e2ff00]">local_fire_department</span>
-                      <span>{filteredRecipes[0].calories} kcal</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-[#e2ff00]">PRO:</span>
-                      <span>{filteredRecipes[0].macros.pro}</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            )}
-
-            {/* Small card list bento expansion */}
-            {filteredRecipes.slice(1).map((recipe) => (
-              <article 
-                key={recipe.id}
-                onClick={() => handleOpenRecipeDetail(recipe)}
-                className="col-span-1 md:col-span-4 group relative rounded-xl overflow-hidden bg-[#201f1f] border border-[#2a2a2a] min-h-[250px] md:min-h-[380px] flex flex-col justify-end p-5 cursor-pointer hover:border-[#e2ff00]/40 transition-all shadow-md"
-              >
-                <img 
-                  alt={recipe.title}
-                  src={recipe.imageUrl} 
-                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-                
-                <div className="relative z-10 space-y-2">
-                  <span className="inline-block bg-[#1c1b1b]/80 backdrop-blur-sm text-white px-2 py-0.5 rounded font-mono text-[9px] font-bold uppercase tracking-wider border border-[#2a2a2a] mb-1">
-                    {recipe.category === 'pre-workout' ? 'Pre-Entreno' : recipe.category === 'recovery' ? 'Post-Entreno' : 'Fácil Preparación'}
-                  </span>
-                  <h3 className="font-sans font-bold text-lg text-white leading-tight group-hover:text-[#e2ff00] transition-[#e2ff00]">{recipe.title}</h3>
-                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs font-mono text-[#c6c9ab] pt-2 border-t border-[#2a2a2a]/40">
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs">schedule</span>
-                      <span>{recipe.time}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-[#e2ff00]">PRO:</span>
-                      <span>{recipe.macros.pro}</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-
-            {filteredRecipes.length === 0 && (
-              <div className="col-span-12 text-[#c6c9ab] text-center italic py-24 select-none">
-                No se encontraron recetas optimizadas en esta categoría.
-              </div>
-            )}
-
-          </div>
-        </>
-      ) : (
-        /* RECIPE DETAIL VIEW (HIGH-FIDELITY SINGLE RECIPE VIEW) */
-        <div className="space-y-6">
-          {/* Detailed top navigation info slider */}
-          <div className="flex justify-between items-center bg-[#1c1b1b] p-3 rounded-lg border border-[#2a2a2a]">
-            <button 
-              onClick={() => setActiveRecipe(null)}
-              className="text-[#c6c9ab] hover:text-[#e2ff00] transition-colors p-2 rounded-full hover:bg-[#201f1f] flex items-center justify-center gap-2 text-xs font-mono"
-            >
-              <span className="material-symbols-outlined text-sm font-bold">arrow_back</span>
-              Volver a Recetas
-            </button>
-            <span className="font-mono text-[10px] text-[#e2ff00] font-bold tracking-widest uppercase">FICHA TÉCNICA NUTRICIONAL</span>
-          </div>
-
-          {addedToast && (
-            <div className="bg-[#00eefc]/15 border border-[#00eefc]/30 text-white p-3 rounded-lg text-sm flex items-center gap-3 animate-pulse">
-              <span className="material-symbols-outlined text-[#00eefc]">add_task</span>
-              <p className="font-bold">¡Receta guardada en tu plan del día! Macros anexados.</p>
-            </div>
           )}
+          <div className="flex flex-wrap gap-2">
+            {(Object.entries(exch) as [FoodCategory, number][])
+              .filter(([, v]) => v > 0)
+              .map(([cat, val]) => (
+                <span key={cat} className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold ${CAT_COLORS[cat]}`}>
+                  {val} {CAT_LABELS[cat]}
+                </span>
+              ))
+            }
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Left Column: Hero & Ingredients Checkboxes */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-[#201f1f] border border-[#2a2a2a] shadow-lg">
-                <img 
-                  alt={activeRecipe.title} 
-                  src={activeRecipe.imageUrl} 
-                  className="w-full h-full object-cover"
-                />
-                {/* Macro badging overlay */}
-                <div className="absolute bottom-4 left-4 flex gap-2">
-                  <span className="bg-[#131313]/90 backdrop-blur-sm px-2.5 py-1 rounded font-mono text-[10px] font-bold text-[#e2ff00] border border-[#e2ff00]/20">
-                    {activeRecipe.macros.pro.toUpperCase()} PRO
-                  </span>
-                  <span className="bg-[#131313]/90 backdrop-blur-sm px-2.5 py-1 rounded font-mono text-[10px] font-bold text-[#00eefc] border border-[#00eefc]/20">
-                    {activeRecipe.macros.carb.toUpperCase()} HC
-                  </span>
-                  <span className="bg-[#131313]/90 backdrop-blur-sm px-2.5 py-1 rounded font-mono text-[10px] font-bold text-red-300 border border-red-400/20">
-                    {activeRecipe.macros.fat.toUpperCase()} FAT
-                  </span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Ingredients */}
+          <section className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
+            <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#e2ff00] text-base">recipe</span>
+              Ingredientes
+            </h2>
+            {visibleIngredients.length === 0 ? (
+              <p className="font-mono text-xs text-[#c6c9ab] italic">Sin ingredientes para tu modo de alimentación.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {visibleIngredients.map((ing, idx) => (
+                  <li key={idx} className="flex items-center justify-between py-1.5 border-b border-[#2a2a2a]/50 last:border-0">
+                    <span className="text-xs text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
+                    <span className={`font-mono text-[10px] font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>
+                      ×{ing.quantity}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {activeRecipe.extras.length > 0 && (
+              <div className="pt-2 border-t border-[#2a2a2a]/60">
+                <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Extras</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeRecipe.extras.map((ex, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px]">{ex}</span>
+                  ))}
                 </div>
               </div>
+            )}
+          </section>
 
-              <div>
-                <h2 className="font-sans font-black text-2xl text-[#e2ff00] mb-2">{activeRecipe.title}</h2>
-                <div className="flex items-center gap-4 text-xs font-mono text-[#c6c9ab] uppercase tracking-wider">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                    {activeRecipe.time}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">local_fire_department</span>
-                    {activeRecipe.calories} KCAL
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm text-[#e2ff00]">fitness_center</span>
-                    {activeRecipe.difficulty}
-                  </span>
-                </div>
-              </div>
-
-              {/* Add to Day CTA action */}
-              <button
-                onClick={triggerAddToMyDay}
-                className="w-full h-[48px] bg-[#e2ff00] hover:bg-[#bad200] text-black font-mono font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-2 volt-glow active:scale-95 transition-all tracking-wider"
-              >
-                <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>add_circle</span>
-                Guardar en mi Almuerzo
-              </button>
-
-              {/* Ingredients card */}
-              <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-4">
-                <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wider border-b border-[#2a2a2a]/60 pb-2 flex items-center gap-2 select-none">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-lg">recipe</span>
-                  Ingredientes Requeridos
-                </h3>
-
-                <ul className="space-y-1">
-                  {activeRecipe.ingredients.map((ing, i) => {
-                    const isChecked = !!checkedIngredients[ing];
-                    return (
-                      <li key={i}>
-                        <label 
-                          onClick={() => toggleIngredient(ing)}
-                          className={`flex items-center justify-between p-2.5 rounded hover:bg-[#201f1f] cursor-pointer border border-transparent transition-all ${isChecked ? 'bg-[#1c1b1b] border-[#e2ff00]/10 text-[#c6c9ab]/60' : 'text-white'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-[#e2ff00] border-transparent text-black' : 'border-[#2a2a2a]'}`}>
-                              {isChecked && <span className="material-symbols-outlined text-xs font-bold leading-none select-none">check</span>}
-                            </div>
-                            <span className={`text-xs font-sans ${isChecked ? 'line-through' : ''}`}>
-                              {ing.split(' - ')[0]}
-                            </span>
-                          </div>
-                          
-                          <span className="font-mono text-[10px] text-[#c6c9ab] tracking-wider select-none shrink-0 font-bold">
-                            {ing.split(' - ')[1] || ''}
-                          </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            </div>
-
-            {/* Right Column: Steps & Telemetry Table */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Protocol Execution Timeline */}
-              <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-6">
-                <h3 className="font-sans font-bold text-sm text-[#e2ff00] uppercase tracking-wider pb-2 border-b border-[#2a2a2a]/60 flex items-center gap-2 select-none">
-                  <span className="material-symbols-outlined text-base">format_list_numbered</span>
-                  Protocolo de Preparación
-                </h3>
-
-                <div className="space-y-6">
-                  {activeRecipe.protocol.map((step, idx) => {
-                    const isChecked = !!checkedSteps[idx];
-                    return (
-                      <div 
-                        key={idx} 
-                        onClick={() => toggleStep(idx)}
-                        className="flex gap-4 group cursor-pointer"
-                      >
-                        <div className="flex flex-col items-center">
-                          <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-mono text-[11px] font-bold shrink-0 transition-colors ${isChecked ? 'bg-[#e2ff00] border-transparent text-black shadow-md' : 'bg-transparent border-[#2a2a2a] text-[#c6c9ab] group-hover:border-[#e2ff00] group-hover:text-white'}`}>
-                            {idx + 1}
-                          </div>
-                          <div className="w-[1px] h-full bg-[#2a2a2a] mt-2 group-last:hidden"></div>
+          {/* Steps */}
+          {activeRecipe.steps.length > 0 && (
+            <section className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+              <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#e2ff00] text-base">format_list_numbered</span>
+                Preparación
+              </h2>
+              <div className="space-y-4">
+                {activeRecipe.steps.map((step, idx) => {
+                  const done = !!checkedSteps[idx];
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                      className="flex gap-3 group cursor-pointer"
+                    >
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-all ${done ? 'bg-[#e2ff00] border-[#e2ff00] text-black' : 'border-[#2a2a2a] text-[#c6c9ab] group-hover:border-[#e2ff00]/50'}`}>
+                          {done ? <span className="material-symbols-outlined text-xs font-bold">check</span> : idx + 1}
                         </div>
-                        <div className="pb-2">
-                          <h4 className={`font-sans font-semibold text-xs mb-1 transition-colors ${isChecked ? 'text-[#c6c9ab]/60 line-through' : 'text-white'}`}>Paso Opcional {idx + 1}</h4>
-                          <p className={`text-xs font-sans leading-relaxed transition-colors ${isChecked ? 'text-[#c6c9ab]/50' : 'text-[#c6c9ab]'}`}>{step}</p>
-                        </div>
+                        {idx < activeRecipe.steps.length - 1 && (
+                          <div className="w-px flex-1 bg-[#2a2a2a] mt-1.5"></div>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
+                      <p className={`text-xs font-sans leading-relaxed pt-1 pb-3 transition-colors ${done ? 'text-[#c6c9ab]/50 line-through' : 'text-[#c6c9ab]'}`}>
+                        {step}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-              {/* Advanced Dense Telemetry Table */}
-              <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-                <h3 className="font-sans font-bold text-sm text-[#00eefc] uppercase tracking-wider pb-2 border-b border-[#2a2a2a]/60 flex items-center gap-2 select-none">
-                  <span className="material-symbols-outlined text-base">analytics</span>
-                  Nutritional Telemetry
-                </h3>
+  // ── GALLERY VIEW ───────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Recetas</h1>
+        <p className="text-[#c6c9ab] text-sm mt-1">
+          {recipes.length === 0
+            ? 'Tu entrenador todavía no ha publicado recetas.'
+            : `${recipes.length} receta${recipes.length !== 1 ? 's' : ''} disponible${recipes.length !== 1 ? 's' : ''}`
+          }
+        </p>
+      </div>
 
-                <div className="overflow-x-auto hide-scrollbar">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#2a2a2a]">
-                        <th className="py-2.5 px-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Métrica</th>
-                        <th className="py-2.5 px-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-right">Porción</th>
-                        <th className="py-2.5 px-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-right">% Diaria VQD</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-mono text-xs text-[#e5e2e1]">
-                      <tr className="hover:bg-[#1c1b1b] border-b border-[#2a2a2a]/40">
-                        <td className="py-3 px-3">Calorías Totales</td>
-                        <td className="py-3 px-3 text-right text-[#e2ff00] font-bold">{activeRecipe.calories} kcal</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab]">32%</td>
-                      </tr>
-                      <tr className="hover:bg-[#1c1b1b] border-b border-[#2a2a2a]/40">
-                        <td className="py-3 px-3">Proteínas Puras</td>
-                        <td className="py-3 px-3 text-right">{activeRecipe.macros.pro}</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab]">90%</td>
-                      </tr>
-                      <tr className="hover:bg-[#1c1b1b] border-b border-[#2a2a2a]/40">
-                        <td className="py-3 px-3">Carbohidratos</td>
-                        <td className="py-3 px-3 text-right">{activeRecipe.macros.carb}</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab]">22%</td>
-                      </tr>
-                      <tr className="hover:bg-[#1c1b1b] border-b border-[#2a2a2a]/40">
-                        <td className="py-3 px-3">Grasas Totales</td>
-                        <td className="py-3 px-3 text-right text-red-300">{activeRecipe.macros.fat}</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab]">23%</td>
-                      </tr>
-                      <tr className="hover:bg-[#1c1b1b]">
-                        <td className="py-3 px-3 text-[#c6c9ab] text-[11px] pl-6">Fibra Alimentaria</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab] text-[11px]">~9g</td>
-                        <td className="py-3 px-3 text-right text-[#c6c9ab] text-[11px]">36%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-            </div>
-
+      {/* Category filter pills */}
+      {recipes.length > 0 && (
+        <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-2 w-max">
+            {[
+              { id: 'all',       name: 'Todas' },
+              { id: 'Favoritas', name: '❤ Favoritas' },
+              ...availableCategories.map(c => ({ id: c, name: c })),
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCat(cat.id)}
+                className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                  selectedCat === cat.id
+                    ? 'bg-[#e2ff00] text-black shadow-md'
+                    : 'bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] hover:border-[#c6c9ab]/40 hover:text-white'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
           </div>
         </div>
       )}
+
+      {/* Gallery */}
+      {filteredRecipes.length === 0 ? (
+        <div className="text-center py-24 text-[#c6c9ab] font-mono text-xs uppercase tracking-widest select-none">
+          {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.' : 'No hay recetas en esta categoría.'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+          {/* Featured card */}
+          <RecipeCard
+            recipe={filteredRecipes[0]}
+            isFav={favorites.recipeIds.includes(filteredRecipes[0].id)}
+            onOpen={openRecipe}
+            onToggleFav={toggleFavorite}
+            large
+          />
+          {/* Rest */}
+          {filteredRecipes.slice(1).map(recipe => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              isFav={favorites.recipeIds.includes(recipe.id)}
+              onOpen={openRecipe}
+              onToggleFav={toggleFavorite}
+            />
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ── Card subcomponent ────────────────────────────────────────────────────────
+
+interface CardProps {
+  recipe: Recipe;
+  isFav: boolean;
+  large?: boolean;
+  onOpen: (r: Recipe) => void;
+  onToggleFav: (id: string) => void;
+  key?: React.Key;
+}
+
+function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardProps) {
+  const exchStr = formatExchanges(calcExchanges(recipe));
+  const colSpan = large ? 'col-span-1 md:col-span-8' : 'col-span-1 md:col-span-4';
+  const minH    = large ? 'min-h-[300px] md:min-h-[360px]' : 'min-h-[220px] md:min-h-[280px]';
+
+  return (
+    <article
+      onClick={() => onOpen(recipe)}
+      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-[#1c1b1b] border border-[#2a2a2a] ${minH} flex flex-col justify-end cursor-pointer hover:border-[#e2ff00]/40 transition-all shadow-md`}
+    >
+      {/* Background */}
+      {recipe.photoUrl
+        ? <img src={recipe.photoUrl} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
+        : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#e2ff00]/10 to-[#1c1b1b] flex items-center justify-center">
+            <span className="material-symbols-outlined text-6xl text-[#c6c9ab]/20">skillet</span>
+          </div>
+        )
+      }
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+
+      {/* Favorite button */}
+      <button
+        onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
+        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+      >
+        <span
+          className="material-symbols-outlined text-base"
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#e2ff00' : '#c6c9ab' }}
+        >
+          favorite
+        </span>
+      </button>
+
+      {/* Content */}
+      <div className="relative z-10 p-4 space-y-2">
+        {recipe.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {recipe.categories.slice(0, 2).map(c => (
+              <span key={c} className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-[#c6c9ab] font-mono text-[8px] uppercase tracking-wider border border-[#2a2a2a]">{c}</span>
+            ))}
+          </div>
+        )}
+        <h3 className={`font-sans font-black text-white group-hover:text-[#e2ff00] transition-colors leading-tight ${large ? 'text-2xl' : 'text-base'}`}>
+          {recipe.name}
+        </h3>
+        {exchStr !== '—' && (
+          <p className="font-mono text-[10px] text-[#e2ff00]/80 font-bold">{exchStr}</p>
+        )}
+      </div>
+    </article>
   );
 }

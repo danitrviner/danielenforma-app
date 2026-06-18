@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
+import RecipeBuilderScreen from './RecipeBuilderScreen';
 
-type Tab = 'tipos' | 'alimentos';
+type Tab = 'tipos' | 'alimentos' | 'recetas';
 
 interface Props {
   coachId: string;
@@ -12,8 +13,9 @@ export default function NutritionCoachScreen({ coachId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('tipos');
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'tipos',     label: 'Dietas',        icon: 'nutrition' },
-    { id: 'alimentos', label: 'Alimentos',     icon: 'set_meal' },
+    { id: 'tipos',     label: 'Dietas',    icon: 'nutrition' },
+    { id: 'alimentos', label: 'Alimentos', icon: 'set_meal' },
+    { id: 'recetas',   label: 'Recetas',   icon: 'skillet' },
   ];
 
   return (
@@ -31,7 +33,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Nutrición</h1>
       </header>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -50,6 +52,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
 
       {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}
+      {activeTab === 'recetas'   && <RecipeBuilderScreen coachId={coachId} />}
     </div>
   );
 }

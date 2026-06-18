@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig } from './types';
+import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1250,6 +1250,128 @@ export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     localStorage.setItem(localKey, JSON.stringify(config));
+  }
+}
+
+// ─── RECIPES ─────────────────────────────────────────────────────────────────
+
+const RECIPES_LOCAL_KEY = 'enforma_recipes_v1';
+
+function getLocalRecipes(): Recipe[] {
+  try {
+    const raw = localStorage.getItem(RECIPES_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as Recipe[]) : [];
+  } catch { return []; }
+}
+
+function setLocalRecipes(recipes: Recipe[]): void {
+  localStorage.setItem(RECIPES_LOCAL_KEY, JSON.stringify(recipes));
+}
+
+export async function getRecipes(): Promise<Recipe[]> {
+  if (forceLocalOnly) return getLocalRecipes();
+  try {
+    const snap = await getDocs(collection(db, 'recipes'));
+    const recipes = snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
+    setLocalRecipes(recipes);
+    return recipes;
+  } catch (err) {
+    console.warn('getRecipes Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalRecipes();
+  }
+}
+
+export async function createRecipe(data: Omit<Recipe, 'id'>): Promise<Recipe> {
+  if (forceLocalOnly) {
+    const recipe: Recipe = { id: `recipe_${Date.now()}`, ...data };
+    setLocalRecipes([...getLocalRecipes(), recipe]);
+    return recipe;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'recipes'), data);
+    const recipe: Recipe = { id: ref.id, ...data };
+    setLocalRecipes([...getLocalRecipes(), recipe]);
+    return recipe;
+  } catch (err) {
+    console.warn('createRecipe Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const recipe: Recipe = { id: `recipe_${Date.now()}`, ...data };
+    setLocalRecipes([...getLocalRecipes(), recipe]);
+    return recipe;
+  }
+}
+
+export async function updateRecipe(id: string, updates: Partial<Omit<Recipe, 'id'>>): Promise<void> {
+  const all = getLocalRecipes();
+  const updated = all.map(r => r.id === id ? { ...r, ...updates } : r);
+  if (forceLocalOnly) { setLocalRecipes(updated); return; }
+  try {
+    await updateDoc(doc(db, 'recipes', id), updates as Record<string, unknown>);
+    setLocalRecipes(updated);
+  } catch (err) {
+    console.warn('updateRecipe Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    setLocalRecipes(updated);
+  }
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+  const filtered = getLocalRecipes().filter(r => r.id !== id);
+  if (forceLocalOnly) { setLocalRecipes(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'recipes', id));
+    setLocalRecipes(filtered);
+  } catch (err) {
+    console.warn('deleteRecipe Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    setLocalRecipes(filtered);
+  }
+}
+
+// ─── RECIPE FAVORITES ─────────────────────────────────────────────────────────
+
+export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFavorites> {
+  const defaultFav: RecipeFavorites = { athleteId: athleteEmail, recipeIds: [] };
+  const localKey = `enforma_recipe_favorites_${athleteEmail}`;
+  if (forceLocalOnly) {
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : defaultFav;
+    } catch { return defaultFav; }
+  }
+  try {
+    const snap = await getDoc(doc(db, 'recipeFavorites', athleteEmail));
+    if (snap.exists()) {
+      const data = snap.data() as RecipeFavorites;
+      localStorage.setItem(localKey, JSON.stringify(data));
+      return data;
+    }
+    try {
+      const raw = localStorage.getItem(localKey);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return defaultFav;
+  } catch (err) {
+    console.warn('getRecipeFavorites Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : defaultFav;
+    } catch { return defaultFav; }
+  }
+}
+
+export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> {
+  const localKey = `enforma_recipe_favorites_${favs.athleteId}`;
+  if (forceLocalOnly) { localStorage.setItem(localKey, JSON.stringify(favs)); return; }
+  try {
+    await setDoc(doc(db, 'recipeFavorites', favs.athleteId), favs);
+    localStorage.setItem(localKey, JSON.stringify(favs));
+  } catch (err) {
+    console.warn('saveRecipeFavorites Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    localStorage.setItem(localKey, JSON.stringify(favs));
   }
 }
 

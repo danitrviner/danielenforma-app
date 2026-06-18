@@ -133,15 +133,25 @@ export interface AthleteDietConfig {
   activeDietIds: string[];  // which of their diets are enabled in the tracker
 }
 
+export interface RecipeIngredient {
+  foodLabel: string;
+  category: FoodCategory;
+  mode: DietMode;
+  quantity: number; // multiples of 0.25
+}
+
 export interface Recipe {
   id: string;
-  title: string;
-  time: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  category: 'all' | 'high-protein' | 'fast-prep' | 'pre-workout' | 'recovery';
-  calories: number;
-  macros: { pro: string; carb: string; fat: string };
-  imageUrl: string;
-  ingredients: string[];
-  protocol: string[];
+  ownerId: string;
+  name: string;
+  photoUrl?: string;
+  categories: string[];
+  ingredients: RecipeIngredient[];
+  extras: string[];   // free-text items (e.g. "sal al gusto")
+  steps: string[];    // preparation steps
+}
+
+export interface RecipeFavorites {
+  athleteId: string; // email
+  recipeIds: string[];
 }
