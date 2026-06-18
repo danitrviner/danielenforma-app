@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig, NutritionMenu } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig, NutritionMenu, Diet, AthleteDietConfig } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1424,5 +1424,131 @@ export async function deleteMenu(id: string): Promise<void> {
     console.warn('deleteMenu Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     setMenusToLocal(filtered);
+  }
+}
+
+// ─── DIETS ────────────────────────────────────────────────────────────────────
+
+const DIETS_LOCAL_KEY = 'enforma_diets_v1';
+
+function getDietsFromLocal(): Diet[] {
+  try {
+    const raw = localStorage.getItem(DIETS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as Diet[]) : [];
+  } catch { return []; }
+}
+
+function setDietsToLocal(diets: Diet[]): void {
+  localStorage.setItem(DIETS_LOCAL_KEY, JSON.stringify(diets));
+}
+
+export async function getDietsForAthlete(athleteEmail: string): Promise<Diet[]> {
+  if (forceLocalOnly) {
+    return getDietsFromLocal().filter(d => d.athleteId === athleteEmail);
+  }
+  try {
+    const q = query(collection(db, 'diets'), where('athleteId', '==', athleteEmail));
+    const snap = await getDocs(q);
+    const diets = snap.docs.map(d => ({ id: d.id, ...d.data() } as Diet));
+    const others = getDietsFromLocal().filter(d => d.athleteId !== athleteEmail);
+    setDietsToLocal([...others, ...diets]);
+    return diets;
+  } catch (err) {
+    console.warn('getDietsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getDietsFromLocal().filter(d => d.athleteId === athleteEmail);
+  }
+}
+
+export async function createDiet(data: Omit<Diet, 'id'>): Promise<Diet> {
+  if (forceLocalOnly) {
+    const diet: Diet = { id: `diet_${Date.now()}`, ...data };
+    setDietsToLocal([...getDietsFromLocal(), diet]);
+    return diet;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'diets'), data);
+    const diet: Diet = { id: ref.id, ...data };
+    setDietsToLocal([...getDietsFromLocal(), diet]);
+    return diet;
+  } catch (err) {
+    console.warn('createDiet Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const diet: Diet = { id: `diet_${Date.now()}`, ...data };
+    setDietsToLocal([...getDietsFromLocal(), diet]);
+    return diet;
+  }
+}
+
+export async function updateDiet(id: string, updates: Partial<Diet>): Promise<void> {
+  const all = getDietsFromLocal();
+  const updated = all.map(d => d.id === id ? { ...d, ...updates } : d);
+  if (forceLocalOnly) { setDietsToLocal(updated); return; }
+  try {
+    await updateDoc(doc(db, 'diets', id), updates as Record<string, unknown>);
+    setDietsToLocal(updated);
+  } catch (err) {
+    console.warn('updateDiet Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    setDietsToLocal(updated);
+  }
+}
+
+export async function deleteDiet(id: string): Promise<void> {
+  const filtered = getDietsFromLocal().filter(d => d.id !== id);
+  if (forceLocalOnly) { setDietsToLocal(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'diets', id));
+    setDietsToLocal(filtered);
+  } catch (err) {
+    console.warn('deleteDiet Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    setDietsToLocal(filtered);
+  }
+}
+
+// ─── ATHLETE DIET CONFIG ──────────────────────────────────────────────────────
+
+export async function getAthleteDietConfig(athleteEmail: string): Promise<AthleteDietConfig> {
+  const defaultCfg: AthleteDietConfig = { athleteId: athleteEmail, activeDietIds: [] };
+  const localKey = `enforma_athlete_diet_config_${athleteEmail}`;
+  if (forceLocalOnly) {
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : defaultCfg;
+    } catch { return defaultCfg; }
+  }
+  try {
+    const snap = await getDoc(doc(db, 'athleteDietConfigs', athleteEmail));
+    if (snap.exists()) {
+      const data = snap.data() as AthleteDietConfig;
+      localStorage.setItem(localKey, JSON.stringify(data));
+      return data;
+    }
+    try {
+      const raw = localStorage.getItem(localKey);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return defaultCfg;
+  } catch (err) {
+    console.warn('getAthleteDietConfig Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : defaultCfg;
+    } catch { return defaultCfg; }
+  }
+}
+
+export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<void> {
+  const localKey = `enforma_athlete_diet_config_${config.athleteId}`;
+  if (forceLocalOnly) { localStorage.setItem(localKey, JSON.stringify(config)); return; }
+  try {
+    await setDoc(doc(db, 'athleteDietConfigs', config.athleteId), config);
+    localStorage.setItem(localKey, JSON.stringify(config));
+  } catch (err) {
+    console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    localStorage.setItem(localKey, JSON.stringify(config));
   }
 }

@@ -140,6 +140,37 @@ export interface AthleteDayTypeConfig {
   dayTypeIds: string[]; // day types available to this athlete
 }
 
+// ─── DIET (replaces NutritionDayType for coach builder — N2 will migrate athlete view) ───
+
+export interface DietItem {
+  category: FoodCategory;
+  foodLabel: string;
+  quantity: number;   // multiples of 0.25 (e.g. 0.25, 0.5, 1, 1.25)
+  grams?: number;     // computed: parsed base weight × quantity
+}
+
+export interface DietMeal {
+  id: string;
+  name: string;
+  items: DietItem[];
+}
+
+export interface Diet {
+  id: string;
+  athleteId: string;  // email
+  name: string;
+  budget: Record<FoodCategory, number>; // total exchanges per category for the day
+  meals: DietMeal[];
+  coachNote?: string;
+}
+
+export interface AthleteDietConfig {
+  athleteId: string;        // email
+  activeDietIds: string[];  // which of their diets are enabled in the tracker
+}
+
+// ─── NUTRITION MENUS ─────────────────────────────────────────────────────────
+
 export interface NutritionMenuItem {
   category: FoodCategory;
   foodLabel: string;

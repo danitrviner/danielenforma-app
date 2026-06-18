@@ -12,7 +12,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('tipos');
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'tipos',     label: 'Tipos de día', icon: 'calendar_view_day' },
+    { id: 'tipos',     label: 'Dietas',        icon: 'nutrition' },
     { id: 'alimentos', label: 'Alimentos',     icon: 'set_meal' },
   ];
 

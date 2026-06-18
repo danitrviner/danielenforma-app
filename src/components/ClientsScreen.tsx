@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, NutritionDayType, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig, NutritionMenu, NutritionMenuItem, FoodCategory } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionDayTypes, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDayTypeConfig, saveAthleteDayTypeConfig, getMenusForAthlete, createMenu, updateMenu, deleteMenu } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode, NutritionMenu, NutritionMenuItem, FoodCategory } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getDietsForAthlete, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDietConfig, saveAthleteDietConfig, getMenusForAthlete, createMenu, updateMenu, deleteMenu } from '../dbService';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -49,8 +49,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [showHistory, setShowHistory] = useState(false);
 
   // Nutrition state
-  const [dayTypes, setDayTypes] = useState<NutritionDayType[]>([]);
-  const [athleteDayTypeConfig, setAthleteDayTypeConfig] = useState<AthleteDayTypeConfig | null>(null);
+  const [athleteDiets, setAthleteDiets] = useState<Diet[]>([]);
+  const [athleteDietConfig, setAthleteDietConfig] = useState<AthleteDietConfig | null>(null);
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
 
   // Menu state
@@ -99,7 +99,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     if (!selectedAthlete) return;
     setAssignments([]);
     setAthleteLogs([]);
-    setAthleteDayTypeConfig(null);
+    setAthleteDiets([]);
+    setAthleteDietConfig(null);
     setNutritionConfig(null);
     setAthleteMenus([]);
     setHistExerciseId('');
@@ -108,11 +109,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     getWorkoutAssignments(selectedAthlete.email).then(setAssignments).catch(console.error);
     getWorkoutLogs(selectedAthlete.email).then(setAthleteLogs).catch(console.error);
     getAthleteNutritionConfig(selectedAthlete.email).then(setNutritionConfig).catch(console.error);
-    getAthleteDayTypeConfig(selectedAthlete.email).then(setAthleteDayTypeConfig).catch(console.error);
+    getDietsForAthlete(selectedAthlete.email).then(setAthleteDiets).catch(console.error);
+    getAthleteDietConfig(selectedAthlete.email).then(setAthleteDietConfig).catch(console.error);
     getMenusForAthlete(selectedAthlete.email).then(setAthleteMenus).catch(console.error);
 
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
-    if (dayTypes.length === 0) getNutritionDayTypes().then(setDayTypes).catch(console.error);
     if (exercises.length === 0) {
       (async () => {
         await seedExercisesIfEmpty();
@@ -224,17 +225,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     }
   };
 
-  const handleToggleDayType = async (dayTypeId: string) => {
+  const handleToggleDiet = async (dietId: string) => {
     if (!selectedAthlete) return;
-    const current = athleteDayTypeConfig ?? { athleteId: selectedAthlete.email, dayTypeIds: [] };
-    const next: AthleteDayTypeConfig = {
+    const current = athleteDietConfig ?? { athleteId: selectedAthlete.email, activeDietIds: [] };
+    const next: AthleteDietConfig = {
       ...current,
-      dayTypeIds: current.dayTypeIds.includes(dayTypeId)
-        ? current.dayTypeIds.filter(id => id !== dayTypeId)
-        : [...current.dayTypeIds, dayTypeId],
+      activeDietIds: current.activeDietIds.includes(dietId)
+        ? current.activeDietIds.filter(id => id !== dietId)
+        : [...current.activeDietIds, dietId],
     };
-    setAthleteDayTypeConfig(next);
-    await saveAthleteDayTypeConfig(next).catch(console.error);
+    setAthleteDietConfig(next);
+    await saveAthleteDietConfig(next).catch(console.error);
   };
 
   const handleToggleDietMode = async (mode: DietMode) => {
@@ -851,48 +852,48 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                 </div>
               )}
             </div>
-            {/* ── DAY TYPES FOR ATHLETE ─────────────────────────────────────── */}
+            {/* ── DIETAS DISPONIBLES ────────────────────────────────────────── */}
             <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
               <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#e2ff00] text-sm">calendar_view_day</span>
-                Tipos de día disponibles
+                <span className="material-symbols-outlined text-[#e2ff00] text-sm">nutrition</span>
+                Dietas disponibles
               </h3>
-              {dayTypes.length === 0 ? (
+              {athleteDiets.length === 0 ? (
                 <div className="py-6 text-center">
-                  <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">calendar_view_day</span>
-                  <p className="text-xs text-[#c6c9ab]">No hay tipos de día creados.</p>
-                  <p className="text-[10px] text-[#c6c9ab] mt-1 font-mono">Créalos primero en la pestaña Nutrición.</p>
+                  <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">nutrition</span>
+                  <p className="text-xs text-[#c6c9ab]">No hay dietas creadas para este atleta.</p>
+                  <p className="text-[10px] text-[#c6c9ab] mt-1 font-mono">Créalas en Nutrición → Dietas.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {dayTypes.map(dt => {
-                    const enabled = athleteDayTypeConfig?.dayTypeIds.includes(dt.id) ?? false;
+                  {athleteDiets.map(dt => {
+                    const active = athleteDietConfig?.activeDietIds.includes(dt.id) ?? false;
                     return (
                       <button
                         key={dt.id}
-                        onClick={() => handleToggleDayType(dt.id)}
+                        onClick={() => handleToggleDiet(dt.id)}
                         className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border transition-all text-left ${
-                          enabled
+                          active
                             ? 'bg-[#1a1c12] border-[#e2ff00]/40 text-white'
                             : 'bg-[#171717] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a] hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                            enabled ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'
+                            active ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'
                           }`}>
-                            {enabled && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
+                            {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
                           </span>
                           <div className="min-w-0">
                             <p className="font-sans font-bold text-sm truncate">{dt.name}</p>
                             <p className="font-mono text-[10px] text-[#c6c9ab]">
-                              {dt.targetCalories} kcal · {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''}
+                              {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {dt.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                             </p>
                           </div>
                         </div>
-                        {enabled && (
+                        {active && (
                           <span className="text-[9px] font-mono font-bold uppercase text-[#e2ff00] bg-[#e2ff00]/10 px-2 py-0.5 rounded border border-[#e2ff00]/20 flex-shrink-0">
-                            Activo
+                            Activa
                           </span>
                         )}
                       </button>
@@ -900,9 +901,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                   })}
                 </div>
               )}
-              {(athleteDayTypeConfig?.dayTypeIds.length ?? 0) > 0 && (
+              {(athleteDietConfig?.activeDietIds.length ?? 0) > 0 && (
                 <p className="text-[10px] text-[#c6c9ab] font-mono">
-                  {athleteDayTypeConfig!.dayTypeIds.length} tipo{athleteDayTypeConfig!.dayTypeIds.length !== 1 ? 's' : ''} disponible{athleteDayTypeConfig!.dayTypeIds.length !== 1 ? 's' : ''} para este atleta.
+                  {athleteDietConfig!.activeDietIds.length} dieta{athleteDietConfig!.activeDietIds.length !== 1 ? 's' : ''} activa{athleteDietConfig!.activeDietIds.length !== 1 ? 's' : ''} para este atleta.
                 </p>
               )}
             </div>
