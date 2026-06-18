@@ -1,278 +1,341 @@
-import React, { useState, useEffect } from 'react';
-import { UserProfile, NutritionDayType, NutritionMeal, NutritionMenu, FoodCategory, DietMode, MealItem } from '../types';
-import { getAthleteDayTypeConfig, getNutritionDayTypes, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getMenusForAthlete } from '../dbService';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserProfile, Diet, DietItem, DietMeal, NutritionMenu, FoodCategory, DietMode, MealItem } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getMenusForAthlete } from '../dbService';
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+
+const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
 
 const CAT_LABEL: Record<FoodCategory, string> = {
-  HC:        'HC',
-  PROT:      'Proteína',
-  GRASA:     'Grasa',
-  MIX_HC:    '½ Prot + ½ HC',
-  MIX_GRASA: '½ Prot + ½ Grasa',
+  HC: 'HC', PROT: 'Proteína', GRASA: 'Grasa', MIX_HC: '½P+½HC', MIX_GRASA: '½P+½Grasa',
 };
 
 const CAT_COLOR: Record<FoodCategory, string> = {
-  HC:        'text-amber-300',
-  PROT:      'text-blue-300',
-  GRASA:     'text-orange-300',
-  MIX_HC:    'text-violet-300',
-  MIX_GRASA: 'text-pink-300',
+  HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
+  MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
 };
 
 const CAT_BG: Record<FoodCategory, string> = {
-  HC:        'bg-amber-500/10 border-amber-500/20',
-  PROT:      'bg-blue-500/10 border-blue-500/20',
-  GRASA:     'bg-orange-500/10 border-orange-500/20',
-  MIX_HC:    'bg-violet-500/10 border-violet-500/20',
+  HC: 'bg-amber-500/10 border-amber-500/20',
+  PROT: 'bg-blue-500/10 border-blue-500/20',
+  GRASA: 'bg-orange-500/10 border-orange-500/20',
+  MIX_HC: 'bg-violet-500/10 border-violet-500/20',
   MIX_GRASA: 'bg-pink-500/10 border-pink-500/20',
 };
 
 const MODE_LABEL: Record<DietMode, string> = {
-  OMNIVORO:  'Omnívoro',
-  VEGANO:    'Vegano',
-  SIN_PESAR: 'Sin pesar',
+  OMNIVORO: 'Omnívoro', VEGANO: 'Vegano', SIN_PESAR: 'Sin pesar',
 };
 
-const ALL_CATEGORIES: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-interface ExchangeSlot {
-  key: string;
-  category: FoodCategory;
-  index: number;          // 0-based within this category+meal
-  totalForCategory: number;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function fmtQty(q: number): string {
+  if (Number.isInteger(q)) return String(q);
+  return q.toFixed(2).replace(/\.?0+$/, '');
 }
 
-function mealDisplayName(name: string, n: number): string {
+function parseBaseGrams(label: string): number | null {
+  const m = label.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|cc|kg|l)\b/i);
+  if (!m) return null;
+  let val = parseFloat(m[1].replace(',', '.'));
+  const u = m[2].toLowerCase();
+  if (u === 'kg') val *= 1000;
+  if (u === 'l') val *= 1000;
+  return val;
+}
+
+function itemWeightLabel(foodLabel: string, qty: number): string {
+  const base = parseBaseGrams(foodLabel);
+  if (base == null) return `×${fmtQty(qty)}`;
+  const g = Math.round(base * qty * 10) / 10;
+  return g >= 1000 ? `${(g / 1000).toFixed(1)}kg` : `${g}g`;
+}
+
+function mealLabel(name: string, n: number): string {
   const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
   return stripped || `Comida ${n}`;
 }
 
-function expandMealSlots(meal: NutritionMeal): ExchangeSlot[] {
-  return meal.exchanges.flatMap(ex =>
-    Array.from({ length: ex.count }, (_, i) => ({
-      key: `${meal.id}_${ex.category}_${i}`,
-      category: ex.category,
-      index: i,
-      totalForCategory: ex.count,
-    }))
-  );
-}
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-type SlotState = { foodId: string; foodLabel: string; done: boolean };
+type ItemState = { foodLabel: string; done: boolean };
+// key = `${mealId}_${itemIdx}`
 
-interface NutritionScreenProps {
-  profile: UserProfile;
-}
+interface Props { profile: UserProfile; }
 
-export default function NutritionScreen({ profile }: NutritionScreenProps) {
-  const [availableDayTypes, setAvailableDayTypes] = useState<NutritionDayType[]>([]);
-  const [selectedDayType, setSelectedDayType] = useState<NutritionDayType | null>(null);
-  const [slotStates, setSlotStates] = useState<Record<string, SlotState>>({});
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export default function NutritionScreen({ profile }: Props) {
+  // Diets
+  const [activeDiets, setActiveDiets] = useState<Diet[]>([]);
+  const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Per-item state (ephemeral, day-only)
+  const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
+
+  // Food library + modes
   const [foodItems, setFoodItems] = useState<MealItem[]>([]);
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
 
-  const [pickerSlot, setPickerSlot] = useState<{ key: string; category: FoodCategory } | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
-
-  // Menu apply picker
+  // Menus
   const [savedMenus, setSavedMenus] = useState<NutritionMenu[]>([]);
   const [menuPickerMealId, setMenuPickerMealId] = useState<string | null>(null);
+
+  // Food picker (for swapping an item)
+  const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number; category: FoodCategory } | null>(null);
+  const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // ── Load on mount ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
         await seedFoodItemsIfEmpty();
-        const [foods, config, allDayTypes, dtConfig, menus] = await Promise.all([
+        const [foods, config, allDiets, dietConfig, menus] = await Promise.all([
           getFoodItems(),
           getAthleteNutritionConfig(profile.email).catch(() => null),
-          getNutritionDayTypes(),
-          getAthleteDayTypeConfig(profile.email).catch(() => null),
+          getDietsForAthlete(profile.email),
+          getAthleteDietConfig(profile.email).catch(() => null),
           getMenusForAthlete(profile.email).catch(() => [] as NutritionMenu[]),
         ]);
-        setSavedMenus(menus);
 
         setFoodItems(foods);
+        setSavedMenus(menus);
 
         if (config && config.enabledModes.length > 0) {
           setEnabledModes(config.enabledModes);
           setActiveDietMode(config.enabledModes[0]);
         }
 
-        const athleteDayTypeIds = dtConfig?.dayTypeIds ?? [];
-        const available = allDayTypes.filter(dt => athleteDayTypeIds.includes(dt.id));
-        setAvailableDayTypes(available);
+        const activeIds = new Set(dietConfig?.activeDietIds ?? []);
+        const active = allDiets.filter(d => activeIds.has(d.id));
+        setActiveDiets(active);
 
-        if (available.length === 1) {
-          setSelectedDayType(available[0]);
-        } else if (available.length > 1) {
-          setSelectedDayType(available[0]);
-        }
+        if (active.length === 1) setSelectedDiet(active[0]);
+        else if (active.length > 1) setSelectedDiet(active[0]);
       } finally {
         setLoading(false);
       }
     })();
   }, [profile.email]);
 
-  const handleSelectDayType = (dt: NutritionDayType) => {
-    setSelectedDayType(dt);
-    setSlotStates({});
+  // ── Init item states when diet changes ──────────────────────────────────────
+
+  useEffect(() => {
+    if (!selectedDiet) { setItemStates({}); return; }
+    const initial: Record<string, ItemState> = {};
+    for (const meal of selectedDiet.meals) {
+      meal.items.forEach((item, idx) => {
+        initial[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: false };
+      });
+    }
+    setItemStates(initial);
+  }, [selectedDiet?.id]);
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+
+  const { doneByCat, totalItems, doneItems } = useMemo(() => {
+    const doneByCat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    let total = 0;
+    let done = 0;
+    if (selectedDiet) {
+      for (const meal of selectedDiet.meals) {
+        meal.items.forEach((item, idx) => {
+          total++;
+          const st = itemStates[`${meal.id}_${idx}`];
+          if (st?.done) {
+            done++;
+            doneByCat[item.category] = round2(doneByCat[item.category] + item.quantity);
+          }
+        });
+      }
+    }
+    return { doneByCat, totalItems: total, doneItems: done };
+  }, [selectedDiet, itemStates]);
+
+  const filteredFoods = useMemo(() =>
+    foodItems.filter(f =>
+      f.mode === activeDietMode &&
+      f.category === pickerCategory &&
+      (!searchTerm || f.label.toLowerCase().includes(searchTerm.toLowerCase()))
+    ),
+    [foodItems, activeDietMode, pickerCategory, searchTerm]
+  );
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+
+  const handleSelectDiet = (dt: Diet) => {
+    setSelectedDiet(dt);
+    // itemStates reset handled by useEffect on selectedDiet?.id change
   };
 
-  const handleOpenPicker = (slotKey: string, category: FoodCategory) => {
-    setPickerSlot({ key: slotKey, category });
+  const handleToggleDone = (mealId: string, itemIdx: number) => {
+    const key = `${mealId}_${itemIdx}`;
+    setItemStates(prev => {
+      const cur = prev[key];
+      if (!cur) return prev;
+      return { ...prev, [key]: { ...cur, done: !cur.done } };
+    });
+  };
+
+  const handleOpenPicker = (mealId: string, itemIdx: number, category: FoodCategory) => {
+    setPickerItem({ mealId, itemIdx, category });
     setPickerCategory(category);
     setSearchTerm('');
   };
 
   const handleSelectFood = (food: MealItem) => {
-    if (!pickerSlot) return;
-    setSlotStates(prev => ({
-      ...prev,
-      [pickerSlot.key]: { foodId: food.id, foodLabel: food.label, done: false },
-    }));
-    setPickerSlot(null);
+    if (!pickerItem) return;
+    const key = `${pickerItem.mealId}_${pickerItem.itemIdx}`;
+    setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
+    setPickerItem(null);
   };
 
-  const handleToggleDone = (slotKey: string, category: FoodCategory) => {
-    const current = slotStates[slotKey];
-    if (!current) {
-      handleOpenPicker(slotKey, category);
-      return;
-    }
-    setSlotStates(prev => ({ ...prev, [slotKey]: { ...current, done: !current.done } }));
-  };
-
-  const applyMenuToMeal = (meal: NutritionMeal, menu: NutritionMenu) => {
-    const slots = expandMealSlots(meal);
+  const applyMenuToMeal = (mealId: string, menu: NutritionMenu) => {
+    const meal = selectedDiet?.meals.find(m => m.id === mealId);
+    if (!meal) return;
     const byCategory: Partial<Record<FoodCategory, string[]>> = {};
     for (const item of menu.items) {
       if (!byCategory[item.category]) byCategory[item.category] = [];
       byCategory[item.category]!.push(item.foodLabel);
     }
     const counters: Partial<Record<FoodCategory, number>> = {};
-    const patch: Record<string, SlotState> = {};
-    for (const slot of slots) {
-      const cat = slot.category;
-      const idx = counters[cat] ?? 0;
+    const patch: Record<string, ItemState> = {};
+    meal.items.forEach((item, idx) => {
+      const key = `${mealId}_${idx}`;
+      const cat = item.category;
+      const i = counters[cat] ?? 0;
       const labels = byCategory[cat];
-      if (labels && idx < labels.length) {
-        patch[slot.key] = { foodId: '', foodLabel: labels[idx], done: false };
-        counters[cat] = idx + 1;
+      if (labels && i < labels.length) {
+        patch[key] = { foodLabel: labels[i], done: false };
+        counters[cat] = i + 1;
       }
-    }
-    setSlotStates(prev => ({ ...prev, ...patch }));
+    });
+    setItemStates(prev => ({ ...prev, ...patch }));
     setMenuPickerMealId(null);
   };
 
-  // Progress counters
-  const allSlots = selectedDayType
-    ? selectedDayType.meals.flatMap(m => expandMealSlots(m))
-    : [];
-  const totalSlots = allSlots.length;
-  const doneSlots = allSlots.filter(s => slotStates[s.key]?.done).length;
-
-  const filteredFoods = foodItems.filter(f => {
-    if (f.mode !== activeDietMode) return false;
-    if (f.category !== pickerCategory) return false;
-    if (searchTerm && !f.label.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  });
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrition Tracker</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Registra tus intercambios del día según tu tipo de día activo.</p>
+        <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
+        <p className="text-[#c6c9ab] text-sm mt-1">Registra los intercambios del día según tu dieta activa.</p>
       </div>
 
       {/* Diet mode selector */}
       {enabledModes.length > 1 && (
         <div className="flex gap-2 flex-wrap">
           {enabledModes.map(mode => (
-            <button
-              key={mode}
-              onClick={() => setActiveDietMode(mode)}
+            <button key={mode} onClick={() => setActiveDietMode(mode)}
               className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
                 activeDietMode === mode
                   ? 'bg-[#e2ff00] text-black shadow-md'
                   : 'bg-[#1c1b1b] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/40 hover:text-white'
               }`}
-            >
-              {MODE_LABEL[mode]}
-            </button>
+            >{MODE_LABEL[mode]}</button>
           ))}
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando tipos de día...</div>
-      ) : availableDayTypes.length === 0 ? (
+        <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dieta...</div>
+      ) : activeDiets.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-[#2a2a2a] rounded-2xl">
-          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">calendar_view_day</span>
-          <p className="text-[#c6c9ab] text-sm font-sans">Sin tipos de día asignados.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu entrenador aún no ha configurado tus tipos de día.</p>
+          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
+          <p className="text-[#c6c9ab] text-sm font-sans">Sin dietas asignadas.</p>
+          <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu entrenador aún no ha activado ninguna dieta para ti.</p>
         </div>
       ) : (
         <>
-          {/* Day type selector — only shown when athlete has multiple */}
-          {availableDayTypes.length > 1 && (
+          {/* Diet selector (only when multiple active) */}
+          {activeDiets.length > 1 && (
             <div className="flex gap-2 flex-wrap">
-              {availableDayTypes.map(dt => (
-                <button
-                  key={dt.id}
-                  onClick={() => handleSelectDayType(dt)}
+              {activeDiets.map(dt => (
+                <button key={dt.id} onClick={() => handleSelectDiet(dt)}
                   className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-                    selectedDayType?.id === dt.id
+                    selectedDiet?.id === dt.id
                       ? 'bg-[#e2ff00] text-black shadow-md'
                       : 'bg-[#1c1b1b] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/40 hover:text-white'
                   }`}
-                >
-                  {dt.name}
-                </button>
+                >{dt.name}</button>
               ))}
             </div>
           )}
 
-          {selectedDayType && (
+          {selectedDiet && (
             <>
-              {/* Day type header */}
-              <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a] flex items-center justify-between">
-                <div>
-                  <span className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest font-bold">TIPO DE DÍA ACTIVO</span>
-                  <span className="block font-sans font-bold text-lg text-white mt-0.5">{selectedDayType.name}</span>
-                  <span className="block font-mono text-[9px] text-[#00eefc] uppercase mt-1 tracking-wider">
-                    {selectedDayType.targetCalories} kcal · {selectedDayType.meals.length} comidas
-                  </span>
-                </div>
-                <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">calendar_view_day</span>
+              {/* Diet header */}
+              <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
+                <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-0.5">DIETA ACTIVA</span>
+                <span className="block font-sans font-bold text-lg text-white leading-tight">{selectedDiet.name}</span>
+                {selectedDiet.coachNote && (
+                  <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
+                )}
+                <span className="block font-mono text-[9px] text-[#c6c9ab] mt-1.5">
+                  {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
+                </span>
               </div>
 
-              {/* Progress */}
+              {/* Budget dashboard */}
+              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+                <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
+                  Progreso por categoría
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
+                  {CATS.map(cat => {
+                    const b = selectedDiet.budget[cat];
+                    const d = doneByCat[cat];
+                    const isOver = b > 0 && d > b;
+                    const isOk = b > 0 && round2(d) === round2(b);
+                    const pct = b > 0 ? Math.min(100, (d / b) * 100) : (d > 0 ? 100 : 0);
+                    const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#e2ff00]';
+                    return (
+                      <div key={cat}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[9px] font-mono font-bold ${CAT_COLOR[cat]}`}>
+                            {cat.replace('_', ' ')}
+                          </span>
+                          <span className={`text-[9px] font-mono font-bold ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                            {fmtQty(d)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
+                          </span>
+                        </div>
+                        <div className="h-1 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Overall progress bar */}
               <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
                 <div className="flex justify-between items-end mb-2">
-                  <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Progreso del día</h2>
-                  <span className="font-mono text-xs text-[#e2ff00] font-bold">{doneSlots} / {totalSlots} COMPLETADOS</span>
+                  <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Completados hoy</h2>
+                  <span className="font-mono text-xs text-[#e2ff00] font-bold">{doneItems} / {totalItems}</span>
                 </div>
                 <div className="h-2 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#e2ff00] rounded-full transition-all duration-500 volt-glow"
-                    style={{ width: `${totalSlots > 0 ? (doneSlots / totalSlots) * 100 : 0}%` }}
+                    style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
                   />
                 </div>
               </div>
 
               {/* Meal blocks */}
               <div className="space-y-4">
-                {selectedDayType.meals.map((meal, mi) => {
-                  const slots = expandMealSlots(meal);
-                  const mealDone = slots.length > 0 && slots.every(s => slotStates[s.key]?.done);
+                {selectedDiet.meals.map((meal, mi) => {
+                  const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
-                    <div
-                      key={meal.id}
+                    <div key={meal.id}
                       className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${mealDone ? 'border-[#e2ff00]/40' : 'border-[#2a2a2a]'}`}
                     >
                       {/* Meal header */}
@@ -281,7 +344,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                           <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
-                          <span className="font-sans font-bold text-white text-base">{mealDisplayName(meal.name, mi + 1)}</span>
+                          <span className="font-sans font-bold text-white text-base">{mealLabel(meal.name, mi + 1)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {savedMenus.length > 0 && (
@@ -294,58 +357,53 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                             </button>
                           )}
                           <span className="font-mono text-[9px] text-[#c6c9ab]">
-                            {slots.length} intercambio{slots.length !== 1 ? 's' : ''}
+                            {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
                         </div>
                       </div>
 
-                      {/* Exchange slots */}
+                      {/* Item list */}
                       <div className="p-3 border-t border-[#2a2a2a]/60 bg-[#131313]/40 space-y-2">
-                        {slots.map(slot => {
-                          const state = slotStates[slot.key];
-                          const label = slot.totalForCategory > 1
-                            ? `${CAT_LABEL[slot.category]} #${slot.index + 1}`
-                            : CAT_LABEL[slot.category];
+                        {meal.items.length === 0 ? (
+                          <p className="text-center py-3 font-mono text-[10px] text-[#c6c9ab] italic">Sin alimentos en esta comida.</p>
+                        ) : meal.items.map((item, idx) => {
+                          const key = `${meal.id}_${idx}`;
+                          const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
                           return (
-                            <div
-                              key={slot.key}
-                              className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${state?.done ? 'bg-[#121212] border-[#e2ff00]/20 opacity-70' : 'bg-[#121212] border-[#2a2a2a]'}`}
+                            <div key={key}
+                              className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all ${st.done ? 'bg-[#121212] border-[#e2ff00]/20 opacity-75' : 'bg-[#121212] border-[#2a2a2a]'}`}
                             >
                               {/* Checkbox */}
                               <button
-                                onClick={() => handleToggleDone(slot.key, slot.category)}
-                                className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${state?.done ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#e2ff00]'}`}
+                                onClick={() => handleToggleDone(meal.id, idx)}
+                                className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#e2ff00]'}`}
                               >
-                                {state?.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
+                                {st.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
                               </button>
 
                               {/* Category badge */}
-                              <span className={`text-[10px] font-mono font-bold px-2 py-1 rounded border ${CAT_BG[slot.category]} ${CAT_COLOR[slot.category]} flex-shrink-0`}>
-                                {label}
+                              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
+                                {item.category.replace('_', ' ')}
                               </span>
 
-                              {/* Food info or picker trigger */}
-                              {state ? (
-                                <div className="flex items-center justify-between flex-1 min-w-0 gap-2">
-                                  <span className={`text-xs font-sans truncate ${state.done ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>
-                                    {state.foodLabel}
-                                  </span>
-                                  <button
-                                    onClick={() => handleOpenPicker(slot.key, slot.category)}
-                                    className="text-[10px] text-[#00eefc] hover:underline font-mono flex items-center gap-1 flex-shrink-0"
-                                  >
-                                    <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => handleOpenPicker(slot.key, slot.category)}
-                                  className="flex-1 text-left text-xs font-mono text-[#c6c9ab] hover:text-[#e2ff00] transition-colors flex items-center gap-1.5"
-                                >
-                                  <span className="material-symbols-outlined text-sm">add_circle</span>
-                                  Elegir alimento
-                                </button>
-                              )}
+                              {/* Food label + qty + weight */}
+                              <div className="flex-1 min-w-0">
+                                <span className={`block text-xs font-sans leading-snug ${st.done ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>
+                                  {st.foodLabel}
+                                </span>
+                                <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">
+                                  ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
+                                </span>
+                              </div>
+
+                              {/* Swap button */}
+                              <button
+                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                                title="Cambiar alimento"
+                                className="text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0"
+                              >
+                                <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
+                              </button>
                             </div>
                           );
                         })}
@@ -361,8 +419,9 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
 
       {/* Menu picker modal */}
       {menuPickerMealId !== null && (() => {
-        const meal = selectedDayType?.meals.find(m => m.id === menuPickerMealId);
+        const meal = selectedDiet?.meals.find(m => m.id === menuPickerMealId);
         if (!meal) return null;
+        const mi = selectedDiet!.meals.indexOf(meal);
         return (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
@@ -370,7 +429,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white">Aplicar menú</h3>
                   <p className="text-[10px] font-mono text-[#c6c9ab] mt-0.5">
-                    Comida: {mealDisplayName(meal.name, (selectedDayType?.meals.indexOf(meal) ?? 0) + 1)}
+                    Comida: {mealLabel(meal.name, mi + 1)}
                   </p>
                 </div>
                 <button onClick={() => setMenuPickerMealId(null)} className="text-[#c6c9ab] hover:text-white">
@@ -379,9 +438,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
               </div>
               <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
                 {savedMenus.map(menu => (
-                  <button
-                    key={menu.id}
-                    onClick={() => applyMenuToMeal(meal, menu)}
+                  <button key={menu.id} onClick={() => applyMenuToMeal(meal.id, menu)}
                     className="w-full text-left flex flex-col gap-1.5 p-3 bg-[#121212] hover:bg-[#1a1c12] border border-[#2a2a2a] hover:border-[#e2ff00]/30 rounded-xl transition-all group"
                   >
                     <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors">{menu.name}</span>
@@ -404,84 +461,58 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
       })()}
 
       {/* Food picker sheet */}
-      {pickerSlot && (
+      {pickerItem && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-
             <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
               <div>
-                <h3 className="font-sans font-bold text-lg text-white">Seleccionar Alimento</h3>
+                <h3 className="font-sans font-bold text-lg text-white">Cambiar alimento</h3>
                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
                   {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
                 </span>
               </div>
-              <button onClick={() => setPickerSlot(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+              <button onClick={() => setPickerItem(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                 <span className="material-symbols-outlined text-sm select-none">close</span>
               </button>
             </div>
 
-            {/* Mode selector inside picker */}
             {enabledModes.length > 1 && (
               <div className="px-4 py-2 bg-[#111] border-b border-[#2a2a2a] flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${
-                      activeDietMode === mode ? 'bg-[#e2ff00] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-[#2a2a2a]'
-                    }`}
-                  >
-                    {MODE_LABEL[mode]}
-                  </button>
+                  <button key={mode} onClick={() => setActiveDietMode(mode)}
+                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#e2ff00] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-[#2a2a2a]'}`}
+                  >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
             )}
 
-            {/* Category tabs */}
             <div className="p-3 bg-[#121212] border-b border-[#2a2a2a] flex gap-1.5 flex-wrap">
-              {ALL_CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${
-                    pickerCategory === cat ? 'bg-[#e2ff00] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-[#2a2a2a]'
-                  }`}
-                >
-                  {cat.replace('_', ' ')}
-                </button>
+              {CATS.map(cat => (
+                <button key={cat} onClick={() => setPickerCategory(cat)}
+                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#e2ff00] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-[#2a2a2a]'}`}
+                >{cat.replace('_', ' ')}</button>
               ))}
             </div>
 
-            {/* Search */}
             <div className="px-4 py-2 bg-[#121212] flex items-center gap-2 border-b border-[#2a2a2a]">
               <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
-              <input
-                type="text"
-                placeholder="Buscar alimento..."
-                value={searchTerm}
+              <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-[#c6c9ab]/45"
               />
             </div>
 
-            {/* Food list */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">
-                  Ningún alimento coincide.
-                </div>
-              ) : (
-                filteredFoods.map(food => (
-                  <button
-                    key={food.id}
-                    onClick={() => handleSelectFood(food)}
-                    className="w-full flex items-center justify-between p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-lg border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
-                  >
-                    <span className="block font-sans text-xs text-white group-hover:text-[#e2ff00] transition-colors leading-snug">{food.label}</span>
-                    <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
-                  </button>
-                ))
-              )}
+                <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Ningún alimento coincide.</div>
+              ) : filteredFoods.map(food => (
+                <button key={food.id} onClick={() => handleSelectFood(food)}
+                  className="w-full flex items-center justify-between p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-lg border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                >
+                  <span className="block font-sans text-xs text-white group-hover:text-[#e2ff00] transition-colors leading-snug">{food.label}</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
