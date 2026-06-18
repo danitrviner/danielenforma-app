@@ -91,38 +91,52 @@ export default function NutritionScreen({ profile }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // ── Load on mount ────────────────────────────────────────────────────────────
+  // Phase 1: diets + config BEFORE seedFoodItemsIfEmpty, which on Firestore failure
+  // calls setLocalBypassMode(true) internally — poisoning subsequent queries.
+  // Phase 2: food library seeding runs independently, after diet data is secured.
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const load = async () => {
       setLoading(true);
       try {
-        await seedFoodItemsIfEmpty();
-        const [foods, config, allDiets, dietConfig, menus] = await Promise.all([
-          getFoodItems(),
+        // Phase 1 — diet/config always queries Firestore with a clean bypass flag
+        const [config, allDiets, dietConfig, menus] = await Promise.all([
           getAthleteNutritionConfig(profile.email).catch(() => null),
           getDietsForAthlete(profile.email),
           getAthleteDietConfig(profile.email).catch(() => null),
           getMenusForAthlete(profile.email).catch(() => [] as NutritionMenu[]),
         ]);
 
-        setFoodItems(foods);
-        setSavedMenus(menus);
+        if (cancelled) return;
 
         if (config && config.enabledModes.length > 0) {
           setEnabledModes(config.enabledModes);
           setActiveDietMode(config.enabledModes[0]);
         }
+        setSavedMenus(menus);
 
         const activeIds = new Set(dietConfig?.activeDietIds ?? []);
         const active = allDiets.filter(d => activeIds.has(d.id));
         setActiveDiets(active);
+        if (active.length >= 1) setSelectedDiet(active[0]);
 
-        if (active.length === 1) setSelectedDiet(active[0]);
-        else if (active.length > 1) setSelectedDiet(active[0]);
+        // Phase 2 — food library; seed failure must not affect diet data already set
+        await seedFoodItemsIfEmpty().catch(() => {});
+        if (cancelled) return;
+
+        const foods = await getFoodItems();
+        if (!cancelled) setFoodItems(foods);
+      } catch (err) {
+        if (!cancelled) console.error('NutritionScreen load error:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, [profile.email]);
 
   // ── Init item states when diet changes ──────────────────────────────────────
