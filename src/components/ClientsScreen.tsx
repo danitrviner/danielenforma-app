@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, NutritionDayType, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionDayTypes, getMealStatesForWeek, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDayTypeConfig, saveAthleteDayTypeConfig } from '../dbService';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getNutritionDayTypes, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDayTypeConfig, saveAthleteDayTypeConfig } from '../dbService';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -41,7 +41,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   // Nutrition state
   const [dayTypes, setDayTypes] = useState<NutritionDayType[]>([]);
   const [athleteDayTypeConfig, setAthleteDayTypeConfig] = useState<AthleteDayTypeConfig | null>(null);
-  const [macroAdherence, setMacroAdherence] = useState<number | null>(null);
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
@@ -83,7 +82,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setAssignments([]);
     setAthleteLogs([]);
     setAthleteDayTypeConfig(null);
-    setMacroAdherence(null);
     setNutritionConfig(null);
     setHistExerciseId('');
     setShowHistory(false);
@@ -102,28 +100,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
       })();
     }
 
-    // Macro adherence from athlete's meal state records this week
-    const today = new Date();
-    const day = today.getDay();
-    const daysFromMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - daysFromMonday);
-    const weekDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return d.toISOString().split('T')[0];
-    });
-    const states = getMealStatesForWeek(selectedAthlete.userId, weekDates);
-    if (states.length > 0) {
-      let total = 0, completed = 0;
-      states.forEach(ms => {
-        (['comida1','comida2','comida3','comida4','comida5'] as const).forEach(key => {
-          const slot = ms[key] as any;
-          if (slot) { total++; if (slot.completed) completed++; }
-        });
-      });
-      setMacroAdherence(total > 0 ? Math.round((completed / total) * 100) : null);
-    }
   }, [selectedAthlete]);
 
   const handleSelectCheckIn = (id: string, initialFeedback: string) => {
@@ -541,21 +517,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
                   </div>
                   {weekTotal === 0 && (
                     <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Sin entrenamientos programados esta semana</p>
-                  )}
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1.5 font-mono text-[10px]">
-                    <span className="text-[#c6c9ab] uppercase">Adherencia Macros</span>
-                    <span className="text-white">{macroAdherence !== null ? `${macroAdherence}%` : '—'}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#e2ff00] rounded-full shadow-[0_0_6px_rgba(226,255,0,0.3)] transition-all"
-                      style={{ width: macroAdherence !== null ? `${macroAdherence}%` : '0%' }}
-                    />
-                  </div>
-                  {macroAdherence === null && (
-                    <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Sin registros de nutrición esta semana</p>
                   )}
                 </div>
               </div>
