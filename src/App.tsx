@@ -120,11 +120,17 @@ export default function App() {
     const nextRole = profile.role === 'client' ? 'coach' : 'client';
     try {
       await updateUserProfile(profile.userId, { role: nextRole });
-      setProfile(prev => prev ? { ...prev, role: nextRole } : null);
+      // Re-fetch from DB so any changes made on another device/session are reflected
+      const fresh = await getOrCreateUserProfile(profile.userId, profile.email, profile.displayName);
+      setProfile({ ...fresh, role: nextRole });
       setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
       setRoleSessionKey(k => k + 1);
     } catch (err) {
       console.error(err);
+      // Fallback: optimistic update
+      setProfile(prev => prev ? { ...prev, role: nextRole } : null);
+      setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
+      setRoleSessionKey(k => k + 1);
     }
   };
 

@@ -40,6 +40,28 @@ export function isLocalBypassActive(): boolean {
   return forceLocalOnly;
 }
 
+// ── Profile de-duplication helpers ────────────────────────────────────────────
+
+// Mock/sandbox user IDs that were never real Firebase Auth UIDs
+function isDefaultUserId(userId: string): boolean {
+  return /^(client|coach)_\w+_(default|local)$/.test(userId);
+}
+
+// Return one profile per email; prefer a real Firebase UID over a mock one.
+function deduplicateByEmail(profiles: UserProfile[]): UserProfile[] {
+  const byEmail = new Map<string, UserProfile>();
+  for (const p of profiles) {
+    const key = p.email.toLowerCase();
+    const existing = byEmail.get(key);
+    if (!existing) {
+      byEmail.set(key, p);
+    } else if (isDefaultUserId(existing.userId) && !isDefaultUserId(p.userId)) {
+      byEmail.set(key, p); // prefer real Firebase UID
+    }
+  }
+  return Array.from(byEmail.values());
+}
+
 // Local storage helper functions
 function getLocalUserProfile(userId: string, email: string, displayName?: string, isDanitrviner?: boolean): UserProfile {
   try {
@@ -185,6 +207,20 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
       return data;
     }
 
+    // Before creating, check if another doc already exists for this email (different UID).
+    // This prevents duplicates when the same person re-registers via a different auth flow.
+    try {
+      const emailSnap = await getDocs(query(collection(db, 'user_profiles'), where('email', '==', email)));
+      if (!emailSnap.empty) {
+        const existing = emailSnap.docs[0].data() as UserProfile;
+        // Keep existing Firestore doc; just cache it locally under the current UID.
+        saveLocalUserProfile(userId, existing);
+        return existing;
+      }
+    } catch (_) {
+      // Email check failed; fall through to create new profile
+    }
+
     // Create default Client Profile (Promote danitrviner immediately on first register)
     const defaultProfile: UserProfile = {
       userId,
@@ -229,8 +265,9 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
       }
     } catch (e) {}
 
-    if (profiles.length === 0) {
-      profiles.push({
+    const deduped = deduplicateByEmail(profiles);
+    if (deduped.length === 0) {
+      deduped.push({
         userId: 'client_alex_default',
         email: 'atleta@enforma.com',
         displayName: 'Alex Rivera',
@@ -245,7 +282,7 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
         actualWeight: 76.5
       });
     }
-    return profiles;
+    return deduped;
   }
 
   try {
@@ -259,8 +296,21 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
       }
     });
 
-    if (profiles.length === 0) {
-      profiles.push({
+    // De-duplicate by email: one canonical record per email
+    const deduped = deduplicateByEmail(profiles);
+
+    // Silently delete Firestore docs for "loser" duplicates
+    if (deduped.length < profiles.length) {
+      const keptIds = new Set(deduped.map(p => p.userId));
+      for (const p of profiles) {
+        if (!keptIds.has(p.userId)) {
+          deleteDoc(doc(db, 'user_profiles', p.userId)).catch(() => {});
+        }
+      }
+    }
+
+    if (deduped.length === 0) {
+      deduped.push({
         userId: 'client_alex_default',
         email: 'atleta@enforma.com',
         displayName: 'Alex Rivera',
@@ -275,7 +325,7 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
         actualWeight: 76.5
       });
     }
-    return profiles;
+    return deduped;
   } catch (err) {
     console.warn('Failed to fetch user profiles from Firestore:', err);
     return [
