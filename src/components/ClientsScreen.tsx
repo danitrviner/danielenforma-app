@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode, NutritionMenu, NutritionMenuItem, FoodCategory } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getDietsForAthlete, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDietConfig, saveAthleteDietConfig, getMenusForAthlete, createMenu, updateMenu, deleteMenu } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode, FoodCategory } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getDietsForAthlete, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDietConfig, saveAthleteDietConfig } from '../dbService';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -53,14 +53,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [athleteDietConfig, setAthleteDietConfig] = useState<AthleteDietConfig | null>(null);
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
 
-  // Menu state
-  const [athleteMenus, setAthleteMenus] = useState<NutritionMenu[]>([]);
-  const [showMenuModal, setShowMenuModal] = useState(false);
-  const [editingMenu, setEditingMenu] = useState<NutritionMenu | null>(null);
-  const [menuForm, setMenuForm] = useState<{ name: string; items: NutritionMenuItem[]; coachNote: string }>({ name: '', items: [], coachNote: '' });
-  const [savingMenu, setSavingMenu] = useState(false);
-  const [menuItemForm, setMenuItemForm] = useState<{ category: FoodCategory; foodLabel: string }>({ category: 'HC', foodLabel: '' });
-
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
   useEffect(() => {
@@ -102,7 +94,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setAthleteDiets([]);
     setAthleteDietConfig(null);
     setNutritionConfig(null);
-    setAthleteMenus([]);
     setHistExerciseId('');
     setShowHistory(false);
 
@@ -111,7 +102,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     getAthleteNutritionConfig(selectedAthlete.email).then(setNutritionConfig).catch(console.error);
     getDietsForAthlete(selectedAthlete.email).then(setAthleteDiets).catch(console.error);
     getAthleteDietConfig(selectedAthlete.email).then(setAthleteDietConfig).catch(console.error);
-    getMenusForAthlete(selectedAthlete.email).then(setAthleteMenus).catch(console.error);
 
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
     if (exercises.length === 0) {
@@ -248,58 +238,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     const next: AthleteNutritionConfig = { ...nutritionConfig, enabledModes: updated };
     setNutritionConfig(next);
     await saveAthleteNutritionConfig(next).catch(console.error);
-  };
-
-  const openCreateMenu = () => {
-    setEditingMenu(null);
-    setMenuForm({ name: '', items: [], coachNote: '' });
-    setMenuItemForm({ category: 'HC', foodLabel: '' });
-    setShowMenuModal(true);
-  };
-
-  const openEditMenu = (menu: NutritionMenu) => {
-    setEditingMenu(menu);
-    setMenuForm({ name: menu.name, items: menu.items.map(i => ({ ...i })), coachNote: menu.coachNote ?? '' });
-    setMenuItemForm({ category: 'HC', foodLabel: '' });
-    setShowMenuModal(true);
-  };
-
-  const handleAddMenuItem = () => {
-    if (!menuItemForm.foodLabel.trim()) return;
-    setMenuForm(f => ({ ...f, items: [...f.items, { category: menuItemForm.category, foodLabel: menuItemForm.foodLabel.trim() }] }));
-    setMenuItemForm(prev => ({ ...prev, foodLabel: '' }));
-  };
-
-  const handleRemoveMenuItem = (idx: number) =>
-    setMenuForm(f => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
-
-  const handleSaveMenu = async () => {
-    if (!selectedAthlete || !menuForm.name.trim()) return;
-    setSavingMenu(true);
-    try {
-      const data: Omit<NutritionMenu, 'id'> = {
-        athleteId: selectedAthlete.email,
-        name: menuForm.name.trim(),
-        createdBy: 'coach',
-        items: menuForm.items,
-        coachNote: menuForm.coachNote.trim() || undefined,
-      };
-      if (editingMenu) {
-        await updateMenu(editingMenu.id, data);
-        setAthleteMenus(prev => prev.map(m => m.id === editingMenu.id ? { ...m, ...data } : m));
-      } else {
-        const created = await createMenu(data);
-        setAthleteMenus(prev => [...prev, created]);
-      }
-      setShowMenuModal(false);
-    } finally {
-      setSavingMenu(false);
-    }
-  };
-
-  const handleDeleteMenu = async (id: string) => {
-    await deleteMenu(id).catch(console.error);
-    setAthleteMenus(prev => prev.filter(m => m.id !== id));
   };
 
   const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
@@ -947,153 +885,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
               </div>
             )}
 
-            {/* ── MENUS DEL ATLETA ──────────────────────────────────────────── */}
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#00eefc] text-sm">menu_book</span>
-                  Menús del atleta
-                </h3>
-                <button
-                  onClick={openCreateMenu}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                  Nuevo menú
-                </button>
-              </div>
-              {athleteMenus.length === 0 ? (
-                <div className="py-6 text-center">
-                  <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">menu_book</span>
-                  <p className="text-xs text-[#c6c9ab]">Sin menús todavía.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {athleteMenus.map(menu => (
-                    <div key={menu.id} className="bg-[#171717] border border-[#2a2a2a] rounded-lg p-3 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-sans font-bold text-sm text-white truncate">{menu.name}</p>
-                          {menu.coachNote && (
-                            <p className="text-[10px] text-[#00eefc] italic font-sans mt-0.5">{menu.coachNote}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-1 flex-shrink-0">
-                          <button onClick={() => openEditMenu(menu)} className="text-[#c6c9ab] hover:text-[#00eefc] p-1 rounded transition-colors">
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
-                          <button onClick={() => handleDeleteMenu(menu.id)} className="text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors">
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {menu.items.map((item, i) => (
-                          <span key={i} className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${CAT_BG[item.category]}`}>
-                            {item.foodLabel}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </section>
-        </div>
-      )}
-
-      {/* ── MENU MODAL ───────────────────────────────────────────────────── */}
-      {showMenuModal && selectedAthlete && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 max-h-[90vh] flex flex-col overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
-                {editingMenu ? 'Editar menú' : 'Nuevo menú'}
-              </h2>
-              <button onClick={() => setShowMenuModal(false)} className="text-[#c6c9ab] hover:text-white transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <p className="text-xs text-[#c6c9ab] font-mono flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm text-[#00eefc]">person</span>
-              Atleta: <strong className="text-white">{selectedAthlete.displayName}</strong>
-            </p>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre *</label>
-              <input
-                value={menuForm.name}
-                onChange={e => setMenuForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Ej: Desayuno avena+claras"
-                className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc]"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nota del coach</label>
-              <input
-                value={menuForm.coachNote}
-                onChange={e => setMenuForm(f => ({ ...f, coachNote: e.target.value }))}
-                placeholder="Opcional: indicaciones para el atleta"
-                className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc]"
-              />
-            </div>
-            {/* Add item */}
-            <div className="space-y-2">
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Añadir alimento</label>
-              <div className="flex gap-2">
-                <select
-                  value={menuItemForm.category}
-                  onChange={e => setMenuItemForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                  className="bg-[#121212] border border-[#2a2a2a] rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc] cursor-pointer"
-                >
-                  {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-                </select>
-                <input
-                  value={menuItemForm.foodLabel}
-                  onChange={e => setMenuItemForm(f => ({ ...f, foodLabel: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && handleAddMenuItem()}
-                  placeholder="Nombre del alimento"
-                  className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc]"
-                />
-                <button
-                  onClick={handleAddMenuItem}
-                  className="px-3 py-2 bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] rounded-lg font-mono text-xs hover:bg-[#00eefc]/20 transition-all"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                </button>
-              </div>
-            </div>
-            {/* Items list */}
-            {menuForm.items.length > 0 && (
-              <div className="space-y-1.5">
-                {menuForm.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-lg">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]}`}>
-                        {item.category.replace('_', ' ')}
-                      </span>
-                      <span className="text-xs text-white font-sans truncate">{item.foodLabel}</span>
-                    </div>
-                    <button onClick={() => handleRemoveMenuItem(i)} className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0">
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowMenuModal(false)} className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
-                Cancelar
-              </button>
-              <button
-                onClick={handleSaveMenu}
-                disabled={savingMenu || !menuForm.name.trim()}
-                className="flex-1 py-3 bg-[#00eefc] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#00d4e0] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                {savingMenu ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</> : <><span className="material-symbols-outlined text-sm">save</span>Guardar</>}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import NutritionScreen from './NutritionScreen';
-import NutritionMenusScreen from './NutritionMenusScreen';
 import RecipesScreen from './RecipesScreen';
 
 interface NutritionHubScreenProps {
   profile: UserProfile;
 }
 
-type NutritionTab = 'intercambios' | 'menus' | 'recetas';
+type NutritionTab = 'intercambios' | 'recetas';
 
 const TABS: { id: NutritionTab; label: string; icon: string }[] = [
   { id: 'intercambios', label: 'Intercambios', icon: 'restaurant' },
-  { id: 'menus',        label: 'Menús',         icon: 'menu_book' },
   { id: 'recetas',      label: 'Recetas',        icon: 'skillet' },
 ];
 
@@ -39,7 +37,6 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       </div>
 
       {activeSubTab === 'intercambios' && <NutritionScreen profile={profile} />}
-      {activeSubTab === 'menus'        && <NutritionMenusScreen profile={profile} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} />}
     </div>
   );

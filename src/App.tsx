@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, updateUserProfile } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, updateUserProfile, cleanupTestDataOnce } from './dbService';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfileScreen from './components/ProfileScreen';
@@ -70,6 +70,9 @@ export default function App() {
     const checks = await getCheckIns();
     setCheckins(checks);
   };
+
+  // One-time: remove ZZ_TEST data and orphaned workout assignments
+  useEffect(() => { cleanupTestDataOnce().catch(console.warn); }, []);
 
   // Subscribe once on mount — handles session restore when the page reloads with an
   // existing Firebase session. Does NOT re-run on manual logins (those go through

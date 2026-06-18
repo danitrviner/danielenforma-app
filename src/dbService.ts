@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig, NutritionMenu, Diet, AthleteDietConfig } from './types';
+import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -146,40 +146,6 @@ function submitLocalCoachFeedback(checkInId: string, feedback: string) {
   } catch (e) {}
 }
 
-function getLocalMealState(userId: string, dateStr: string): MealState {
-  try {
-    const local = localStorage.getItem(`enforma_meals_${userId}_${dateStr}`);
-    if (local) {
-      return JSON.parse(local) as MealState;
-    }
-  } catch (e) {}
-
-  const defaultMeals: MealState = {
-    userId,
-    dateStr,
-    comida1: { completed: true, foodId: 'avena-integral', title: 'Avena cocida', portion: '60g', specs: '2 HC' },
-    comida2: null,
-    comida3: null,
-    comida4: null,
-    comida5: null
-  };
-  saveLocalMealState(userId, dateStr, defaultMeals);
-  return defaultMeals;
-}
-
-function saveLocalMealState(userId: string, dateStr: string, meals: MealState) {
-  try {
-    localStorage.setItem(`enforma_meals_${userId}_${dateStr}`, JSON.stringify(meals));
-  } catch (e) {}
-}
-
-function updateLocalMealState(userId: string, dateStr: string, updates: Partial<MealState>) {
-  try {
-    const current = getLocalMealState(userId, dateStr);
-    const updated = { ...current, ...updates };
-    saveLocalMealState(userId, dateStr, updated);
-  } catch (e) {}
-}
 
 // Get or create User Profile (with automatic offline fallback)
 export async function getOrCreateUserProfile(userId: string, email: string, displayName?: string): Promise<UserProfile> {
@@ -532,62 +498,6 @@ export async function submitCoachFeedback(checkInId: string, feedback: string): 
   }
 }
 
-// Get meal states for a date
-export async function getOrCreateMealState(userId: string, dateStr: string): Promise<MealState> {
-  if (forceLocalOnly) {
-    return getLocalMealState(userId, dateStr);
-  }
-
-  try {
-    const docId = `${userId}_${dateStr}`;
-    const docRef = doc(db, 'meals_states', docId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data() as MealState;
-      saveLocalMealState(userId, dateStr, data);
-      return data;
-    }
-
-    const defaultMeals: MealState = {
-      userId,
-      dateStr,
-      comida1: { completed: true, foodId: 'avena-integral', title: 'Avena cocida', portion: '60g', specs: '2 HC' },
-      comida2: null,
-      comida3: null,
-      comida4: null,
-      comida5: null
-    };
-
-    await setDoc(docRef, defaultMeals);
-    saveLocalMealState(userId, dateStr, defaultMeals);
-    return defaultMeals;
-  } catch (err) {
-    console.warn('Firestore meals_states read failed, using local storage:', err);
-    setLocalBypassMode(true);
-    return getLocalMealState(userId, dateStr);
-  }
-}
-
-// Update meals state
-export async function updateMealState(userId: string, dateStr: string, updates: Partial<MealState>): Promise<void> {
-  if (forceLocalOnly) {
-    updateLocalMealState(userId, dateStr, updates);
-    return;
-  }
-
-  try {
-    const docId = `${userId}_${dateStr}`;
-    const docRef = doc(db, 'meals_states', docId);
-    await setDoc(docRef, { userId, dateStr, ...updates }, { merge: true });
-    updateLocalMealState(userId, dateStr, updates);
-  } catch (err) {
-    console.warn('Firestore meals_states update failed, using local storage:', err);
-    setLocalBypassMode(true);
-    updateLocalMealState(userId, dateStr, updates);
-  }
-}
-
 // Seed Initial Checkins if collection is empty
 export async function seedInitialCheckinsIfEmpty(userId: string, email: string): Promise<void> {
   const currentLocal = getLocalCheckIns();
@@ -853,17 +763,21 @@ export async function updateWorkout(id: string, updates: Partial<Workout>): Prom
 }
 
 export async function deleteWorkout(id: string): Promise<void> {
-  if (forceLocalOnly) {
+  const dropLocal = () => {
     saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
-    return;
-  }
+    saveLocalAssignments(getLocalAssignments().filter(a => a.workoutId !== id));
+  };
+  if (forceLocalOnly) { dropLocal(); return; }
   try {
     await deleteDoc(doc(db, 'workouts', id));
-    saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
+    // Cascade: remove assignments that reference this workout
+    const aSnap = await getDocs(query(collection(db, 'workoutAssignments'), where('workoutId', '==', id)));
+    await Promise.all(aSnap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+    dropLocal();
   } catch (err) {
     console.warn('deleteWorkout Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
-    saveLocalWorkouts(getLocalWorkouts().filter(w => w.id !== id));
+    dropLocal();
   }
 }
 
@@ -1161,172 +1075,6 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
   }
 }
 
-// ─── NUTRITION PLANS ─────────────────────────────────────────────────────────
-
-// ─── NUTRITION DAY TYPES ──────────────────────────────────────────────────────
-
-const DAY_TYPES_LOCAL_KEY = 'enforma_day_types_v1';
-
-function getLocalDayTypes(): NutritionDayType[] {
-  try {
-    const raw = localStorage.getItem(DAY_TYPES_LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as NutritionDayType[]) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function saveLocalDayTypes(items: NutritionDayType[]) {
-  try {
-    localStorage.setItem(DAY_TYPES_LOCAL_KEY, JSON.stringify(items));
-  } catch (e) {}
-}
-
-export async function getNutritionDayTypes(): Promise<NutritionDayType[]> {
-  if (forceLocalOnly) return getLocalDayTypes();
-  try {
-    const snap = await getDocs(collection(db, 'nutritionDayTypes'));
-    const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionDayType));
-    saveLocalDayTypes(items);
-    return items;
-  } catch (err) {
-    console.warn('getNutritionDayTypes Firestore failed, using local:', err);
-    setLocalBypassMode(true);
-    return getLocalDayTypes();
-  }
-}
-
-// Backward-compat alias
-export const getNutritionPlans = getNutritionDayTypes;
-
-export async function createNutritionDayType(data: Omit<NutritionDayType, 'id'>): Promise<NutritionDayType> {
-  if (forceLocalOnly) {
-    const item: NutritionDayType = { ...data, id: `local_dt_${Date.now()}` };
-    saveLocalDayTypes([...getLocalDayTypes(), item]);
-    return item;
-  }
-  try {
-    const ref = await addDoc(collection(db, 'nutritionDayTypes'), data);
-    const item: NutritionDayType = { ...data, id: ref.id };
-    saveLocalDayTypes([...getLocalDayTypes(), item]);
-    return item;
-  } catch (err) {
-    console.warn('createNutritionDayType Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
-    const item: NutritionDayType = { ...data, id: `local_dt_${Date.now()}` };
-    saveLocalDayTypes([...getLocalDayTypes(), item]);
-    return item;
-  }
-}
-
-// Backward-compat alias
-export const createNutritionPlan = createNutritionDayType;
-
-export async function updateNutritionDayType(id: string, updates: Partial<NutritionDayType>): Promise<void> {
-  if (forceLocalOnly) {
-    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
-    return;
-  }
-  try {
-    await updateDoc(doc(db, 'nutritionDayTypes', id), updates as Record<string, unknown>);
-    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
-  } catch (err) {
-    console.warn('updateNutritionDayType Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
-    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
-  }
-}
-
-// Backward-compat alias
-export const updateNutritionPlan = updateNutritionDayType;
-
-export async function deleteNutritionDayType(id: string): Promise<void> {
-  if (forceLocalOnly) {
-    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
-    return;
-  }
-  try {
-    await deleteDoc(doc(db, 'nutritionDayTypes', id));
-    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
-  } catch (err) {
-    console.warn('deleteNutritionDayType Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
-    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
-  }
-}
-
-// Backward-compat alias
-export const deleteNutritionPlan = deleteNutritionDayType;
-
-// ─── ATHLETE DAY TYPE CONFIG ──────────────────────────────────────────────────
-
-export async function getAthleteDayTypeConfig(athleteEmail: string): Promise<AthleteDayTypeConfig> {
-  const defaultCfg: AthleteDayTypeConfig = { athleteId: athleteEmail, dayTypeIds: [] };
-  const localKey = `enforma_athlete_day_type_config_${athleteEmail}`;
-  if (forceLocalOnly) {
-    try {
-      const raw = localStorage.getItem(localKey);
-      return raw ? (JSON.parse(raw) as AthleteDayTypeConfig) : defaultCfg;
-    } catch (e) { return defaultCfg; }
-  }
-  try {
-    const docRef = doc(db, 'athleteDayTypeConfigs', athleteEmail);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      const data = snap.data() as AthleteDayTypeConfig;
-      localStorage.setItem(localKey, JSON.stringify(data));
-      return data;
-    }
-    try {
-      const raw = localStorage.getItem(localKey);
-      if (raw) return JSON.parse(raw) as AthleteDayTypeConfig;
-    } catch (_) {}
-    return defaultCfg;
-  } catch (err) {
-    console.warn('getAthleteDayTypeConfig Firestore failed, using local:', err);
-    setLocalBypassMode(true);
-    try {
-      const raw = localStorage.getItem(localKey);
-      return raw ? (JSON.parse(raw) as AthleteDayTypeConfig) : defaultCfg;
-    } catch (e) { return defaultCfg; }
-  }
-}
-
-export async function saveAthleteDayTypeConfig(config: AthleteDayTypeConfig): Promise<void> {
-  const localKey = `enforma_athlete_day_type_config_${config.athleteId}`;
-  const data = { ...config };
-  if (forceLocalOnly) {
-    localStorage.setItem(localKey, JSON.stringify(data));
-    return;
-  }
-  try {
-    await setDoc(doc(db, 'athleteDayTypeConfigs', config.athleteId), data);
-    localStorage.setItem(localKey, JSON.stringify(data));
-  } catch (err) {
-    console.warn('saveAthleteDayTypeConfig Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
-    localStorage.setItem(localKey, JSON.stringify(data));
-  }
-}
-
-// ─── ACTIVE PLAN (A2 will redesign; for now returns first available day type) ─
-
-export async function getActiveNutritionAssignment(athleteEmail: string): Promise<{ plan: NutritionPlan } | null> {
-  try {
-    const [config, dayTypes] = await Promise.all([
-      getAthleteDayTypeConfig(athleteEmail),
-      getNutritionDayTypes(),
-    ]);
-    if (config.dayTypeIds.length === 0) return null;
-    const first = dayTypes.find(dt => config.dayTypeIds.includes(dt.id));
-    return first ? { plan: first } : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-// ─── MEAL STATE WEEK SUMMARY (for coach macro adherence) ──────────────────────
-
 // ─── ATHLETE NUTRITION CONFIG ─────────────────────────────────────────────────
 
 export async function getAthleteNutritionConfig(athleteEmail: string): Promise<AthleteNutritionConfig> {
@@ -1376,104 +1124,6 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
     console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     localStorage.setItem(localKey, JSON.stringify(data));
-  }
-}
-
-export function getMealStatesForWeek(userId: string, dates: string[]): MealState[] {
-  const results: MealState[] = [];
-  for (const date of dates) {
-    try {
-      const raw = localStorage.getItem(`enforma_meals_${userId}_${date}`);
-      if (raw) results.push(JSON.parse(raw) as MealState);
-    } catch (e) {}
-  }
-  return results;
-}
-
-// ─── NUTRITION MENUS ──────────────────────────────────────────────────────────
-
-const MENUS_LOCAL_KEY = 'enforma_nutrition_menus_v1';
-
-function getMenusFromLocal(): NutritionMenu[] {
-  try {
-    const raw = localStorage.getItem(MENUS_LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as NutritionMenu[]) : [];
-  } catch { return []; }
-}
-
-function setMenusToLocal(menus: NutritionMenu[]): void {
-  localStorage.setItem(MENUS_LOCAL_KEY, JSON.stringify(menus));
-}
-
-export async function getMenusForAthlete(athleteEmail: string): Promise<NutritionMenu[]> {
-  if (forceLocalOnly) {
-    return getMenusFromLocal().filter(m => m.athleteId === athleteEmail);
-  }
-  try {
-    const q = query(collection(db, 'nutritionMenus'), where('athleteId', '==', athleteEmail));
-    const snap = await getDocs(q);
-    const menus = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionMenu));
-    // Sync to local: keep other athletes' menus intact
-    const others = getMenusFromLocal().filter(m => m.athleteId !== athleteEmail);
-    setMenusToLocal([...others, ...menus]);
-    return menus;
-  } catch (err) {
-    console.warn('getMenusForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
-    return getMenusFromLocal().filter(m => m.athleteId === athleteEmail);
-  }
-}
-
-export async function createMenu(data: Omit<NutritionMenu, 'id'>): Promise<NutritionMenu> {
-  if (forceLocalOnly) {
-    const menu: NutritionMenu = { id: `menu_${Date.now()}`, ...data };
-    setMenusToLocal([...getMenusFromLocal(), menu]);
-    return menu;
-  }
-  try {
-    const ref = await addDoc(collection(db, 'nutritionMenus'), data);
-    const menu: NutritionMenu = { id: ref.id, ...data };
-    setMenusToLocal([...getMenusFromLocal(), menu]);
-    return menu;
-  } catch (err) {
-    console.warn('createMenu Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
-    const menu: NutritionMenu = { id: `menu_${Date.now()}`, ...data };
-    setMenusToLocal([...getMenusFromLocal(), menu]);
-    return menu;
-  }
-}
-
-export async function updateMenu(id: string, updates: Partial<NutritionMenu>): Promise<void> {
-  const all = getMenusFromLocal();
-  const updated = all.map(m => m.id === id ? { ...m, ...updates } : m);
-  if (forceLocalOnly) {
-    setMenusToLocal(updated);
-    return;
-  }
-  try {
-    await updateDoc(doc(db, 'nutritionMenus', id), updates as Record<string, unknown>);
-    setMenusToLocal(updated);
-  } catch (err) {
-    console.warn('updateMenu Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
-    setMenusToLocal(updated);
-  }
-}
-
-export async function deleteMenu(id: string): Promise<void> {
-  const filtered = getMenusFromLocal().filter(m => m.id !== id);
-  if (forceLocalOnly) {
-    setMenusToLocal(filtered);
-    return;
-  }
-  try {
-    await deleteDoc(doc(db, 'nutritionMenus', id));
-    setMenusToLocal(filtered);
-  } catch (err) {
-    console.warn('deleteMenu Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
-    setMenusToLocal(filtered);
   }
 }
 
@@ -1600,5 +1250,86 @@ export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     localStorage.setItem(localKey, JSON.stringify(config));
+  }
+}
+
+// ─── ONE-TIME CLEANUP ──────────────────────────────────────────────────────────
+// Removes ZZ_TEST test data and orphaned workout assignments. Runs once per
+// browser (guarded by a localStorage flag). Safe to call on every app boot.
+
+export async function cleanupTestDataOnce(): Promise<void> {
+  const FLAG = 'enforma_cleanup_v1_done';
+  if (localStorage.getItem(FLAG) === 'true') return;
+
+  if (forceLocalOnly) {
+    // Local-only path: purge ZZ_TEST items by name
+    const keptWorkouts = getLocalWorkouts().filter(w => !w.name.includes('ZZ_TEST'));
+    const keptIds = new Set(keptWorkouts.map(w => w.id));
+    saveLocalWorkouts(keptWorkouts);
+    saveLocalAssignments(getLocalAssignments().filter(a => keptIds.has(a.workoutId)));
+    // local diets cleanup
+    const keptDiets = getDietsFromLocal().filter(d => !d.name.includes('ZZ_TEST'));
+    setDietsToLocal(keptDiets);
+    localStorage.setItem(FLAG, 'true');
+    return;
+  }
+
+  try {
+    // 1. Delete ZZ_TEST diets from Firestore; collect their IDs
+    const dietSnap = await getDocs(collection(db, 'diets'));
+    const zzDietIds = new Set<string>();
+    for (const d of dietSnap.docs) {
+      const name = (d.data() as { name?: string }).name ?? '';
+      if (name.includes('ZZ_TEST')) {
+        zzDietIds.add(d.id);
+        await deleteDoc(doc(db, 'diets', d.id)).catch(() => {});
+      }
+    }
+
+    // 2. Scrub deleted diet IDs from athleteDietConfigs
+    if (zzDietIds.size > 0) {
+      const cfgSnap = await getDocs(collection(db, 'athleteDietConfigs'));
+      for (const d of cfgSnap.docs) {
+        const ids: string[] = (d.data() as { activeDietIds?: string[] }).activeDietIds ?? [];
+        const next = ids.filter(id => !zzDietIds.has(id));
+        if (next.length !== ids.length) {
+          await updateDoc(doc(db, 'athleteDietConfigs', d.id), { activeDietIds: next }).catch(() => {});
+        }
+      }
+    }
+
+    // 3. Delete ZZ_TEST workouts; collect all valid workout IDs
+    const workoutSnap = await getDocs(collection(db, 'workouts'));
+    const validWorkoutIds = new Set<string>();
+    for (const d of workoutSnap.docs) {
+      const name = (d.data() as { name?: string }).name ?? '';
+      if (name.includes('ZZ_TEST')) {
+        await deleteDoc(doc(db, 'workouts', d.id)).catch(() => {});
+      } else {
+        validWorkoutIds.add(d.id);
+      }
+    }
+
+    // 4. Delete every assignment whose workoutId is NOT in validWorkoutIds (orphans + ZZ refs)
+    const assignSnap = await getDocs(collection(db, 'workoutAssignments'));
+    for (const d of assignSnap.docs) {
+      const wid = (d.data() as { workoutId?: string }).workoutId ?? '';
+      if (!validWorkoutIds.has(wid)) {
+        await deleteDoc(doc(db, 'workoutAssignments', d.id)).catch(() => {});
+      }
+    }
+
+    // 5. Mirror cleanup in localStorage
+    const keptWk = getLocalWorkouts().filter(w => validWorkoutIds.has(w.id));
+    saveLocalWorkouts(keptWk);
+    const keptIds = new Set(keptWk.map(w => w.id));
+    saveLocalAssignments(getLocalAssignments().filter(a => keptIds.has(a.workoutId)));
+    setDietsToLocal(getDietsFromLocal().filter(d => !zzDietIds.has(d.id) && !d.name.includes('ZZ_TEST')));
+
+    localStorage.setItem(FLAG, 'true');
+    console.log('[cleanup v1] ZZ_TEST data and orphaned assignments removed.');
+  } catch (err) {
+    // Don't set the flag — next load will retry
+    console.warn('[cleanup v1] Incomplete, will retry:', err);
   }
 }

@@ -43,16 +43,6 @@ export interface AthleteNutritionConfig {
   enabledModes: DietMode[];
 }
 
-export interface MealState {
-  userId: string;
-  dateStr: string; // YYYY-MM-DD
-  comida1: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
-  comida2: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
-  comida3: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
-  comida4: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
-  comida5: { completed: boolean; foodId: string; title: string; portion: string; specs: string } | null;
-}
-
 export interface Exercise {
   id: string;
   ownerId: string; // 'system' for preloaded, coachId for custom
@@ -113,34 +103,7 @@ export interface WorkoutAssignment {
   status: 'pending' | 'completed' | 'skipped';
 }
 
-export interface MealExchange {
-  category: FoodCategory;
-  count: number;
-}
-
-export interface NutritionMeal {
-  id: string;
-  name: string; // free text, e.g. "Desayuno", "Post-entreno"
-  exchanges: MealExchange[];
-}
-
-export interface NutritionDayType {
-  id: string;
-  ownerId: string;
-  name: string; // e.g. "Día Alto", "Día Bajo", "Día Libre"
-  targetCalories: number;
-  meals: NutritionMeal[];
-}
-
-// Backward-compat alias — A2 will clean this up
-export type NutritionPlan = NutritionDayType;
-
-export interface AthleteDayTypeConfig {
-  athleteId: string; // email
-  dayTypeIds: string[]; // day types available to this athlete
-}
-
-// ─── DIET (replaces NutritionDayType for coach builder — N2 will migrate athlete view) ───
+// ─── DIET ─────────────────────────────────────────────────────────────────────
 
 export interface DietItem {
   category: FoodCategory;
@@ -168,22 +131,6 @@ export interface Diet {
 export interface AthleteDietConfig {
   athleteId: string;        // email
   activeDietIds: string[];  // which of their diets are enabled in the tracker
-}
-
-// ─── NUTRITION MENUS ─────────────────────────────────────────────────────────
-
-export interface NutritionMenuItem {
-  category: FoodCategory;
-  foodLabel: string;
-}
-
-export interface NutritionMenu {
-  id: string;
-  athleteId: string;    // email
-  name: string;         // e.g. "Desayuno avena+claras"
-  createdBy: 'coach' | 'athlete';
-  items: NutritionMenuItem[];
-  coachNote?: string;
 }
 
 export interface Recipe {
