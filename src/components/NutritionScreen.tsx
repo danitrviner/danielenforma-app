@@ -41,6 +41,11 @@ interface ExchangeSlot {
   totalForCategory: number;
 }
 
+function mealDisplayName(name: string, n: number): string {
+  const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
+  return stripped || `Comida ${n}`;
+}
+
 function expandMealSlots(meal: NutritionMeal): ExchangeSlot[] {
   return meal.exchanges.flatMap(ex =>
     Array.from({ length: ex.count }, (_, i) => ({
@@ -248,7 +253,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                           <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
-                          <span className="font-sans font-bold text-white text-base">{meal.name || `Comida ${mi + 1}`}</span>
+                          <span className="font-sans font-bold text-white text-base">{mealDisplayName(meal.name, mi + 1)}</span>
                         </div>
                         <span className="font-mono text-[9px] text-[#c6c9ab]">
                           {slots.length} intercambio{slots.length !== 1 ? 's' : ''}

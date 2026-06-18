@@ -19,6 +19,10 @@ const CAT_COLOR: Record<FoodCategory, string> = {
 };
 
 function makeMealId() { return `meal_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`; }
+function mealDisplayName(name: string, n: number): string {
+  const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
+  return stripped || `Comida ${n}`;
+}
 function makeBlankExchange(): MealExchange { return { category: 'HC', count: 1 }; }
 function makeBlankMeal(_n: number): NutritionMeal {
   return { id: makeMealId(), name: '', exchanges: [makeBlankExchange()] };
@@ -174,7 +178,7 @@ export default function NutritionPlansScreen({ coachId }: Props) {
                   <div className="space-y-1.5">
                     {dt.meals.map((meal, mi) => (
                       <div key={mi} className="flex items-center gap-2 text-xs">
-                        <span className="font-mono text-[#c6c9ab] w-28 truncate">{meal.name || `Comida ${mi + 1}`}</span>
+                        <span className="font-mono text-[#c6c9ab] w-28 truncate">{mealDisplayName(meal.name, mi + 1)}</span>
                         <div className="flex gap-1 flex-wrap">
                           {meal.exchanges.map((ex, ei) => (
                             <span key={ei} className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${CAT_COLOR[ex.category]}`}>
