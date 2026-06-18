@@ -189,8 +189,17 @@ export default function NutritionScreen({ profile }: Props) {
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleSelectDiet = (dt: Diet) => {
+    // Build itemStates for the new diet immediately in the same event handler so
+    // React batches both updates into one render. Relying only on a useEffect meant
+    // the content rendered once with the new selectedDiet but stale itemStates.
+    const initial: Record<string, ItemState> = {};
+    for (const meal of dt.meals) {
+      meal.items.forEach((item, idx) => {
+        initial[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: false };
+      });
+    }
+    setItemStates(initial);
     setSelectedDiet(dt);
-    // itemStates reset handled by useEffect on selectedDiet?.id change
   };
 
   const handleToggleDone = (mealId: string, itemIdx: number) => {
@@ -289,7 +298,7 @@ export default function NutritionScreen({ profile }: Props) {
           )}
 
           {selectedDiet && (
-            <>
+            <React.Fragment key={selectedDiet.id}>
               {/* Diet header */}
               <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
                 <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-0.5">DIETA ACTIVA</span>
@@ -462,7 +471,7 @@ export default function NutritionScreen({ profile }: Props) {
                   );
                 })}
               </div>
-            </>
+            </React.Fragment>
           )}
         </>
       )}
