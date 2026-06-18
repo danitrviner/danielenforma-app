@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
 
-type Tab = 'planes' | 'alimentos';
+type Tab = 'tipos' | 'alimentos';
 
 interface Props {
   coachId: string;
 }
 
 export default function NutritionCoachScreen({ coachId }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('planes');
+  const [activeTab, setActiveTab] = useState<Tab>('tipos');
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'planes',    label: 'Planes',    icon: 'menu_book' },
-    { id: 'alimentos', label: 'Alimentos', icon: 'set_meal' },
+    { id: 'tipos',     label: 'Tipos de día', icon: 'calendar_view_day' },
+    { id: 'alimentos', label: 'Alimentos',     icon: 'set_meal' },
   ];
 
   return (
@@ -48,7 +48,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
         ))}
       </div>
 
-      {activeTab === 'planes'    && <NutritionPlansScreen coachId={coachId} />}
+      {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}
     </div>
   );

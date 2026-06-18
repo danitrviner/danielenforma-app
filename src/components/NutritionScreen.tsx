@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, MealState, MealItem, NutritionPlan, FoodCategory, DietMode } from '../types';
+import { UserProfile, MealState, MealItem, NutritionDayType, FoodCategory, DietMode } from '../types';
 import { getOrCreateMealState, updateMealState, getActiveNutritionAssignment, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig } from '../dbService';
 
 const CAT_LABEL: Record<FoodCategory, string> = {
@@ -35,7 +35,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
   const [mealState, setMealState] = useState<MealState | null>(null);
   const [activeMealIdForPicker, setActiveMealIdForPicker] = useState<number | null>(null);
   const [activeCategoryForPicker, setActiveCategoryForPicker] = useState<FoodCategory>('HC');
-  const [activePlan, setActivePlan] = useState<NutritionPlan | null>(null);
+  const [activePlan, setActivePlan] = useState<NutritionDayType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [foodItems, setFoodItems] = useState<MealItem[]>([]);
@@ -74,7 +74,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
 
   const getMealPickerCategory = (mealNum: number): FoodCategory => {
     const meal = activePlan?.meals[mealNum - 1];
-    if (meal && meal.slots.length > 0) return meal.slots[0].category;
+    if (meal && meal.exchanges.length > 0) return meal.exchanges[0].category;
     return 'HC';
   };
 
@@ -200,7 +200,7 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
             const planMeal = activePlan?.meals[num - 1];
             const mealName = planMeal?.name ?? `Comida ${num}`;
             const slotsSummary = planMeal
-              ? planMeal.slots.map(s => `${s.portions}× ${CAT_LABEL[s.category]}`).join(' · ')
+              ? planMeal.exchanges.map(e => `${e.count}× ${CAT_LABEL[e.category]}`).join(' · ')
               : null;
             const pickerCat = getMealPickerCategory(num);
 

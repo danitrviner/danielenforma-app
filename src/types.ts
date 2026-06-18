@@ -113,31 +113,31 @@ export interface WorkoutAssignment {
   status: 'pending' | 'completed' | 'skipped';
 }
 
-export interface NutritionMealSlot {
+export interface MealExchange {
   category: FoodCategory;
-  portions: number;
+  count: number;
 }
 
 export interface NutritionMeal {
   id: string;
-  name: string;
-  slots: NutritionMealSlot[];
+  name: string; // free text, e.g. "Desayuno", "Post-entreno"
+  exchanges: MealExchange[];
 }
 
-export interface NutritionPlan {
+export interface NutritionDayType {
   id: string;
   ownerId: string;
-  name: string;
+  name: string; // e.g. "Día Alto", "Día Bajo", "Día Libre"
   targetCalories: number;
-  macros: { carbs: number; protein: number; fats: number };
   meals: NutritionMeal[];
 }
 
-export interface NutritionAssignment {
-  id: string;
+// Backward-compat alias — A2 will clean this up
+export type NutritionPlan = NutritionDayType;
+
+export interface AthleteDayTypeConfig {
   athleteId: string; // email
-  planId: string;
-  startDate: string; // YYYY-MM-DD
+  dayTypeIds: string[]; // day types available to this athlete
 }
 
 export interface Recipe {

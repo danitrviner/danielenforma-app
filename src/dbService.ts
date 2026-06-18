@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionPlan, NutritionAssignment, AthleteNutritionConfig, DietMode } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1113,180 +1113,166 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
 
 // ─── NUTRITION PLANS ─────────────────────────────────────────────────────────
 
-const NUTRITION_PLANS_LOCAL_KEY = 'enforma_nutrition_plans';
+// ─── NUTRITION DAY TYPES ──────────────────────────────────────────────────────
 
-function getLocalNutritionPlans(): NutritionPlan[] {
+const DAY_TYPES_LOCAL_KEY = 'enforma_day_types_v1';
+
+function getLocalDayTypes(): NutritionDayType[] {
   try {
-    const raw = localStorage.getItem(NUTRITION_PLANS_LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as NutritionPlan[]) : [];
+    const raw = localStorage.getItem(DAY_TYPES_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as NutritionDayType[]) : [];
   } catch (e) {
     return [];
   }
 }
 
-function saveLocalNutritionPlans(plans: NutritionPlan[]) {
+function saveLocalDayTypes(items: NutritionDayType[]) {
   try {
-    localStorage.setItem(NUTRITION_PLANS_LOCAL_KEY, JSON.stringify(plans));
+    localStorage.setItem(DAY_TYPES_LOCAL_KEY, JSON.stringify(items));
   } catch (e) {}
 }
 
-export async function getNutritionPlans(): Promise<NutritionPlan[]> {
-  if (forceLocalOnly) return getLocalNutritionPlans();
+export async function getNutritionDayTypes(): Promise<NutritionDayType[]> {
+  if (forceLocalOnly) return getLocalDayTypes();
   try {
-    const snap = await getDocs(collection(db, 'nutritionPlans'));
-    const plans = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionPlan));
-    saveLocalNutritionPlans(plans);
-    return plans;
+    const snap = await getDocs(collection(db, 'nutritionDayTypes'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionDayType));
+    saveLocalDayTypes(items);
+    return items;
   } catch (err) {
-    console.warn('getNutritionPlans Firestore failed, using local:', err);
+    console.warn('getNutritionDayTypes Firestore failed, using local:', err);
     setLocalBypassMode(true);
-    return getLocalNutritionPlans();
+    return getLocalDayTypes();
   }
 }
 
-export async function createNutritionPlan(data: Omit<NutritionPlan, 'id'>): Promise<NutritionPlan> {
+// Backward-compat alias
+export const getNutritionPlans = getNutritionDayTypes;
+
+export async function createNutritionDayType(data: Omit<NutritionDayType, 'id'>): Promise<NutritionDayType> {
   if (forceLocalOnly) {
-    const newP: NutritionPlan = { ...data, id: `local_np_${Date.now()}` };
-    saveLocalNutritionPlans([...getLocalNutritionPlans(), newP]);
-    return newP;
+    const item: NutritionDayType = { ...data, id: `local_dt_${Date.now()}` };
+    saveLocalDayTypes([...getLocalDayTypes(), item]);
+    return item;
   }
   try {
-    const ref = await addDoc(collection(db, 'nutritionPlans'), data);
-    const newP: NutritionPlan = { ...data, id: ref.id };
-    saveLocalNutritionPlans([...getLocalNutritionPlans(), newP]);
-    return newP;
+    const ref = await addDoc(collection(db, 'nutritionDayTypes'), data);
+    const item: NutritionDayType = { ...data, id: ref.id };
+    saveLocalDayTypes([...getLocalDayTypes(), item]);
+    return item;
   } catch (err) {
-    console.warn('createNutritionPlan Firestore failed, saving local:', err);
+    console.warn('createNutritionDayType Firestore failed, saving local:', err);
     setLocalBypassMode(true);
-    const newP: NutritionPlan = { ...data, id: `local_np_${Date.now()}` };
-    saveLocalNutritionPlans([...getLocalNutritionPlans(), newP]);
-    return newP;
+    const item: NutritionDayType = { ...data, id: `local_dt_${Date.now()}` };
+    saveLocalDayTypes([...getLocalDayTypes(), item]);
+    return item;
   }
 }
 
-export async function updateNutritionPlan(id: string, updates: Partial<NutritionPlan>): Promise<void> {
+// Backward-compat alias
+export const createNutritionPlan = createNutritionDayType;
+
+export async function updateNutritionDayType(id: string, updates: Partial<NutritionDayType>): Promise<void> {
   if (forceLocalOnly) {
-    saveLocalNutritionPlans(getLocalNutritionPlans().map(p => (p.id === id ? { ...p, ...updates } : p)));
+    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
     return;
   }
   try {
-    await updateDoc(doc(db, 'nutritionPlans', id), updates as Record<string, unknown>);
-    saveLocalNutritionPlans(getLocalNutritionPlans().map(p => (p.id === id ? { ...p, ...updates } : p)));
+    await updateDoc(doc(db, 'nutritionDayTypes', id), updates as Record<string, unknown>);
+    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
   } catch (err) {
-    console.warn('updateNutritionPlan Firestore failed, updating local:', err);
+    console.warn('updateNutritionDayType Firestore failed, updating local:', err);
     setLocalBypassMode(true);
-    saveLocalNutritionPlans(getLocalNutritionPlans().map(p => (p.id === id ? { ...p, ...updates } : p)));
+    saveLocalDayTypes(getLocalDayTypes().map(p => (p.id === id ? { ...p, ...updates } : p)));
   }
 }
 
-export async function deleteNutritionPlan(id: string): Promise<void> {
+// Backward-compat alias
+export const updateNutritionPlan = updateNutritionDayType;
+
+export async function deleteNutritionDayType(id: string): Promise<void> {
   if (forceLocalOnly) {
-    saveLocalNutritionPlans(getLocalNutritionPlans().filter(p => p.id !== id));
+    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
     return;
   }
   try {
-    await deleteDoc(doc(db, 'nutritionPlans', id));
-    saveLocalNutritionPlans(getLocalNutritionPlans().filter(p => p.id !== id));
+    await deleteDoc(doc(db, 'nutritionDayTypes', id));
+    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
   } catch (err) {
-    console.warn('deleteNutritionPlan Firestore failed, deleting local:', err);
+    console.warn('deleteNutritionDayType Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
-    saveLocalNutritionPlans(getLocalNutritionPlans().filter(p => p.id !== id));
+    saveLocalDayTypes(getLocalDayTypes().filter(p => p.id !== id));
   }
 }
 
-// ─── NUTRITION ASSIGNMENTS ────────────────────────────────────────────────────
+// Backward-compat alias
+export const deleteNutritionPlan = deleteNutritionDayType;
 
-const NUTRITION_ASSIGNMENTS_LOCAL_KEY = 'enforma_nutrition_assignments';
+// ─── ATHLETE DAY TYPE CONFIG ──────────────────────────────────────────────────
 
-function getLocalNutritionAssignments(): NutritionAssignment[] {
-  try {
-    const raw = localStorage.getItem(NUTRITION_ASSIGNMENTS_LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as NutritionAssignment[]) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function saveLocalNutritionAssignments(assignments: NutritionAssignment[]) {
-  try {
-    localStorage.setItem(NUTRITION_ASSIGNMENTS_LOCAL_KEY, JSON.stringify(assignments));
-  } catch (e) {}
-}
-
-export async function getNutritionAssignments(athleteEmail?: string): Promise<NutritionAssignment[]> {
+export async function getAthleteDayTypeConfig(athleteEmail: string): Promise<AthleteDayTypeConfig> {
+  const defaultCfg: AthleteDayTypeConfig = { athleteId: athleteEmail, dayTypeIds: [] };
+  const localKey = `enforma_athlete_day_type_config_${athleteEmail}`;
   if (forceLocalOnly) {
-    const all = getLocalNutritionAssignments();
-    return athleteEmail ? all.filter(a => a.athleteId === athleteEmail) : all;
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? (JSON.parse(raw) as AthleteDayTypeConfig) : defaultCfg;
+    } catch (e) { return defaultCfg; }
   }
   try {
-    const colRef = collection(db, 'nutritionAssignments');
-    const q = athleteEmail ? query(colRef, where('athleteId', '==', athleteEmail)) : colRef;
-    const snap = await getDocs(q);
-    const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionAssignment));
-    const local = getLocalNutritionAssignments().filter(a => !assignments.find(b => b.id === a.id));
-    saveLocalNutritionAssignments([...local, ...assignments]);
-    return assignments;
+    const docRef = doc(db, 'athleteDayTypeConfigs', athleteEmail);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data() as AthleteDayTypeConfig;
+      localStorage.setItem(localKey, JSON.stringify(data));
+      return data;
+    }
+    try {
+      const raw = localStorage.getItem(localKey);
+      if (raw) return JSON.parse(raw) as AthleteDayTypeConfig;
+    } catch (_) {}
+    return defaultCfg;
   } catch (err) {
-    console.warn('getNutritionAssignments Firestore failed, using local:', err);
+    console.warn('getAthleteDayTypeConfig Firestore failed, using local:', err);
     setLocalBypassMode(true);
-    const all = getLocalNutritionAssignments();
-    return athleteEmail ? all.filter(a => a.athleteId === athleteEmail) : all;
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? (JSON.parse(raw) as AthleteDayTypeConfig) : defaultCfg;
+    } catch (e) { return defaultCfg; }
   }
 }
 
-export async function createNutritionAssignment(data: Omit<NutritionAssignment, 'id'>): Promise<NutritionAssignment> {
+export async function saveAthleteDayTypeConfig(config: AthleteDayTypeConfig): Promise<void> {
+  const localKey = `enforma_athlete_day_type_config_${config.athleteId}`;
+  const data = { ...config };
   if (forceLocalOnly) {
-    const newA: NutritionAssignment = { ...data, id: `local_na_${Date.now()}` };
-    saveLocalNutritionAssignments([...getLocalNutritionAssignments(), newA]);
-    return newA;
-  }
-  try {
-    const ref = await addDoc(collection(db, 'nutritionAssignments'), data);
-    const newA: NutritionAssignment = { ...data, id: ref.id };
-    saveLocalNutritionAssignments([...getLocalNutritionAssignments(), newA]);
-    return newA;
-  } catch (err) {
-    console.warn('createNutritionAssignment Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
-    const newA: NutritionAssignment = { ...data, id: `local_na_${Date.now()}` };
-    saveLocalNutritionAssignments([...getLocalNutritionAssignments(), newA]);
-    return newA;
-  }
-}
-
-export async function deleteNutritionAssignment(id: string): Promise<void> {
-  if (forceLocalOnly) {
-    saveLocalNutritionAssignments(getLocalNutritionAssignments().filter(a => a.id !== id));
+    localStorage.setItem(localKey, JSON.stringify(data));
     return;
   }
   try {
-    await deleteDoc(doc(db, 'nutritionAssignments', id));
-    saveLocalNutritionAssignments(getLocalNutritionAssignments().filter(a => a.id !== id));
+    await setDoc(doc(db, 'athleteDayTypeConfigs', config.athleteId), data);
+    localStorage.setItem(localKey, JSON.stringify(data));
   } catch (err) {
-    console.warn('deleteNutritionAssignment Firestore failed, deleting local:', err);
+    console.warn('saveAthleteDayTypeConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true);
-    saveLocalNutritionAssignments(getLocalNutritionAssignments().filter(a => a.id !== id));
+    localStorage.setItem(localKey, JSON.stringify(data));
   }
 }
 
-export async function getActiveNutritionAssignment(athleteEmail: string): Promise<{ assignment: NutritionAssignment; plan: NutritionPlan } | null> {
-  const [assignments, plans] = await Promise.all([
-    getNutritionAssignments(athleteEmail),
-    getNutritionPlans(),
-  ]);
-  if (assignments.length === 0) return null;
+// ─── ACTIVE PLAN (A2 will redesign; for now returns first available day type) ─
 
-  const today = new Date().toISOString().split('T')[0];
-  const active = assignments
-    .filter(a => a.startDate <= today)
-    .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
-
-  if (!active) return null;
-
-  const plan = plans.find(p => p.id === active.planId);
-  if (!plan) return null;
-
-  return { assignment: active, plan };
+export async function getActiveNutritionAssignment(athleteEmail: string): Promise<{ plan: NutritionPlan } | null> {
+  try {
+    const [config, dayTypes] = await Promise.all([
+      getAthleteDayTypeConfig(athleteEmail),
+      getNutritionDayTypes(),
+    ]);
+    if (config.dayTypeIds.length === 0) return null;
+    const first = dayTypes.find(dt => config.dayTypeIds.includes(dt.id));
+    return first ? { plan: first } : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 // ─── MEAL STATE WEEK SUMMARY (for coach macro adherence) ──────────────────────
