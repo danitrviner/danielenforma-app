@@ -140,6 +140,20 @@ export interface AthleteDayTypeConfig {
   dayTypeIds: string[]; // day types available to this athlete
 }
 
+export interface NutritionMenuItem {
+  category: FoodCategory;
+  foodLabel: string;
+}
+
+export interface NutritionMenu {
+  id: string;
+  athleteId: string;    // email
+  name: string;         // e.g. "Desayuno avena+claras"
+  createdBy: 'coach' | 'athlete';
+  items: NutritionMenuItem[];
+  coachNote?: string;
+}
+
 export interface Recipe {
   id: string;
   title: string;

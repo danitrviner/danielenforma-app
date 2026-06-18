@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from './firebase';
-import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig } from './types';
+import { UserProfile, WeightCheckIn, MealState, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, NutritionDayType, NutritionPlan, AthleteNutritionConfig, DietMode, AthleteDayTypeConfig, NutritionMenu } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1338,4 +1338,91 @@ export function getMealStatesForWeek(userId: string, dates: string[]): MealState
     } catch (e) {}
   }
   return results;
+}
+
+// ─── NUTRITION MENUS ──────────────────────────────────────────────────────────
+
+const MENUS_LOCAL_KEY = 'enforma_nutrition_menus_v1';
+
+function getMenusFromLocal(): NutritionMenu[] {
+  try {
+    const raw = localStorage.getItem(MENUS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as NutritionMenu[]) : [];
+  } catch { return []; }
+}
+
+function setMenusToLocal(menus: NutritionMenu[]): void {
+  localStorage.setItem(MENUS_LOCAL_KEY, JSON.stringify(menus));
+}
+
+export async function getMenusForAthlete(athleteEmail: string): Promise<NutritionMenu[]> {
+  if (forceLocalOnly) {
+    return getMenusFromLocal().filter(m => m.athleteId === athleteEmail);
+  }
+  try {
+    const q = query(collection(db, 'nutritionMenus'), where('athleteId', '==', athleteEmail));
+    const snap = await getDocs(q);
+    const menus = snap.docs.map(d => ({ id: d.id, ...d.data() } as NutritionMenu));
+    // Sync to local: keep other athletes' menus intact
+    const others = getMenusFromLocal().filter(m => m.athleteId !== athleteEmail);
+    setMenusToLocal([...others, ...menus]);
+    return menus;
+  } catch (err) {
+    console.warn('getMenusForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getMenusFromLocal().filter(m => m.athleteId === athleteEmail);
+  }
+}
+
+export async function createMenu(data: Omit<NutritionMenu, 'id'>): Promise<NutritionMenu> {
+  if (forceLocalOnly) {
+    const menu: NutritionMenu = { id: `menu_${Date.now()}`, ...data };
+    setMenusToLocal([...getMenusFromLocal(), menu]);
+    return menu;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'nutritionMenus'), data);
+    const menu: NutritionMenu = { id: ref.id, ...data };
+    setMenusToLocal([...getMenusFromLocal(), menu]);
+    return menu;
+  } catch (err) {
+    console.warn('createMenu Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const menu: NutritionMenu = { id: `menu_${Date.now()}`, ...data };
+    setMenusToLocal([...getMenusFromLocal(), menu]);
+    return menu;
+  }
+}
+
+export async function updateMenu(id: string, updates: Partial<NutritionMenu>): Promise<void> {
+  const all = getMenusFromLocal();
+  const updated = all.map(m => m.id === id ? { ...m, ...updates } : m);
+  if (forceLocalOnly) {
+    setMenusToLocal(updated);
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'nutritionMenus', id), updates as Record<string, unknown>);
+    setMenusToLocal(updated);
+  } catch (err) {
+    console.warn('updateMenu Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    setMenusToLocal(updated);
+  }
+}
+
+export async function deleteMenu(id: string): Promise<void> {
+  const filtered = getMenusFromLocal().filter(m => m.id !== id);
+  if (forceLocalOnly) {
+    setMenusToLocal(filtered);
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'nutritionMenus', id));
+    setMenusToLocal(filtered);
+  } catch (err) {
+    console.warn('deleteMenu Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    setMenusToLocal(filtered);
+  }
 }

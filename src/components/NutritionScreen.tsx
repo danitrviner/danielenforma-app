@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, NutritionDayType, NutritionMeal, FoodCategory, DietMode, MealItem } from '../types';
-import { getAthleteDayTypeConfig, getNutritionDayTypes, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig } from '../dbService';
+import { UserProfile, NutritionDayType, NutritionMeal, NutritionMenu, FoodCategory, DietMode, MealItem } from '../types';
+import { getAthleteDayTypeConfig, getNutritionDayTypes, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getMenusForAthlete } from '../dbService';
 
 const CAT_LABEL: Record<FoodCategory, string> = {
   HC:        'HC',
@@ -77,17 +77,23 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
 
+  // Menu apply picker
+  const [savedMenus, setSavedMenus] = useState<NutritionMenu[]>([]);
+  const [menuPickerMealId, setMenuPickerMealId] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
         await seedFoodItemsIfEmpty();
-        const [foods, config, allDayTypes, dtConfig] = await Promise.all([
+        const [foods, config, allDayTypes, dtConfig, menus] = await Promise.all([
           getFoodItems(),
           getAthleteNutritionConfig(profile.email).catch(() => null),
           getNutritionDayTypes(),
           getAthleteDayTypeConfig(profile.email).catch(() => null),
+          getMenusForAthlete(profile.email).catch(() => [] as NutritionMenu[]),
         ]);
+        setSavedMenus(menus);
 
         setFoodItems(foods);
 
@@ -138,6 +144,28 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
       return;
     }
     setSlotStates(prev => ({ ...prev, [slotKey]: { ...current, done: !current.done } }));
+  };
+
+  const applyMenuToMeal = (meal: NutritionMeal, menu: NutritionMenu) => {
+    const slots = expandMealSlots(meal);
+    const byCategory: Partial<Record<FoodCategory, string[]>> = {};
+    for (const item of menu.items) {
+      if (!byCategory[item.category]) byCategory[item.category] = [];
+      byCategory[item.category]!.push(item.foodLabel);
+    }
+    const counters: Partial<Record<FoodCategory, number>> = {};
+    const patch: Record<string, SlotState> = {};
+    for (const slot of slots) {
+      const cat = slot.category;
+      const idx = counters[cat] ?? 0;
+      const labels = byCategory[cat];
+      if (labels && idx < labels.length) {
+        patch[slot.key] = { foodId: '', foodLabel: labels[idx], done: false };
+        counters[cat] = idx + 1;
+      }
+    }
+    setSlotStates(prev => ({ ...prev, ...patch }));
+    setMenuPickerMealId(null);
   };
 
   // Progress counters
@@ -255,9 +283,20 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
                           </span>
                           <span className="font-sans font-bold text-white text-base">{mealDisplayName(meal.name, mi + 1)}</span>
                         </div>
-                        <span className="font-mono text-[9px] text-[#c6c9ab]">
-                          {slots.length} intercambio{slots.length !== 1 ? 's' : ''}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {savedMenus.length > 0 && (
+                            <button
+                              onClick={() => setMenuPickerMealId(meal.id)}
+                              className="flex items-center gap-1 text-[9px] font-mono text-[#c6c9ab] hover:text-[#e2ff00] transition-colors px-2 py-1 rounded border border-[#2a2a2a] hover:border-[#e2ff00]/30"
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>menu_book</span>
+                              Aplicar menú
+                            </button>
+                          )}
+                          <span className="font-mono text-[9px] text-[#c6c9ab]">
+                            {slots.length} intercambio{slots.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Exchange slots */}
@@ -319,6 +358,50 @@ export default function NutritionScreen({ profile }: NutritionScreenProps) {
           )}
         </>
       )}
+
+      {/* Menu picker modal */}
+      {menuPickerMealId !== null && (() => {
+        const meal = selectedDayType?.meals.find(m => m.id === menuPickerMealId);
+        if (!meal) return null;
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-sans font-bold text-lg text-white">Aplicar menú</h3>
+                  <p className="text-[10px] font-mono text-[#c6c9ab] mt-0.5">
+                    Comida: {mealDisplayName(meal.name, (selectedDayType?.meals.indexOf(meal) ?? 0) + 1)}
+                  </p>
+                </div>
+                <button onClick={() => setMenuPickerMealId(null)} className="text-[#c6c9ab] hover:text-white">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                {savedMenus.map(menu => (
+                  <button
+                    key={menu.id}
+                    onClick={() => applyMenuToMeal(meal, menu)}
+                    className="w-full text-left flex flex-col gap-1.5 p-3 bg-[#121212] hover:bg-[#1a1c12] border border-[#2a2a2a] hover:border-[#e2ff00]/30 rounded-xl transition-all group"
+                  >
+                    <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors">{menu.name}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {menu.items.map((item, i) => (
+                        <span key={i} className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${CAT_BG[item.category]}`}>
+                          {item.foodLabel}
+                        </span>
+                      ))}
+                    </div>
+                    {menu.coachNote && (
+                      <p className="text-[9px] text-[#00eefc] font-sans italic mt-0.5">{menu.coachNote}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Food picker sheet */}
       {pickerSlot && (
