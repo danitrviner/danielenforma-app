@@ -70,6 +70,21 @@ function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
   return p;
 }
 
+function computeMealPlaced(meal: DietMeal): Record<FoodCategory, number> {
+  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+  for (const item of meal.items) p[item.category] = round2(p[item.category] + item.quantity);
+  return p;
+}
+
+// Distributes `total` across `n` slots in 0.25 steps; extras go to the first slots
+function distributeEvenly(total: number, n: number): number[] {
+  if (n === 0) return [];
+  const units = Math.round(total / 0.25);
+  const base = Math.floor(units / n);
+  const extra = units - base * n;
+  return Array.from({ length: n }, (_, i) => round2((base + (i < extra ? 1 : 0)) * 0.25));
+}
+
 function blankBudget(): Record<FoodCategory, number> {
   return { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
 }
@@ -156,6 +171,18 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
   // ── Live dashboard ───────────────────────────────────────────────────────────
   const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
 
+  // Per-category mismatch: sum of meal targets ≠ day budget (only when targets are set)
+  const targetMismatches = useMemo(() => {
+    return CATS.flatMap(cat => {
+      if (form.budget[cat] === 0) return [];
+      const sum = form.meals.reduce((s, m) => s + (m.target?.[cat] ?? 0), 0);
+      if (sum === 0) return []; // targets not yet set — no mismatch
+      return round2(sum) !== round2(form.budget[cat])
+        ? [{ cat, sum: round2(sum), budget: form.budget[cat] }]
+        : [];
+    });
+  }, [form.meals, form.budget]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const openCreate = () => {
@@ -240,6 +267,33 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
 
   const setBudget = (cat: FoodCategory, val: number) =>
     setForm(f => ({ ...f, budget: { ...f.budget, [cat]: Math.max(0, round2(val)) } }));
+
+  const setMealTarget = (mealId: string, cat: FoodCategory, delta: number) =>
+    setForm(f => ({
+      ...f,
+      meals: f.meals.map(m => {
+        if (m.id !== mealId) return m;
+        const cur = m.target ?? blankBudget();
+        return { ...m, target: { ...cur, [cat]: Math.max(0, round2(cur[cat] + delta)) } };
+      }),
+    }));
+
+  const autoDistribute = () => {
+    const n = form.meals.length;
+    if (n === 0) return;
+    setForm(f => ({
+      ...f,
+      meals: f.meals.map((meal, idx) => {
+        const target = blankBudget();
+        for (const cat of CATS) {
+          if (f.budget[cat] > 0) {
+            target[cat] = distributeEvenly(f.budget[cat], n)[idx];
+          }
+        }
+        return { ...meal, target };
+      }),
+    }));
+  };
 
   // ── Food picker ──────────────────────────────────────────────────────────────
 
@@ -487,17 +541,41 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
 
       {/* Meals */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
             Comidas ({form.meals.length})
           </h3>
-          <button
-            onClick={addMeal}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-[#2a2a2a] text-[#e2ff00] hover:border-[#e2ff00]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>Añadir comida
-          </button>
+          <div className="flex gap-2">
+            {CATS.some(c => form.budget[c] > 0) && form.meals.length > 1 && (
+              <button
+                onClick={autoDistribute}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-[#00eefc]/40 text-[#00eefc] hover:border-[#00eefc]/70 font-mono text-[10px] uppercase rounded-lg transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">auto_fix_high</span>
+                Repartir
+              </button>
+            )}
+            <button
+              onClick={addMeal}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-[#2a2a2a] text-[#e2ff00] hover:border-[#e2ff00]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>Añadir comida
+            </button>
+          </div>
         </div>
+
+        {targetMismatches.length > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
+            <span className="font-mono text-[9px] text-amber-400 uppercase tracking-wider w-full mb-0.5">
+              ⚠ Objetivos por comida no cuadran con el presupuesto
+            </span>
+            {targetMismatches.map(({ cat, sum, budget: b }) => (
+              <span key={cat} className="font-mono text-[9px] text-amber-300">
+                {cat.replace('_', ' ')}: suma {fmtQty(sum)} ≠ {fmtQty(b)}
+              </span>
+            ))}
+          </div>
+        )}
 
         {form.meals.map((meal, mi) => (
           <div key={meal.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
@@ -518,6 +596,48 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
                 </button>
               )}
             </div>
+
+            {/* Per-meal target steppers (only if day has any budget) */}
+            {CATS.some(c => form.budget[c] > 0) && (() => {
+              const activeCats = CATS.filter(c => form.budget[c] > 0);
+              const mPlaced = computeMealPlaced(meal);
+              return (
+                <div className="px-4 py-3 bg-[#0e0e0e]/50 border-b border-[#1c1b1b]">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2">Objetivo comida</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeCats.map(cat => {
+                      const tgt = meal.target?.[cat] ?? 0;
+                      const p = mPlaced[cat];
+                      const isOk = tgt > 0 && round2(p) === round2(tgt);
+                      const isOver = tgt > 0 && p > tgt;
+                      return (
+                        <div key={cat} className="flex items-center gap-1">
+                          <span className={`font-mono text-[9px] w-14 ${CAT_COLOR[cat]}`}>
+                            {cat.replace('_', ' ')}
+                          </span>
+                          <div className="flex items-center bg-[#1c1b1b] rounded border border-[#2a2a2a]">
+                            <button
+                              onClick={() => setMealTarget(meal.id, cat, -0.25)}
+                              className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white text-xs font-bold"
+                            >−</button>
+                            <span className="w-7 text-center font-mono text-[10px] text-white">{fmtQty(tgt)}</span>
+                            <button
+                              onClick={() => setMealTarget(meal.id, cat, 0.25)}
+                              className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white text-xs font-bold"
+                            >+</button>
+                          </div>
+                          {tgt > 0 && (
+                            <span className={`font-mono text-[9px] ml-1 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-[#c6c9ab]'}`}>
+                              {fmtQty(p)}{isOk ? ' ✓' : isOver ? ' !' : ''}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Items */}
             <div className="p-3 space-y-2">

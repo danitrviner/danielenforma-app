@@ -153,6 +153,7 @@ export interface DietMeal {
   id: string;
   name: string;
   items: DietItem[];
+  target?: Record<FoodCategory, number>; // per-meal exchange targets (optional, set by coach)
 }
 
 export interface Diet {

@@ -154,23 +154,27 @@ export default function NutritionScreen({ profile }: Props) {
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
-  const { doneByCat, totalItems, doneItems } = useMemo(() => {
+  const { doneByCat, mealDoneByCat, totalItems, doneItems } = useMemo(() => {
     const doneByCat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    const mealDoneByCat: Record<string, Record<FoodCategory, number>> = {};
     let total = 0;
     let done = 0;
     if (selectedDiet) {
       for (const meal of selectedDiet.meals) {
+        const mealBycat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
         meal.items.forEach((item, idx) => {
           total++;
           const st = itemStates[`${meal.id}_${idx}`];
           if (st?.done) {
             done++;
             doneByCat[item.category] = round2(doneByCat[item.category] + item.quantity);
+            mealBycat[item.category] = round2(mealBycat[item.category] + item.quantity);
           }
         });
+        mealDoneByCat[meal.id] = mealBycat;
       }
     }
-    return { doneByCat, totalItems: total, doneItems: done };
+    return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
 
   const filteredFoods = useMemo(() =>
@@ -375,6 +379,38 @@ export default function NutritionScreen({ profile }: Props) {
                           </span>
                         </div>
                       </div>
+
+                      {/* Per-meal target + progress (only when targets are set) */}
+                      {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
+                        const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
+                        const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
+                        return (
+                          <div className="px-4 py-2 bg-[#0e0e0e]/60 border-b border-[#2a2a2a]/60 flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+                            {targetCats.map(cat => {
+                              const tgt = meal.target![cat]!;
+                              const d = mDone[cat] ?? 0;
+                              const isOk = round2(d) >= round2(tgt);
+                              const isOver = d > tgt;
+                              return (
+                                <div key={cat} className="flex items-center gap-1">
+                                  <span className={`font-mono text-[9px] font-bold ${CAT_COLOR[cat]}`}>
+                                    {cat.replace('_', ' ')}
+                                  </span>
+                                  <span className={`font-mono text-[9px] ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-[#c6c9ab]'}`}>
+                                    {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
+                                  </span>
+                                  <div className="w-10 h-1 bg-[#1c1b1b] rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#e2ff00]'}`}
+                                      style={{ width: `${tgt > 0 ? Math.min(100, (d / tgt) * 100) : 0}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
 
                       {/* Item list */}
                       <div className="p-3 border-t border-[#2a2a2a]/60 bg-[#131313]/40 space-y-2">
