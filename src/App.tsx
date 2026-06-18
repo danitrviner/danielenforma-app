@@ -42,6 +42,7 @@ export default function App() {
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [loading, setLoading] = useState(true);
+  const [roleSessionKey, setRoleSessionKey] = useState(0);
 
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
@@ -121,6 +122,7 @@ export default function App() {
       await updateUserProfile(profile.userId, { role: nextRole });
       setProfile(prev => prev ? { ...prev, role: nextRole } : null);
       setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
+      setRoleSessionKey(k => k + 1);
     } catch (err) {
       console.error(err);
     }
@@ -225,8 +227,8 @@ export default function App() {
         </button>
       </nav>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      {/* MAIN CONTENT — key forces full remount on every role toggle */}
+      <main key={roleSessionKey} className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
 
         {/* ATHLETE */}
         {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} />}

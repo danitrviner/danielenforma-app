@@ -1310,6 +1310,11 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
       localStorage.setItem(localKey, JSON.stringify(data));
       return data;
     }
+    // Doc not in Firestore — fall back to localStorage before using hard default
+    try {
+      const raw = localStorage.getItem(localKey);
+      if (raw) return JSON.parse(raw) as AthleteNutritionConfig;
+    } catch (_) {}
     return defaultConfig;
   } catch (err) {
     console.warn('getAthleteNutritionConfig Firestore failed, using local:', err);
