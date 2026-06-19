@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig } from '../dbService';
+import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites } from '../dbService';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -86,6 +86,15 @@ export default function NutritionScreen({ profile }: Props) {
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Recipe picker
+  const [recipes, setRecipes]                       = useState<Recipe[]>([]);
+  const [recipeFavorites, setRecipeFavorites]       = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [] });
+  const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
+  const [recipeSearch, setRecipeSearch]             = useState('');
+  const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
+  // Tracks how many items each meal had originally (before any recipe was applied)
+  const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
+
   // ── Load on mount ────────────────────────────────────────────────────────────
   // Phase 1: diets + config BEFORE seedFoodItemsIfEmpty, which on Firestore failure
   // calls setLocalBypassMode(true) internally — poisoning subsequent queries.
@@ -114,14 +123,27 @@ export default function NutritionScreen({ profile }: Props) {
         const activeIds = new Set(dietConfig?.activeDietIds ?? []);
         const active = allDiets.filter(d => activeIds.has(d.id));
         setActiveDiets(active);
-        if (active.length >= 1) setSelectedDiet(active[0]);
+        if (active.length >= 1) {
+          setSelectedDiet(active[0]);
+          const counts: Record<string, number> = {};
+          active[0].meals.forEach(m => { counts[m.id] = m.items.length; });
+          setOrigItemCounts(counts);
+        }
 
-        // Phase 2 — food library; seed failure must not affect diet data already set
+        // Phase 2 — food library + recipes; seed failure must not affect diet data already set
         await seedFoodItemsIfEmpty().catch(() => {});
         if (cancelled) return;
 
-        const foods = await getFoodItems();
-        if (!cancelled) setFoodItems(foods);
+        const [foods, recs, favs] = await Promise.all([
+          getFoodItems(),
+          getRecipes().catch(() => [] as Recipe[]),
+          getRecipeFavorites(profile.email).catch(() => ({ athleteId: profile.email, recipeIds: [] } as RecipeFavorites)),
+        ]);
+        if (!cancelled) {
+          setFoodItems(foods);
+          setRecipes(recs);
+          setRecipeFavorites(favs);
+        }
       } catch (err) {
         if (!cancelled) console.error('NutritionScreen load error:', err);
       } finally {
@@ -180,6 +202,29 @@ export default function NutritionScreen({ profile }: Props) {
     [foodItems, activeDietMode, pickerCategory, searchTerm]
   );
 
+  const availableRecipeCats = useMemo(() => {
+    const s = new Set<string>();
+    recipes.forEach(r => r.categories.forEach(c => s.add(c)));
+    return Array.from(s).sort();
+  }, [recipes]);
+
+  const sortedPickerRecipes = useMemo(() => {
+    const withIngredients = recipes.filter(r =>
+      r.ingredients.some(ing => enabledModes.includes(ing.mode))
+    );
+    const filtered = withIngredients.filter(r => {
+      const matchCat = recipeCatFilter === 'all' || r.categories.includes(recipeCatFilter);
+      const matchSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
+      return matchCat && matchSearch;
+    });
+    return filtered.sort((a, b) => {
+      const aFav = recipeFavorites.recipeIds.includes(a.id);
+      const bFav = recipeFavorites.recipeIds.includes(b.id);
+      if (aFav !== bFav) return aFav ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, recipeFavorites]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleSelectDiet = (dt: Diet) => {
@@ -187,12 +232,15 @@ export default function NutritionScreen({ profile }: Props) {
     // React batches both updates into one render. Relying only on a useEffect meant
     // the content rendered once with the new selectedDiet but stale itemStates.
     const initial: Record<string, ItemState> = {};
+    const counts: Record<string, number> = {};
     for (const meal of dt.meals) {
+      counts[meal.id] = meal.items.length;
       meal.items.forEach((item, idx) => {
         initial[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: false };
       });
     }
     setItemStates(initial);
+    setOrigItemCounts(counts);
     setSelectedDiet(dt);
   };
 
@@ -216,6 +264,76 @@ export default function NutritionScreen({ profile }: Props) {
     const key = `${pickerItem.mealId}_${pickerItem.itemIdx}`;
     setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
     setPickerItem(null);
+  };
+
+  // ── Recipe picker handlers ─────────────────────────────────────────────────
+
+  const handleOpenRecipePicker = (mealId: string) => {
+    setRecipePickerMealId(mealId);
+    setRecipeSearch('');
+    setRecipeCatFilter('all');
+  };
+
+  const handleApplyRecipe = (recipe: Recipe) => {
+    if (!recipePickerMealId || !selectedDiet) return;
+    const meal = selectedDiet.meals.find(m => m.id === recipePickerMealId);
+    if (!meal) return;
+
+    const newItems: DietItem[] = recipe.ingredients
+      .filter(ing => enabledModes.includes(ing.mode))
+      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity }));
+
+    if (newItems.length === 0) { setRecipePickerMealId(null); return; }
+
+    const startIdx = meal.items.length;
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map(m =>
+          m.id !== recipePickerMealId ? m : { ...m, items: [...m.items, ...newItems] }
+        ),
+      };
+    });
+    const newStates: Record<string, ItemState> = {};
+    newItems.forEach((item, i) => {
+      newStates[`${recipePickerMealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false };
+    });
+    setItemStates(prev => ({ ...prev, ...newStates }));
+    setRecipePickerMealId(null);
+  };
+
+  const handleRemoveItem = (mealId: string, itemIdx: number) => {
+    if (!selectedDiet) return;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    const oldLen = meal.items.length;
+
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map(m =>
+          m.id !== mealId ? m : { ...m, items: m.items.filter((_, i) => i !== itemIdx) }
+        ),
+      };
+    });
+
+    // Rebuild itemStates for this meal with shifted indices
+    setItemStates(prev => {
+      const next: Record<string, ItemState> = {};
+      // Keep all states that belong to other meals
+      Object.keys(prev).forEach(k => {
+        if (!k.startsWith(`${mealId}_`)) next[k] = prev[k];
+      });
+      // Re-index this meal's states (skip deleted idx, shift down above it)
+      for (let i = 0; i < oldLen; i++) {
+        if (i === itemIdx) continue;
+        const oldState = prev[`${mealId}_${i}`] ?? { foodLabel: meal.items[i].foodLabel, done: false };
+        next[`${mealId}_${i < itemIdx ? i : i - 1}`] = oldState;
+      }
+      return next;
+    });
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -347,6 +465,16 @@ export default function NutritionScreen({ profile }: Props) {
                           <span className="font-mono text-[9px] text-[#c6c9ab]">
                             {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
+                          {recipes.length > 0 && (
+                            <button
+                              onClick={() => handleOpenRecipePicker(meal.id)}
+                              title="Usar receta"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#e2ff00]/50 hover:text-[#e2ff00] text-[#c6c9ab] transition-all"
+                            >
+                              <span className="material-symbols-outlined text-xs select-none">skillet</span>
+                              <span className="font-mono text-[9px] uppercase tracking-wider hidden sm:block">Receta</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -424,6 +552,16 @@ export default function NutritionScreen({ profile }: Props) {
                               >
                                 <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
                               </button>
+                              {/* Delete button — only for recipe-added items */}
+                              {idx >= (origItemCounts[meal.id] ?? Infinity) && (
+                                <button
+                                  onClick={() => handleRemoveItem(meal.id, idx)}
+                                  title="Quitar"
+                                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0"
+                                >
+                                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -436,6 +574,120 @@ export default function NutritionScreen({ profile }: Props) {
           )}
         </>
       )}
+
+      {/* Recipe picker sheet */}
+      {recipePickerMealId && (() => {
+        const targetMeal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
+        return (
+          <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
+            <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+                <div>
+                  <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#e2ff00] text-base">skillet</span>
+                    Usar receta
+                  </h3>
+                  {targetMeal && (
+                    <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
+                      {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setRecipePickerMealId(null)}
+                  className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="px-4 py-2 bg-[#121212] flex items-center gap-2 border-b border-[#2a2a2a]">
+                <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
+                <input
+                  type="text"
+                  placeholder="Buscar receta..."
+                  value={recipeSearch}
+                  onChange={e => setRecipeSearch(e.target.value)}
+                  className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-[#c6c9ab]/45"
+                />
+              </div>
+
+              {/* Category filter */}
+              {availableRecipeCats.length > 0 && (
+                <div className="px-4 py-2 bg-[#121212] border-b border-[#2a2a2a] flex gap-1.5 overflow-x-auto">
+                  {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setRecipeCatFilter(cat.id)}
+                      className={`px-3 py-1.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                        recipeCatFilter === cat.id
+                          ? 'bg-[#e2ff00] text-black shadow-md'
+                          : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-[#2a2a2a]'
+                      }`}
+                    >{cat.label}</button>
+                  ))}
+                </div>
+              )}
+
+              {/* Recipe list */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                {sortedPickerRecipes.length === 0 ? (
+                  <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">
+                    {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
+                  </div>
+                ) : sortedPickerRecipes.map(recipe => {
+                  const isFav = recipeFavorites.recipeIds.includes(recipe.id);
+                  // Exchange summary for this athlete's mode
+                  const exchParts: string[] = [];
+                  const totals: Partial<Record<FoodCategory, number>> = {};
+                  recipe.ingredients
+                    .filter(ing => enabledModes.includes(ing.mode))
+                    .forEach(ing => { totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity; });
+                  (['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] as FoodCategory[])
+                    .filter(c => (totals[c] ?? 0) > 0)
+                    .forEach(c => exchParts.push(`${totals[c]} ${c.replace('_', ' ')}`));
+                  const exchStr = exchParts.join(' · ') || '—';
+
+                  return (
+                    <button
+                      key={recipe.id}
+                      onClick={() => handleApplyRecipe(recipe)}
+                      className="w-full flex items-center gap-3 p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-xl border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                    >
+                      {recipe.photoUrl ? (
+                        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                          <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {isFav && (
+                            <span className="material-symbols-outlined text-[#e2ff00] text-xs" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
+                          )}
+                          <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors truncate">{recipe.name}</span>
+                        </div>
+                        {recipe.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {recipe.categories.slice(0, 3).map(c => (
+                              <span key={c} className="px-1.5 py-0.5 rounded bg-[#2a2a2a] font-mono text-[8px] text-[#c6c9ab] uppercase">{c}</span>
+                            ))}
+                          </div>
+                        )}
+                        <span className="font-mono text-[9px] text-[#e2ff00]/70">{exchStr}</span>
+                      </div>
+                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Food picker sheet */}
       {pickerItem && (
