@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserProfile, WeightCheckIn } from '../types';
+import PhotosScreen from './PhotosScreen';
 
 interface ProgressScreenProps {
   profile: UserProfile;
   checkins: WeightCheckIn[];
 }
 
+type ProgressTab = 'progreso' | 'fotos';
+
 export default function ProgressScreen({ profile, checkins }: ProgressScreenProps) {
+  const [activeTab, setActiveTab] = useState<ProgressTab>('progreso');
   const currentWeight = checkins[0]?.weight || profile.actualWeight;
   const initialWeight = profile.initialWeight;
   const difference = parseFloat((currentWeight - initialWeight).toFixed(1));
@@ -34,6 +38,30 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
 
   return (
     <div className="space-y-6">
+      {/* Sub-tab selector */}
+      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit">
+        {([
+          { id: 'progreso', label: 'Progreso', icon: 'trending_down' },
+          { id: 'fotos',    label: 'Fotos',    icon: 'photo_camera' },
+        ] as { id: ProgressTab; label: string; icon: string }[]).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+              activeTab === tab.id
+                ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10'
+                : 'text-[#c6c9ab] hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'fotos' && <PhotosScreen profile={profile} />}
+
+      {activeTab === 'progreso' && <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Progreso</h1>
         <p className="text-[#c6c9ab] text-sm mt-1">Evolución de peso, historial de check-ins y feedback del entrenador.</p>
@@ -166,6 +194,7 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
           )}
         </div>
       </section>
+      </div>}
     </div>
   );
 }

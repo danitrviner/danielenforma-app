@@ -10,9 +10,14 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy
+  orderBy,
+  storage,
+  storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
 } from './firebase';
-import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites } from './types';
+import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1373,6 +1378,50 @@ export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> 
     setLocalBypassMode(true);
     localStorage.setItem(localKey, JSON.stringify(favs));
   }
+}
+
+// ─── PROGRESS PHOTOS ──────────────────────────────────────────────────────────
+
+export async function getProgressPhotos(athleteEmail: string): Promise<ProgressPhoto[]> {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'progressPhotos'), where('athleteId', '==', athleteEmail))
+    );
+    return snap.docs
+      .map(d => d.data() as ProgressPhoto)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    console.warn('getProgressPhotos failed:', err);
+    return [];
+  }
+}
+
+export async function uploadProgressPhoto(
+  athleteEmail: string,
+  date: string,
+  view: PhotoView,
+  file: File
+): Promise<ProgressPhoto> {
+  const path = `progressPhotos/${athleteEmail}/${date}_${view}`;
+  const sRef = storageRef(storage, path);
+  await uploadBytes(sRef, file);
+  const url = await getDownloadURL(sRef);
+  const photo: ProgressPhoto = {
+    id: `${athleteEmail}_${date}_${view}`,
+    athleteId: athleteEmail,
+    date,
+    view,
+    url,
+    uploadedAt: new Date().toISOString(),
+  };
+  await setDoc(doc(db, 'progressPhotos', photo.id), photo);
+  return photo;
+}
+
+export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
+  const path = `progressPhotos/${photo.athleteId}/${photo.date}_${photo.view}`;
+  await deleteObject(storageRef(storage, path)).catch(() => {});
+  await deleteDoc(doc(db, 'progressPhotos', photo.id));
 }
 
 // ─── ONE-TIME CLEANUP ──────────────────────────────────────────────────────────

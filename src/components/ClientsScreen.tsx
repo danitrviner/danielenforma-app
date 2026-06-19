@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode, FoodCategory } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getDietsForAthlete, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDietConfig, saveAthleteDietConfig } from '../dbService';
+import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog, Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode, FoodCategory, ProgressPhoto, PhotoView } from '../types';
+import { getAllUserProfiles, submitCoachFeedback, getWorkouts, getWorkoutAssignments, createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, getExercises, seedExercisesIfEmpty, getDietsForAthlete, getAthleteNutritionConfig, saveAthleteNutritionConfig, getAthleteDietConfig, saveAthleteDietConfig, getProgressPhotos } from '../dbService';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -53,6 +53,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
   const [athleteDietConfig, setAthleteDietConfig] = useState<AthleteDietConfig | null>(null);
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
 
+  // Progress photos
+  const [athletePhotos, setAthletePhotos] = useState<ProgressPhoto[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
   useEffect(() => {
@@ -86,7 +90,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setSuccessMsg('');
   };
 
-  // Load assignments, logs, workouts, exercises, and nutrition data when athlete selected
+  // Load assignments, logs, workouts, exercises, nutrition and photos when athlete selected
   useEffect(() => {
     if (!selectedAthlete) return;
     setAssignments([]);
@@ -94,6 +98,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     setAthleteDiets([]);
     setAthleteDietConfig(null);
     setNutritionConfig(null);
+    setAthletePhotos([]);
     setHistExerciseId('');
     setShowHistory(false);
 
@@ -102,6 +107,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
     getAthleteNutritionConfig(selectedAthlete.email).then(setNutritionConfig).catch(console.error);
     getDietsForAthlete(selectedAthlete.email).then(setAthleteDiets).catch(console.error);
     getAthleteDietConfig(selectedAthlete.email).then(setAthleteDietConfig).catch(console.error);
+    setLoadingPhotos(true);
+    getProgressPhotos(selectedAthlete.email).then(p => { setAthletePhotos(p); setLoadingPhotos(false); }).catch(() => setLoadingPhotos(false));
 
     if (workouts.length === 0) getWorkouts().then(setWorkouts).catch(console.error);
     if (exercises.length === 0) {
@@ -536,48 +543,106 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns }: ClientsSc
 
           {/* RIGHT: photos + check-in detail + feedback */}
           <section className="lg:col-span-8 flex flex-col gap-6">
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between bg-[#1c1b1b]">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-sm">photo_camera</span>
-                  Historial Fotográfico
-                </h3>
-                <div className="flex bg-[#2a2a2a] rounded p-0.5">
-                  {(['front', 'side', 'back'] as const).map((view) => (
-                    <button
-                      key={view}
-                      type="button"
-                      onClick={() => setSelectedView(view)}
-                      className={`px-3 py-1 rounded font-mono text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === view ? 'bg-[#e2ff00] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
-                    >
-                      {view}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="p-3 grid grid-cols-2 gap-3 bg-[#131313]/90">
-                <div className="relative rounded-lg overflow-hidden border border-[#2a2a2a] group">
-                  <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-[#2a2a2a] px-2.5 py-0.5 rounded text-white font-mono text-[10px]">
-                    Baseline (S1)
+            {/* ── HISTORIAL FOTOGRÁFICO ─────────────────────────── */}
+            {(() => {
+              const viewPhotos = athletePhotos
+                .filter(p => p.view === selectedView)
+                .sort((a, b) => a.date.localeCompare(b.date));
+              const baseline = viewPhotos[0];
+              const latest   = viewPhotos[viewPhotos.length - 1];
+              const fmtDate  = (d: string) =>
+                new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
+
+              return (
+                <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
+                  <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between bg-[#1c1b1b]">
+                    <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#e2ff00] text-sm">photo_camera</span>
+                      Historial Fotográfico
+                      {athletePhotos.length > 0 && (
+                        <span className="font-mono text-[9px] text-[#c6c9ab]">({athletePhotos.length} fotos)</span>
+                      )}
+                    </h3>
+                    <div className="flex bg-[#2a2a2a] rounded p-0.5">
+                      {([
+                        { id: 'front', label: 'Frente' },
+                        { id: 'side',  label: 'Lateral' },
+                        { id: 'back',  label: 'Espalda' },
+                      ] as { id: PhotoView; label: string }[]).map(v => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setSelectedView(v.id)}
+                          className={`px-3 py-1 rounded font-mono text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#e2ff00] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <img
-                    className="w-full h-[280px] object-cover object-top filter grayscale-[15%] group-hover:filter-none transition-all duration-500"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCembU5PDvcRsGK_NeKUJUjJ0C4iyB3TjRmqUz0ICDMLKno0GJG-vc6PkXBlOrZ6lKLe3_xQQX74ev4M4oXWnNXlB0-ywA94vvgxgRj0uTEcOAsPm4hQeXwpQgvp7pFs-hIspYO7w2uAv_2BMTBzWgMhdFYZAeTT8psKgvECQnecZG6tI5dLcVbej4gJX2t2-Cf3PppEFrMnKOoj0JIRWfHpvrvTRbHBHVoe-0Sbfo9drSiGRy2sQSJn1e5svDWXPBW1bjjQD1Wn5ab"
-                    alt="Baseline"
-                  />
+
+                  {loadingPhotos ? (
+                    <div className="p-8 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando fotos…</div>
+                  ) : viewPhotos.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">photo_camera</span>
+                      <p className="font-mono text-xs text-[#c6c9ab]">
+                        Sin fotos de {selectedView === 'front' ? 'frente' : selectedView === 'side' ? 'lateral' : 'espalda'} todavía.
+                      </p>
+                      <p className="font-mono text-[10px] text-[#c6c9ab]/60 mt-1">
+                        El atleta puede subir fotos desde su sección de Progreso → Fotos.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-[#131313]/90">
+                      {viewPhotos.length === 1 ? (
+                        /* Single photo — show centered */
+                        <div className="relative rounded-lg overflow-hidden border border-[#e2ff00]/20 group max-w-[240px] mx-auto">
+                          <div className="absolute top-2 left-2 z-10 bg-[#e2ff00] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md">
+                            Actual · {fmtDate(latest.date)}
+                          </div>
+                          <img
+                            className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500"
+                            src={latest.url}
+                            alt="Actual"
+                          />
+                        </div>
+                      ) : (
+                        /* Two photos — baseline vs actual */
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="relative rounded-lg overflow-hidden border border-[#2a2a2a] group">
+                            <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-[#2a2a2a] px-2.5 py-0.5 rounded text-white font-mono text-[10px]">
+                              Baseline · {fmtDate(baseline.date)}
+                            </div>
+                            <img
+                              className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500"
+                              src={baseline.url}
+                              alt="Baseline"
+                            />
+                          </div>
+                          <div className="relative rounded-lg overflow-hidden border border-[#e2ff00]/20 group">
+                            <div className="absolute top-2 left-2 z-10 bg-[#e2ff00] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md">
+                              Actual · {fmtDate(latest.date)}
+                            </div>
+                            <img
+                              className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500"
+                              src={latest.url}
+                              alt="Actual"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {/* Photo count strip */}
+                      {viewPhotos.length > 2 && (
+                        <p className="text-center font-mono text-[9px] text-[#c6c9ab] mt-2">
+                          {viewPhotos.length} fotos totales — mostrando baseline y más reciente
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="relative rounded-lg overflow-hidden border border-[#e2ff00]/20 group">
-                  <div className="absolute top-2 left-2 z-10 bg-[#e2ff00] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md">
-                    Actual
-                  </div>
-                  <img
-                    className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmPlIy5pwqq-9j9RusW6cmHeHZEEQCHOULf9mpDx67LB56kmapDKD4S6TX3sOc9zBv0KA_ZokJ3EBqlHlchw3jc9tuNK_2oQm--a46HeMBvL5MgQjJaMSXyTaEW3mW1kZ_aVbNcYPoFGdpJJfWOnLh6zlA4h7aC_0MAVCUviar-P2_qSt-pRsnwPylJ1JUSnuQ7NpVeChalKhgi-mraO1P10CiJfVQ5tOMrmzvL8M_-V6NnKWTimdZA-nDXcUYt5CoJMjyLKSghHuL"
-                    alt="Actual"
-                  />
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {activeCheckIn ? (
               <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">

@@ -133,6 +133,17 @@ export interface AthleteDietConfig {
   activeDietIds: string[];  // which of their diets are enabled in the tracker
 }
 
+export type PhotoView = 'front' | 'side' | 'back';
+
+export interface ProgressPhoto {
+  id: string;          // `${athleteId}_${date}_${view}`
+  athleteId: string;   // email
+  date: string;        // YYYY-MM-DD
+  view: PhotoView;
+  url: string;
+  uploadedAt: string;  // ISO timestamp
+}
+
 export interface RecipeIngredient {
   foodLabel: string;
   category: FoodCategory;
