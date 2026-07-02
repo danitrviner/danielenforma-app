@@ -1,3 +1,25 @@
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'checkin_submitted'
+  | 'questionnaire_submitted'
+  | 'nutrition_phase_change'
+  | 'plan_expiring'
+  | 'checkin_late';
+
+export interface AppNotification {
+  id: string;                   // deterministic dedup key
+  recipientEmail: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link?: string;               // tab to navigate to on click
+  createdAt: string;           // ISO string
+  read: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface UserProfile {
   userId: string;
   email: string;
@@ -11,6 +33,8 @@ export interface UserProfile {
   initialWeight: number;
   targetWeight: number;
   actualWeight: number;
+  planStartDate?: string;       // ISO YYYY-MM-DD set by coach
+  planDurationMonths?: 3 | 6 | 12;
 }
 
 export interface WeightCheckIn {
@@ -45,11 +69,13 @@ export interface AthleteNutritionConfig {
 
 export interface Exercise {
   id: string;
-  ownerId: string; // 'system' for preloaded, coachId for custom
+  ownerId: string;
   name: string;
-  primaryFocus: string; // muscle group: 'pecho', 'espalda', etc.
+  primaryFocus: string;      // legacy free-form label
+  muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it)
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
   level: 'principiante' | 'intermedio' | 'avanzado';
+  equipment?: string[];      // material necesario; undefined/empty = siempre disponible
   videoUrl?: string;
   imageUrl?: string;
   instructions?: string;
@@ -64,6 +90,22 @@ export interface WorkoutExercise {
   restSeconds: number;
   rir: number;         // reps in reserve (0-5)
   notes?: string;
+  muscleGroup?: MuscleGroup;
+}
+
+export interface TemplateDay {
+  id: string;
+  name: string;
+  exercises: WorkoutExercise[];
+}
+
+export interface TemplateStage {
+  id: string;
+  name: string;
+  weeks: number;
+  daysPerWeek: number;
+  groups: Record<MuscleGroup, MuscleGroupConfig>;
+  days?: TemplateDay[];
 }
 
 export interface Workout {
@@ -72,6 +114,7 @@ export interface Workout {
   name: string;
   tags?: string[];
   exercises: WorkoutExercise[];
+  mesocycleId?: string;
 }
 
 export interface WorkoutSetLog {
@@ -90,6 +133,7 @@ export interface WorkoutLog {
   athleteId: string;
   workoutId: string;
   assignmentId: string;
+  mesocycleId?: string; // resolved from assignment at creation time; older logs may lack it
   date: string;        // YYYY-MM-DD
   completedAt: string; // ISO timestamp string
   entries: WorkoutEntryLog[];
@@ -98,9 +142,164 @@ export interface WorkoutLog {
 export interface WorkoutAssignment {
   id: string;
   workoutId: string;
-  athleteId: string;   // userId of the athlete
-  date: string;        // YYYY-MM-DD
-  status: 'pending' | 'completed' | 'skipped';
+  athleteId: string;
+  date: string;
+  status: 'pending' | 'completed' | 'skipped' | 'perdido';
+  mesocycleId?: string;
+}
+
+// ─── QUESTIONNAIRES ───────────────────────────────────────────────────────────
+
+export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean';
+
+export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly';
+
+export interface QSchedule {
+  type: QScheduleType;
+  weekdays?: number[];    // 0=Sun..6=Sat  (for 'weekdays')
+  intervalDays?: number;  // (for 'interval')
+  dayOfMonth?: number;    // (for 'monthly')
+}
+
+export interface QuestionnaireQuestion {
+  id: string;
+  label: string;
+  type: QuestionType;
+  required: boolean;
+  helpText?: string;
+  graphable?: boolean;       // auto-true for numeric/scale; used in R2 charts
+  // numeric
+  unit?: string;
+  min?: number;
+  max?: number;
+  decimals?: number;
+  // scale
+  scaleMin?: number;         // default 1
+  scaleMax?: number;         // default 10
+  scaleMinLabel?: string;
+  scaleMaxLabel?: string;
+  // choice
+  options?: string[];
+  multiSelect?: boolean;
+  // text
+  maxChars?: number;
+  // boolean
+  labelTrue?: string;        // default 'Sí'
+  labelFalse?: string;       // default 'No'
+}
+
+export interface Questionnaire {
+  id: string;
+  ownerId: string;   // coachUid
+  title: string;
+  description?: string;
+  questions: QuestionnaireQuestion[];
+}
+
+export interface QuestionnaireAssignment {
+  id: string;
+  questionnaireId: string;
+  athleteId: string;           // email
+  schedule: QSchedule;
+  startDate: string;           // YYYY-MM-DD
+  active: boolean;
+  createdAt: string;
+}
+
+export interface QuestionnaireResponse {
+  id: string;
+  questionnaireId: string;
+  assignmentId: string;
+  athleteId: string;           // email
+  submittedAt: string;
+  answers: { questionId: string; value: string | number | boolean }[];
+}
+
+// ─── BODYWEIGHT ───────────────────────────────────────────────────────────────
+
+export interface BodyweightLog {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  weight: number;
+  createdAt: string;  // ISO timestamp
+}
+
+// ─── ONBOARDING ──────────────────────────────────────────────────────────────
+
+export type DietType        = 'omnivoro' | 'vegano' | 'vegetariano' | 'otro';
+export type ExperienceLevel = 'principiante' | 'intermedio' | 'avanzado';
+export type ActivityLevel   = 'sedentario' | 'poco_activo' | 'activo' | 'muy_activo';
+export type GoalBody        = 'aumentar_musculo' | 'reducir_grasa' | 'mantener';
+export type GoalCapacity    = 'fuerza' | 'fuerza_resistencia' | 'salud';
+
+export interface OnboardingMeal {
+  intakeType:  number;    // 1=Desayuno 2=Media 3=Comida 4=Merienda 5=Cena
+  name:        string;
+  needsTupper: boolean;
+}
+
+export interface MacroSplit { hc: number; prot: number; grasa: number }
+export interface MacroGrams { hc: number; prot: number; grasa: number }
+
+export interface OnboardingData {
+  athleteId:          string;         // email
+  // ── Composición corporal ──────────────────────────────────────────────────
+  sex?:               'male' | 'female';
+  birthDate?:         string;         // YYYY-MM-DD
+  weightKg?:          number;
+  heightCm?:          number;
+  bodyFatPct?:        number;
+  musclePct?:         number;
+  // ── Actividad ─────────────────────────────────────────────────────────────
+  activityLevel?:     ActivityLevel;
+  // ── Objetivo ──────────────────────────────────────────────────────────────
+  goalBody?:          GoalBody;
+  goalCapacity?:      GoalCapacity;
+  // ── Nutrición ─────────────────────────────────────────────────────────────
+  dietType:           DietType;
+  targetCalories:     number;
+  macroSplit:         MacroSplit;     // percentages (hc+prot+grasa = 100)
+  macroGrams:         MacroGrams;     // computed grams/day
+  // ── Alimentos ─────────────────────────────────────────────────────────────
+  likedFoods:         string[];
+  dislikedFoods:      string[];
+  allergies:          string[];
+  // ── Comidas ───────────────────────────────────────────────────────────────
+  mealCount?:         number;         // 3 | 4 | 5
+  meals?:             OnboardingMeal[];
+  // ── Cocina ────────────────────────────────────────────────────────────────
+  cookingLevel?:      number;         // 1–5
+  cookingMaxTime?:    number;         // minutes
+  breakfastVariety?:  number;         // 1–5
+  lunchVariety?:      number;         // 1–5
+  // ── Entrenamiento ─────────────────────────────────────────────────────────
+  equipment:          string[];
+  favoriteExercises:  string[];
+  hatedExercises:     string[];
+  experienceLevel:    ExperienceLevel;
+  injuries:           string;
+  // ── Meta ──────────────────────────────────────────────────────────────────
+  completedAt:        string;         // ISO timestamp
+  extraAnswers?:      Record<string, string | number>;
+}
+
+export type OnboardingSection = 'entrenamiento' | 'nutricion' | 'descanso';
+
+export interface OnboardingTemplateQuestion {
+  id: string;
+  label: string;
+  section: OnboardingSection;
+  type: 'numeric' | 'scale' | 'choice' | 'text';
+  options?: string[];
+  unit?: string;
+  scaleMin?: number;
+  scaleMax?: number;
+}
+
+export interface OnboardingTemplate {
+  coachEmail: string;
+  questions: OnboardingTemplateQuestion[];
 }
 
 // ─── DIET ─────────────────────────────────────────────────────────────────────
@@ -126,11 +325,47 @@ export interface Diet {
   budget: Record<FoodCategory, number>; // total exchanges per category for the day
   meals: DietMeal[];
   coachNote?: string;
+  coachVideoUrl?: string;
+  isDraft?: boolean;
 }
+
+export type WeekDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 export interface AthleteDietConfig {
   athleteId: string;        // email
   activeDietIds: string[];  // which of their diets are enabled in the tracker
+  weeklySchedule?: Partial<Record<WeekDay, string | null>>; // day → dietId or null (libre)
+}
+
+export interface NutritionPhase {
+  id: string;
+  name: string;
+  weeks: number;
+  dietId: string;
+  targetWeight?: number; // kg at end of phase; undefined = not projected
+}
+
+export interface NutritionProgram {
+  athleteId: string;          // email, also the Firestore doc id
+  startDate: string;          // YYYY-MM-DD
+  phases: NutritionPhase[];
+  lastSeenPhaseId?: string;   // tracks when athlete saw the phase change banner
+}
+
+export interface RoadmapItem {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'objetivo' | 'hito' | 'nota';
+  lane: 'entreno' | 'nutricion' | 'movilidad' | 'general';
+  startDate?: string;   // YYYY-MM-DD
+  targetDate?: string;  // YYYY-MM-DD
+  status?: 'pendiente' | 'en_progreso' | 'logrado';
+}
+
+export interface Roadmap {
+  athleteId: string;    // email, also Firestore doc id
+  items: RoadmapItem[];
 }
 
 export type PhotoView = 'front' | 'side' | 'back';
@@ -151,18 +386,115 @@ export interface RecipeIngredient {
   quantity: number; // multiples of 0.25
 }
 
+export interface IndyaIngredient {
+  name: string;
+  quantity: number; // grams or units
+}
+
+export interface IndyaStep {
+  position: number;
+  description: string;
+}
+
 export interface Recipe {
   id: string;
-  ownerId: string;
+  ownerId: string;    // Firebase UID | 'indya'
   name: string;
   photoUrl?: string;
+  // ── Coach / athlete builder ───────────────────────────────────────────────
   categories: string[];
   ingredients: RecipeIngredient[];
-  extras: string[];   // free-text items (e.g. "sal al gusto")
-  steps: string[];    // preparation steps
+  extras: string[];
+  steps: string[];
+  // ── Indya-only fields (all optional) ────────────────────────────────────
+  image?: string;
+  ingredientsText?: IndyaIngredient[];
+  stepsText?: IndyaStep[];
+  macros?: { carb: number; prot: number; fat: number };
+  kcal?: number;
+  weight?: number;
+  cookingTime?: number;
+  difficulty?: number;
+  tupper?: boolean;
+  intakeTypes?: number[];
+  categoria?: string;
+  exchanges?: { HC: number; PROT: number; GRASA: number };
 }
 
 export interface RecipeFavorites {
   athleteId: string; // email
   recipeIds: string[];
+}
+
+// ─── MESOCYCLE ────────────────────────────────────────────────────────────────
+
+export type MuscleGroup =
+  | 'pecho' | 'dorsal' | 'trapecio'
+  | 'deltoide_ant' | 'deltoide_lat' | 'deltoide_post'
+  | 'biceps' | 'triceps' | 'antebrazo'
+  | 'cuadriceps' | 'isquios' | 'gluteo' | 'gemelo' | 'core';
+
+export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
+  pecho:         'Pecho',
+  dorsal:        'Dorsal',
+  trapecio:      'Trapecio',
+  deltoide_ant:  'Deltoides ant.',
+  deltoide_lat:  'Deltoides lat.',
+  deltoide_post: 'Deltoides post.',
+  biceps:        'Bíceps',
+  triceps:       'Tríceps',
+  antebrazo:     'Antebrazo',
+  cuadriceps:    'Cuádriceps',
+  isquios:       'Isquiotibiales',
+  gluteo:        'Glúteo',
+  gemelo:        'Gemelo',
+  core:          'Core',
+};
+
+export interface MuscleGroupConfig {
+  series: number;          // 0..25 series semanales
+  priority: 'alta' | 'media' | 'baja';
+}
+
+export interface DayAssignment {
+  group: MuscleGroup;
+  series: number;
+}
+
+export interface DayPlan {
+  assignments: DayAssignment[];
+  totalSeries: number;
+}
+
+export interface WeekDistribution {
+  days: DayPlan[];
+  overloadAlert: boolean;
+  snapshot: {
+    daysPerWeek: number;
+    groupSeries: Partial<Record<MuscleGroup, number>>;
+  };
+  generatedAt: string;
+}
+
+export interface Mesocycle {
+  id: string;
+  athleteId: string;
+  number: number;
+  weeks: number;
+  startDate: string;
+  objective: string;
+  daysPerWeek: number;
+  groups: Record<MuscleGroup, MuscleGroupConfig>;
+  distribution?: WeekDistribution;
+  days?: TemplateDay[];
+  programId?: string;      // links mesocycles created from the same template
+  programOrder?: number;   // position in the sequence (0-based)
+}
+
+export interface MesocycleTemplate {
+  id: string;
+  ownerId: string;
+  name: string;
+  description?: string;
+  stages: TemplateStage[];
 }
