@@ -4,5 +4,25 @@ dist/
 coverage/
 .DS_Store
 *.log
-.env*
+
+# Env files — only the example template is committed
+.env
+.env.*
 !.env.example
+
+# Firebase CLI cache and deploy artefacts
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Service account / admin credentials — NEVER commit these
+serviceAccount.json
+service-account*.json
+*-service-account*.json
+*-adminsdk-*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
