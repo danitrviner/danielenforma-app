@@ -25,6 +25,7 @@ import {
   getOnboardingTemplate,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
+import ScheduleFields from './ScheduleFields';
 import MesocycleManager from './MesocycleManager';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
@@ -1337,103 +1338,37 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* Template + schedule type row */}
-                  <div className="flex flex-wrap gap-2">
-                    <select
-                      value={assignQId}
-                      onChange={e => setAssignQId(e.target.value)}
-                      className="flex-1 min-w-[160px] bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-                    >
-                      <option value="">— Seleccionar plantilla —</option>
-                      {coachQuestionnaires.map(q => (
-                        <option key={q.id} value={q.id}>{q.title}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={assignSchedType}
-                      onChange={e => { setAssignSchedType(e.target.value as QScheduleType); setAssignWeekdays([]); }}
-                      className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-                    >
-                      <option value="once">Una vez</option>
-                      <option value="weekdays">Días de la semana</option>
-                      <option value="interval">Cada N días</option>
-                      <option value="monthly">Día del mes</option>
-                    </select>
-                  </div>
+                  <select
+                    value={assignQId}
+                    onChange={e => setAssignQId(e.target.value)}
+                    className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                  >
+                    <option value="">— Seleccionar plantilla —</option>
+                    {coachQuestionnaires.map(q => (
+                      <option key={q.id} value={q.id}>{q.title}</option>
+                    ))}
+                  </select>
 
-                  {/* Schedule-specific params */}
-                  {assignSchedType === 'weekdays' && (
-                    <div className="space-y-1">
-                      <p className="font-mono text-[9px] text-[#c6c9ab] uppercase">Días activos</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {(['L','M','X','J','V','S','D'] as const).map((label, i) => {
-                          const dayNum = i === 6 ? 0 : i + 1; // Mon=1..Sat=6, Sun=0
-                          const active = assignWeekdays.includes(dayNum);
-                          return (
-                            <button
-                              key={label}
-                              onClick={() => setAssignWeekdays(prev =>
-                                active ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
-                              )}
-                              className={`w-9 h-9 rounded-lg font-mono text-xs font-bold border transition-all ${
-                                active
-                                  ? 'bg-[#e2ff00] border-[#e2ff00] text-black'
-                                  : 'bg-[#1c1b1b] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a]'
-                              }`}
-                            >{label}</button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  <ScheduleFields
+                    schedType={assignSchedType}
+                    onSchedTypeChange={setAssignSchedType}
+                    weekdays={assignWeekdays}
+                    onWeekdaysChange={setAssignWeekdays}
+                    intervalDays={assignIntervalDays}
+                    onIntervalDaysChange={setAssignIntervalDays}
+                    dayOfMonth={assignDayOfMonth}
+                    onDayOfMonthChange={setAssignDayOfMonth}
+                    startDate={assignStartDate}
+                    onStartDateChange={setAssignStartDate}
+                  />
 
-                  {assignSchedType === 'interval' && (
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-[#c6c9ab]">Cada</span>
-                      <input
-                        type="number"
-                        value={assignIntervalDays}
-                        min={1}
-                        onChange={e => setAssignIntervalDays(Math.max(1, Number(e.target.value)))}
-                        className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-                      />
-                      <span className="font-mono text-xs text-[#c6c9ab]">días</span>
-                    </div>
-                  )}
-
-                  {assignSchedType === 'monthly' && (
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-[#c6c9ab]">Día</span>
-                      <input
-                        type="number"
-                        value={assignDayOfMonth}
-                        min={1} max={28}
-                        onChange={e => setAssignDayOfMonth(Math.min(28, Math.max(1, Number(e.target.value))))}
-                        className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-                      />
-                      <span className="font-mono text-xs text-[#c6c9ab]">de cada mes</span>
-                    </div>
-                  )}
-
-                  {/* Start date + assign button */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] text-[#c6c9ab]">Desde</span>
-                      <input
-                        type="date"
-                        value={assignStartDate}
-                        onChange={e => setAssignStartDate(e.target.value)}
-                        className="bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-                      />
-                    </div>
-                    <button
-                      onClick={handleAssignQuestionnaire}
-                      disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                      className="px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40"
-                    >
-                      {assigningQ ? '…' : 'Asignar'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleAssignQuestionnaire}
+                    disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
+                    className="px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40"
+                  >
+                    {assigningQ ? '…' : 'Asignar'}
+                  </button>
                 </div>
               )}
 
