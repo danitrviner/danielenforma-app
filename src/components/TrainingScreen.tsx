@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog } from '../types';
+import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkouts, getExercises, seedExercisesIfEmpty,
-  createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs,
+  createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
 } from '../dbService';
 import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
 
@@ -65,6 +65,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
+  const [personalNotes, setPersonalNotes] = useState<ExercisePersonalNote[]>([]);
 
   // List filter
   const [listFilter, setListFilter] = useState<WorkoutAssignment['status'] | 'all'>('pending');
@@ -106,6 +107,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       // Exercises — seed if needed
       await seedExercisesIfEmpty();
       setExercises(await getExercises());
+      setPersonalNotes(await getExerciseNotesForAthlete(profile.email));
     } catch (err) {
       console.error(err);
     } finally {
@@ -118,6 +120,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // ── Derived ────────────────────────────────────────────────────────────────
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
   const getExercise = (id: string) => exercises.find(e => e.id === id);
+  const getPersonalNote = (exerciseId: string) => personalNotes.find(n => n.exerciseId === exerciseId)?.observation;
 
   const today = new Date().toISOString().split('T')[0];
   const curWeekStart = getWeekRange().start;
@@ -488,6 +491,20 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {we.notes && (
                 <div className="px-4 py-2 bg-[#111111] border-t border-[#2a2a2a]/30">
                   <p className="font-mono text-[10px] text-[#c6c9ab] italic">📌 {we.notes}</p>
+                </div>
+              )}
+
+              {ex?.instructions && (
+                <div className="px-4 py-2 bg-[#111111] border-t border-[#2a2a2a]/30">
+                  <p className="font-mono text-[9px] text-[#555] uppercase mb-0.5">Descripción</p>
+                  <p className="text-xs text-[#c6c9ab]">{ex.instructions}</p>
+                </div>
+              )}
+
+              {getPersonalNote(we.exerciseId) && (
+                <div className="px-4 py-2 bg-[#1a1710] border-t border-[#e2ff00]/15">
+                  <p className="font-mono text-[9px] text-[#e2ff00]/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
+                  <p className="text-xs text-[#e2ff00]">{getPersonalNote(we.exerciseId)}</p>
                 </div>
               )}
             </div>

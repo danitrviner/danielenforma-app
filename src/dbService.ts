@@ -22,7 +22,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -755,6 +755,53 @@ export async function deleteExercise(id: string): Promise<void> {
   }
 }
 
+// ─── EXERCISE PERSONAL NOTES (per-athlete observation, doc id = `${exerciseId}_${athleteId}`) ──
+
+const LOCAL_EXERCISE_NOTES = 'enforma_exercise_notes_v1';
+
+function getLocalExerciseNotes(): ExercisePersonalNote[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_EXERCISE_NOTES) || '[]'); } catch { return []; }
+}
+function saveLocalExerciseNotes(list: ExercisePersonalNote[]): void {
+  localStorage.setItem(LOCAL_EXERCISE_NOTES, JSON.stringify(list));
+}
+
+// Bulk-loads every personalized observation for an athlete (used by the athlete's
+// workout player, which needs to look up notes for several exercises at once).
+export async function getExerciseNotesForAthlete(athleteId: string): Promise<ExercisePersonalNote[]> {
+  if (forceLocalOnly) return getLocalExerciseNotes().filter(n => n.athleteId === athleteId);
+  try {
+    const snap = await getDocs(query(collection(db, 'exerciseNotes'), where('athleteId', '==', athleteId)));
+    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() } as ExercisePersonalNote));
+    const others = getLocalExerciseNotes().filter(n => n.athleteId !== athleteId);
+    saveLocalExerciseNotes([...others, ...notes]);
+    return notes;
+  } catch (err) {
+    console.warn('getExerciseNotesForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalExerciseNotes().filter(n => n.athleteId === athleteId);
+  }
+}
+
+export async function saveExerciseNote(data: Omit<ExercisePersonalNote, 'id'>): Promise<ExercisePersonalNote> {
+  const docId = `${data.exerciseId}_${data.athleteId}`;
+  const note: ExercisePersonalNote = { ...data, id: docId };
+  if (forceLocalOnly) {
+    saveLocalExerciseNotes([...getLocalExerciseNotes().filter(n => n.id !== docId), note]);
+    return note;
+  }
+  try {
+    await setDoc(doc(db, 'exerciseNotes', docId), stripUndefined(data));
+    saveLocalExerciseNotes([...getLocalExerciseNotes().filter(n => n.id !== docId), note]);
+    return note;
+  } catch (err) {
+    console.warn('saveExerciseNote Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalExerciseNotes([...getLocalExerciseNotes().filter(n => n.id !== docId), note]);
+    return note;
+  }
+}
+
 export async function seedExercisesIfEmpty(): Promise<void> {
   exercisesCache = null;
   if (forceLocalOnly) {
@@ -1095,6 +1142,19 @@ export async function deleteWorkoutLog(id: string): Promise<void> {
     console.warn('deleteWorkoutLog Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
+  }
+}
+
+export async function updateWorkoutLog(id: string, updates: Partial<WorkoutLog>): Promise<void> {
+  const updated = getLocalWorkoutLogs().map(l => l.id === id ? { ...l, ...updates } : l);
+  if (forceLocalOnly) { saveLocalWorkoutLogs(updated); return; }
+  try {
+    await updateDoc(doc(db, 'workoutLogs', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalWorkoutLogs(updated);
+  } catch (err) {
+    console.warn('updateWorkoutLog Firestore failed, updating local:', err);
+    setLocalBypassMode(true);
+    saveLocalWorkoutLogs(updated);
   }
 }
 

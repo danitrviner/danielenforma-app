@@ -37,6 +37,13 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── exerciseNotes (docId = `${exerciseId}_${athleteId}`; athleteId = EMAIL) ─
+    match /exerciseNotes/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+      allow write: if isCoach();
+    }
+
     // ── workouts (ownerId = UID del coach) ───────────────────────────────────
     match /workouts/{docId} {
       allow read: if request.auth != null;

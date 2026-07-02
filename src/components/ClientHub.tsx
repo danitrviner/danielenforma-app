@@ -36,6 +36,7 @@ import CoachRoadmapView from './CoachRoadmapView';
 import DietAutoGenerator from './DietAutoGenerator';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
+import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -1526,6 +1527,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
       {activeTab === 'entrenamientos' && (
         <div className="space-y-6">
+          <ExercisePersonalNotesPanel athleteEmail={athlete.email} />
+
           {/* Onboarding exercise reference */}
           {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
             <div className="bg-[#0e0e0e] border border-[#e2ff00]/15 rounded-xl p-4 space-y-3">
