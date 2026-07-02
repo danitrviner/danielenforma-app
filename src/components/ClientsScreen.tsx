@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
-import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
+import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog, Invite } from '../types';
+import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
 import ClientHub, { HubTab } from './ClientHub';
 import ResourcesPanel from './ResourcesPanel';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
@@ -20,6 +20,51 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const [selectedHubTab, setSelectedHubTab] = useState<HubTab | undefined>(undefined);
   const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
   const [allWorkoutLogs, setAllWorkoutLogs] = useState<Map<string, WorkoutLog[]>>(new Map());
+
+  // Invite a new client by email
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState('');
+
+  const loadInvites = () => {
+    getPendingInvites().then(setPendingInvites).catch(console.error);
+  };
+
+  useEffect(() => { loadInvites(); }, []);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteError('');
+    setInviteSuccess('');
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await inviteClient(inviteEmail.trim());
+      setInviteSuccess(`Invitación enviada a ${inviteEmail.trim()}.`);
+      setInviteEmail('');
+      loadInvites();
+    } catch (err: any) {
+      console.error('inviteClient error:', err);
+      if (err.code === 'auth/operation-not-allowed') {
+        setInviteError('El acceso por enlace no está activado en Firebase (Authentication → Sign-in method → Email link).');
+      } else {
+        setInviteError(err.message || 'No se pudo enviar la invitación.');
+      }
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleResendInvite = async (email: string) => {
+    try {
+      await inviteClient(email);
+      loadInvites();
+    } catch (err) {
+      console.error('resend invite error:', err);
+    }
+  };
 
   const openAthleteHub = (athlete: UserProfile, hubTab?: HubTab) => {
     setSelectedHubTab(hubTab);
@@ -184,7 +229,58 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
         </div>
+
+        {/* Invite a new client by email */}
+        <div className="w-full md:w-auto md:min-w-[320px]">
+          <form onSubmit={handleInvite} className="flex gap-2">
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              placeholder="correo del nuevo cliente"
+              className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#e2ff00] transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={inviting || !inviteEmail.trim()}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 bg-[#e2ff00] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40"
+            >
+              <span className="material-symbols-outlined text-sm">mail</span>
+              {inviting ? 'Enviando...' : 'Invitar'}
+            </button>
+          </form>
+          {inviteError && <p className="font-mono text-[10px] text-red-400 mt-1.5">{inviteError}</p>}
+          {inviteSuccess && <p className="font-mono text-[10px] text-[#e2ff00] mt-1.5">{inviteSuccess}</p>}
+        </div>
       </header>
+
+      {/* Pending invites */}
+      {pendingInvites.length > 0 && (
+        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
+            Invitaciones pendientes ({pendingInvites.length})
+          </p>
+          <div className="space-y-1.5">
+            {pendingInvites.map(inv => (
+              <div key={inv.id} className="flex items-center gap-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2">
+                <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-sans text-xs text-white truncate">{inv.email}</p>
+                  <p className="font-mono text-[9px] text-[#555]">
+                    Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleResendInvite(inv.email)}
+                  className="font-mono text-[9px] text-[#00eefc] hover:underline uppercase tracking-wide flex-shrink-0"
+                >
+                  Reenviar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
