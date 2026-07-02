@@ -1444,6 +1444,23 @@ export async function getDietCompletionLog(athleteId: string, date: string): Pro
   }
 }
 
+// Bulk range read for the AI nutrition dashboard's adherence computation.
+export async function getDietCompletionLogsForAthlete(athleteId: string): Promise<DietCompletionLog[]> {
+  if (forceLocalOnly) {
+    return getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  try {
+    const snap = await getDocs(query(collection(db, 'dietCompletionLogs'), where('athleteId', '==', athleteId)));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as DietCompletionLog)).sort((a, b) => a.date.localeCompare(b.date));
+    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...list]);
+    return list;
+  } catch (err) {
+    console.warn('getDietCompletionLogsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
+  }
+}
+
 export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>): Promise<DietCompletionLog> {
   const docId = `${data.athleteId}_${data.date}`;
   const log: DietCompletionLog = { ...data, id: docId };

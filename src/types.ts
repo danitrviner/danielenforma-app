@@ -67,6 +67,8 @@ export interface AthleteNutritionConfig {
   enabledModes: DietMode[];
   stepGoal?: number;      // daily step target set by the coach
   kcalPerStep?: number;   // configurable conversion rate; falls back to DEFAULT_KCAL_PER_STEP when unset
+  // AI dashboard "share with athlete" — private by default, only set when the coach shares a snapshot
+  sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
 }
 
 export interface Exercise {

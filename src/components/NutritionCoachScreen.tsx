@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import RecipeBuilderScreen from './RecipeBuilderScreen';
+import NutritionAIDashboard from './NutritionAIDashboard';
 
-type Tab = 'tipos' | 'alimentos' | 'recetas';
+type Tab = 'tipos' | 'alimentos' | 'recetas' | 'dashboard';
 
 interface Props {
   coachId: string;
@@ -16,6 +17,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
     { id: 'tipos',     label: 'Dietas',    icon: 'nutrition' },
     { id: 'alimentos', label: 'Alimentos', icon: 'set_meal' },
     { id: 'recetas',   label: 'Recetas',   icon: 'skillet' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'insights' },
   ];
 
   return (
@@ -53,6 +55,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
       {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}
       {activeTab === 'recetas'   && <RecipeBuilderScreen coachId={coachId} />}
+      {activeTab === 'dashboard' && <NutritionAIDashboard />}
     </div>
   );
 }

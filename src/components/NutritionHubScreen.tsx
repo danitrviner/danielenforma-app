@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { UserProfile } from '../types';
+import React, { useState, useEffect } from 'react';
+import { UserProfile, AthleteNutritionConfig } from '../types';
+import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyDietsScreen from './MyDietsScreen';
 import RecipesScreen from './RecipesScreen';
@@ -18,9 +19,31 @@ const TABS: { id: NutritionTab; label: string; icon: string }[] = [
 
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('intercambios');
+  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
+
+  useEffect(() => {
+    getAthleteNutritionConfig(profile.email).then(setNutritionConfig).catch(() => {});
+  }, [profile.email]);
 
   return (
     <div className="space-y-6">
+      {nutritionConfig?.sharedReportSnapshot && (
+        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="material-symbols-outlined text-[#e2ff00] text-base">insights</span>
+            <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
+          </div>
+          <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
+          {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {nutritionConfig.sharedReportSnapshot.flags.map((f, i) => (
+                <li key={i} className="text-[11px] text-amber-300 font-mono">• {f}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit">
         {TABS.map(tab => (
           <button
