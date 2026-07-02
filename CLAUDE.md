@@ -48,7 +48,7 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 | `workoutAssignments` | auto | `athleteId` = **UID** |
 | `workoutLogs` | auto | `athleteId` = **EMAIL** |
 | `foodItems` | auto | — |
-| `diets` | auto | `athleteId` = **EMAIL** |
+| `diets` | auto | `athleteId` = **EMAIL** (`selfManaged: true` = creada por el atleta en "Mis Dietas", el coach no la ve/edita) |
 | `athleteDietConfigs` | email | docId = email |
 | `athleteNutritionConfig` | email | docId = email |
 | `mesocycles` | auto | `athleteId` = **EMAIL** |
@@ -67,6 +67,9 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 | `tasks` | auto | `athleteId` = EMAIL |
 | `resources` | auto | `coachId` (UID coach) — se lee sin filtrar (1 solo coach) |
 | `stepLogs` | auto | `athleteId` = EMAIL |
+| `dietCompletionLogs` | `${email}_${date}` | `athleteId` = EMAIL |
+| `exerciseNotes` | `${exerciseId}_${email}` | `athleteId` = EMAIL |
+| `photoAssignments` | auto | `athleteId` = EMAIL |
 
 ---
 
@@ -189,7 +192,12 @@ interface OnboardingData {
 
 ## Última sesión (2026-07-02)
 
-- **Fase 1 (UX y Navegación) del roadmap de mejoras completada** — ver `src/utils/`, nuevos componentes abajo. Fases 2-4 (Entrenamiento, Nutrición, Check-in avanzado) quedan pendientes para sesiones futuras, se planean e implementan una a la vez.
+**Roadmap de 4 fases completado en su totalidad (Fase 1-4).**
+
+- **Fase 4 (Check-in):** las fotos de progreso ganaron calendario propio, igual que los cuestionarios. Nuevo tipo `PhotoAssignment` (colección `photoAssignments`, mismo patrón que `questionnaireAssignments`). `src/utils/scheduleEngine.ts` (nuevo) extrae `isDueToday`/`isUpcoming`/`scheduleLabel` como motor genérico reutilizado por cuestionarios y fotos; `src/utils/photoSchedule.ts` añade `hasUploadedThisOccurrence`. `src/components/ScheduleFields.tsx` (nuevo) extrae el selector de repetición (días/intervalo/mes/fecha) que antes vivía duplicado inline en `ClientHub.tsx`. Coach asigna fotos desde `ClientHub` → Revisiones; atleta ve "Fotos pendientes"/"Fotos futuras" en `CheckInScreen.tsx`; el tipo de tarea `foto` de `PendingTasksPanel.tsx` (existía desde Fase 1 pero nunca se poblaba) ya se genera.
+- **Fase 3 (Nutrición):** "Mis Dietas" (atleta crea/guarda dietas propias, `Diet.selfManaged`, misma colección `diets`); consumo diario de intercambios persistido (`dietCompletionLogs`, doc id `${email}_${date}`) en vez de solo-sesión; botón "Cambiar comida" (recetas ±10% kcal, `src/utils/recipeMatch.ts`, reutilizado por `DietAutoGenerator.tsx`); `AthleteNutritionConfig.kcalPerStep` configurable (`src/utils/nutritionConstants.ts`, default 0.046 kcal/paso — nunca hardcodeado inline); dashboard nutricional IA coach-only (`NutritionAIDashboard.tsx` + `src/utils/nutritionAnalysis.ts`) — **motor de reglas determinístico, sin LLM/API externa** — con reporte compartible (`AthleteNutritionConfig.sharedReportSnapshot`, privado por defecto). `src/utils/exchangeHelpers.ts` (nuevo) extrae CATS/CAT_LABEL/CAT_COLOR/etc. duplicados entre `NutritionScreen.tsx`/`NutritionPlansScreen.tsx`.
+- **Fase 2 (Entrenamiento):** biblioteca de ejercicios sin nivel Principiante/Intermedio/Avanzado, con filtro "Perfil de resistencia" (`enduranceProfile`). Observaciones de ejercicio en dos niveles: descripción global (`instructions`, cualquier atleta) + observación personalizada por atleta (`ExercisePersonalNote`, colección `exerciseNotes` doc id `${exerciseId}_${email}`). Atleta deja notas por ejercicio y por entreno completo (`WorkoutLog.note`/`WorkoutEntryLog.note`, ya preparados en Fase 1); coach las ve/marca vistas en `ClientHub`. Plantillas de programa renombradas a "Plantillas de mesociclo" + 3 grupos musculares prioritarios calculados automáticamente (`src/utils/muscleGroupRanking.ts`, reutilizado por `MesocycleManager.tsx`).
+- **Fase 1 (UX y Navegación):**
 - **`RecipesScreen.tsx`:** "Cargar más recetas" fallaba en silencio cuando categoría + momento de ingesta estaban filtrados a la vez — faltaba el índice compuesto `(ownerId, categoria, intakeTypes, name)`. Añadido a `firestore.indexes.json` y desplegado. Se agregó `indyaError` + botón "Reintentar" para que futuros fallos no queden atascados sin feedback.
 - **`ProgressScreen.tsx` eliminado** (duplicado muerto de `HomeScreen.tsx`, sin referencias).
 - **Navegación coach:** tab "Ajustes" eliminado; `CoachesScreen` (Entrenadores/Cuestionarios/Ficha/Biblioteca) ahora vive colapsado dentro de `ProfileScreen.tsx` → sección "Entrenadores" (solo coach). Icono "Perfil" quitado del dock móvil del coach (el avatar del header ya abre el perfil). `TrainingCoachScreen.tsx`'s tab bar (Rutinas/Ejercicios/Plantillas) pasó a scroll+snap para mobile.
