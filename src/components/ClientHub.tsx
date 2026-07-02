@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
   Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
-  FoodCategory, ProgressPhoto, PhotoView,
+  FoodCategory, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
   QSchedule, QScheduleType, OnboardingData, WeekDay, BodyweightLog,
   OnboardingTemplateQuestion,
 } from '../types';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
+import { scheduleLabel } from '../utils/scheduleEngine';
 import {
   submitCoachFeedback, getWorkouts, getWorkoutAssignments,
   createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, updateWorkoutLog,
@@ -18,6 +19,7 @@ import {
   updateUserProfile,
   getQuestionnairesByCoach, assignQuestionnaire, getAssignmentsForAthlete,
   getResponsesForAthlete, deactivateAssignment,
+  assignPhotoCheckIn, getPhotoAssignmentsForAthlete, deactivatePhotoAssignment,
   updateCheckIn, deleteCheckIn,
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
@@ -176,6 +178,16 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
   const [newQForm, setNewQForm]             = useState<QFormState>(blankQForm());
   const [savingNewQ, setSavingNewQ]         = useState(false);
 
+  // Photo check-in assignments
+  const [athletePhotoAssignments, setAthletePhotoAssignments] = useState<PhotoAssignment[]>([]);
+  const [assignPhotoViews, setAssignPhotoViews]         = useState<PhotoView[]>(['front']);
+  const [assignPhotoSchedType, setAssignPhotoSchedType] = useState<QScheduleType>('once');
+  const [assignPhotoWeekdays, setAssignPhotoWeekdays]   = useState<number[]>([]);
+  const [assignPhotoIntervalDays, setAssignPhotoIntervalDays] = useState(7);
+  const [assignPhotoDayOfMonth, setAssignPhotoDayOfMonth]     = useState(1);
+  const [assignPhotoStartDate, setAssignPhotoStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [assigningPhoto, setAssigningPhoto] = useState(false);
+
   // Bodyweight logs (for Análisis tab)
   const [bodyweightLogs, setBodyweightLogs] = useState<BodyweightLog[]>([]);
 
@@ -237,6 +249,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     getAthleteDietConfig(athlete.email).then(setAthleteDietConfig).catch(console.error);
     getAssignmentsForAthlete(athlete.email).then(setAthleteQAssignments).catch(console.error);
     getResponsesForAthlete(athlete.email).then(setAthleteQResponses).catch(console.error);
+    getPhotoAssignmentsForAthlete(athlete.email).then(setAthletePhotoAssignments).catch(console.error);
     getBodyweightForAthlete(athlete.email).then(setBodyweightLogs).catch(console.error);
     setLoadingPhotos(true);
     getProgressPhotos(athlete.email)
@@ -461,6 +474,37 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
   const handleDeactivateQ = async (id: string) => {
     await deactivateAssignment(id).catch(console.error);
     setAthleteQAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
+  };
+
+  // ── Photo check-in assignment ───────────────────────────────────────────────
+  const handleAssignPhotoCheckIn = async () => {
+    if (assignPhotoViews.length === 0) return;
+    if (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0) return;
+    setAssigningPhoto(true);
+    try {
+      const schedule: QSchedule = { type: assignPhotoSchedType };
+      if (assignPhotoSchedType === 'weekdays')  schedule.weekdays     = assignPhotoWeekdays;
+      if (assignPhotoSchedType === 'interval')  schedule.intervalDays = assignPhotoIntervalDays;
+      if (assignPhotoSchedType === 'monthly')   schedule.dayOfMonth   = assignPhotoDayOfMonth;
+      const a = await assignPhotoCheckIn({
+        athleteId: athlete.email,
+        schedule,
+        startDate: assignPhotoStartDate,
+        views: assignPhotoViews,
+        active: true,
+        createdAt: new Date().toISOString(),
+      });
+      setAthletePhotoAssignments(prev => [...prev, a]);
+      setAssignPhotoViews(['front']);
+      setAssignPhotoSchedType('once');
+      setAssignPhotoWeekdays([]);
+    } catch (err) { console.error(err); }
+    finally { setAssigningPhoto(false); }
+  };
+
+  const handleDeactivatePhoto = async (id: string) => {
+    await deactivatePhotoAssignment(id).catch(console.error);
+    setAthletePhotoAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
   };
 
   const handleCreateNewQ = async () => {
@@ -1378,16 +1422,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
                   {athleteQAssignments.filter(a => a.active).map(a => {
                     const tmpl = coachQuestionnaires.find(q => q.id === a.questionnaireId);
-                    const schedLabel = (() => {
-                      const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-                      switch (a.schedule?.type) {
-                        case 'once':     return 'Una vez';
-                        case 'weekdays': return (a.schedule.weekdays ?? []).map(d => DAYS[d]).join(', ') || '—';
-                        case 'interval': return `Cada ${a.schedule.intervalDays ?? 1}d`;
-                        case 'monthly':  return `Día ${a.schedule.dayOfMonth ?? 1}/mes`;
-                        default:         return '—';
-                      }
-                    })();
+                    const schedLabel = scheduleLabel(a.schedule);
                     return (
                       <div key={a.id} className="flex items-center gap-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2">
                         <span className="material-symbols-outlined text-[#e2ff00] text-sm">quiz</span>
@@ -1396,6 +1431,80 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                           <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
                         </div>
                         <button onClick={() => handleDeactivateQ(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── Asignar fotos de check-in ─────────────────────────────── */}
+            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#e2ff00] text-sm">photo_camera</span>
+                Asignar fotos de check-in
+              </h3>
+
+              <div className="space-y-3">
+                <div className="flex gap-1.5 flex-wrap">
+                  {([
+                    { id: 'front', label: 'Frente' },
+                    { id: 'side',  label: 'Lateral' },
+                    { id: 'back',  label: 'Espalda' },
+                  ] as { id: PhotoView; label: string }[]).map(v => {
+                    const active = assignPhotoViews.includes(v.id);
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
+                        className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                          active
+                            ? 'bg-[#e2ff00] border-[#e2ff00] text-black'
+                            : 'bg-[#1c1b1b] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a]'
+                        }`}
+                      >{v.label}</button>
+                    );
+                  })}
+                </div>
+
+                <ScheduleFields
+                  schedType={assignPhotoSchedType}
+                  onSchedTypeChange={setAssignPhotoSchedType}
+                  weekdays={assignPhotoWeekdays}
+                  onWeekdaysChange={setAssignPhotoWeekdays}
+                  intervalDays={assignPhotoIntervalDays}
+                  onIntervalDaysChange={setAssignPhotoIntervalDays}
+                  dayOfMonth={assignPhotoDayOfMonth}
+                  onDayOfMonthChange={setAssignPhotoDayOfMonth}
+                  startDate={assignPhotoStartDate}
+                  onStartDateChange={setAssignPhotoStartDate}
+                />
+
+                <button
+                  onClick={handleAssignPhotoCheckIn}
+                  disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
+                  className="px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40"
+                >
+                  {assigningPhoto ? '…' : 'Asignar'}
+                </button>
+              </div>
+
+              {athletePhotoAssignments.filter(a => a.active).length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-[#2a2a2a]/60">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
+                  {athletePhotoAssignments.filter(a => a.active).map(a => {
+                    const schedLabel = scheduleLabel(a.schedule);
+                    const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
+                    return (
+                      <div key={a.id} className="flex items-center gap-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2">
+                        <span className="material-symbols-outlined text-[#e2ff00] text-sm">photo_camera</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
+                          <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
+                        </div>
+                        <button onClick={() => handleDeactivatePhoto(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
                           <span className="material-symbols-outlined text-sm">close</span>
                         </button>
                       </div>

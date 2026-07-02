@@ -40,3 +40,16 @@ export function isUpcoming(a: Scheduled): boolean {
   const start = new Date(a.startDate + 'T00:00:00');
   return today <= start || a.schedule.type !== 'once';
 }
+
+// Short human label for an "active assignments" list row — shared by the
+// questionnaire and photo check-in assignment UIs in ClientHub.
+export function scheduleLabel(schedule: QSchedule): string {
+  const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  switch (schedule?.type) {
+    case 'once':     return 'Una vez';
+    case 'weekdays': return (schedule.weekdays ?? []).map(d => DAYS[d]).join(', ') || '—';
+    case 'interval': return `Cada ${schedule.intervalDays ?? 1}d`;
+    case 'monthly':  return `Día ${schedule.dayOfMonth ?? 1}/mes`;
+    default:         return '—';
+  }
+}

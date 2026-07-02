@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { UserProfile, WeightCheckIn, TaskItem, TaskType } from '../types';
-import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById } from '../dbService';
+import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
+import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -30,6 +31,7 @@ const TYPE_COLOR: Record<TaskType, string> = {
 export default function PendingTasksPanel({ profile, checkins, onNavigate }: Props) {
   const [manualTasks, setManualTasks] = useState<TaskItem[]>([]);
   const [pendingQuestionnaires, setPendingQuestionnaires] = useState<{ id: string; title: string }[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; viewsLabel: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +41,9 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
       getTasksForAthlete(profile.email),
       getAssignmentsForAthlete(profile.email),
       getResponsesForAthlete(profile.email),
-    ]).then(async ([tasks, assignments, responses]) => {
+      getPhotoAssignmentsForAthlete(profile.email),
+      getProgressPhotos(profile.email),
+    ]).then(async ([tasks, assignments, responses, photoAssignments, photos]) => {
       if (cancelled) return;
       setManualTasks(tasks.filter(t => t.status === 'pending'));
 
@@ -49,6 +53,12 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
         return { id: a.id, title: q?.title ?? 'Cuestionario' };
       }));
       if (!cancelled) setPendingQuestionnaires(withTitles);
+
+      const duePhotos = photoAssignments.filter(a => a.active && isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
+      if (!cancelled) setPendingPhotos(duePhotos.map(a => ({
+        id: a.id,
+        viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),
+      })));
     }).catch(console.error).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [profile.email]);
@@ -75,6 +85,13 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
       key: `q_${q.id}`,
       type: 'cuestionario' as TaskType,
       title: q.title,
+      dueDate: todayStr(),
+      onOpen: () => onNavigate('checkin'),
+    })),
+    ...pendingPhotos.map(p => ({
+      key: `foto_${p.id}`,
+      type: 'foto' as TaskType,
+      title: `Fotos de check-in: ${p.viewsLabel}`,
       dueDate: todayStr(),
       onOpen: () => onNavigate('checkin'),
     })),
