@@ -22,7 +22,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification } from './types';
+import { UserProfile, WeightCheckIn, Exercise, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -2560,6 +2560,69 @@ export async function deleteBodyweight(id: string): Promise<void> {
   }
 }
 
+// Collection: stepLogs  (athleteId = email) — manual entry today; Fase 3 adds
+// Apple Health / Google Health Connect as additional `source` values.
+
+const LOCAL_STEPS = 'enforma_steps_v1';
+
+function getLocalSteps(): StepLog[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_STEPS) || '[]'); } catch { return []; }
+}
+function saveLocalSteps(list: StepLog[]): void {
+  localStorage.setItem(LOCAL_STEPS, JSON.stringify(list));
+}
+
+export async function getStepsForAthlete(email: string): Promise<StepLog[]> {
+  if (forceLocalOnly) {
+    return getLocalSteps().filter(s => s.athleteId === email).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  try {
+    const snap = await getDocs(query(collection(db, 'stepLogs'), where('athleteId', '==', email)));
+    const list = snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as StepLog))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    saveLocalSteps([...getLocalSteps().filter(s => s.athleteId !== email), ...list]);
+    return list;
+  } catch (err) {
+    console.warn('getStepsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalSteps().filter(s => s.athleteId === email).sort((a, b) => a.date.localeCompare(b.date));
+  }
+}
+
+export async function addSteps(data: Omit<StepLog, 'id'>): Promise<StepLog> {
+  if (forceLocalOnly) {
+    const entry: StepLog = { ...data, id: `local_steps_${Date.now()}` };
+    saveLocalSteps([...getLocalSteps(), entry]);
+    return entry;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'stepLogs'), stripUndefined(data));
+    const entry: StepLog = { ...data, id: ref.id };
+    saveLocalSteps([...getLocalSteps(), entry]);
+    return entry;
+  } catch (err) {
+    console.warn('addSteps Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const entry: StepLog = { ...data, id: `local_steps_${Date.now()}` };
+    saveLocalSteps([...getLocalSteps(), entry]);
+    return entry;
+  }
+}
+
+export async function updateSteps(id: string, updates: Partial<Pick<StepLog, 'steps'>>): Promise<void> {
+  const updated = getLocalSteps().map(s => s.id === id ? { ...s, ...updates } : s);
+  if (forceLocalOnly) { saveLocalSteps(updated); return; }
+  try {
+    await updateDoc(doc(db, 'stepLogs', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalSteps(updated);
+  } catch (err) {
+    console.warn('updateSteps Firestore failed, updating local:', err);
+    setLocalBypassMode(true);
+    saveLocalSteps(updated);
+  }
+}
+
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
 const ONBOARDING_LS = 'enforma_onboarding_v1';
@@ -2779,5 +2842,133 @@ export async function markAllNotificationsRead(recipientEmail: string): Promise<
   } catch (err) {
     console.warn('markAllNotificationsRead Firestore failed:', err);
     setLocalBypassMode(true);
+  }
+}
+
+// ─── TASKS (dashboard "Tareas pendientes") ─────────────────────────────────────
+
+const TASKS_LOCAL_KEY = 'enforma_tasks_v1';
+
+function getLocalTasks(): TaskItem[] {
+  try {
+    const raw = localStorage.getItem(TASKS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as TaskItem[]) : [];
+  } catch { return []; }
+}
+
+function saveLocalTasks(tasks: TaskItem[]): void {
+  localStorage.setItem(TASKS_LOCAL_KEY, JSON.stringify(tasks));
+}
+
+export async function getTasksForAthlete(athleteId: string): Promise<TaskItem[]> {
+  if (forceLocalOnly) return getLocalTasks().filter(t => t.athleteId === athleteId);
+  try {
+    const q = query(collection(db, 'tasks'), where('athleteId', '==', athleteId));
+    const snap = await getDocs(q);
+    const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskItem));
+    const others = getLocalTasks().filter(t => t.athleteId !== athleteId);
+    saveLocalTasks([...others, ...tasks]);
+    return tasks;
+  } catch (err) {
+    console.warn('getTasksForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalTasks().filter(t => t.athleteId === athleteId);
+  }
+}
+
+export async function createTask(data: Omit<TaskItem, 'id'>): Promise<TaskItem> {
+  if (forceLocalOnly) {
+    const task: TaskItem = { ...data, id: `local_task_${Date.now()}` };
+    saveLocalTasks([...getLocalTasks(), task]);
+    return task;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'tasks'), stripUndefined(data));
+    const task: TaskItem = { ...data, id: ref.id };
+    saveLocalTasks([...getLocalTasks(), task]);
+    return task;
+  } catch (err) {
+    console.warn('createTask Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const task: TaskItem = { ...data, id: `local_task_${Date.now()}` };
+    saveLocalTasks([...getLocalTasks(), task]);
+    return task;
+  }
+}
+
+export async function updateTask(id: string, updates: Partial<TaskItem>): Promise<void> {
+  const updated = getLocalTasks().map(t => t.id === id ? { ...t, ...updates } : t);
+  if (forceLocalOnly) { saveLocalTasks(updated); return; }
+  try {
+    await updateDoc(doc(db, 'tasks', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalTasks(updated);
+  } catch (err) {
+    console.warn('updateTask Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalTasks(updated);
+  }
+}
+
+// ─── RESOURCES (coach-shared files/links) ──────────────────────────────────────
+
+const RESOURCES_LOCAL_KEY = 'enforma_resources_v1';
+
+function getLocalResources(): Resource[] {
+  try {
+    const raw = localStorage.getItem(RESOURCES_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as Resource[]) : [];
+  } catch { return []; }
+}
+
+function saveLocalResources(resources: Resource[]): void {
+  localStorage.setItem(RESOURCES_LOCAL_KEY, JSON.stringify(resources));
+}
+
+// Single-coach app — resources aren't filtered per coach, same pattern as
+// getFoodItems()/getExercises() (shared library, any authenticated user reads all).
+export async function getAllResources(): Promise<Resource[]> {
+  if (forceLocalOnly) return getLocalResources();
+  try {
+    const snap = await getDocs(collection(db, 'resources'));
+    const resources = snap.docs.map(d => ({ id: d.id, ...d.data() } as Resource));
+    saveLocalResources(resources);
+    return resources;
+  } catch (err) {
+    console.warn('getAllResources Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalResources();
+  }
+}
+
+export async function createResource(data: Omit<Resource, 'id'>): Promise<Resource> {
+  if (forceLocalOnly) {
+    const resource: Resource = { ...data, id: `local_resource_${Date.now()}` };
+    saveLocalResources([...getLocalResources(), resource]);
+    return resource;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'resources'), stripUndefined(data));
+    const resource: Resource = { ...data, id: ref.id };
+    saveLocalResources([...getLocalResources(), resource]);
+    return resource;
+  } catch (err) {
+    console.warn('createResource Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const resource: Resource = { ...data, id: `local_resource_${Date.now()}` };
+    saveLocalResources([...getLocalResources(), resource]);
+    return resource;
+  }
+}
+
+export async function deleteResource(id: string): Promise<void> {
+  const filtered = getLocalResources().filter(r => r.id !== id);
+  if (forceLocalOnly) { saveLocalResources(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'resources', id));
+    saveLocalResources(filtered);
+  } catch (err) {
+    console.warn('deleteResource Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalResources(filtered);
   }
 }

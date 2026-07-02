@@ -1,49 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog } from '../types';
 import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight } from '../dbService';
+import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
+import PhotosScreen from './PhotosScreen';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
-
-// ── Questionnaire schedule helpers ────────────────────────────────────────────
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isDueToday(a: QuestionnaireAssignment): boolean {
-  if (!a.schedule) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = new Date(a.startDate + 'T00:00:00');
-  if (today < start) return false;
-
-  const { type } = a.schedule;
-  if (type === 'once') return a.startDate === todayStr();
-  if (type === 'weekdays') return (a.schedule.weekdays ?? []).includes(today.getDay());
-  if (type === 'interval') {
-    const diff = Math.floor((today.getTime() - start.getTime()) / 86400000);
-    return diff % (a.schedule.intervalDays ?? 7) === 0;
-  }
-  if (type === 'monthly') return today.getDate() === (a.schedule.dayOfMonth ?? 1);
-  return false;
-}
-
-function hasAnsweredThisOccurrence(a: QuestionnaireAssignment, responses: QuestionnaireResponse[]): boolean {
-  if (!a.schedule) return false;
-  const mine = responses.filter(r => r.assignmentId === a.id);
-  if (mine.length === 0) return false;
-  const { type } = a.schedule;
-  if (type === 'once') return true;
-  const today = todayStr();
-  if (type === 'weekdays' || type === 'interval') {
-    return mine.some(r => r.submittedAt.slice(0, 10) === today);
-  }
-  if (type === 'monthly') {
-    const ym = today.slice(0, 7);
-    return mine.some(r => r.submittedAt.slice(0, 7) === ym);
-  }
-  return false;
-}
 
 // ── Inline questionnaire form ─────────────────────────────────────────────────
 
@@ -327,6 +288,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const pendingAssignments = assignments.filter(
     a => isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)
   );
+  const upcomingAssignments = assignments.filter(a => isUpcoming(a));
 
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
     setResponses(prev => [...prev, r]);
@@ -445,6 +407,43 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </div>
         </section>
       )}
+
+      {/* Upcoming (not-yet-due) recurring questionnaires */}
+      {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
+        <details className="group bg-[#121212] border border-[#2a2a2a] rounded-xl">
+          <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
+            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+              Cuestionarios futuros
+              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingAssignments.length})</span>
+            </h2>
+            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+          </summary>
+          <div className="px-4 sm:px-6 pb-4 space-y-2">
+            {upcomingAssignments.map(a => {
+              const q = templates.get(a.questionnaireId);
+              if (!q) return null;
+              return (
+                <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a]/60 rounded-lg p-3">
+                  <p className="font-sans text-xs text-[#c6c9ab]">{q.title}</p>
+                  <span className="font-mono text-[9px] text-[#555] uppercase">
+                    {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+
+      {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
+      <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-6">
+        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#e2ff00]">photo_camera</span>
+          Fotografías de Progreso
+        </h2>
+        <PhotosScreen profile={profile} />
+      </section>
 
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
       <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">

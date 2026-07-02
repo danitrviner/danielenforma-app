@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
 import ClientHub, { HubTab } from './ClientHub';
+import ResourcesPanel from './ResourcesPanel';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 
 interface ClientsScreenProps {
@@ -287,6 +288,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         </div>
       </div>
+
+      <ResourcesPanel isCoach coachId={coachId} />
 
       {/* Athlete list */}
       <div className="space-y-4">

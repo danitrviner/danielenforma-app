@@ -65,6 +65,7 @@ export interface MealItem {
 export interface AthleteNutritionConfig {
   athleteId: string; // email
   enabledModes: DietMode[];
+  stepGoal?: number; // daily step target set by the coach; kcal-per-step conversion lives in Fase 3
 }
 
 export interface Exercise {
@@ -226,6 +227,18 @@ export interface BodyweightLog {
   athleteId: string;  // email
   date: string;       // YYYY-MM-DD
   weight: number;
+  createdAt: string;  // ISO timestamp
+}
+
+// Kept separate from BodyweightLog so step tracking never has to carry a
+// placeholder weight value — manual entry until Fase 3 wires up Apple Health /
+// Google Health Connect (see AthleteNutritionConfig.stepGoal for the target).
+export interface StepLog {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  steps: number;
+  source: 'manual' | 'apple_health' | 'google_health_connect';
   createdAt: string;  // ISO timestamp
 }
 
@@ -501,4 +514,36 @@ export interface MesocycleTemplate {
   name: string;
   description?: string;
   stages: TemplateStage[];
+}
+
+// ─── PENDING TASKS (athlete dashboard) ─────────────────────────────────────────
+// Generic task feed for the "Tareas pendientes" dashboard block. New task types
+// (e.g. future integrations) just add a TaskType value + a case in the renderer's
+// icon/color map — no change needed to the aggregation or storage shape.
+
+export type TaskType = 'revision' | 'cuestionario' | 'foto' | 'manual' | 'otro';
+
+export interface TaskItem {
+  id: string;
+  athleteId: string;      // email
+  type: TaskType;
+  title: string;
+  dueDate?: string;       // YYYY-MM-DD
+  status: 'pending' | 'done';
+  linkTab?: 'checkin' | 'training' | 'nutrition' | 'roadmap';
+  createdBy: 'system' | 'coach';
+  createdAt: string;      // ISO timestamp
+}
+
+// ─── RESOURCES (coach-shared files/links) ──────────────────────────────────────
+
+export type ResourceKind = 'pdf' | 'video' | 'image' | 'doc' | 'link' | 'guide';
+
+export interface Resource {
+  id: string;
+  coachId: string;
+  title: string;
+  kind: ResourceKind;
+  url: string;
+  createdAt: string; // ISO timestamp
 }

@@ -35,6 +35,7 @@ import CorrelationPanel from './CorrelationPanel';
 import CoachRoadmapView from './CoachRoadmapView';
 import DietAutoGenerator from './DietAutoGenerator';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
+import TaskManagerPanel from './TaskManagerPanel';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -589,6 +590,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       {/* ── Tab: Revisiones ────────────────────────────────────────────────── */}
       {activeTab === 'revisiones' && (
         <div className="space-y-6">
+
+        <TaskManagerPanel athleteEmail={athlete.email} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
         <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">

@@ -241,7 +241,7 @@ export default function App() {
       <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
 
         {/* ATHLETE */}
-        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} />}
+        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} onNavigate={setActiveTab} />}
         {!isCoach && activeTab === 'training'  && <TrainingScreen profile={profile} />}
         {!isCoach && activeTab === 'nutrition' && <NutritionHubScreen profile={profile} />}
         {!isCoach && activeTab === 'checkin'   && (
