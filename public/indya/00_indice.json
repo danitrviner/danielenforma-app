@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "fuente": "getindya.com",
+    "exportadoOriginal": "2026-06-13T13:20:51.294Z",
+    "totalRecetas": 8850,
+    "schemaVersion": 1,
+    "descripcion": "Recetas Indya limpiadas y troceadas por categoria para integrar en la app."
+  },
+  "categorias": [
+    {
+      "clave": "platos_salados",
+      "nombre": "Platos salados / principales",
+      "totalRecetas": 4725,
+      "partes": 6
+    },
+    {
+      "clave": "desayuno_y_dulces",
+      "nombre": "Desayuno y dulces",
+      "totalRecetas": 1850,
+      "partes": 2
+    },
+    {
+      "clave": "bebidas",
+      "nombre": "Bebidas",
+      "totalRecetas": 1889,
+      "partes": 2
+    },
+    {
+      "clave": "suplementos_deportivos",
+      "nombre": "Suplementos deportivos",
+      "totalRecetas": 386,
+      "partes": 1
+    }
+  ],
+  "archivos": [
+    {
+      "archivo": "recetas_01_platos_salados_p01.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 788,
+      "MB": 1.89
+    },
+    {
+      "archivo": "recetas_01_platos_salados_p02.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 788,
+      "MB": 1.98
+    },
+    {
+      "archivo": "recetas_01_platos_salados_p03.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 788,
+      "MB": 1.62
+    },
+    {
+      "archivo": "recetas_01_platos_salados_p04.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 788,
+      "MB": 1.77
+    },
+    {
+      "archivo": "recetas_01_platos_salados_p05.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 788,
+      "MB": 1.67
+    },
+    {
+      "archivo": "recetas_01_platos_salados_p06.json",
+      "categoria": "Platos salados / principales",
+      "recetas": 785,
+      "MB": 1.66
+    },
+    {
+      "archivo": "recetas_02_desayuno_y_dulces_p01.json",
+      "categoria": "Desayuno y dulces",
+      "recetas": 925,
+      "MB": 1.63
+    },
+    {
+      "archivo": "recetas_02_desayuno_y_dulces_p02.json",
+      "categoria": "Desayuno y dulces",
+      "recetas": 925,
+      "MB": 1.61
+    },
+    {
+      "archivo": "recetas_03_bebidas_p01.json",
+      "categoria": "Bebidas",
+      "recetas": 945,
+      "MB": 1.98
+    },
+    {
+      "archivo": "recetas_03_bebidas_p02.json",
+      "categoria": "Bebidas",
+      "recetas": 944,
+      "MB": 1.72
+    },
+    {
+      "archivo": "recetas_04_suplementos_deportivos_p01.json",
+      "categoria": "Suplementos deportivos",
+      "recetas": 386,
+      "MB": 0.43
+    }
+  ]
+}
