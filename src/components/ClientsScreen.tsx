@@ -3,6 +3,7 @@ import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog, Invite } fro
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
 import ClientHub, { HubTab } from './ClientHub';
 import ResourcesPanel from './ResourcesPanel';
+import CoachNotesPanel from './CoachNotesPanel';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 
 interface ClientsScreenProps {
@@ -384,6 +385,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         </div>
       </div>
+
+      {/* Coach's own private to-do list — separate from Revisiones Pendientes */}
+      <CoachNotesPanel athletes={athletes} />
 
       <ResourcesPanel isCoach coachId={coachId} />
 

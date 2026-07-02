@@ -580,6 +580,18 @@ export interface TaskItem {
   createdAt: string;      // ISO timestamp
 }
 
+// Coach's own private to-do list ("enviar mensaje a X", "cambiar rutina a Y").
+// Never visible to athletes — separate from TaskItem, which is a task the
+// coach assigns TO an athlete.
+export interface CoachNote {
+  id: string;
+  text: string;
+  relatedAthleteEmail?: string;  // optional link to a client
+  relatedAthleteName?: string;   // denormalized for display without extra lookups
+  done: boolean;
+  createdAt: string;             // ISO timestamp
+}
+
 // ─── RESOURCES (coach-shared files/links) ──────────────────────────────────────
 
 export type ResourceKind = 'pdf' | 'video' | 'image' | 'doc' | 'link' | 'guide';

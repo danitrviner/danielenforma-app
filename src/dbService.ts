@@ -23,7 +23,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, Invite, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -3143,6 +3143,77 @@ export async function updateTask(id: string, updates: Partial<TaskItem>): Promis
     console.warn('updateTask Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     saveLocalTasks(updated);
+  }
+}
+
+// ─── COACH NOTES (private to-do list, never visible to athletes) ──────────────
+
+const COACH_NOTES_LOCAL_KEY = 'enforma_coach_notes_v1';
+
+function getLocalCoachNotes(): CoachNote[] {
+  try { return JSON.parse(localStorage.getItem(COACH_NOTES_LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function saveLocalCoachNotes(list: CoachNote[]): void {
+  localStorage.setItem(COACH_NOTES_LOCAL_KEY, JSON.stringify(list));
+}
+
+export async function getCoachNotes(): Promise<CoachNote[]> {
+  if (forceLocalOnly) return getLocalCoachNotes();
+  try {
+    const snap = await getDocs(collection(db, 'coachNotes'));
+    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() } as CoachNote));
+    saveLocalCoachNotes(notes);
+    return notes;
+  } catch (err) {
+    console.warn('getCoachNotes Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalCoachNotes();
+  }
+}
+
+export async function createCoachNote(data: Omit<CoachNote, 'id'>): Promise<CoachNote> {
+  if (forceLocalOnly) {
+    const note: CoachNote = { ...data, id: `local_cn_${Date.now()}` };
+    saveLocalCoachNotes([...getLocalCoachNotes(), note]);
+    return note;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'coachNotes'), stripUndefined(data));
+    const note: CoachNote = { ...data, id: ref.id };
+    saveLocalCoachNotes([...getLocalCoachNotes(), note]);
+    return note;
+  } catch (err) {
+    console.warn('createCoachNote Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const note: CoachNote = { ...data, id: `local_cn_${Date.now()}` };
+    saveLocalCoachNotes([...getLocalCoachNotes(), note]);
+    return note;
+  }
+}
+
+export async function updateCoachNote(id: string, updates: Partial<CoachNote>): Promise<void> {
+  const updated = getLocalCoachNotes().map(n => n.id === id ? { ...n, ...updates } : n);
+  if (forceLocalOnly) { saveLocalCoachNotes(updated); return; }
+  try {
+    await updateDoc(doc(db, 'coachNotes', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalCoachNotes(updated);
+  } catch (err) {
+    console.warn('updateCoachNote Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalCoachNotes(updated);
+  }
+}
+
+export async function deleteCoachNote(id: string): Promise<void> {
+  const filtered = getLocalCoachNotes().filter(n => n.id !== id);
+  if (forceLocalOnly) { saveLocalCoachNotes(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'coachNotes', id));
+    saveLocalCoachNotes(filtered);
+  } catch (err) {
+    console.warn('deleteCoachNote Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalCoachNotes(filtered);
   }
 }
 

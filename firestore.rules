@@ -242,5 +242,10 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── coachNotes (private to-do list — never visible to athletes) ──────────
+    match /coachNotes/{docId} {
+      allow read, write: if isCoach();
+    }
+
   }
 }
