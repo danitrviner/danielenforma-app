@@ -411,6 +411,15 @@ export interface Roadmap {
   items: RoadmapItem[];
 }
 
+// Coach invites a new client by email (passwordless sign-in link). Doc id = email.
+export interface Invite {
+  id: string;          // = email
+  email: string;
+  invitedAt: string;   // ISO timestamp, overwritten on resend
+  status: 'pending' | 'joined';
+  joinedAt?: string;
+}
+
 export type PhotoView = 'front' | 'side' | 'back';
 
 export interface ProgressPhoto {

@@ -208,6 +208,17 @@ service cloud.firestore {
       allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
+    // ── invites (docId = email) — coach invites a new client by email ────────
+    // Update is also allowed to the invited email itself: markInviteJoined()
+    // runs under the newly-created client's own auth session right after they
+    // sign in via the invite link, not the coach's.
+    match /invites/{email} {
+      allow read: if isCoach();
+      allow create: if isCoach();
+      allow update: if isCoach() || isOwnerEmail(email);
+      allow delete: if isCoach();
+    }
+
     // ── notifications (recipientEmail) ───────────────────────────────────────
     match /notifications/{docId} {
       allow read: if isCoach()
