@@ -365,6 +365,17 @@ export interface AthleteDietConfig {
   weeklySchedule?: Partial<Record<WeekDay, string | null>>; // day → dietId or null (libre)
 }
 
+// Doc id = `${athleteId}_${date}`. One log per athlete per day; doneItemIds keys
+// match NutritionScreen's in-memory item keys (`${mealId}_${itemIdx}`) so the
+// persisted state can be loaded straight into the existing itemStates shape.
+export interface DietCompletionLog {
+  id: string;
+  athleteId: string;  // email
+  date: string;        // YYYY-MM-DD
+  dietId: string;
+  doneItemIds: string[];
+}
+
 export interface NutritionPhase {
   id: string;
   name: string;

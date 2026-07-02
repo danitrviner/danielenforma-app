@@ -22,7 +22,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1414,6 +1414,52 @@ export async function deleteDiet(id: string): Promise<void> {
     console.warn('deleteDiet Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     setDietsToLocal(filtered);
+  }
+}
+
+// ─── DIET COMPLETION LOGS (per-athlete-per-day, doc id = `${athleteId}_${date}`) ──
+
+const LOCAL_DIET_COMPLETION_LOGS = 'enforma_diet_completion_logs_v1';
+
+function getLocalDietCompletionLogs(): DietCompletionLog[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_DIET_COMPLETION_LOGS) || '[]'); } catch { return []; }
+}
+function saveLocalDietCompletionLogs(list: DietCompletionLog[]): void {
+  localStorage.setItem(LOCAL_DIET_COMPLETION_LOGS, JSON.stringify(list));
+}
+
+export async function getDietCompletionLog(athleteId: string, date: string): Promise<DietCompletionLog | null> {
+  const docId = `${athleteId}_${date}`;
+  if (forceLocalOnly) return getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
+  try {
+    const snap = await getDoc(doc(db, 'dietCompletionLogs', docId));
+    if (!snap.exists()) return null;
+    const log = { id: snap.id, ...snap.data() } as DietCompletionLog;
+    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+    return log;
+  } catch (err) {
+    console.warn('getDietCompletionLog Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
+  }
+}
+
+export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>): Promise<DietCompletionLog> {
+  const docId = `${data.athleteId}_${data.date}`;
+  const log: DietCompletionLog = { ...data, id: docId };
+  if (forceLocalOnly) {
+    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+    return log;
+  }
+  try {
+    await setDoc(doc(db, 'dietCompletionLogs', docId), stripUndefined(data));
+    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+    return log;
+  } catch (err) {
+    console.warn('saveDietCompletionLog Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+    return log;
   }
 }
 

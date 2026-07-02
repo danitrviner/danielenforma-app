@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
 
@@ -10,6 +10,7 @@ const COACH_EMAIL = 'danitrviner@gmail.com';
 
 const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
+const TODAY_DATE: string = new Date().toISOString().split('T')[0];
 const WD_ORDER: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
 const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };
@@ -182,6 +183,8 @@ export default function NutritionScreen({ profile }: Props) {
   }, [profile.email]);
 
   // ── Init item states when diet changes ──────────────────────────────────────
+  // Rebuilds the (done:false) shape synchronously, then merges in today's
+  // persisted completion log so consumido/restante survives reloads.
 
   useEffect(() => {
     if (!selectedDiet) { setItemStates({}); return; }
@@ -192,7 +195,22 @@ export default function NutritionScreen({ profile }: Props) {
       });
     }
     setItemStates(initial);
-  }, [selectedDiet?.id]);
+
+    let cancelled = false;
+    const dietId = selectedDiet.id;
+    getDietCompletionLog(profile.email, TODAY_DATE).then(log => {
+      if (cancelled || !log || log.dietId !== dietId) return;
+      const doneSet = new Set(log.doneItemIds);
+      setItemStates(prev => {
+        const next = { ...prev };
+        doneSet.forEach(key => {
+          if (next[key]) next[key] = { ...next[key], done: true };
+        });
+        return next;
+      });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedDiet?.id, profile.email]);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -275,7 +293,12 @@ export default function NutritionScreen({ profile }: Props) {
     setItemStates(prev => {
       const cur = prev[key];
       if (!cur) return prev;
-      return { ...prev, [key]: { ...cur, done: !cur.done } };
+      const next = { ...prev, [key]: { ...cur, done: !cur.done } };
+      if (selectedDiet) {
+        const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+        saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      }
+      return next;
     });
   };
 
