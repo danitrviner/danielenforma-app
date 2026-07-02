@@ -77,6 +77,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [prevEntries, setPrevEntries] = useState<WorkoutEntryLog[]>([]);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishMsg, setFinishMsg] = useState('');
+  const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
+  const [workoutNoteInput, setWorkoutNoteInput] = useState('');
 
   // ── Load data ──────────────────────────────────────────────────────────────
   const loadAll = useCallback(async () => {
@@ -163,6 +165,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
     setPlayerSets(initPlayerSets(wo));
+    setExerciseNoteInputs(wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
+    setWorkoutNoteInput('');
     setFinishMsg('');
 
     // For each exercise in the workout, find the most recent logged set across ALL previous sessions
@@ -190,6 +194,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     });
   };
 
+  const updateExerciseNote = (exIdx: number, value: string) => {
+    setExerciseNoteInputs(prev => {
+      const next = [...prev];
+      next[exIdx] = value;
+      return next;
+    });
+  };
+
   const canFinish = playerSets.some(exSets => exSets.some(s => s.done));
 
   const handleFinish = async () => {
@@ -207,6 +219,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               repsDone: parseInt(s.repsDone) || 0,
               rir: parseInt(s.rir) || 0,
             })),
+          note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
         }))
         .filter(e => e.sets.length > 0);
 
@@ -219,6 +232,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         date:         activeAssignment.date,
         completedAt:  now,
         entries,
+        note: workoutNoteInput.trim() || undefined,
       });
 
       await updateWorkoutAssignment(activeAssignment.id, { status: 'completed' });
@@ -230,6 +244,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       setActiveAssignment(null);
       setActiveWorkout(null);
       setPrevEntries([]);
+      setExerciseNoteInputs([]);
+      setWorkoutNoteInput('');
       setFinishMsg('¡Entreno completado! Buen trabajo 💪');
       setTimeout(() => setFinishMsg(''), 5000);
     } catch (err) {
@@ -340,7 +356,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {/* Player header */}
         <header className="flex items-center gap-3 pb-4 border-b border-[#2a2a2a]/60 sticky top-[65px] bg-[#131313] z-30 pt-2">
           <button
-            onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); }}
+            onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); }}
             className="flex items-center gap-1.5 text-xs font-mono text-[#c6c9ab] hover:text-white border border-[#2a2a2a] hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all flex-shrink-0"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
@@ -488,6 +504,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </table>
               </div>
 
+              {/* Athlete's note for this exercise */}
+              <div className="px-4 py-3 bg-[#111111] border-t border-[#2a2a2a]/30">
+                <label className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
+                <textarea
+                  value={exerciseNoteInputs[exIdx] || ''}
+                  onChange={e => updateExerciseNote(exIdx, e.target.value)}
+                  placeholder="ej. Molestia leve en el hombro derecho..."
+                  rows={2}
+                  className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg p-2.5 text-xs text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] resize-none"
+                />
+              </div>
+
               {we.notes && (
                 <div className="px-4 py-2 bg-[#111111] border-t border-[#2a2a2a]/30">
                   <p className="font-mono text-[10px] text-[#c6c9ab] italic">📌 {we.notes}</p>
@@ -511,6 +539,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           );
         })}
 
+        {/* Nota del entrenamiento completo */}
+        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-2">
+          <label className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
+          <textarea
+            value={workoutNoteInput}
+            onChange={e => setWorkoutNoteInput(e.target.value)}
+            placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
+            rows={2}
+            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg p-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] resize-none"
+          />
+        </div>
+
         {/* Player action bar */}
         <div className="fixed bottom-24 md:bottom-6 left-0 right-0 flex justify-center gap-3 z-40 px-4">
           <button
@@ -519,6 +559,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               setActiveAssignment(null);
               setActiveWorkout(null);
               setPrevEntries([]);
+              setExerciseNoteInputs([]);
+              setWorkoutNoteInput('');
             }}
             className="flex items-center gap-2 px-5 py-4 bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
           >

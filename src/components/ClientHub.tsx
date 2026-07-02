@@ -10,7 +10,7 @@ import {
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import {
   submitCoachFeedback, getWorkouts, getWorkoutAssignments,
-  createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs,
+  createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, updateWorkoutLog,
   getExercises, seedExercisesIfEmpty, getDietsForAthlete,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
   getAthleteDietConfig, saveAthleteDietConfig, getProgressPhotos,
@@ -1583,6 +1583,56 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
           {/* Load history */}
           <LoadHistoryPanel logs={athleteLogs} exercises={exercises} />
+
+          {/* Notas del atleta (por ejercicio + entreno completo) */}
+          {(() => {
+            const logsWithNotes = athleteLogs
+              .filter(l => l.note || l.entries.some(e => e.note))
+              .sort((a, b) => b.date.localeCompare(a.date));
+            if (logsWithNotes.length === 0) return null;
+            return (
+              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
+                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-amber-300 text-base">sticky_note_2</span>
+                  Notas del atleta
+                </h3>
+                {logsWithNotes.map(log => {
+                  const wo = getWorkout(log.workoutId);
+                  const unseen = !log.noteCoachSeen;
+                  return (
+                    <div
+                      key={log.id}
+                      className={`border rounded-lg p-3.5 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-[#1e1e1e] border-[#2a2a2a]'}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="font-sans text-xs font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>
+                        {unseen && (
+                          <button
+                            onClick={() => {
+                              updateWorkoutLog(log.id, { noteCoachSeen: true }).catch(console.error);
+                              setAthleteLogs(prev => prev.map(l => l.id === log.id ? { ...l, noteCoachSeen: true } : l));
+                            }}
+                            className="flex-shrink-0 flex items-center gap-1 text-[9px] font-mono font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded"
+                          >
+                            <span className="material-symbols-outlined text-xs">visibility</span>
+                            Marcar visto
+                          </button>
+                        )}
+                      </div>
+                      {log.note && (
+                        <p className="text-xs text-[#c6c9ab] italic">"{log.note}"</p>
+                      )}
+                      {log.entries.filter(e => e.note).map(e => (
+                        <p key={e.exerciseId} className="text-xs text-[#c6c9ab]">
+                          <span className="font-mono text-[10px] text-[#e2ff00]">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Workout assignments */}
           <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
