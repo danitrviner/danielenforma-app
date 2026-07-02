@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
+import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 
 interface Props {
   athleteEmail: string;
@@ -10,6 +11,7 @@ const DEFAULT_STEP_GOAL = 8000;
 
 export default function StepsWidget({ athleteEmail }: Props) {
   const [goal, setGoal] = useState(DEFAULT_STEP_GOAL);
+  const [kcalPerStep, setKcalPerStep] = useState(DEFAULT_KCAL_PER_STEP);
   const [todayId, setTodayId] = useState<string | null>(null);
   const [steps, setSteps] = useState(0);
   const [input, setInput] = useState('');
@@ -23,6 +25,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
       getStepsForAthlete(athleteEmail),
     ]).then(([cfg, logs]) => {
       if (cfg.stepGoal) setGoal(cfg.stepGoal);
+      if (cfg.kcalPerStep) setKcalPerStep(cfg.kcalPerStep);
       const today = logs.find(l => l.date === todayStr());
       if (today) { setTodayId(today.id); setSteps(today.steps); }
       else setEditing(true);
@@ -56,6 +59,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   const remaining = Math.max(0, goal - steps);
   const pct = Math.min(100, (steps / goal) * 100);
+  const kcalEarned = Math.round(steps * kcalPerStep);
 
   if (loading) {
     return (
@@ -126,6 +130,9 @@ export default function StepsWidget({ athleteEmail }: Props) {
           <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
             <div className="h-full bg-[#e2ff00] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
+          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest mt-2 text-center">
+            +{kcalEarned.toLocaleString('es-ES')} kcal por actividad
+          </p>
         </>
       )}
     </div>

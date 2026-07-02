@@ -8,6 +8,7 @@ import {
   OnboardingTemplateQuestion,
 } from '../types';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import {
   submitCoachFeedback, getWorkouts, getWorkoutAssignments,
   createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, updateWorkoutLog,
@@ -419,6 +420,13 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       : [...nutritionConfig.enabledModes, mode];
     if (updated.length === 0) return;
     const next: AthleteNutritionConfig = { ...nutritionConfig, enabledModes: updated };
+    setNutritionConfig(next);
+    await saveAthleteNutritionConfig(next).catch(console.error);
+  };
+
+  const handleSaveStepConfig = async (updates: Partial<Pick<AthleteNutritionConfig, 'stepGoal' | 'kcalPerStep'>>) => {
+    const current = nutritionConfig ?? { athleteId: athlete.email, enabledModes: ['OMNIVORO'] as DietMode[] };
+    const next: AthleteNutritionConfig = { ...current, ...updates };
     setNutritionConfig(next);
     await saveAthleteNutritionConfig(next).catch(console.error);
   };
@@ -1888,6 +1896,49 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Step goal config */}
+            {nutritionConfig && (
+              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#00eefc] text-sm">directions_walk</span>
+                  Objetivo de pasos
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Pasos/día</label>
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={nutritionConfig.stepGoal ?? ''}
+                      placeholder="8000"
+                      onBlur={e => {
+                        const val = parseInt(e.target.value, 10);
+                        handleSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
+                      }}
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Kcal/paso</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.001}
+                      defaultValue={nutritionConfig.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
+                      onBlur={e => {
+                        const val = parseFloat(e.target.value);
+                        handleSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
+                      }}
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#c6c9ab] font-mono">
+                  Por defecto {DEFAULT_KCAL_PER_STEP} kcal/paso (1000 pasos ≈ 46 kcal).
+                </p>
               </div>
             )}
           </div>

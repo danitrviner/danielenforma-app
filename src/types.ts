@@ -65,7 +65,8 @@ export interface MealItem {
 export interface AthleteNutritionConfig {
   athleteId: string; // email
   enabledModes: DietMode[];
-  stepGoal?: number; // daily step target set by the coach; kcal-per-step conversion lives in Fase 3
+  stepGoal?: number;      // daily step target set by the coach
+  kcalPerStep?: number;   // configurable conversion rate; falls back to DEFAULT_KCAL_PER_STEP when unset
 }
 
 export interface Exercise {
