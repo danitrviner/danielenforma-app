@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise } from '../types';
+import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
   getMesocycleTemplates, createMesocycleTemplate,
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
@@ -604,7 +605,7 @@ function TemplateEditor({
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2a]">
         <h3 className="font-sans font-bold text-white text-sm flex items-center gap-2">
           <span className="material-symbols-outlined text-[#e2ff00] text-base">edit_note</span>
-          {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de programa'}
+          {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
         <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">close</span>
@@ -615,7 +616,7 @@ function TemplateEditor({
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre del programa</label>
+            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
             <input
               type="text"
               value={form.name}
@@ -631,7 +632,7 @@ function TemplateEditor({
               type="text"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Breve descripción del programa"
+              placeholder="Breve descripción de la plantilla"
               className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#e2ff00]/50 placeholder-[#555]"
             />
           </div>
@@ -676,7 +677,7 @@ function TemplateEditor({
             disabled={saving}
             className="flex-1 py-2.5 bg-[#e2ff00] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
           >
-            {saving ? 'Guardando…' : 'Guardar programa'}
+            {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
           <button
             onClick={onCancel}
@@ -692,6 +693,29 @@ function TemplateEditor({
 
 // ── Template card ──────────────────────────────────────────────────────────────
 
+// Merges every stage's muscle group volume config into one, so the template
+// card can rank the 3 muscle groups the plantilla emphasizes overall (not just
+// within a single stage). Series are summed across stages; priority keeps the
+// highest ('alta' beats 'media' beats 'baja') seen for that group in any stage.
+const PRIO_RANK: Record<MuscleGroupConfig['priority'], number> = { alta: 0, media: 1, baja: 2 };
+function mergeStageGroups(stages: MesocycleTemplate['stages']): Record<MuscleGroup, MuscleGroupConfig> {
+  const merged = {} as Record<MuscleGroup, MuscleGroupConfig>;
+  for (const st of stages) {
+    for (const [group, cfg] of Object.entries(st.groups) as [MuscleGroup, MuscleGroupConfig][]) {
+      const prev = merged[group];
+      if (!prev) {
+        merged[group] = { ...cfg };
+      } else {
+        merged[group] = {
+          series: prev.series + cfg.series,
+          priority: PRIO_RANK[cfg.priority] < PRIO_RANK[prev.priority] ? cfg.priority : prev.priority,
+        };
+      }
+    }
+  }
+  return merged;
+}
+
 function TemplateCard({
   tpl, onEdit, onDelete,
 }: {
@@ -701,6 +725,7 @@ function TemplateCard({
 }) {
   const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
   const totalExercises = tpl.stages.reduce((s, st) => s + (st.days ?? []).reduce((ds, d) => ds + d.exercises.length, 0), 0);
+  const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
     <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-4 hover:border-[#3a3a3a] transition-all">
@@ -735,6 +760,20 @@ function TemplateCard({
           </button>
         </div>
       </div>
+
+      {/* Top 3 grupos musculares prioritarios (calculado desde series+prioridad de todas las etapas) */}
+      {topGroups.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {topGroups.map(g => (
+            <span
+              key={g}
+              className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-[#e2ff00]/10 border border-[#e2ff00]/25 text-[#e2ff00] uppercase font-bold"
+            >
+              {MUSCLE_LABELS[g]}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Stage name chips */}
       <div className="flex flex-wrap gap-1">
@@ -839,9 +878,9 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-sans font-bold text-lg text-white">Plantillas de programa</h2>
+          <h2 className="font-sans font-bold text-lg text-white">Plantillas de mesociclo</h2>
           <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
-            Programas periodizados de múltiples mesociclos — aplícalos a cualquier cliente.
+            Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
         <button
@@ -860,12 +899,12 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         <div className="py-16 text-center border border-dashed border-[#2a2a2a] rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
-          <p className="text-[#c6c9ab] text-xs font-mono">Crea tu primer programa periodizado reutilizable.</p>
+          <p className="text-[#c6c9ab] text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
             className="mt-4 px-4 py-2 bg-[#e2ff00] text-black font-mono text-[10px] font-bold uppercase rounded-xl hover:bg-[#bad200] transition-all"
           >
-            Crear programa
+            Crear plantilla
           </button>
         </div>
       ) : (

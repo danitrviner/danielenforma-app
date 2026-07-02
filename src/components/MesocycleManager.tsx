@@ -14,6 +14,7 @@ import {
 } from '../dbService';
 import MesocycleDashboard from './MesocycleDashboard';
 import { MesocycleTemplate } from '../types';
+import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -97,13 +98,7 @@ function runDistribution(
   const totalAll = MUSCLE_GROUPS.reduce((s, g) => s + groups[g].series, 0);
   const overloadAlert = totalAll > daysPerWeek * 12;
 
-  const PRIO: Record<string, number> = { alta: 0, media: 1, baja: 2 };
-  const active = MUSCLE_GROUPS
-    .filter(g => groups[g].series > 0)
-    .sort((a, b) => {
-      const dp = PRIO[groups[a].priority] - PRIO[groups[b].priority];
-      return dp !== 0 ? dp : groups[b].series - groups[a].series;
-    });
+  const active = rankMuscleGroups(groups);
 
   const placedOn: Partial<Record<MuscleGroup, number[]>> = {};
 
