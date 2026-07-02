@@ -423,6 +423,16 @@ export interface ProgressPhoto {
   uploadedAt: string;  // ISO timestamp
 }
 
+export interface PhotoAssignment {
+  id: string;
+  athleteId: string;   // email
+  schedule: QSchedule;
+  startDate: string;   // YYYY-MM-DD
+  views: PhotoView[];  // which views must be uploaded per occurrence
+  active: boolean;
+  createdAt: string;
+}
+
 export interface RecipeIngredient {
   foodLabel: string;
   category: FoodCategory;

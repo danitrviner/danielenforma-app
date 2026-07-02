@@ -177,6 +177,13 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── photoAssignments (athleteId = EMAIL) ─────────────────────────────────
+    match /photoAssignments/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+      allow write: if isCoach();
+    }
+
     // ── questionnaireResponses (athleteId = EMAIL) ───────────────────────────
     match /questionnaireResponses/{docId} {
       allow read: if isCoach()

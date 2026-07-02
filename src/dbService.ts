@@ -22,7 +22,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, OnboardingTemplate, AppNotification, TaskItem, Resource } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1859,6 +1859,62 @@ export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
   const path = `progressPhotos/${photo.athleteId}/${photo.date}_${photo.view}`;
   await deleteObject(storageRef(storage, path)).catch(() => {});
   await deleteDoc(doc(db, 'progressPhotos', photo.id));
+}
+
+// ─── PHOTO CHECK-IN ASSIGNMENTS ───────────────────────────────────────────────
+// Collection: photoAssignments  (athleteId = email) — same shape/pattern as
+// questionnaireAssignments, so the athlete's photo check-ins can have a
+// pending/upcoming calendar like questionnaires do.
+
+const LOCAL_PHOTO_ASSIGNMENTS = 'photoAssignments_v1';
+
+function getLocalPhotoAssignments(): PhotoAssignment[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_PHOTO_ASSIGNMENTS) || '[]'); } catch { return []; }
+}
+
+export async function assignPhotoCheckIn(data: Omit<PhotoAssignment, 'id'>): Promise<PhotoAssignment> {
+  const safeData = { ...data, schedule: data.schedule ?? { type: 'once' as const } };
+  if (forceLocalOnly) {
+    const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
+    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
+    return a;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'photoAssignments'), stripUndefined(safeData));
+    return { ...safeData, id: ref.id };
+  } catch (err) {
+    console.warn('assignPhotoCheckIn Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
+    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
+    return a;
+  }
+}
+
+export async function getPhotoAssignmentsForAthlete(email: string): Promise<PhotoAssignment[]> {
+  if (forceLocalOnly) return getLocalPhotoAssignments().filter(a => a.athleteId === email);
+  try {
+    const snap = await getDocs(query(collection(db, 'photoAssignments'), where('athleteId', '==', email)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as PhotoAssignment));
+  } catch (err) {
+    console.warn('getPhotoAssignmentsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalPhotoAssignments().filter(a => a.athleteId === email);
+  }
+}
+
+export async function deactivatePhotoAssignment(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'photoAssignments', id), { active: false });
+  } catch (err) {
+    console.warn('deactivatePhotoAssignment Firestore failed:', err);
+    setLocalBypassMode(true);
+    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
+  }
 }
 
 // Storage path: dietNotes/{athleteEmail}/{dietId}.{ext}
