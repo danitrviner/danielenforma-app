@@ -76,7 +76,17 @@ service cloud.firestore {
     match /diets/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.token.email == resource.data.athleteId);
-      allow write: if isCoach();
+      // Self-managed diets ("Mis Dietas") are the athlete's own — they may create
+      // their own, and update/delete only ones already flagged selfManaged.
+      // Coach-assigned diets (selfManaged absent/false) remain read-only for athletes.
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.auth.token.email == request.resource.data.athleteId
+                        && request.resource.data.selfManaged == true);
+      allow update, delete: if isCoach()
+                            || (request.auth != null
+                                && request.auth.token.email == resource.data.athleteId
+                                && resource.data.selfManaged == true);
     }
 
     // ── athleteDietConfigs (docId = email) ───────────────────────────────────

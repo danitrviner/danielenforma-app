@@ -229,7 +229,9 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     getWorkoutAssignments(athlete.userId).then(setAssignments).catch(console.error);
     getWorkoutLogs(athlete.email).then(setAthleteLogs).catch(console.error);
     getAthleteNutritionConfig(athlete.email).then(setNutritionConfig).catch(console.error);
-    getDietsForAthlete(athlete.email).then(setAthleteDiets).catch(console.error);
+    // Self-managed diets ("Mis Dietas") are private to the athlete — the coach's
+    // "Dietas disponibles" tab only lists/assigns diets the coach itself authored.
+    getDietsForAthlete(athlete.email).then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged))).catch(console.error);
     getAthleteDietConfig(athlete.email).then(setAthleteDietConfig).catch(console.error);
     getAssignmentsForAthlete(athlete.email).then(setAthleteQAssignments).catch(console.error);
     getResponsesForAthlete(athlete.email).then(setAthleteQResponses).catch(console.error);
@@ -1696,7 +1698,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             onSaved={async () => {
               setShowGenerator(false);
               getDietsForAthlete(athlete.email)
-                .then(setAthleteDiets)
+                .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
                 .catch(console.error);
             }}
             onCancel={() => setShowGenerator(false)}
@@ -1711,7 +1713,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             onSaved={async (_saved) => {
               setDietEditorDiet(undefined);
               getDietsForAthlete(athlete.email)
-                .then(setAthleteDiets)
+                .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
                 .catch(console.error);
             }}
             onCancelled={() => setDietEditorDiet(undefined)}

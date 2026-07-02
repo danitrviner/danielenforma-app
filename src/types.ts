@@ -355,6 +355,7 @@ export interface Diet {
   coachNote?: string;
   coachVideoUrl?: string;
   isDraft?: boolean;
+  selfManaged?: boolean; // true = created by the athlete in "Mis Dietas", private to them
 }
 
 export type WeekDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';

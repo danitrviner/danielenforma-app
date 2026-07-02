@@ -178,7 +178,9 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       })(),
       getAthleteNutritionConfig(selectedEmail).catch(() => null),
     ]).then(([fetchedDiets, foods, config]) => {
-      setDiets(fetchedDiets);
+      // Self-managed diets ("Mis Dietas") are private to the athlete — the coach's
+      // editor only lists/assigns diets the coach itself authored.
+      setDiets(fetchedDiets.filter(d => !d.selfManaged));
       setFoodItems(foods);
       if (config && config.enabledModes.length > 0) {
         setEnabledModes(config.enabledModes);
