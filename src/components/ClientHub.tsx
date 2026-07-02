@@ -102,6 +102,12 @@ const GOAL_BODY_LABELS: Record<string, string> = {
 const GOAL_CAP_LABELS: Record<string, string> = {
   fuerza: 'Fuerza', fuerza_resistencia: 'Fuerza-resistencia', salud: 'Salud',
 };
+const PROGRESS_FREQ_LABELS: Record<string, string> = {
+  cada_semana: 'Cada semana', cada_varias_semanas: 'Cada varias semanas', con_dificultad: 'Con dificultad',
+};
+const TECHNIQUE_LABELS: Record<string, string> = {
+  mala: 'Mala', regular: 'Regular', buena: 'Buena', muy_buena: 'Muy buena',
+};
 
 function displayAge(birthDate: string): number {
   const dob = new Date(birthDate);
@@ -820,6 +826,152 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   </p>
                 )}
               </div>
+
+              {/* Datos personales adicionales */}
+              {(onboardingData.occupation || onboardingData.referralSource || onboardingData.goalFreeText) && (
+                <div className="space-y-1 pt-3 border-t border-[#2a2a2a]/40">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Datos personales</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                    {onboardingData.occupation && (
+                      <span className="text-[#c6c9ab]">Ocupación: <span className="text-white font-bold">{onboardingData.occupation}</span></span>
+                    )}
+                    {onboardingData.referralSource && (
+                      <span className="text-[#c6c9ab]">Nos conoció por: <span className="text-white font-bold">{onboardingData.referralSource}</span></span>
+                    )}
+                  </div>
+                  {onboardingData.goalFreeText && (
+                    <p className="font-mono text-[10px] text-[#c6c9ab] italic">"{onboardingData.goalFreeText}"</p>
+                  )}
+                </div>
+              )}
+
+              {/* Salud */}
+              {(onboardingData.hasCurrentInjury || onboardingData.hadPastInjuries || onboardingData.takesMedication ||
+                onboardingData.recentSurgery || onboardingData.smokesAlcoholSubstances || onboardingData.sunExposureWeekly) && (
+                <div className="space-y-1 pt-3 border-t border-[#2a2a2a]/40">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Salud</p>
+                  <div className="space-y-1">
+                    {onboardingData.hasCurrentInjury && (
+                      <p className="font-mono text-[10px] text-amber-300">
+                        <span className="material-symbols-outlined text-xs align-middle mr-1">personal_injury</span>
+                        Lesión actual en {onboardingData.currentInjuryLocation || '—'} (intensidad {onboardingData.currentInjuryIntensity ?? '—'}/10)
+                        {onboardingData.currentInjuryMovements && ` — duele al: ${onboardingData.currentInjuryMovements}`}
+                      </p>
+                    )}
+                    {onboardingData.hadPastInjuries && (
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">
+                        <span className="text-[#555] mr-1">Lesiones anteriores:</span>{onboardingData.pastInjuriesDetail || '—'}
+                      </p>
+                    )}
+                    {onboardingData.takesMedication && (
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">
+                        <span className="text-[#555] mr-1">Medicación:</span>{onboardingData.medicationDetail || '—'}
+                      </p>
+                    )}
+                    {onboardingData.recentSurgery && (
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">
+                        <span className="text-[#555] mr-1">Cirugía reciente:</span>{onboardingData.recentSurgeryDetail || '—'}
+                      </p>
+                    )}
+                    {onboardingData.smokesAlcoholSubstances && (
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">
+                        <span className="text-[#555] mr-1">Tabaco/alcohol/otras sustancias:</span>{onboardingData.smokesAlcoholSubstances}
+                      </p>
+                    )}
+                    {onboardingData.sunExposureWeekly && (
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">
+                        <span className="text-[#555] mr-1">Exposición al sol:</span>{onboardingData.sunExposureWeekly}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Nutrición — detalle adicional */}
+              {(onboardingData.appetitePeakTime || onboardingData.hadOverweightHistory || !onboardingData.foodRelationshipGood ||
+                onboardingData.eatsTooFast || (onboardingData.supplements?.length ?? 0) > 0 || onboardingData.weightTendency ||
+                onboardingData.neckCm || onboardingData.waistCm || onboardingData.hipCm) && (
+                <div className="space-y-1 pt-3 border-t border-[#2a2a2a]/40">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Nutrición — detalle</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                    {onboardingData.appetitePeakTime && (
+                      <span className="text-[#c6c9ab]">Más apetito: <span className="text-white font-bold">{onboardingData.appetitePeakTime}</span></span>
+                    )}
+                    {onboardingData.hadOverweightHistory && (
+                      <span className="text-amber-300">Historial de sobrepeso</span>
+                    )}
+                    {!onboardingData.foodRelationshipGood && (
+                      <span className="text-amber-300">Relación con la comida: mala{onboardingData.foodRelationshipReason ? ` (${onboardingData.foodRelationshipReason})` : ''}</span>
+                    )}
+                    {onboardingData.eatsTooFast && <span className="text-[#c6c9ab]">Come deprisa</span>}
+                    {onboardingData.neckCm && <span className="text-[#c6c9ab]">Cuello: <span className="text-white font-bold">{onboardingData.neckCm}cm</span></span>}
+                    {onboardingData.waistCm && <span className="text-[#c6c9ab]">Cintura: <span className="text-white font-bold">{onboardingData.waistCm}cm</span></span>}
+                    {onboardingData.hipCm && <span className="text-[#c6c9ab]">Cadera: <span className="text-white font-bold">{onboardingData.hipCm}cm</span></span>}
+                  </div>
+                  {onboardingData.weightTendency && (
+                    <p className="font-mono text-[10px] text-[#c6c9ab]"><span className="text-[#555] mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
+                  )}
+                  {(onboardingData.supplements?.length ?? 0) > 0 && (
+                    <div className="pt-1">
+                      <p className="font-mono text-[9px] text-[#555] mb-1">Suplementación</p>
+                      {onboardingData.supplements!.map((s, i) => (
+                        <p key={i} className="font-mono text-[10px] text-[#c6c9ab]">{s.name} — {s.dose} — {s.frequency}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Entrenamiento — detalle adicional */}
+              {(onboardingData.oneRepMaxTotal || onboardingData.progressFrequency || onboardingData.techniqueLevel ||
+                onboardingData.currentMotivation || onboardingData.muscleGroupsToImprove || onboardingData.restDayActive ||
+                onboardingData.sittingHoursPerDay || onboardingData.stressReason) && (
+                <div className="space-y-1 pt-3 border-t border-[#2a2a2a]/40">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Entrenamiento — detalle</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                    {onboardingData.oneRepMaxTotal && (
+                      <span className="text-[#c6c9ab]">Total 1RM: <span className="text-white font-bold">{onboardingData.oneRepMaxTotal}kg</span></span>
+                    )}
+                    {onboardingData.progressFrequency && (
+                      <span className="text-[#c6c9ab]">Progresa: <span className="text-white font-bold">{PROGRESS_FREQ_LABELS[onboardingData.progressFrequency]}</span></span>
+                    )}
+                    {onboardingData.techniqueLevel && (
+                      <span className="text-[#c6c9ab]">Técnica: <span className="text-white font-bold">{TECHNIQUE_LABELS[onboardingData.techniqueLevel]}</span></span>
+                    )}
+                    {onboardingData.currentMotivation && (
+                      <span className="text-[#c6c9ab]">Motivación: <span className="text-white font-bold">{onboardingData.currentMotivation}/10</span></span>
+                    )}
+                    {onboardingData.sittingHoursPerDay && (
+                      <span className="text-[#c6c9ab]">Horas sentado/día: <span className="text-white font-bold">{onboardingData.sittingHoursPerDay}h</span></span>
+                    )}
+                    {onboardingData.restDayActive && <span className="text-[#c6c9ab]">Activo en descanso{onboardingData.restDayActiveDetail ? ` (${onboardingData.restDayActiveDetail})` : ''}</span>}
+                  </div>
+                  {onboardingData.muscleGroupsToImprove && (
+                    <p className="font-mono text-[10px] text-[#c6c9ab]"><span className="text-[#555] mr-1">A mejorar:</span>{onboardingData.muscleGroupsToImprove}</p>
+                  )}
+                  {onboardingData.stressReason && (
+                    <p className="font-mono text-[10px] text-[#c6c9ab]"><span className="text-[#555] mr-1">Motivo de estrés:</span>{onboardingData.stressReason}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Descanso — detalle adicional */}
+              {((onboardingData.sleepDeficitCauses?.length ?? 0) > 0 || onboardingData.sleepRoutineOrScreen || onboardingData.sleepMedication) && (
+                <div className="space-y-1 pt-3 border-t border-[#2a2a2a]/40">
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Descanso — detalle</p>
+                  {(onboardingData.sleepDeficitCauses?.length ?? 0) > 0 && (
+                    <p className="font-mono text-[10px] text-[#c6c9ab]"><span className="text-[#555] mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                    {onboardingData.sleepRoutineOrScreen && (
+                      <span className="text-[#c6c9ab]">Antes de dormir: <span className="text-white font-bold">{onboardingData.sleepRoutineOrScreen === 'rutina' ? 'Rutina' : 'Pantalla'}</span></span>
+                    )}
+                    {onboardingData.sleepMedication && (
+                      <span className="text-amber-300">Medicación para dormir{onboardingData.sleepMedicationDetail ? `: ${onboardingData.sleepMedicationDetail}` : ''}</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Extra answers from template */}
               {onboardingTemplate.length > 0 && onboardingData.extraAnswers && Object.keys(onboardingData.extraAnswers).length > 0 && (

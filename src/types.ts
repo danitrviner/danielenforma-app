@@ -273,6 +273,12 @@ export interface OnboardingMeal {
 export interface MacroSplit { hc: number; prot: number; grasa: number }
 export interface MacroGrams { hc: number; prot: number; grasa: number }
 
+export interface SupplementEntry { name: string; dose: string; frequency: string }
+
+export type ProgressFrequency = 'cada_semana' | 'cada_varias_semanas' | 'con_dificultad';
+export type TechniqueLevel    = 'mala' | 'regular' | 'buena' | 'muy_buena';
+export type SleepRoutineOrScreen = 'rutina' | 'pantalla';
+
 export interface OnboardingData {
   athleteId:          string;         // email
   // ── Composición corporal ──────────────────────────────────────────────────
@@ -282,16 +288,44 @@ export interface OnboardingData {
   heightCm?:          number;
   bodyFatPct?:        number;
   musclePct?:         number;
+  // ── Datos personales adicionales ───────────────────────────────────────────
+  occupation?:        string;
+  referralSource?:    string;         // ¿cómo nos conociste?
+  goalFreeText?:      string;         // objetivo en texto libre (además de goalBody/goalCapacity)
   // ── Actividad ─────────────────────────────────────────────────────────────
   activityLevel?:     ActivityLevel;
   // ── Objetivo ──────────────────────────────────────────────────────────────
   goalBody?:          GoalBody;
   goalCapacity?:      GoalCapacity;
+  // ── Salud ─────────────────────────────────────────────────────────────────
+  hasCurrentInjury?:      boolean;
+  currentInjuryLocation?: string;
+  currentInjuryIntensity?: number;    // 1–10
+  currentInjuryMovements?: string;    // gestos/movimientos que duelen
+  hadPastInjuries?:       boolean;
+  pastInjuriesDetail?:    string;
+  takesMedication?:       boolean;
+  medicationDetail?:      string;
+  recentSurgery?:         boolean;
+  recentSurgeryDetail?:   string;
+  smokesAlcoholSubstances?: string;   // tabaco/alcohol/otras sustancias, texto libre
+  sunExposureWeekly?:     string;
   // ── Nutrición ─────────────────────────────────────────────────────────────
   dietType:           DietType;
   targetCalories:     number;
   macroSplit:         MacroSplit;     // percentages (hc+prot+grasa = 100)
   macroGrams:         MacroGrams;     // computed grams/day
+  appetitePeakTime?:      string;     // momento del día con más apetito
+  dietSince?:             string;     // desde cuándo sigue dieta vegana/vegetariana
+  hadOverweightHistory?:  boolean;
+  foodRelationshipGood?:  boolean;
+  foodRelationshipReason?: string;    // por qué, si la relación no es buena
+  eatsTooFast?:           boolean;
+  supplements?:           SupplementEntry[];
+  weightTendency?:        string;     // tendencia a ganar/perder peso, texto libre
+  neckCm?:                number;
+  waistCm?:               number;
+  hipCm?:                 number;
   // ── Alimentos ─────────────────────────────────────────────────────────────
   likedFoods:         string[];
   dislikedFoods:      string[];
@@ -310,6 +344,20 @@ export interface OnboardingData {
   hatedExercises:     string[];
   experienceLevel:    ExperienceLevel;
   injuries:           string;
+  oneRepMaxTotal?:        number;     // press banca + sentadilla + peso muerto
+  progressFrequency?:     ProgressFrequency;
+  techniqueLevel?:        TechniqueLevel;
+  currentMotivation?:     number;     // 1–10
+  muscleGroupsToImprove?: string;
+  restDayActive?:         boolean;
+  restDayActiveDetail?:   string;
+  sittingHoursPerDay?:    number;
+  stressReason?:          string;     // motivo del nivel de estrés (complementa la plantilla)
+  // ── Descanso ──────────────────────────────────────────────────────────────
+  sleepDeficitCauses?:    string[];   // checkboxes: cuesta dormir / estrés / pensamientos / ansiedad / duerme pero no descansa
+  sleepRoutineOrScreen?:  SleepRoutineOrScreen;
+  sleepMedication?:       boolean;
+  sleepMedicationDetail?: string;
   // ── Meta ──────────────────────────────────────────────────────────────────
   completedAt:        string;         // ISO timestamp
   extraAnswers?:      Record<string, string | number>;

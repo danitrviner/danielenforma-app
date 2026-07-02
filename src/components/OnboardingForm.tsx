@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   OnboardingData, OnboardingMeal, DietType, ExperienceLevel,
-  ActivityLevel, GoalBody, GoalCapacity,
+  ActivityLevel, GoalBody, GoalCapacity, SupplementEntry,
+  ProgressFrequency, TechniqueLevel, SleepRoutineOrScreen,
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
 import { saveOnboarding, updateOnboarding } from '../dbService';
@@ -126,14 +127,40 @@ interface FormState {
   heightCm:         number | '';
   bodyFatPct:       number | '';
   musclePct:        number | '';
+  occupation:       string;
+  referralSource:   string;
+  goalFreeText:     string;
   activityLevel:    ActivityLevel | '';
   goalBody:         GoalBody | '';
   goalCapacity:     GoalCapacity | '';
+  hasCurrentInjury:        boolean;
+  currentInjuryLocation:   string;
+  currentInjuryIntensity:  number;
+  currentInjuryMovements:  string;
+  hadPastInjuries:         boolean;
+  pastInjuriesDetail:      string;
+  takesMedication:         boolean;
+  medicationDetail:        string;
+  recentSurgery:           boolean;
+  recentSurgeryDetail:     string;
+  smokesAlcoholSubstances: string;
+  sunExposureWeekly:       string;
   dietType:         DietType;
   targetCalories:   number | '';
   hcPct:            number | '';
   protPct:          number | '';
   grasaPct:         number | '';
+  appetitePeakTime:       string;
+  dietSince:              string;
+  hadOverweightHistory:   boolean;
+  foodRelationshipGood:   boolean;
+  foodRelationshipReason: string;
+  eatsTooFast:            boolean;
+  supplements:            SupplementEntry[];
+  weightTendency:         string;
+  neckCm:                 number | '';
+  waistCm:                number | '';
+  hipCm:                  number | '';
   allergies:        string[];
   mealCount:        3 | 4 | 5;
   meals:            OnboardingMeal[];
@@ -146,6 +173,19 @@ interface FormState {
   hatedExercises:    string[];
   experienceLevel:   ExperienceLevel;
   injuries:          string;
+  oneRepMaxTotal:        number | '';
+  progressFrequency:     ProgressFrequency | '';
+  techniqueLevel:        TechniqueLevel | '';
+  currentMotivation:     number;
+  muscleGroupsToImprove: string;
+  restDayActive:         boolean;
+  restDayActiveDetail:   string;
+  sittingHoursPerDay:    number | '';
+  stressReason:          string;
+  sleepDeficitCauses:    string[];
+  sleepRoutineOrScreen:  SleepRoutineOrScreen | '';
+  sleepMedication:       boolean;
+  sleepMedicationDetail: string;
   extraAnswers:      Record<string, string | number>;
 }
 
@@ -158,14 +198,40 @@ function fromOnboarding(d: OnboardingData): FormState {
     heightCm:         d.heightCm ?? '',
     bodyFatPct:       d.bodyFatPct ?? '',
     musclePct:        d.musclePct ?? '',
+    occupation:       d.occupation ?? '',
+    referralSource:   d.referralSource ?? '',
+    goalFreeText:     d.goalFreeText ?? '',
     activityLevel:    d.activityLevel ?? '',
     goalBody:         d.goalBody ?? '',
     goalCapacity:     d.goalCapacity ?? '',
+    hasCurrentInjury:        d.hasCurrentInjury ?? false,
+    currentInjuryLocation:   d.currentInjuryLocation ?? '',
+    currentInjuryIntensity:  d.currentInjuryIntensity ?? 5,
+    currentInjuryMovements:  d.currentInjuryMovements ?? '',
+    hadPastInjuries:         d.hadPastInjuries ?? false,
+    pastInjuriesDetail:      d.pastInjuriesDetail ?? '',
+    takesMedication:         d.takesMedication ?? false,
+    medicationDetail:        d.medicationDetail ?? '',
+    recentSurgery:           d.recentSurgery ?? false,
+    recentSurgeryDetail:     d.recentSurgeryDetail ?? '',
+    smokesAlcoholSubstances: d.smokesAlcoholSubstances ?? '',
+    sunExposureWeekly:       d.sunExposureWeekly ?? '',
     dietType:         d.dietType,
     targetCalories:   d.targetCalories,
     hcPct:            d.macroSplit.hc,
     protPct:          d.macroSplit.prot,
     grasaPct:         d.macroSplit.grasa,
+    appetitePeakTime:       d.appetitePeakTime ?? '',
+    dietSince:              d.dietSince ?? '',
+    hadOverweightHistory:   d.hadOverweightHistory ?? false,
+    foodRelationshipGood:   d.foodRelationshipGood ?? true,
+    foodRelationshipReason: d.foodRelationshipReason ?? '',
+    eatsTooFast:            d.eatsTooFast ?? false,
+    supplements:            d.supplements ?? [],
+    weightTendency:         d.weightTendency ?? '',
+    neckCm:                 d.neckCm ?? '',
+    waistCm:                d.waistCm ?? '',
+    hipCm:                  d.hipCm ?? '',
     allergies:        d.allergies,
     mealCount:        count,
     meals:            d.meals ?? MEAL_PRESETS[count].map(m => ({ ...m })),
@@ -178,6 +244,19 @@ function fromOnboarding(d: OnboardingData): FormState {
     hatedExercises:    d.hatedExercises,
     experienceLevel:   d.experienceLevel,
     injuries:          d.injuries,
+    oneRepMaxTotal:        d.oneRepMaxTotal ?? '',
+    progressFrequency:     d.progressFrequency ?? '',
+    techniqueLevel:        d.techniqueLevel ?? '',
+    currentMotivation:     d.currentMotivation ?? 5,
+    muscleGroupsToImprove: d.muscleGroupsToImprove ?? '',
+    restDayActive:         d.restDayActive ?? false,
+    restDayActiveDetail:   d.restDayActiveDetail ?? '',
+    sittingHoursPerDay:    d.sittingHoursPerDay ?? '',
+    stressReason:          d.stressReason ?? '',
+    sleepDeficitCauses:    d.sleepDeficitCauses ?? [],
+    sleepRoutineOrScreen:  d.sleepRoutineOrScreen ?? '',
+    sleepMedication:       d.sleepMedication ?? false,
+    sleepMedicationDetail: d.sleepMedicationDetail ?? '',
     extraAnswers:      d.extraAnswers ?? {},
   };
 }
@@ -189,14 +268,40 @@ const DEFAULTS: FormState = {
   heightCm:         '',
   bodyFatPct:       '',
   musclePct:        '',
+  occupation:       '',
+  referralSource:   '',
+  goalFreeText:     '',
   activityLevel:    '',
   goalBody:         '',
   goalCapacity:     '',
+  hasCurrentInjury:        false,
+  currentInjuryLocation:   '',
+  currentInjuryIntensity:  5,
+  currentInjuryMovements:  '',
+  hadPastInjuries:         false,
+  pastInjuriesDetail:      '',
+  takesMedication:         false,
+  medicationDetail:        '',
+  recentSurgery:           false,
+  recentSurgeryDetail:     '',
+  smokesAlcoholSubstances: '',
+  sunExposureWeekly:       '',
   dietType:         'omnivoro',
   targetCalories:   2000,
   hcPct:            40,
   protPct:          30,
   grasaPct:         30,
+  appetitePeakTime:       '',
+  dietSince:              '',
+  hadOverweightHistory:   false,
+  foodRelationshipGood:   true,
+  foodRelationshipReason: '',
+  eatsTooFast:            false,
+  supplements:            [],
+  weightTendency:         '',
+  neckCm:                 '',
+  waistCm:                '',
+  hipCm:                  '',
   allergies:        [],
   mealCount:        4,
   meals:            MEAL_PRESETS[4].map(m => ({ ...m })),
@@ -207,6 +312,19 @@ const DEFAULTS: FormState = {
   equipment:         [],
   favoriteExercises: [],
   hatedExercises:    [],
+  oneRepMaxTotal:        '',
+  progressFrequency:     '',
+  techniqueLevel:        '',
+  currentMotivation:     5,
+  muscleGroupsToImprove: '',
+  restDayActive:         false,
+  restDayActiveDetail:   '',
+  sittingHoursPerDay:    '',
+  stressReason:          '',
+  sleepDeficitCauses:    [],
+  sleepRoutineOrScreen:  '',
+  sleepMedication:       false,
+  sleepMedicationDetail: '',
   experienceLevel:   'intermedio',
   injuries:          '',
   extraAnswers:      {},
@@ -236,6 +354,85 @@ function PillSelect<T extends string>({
             {o.label}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function YesNo({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+      <div className="flex gap-2">
+        {([{ v: true, l: 'Sí' }, { v: false, l: 'No' }]).map(o => (
+          <button key={String(o.v)} type="button" onClick={() => onChange(o.v)}
+            className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${
+              value === o.v
+                ? 'bg-[#e2ff00] text-black border-transparent'
+                : 'bg-transparent text-[#c6c9ab] border-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
+            }`}>
+            {o.l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CheckboxGroup({
+  label, options, values, onChange,
+}: {
+  label: string; options: string[]; values: string[]; onChange: (next: string[]) => void;
+}) {
+  const toggle = (opt: string) =>
+    onChange(values.includes(opt) ? values.filter(v => v !== opt) : [...values, opt]);
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => toggle(opt)}
+            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
+              values.includes(opt)
+                ? 'bg-[#e2ff00] text-black border-transparent'
+                : 'bg-transparent text-[#c6c9ab] border-[#2a2a2a] hover:text-white hover:border-[#3a3a3a]'
+            }`}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TextField({
+  label, value, onChange, placeholder,
+}: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+      <input type="text" value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] w-full placeholder:text-[#444]" />
+    </div>
+  );
+}
+
+function NumberField({
+  label, value, onChange, unit, min, max,
+}: {
+  label: string; value: number | ''; onChange: (v: number | '') => void; unit?: string; min?: number; max?: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+      <div className="flex items-center gap-2">
+        <input type="number" min={min} max={max} value={value}
+          onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+          className="flex-1 bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] text-center" />
+        {unit && <span className="font-mono text-[10px] text-[#555] flex-shrink-0">{unit}</span>}
       </div>
     </div>
   );
@@ -275,6 +472,45 @@ function TagInput({
           placeholder={tags.length === 0 ? placeholder : '+ añadir'}
           className="bg-transparent text-sm text-white outline-none flex-1 min-w-[100px] placeholder:text-[#444]" />
       </div>
+    </div>
+  );
+}
+
+function SupplementsTable({
+  rows, onChange,
+}: {
+  rows: SupplementEntry[]; onChange: (next: SupplementEntry[]) => void;
+}) {
+  const update = (i: number, patch: Partial<SupplementEntry>) =>
+    onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
+  const add = () => onChange([...rows, { name: '', dose: '', frequency: '' }]);
+
+  return (
+    <div className="space-y-1.5">
+      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Suplementación</p>
+      {rows.length > 0 && (
+        <div className="space-y-2">
+          {rows.map((r, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input type="text" value={r.name} onChange={e => update(i, { name: e.target.value })}
+                placeholder="Suplemento" className="flex-1 min-w-0 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] placeholder:text-[#444]" />
+              <input type="text" value={r.dose} onChange={e => update(i, { dose: e.target.value })}
+                placeholder="Dosis" className="w-20 flex-shrink-0 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] placeholder:text-[#444]" />
+              <input type="text" value={r.frequency} onChange={e => update(i, { frequency: e.target.value })}
+                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] placeholder:text-[#444]" />
+              <button type="button" onClick={() => remove(i)} className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={add}
+        className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#e2ff00] transition-colors border border-dashed border-[#2a2a2a] hover:border-[#e2ff00]/40 px-2.5 py-1.5 rounded-lg">
+        <span className="material-symbols-outlined text-sm">add</span>
+        Añadir suplemento
+      </button>
     </div>
   );
 }
@@ -404,13 +640,39 @@ export default function OnboardingForm({
       heightCm:           form.heightCm !== '' ? Number(form.heightCm) : undefined,
       bodyFatPct:         form.bodyFatPct !== '' ? Number(form.bodyFatPct) : undefined,
       musclePct:          form.musclePct  !== '' ? Number(form.musclePct)  : undefined,
+      occupation:         form.occupation || undefined,
+      referralSource:     form.referralSource || undefined,
+      goalFreeText:       form.goalFreeText || undefined,
       activityLevel:      form.activityLevel !== '' ? form.activityLevel : undefined,
       goalBody:           form.goalBody      !== '' ? form.goalBody      : undefined,
       goalCapacity:       form.goalCapacity  !== '' ? form.goalCapacity  : undefined,
+      hasCurrentInjury:        form.hasCurrentInjury,
+      currentInjuryLocation:   form.hasCurrentInjury ? (form.currentInjuryLocation || undefined) : undefined,
+      currentInjuryIntensity:  form.hasCurrentInjury ? form.currentInjuryIntensity : undefined,
+      currentInjuryMovements:  form.hasCurrentInjury ? (form.currentInjuryMovements || undefined) : undefined,
+      hadPastInjuries:         form.hadPastInjuries,
+      pastInjuriesDetail:      form.hadPastInjuries ? (form.pastInjuriesDetail || undefined) : undefined,
+      takesMedication:         form.takesMedication,
+      medicationDetail:        form.takesMedication ? (form.medicationDetail || undefined) : undefined,
+      recentSurgery:           form.recentSurgery,
+      recentSurgeryDetail:     form.recentSurgery ? (form.recentSurgeryDetail || undefined) : undefined,
+      smokesAlcoholSubstances: form.smokesAlcoholSubstances || undefined,
+      sunExposureWeekly:       form.sunExposureWeekly || undefined,
       dietType:           form.dietType,
       targetCalories:     Number(form.targetCalories),
       macroSplit:         { hc: Number(form.hcPct)||0, prot: Number(form.protPct)||0, grasa: Number(form.grasaPct)||0 },
       macroGrams:         { hc: hcG, prot: protG, grasa: grasaG },
+      appetitePeakTime:       form.appetitePeakTime || undefined,
+      dietSince:              form.dietSince || undefined,
+      hadOverweightHistory:   form.hadOverweightHistory,
+      foodRelationshipGood:   form.foodRelationshipGood,
+      foodRelationshipReason: !form.foodRelationshipGood ? (form.foodRelationshipReason || undefined) : undefined,
+      eatsTooFast:            form.eatsTooFast,
+      supplements:            form.supplements.filter(s => s.name.trim()),
+      weightTendency:         form.weightTendency || undefined,
+      neckCm:                 form.neckCm  !== '' ? Number(form.neckCm)  : undefined,
+      waistCm:                form.waistCm !== '' ? Number(form.waistCm) : undefined,
+      hipCm:                  form.hipCm   !== '' ? Number(form.hipCm)   : undefined,
       likedFoods:         initialData?.likedFoods    ?? [],
       dislikedFoods:      initialData?.dislikedFoods ?? [],
       allergies:          form.allergies,
@@ -425,6 +687,19 @@ export default function OnboardingForm({
       hatedExercises:     form.hatedExercises,
       experienceLevel:    form.experienceLevel,
       injuries:           form.injuries,
+      oneRepMaxTotal:        form.oneRepMaxTotal !== '' ? Number(form.oneRepMaxTotal) : undefined,
+      progressFrequency:     form.progressFrequency !== '' ? form.progressFrequency : undefined,
+      techniqueLevel:        form.techniqueLevel !== '' ? form.techniqueLevel : undefined,
+      currentMotivation:     form.currentMotivation,
+      muscleGroupsToImprove: form.muscleGroupsToImprove || undefined,
+      restDayActive:         form.restDayActive,
+      restDayActiveDetail:   form.restDayActive ? (form.restDayActiveDetail || undefined) : undefined,
+      sittingHoursPerDay:    form.sittingHoursPerDay !== '' ? Number(form.sittingHoursPerDay) : undefined,
+      stressReason:          form.stressReason || undefined,
+      sleepDeficitCauses:    form.sleepDeficitCauses,
+      sleepRoutineOrScreen:  form.sleepRoutineOrScreen !== '' ? form.sleepRoutineOrScreen : undefined,
+      sleepMedication:       form.sleepMedication,
+      sleepMedicationDetail: form.sleepMedication ? (form.sleepMedicationDetail || undefined) : undefined,
       extraAnswers:       form.extraAnswers,
       completedAt:        new Date().toISOString(),
     };
@@ -622,6 +897,54 @@ export default function OnboardingForm({
             { value: 'salud',               label: 'Salud'              },
           ]}
         />
+        <div className="space-y-1.5">
+          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Objetivo, en tus palabras <span className="text-[#555] normal-case">(opc)</span></p>
+          <textarea rows={2} value={form.goalFreeText} onChange={e => set('goalFreeText', e.target.value)}
+            placeholder="Describe con tus palabras qué quieres conseguir…"
+            className={`${FIELD} resize-none placeholder:text-[#444]`} />
+        </div>
+      </Section>
+
+      {/* ── DATOS PERSONALES ADICIONALES ─────────────────────────────── */}
+      <Section icon="badge" title="Datos personales">
+        <TextField label="Ocupación" value={form.occupation} onChange={v => set('occupation', v)} placeholder="p.ej. profesor, comercial…" />
+        <TextField label="¿Cómo nos has conocido?" value={form.referralSource} onChange={v => set('referralSource', v)} placeholder="p.ej. Instagram, recomendación…" />
+      </Section>
+
+      {/* ── SALUD ─────────────────────────────────────────────────────── */}
+      <Section icon="health_and_safety" title="Salud">
+        <YesNo label="¿Tienes alguna lesión o molestia actual?" value={form.hasCurrentInjury} onChange={v => set('hasCurrentInjury', v)} />
+        {form.hasCurrentInjury && (
+          <div className="space-y-3 pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Dónde?" value={form.currentInjuryLocation} onChange={v => set('currentInjuryLocation', v)} />
+            <SliderField label="Intensidad" min={1} max={10} value={form.currentInjuryIntensity} onChange={v => set('currentInjuryIntensity', v)} />
+            <div className="space-y-1.5">
+              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">¿En qué gestos/movimientos/ejercicios sientes dolor?</p>
+              <textarea rows={2} value={form.currentInjuryMovements} onChange={e => set('currentInjuryMovements', e.target.value)}
+                className={`${FIELD} resize-none placeholder:text-[#444]`} />
+            </div>
+          </div>
+        )}
+        <YesNo label="¿Lesiones anteriores?" value={form.hadPastInjuries} onChange={v => set('hadPastInjuries', v)} />
+        {form.hadPastInjuries && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Cuál?" value={form.pastInjuriesDetail} onChange={v => set('pastInjuriesDetail', v)} />
+          </div>
+        )}
+        <YesNo label="¿Consumes algún medicamento o fármaco?" value={form.takesMedication} onChange={v => set('takesMedication', v)} />
+        {form.takesMedication && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Cuál?" value={form.medicationDetail} onChange={v => set('medicationDetail', v)} />
+          </div>
+        )}
+        <YesNo label="¿Intervención quirúrgica reciente?" value={form.recentSurgery} onChange={v => set('recentSurgery', v)} />
+        {form.recentSurgery && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Cuál?" value={form.recentSurgeryDetail} onChange={v => set('recentSurgeryDetail', v)} />
+          </div>
+        )}
+        <TextField label="¿Fumas / alcohol / otras sustancias?" value={form.smokesAlcoholSubstances} onChange={v => set('smokesAlcoholSubstances', v)} placeholder="Describe brevemente…" />
+        <TextField label="Exposición al sol durante la semana" value={form.sunExposureWeekly} onChange={v => set('sunExposureWeekly', v)} placeholder="p.ej. 2-3 horas los fines de semana" />
       </Section>
 
       {/* ── NUTRICIÓN + CÁLCULO AUTOMÁTICO ───────────────────────────── */}
@@ -729,6 +1052,26 @@ export default function OnboardingForm({
         <TagInput label="Alergias / intolerancias" placeholder="p.ej. lactosa, gluten, frutos secos…"
           helpText="Pulsa Enter o coma para añadir. Excluyen recetas del generador."
           tags={form.allergies} onChange={v => set('allergies', v)} />
+
+        {(form.dietType === 'vegano' || form.dietType === 'vegetariano') && (
+          <TextField label="¿Desde cuándo?" value={form.dietSince} onChange={v => set('dietSince', v)} placeholder="p.ej. desde hace 2 años" />
+        )}
+        <TextField label="¿En qué momento del día tienes más apetito?" value={form.appetitePeakTime} onChange={v => set('appetitePeakTime', v)} placeholder="p.ej. por la mañana, por la noche…" />
+        <YesNo label="¿Has tenido sobrepeso u obesidad anteriormente?" value={form.hadOverweightHistory} onChange={v => set('hadOverweightHistory', v)} />
+        <YesNo label="¿Tu relación con la comida es buena?" value={form.foodRelationshipGood} onChange={v => set('foodRelationshipGood', v)} />
+        {!form.foodRelationshipGood && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Por qué?" value={form.foodRelationshipReason} onChange={v => set('foodRelationshipReason', v)} />
+          </div>
+        )}
+        <YesNo label="¿Comes muy deprisa?" value={form.eatsTooFast} onChange={v => set('eatsTooFast', v)} />
+        <SupplementsTable rows={form.supplements} onChange={v => set('supplements', v)} />
+        <TextField label="¿Tendencia a ganar o perder peso?" value={form.weightTendency} onChange={v => set('weightTendency', v)} placeholder="Descríbelo brevemente…" />
+        <div className="grid grid-cols-3 gap-3">
+          <NumberField label="Cuello" value={form.neckCm} onChange={v => set('neckCm', v)} unit="cm" min={0} />
+          <NumberField label="Cintura" value={form.waistCm} onChange={v => set('waistCm', v)} unit="cm" min={0} />
+          <NumberField label="Cadera" value={form.hipCm} onChange={v => set('hipCm', v)} unit="cm" min={0} />
+        </div>
       </Section>
 
       {/* ── COMIDAS ──────────────────────────────────────────────────── */}
@@ -827,6 +1170,61 @@ export default function OnboardingForm({
             placeholder="p.ej. rodilla derecha operada (menisco)…"
             className={`${FIELD} resize-none placeholder:text-[#444]`} />
         </div>
+        <NumberField label="Múltiplo de levantamiento total (press banca + sentadilla + peso muerto)" value={form.oneRepMaxTotal} onChange={v => set('oneRepMaxTotal', v)} unit="kg" min={0} />
+        <PillSelect<ProgressFrequency>
+          label="¿Cada cuánto progresas?" value={form.progressFrequency} onChange={v => set('progressFrequency', v)}
+          options={[
+            { value: 'cada_semana',          label: 'Cada semana' },
+            { value: 'cada_varias_semanas',  label: 'Cada varias semanas' },
+            { value: 'con_dificultad',       label: 'Con dificultad' },
+          ]}
+        />
+        <PillSelect<TechniqueLevel>
+          label="Ejecución técnica" value={form.techniqueLevel} onChange={v => set('techniqueLevel', v)}
+          options={[
+            { value: 'mala',       label: 'Mala' },
+            { value: 'regular',    label: 'Regular' },
+            { value: 'buena',      label: 'Buena' },
+            { value: 'muy_buena',  label: 'Muy buena' },
+          ]}
+        />
+        <SliderField label="Motivación actual" min={1} max={10} value={form.currentMotivation} onChange={v => set('currentMotivation', v)} />
+        <div className="space-y-1.5">
+          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Grupos musculares o ejercicios a mejorar</p>
+          <textarea rows={2} value={form.muscleGroupsToImprove} onChange={e => set('muscleGroupsToImprove', e.target.value)}
+            className={`${FIELD} resize-none placeholder:text-[#444]`} />
+        </div>
+        <YesNo label="¿Te mantienes activo en tus días de descanso?" value={form.restDayActive} onChange={v => set('restDayActive', v)} />
+        {form.restDayActive && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Cómo?" value={form.restDayActiveDetail} onChange={v => set('restDayActiveDetail', v)} />
+          </div>
+        )}
+        <NumberField label="Horas sentado al día" value={form.sittingHoursPerDay} onChange={v => set('sittingHoursPerDay', v)} unit="h" min={0} max={24} />
+        <TextField label="Motivo del nivel de estrés" value={form.stressReason} onChange={v => set('stressReason', v)} placeholder="Complementa a la valoración detallada de más abajo…" />
+      </Section>
+
+      {/* ── DESCANSO ─────────────────────────────────────────────────── */}
+      <Section icon="bedtime" title="Descanso">
+        <CheckboxGroup
+          label="Si tu descanso es deficitario, ¿por qué?"
+          options={['Te cuesta dormir', 'Estrés', 'Pensamientos', 'Ansiedad', 'Duermes pero no descansas']}
+          values={form.sleepDeficitCauses}
+          onChange={v => set('sleepDeficitCauses', v)}
+        />
+        <PillSelect<SleepRoutineOrScreen>
+          label="Antes de dormir, ¿rutina o pantalla?" value={form.sleepRoutineOrScreen} onChange={v => set('sleepRoutineOrScreen', v)}
+          options={[
+            { value: 'rutina',  label: 'Rutina' },
+            { value: 'pantalla', label: 'Pantalla' },
+          ]}
+        />
+        <YesNo label="¿Medicación para conciliar el sueño?" value={form.sleepMedication} onChange={v => set('sleepMedication', v)} />
+        {form.sleepMedication && (
+          <div className="pl-3 border-l-2 border-[#2a2a2a]">
+            <TextField label="¿Cuál?" value={form.sleepMedicationDetail} onChange={v => set('sleepMedicationDetail', v)} />
+          </div>
+        )}
       </Section>
 
       {/* ── VALORACIÓN DETALLADA (template questions) ────────────────── */}
