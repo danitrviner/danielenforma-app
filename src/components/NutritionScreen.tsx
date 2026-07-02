@@ -2,34 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
-
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
-const BUDGET_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
-
-const CAT_LABEL: Record<FoodCategory, string> = {
-  HC: 'HC', PROT: 'Proteína', GRASA: 'Grasa', MIX_HC: '½P+½HC', MIX_GRASA: '½P+½Grasa',
-};
-
-const CAT_COLOR: Record<FoodCategory, string> = {
-  HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
-  MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
-};
-
-const CAT_BG: Record<FoodCategory, string> = {
-  HC: 'bg-amber-500/10 border-amber-500/20',
-  PROT: 'bg-blue-500/10 border-blue-500/20',
-  GRASA: 'bg-orange-500/10 border-orange-500/20',
-  MIX_HC: 'bg-violet-500/10 border-violet-500/20',
-  MIX_GRASA: 'bg-pink-500/10 border-pink-500/20',
-};
-
-const MODE_LABEL: Record<DietMode, string> = {
-  OMNIVORO: 'Omnívoro', VEGANO: 'Vegano', SIN_PESAR: 'Sin pesar',
-};
 
 // ── Weekly schedule constants ──────────────────────────────────────────────────
 
@@ -40,42 +15,6 @@ const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: '
 const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {
-  if (category === 'MIX_HC') {
-    p.HC   = round2(p.HC   + qty * 0.5);
-    p.PROT = round2(p.PROT + qty * 0.5);
-  } else if (category === 'MIX_GRASA') {
-    p.GRASA = round2(p.GRASA + qty * 0.5);
-    p.PROT  = round2(p.PROT  + qty * 0.5);
-  } else {
-    p[category] = round2(p[category] + qty);
-  }
-}
-
-function fmtQty(q: number): string {
-  if (Number.isInteger(q)) return String(q);
-  return q.toFixed(2).replace(/\.?0+$/, '');
-}
-
-function parseBaseGrams(label: string): number | null {
-  const m = label.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|cc|kg|l)\b/i);
-  if (!m) return null;
-  let val = parseFloat(m[1].replace(',', '.'));
-  const u = m[2].toLowerCase();
-  if (u === 'kg') val *= 1000;
-  if (u === 'l') val *= 1000;
-  return val;
-}
-
-function itemWeightLabel(foodLabel: string, qty: number): string {
-  const base = parseBaseGrams(foodLabel);
-  if (base == null) return `×${fmtQty(qty)}`;
-  const g = Math.round(base * qty * 10) / 10;
-  return g >= 1000 ? `${(g / 1000).toFixed(1)}kg` : `${g}g`;
-}
 
 function mealLabel(name: string, n: number): string {
   const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();

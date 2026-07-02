@@ -3,23 +3,12 @@ import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles, uploadDietVideo } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
 import CoachNoteEditor from './CoachNoteEditor';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
-// Only HC, PROT, GRASA appear in budget and live-distribution panels.
-// MIX_HC / MIX_GRASA exist only at food-item level.
-const BUDGET_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
-
-const CAT_LABEL: Record<FoodCategory, string> = {
-  HC: 'HC', PROT: 'Proteína', GRASA: 'Grasa', MIX_HC: '½P+½HC', MIX_GRASA: '½P+½Grasa',
-};
-
-const CAT_COLOR: Record<FoodCategory, string> = {
-  HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
-  MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
-};
-
+// Local CAT_BG bakes in the text color class (unlike the shared exchangeHelpers
+// version) because every usage site in this file renders it standalone.
 const CAT_BG: Record<FoodCategory, string> = {
   HC: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
   PROT: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
@@ -28,24 +17,9 @@ const CAT_BG: Record<FoodCategory, string> = {
   MIX_GRASA: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
 };
 
-const MODE_LABEL: Record<DietMode, string> = {
-  OMNIVORO: 'Omnívoro', VEGANO: 'Vegano', SIN_PESAR: 'Sin pesar',
-};
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-function parseBaseGrams(label: string): number | null {
-  const m = label.match(/(\d+(?:[.,]\d+)?)\s*(g|ml|cc|kg|l)\b/i);
-  if (!m) return null;
-  let val = parseFloat(m[1].replace(',', '.'));
-  const u = m[2].toLowerCase();
-  if (u === 'kg') val *= 1000;
-  if (u === 'l') val *= 1000;
-  return val;
-}
 
 function computeGrams(label: string, qty: number): number | undefined {
   const base = parseBaseGrams(label);
@@ -57,26 +31,6 @@ function itemWeightLabel(foodLabel: string, qty: number): string {
   if (g == null) return `×${fmtQty(qty)}`;
   if (g >= 1000) return `${(g / 1000).toFixed(1)}kg`;
   return `${g}g`;
-}
-
-function fmtQty(q: number): string {
-  if (Number.isInteger(q)) return String(q);
-  const s = q.toFixed(2);
-  return s.replace(/\.?0+$/, '');
-}
-
-// MIX_HC  → +0.5 HC  +0.5 PROT per exchange
-// MIX_GRASA → +0.5 GRASA +0.5 PROT per exchange
-function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {
-  if (category === 'MIX_HC') {
-    p.HC   = round2(p.HC   + qty * 0.5);
-    p.PROT = round2(p.PROT + qty * 0.5);
-  } else if (category === 'MIX_GRASA') {
-    p.GRASA = round2(p.GRASA + qty * 0.5);
-    p.PROT  = round2(p.PROT  + qty * 0.5);
-  } else {
-    p[category] = round2(p[category] + qty);
-  }
 }
 
 function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
