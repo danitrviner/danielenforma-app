@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds } from '../dbService';
+import ClientHub from './ClientHub';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
   onRefreshCheckIns: () => void;
   coachId: string;
+  coachEmail: string;
 }
 
 type UnifiedItem =
   | { kind: 'checkin'; sortKey: number; data: WeightCheckIn }
   | { kind: 'response'; sortKey: number; data: QuestionnaireResponse; questionnaire?: Questionnaire };
 
-export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: ReviewsScreenProps) {
+export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
   const [athletes, setAthletes] = useState<UserProfile[]>([]);
+  const [selectedAthlete, setSelectedAthlete] = useState<UserProfile | null>(null);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [allResponses, setAllResponses] = useState<QuestionnaireResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(true);
@@ -96,6 +99,19 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
       setIsSubmitting(false);
     }
   };
+
+  if (selectedAthlete) {
+    return (
+      <ClientHub
+        athlete={selectedAthlete}
+        coachId={coachId}
+        coachEmail={coachEmail}
+        checkins={checkins}
+        onRefreshCheckIns={onRefreshCheckIns}
+        onBack={() => setSelectedAthlete(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -196,6 +212,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                           {c.weight} kg · {c.adherence} · {c.mood}
                         </p>
                       </div>
+                      {athleteProfile && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
+                          title="Ver perfil completo"
+                          className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#e2ff00] hover:bg-[#1c1b1b] transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-base">account_circle</span>
+                        </button>
+                      )}
                       <span
                         className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -291,6 +316,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                         <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5 truncate">{previewAnswers}</p>
                       )}
                     </div>
+                    {athleteProfile && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
+                        title="Ver perfil completo"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#e2ff00] hover:bg-[#1c1b1b] transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-base">account_circle</span>
+                      </button>
+                    )}
                     <span
                       className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
