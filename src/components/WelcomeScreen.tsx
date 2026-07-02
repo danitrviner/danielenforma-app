@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
 
 interface WelcomeScreenProps {
@@ -12,6 +12,31 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetting, setResetting] = useState(false);
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setResetMessage('');
+    if (!email) {
+      setError('Escribe tu correo electrónico arriba y vuelve a pulsar "¿Olvidaste tu contraseña?".');
+      return;
+    }
+    setResetting(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetMessage(`Te hemos enviado un correo a ${email} para restablecer tu contraseña. Revisa también la carpeta de spam.`);
+    } catch (err: any) {
+      console.error('sendPasswordResetEmail error:', err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No existe ninguna cuenta con ese correo.');
+      } else {
+        setError(err.message || 'No se pudo enviar el correo de recuperación.');
+      }
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
     setError('');
@@ -159,10 +184,16 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           </div>
         )}
 
+        {resetMessage && (
+          <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/35 text-[#e2ff00] p-3 rounded text-sm mb-6 text-center">
+            {resetMessage}
+          </div>
+        )}
+
         <form onSubmit={handleEmailAuth} className="space-y-4">
           <div>
             <label className="block text-xs font-mono text-[#c6c9ab] uppercase tracking-wider mb-2">Correo Electrónico</label>
-            <input 
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -173,8 +204,20 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-mono text-[#c6c9ab] uppercase tracking-wider mb-2">Contraseña</label>
-            <input 
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-mono text-[#c6c9ab] uppercase tracking-wider">Contraseña</label>
+              {!isRegistering && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetting}
+                  className="text-[10px] text-[#e2ff00] hover:underline transition-colors font-mono disabled:opacity-50"
+                >
+                  {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+                </button>
+              )}
+            </div>
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
