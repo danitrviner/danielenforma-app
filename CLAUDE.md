@@ -64,6 +64,9 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 | `nutritionPrograms` | email | docId = email |
 | `roadmaps` | email | docId = email |
 | `notifications` | determinista | `recipientEmail` |
+| `tasks` | auto | `athleteId` = EMAIL |
+| `resources` | auto | `coachId` (UID coach) — se lee sin filtrar (1 solo coach) |
+| `stepLogs` | auto | `athleteId` = EMAIL |
 
 ---
 
@@ -181,6 +184,24 @@ interface OnboardingData {
   completedAt: string;
 }
 ```
+
+---
+
+## Última sesión (2026-07-02)
+
+- **Fase 1 (UX y Navegación) del roadmap de mejoras completada** — ver `src/utils/`, nuevos componentes abajo. Fases 2-4 (Entrenamiento, Nutrición, Check-in avanzado) quedan pendientes para sesiones futuras, se planean e implementan una a la vez.
+- **`RecipesScreen.tsx`:** "Cargar más recetas" fallaba en silencio cuando categoría + momento de ingesta estaban filtrados a la vez — faltaba el índice compuesto `(ownerId, categoria, intakeTypes, name)`. Añadido a `firestore.indexes.json` y desplegado. Se agregó `indyaError` + botón "Reintentar" para que futuros fallos no queden atascados sin feedback.
+- **`ProgressScreen.tsx` eliminado** (duplicado muerto de `HomeScreen.tsx`, sin referencias).
+- **Navegación coach:** tab "Ajustes" eliminado; `CoachesScreen` (Entrenadores/Cuestionarios/Ficha/Biblioteca) ahora vive colapsado dentro de `ProfileScreen.tsx` → sección "Entrenadores" (solo coach). Icono "Perfil" quitado del dock móvil del coach (el avatar del header ya abre el perfil). `TrainingCoachScreen.tsx`'s tab bar (Rutinas/Ejercicios/Plantillas) pasó a scroll+snap para mobile.
+- **`ClientsScreen.tsx`:** métricas "Racha Promedio"/"Nivel Medio" removidas, reemplazadas por "Atletas próximos a finalizar su planificación" (usa `planDaysLeft` ya calculado) + tarjeta nueva "Notas Pendientes". "Revisiones Pendientes" navega directo al tab Revisiones vía `onOpenReviews`.
+- **`ReviewsScreen.tsx`:** cada item (check-in o respuesta de cuestionario) tiene botón "Ver perfil completo" que abre `ClientHub` para ese atleta (mismo componente que usa `ClientsScreen`, reutilizado vía `ClientHub`'s nuevo prop opcional `initialTab`).
+- **`WorkoutLog`/`WorkoutEntryLog`** ganan `note?`/`noteCoachSeen?` opcionales (`types.ts`) — campos preparados para que Fase 2 implemente notas del atleta por ejercicio/entreno; hoy solo alimentan la tarjeta "Notas Pendientes" de Clientes (mostrará 0 hasta que exista la UI de escritura).
+- **Nuevo: "Tareas pendientes"** (`PendingTasksPanel.tsx` + tipo `TaskItem` + colección `tasks`). Agrega automáticamente: check-in atrasado (7+ días sin enviar), cuestionarios R1-R7 pendientes del día (reutiliza `utils/questionnaireSchedule.ts`, extraído de `CheckInScreen.tsx`), y tareas creadas manualmente por el coach (`TaskManagerPanel.tsx`, nuevo en `ClientHub` → Revisiones; tipos `manual`/`foto` para solicitudes de fotos). Arquitectura abierta a nuevos `TaskType` sin tocar el agregador.
+- **Nuevo: "Recursos"** (`ResourcesPanel.tsx` + tipo `Resource` + colección `resources`). App de un solo coach → se lee todo sin filtrar por `coachId` (mismo patrón que `foodItems`/`exercises`). Coach comparte desde `ClientsScreen`, atleta los ve desde `HomeScreen`.
+- **Nuevo: pasos diarios** — `StepsWidget.tsx` + tipo `StepLog` + colección `stepLogs` (separada de `bodyweightLogs` a propósito, para no forzar un peso placeholder) + `AthleteNutritionConfig.stepGoal` configurable (no hardcodeado; default 8000 si no hay valor). Entrada manual por ahora; el cálculo kcal/objetivo dinámico y la sincronización Apple Health/Google Health Connect son Fase 3.
+- **`HomeScreen.tsx` (Inicio) reescrito:** fuera el gráfico "Progresión" y el tab "Fotos" (la evolución de peso sigue en Mi Perfil vía `BodyweightPanel`). Ahora: Tareas pendientes → Pasos de hoy → Entrenamientos pendientes de esta semana + atrasados (compacto, usa `utils/trainingWeek.ts` extraído de `TrainingScreen.tsx`) → Recursos.
+- **`CheckInScreen.tsx`:** centraliza `PhotosScreen` (antes en Inicio) + nueva sección colapsable "Cuestionarios futuros".
+- **`firestore.rules`:** reglas nuevas para `tasks`, `resources`, `stepLogs` (desplegadas).
 
 ---
 
