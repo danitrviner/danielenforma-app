@@ -337,6 +337,7 @@ export interface DietItem {
   foodLabel: string;
   quantity: number;   // multiples of 0.25 (e.g. 0.25, 0.5, 1, 1.25)
   grams?: number;     // computed: parsed base weight × quantity
+  originRecipeId?: string; // set when the item was added via "Usar receta" — scopes "Cambiar comida"
 }
 
 export interface DietMeal {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { OnboardingData, Recipe, Diet, DietItem, FoodCategory } from '../types';
 import { queryIndyaForGenerator, createDiet } from '../dbService';
 import { ingredientMatch } from '../utils/foodPrefs';
+import { fitScore } from '../utils/recipeMatch';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,13 +89,6 @@ function mealTarget(daily: { HC: number; PROT: number; GRASA: number }, pct: num
 function sExch(recipe: Recipe, scale: number) {
   const e = recipe.exchanges ?? { HC: 0, PROT: 0, GRASA: 0 };
   return { HC: rQ(e.HC * scale), PROT: rQ(e.PROT * scale), GRASA: rQ(e.GRASA * scale) };
-}
-
-function fitScore(
-  t: { HC: number; PROT: number; GRASA: number },
-  a: { HC: number; PROT: number; GRASA: number },
-) {
-  return Math.abs(t.HC - a.HC) + Math.abs(t.PROT - a.PROT) + Math.abs(t.GRASA - a.GRASA);
 }
 
 function scoreCandidate(r: Recipe, target: { HC: number; PROT: number; GRASA: number }, ob: OnboardingData): Candidate {

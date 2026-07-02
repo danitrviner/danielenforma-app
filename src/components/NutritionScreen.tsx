@@ -3,6 +3,7 @@ import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, 
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
+import { findSimilarRecipes } from '../utils/recipeMatch';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 
@@ -58,6 +59,9 @@ export default function NutritionScreen({ profile }: Props) {
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
+
+  // Recipe swap ("Cambiar comida")
+  const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string } | null>(null);
 
   // Weekly schedule
   const [allDietsList, setAllDietsList]     = useState<Diet[]>([]);
@@ -269,6 +273,16 @@ export default function NutritionScreen({ profile }: Props) {
     });
   }, [recipes, enabledModes, recipeCatFilter, recipeSearch, recipeFavorites]);
 
+  const swapSourceRecipe = useMemo(() =>
+    swapContext ? recipes.find(r => r.id === swapContext.recipeId) ?? null : null,
+    [swapContext, recipes]
+  );
+
+  const swapCandidates = useMemo(() => {
+    if (!swapSourceRecipe) return [];
+    return findSimilarRecipes(swapSourceRecipe, recipes.filter(r => r.id !== swapSourceRecipe.id));
+  }, [swapSourceRecipe, recipes]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleSelectDiet = (dt: Diet) => {
@@ -330,7 +344,7 @@ export default function NutritionScreen({ profile }: Props) {
 
     const newItems: DietItem[] = recipe.ingredients
       .filter(ing => enabledModes.includes(ing.mode))
-      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity }));
+      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
 
     if (newItems.length === 0) { setRecipePickerMealId(null); return; }
 
@@ -383,6 +397,61 @@ export default function NutritionScreen({ profile }: Props) {
       }
       return next;
     });
+  };
+
+  // ── Recipe swap ("Cambiar comida") ──────────────────────────────────────────
+
+  const handleOpenSwapPicker = (mealId: string, recipeId: string) => {
+    setSwapContext({ mealId, recipeId });
+  };
+
+  const handleApplySwap = (newRecipe: Recipe) => {
+    if (!swapContext || !selectedDiet) return;
+    const { mealId, recipeId } = swapContext;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) { setSwapContext(null); return; }
+
+    const newIngredientItems: DietItem[] = newRecipe.ingredients
+      .filter(ing => enabledModes.includes(ing.mode))
+      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: newRecipe.id }));
+
+    const oldItems = meal.items;
+    const keptIndices: number[] = [];
+    oldItems.forEach((it, i) => { if (it.originRecipeId !== recipeId) keptIndices.push(i); });
+    const keptItems = keptIndices.map(i => oldItems[i]);
+    const newItems = [...keptItems, ...newIngredientItems];
+
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: newItems }),
+      };
+    });
+
+    // Kept items keep their done-state (relative order preserved); swapped-in
+    // items start fresh, same as a freshly-applied recipe.
+    let nextStates: Record<string, ItemState> = {};
+    setItemStates(prev => {
+      const next: Record<string, ItemState> = {};
+      Object.keys(prev).forEach(k => { if (!k.startsWith(`${mealId}_`)) next[k] = prev[k]; });
+      keptItems.forEach((item, newIdx) => {
+        const oldIdx = keptIndices[newIdx];
+        next[`${mealId}_${newIdx}`] = prev[`${mealId}_${oldIdx}`] ?? { foodLabel: item.foodLabel, done: false };
+      });
+      newIngredientItems.forEach((item, i) => {
+        next[`${mealId}_${keptItems.length + i}`] = { foodLabel: item.foodLabel, done: false };
+      });
+      nextStates = next;
+      return next;
+    });
+
+    if (selectedDiet) {
+      const doneItemIds = (Object.entries(nextStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+      saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+    }
+
+    setSwapContext(null);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -704,6 +773,16 @@ export default function NutritionScreen({ profile }: Props) {
                                 </span>
                               </div>
 
+                              {/* Cambiar comida — only on the first item of a recipe-derived group */}
+                              {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
+                                <button
+                                  onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
+                                  title="Cambiar comida"
+                                  className="text-[#c6c9ab] hover:text-[#e2ff00] transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                >
+                                  <span className="material-symbols-outlined text-sm select-none">skillet</span>
+                                </button>
+                              )}
                               {/* Swap button */}
                               <button
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
@@ -848,6 +927,59 @@ export default function NutritionScreen({ profile }: Props) {
           </div>
         );
       })()}
+
+      {/* Cambiar comida sheet */}
+      {swapContext && (
+        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
+          <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+              <div>
+                <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#e2ff00] text-base">skillet</span>
+                  Cambiar comida
+                </h3>
+                {swapSourceRecipe && (
+                  <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
+                    Alternativas a {swapSourceRecipe.name} (±10% kcal)
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setSwapContext(null)}
+                className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm select-none">close</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              {swapCandidates.length === 0 ? (
+                <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">
+                  Sin alternativas nutricionalmente similares disponibles.
+                </div>
+              ) : swapCandidates.map(recipe => (
+                <button
+                  key={recipe.id}
+                  onClick={() => handleApplySwap(recipe)}
+                  className="w-full flex items-center gap-3 p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-xl border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                >
+                  {recipe.photoUrl ? (
+                    <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors truncate block">{recipe.name}</span>
+                    <span className="font-mono text-[9px] text-[#e2ff00]/70">{recipe.kcal} kcal</span>
+                  </div>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Food picker sheet */}
       {pickerItem && (
