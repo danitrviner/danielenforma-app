@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight } from '../dbService';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
+import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import PhotosScreen from './PhotosScreen';
+
+const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 
@@ -290,6 +293,30 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   );
   const upcomingAssignments = assignments.filter(a => isUpcoming(a));
 
+  // Photo check-in state
+  const [photoAssignments, setPhotoAssignments] = useState<PhotoAssignment[]>([]);
+  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
+  const [loadingPhotoAssignments, setLoadingPhotoAssignments] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingPhotoAssignments(true);
+    Promise.all([
+      getPhotoAssignmentsForAthlete(profile.email),
+      getProgressPhotos(profile.email),
+    ]).then(([aList, photos]) => {
+      if (cancelled) return;
+      setPhotoAssignments(aList.filter(a => a.active));
+      setProgressPhotos(photos);
+    }).catch(console.error).finally(() => { if (!cancelled) setLoadingPhotoAssignments(false); });
+    return () => { cancelled = true; };
+  }, [profile.email]);
+
+  const pendingPhotoAssignments = photoAssignments.filter(
+    a => isDueToday(a) && !hasUploadedThisOccurrence(a, progressPhotos)
+  );
+  const upcomingPhotoAssignments = photoAssignments.filter(a => isUpcoming(a));
+
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
     setResponses(prev => [...prev, r]);
     setActiveAssignment(null);
@@ -432,6 +459,51 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
               );
             })}
+          </div>
+        </details>
+      )}
+
+      {/* Pending photo check-ins */}
+      {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
+        <section className="bg-[#121212] border border-[#e2ff00]/20 rounded-xl p-4 sm:p-6">
+          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#e2ff00]">photo_camera</span>
+            Fotos pendientes
+            <span className="ml-auto bg-[#e2ff00] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
+          </h2>
+          <div className="space-y-2">
+            {pendingPhotoAssignments.map(a => (
+              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-3.5">
+                <p className="font-sans font-semibold text-sm text-white">
+                  {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
+                </p>
+                <p className="font-mono text-[10px] text-[#c6c9ab]">Sube las fotos abajo</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Upcoming (not-yet-due) recurring photo check-ins */}
+      {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
+        <details className="group bg-[#121212] border border-[#2a2a2a] rounded-xl">
+          <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
+            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+              Fotos futuras
+              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingPhotoAssignments.length})</span>
+            </h2>
+            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+          </summary>
+          <div className="px-4 sm:px-6 pb-4 space-y-2">
+            {upcomingPhotoAssignments.map(a => (
+              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a]/60 rounded-lg p-3">
+                <p className="font-sans text-xs text-[#c6c9ab]">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
+                <span className="font-mono text-[9px] text-[#555] uppercase">
+                  {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
+                </span>
+              </div>
+            ))}
           </div>
         </details>
       )}
