@@ -233,41 +233,43 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
       )}
 
-      {/* ── Ficha de iniciación ───────────────────────────────────────────────── */}
-      {editingFicha ? (
-        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
-          <OnboardingForm
-            athleteEmail={profile.email}
-            initialData={onboarding}
-            onSaved={data => { setOnboarding(data); setEditingFicha(false); }}
-            onCancel={() => setEditingFicha(false)}
-          />
-        </div>
-      ) : (
-        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4">
-          <div>
-            <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#e2ff00] text-base">assignment_ind</span>
-              {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
-            </h3>
-            <p className="font-mono text-[10px] text-[#555] mt-1">
-              {onboarding
-                ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
-                : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
-            </p>
+      {/* ── Ficha de iniciación (solo atleta — el coach no rellena ficha propia) ── */}
+      {!isCoach && (
+        editingFicha ? (
+          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+            <OnboardingForm
+              athleteEmail={profile.email}
+              initialData={onboarding}
+              onSaved={data => { setOnboarding(data); setEditingFicha(false); }}
+              onCancel={() => setEditingFicha(false)}
+            />
           </div>
-          <button
-            onClick={() => setEditingFicha(true)}
-            className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">edit_note</span>
-            {onboarding ? 'Editar' : 'Completar'}
-          </button>
-        </div>
+        ) : (
+          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#e2ff00] text-base">assignment_ind</span>
+                {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
+              </h3>
+              <p className="font-mono text-[10px] text-[#555] mt-1">
+                {onboarding
+                  ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                  : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
+              </p>
+            </div>
+            <button
+              onClick={() => setEditingFicha(true)}
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">edit_note</span>
+              {onboarding ? 'Editar' : 'Completar'}
+            </button>
+          </div>
+        )
       )}
 
       {/* ── Food preferences ──────────────────────────────────────────────────── */}
-      {onboarding && !editingFicha && (
+      {!isCoach && onboarding && !editingFicha && (
         <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
           <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[#e2ff00] text-base">restaurant</span>
