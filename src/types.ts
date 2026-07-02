@@ -75,12 +75,23 @@ export interface Exercise {
   primaryFocus: string;      // legacy free-form label
   muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it)
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
-  level: 'principiante' | 'intermedio' | 'avanzado';
+  enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie
   equipment?: string[];      // material necesario; undefined/empty = siempre disponible
   videoUrl?: string;
   imageUrl?: string;
-  instructions?: string;
+  instructions?: string;     // descripción global — visible para cualquier atleta
   isCustom: boolean;
+}
+
+// Observación personalizada de un ejercicio, visible únicamente para un atleta concreto
+// (distinta de `Exercise.instructions`, que es la descripción global). Doc ID determinista
+// `${exerciseId}_${athleteId}` — evita duplicados y permite getDoc directo sin query.
+export interface ExercisePersonalNote {
+  id: string;
+  exerciseId: string;
+  athleteId: string; // email
+  observation: string;
+  updatedAt: string; // ISO timestamp
 }
 
 export interface WorkoutExercise {

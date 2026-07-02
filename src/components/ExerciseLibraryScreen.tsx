@@ -7,7 +7,7 @@ interface ExerciseLibraryScreenProps {
 }
 
 type ExerciseType  = Exercise['type'];
-type ExerciseLevel = Exercise['level'];
+type EnduranceProfile = NonNullable<Exercise['enduranceProfile']>;
 
 // ─── Macrocycle muscle groups (the 14 typed keys) ─────────────────────────────
 
@@ -35,8 +35,8 @@ const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = {
   core:          'Core',
 };
 
-const TYPES:  ExerciseType[]  = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
-const LEVELS: ExerciseLevel[] = ['principiante', 'intermedio', 'avanzado'];
+const TYPES: ExerciseType[] = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
+const ENDURANCE_PROFILES: EnduranceProfile[] = ['ascendente', 'campana', 'descendente'];
 
 const EQUIPMENT_OPTIONS = [
   'peso corporal',
@@ -57,10 +57,16 @@ const TYPE_STYLES: Record<ExerciseType, string> = {
   pliometría:   'bg-[#e2ff00]/10 text-[#e2ff00] border border-[#e2ff00]/20',
 };
 
-const LEVEL_STYLES: Record<ExerciseLevel, string> = {
-  principiante: 'bg-emerald-500/10 text-emerald-300',
-  intermedio:   'bg-amber-500/10 text-amber-300',
-  avanzado:     'bg-red-500/10 text-red-300',
+const ENDURANCE_STYLES: Record<EnduranceProfile, string> = {
+  ascendente:  'bg-emerald-500/10 text-emerald-300',
+  campana:     'bg-amber-500/10 text-amber-300',
+  descendente: 'bg-red-500/10 text-red-300',
+};
+
+const ENDURANCE_LABELS: Record<EnduranceProfile, string> = {
+  ascendente:  'Ascendente',
+  campana:     'Campana',
+  descendente: 'Descendente',
 };
 
 const EMPTY_FORM: Omit<Exercise, 'id'> = {
@@ -68,7 +74,6 @@ const EMPTY_FORM: Omit<Exercise, 'id'> = {
   name:         '',
   primaryFocus: 'pecho',
   type:         'fuerza',
-  level:        'principiante',
   equipment:    [],
   videoUrl:     '',
   imageUrl:     '',
@@ -82,7 +87,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [search, setSearch]                     = useState('');
   const [filterMuscleGroup, setFilterMuscleGroup] = useState<MuscleGroup | ''>('');
   const [filterType, setFilterType]             = useState('');
-  const [filterLevel, setFilterLevel]           = useState('');
+  const [filterEndurance, setFilterEndurance]   = useState('');
   const [filterEquipment, setFilterEquipment]   = useState('');
 
   const [showForm, setShowForm]                 = useState(false);
@@ -111,7 +116,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterMuscleGroup && ex.muscleGroup !== filterMuscleGroup) return false;
     if (filterType && ex.type !== filterType) return false;
-    if (filterLevel && ex.level !== filterLevel) return false;
+    if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;
     if (filterEquipment) {
       const eq = ex.equipment ?? [];
       if (eq.length === 0) return false;
@@ -134,7 +139,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       primaryFocus: ex.primaryFocus,
       muscleGroup:  ex.muscleGroup,
       type:         ex.type,
-      level:        ex.level,
+      enduranceProfile: ex.enduranceProfile,
       equipment:    ex.equipment ?? [],
       videoUrl:     ex.videoUrl || '',
       imageUrl:     ex.imageUrl || '',
@@ -194,7 +199,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     return ex.muscleGroup ? MACRO_MUSCLE_LABELS[ex.muscleGroup] : ex.primaryFocus;
   }
 
-  const hasFilters = !!(filterMuscleGroup || filterType || filterLevel || filterEquipment || search);
+  const hasFilters = !!(filterMuscleGroup || filterType || filterEndurance || filterEquipment || search);
 
   return (
     <div className="space-y-6">
@@ -263,12 +268,12 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           </select>
 
           <select
-            value={filterLevel}
-            onChange={e => setFilterLevel(e.target.value)}
+            value={filterEndurance}
+            onChange={e => setFilterEndurance(e.target.value)}
             className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
           >
-            <option value="">Todos los niveles</option>
-            {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
+            <option value="">Todos los perfiles de resistencia</option>
+            {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
           </select>
 
           <select
@@ -284,7 +289,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
           {hasFilters && (
             <button
-              onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterLevel(''); setFilterEquipment(''); setSearch(''); }}
+              onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
               className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-[#2a2a2a] rounded-lg hover:border-[#3a3a3a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
@@ -331,7 +336,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Material</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Tipo</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Nivel</th>
+                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Perfil</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Origen</th>
                     <th className="p-4 pr-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-right">Acciones</th>
                   </tr>
@@ -384,7 +389,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${LEVEL_STYLES[ex.level]}`}>{ex.level}</span>
+                        {ex.enduranceProfile ? (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                        ) : (
+                          <span className="font-mono text-[9px] text-[#333]">—</span>
+                        )}
                       </td>
                       <td className="p-4">
                         {ex.isCustom ? (
@@ -459,7 +468,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${LEVEL_STYLES[ex.level]}`}>{ex.level}</span>
+                  {ex.enduranceProfile && (
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                  )}
                   {(ex.equipment ?? []).map(eq => (
                     <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
                   ))}
@@ -551,7 +562,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </select>
               </div>
 
-              {/* Type + Level — 2 cols */}
+              {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipo *</label>
@@ -564,13 +575,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nivel *</label>
+                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
                   <select
-                    value={form.level}
-                    onChange={e => setForm(f => ({ ...f, level: e.target.value as ExerciseLevel }))}
+                    value={form.enduranceProfile ?? ''}
+                    onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
                     className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
                   >
-                    {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
+                    <option value="">— Sin asignar —</option>
+                    {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
                   </select>
                 </div>
               </div>
@@ -631,13 +643,16 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 />
               </div>
 
-              {/* Instructions */}
+              {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Instrucciones (opcional)</label>
+                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                  Descripción global
+                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
+                </label>
                 <textarea
                   value={form.instructions}
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
-                  placeholder="Descripción técnica del ejercicio, puntos clave de ejecución..."
+                  placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
                   className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all resize-none"
                 />
