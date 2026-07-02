@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../firebase';
+import React, { useState, useEffect } from 'react';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, isSignInWithEmailLink, signInWithEmailLink } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
 
 interface WelcomeScreenProps {
@@ -13,6 +13,46 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
+  // Invite link (passwordless email-link sign-in) handling
+  const [awaitingInviteEmail, setAwaitingInviteEmail] = useState(false);
+  const [inviteEmailInput, setInviteEmailInput] = useState('');
+  const [completingInvite, setCompletingInvite] = useState(false);
+
+  useEffect(() => {
+    if (!isSignInWithEmailLink(auth, window.location.href)) return;
+    const savedEmail = window.localStorage.getItem('emailForSignIn');
+    if (savedEmail) {
+      completeInviteSignIn(savedEmail);
+    } else {
+      setAwaitingInviteEmail(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const completeInviteSignIn = async (emailToUse: string) => {
+    setError('');
+    setCompletingInvite(true);
+    try {
+      const result = await signInWithEmailLink(auth, emailToUse, window.location.href);
+      window.localStorage.removeItem('emailForSignIn');
+      // Drop the sign-in-link query params so a refresh doesn't re-trigger this flow
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setLocalBypassMode(false);
+      onLoginSuccess(result.user);
+    } catch (err: any) {
+      console.error('signInWithEmailLink error:', err);
+      setAwaitingInviteEmail(true);
+      setError('No se pudo verificar el enlace. Confirma que el correo es el mismo al que se envió la invitación.');
+    } finally {
+      setCompletingInvite(false);
+    }
+  };
+
+  const handleConfirmInviteEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmailInput.trim()) return;
+    completeInviteSignIn(inviteEmailInput.trim());
+  };
   const [resetting, setResetting] = useState(false);
 
   const handleForgotPassword = async () => {
@@ -151,12 +191,63 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     }
   };
 
+  // Invited-user flow: they opened the invite link on a device/browser where we
+  // don't already know their email (normal case — the coach sent it, not them).
+  // Show a minimal "confirm your email" step instead of the full login UI.
+  if (awaitingInviteEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#e2ff00]/5 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
+
+        <div className="w-full max-w-md bg-[#131313] border border-[#2a2a2a] p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
+          <div className="flex flex-col items-center mb-6">
+            <div className="flex items-center gap-2 text-[#e2ff00] mb-2">
+              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+              <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
+            </div>
+            <p className="text-[#c6c9ab] text-xs font-mono tracking-widest uppercase">Confirma tu invitación</p>
+          </div>
+
+          <p className="text-sm text-[#c6c9ab] mb-5 text-center">
+            Para completar tu acceso, confirma el correo electrónico al que tu entrenador te envió la invitación.
+          </p>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded text-sm mb-5 text-center">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleConfirmInviteEmail} className="space-y-4">
+            <input
+              type="email"
+              value={inviteEmailInput}
+              onChange={e => setInviteEmailInput(e.target.value)}
+              placeholder="tu@correo.com"
+              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-3 text-sm text-white focus:outline-none focus:border-[#e2ff00] transition-colors"
+              required
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={completingInvite}
+              className="w-full h-[48px] bg-[#e2ff00] text-black font-mono font-bold uppercase rounded-md hover:bg-[#bad200] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
+            >
+              {completingInvite ? 'Verificando...' : 'Continuar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
       {/* Background glow designs */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#e2ff00]/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
-      
+
       <div className="w-full max-w-md bg-[#131313] border border-[#2a2a2a] p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
