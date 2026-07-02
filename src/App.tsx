@@ -21,11 +21,10 @@ import ClientsScreen from './components/ClientsScreen';
 import ReviewsScreen from './components/ReviewsScreen';
 import TrainingCoachScreen from './components/TrainingCoachScreen';
 import NutritionCoachScreen from './components/NutritionCoachScreen';
-import CoachesScreen from './components/CoachesScreen';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'settings' | 'profile';
+type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'profile';
 
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
   { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
@@ -40,7 +39,6 @@ const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string
   { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
   { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
   { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
-  { id: 'settings',  label: 'Ajustes',    icon: 'settings'        },
 ];
 
 export default function App() {
@@ -259,12 +257,12 @@ export default function App() {
         {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} />}
         {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
         {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
-        {isCoach && activeTab === 'settings'  && <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />}
 
         {/* SHARED */}
         {activeTab === 'profile' && (
           <ProfileScreen
             profile={profile}
+            isCoach={isCoach}
             onRefreshProfile={handleRefreshData}
             onLogOut={() => setCurrentUser(null)}
           />
@@ -293,21 +291,7 @@ export default function App() {
             )}
           </button>
         ))}
-        {/* Athletes reach their profile via the avatar bubble in the header — no separate nav item needed */}
-        {isCoach && (
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center justify-center py-1 flex-1 min-w-0 rounded-lg transition-all ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
-          >
-            <span
-              className="material-symbols-outlined text-[22px] mb-0.5"
-              style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}
-            >
-              person
-            </span>
-            <span className="font-mono text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">Perfil</span>
-          </button>
-        )}
+        {/* Both athletes and coaches reach their profile via the avatar bubble in the header — no separate nav item needed */}
       </nav>
 
     </div>

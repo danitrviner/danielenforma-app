@@ -519,10 +519,6 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Ajustes</h1>
-      </div>
-
       {/* Settings tabs */}
       <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit flex-wrap">
         {([

@@ -6,14 +6,17 @@ import BodyweightPanel from './BodyweightPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
+import CoachesScreen from './CoachesScreen';
 
 interface ProfileScreenProps {
   profile: UserProfile;
+  isCoach: boolean;
   onRefreshProfile: () => void;
   onLogOut: () => void;
 }
 
-export default function ProfileScreen({ profile, onRefreshProfile, onLogOut }: ProfileScreenProps) {
+export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut }: ProfileScreenProps) {
+  const [showCoaches, setShowCoaches] = useState(false);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
@@ -95,6 +98,38 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut }: P
         <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-white p-3.5 rounded-lg text-xs font-bold text-center">
           {success}
         </div>
+      )}
+
+      {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
+      {isCoach && (
+        showCoaches ? (
+          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#e2ff00] text-base">groups</span>
+                Entrenadores
+              </h3>
+              <button
+                onClick={() => setShowCoaches(false)}
+                className="text-[#c6c9ab] hover:text-white transition-colors"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowCoaches(true)}
+            className="w-full bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#e2ff00] text-base">groups</span>
+              <span className="font-sans font-bold text-sm text-white">Entrenadores</span>
+            </div>
+            <span className="material-symbols-outlined text-[#c6c9ab] text-sm">chevron_right</span>
+          </button>
+        )
       )}
 
       {/* ── Gamification card ─────────────────────────────────────────────────── */}

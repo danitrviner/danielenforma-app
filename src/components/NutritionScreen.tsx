@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, createNotificationDeduped } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
@@ -88,60 +88,6 @@ type ItemState = { foodLabel: string; done: boolean };
 // key = `${mealId}_${itemIdx}`
 
 interface Props { profile: UserProfile; }
-
-// ── ProgramTimeline (read-only, athlete view) ─────────────────────────────────
-
-const PHASE_COLORS_NS = ['#e2ff00', '#00eefc', '#ff8c69', '#a78bfa'];
-
-function fmtShortDate(isoDate: string): string {
-  const [, m, d] = isoDate.split('-');
-  return `${d}/${m}`;
-}
-
-function ProgramTimeline({ program, diets, today }: { program: NutritionProgram; diets: Diet[]; today: string }) {
-  const totalWeeks = program.phases.reduce((s, p) => s + p.weeks, 0);
-  if (totalWeeks === 0) return null;
-  const activePhase = computeActivePhase(program, today);
-  return (
-    <div className="space-y-1.5">
-      <div className="flex rounded-lg overflow-hidden" style={{ minHeight: '40px' }}>
-        {program.phases.map((phase, idx) => {
-          const widthPct = (phase.weeks / totalWeeks) * 100;
-          const bg = PHASE_COLORS_NS[idx % PHASE_COLORS_NS.length];
-          const fg = (bg === '#e2ff00' || bg === '#00eefc') ? '#000' : '#fff';
-          const isActive = activePhase?.id === phase.id;
-          return (
-            <div
-              key={phase.id}
-              style={{ width: `${widthPct}%`, backgroundColor: bg, color: fg, outline: isActive ? '2px solid white' : 'none', outlineOffset: '-2px' }}
-              className="flex flex-col items-center justify-center px-1 py-1 relative"
-            >
-              {isActive && (
-                <span className="absolute top-0.5 right-0.5 text-[7px] font-mono font-bold px-0.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.25)', color: fg }}>HOY</span>
-              )}
-              <span className="text-[9px] font-bold truncate w-full text-center leading-tight">{phase.name}</span>
-              <span className="text-[8px] font-mono opacity-70">{phase.weeks}s</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex">
-        {program.phases.map((phase, idx) => {
-          const widthPct = (phase.weeks / totalWeeks) * 100;
-          const startDate = computePhaseStartDate(program, idx);
-          const endMs = new Date(startDate + 'T00:00:00');
-          endMs.setDate(endMs.getDate() + phase.weeks * 7);
-          const endDate = endMs.toISOString().split('T')[0];
-          return (
-            <div key={phase.id} style={{ width: `${widthPct}%` }} className="flex justify-center">
-              <span className="text-[7px] font-mono text-[#c6c9ab] truncate">{fmtShortDate(startDate)}–{fmtShortDate(endDate)}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -501,38 +447,6 @@ export default function NutritionScreen({ profile }: Props) {
           </button>
         </div>
       )}
-
-      {/* Nutrition program timeline (athlete read-only) */}
-      {nutritionProgram && nutritionProgram.phases.length > 0 && (() => {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const activePhase = computeActivePhase(nutritionProgram, todayStr);
-        return (
-          <details className="group">
-            <summary className="cursor-pointer list-none flex items-center justify-between bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3 hover:border-[#3a3a3a] transition-colors">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
-                <span className="font-sans font-bold text-white text-sm">Tu plan de nutrición</span>
-                {activePhase && (
-                  <span className="text-[10px] font-mono text-[#a78bfa] border border-[#a78bfa]/30 rounded-lg px-2 py-0.5">
-                    {activePhase.name}
-                  </span>
-                )}
-              </div>
-              <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <div className="bg-[#121212] border border-t-0 border-[#2a2a2a] rounded-b-xl px-4 pb-4 pt-3 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-mono text-[#c6c9ab]">
-                <span>Inicio: {nutritionProgram.startDate}</span>
-                <span>·</span>
-                <span>{nutritionProgram.phases.length} fases</span>
-                <span>·</span>
-                <span>{nutritionProgram.phases.reduce((s, p) => s + p.weeks, 0)} semanas</span>
-              </div>
-              <ProgramTimeline program={nutritionProgram} diets={allDietsList} today={todayStr} />
-            </div>
-          </details>
-        );
-      })()}
 
       {/* Diet mode selector */}
       {enabledModes.length > 1 && (
