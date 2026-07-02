@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments } from '../dbService';
-import ClientHub from './ClientHub';
+import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
+import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
+import ClientHub, { HubTab } from './ClientHub';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 
 interface ClientsScreenProps {
@@ -9,13 +9,21 @@ interface ClientsScreenProps {
   onRefreshCheckIns: () => void;
   coachId: string;
   coachEmail: string;
+  onOpenReviews?: () => void;
 }
 
-export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
+export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
   const [athletes, setAthletes]           = useState<UserProfile[]>([]);
   const [loadingAthletes, setLoadingAthletes] = useState(true);
   const [selectedAthlete, setSelectedAthlete] = useState<UserProfile | null>(null);
+  const [selectedHubTab, setSelectedHubTab] = useState<HubTab | undefined>(undefined);
   const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
+  const [allWorkoutLogs, setAllWorkoutLogs] = useState<Map<string, WorkoutLog[]>>(new Map());
+
+  const openAthleteHub = (athlete: UserProfile, hubTab?: HubTab) => {
+    setSelectedHubTab(hubTab);
+    setSelectedAthlete(athlete);
+  };
 
   const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
 
@@ -56,17 +64,36 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       const athleteAssignments = allAssignments.get(athlete.email) ?? [];
       const adherence = computeAdherenceScore(athleteAssignments, athleteCheckins);
 
+      const athleteLogs = allWorkoutLogs.get(athlete.email) ?? [];
+      const pendingNotesCount = athleteLogs.reduce((n, log) => {
+        let count = n;
+        if (log.note && !log.noteCoachSeen) count++;
+        count += log.entries.filter(e => e.note && !e.noteCoachSeen).length;
+        return count;
+      }, 0);
+
       return {
         ...athlete,
         planDaysLeft, planExpired, planSoon,
         daysSince, checkinLate,
         totalCheckCount: athleteCheckins.length,
         pendingCount: athleteCheckins.filter(c => !c.approved || !c.coachFeedback).length,
+        pendingNotesCount,
         sortScore,
         adherenceScore: adherence.score,
       };
     }).sort((a, b) => a.sortScore - b.sortScore);
-  }, [athletes, checkins, todayMs, allAssignments]);
+  }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
+
+  const athletesFinishingSoon = useMemo(
+    () => enrichedAthletes.filter(a => a.planSoon).sort((a, b) => (a.planDaysLeft ?? 0) - (b.planDaysLeft ?? 0)),
+    [enrichedAthletes]
+  );
+
+  const totalPendingNotes = useMemo(
+    () => enrichedAthletes.reduce((n, a) => n + a.pendingNotesCount, 0),
+    [enrichedAthletes]
+  );
 
   useEffect(() => {
     getAllUserProfiles()
@@ -79,6 +106,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     if (athletes.length === 0) return;
     Promise.all(athletes.map(a => getWorkoutAssignments(a.email).then(wa => [a.email, wa] as const)))
       .then(pairs => setAllAssignments(new Map(pairs)))
+      .catch(console.error);
+    Promise.all(athletes.map(a => getWorkoutLogs(a.email).then(logs => [a.email, logs] as const)))
+      .then(pairs => setAllWorkoutLogs(new Map(pairs)))
       .catch(console.error);
   }, [athletes]);
 
@@ -131,7 +161,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         coachEmail={coachEmail}
         checkins={checkins}
         onRefreshCheckIns={onRefreshCheckIns}
-        onBack={() => setSelectedAthlete(null)}
+        onBack={() => { setSelectedAthlete(null); setSelectedHubTab(undefined); }}
+        initialTab={selectedHubTab}
       />
     );
   }
@@ -156,7 +187,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
-        {/* Athletes count */}
+        {/* Athletes count + finishing soon */}
         <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-[#121212] border border-[#2a2a2a] p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#e2ff00]/5 rounded-bl-full pointer-events-none" />
           <div>
@@ -172,47 +203,88 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               <span className="text-xs text-[#c6c9ab] font-sans pb-1">deportistas registrados</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-[#2a2a2a]/60">
-            <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-[#2a2a2a]/40 text-center font-mono">
-              <span className="block text-[8px] text-[#c6c9ab] uppercase">Racha Promedio</span>
-              <span className="block text-sm font-black text-[#e2ff00] mt-0.5">
-                {athletes.length > 0 ? Math.round(athletes.reduce((a, c) => a + (c.currentStreak || 0), 0) / athletes.length) : 0} sem
-              </span>
-            </div>
-            <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-[#2a2a2a]/40 text-center font-mono">
-              <span className="block text-[8px] text-[#00eefc] uppercase">Nivel Medio</span>
-              <span className="block text-sm font-black text-white mt-0.5">
-                Lvl {athletes.length > 0 ? (athletes.reduce((a, c) => a + (c.level || 0), 0) / athletes.length).toFixed(1) : '1.0'}
-              </span>
-            </div>
+          <div className="mt-6 pt-4 border-t border-[#2a2a2a]/60">
+            <span className="block text-[8px] text-[#c6c9ab] uppercase font-mono mb-2">Próximos a finalizar planificación</span>
+            {athletesFinishingSoon.length === 0 ? (
+              <p className="text-xs text-[#555] font-mono">Ninguno por ahora.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {athletesFinishingSoon.slice(0, 3).map(a => (
+                  <button
+                    key={a.userId}
+                    onClick={() => openAthleteHub(a)}
+                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-[#2a2a2a]/40 text-left transition-colors"
+                  >
+                    <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
+                    <span className="text-[10px] font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Pending reviews */}
-        <div className="lg:col-span-7 bg-[#121212] border border-[#2a2a2a] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#00eefc] text-xl">pending_actions</span>
-              <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
+        {/* Pending reviews + notes */}
+        <div className="lg:col-span-7 flex flex-col gap-4">
+          <button
+            onClick={onOpenReviews}
+            disabled={!onOpenReviews}
+            className="bg-[#121212] border border-[#2a2a2a] p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-[#00eefc]/40 transition-colors disabled:cursor-default disabled:hover:border-[#2a2a2a]"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#00eefc] text-xl">pending_actions</span>
+                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
+              </div>
+              {pendingCheckins.length > 0 ? (
+                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-mono uppercase font-black animate-pulse">
+                  {pendingCheckins.length} por evaluar
+                </span>
+              ) : (
+                <span className="text-[10px] bg-[#e2ff00]/10 text-[#e2ff00] px-2.5 py-0.5 border border-[#e2ff00]/20 rounded font-mono uppercase font-bold">Al día</span>
+              )}
             </div>
-            {pendingCheckins.length > 0 ? (
-              <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-mono uppercase font-black animate-pulse">
-                {pendingCheckins.length} por evaluar
-              </span>
+            {pendingCheckins.length === 0 ? (
+              <p className="text-xs font-bold text-white">¡Sin revisiones pendientes!</p>
             ) : (
-              <span className="text-[10px] bg-[#e2ff00]/10 text-[#e2ff00] px-2.5 py-0.5 border border-[#e2ff00]/20 rounded font-mono uppercase font-bold">Al día</span>
+              <p className="text-sm text-[#c6c9ab] font-mono">
+                Ve a <strong className="text-[#e2ff00]">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
+              </p>
+            )}
+          </button>
+
+          {/* Pending notes */}
+          <div className="bg-[#121212] border border-[#2a2a2a] p-5 rounded-2xl shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
+                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Notas Pendientes</h2>
+              </div>
+              {totalPendingNotes > 0 ? (
+                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-mono uppercase font-black">
+                  {totalPendingNotes} por leer
+                </span>
+              ) : (
+                <span className="text-[10px] bg-[#e2ff00]/10 text-[#e2ff00] px-2.5 py-0.5 border border-[#e2ff00]/20 rounded font-mono uppercase font-bold">Al día</span>
+              )}
+            </div>
+            {totalPendingNotes === 0 ? (
+              <p className="text-xs text-[#555] font-mono">Sin notas nuevas de ejercicios o entrenamientos.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {enrichedAthletes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
+                  <button
+                    key={a.userId}
+                    onClick={() => openAthleteHub(a, 'entrenamientos')}
+                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-[#2a2a2a]/40 text-left transition-colors"
+                  >
+                    <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
+                    <span className="text-[10px] font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-          {pendingCheckins.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-[#c6c9ab]">
-              <span className="material-symbols-outlined text-3xl text-[#e2ff00] mb-2">verified_user</span>
-              <p className="text-xs font-bold text-white">¡Sin revisiones pendientes!</p>
-            </div>
-          ) : (
-            <p className="text-sm text-[#c6c9ab] font-mono">
-              Ve a <strong className="text-[#e2ff00]">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
-            </p>
-          )}
         </div>
       </div>
 
@@ -240,7 +312,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               return (
                 <div
                   key={athlete.userId}
-                  onClick={() => setSelectedAthlete(athlete)}
+                  onClick={() => openAthleteHub(athlete)}
                   className={`bg-[#131313] border rounded-xl p-5 hover:border-[#e2ff00]/50 hover:shadow-[0_4px_20px_rgba(226,255,0,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-[#2a2a2a]'
                   }`}

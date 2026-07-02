@@ -126,6 +126,8 @@ export interface WorkoutSetLog {
 export interface WorkoutEntryLog {
   exerciseId: string;
   sets: WorkoutSetLog[];
+  note?: string;         // athlete's note on this specific exercise
+  noteCoachSeen?: boolean;
 }
 
 export interface WorkoutLog {
@@ -137,6 +139,8 @@ export interface WorkoutLog {
   date: string;        // YYYY-MM-DD
   completedAt: string; // ISO timestamp string
   entries: WorkoutEntryLog[];
+  note?: string;         // athlete's note on the workout as a whole
+  noteCoachSeen?: boolean;
 }
 
 export interface WorkoutAssignment {

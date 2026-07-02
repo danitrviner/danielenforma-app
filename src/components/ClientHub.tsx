@@ -63,7 +63,7 @@ const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
-type HubTab = 'revisiones' | 'entrenamientos' | 'dietas' | 'macrociclos' | 'roadmap' | 'analisis';
+export type HubTab = 'revisiones' | 'entrenamientos' | 'dietas' | 'macrociclos' | 'roadmap' | 'analisis';
 
 interface ClientHubProps {
   athlete: UserProfile;
@@ -72,6 +72,7 @@ interface ClientHubProps {
   checkins: WeightCheckIn[];
   onRefreshCheckIns: () => void;
   onBack: () => void;
+  initialTab?: HubTab;
 }
 
 const DIET_LABELS: Record<string, string> = {
@@ -110,8 +111,8 @@ function fmtExch(g: number, ef: number): string {
   return r % 1 === 0 ? r.toFixed(0) : r.toFixed(2);
 }
 
-export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack }: ClientHubProps) {
-  const [activeTab, setActiveTab] = useState<HubTab>('revisiones');
+export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack, initialTab }: ClientHubProps) {
+  const [activeTab, setActiveTab] = useState<HubTab>(initialTab ?? 'revisiones');
 
   // Onboarding
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);

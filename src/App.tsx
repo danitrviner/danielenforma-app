@@ -253,7 +253,7 @@ export default function App() {
         {!isCoach && activeTab === 'roadmap'   && <AthleteRoadmapScreen profile={profile} />}
 
         {/* COACH */}
-        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />}
+        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} onOpenReviews={() => setActiveTab('reviews')} />}
         {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} />}
         {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
         {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
