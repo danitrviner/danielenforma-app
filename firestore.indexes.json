@@ -25,6 +25,16 @@
         { "fieldPath": "intakeTypes", "arrayConfig": "CONTAINS" },
         { "fieldPath": "name",        "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "recipes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId",     "order": "ASCENDING" },
+        { "fieldPath": "categoria",   "order": "ASCENDING" },
+        { "fieldPath": "intakeTypes", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "name",        "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -454,6 +454,7 @@ export default function RecipesScreen({ profile }: Props) {
   const [indyaHasMore, setIndyaHasMore] = useState(false);
   const [indyaLoading, setIndyaLoading] = useState(true);
   const [indyaLoadingMore, setIndyaLoadingMore] = useState(false);
+  const [indyaError, setIndyaError] = useState<string | null>(null);
 
   // Detail
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
@@ -499,8 +500,13 @@ export default function RecipesScreen({ profile }: Props) {
       setIndyaRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
       setIndyaCursor(result.cursor);
       setIndyaHasMore(result.hasMore);
+      setIndyaError(null);
     } catch (err) {
       console.warn('queryIndyaRecipes failed:', err);
+      setIndyaError('No se pudieron cargar las recetas. Reintenta.');
+      // Keep hasMore true so the retry button stays visible; cursor is left
+      // untouched so retrying repeats the same (failed) page.
+      setIndyaHasMore(true);
     }
   }, []);
 
@@ -511,11 +517,11 @@ export default function RecipesScreen({ profile }: Props) {
     loadIndya(indyaCat, indyaIntake, null, false).finally(() => setIndyaLoading(false));
   }, [indyaCat, indyaIntake, loadIndya]);
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     setIndyaLoadingMore(true);
     await loadIndya(indyaCat, indyaIntake, indyaCursor, true);
     setIndyaLoadingMore(false);
-  };
+  }, [loadIndya, indyaCat, indyaIntake, indyaCursor]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -718,6 +724,20 @@ export default function RecipesScreen({ profile }: Props) {
           <div className="flex items-center justify-center py-16">
             <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas Indya…</span>
           </div>
+        ) : indyaTotalVisible === 0 && indyaError ? (
+          <div className="flex flex-col items-center gap-3 py-16">
+            <p className="font-mono text-xs text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
+            <button
+              onClick={handleLoadMore}
+              disabled={indyaLoadingMore}
+              className="px-6 py-3 bg-[#1c1b1b] border border-[#2a2a2a] hover:border-[#00eefc]/50 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {indyaLoadingMore
+                ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
+                : <><span className="material-symbols-outlined text-sm">refresh</span>Reintentar</>
+              }
+            </button>
+          </div>
         ) : indyaTotalVisible === 0 ? (
           <div className="text-center py-16 text-[#c6c9ab] font-mono text-xs uppercase tracking-widest">
             {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
@@ -800,6 +820,12 @@ export default function RecipesScreen({ profile }: Props) {
               </div>
             )}
 
+            {indyaError && (
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <p className="font-mono text-[10px] text-red-300 uppercase tracking-wide">{indyaError}</p>
+              </div>
+            )}
+
             {indyaHasMore && !indyaSearch && (
               <div className="flex justify-center pt-2">
                 <button
@@ -809,7 +835,7 @@ export default function RecipesScreen({ profile }: Props) {
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-sm">expand_more</span>Cargar más recetas</>
+                    : <><span className="material-symbols-outlined text-sm">expand_more</span>{indyaError ? 'Reintentar' : 'Cargar más recetas'}</>
                   }
                 </button>
               </div>
