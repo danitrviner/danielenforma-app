@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites } from '../dbService';
+import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, createNotificationDeduped } from '../dbService';
+import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
+
+const COACH_EMAIL = 'danitrviner@gmail.com';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
+const BUDGET_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
 
 const CAT_LABEL: Record<FoodCategory, string> = {
   HC: 'HC', PROT: 'Proteína', GRASA: 'Grasa', MIX_HC: '½P+½HC', MIX_GRASA: '½P+½Grasa',
@@ -27,9 +31,29 @@ const MODE_LABEL: Record<DietMode, string> = {
   OMNIVORO: 'Omnívoro', VEGANO: 'Vegano', SIN_PESAR: 'Sin pesar',
 };
 
+// ── Weekly schedule constants ──────────────────────────────────────────────────
+
+const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
+const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
+const WD_ORDER: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
+const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {
+  if (category === 'MIX_HC') {
+    p.HC   = round2(p.HC   + qty * 0.5);
+    p.PROT = round2(p.PROT + qty * 0.5);
+  } else if (category === 'MIX_GRASA') {
+    p.GRASA = round2(p.GRASA + qty * 0.5);
+    p.PROT  = round2(p.PROT  + qty * 0.5);
+  } else {
+    p[category] = round2(p[category] + qty);
+  }
+}
 
 function fmtQty(q: number): string {
   if (Number.isInteger(q)) return String(q);
@@ -65,6 +89,60 @@ type ItemState = { foodLabel: string; done: boolean };
 
 interface Props { profile: UserProfile; }
 
+// ── ProgramTimeline (read-only, athlete view) ─────────────────────────────────
+
+const PHASE_COLORS_NS = ['#e2ff00', '#00eefc', '#ff8c69', '#a78bfa'];
+
+function fmtShortDate(isoDate: string): string {
+  const [, m, d] = isoDate.split('-');
+  return `${d}/${m}`;
+}
+
+function ProgramTimeline({ program, diets, today }: { program: NutritionProgram; diets: Diet[]; today: string }) {
+  const totalWeeks = program.phases.reduce((s, p) => s + p.weeks, 0);
+  if (totalWeeks === 0) return null;
+  const activePhase = computeActivePhase(program, today);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex rounded-lg overflow-hidden" style={{ minHeight: '40px' }}>
+        {program.phases.map((phase, idx) => {
+          const widthPct = (phase.weeks / totalWeeks) * 100;
+          const bg = PHASE_COLORS_NS[idx % PHASE_COLORS_NS.length];
+          const fg = (bg === '#e2ff00' || bg === '#00eefc') ? '#000' : '#fff';
+          const isActive = activePhase?.id === phase.id;
+          return (
+            <div
+              key={phase.id}
+              style={{ width: `${widthPct}%`, backgroundColor: bg, color: fg, outline: isActive ? '2px solid white' : 'none', outlineOffset: '-2px' }}
+              className="flex flex-col items-center justify-center px-1 py-1 relative"
+            >
+              {isActive && (
+                <span className="absolute top-0.5 right-0.5 text-[7px] font-mono font-bold px-0.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.25)', color: fg }}>HOY</span>
+              )}
+              <span className="text-[9px] font-bold truncate w-full text-center leading-tight">{phase.name}</span>
+              <span className="text-[8px] font-mono opacity-70">{phase.weeks}s</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex">
+        {program.phases.map((phase, idx) => {
+          const widthPct = (phase.weeks / totalWeeks) * 100;
+          const startDate = computePhaseStartDate(program, idx);
+          const endMs = new Date(startDate + 'T00:00:00');
+          endMs.setDate(endMs.getDate() + phase.weeks * 7);
+          const endDate = endMs.toISOString().split('T')[0];
+          return (
+            <div key={phase.id} style={{ width: `${widthPct}%` }} className="flex justify-center">
+              <span className="text-[7px] font-mono text-[#c6c9ab] truncate">{fmtShortDate(startDate)}–{fmtShortDate(endDate)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function NutritionScreen({ profile }: Props) {
@@ -95,6 +173,18 @@ export default function NutritionScreen({ profile }: Props) {
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
 
+  // Weekly schedule
+  const [allDietsList, setAllDietsList]     = useState<Diet[]>([]);
+  const [weeklySchedule, setWeeklySchedule] = useState<Partial<Record<WeekDay, string | null>>>({});
+  const [viewDay, setViewDay]               = useState<WeekDay>(TODAY_WD);
+
+  // Nutrition periodization
+  const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
+  const [nutritionProgram, setNutritionProgram] = useState<NutritionProgram | null>(null);
+
+  // View mode (lista / fotos / numeros)
+  const [viewMode, setViewMode] = useDietViewMode();
+
   // ── Load on mount ────────────────────────────────────────────────────────────
   // Phase 1: diets + config BEFORE seedFoodItemsIfEmpty, which on Firestore failure
   // calls setLocalBypassMode(true) internally — poisoning subsequent queries.
@@ -107,10 +197,11 @@ export default function NutritionScreen({ profile }: Props) {
       setLoading(true);
       try {
         // Phase 1 — diet/config always queries Firestore with a clean bypass flag
-        const [config, allDiets, dietConfig] = await Promise.all([
+        const [config, allDiets, dietConfigRaw, program] = await Promise.all([
           getAthleteNutritionConfig(profile.email).catch(() => null),
           getDietsForAthlete(profile.email),
           getAthleteDietConfig(profile.email).catch(() => null),
+          getNutritionProgram(profile.email).catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -120,13 +211,63 @@ export default function NutritionScreen({ profile }: Props) {
           setActiveDietMode(config.enabledModes[0]);
         }
 
+        // Apply nutrition program phase if active
+        let dietConfig = dietConfigRaw;
+        if (program && program.phases.length > 0) {
+          setNutritionProgram(program);
+          const todayStr = new Date().toISOString().split('T')[0];
+          const activePhase = computeActivePhase(program, todayStr);
+          if (activePhase && activePhase.dietId) {
+            const currentActive = new Set(dietConfig?.activeDietIds ?? []);
+            if (!currentActive.has(activePhase.dietId) || currentActive.size !== 1) {
+              const newConfig = {
+                ...(dietConfig ?? { athleteId: profile.email }),
+                activeDietIds: [activePhase.dietId],
+              };
+              await saveAthleteDietConfig(newConfig).catch(() => {});
+              dietConfig = newConfig;
+            }
+            if (program.lastSeenPhaseId !== activePhase.id) {
+              setPhaseBanner(`Tu plan de nutrición cambió a: ${activePhase.name}`);
+              await saveNutritionProgram({ ...program, lastSeenPhaseId: activePhase.id }).catch(() => {});
+              const phaseKey = `notif_np_${profile.email}_${activePhase.id}`;
+              const phaseBody = `Plan de nutrición cambió a: ${activePhase.name}`;
+              createNotificationDeduped(`${phaseKey}_athlete`, {
+                recipientEmail: profile.email,
+                type: 'nutrition_phase_change',
+                title: 'Plan de nutrición actualizado',
+                body: phaseBody,
+                link: 'nutrition',
+                createdAt: new Date().toISOString(),
+                read: false,
+              }).catch(console.error);
+              createNotificationDeduped(`${phaseKey}_coach`, {
+                recipientEmail: COACH_EMAIL,
+                type: 'nutrition_phase_change',
+                title: `Fase de nutrición cambiada (${profile.displayName})`,
+                body: `${profile.displayName}: ${phaseBody}`,
+                link: 'clients',
+                createdAt: new Date().toISOString(),
+                read: false,
+              }).catch(console.error);
+            }
+          }
+        }
+
         const activeIds = new Set(dietConfig?.activeDietIds ?? []);
         const active = allDiets.filter(d => activeIds.has(d.id));
+        const schedule = dietConfig?.weeklySchedule ?? {};
         setActiveDiets(active);
-        if (active.length >= 1) {
-          setSelectedDiet(active[0]);
+        setAllDietsList(allDiets);
+        setWeeklySchedule(schedule);
+
+        const todayId = schedule[TODAY_WD] ?? null;
+        let initDiet: Diet | null = todayId ? (allDiets.find(d => d.id === todayId) ?? null) : null;
+        if (!initDiet && active.length >= 1) initDiet = active[0];
+        if (initDiet) {
+          setSelectedDiet(initDiet);
           const counts: Record<string, number> = {};
-          active[0].meals.forEach(m => { counts[m.id] = m.items.length; });
+          initDiet.meals.forEach(m => { counts[m.id] = m.items.length; });
           setOrigItemCounts(counts);
         }
 
@@ -183,8 +324,8 @@ export default function NutritionScreen({ profile }: Props) {
           const st = itemStates[`${meal.id}_${idx}`];
           if (st?.done) {
             done++;
-            doneByCat[item.category] = round2(doneByCat[item.category] + item.quantity);
-            mealBycat[item.category] = round2(mealBycat[item.category] + item.quantity);
+            addToPlaced(doneByCat, item.category, item.quantity);
+            addToPlaced(mealBycat,  item.category, item.quantity);
           }
         });
         mealDoneByCat[meal.id] = mealBycat;
@@ -339,11 +480,59 @@ export default function NutritionScreen({ profile }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
         <p className="text-[#c6c9ab] text-sm mt-1">Registra los intercambios del día según tu dieta activa.</p>
       </div>
+
+      {/* Phase change banner */}
+      {phaseBanner && (
+        <div className="flex items-center justify-between gap-3 bg-[#00eefc]/10 border border-[#00eefc]/30 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#00eefc] text-lg flex-shrink-0">swap_horiz</span>
+            <p className="font-sans font-bold text-[#00eefc] text-sm">{phaseBanner}</p>
+          </div>
+          <button
+            onClick={() => setPhaseBanner(null)}
+            className="text-[#00eefc]/60 hover:text-[#00eefc] transition-colors flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-base">close</span>
+          </button>
+        </div>
+      )}
+
+      {/* Nutrition program timeline (athlete read-only) */}
+      {nutritionProgram && nutritionProgram.phases.length > 0 && (() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const activePhase = computeActivePhase(nutritionProgram, todayStr);
+        return (
+          <details className="group">
+            <summary className="cursor-pointer list-none flex items-center justify-between bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3 hover:border-[#3a3a3a] transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+                <span className="font-sans font-bold text-white text-sm">Tu plan de nutrición</span>
+                {activePhase && (
+                  <span className="text-[10px] font-mono text-[#a78bfa] border border-[#a78bfa]/30 rounded-lg px-2 py-0.5">
+                    {activePhase.name}
+                  </span>
+                )}
+              </div>
+              <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            </summary>
+            <div className="bg-[#121212] border border-t-0 border-[#2a2a2a] rounded-b-xl px-4 pb-4 pt-3 space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-mono text-[#c6c9ab]">
+                <span>Inicio: {nutritionProgram.startDate}</span>
+                <span>·</span>
+                <span>{nutritionProgram.phases.length} fases</span>
+                <span>·</span>
+                <span>{nutritionProgram.phases.reduce((s, p) => s + p.weeks, 0)} semanas</span>
+              </div>
+              <ProgramTimeline program={nutritionProgram} diets={allDietsList} today={todayStr} />
+            </div>
+          </details>
+        );
+      })()}
 
       {/* Diet mode selector */}
       {enabledModes.length > 1 && (
@@ -360,15 +549,80 @@ export default function NutritionScreen({ profile }: Props) {
         </div>
       )}
 
+      {/* Week schedule navigation */}
+      {!loading && WD_ORDER.some(d => typeof weeklySchedule[d] === 'string') && (
+        <div className="flex gap-1.5">
+          {WD_ORDER.map(day => {
+            const isToday = day === TODAY_WD;
+            const isViewing = day === viewDay;
+            const hasDiet = typeof weeklySchedule[day] === 'string';
+            return (
+              <button
+                key={day}
+                onClick={() => setViewDay(day)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl font-mono text-[11px] font-bold uppercase tracking-wider border transition-all ${
+                  isViewing
+                    ? 'bg-[#e2ff00]/10 border-[#e2ff00]/50 text-[#e2ff00]'
+                    : isToday
+                    ? 'bg-[#1c1b1b] border-[#3a3a3a] text-white'
+                    : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a] hover:text-white'
+                }`}
+              >
+                <span>{WD_SHORT[day]}</span>
+                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-[#e2ff00]' : hasDiet ? 'bg-[#00eefc]/50' : 'bg-transparent'}`} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dieta...</div>
-      ) : activeDiets.length === 0 ? (
+      ) : activeDiets.length === 0 && !selectedDiet ? (
         <div className="text-center py-16 border border-dashed border-[#2a2a2a] rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
           <p className="text-[#c6c9ab] text-sm font-sans">Sin dietas asignadas.</p>
           <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu entrenador aún no ha activado ninguna dieta para ti.</p>
         </div>
-      ) : (
+      ) : viewDay !== TODAY_WD ? (() => {
+        const browseDietId = weeklySchedule[viewDay] ?? null;
+        const browseDiet = browseDietId ? allDietsList.find(d => d.id === browseDietId) ?? null : null;
+        return (
+          <div className="space-y-4">
+            <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
+              <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-1">
+                {WD_FULL[viewDay].charAt(0).toUpperCase() + WD_FULL[viewDay].slice(1)}
+              </span>
+              {browseDiet ? (
+                <>
+                  <span className="block font-sans font-bold text-lg text-white leading-tight">{browseDiet.name}</span>
+                  {browseDiet.coachNote && (
+                    <span className="block text-xs text-[#00eefc] italic mt-1">{browseDiet.coachNote}</span>
+                  )}
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {BUDGET_CATS.map(cat => {
+                      const b = browseDiet.budget[cat];
+                      return b > 0 ? (
+                        <span key={cat} className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
+                          {cat}: {b} int.
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </>
+              ) : (
+                <span className="block font-sans text-[#c6c9ab] text-sm mt-1">Día libre — sin dieta programada.</span>
+              )}
+            </div>
+            <button
+              onClick={() => setViewDay(TODAY_WD)}
+              className="w-full py-2.5 rounded-xl border border-[#e2ff00]/30 text-[#e2ff00] font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#e2ff00]/10 transition-all"
+            >
+              ← Volver a hoy
+            </button>
+          </div>
+        );
+      })() : (
         <>
           {/* Diet selector (only when multiple active) */}
           {activeDiets.length > 1 && (
@@ -389,10 +643,29 @@ export default function NutritionScreen({ profile }: Props) {
             <React.Fragment key={selectedDiet.id}>
               {/* Diet header */}
               <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
-                <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-0.5">DIETA ACTIVA</span>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold">DIETA ACTIVA</span>
+                  <span className="font-mono text-[9px] text-[#e2ff00] uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
+                </div>
                 <span className="block font-sans font-bold text-lg text-white leading-tight">{selectedDiet.name}</span>
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
+                )}
+                {selectedDiet.coachVideoUrl && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="material-symbols-outlined text-[#00eefc]" style={{ fontSize: '14px' }}>videocam</span>
+                      <span className="font-mono text-[9px] text-[#00eefc] uppercase font-bold tracking-wide">Mensaje en vídeo del coach</span>
+                    </div>
+                    <div className="relative w-full bg-black rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                      <video
+                        src={selectedDiet.coachVideoUrl}
+                        controls
+                        playsInline
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
                 )}
                 <span className="block font-mono text-[9px] text-[#c6c9ab] mt-1.5">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
@@ -404,8 +677,8 @@ export default function NutritionScreen({ profile }: Props) {
                 <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
                   Progreso por categoría
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
-                  {CATS.map(cat => {
+                <div className="grid grid-cols-3 gap-x-4 gap-y-2.5">
+                  {BUDGET_CATS.map(cat => {
                     const b = selectedDiet.budget[cat];
                     const d = doneByCat[cat];
                     const isOver = b > 0 && d > b;
@@ -445,8 +718,19 @@ export default function NutritionScreen({ profile }: Props) {
                 </div>
               </div>
 
-              {/* Meal blocks */}
-              <div className="space-y-4">
+              {/* View mode selector */}
+              <DietViewSelector mode={viewMode} onChange={setViewMode} />
+
+              {/* FOTOS / NÚMEROS views */}
+              {viewMode === 'fotos' && (
+                <DietFotosView meals={selectedDiet.meals} recipes={recipes} />
+              )}
+              {viewMode === 'numeros' && (
+                <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
+              )}
+
+              {/* LISTA (interactive, original) */}
+              {viewMode === 'lista' && <div className="space-y-4">
                 {selectedDiet.meals.map((meal, mi) => {
                   const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
@@ -524,7 +808,7 @@ export default function NutritionScreen({ profile }: Props) {
                               {/* Checkbox */}
                               <button
                                 onClick={() => handleToggleDone(meal.id, idx)}
-                                className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#e2ff00]'}`}
+                                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#e2ff00]'}`}
                               >
                                 {st.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
                               </button>
@@ -548,7 +832,7 @@ export default function NutritionScreen({ profile }: Props) {
                               <button
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
                                 title="Cambiar alimento"
-                                className="text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0"
+                                className="text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0 p-1.5 -m-1.5"
                               >
                                 <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
                               </button>
@@ -557,7 +841,7 @@ export default function NutritionScreen({ profile }: Props) {
                                 <button
                                   onClick={() => handleRemoveItem(meal.id, idx)}
                                   title="Quitar"
-                                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0"
+                                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5"
                                 >
                                   <span className="material-symbols-outlined text-sm select-none">close</span>
                                 </button>
@@ -569,7 +853,7 @@ export default function NutritionScreen({ profile }: Props) {
                     </div>
                   );
                 })}
-              </div>
+              </div>}
             </React.Fragment>
           )}
         </>

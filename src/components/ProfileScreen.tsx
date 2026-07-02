@@ -1,22 +1,59 @@
-import React, { useState } from 'react';
-import { UserProfile } from '../types';
-import { updateUserProfile } from '../dbService';
+import React, { useState, useEffect } from 'react';
+import { UserProfile, Questionnaire, QuestionnaireResponse, OnboardingData } from '../types';
+import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
+import BodyweightPanel from './BodyweightPanel';
+import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
+import FoodPreferencesPanel from './FoodPreferencesPanel';
+import OnboardingForm from './OnboardingForm';
 
 interface ProfileScreenProps {
   profile: UserProfile;
   onRefreshProfile: () => void;
   onLogOut: () => void;
-  onToggleRole?: () => void;
 }
 
-export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onToggleRole }: ProfileScreenProps) {
+export default function ProfileScreen({ profile, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  
+
+  // Questionnaire data for charts
+  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
+  const [responses, setResponses]           = useState<QuestionnaireResponse[]>([]);
+
+  // Food preferences + ficha editing
+  const [onboarding,    setOnboarding]    = useState<OnboardingData | null>(null);
+  const [editingFicha,  setEditingFicha]  = useState(false);
+
+  const streakDays = profile.currentStreak;
+  const maxStreakDays = profile.maxStreak;
+
+  useEffect(() => {
+    getOnboarding(profile.email).then(ob => { if (ob) setOnboarding(ob); }).catch(console.error);
+  }, [profile.email]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      getAssignmentsForAthlete(profile.email),
+      getResponsesForAthlete(profile.email),
+    ]).then(async ([aList, rList]) => {
+      if (cancelled) return;
+      setResponses(rList);
+      const ids = [...new Set(aList.filter(a => a.active).map(a => a.questionnaireId))];
+      const qList: Questionnaire[] = [];
+      await Promise.all(ids.map(async id => {
+        const q = await getQuestionnaireById(id);
+        if (q) qList.push(q);
+      }));
+      if (!cancelled) setQuestionnaires(qList);
+    }).catch(console.error);
+    return () => { cancelled = true; };
+  }, [profile.email]);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -48,10 +85,10 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onT
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Mi Perfil</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Configura tus credenciales del sistema, avatar, metas personales e insignias En Forma.</p>
+        <p className="text-[#c6c9ab] text-sm mt-1">Tu gamificación, evolución de peso, gráficas y configuración de ficha.</p>
       </div>
 
       {success && (
@@ -60,89 +97,167 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onT
         </div>
       )}
 
-      {/* Main card details */}
-      <div className="bg-[#121212] border border-[#2a2a2a] p-6 rounded-xl flex flex-col items-center text-center space-y-4">
-        <div className="w-20 h-20 rounded-full border-2 border-[#e2ff00] overflow-hidden relative shadow-lg">
-          <img src={profile.avatarUrl} alt="Avatar profile" className="w-full h-full object-cover" />
-          <div className="absolute bottom-0 right-0 bg-[#e2ff00] text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">Lv {profile.level}</div>
+      {/* ── Gamification card ─────────────────────────────────────────────────── */}
+      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 relative overflow-hidden flex flex-col gap-5">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#e2ff00]/5 blur-3xl rounded-full pointer-events-none"></div>
+
+        {/* Avatar + XP */}
+        <div className="flex items-center gap-4">
+          <div className="relative inline-block flex-shrink-0">
+            <div className="w-16 h-16 rounded-full border-2 border-[#e2ff00] overflow-hidden shadow-lg">
+              <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-[#e2ff00] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-sans font-bold text-lg text-white">{profile.displayName}</h3>
+            <p className="font-mono text-[10px] text-[#c6c9ab] truncate">{profile.email}</p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
+                <div className="h-full bg-[#00eefc]" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+              </div>
+              <span className="font-mono text-[11px] text-[#c6c9ab] flex-shrink-0">{profile.xp}/400 XP</span>
+            </div>
+          </div>
         </div>
 
+        {/* Streak */}
+        <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-[#2a2a2a]">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🔥</span>
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Actual</span>
+              <span className="font-sans font-bold text-lg text-white">{streakDays} Días</span>
+            </div>
+          </div>
+          <div className="text-right flex flex-col">
+            <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Máxima</span>
+            <span className="font-mono font-bold text-white text-sm">{maxStreakDays} Días</span>
+          </div>
+        </div>
+
+        {/* Iron Calendar */}
         <div>
-          <h2 className="font-sans font-black text-xl text-white">{profile.displayName}</h2>
-          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">{profile.email}</span>
+          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: 14 }).map((_, idx) => {
+              const isActive = idx < Math.min(14, streakDays % 14 || 6);
+              return (
+                <div
+                  key={idx}
+                  className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#e2ff00] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-[#2a2a2a]'}`}
+                  title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        {/* Level details metrics */}
-        <div className="grid grid-cols-3 gap-3 w-full bg-[#1c1b1b] p-3 rounded-lg border border-[#2a2a2a] text-center font-mono">
+        {/* Badges */}
+        <div>
+          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Insignias Desbloqueadas</span>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+              <span>🏅</span> Primera semana
+            </span>
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+              <span className="text-[#e2ff00]">⚡</span> 10 días de racha
+            </span>
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+              <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
+            </span>
+          </div>
+        </div>
+
+        {/* Level metrics */}
+        <div className="grid grid-cols-3 gap-3 bg-[#1c1b1b] p-3 rounded-lg border border-[#2a2a2a] text-center font-mono">
           <div>
             <span className="block text-[9px] text-[#c6c9ab] uppercase">Racha</span>
             <span className="block text-sm font-bold text-white mt-0.5">{profile.currentStreak} días</span>
           </div>
           <div>
-            <span className="block text-[9px] text-[#c6c9ab] uppercase">Nivel Atleta</span>
+            <span className="block text-[9px] text-[#c6c9ab] uppercase">Nivel</span>
             <span className="block text-sm font-bold text-[#e2ff00] mt-0.5">{profile.level} (Élite)</span>
           </div>
           <div>
-            <span className="block text-[9px] text-[#c6c9ab] uppercase">Meta Peso</span>
+            <span className="block text-[9px] text-[#c6c9ab] uppercase">Meta</span>
             <span className="block text-sm font-bold text-[#00eefc] mt-0.5">{profile.targetWeight} kg</span>
           </div>
         </div>
       </div>
 
-      {/* Role Switching Interactive Block */}
-      {onToggleRole && (
-        <div className="bg-[#121212] border border-teal-500/25 p-5 rounded-xl space-y-4 shadow-md">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e2ff00]">shield_person</span>
-            <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wider">Selector de Rol Activo</h3>
-          </div>
-          
-          <p className="text-xs text-[#c6c9ab] leading-relaxed">
-            Puedes alternar libremente tu rol para probar ambas puntas de la aplicación: el panel del Entrenador (Módulo CRM) o el panel del Atleta.
-          </p>
+      {/* ── Bodyweight panel ──────────────────────────────────────────────────── */}
+      <div className="bg-[#121212] border border-[#2a2a2a] p-4 sm:p-6 rounded-xl">
+        <BodyweightPanel athleteEmail={profile.email} />
+      </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => profile.role !== 'client' && onToggleRole()}
-              className={`flex-1 py-3 px-4 rounded-lg font-sans text-xs uppercase tracking-wider font-extrabold transition-all border flex items-center justify-center gap-2 ${
-                profile.role === 'client'
-                  ? 'bg-[#e2ff00] text-black border-[#e2ff00] shadow-[0_0_12px_rgba(226,255,0,0.15)] pointer-events-none'
-                  : 'bg-[#1c1b1b] text-slate-300 border-[#2a2a2a] hover:border-slate-500 hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm">fitness_center</span>
-              <span>Rol: Atleta</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => profile.role !== 'coach' && onToggleRole()}
-              className={`flex-1 py-3 px-4 rounded-lg font-sans text-xs uppercase tracking-wider font-extrabold transition-all border flex items-center justify-center gap-2 ${
-                profile.role === 'coach'
-                  ? 'bg-[#e2ff00] text-black border-[#e2ff00] shadow-[0_0_12px_rgba(226,255,0,0.15)] pointer-events-none'
-                  : 'bg-[#1c1b1b] text-slate-300 border-[#2a2a2a] hover:border-slate-500 hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm">assignment_ind</span>
-              <span>Rol: Entrenador</span>
-            </button>
-          </div>
-          
-          <div className="text-[10px] text-center font-mono text-[#c6c9ab] uppercase bg-[#1c1b1b] py-1 border border-[#2a2a2a] rounded">
-            Rol actual registrado: <strong className="text-white">{profile.role === 'coach' ? 'ENTRENADOR (COACH)' : 'ATLETA / CLIENTE'}</strong>
-          </div>
+      {/* ── Questionnaire charts ──────────────────────────────────────────────── */}
+      {questionnaires.length > 0 && responses.length > 0 && (
+        <div className="bg-[#121212] border border-[#2a2a2a] p-4 sm:p-6 rounded-xl">
+          <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
         </div>
       )}
 
-      {/* Form editing updates */}
+      {/* ── Ficha de iniciación ───────────────────────────────────────────────── */}
+      {editingFicha ? (
+        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+          <OnboardingForm
+            athleteEmail={profile.email}
+            initialData={onboarding}
+            onSaved={data => { setOnboarding(data); setEditingFicha(false); }}
+            onCancel={() => setEditingFicha(false)}
+          />
+        </div>
+      ) : (
+        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#e2ff00] text-base">assignment_ind</span>
+              {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
+            </h3>
+            <p className="font-mono text-[10px] text-[#555] mt-1">
+              {onboarding
+                ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
+            </p>
+          </div>
+          <button
+            onClick={() => setEditingFicha(true)}
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">edit_note</span>
+            {onboarding ? 'Editar' : 'Completar'}
+          </button>
+        </div>
+      )}
+
+      {/* ── Food preferences ──────────────────────────────────────────────────── */}
+      {onboarding && !editingFicha && (
+        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+          <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-[#e2ff00] text-base">restaurant</span>
+            Preferencias alimentarias
+          </h3>
+          <FoodPreferencesPanel
+            athleteEmail={profile.email}
+            initialLiked={onboarding.likedFoods}
+            initialDisliked={onboarding.dislikedFoods}
+            allergies={onboarding.allergies}
+            onSaved={(liked, disliked) =>
+              setOnboarding(prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : null)
+            }
+          />
+        </div>
+      )}
+
+      {/* ── Edit profile form ─────────────────────────────────────────────────── */}
       <form onSubmit={handleUpdate} className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl space-y-4">
         <h3 className="font-sans font-bold text-sm text-[#e2ff00] uppercase tracking-wide border-b border-[#2a2a2a] pb-2">Editar Marca de Ficha</h3>
 
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1">Nombre deportivo</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
@@ -152,8 +267,8 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onT
 
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1">Meta de Peso Personal (kg)</label>
-          <input 
-            type="number" 
+          <input
+            type="number"
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
@@ -163,16 +278,16 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onT
 
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1">Avatar Imagen URL</label>
-          <input 
-            type="url" 
+          <input
+            type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
             className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-[#e2ff00]"
           />
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading}
           className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-semibold text-xs font-mono rounded uppercase tracking-wider transition-colors active:scale-95"
         >
@@ -180,7 +295,7 @@ export default function ProfileScreen({ profile, onRefreshProfile, onLogOut, onT
         </button>
       </form>
 
-      {/* Log out options CTA */}
+      {/* ── Sign out ──────────────────────────────────────────────────────────── */}
       <div className="pt-2">
         <button
           onClick={handleSignOut}

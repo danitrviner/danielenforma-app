@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, auth } from './firebase';
+import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, updateUserProfile, cleanupTestDataOnce } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, cleanupTestDataOnce } from './dbService';
+import NotificationBell from './components/NotificationBell';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfileScreen from './components/ProfileScreen';
@@ -11,29 +12,35 @@ import HomeScreen from './components/HomeScreen';
 import TrainingScreen from './components/TrainingScreen';
 import NutritionHubScreen from './components/NutritionHubScreen';
 import CheckInScreen from './components/CheckInScreen';
-import ProgressScreen from './components/ProgressScreen';
+
+// Shared screens
+import AthleteRoadmapScreen from './components/AthleteRoadmapScreen';
 
 // Coach screens
 import ClientsScreen from './components/ClientsScreen';
 import ReviewsScreen from './components/ReviewsScreen';
 import TrainingCoachScreen from './components/TrainingCoachScreen';
 import NutritionCoachScreen from './components/NutritionCoachScreen';
+import CoachesScreen from './components/CoachesScreen';
 
-type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'progress' | 'clients' | 'reviews' | 'profile';
+const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-const ATHLETE_TABS: { id: NavTab; label: string; icon: string }[] = [
-  { id: 'home',      label: 'Inicio',        icon: 'bolt' },
-  { id: 'training',  label: 'Entrenamiento', icon: 'fitness_center' },
-  { id: 'nutrition', label: 'Nutrición',     icon: 'restaurant' },
-  { id: 'checkin',   label: 'Check-in',      icon: 'edit_note' },
-  { id: 'progress',  label: 'Progreso',      icon: 'trending_down' },
+type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'settings' | 'profile';
+
+const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
+  { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
+  { id: 'training',  label: 'Entrenamiento', shortLabel: 'Entreno',  icon: 'fitness_center' },
+  { id: 'nutrition', label: 'Nutrición',     shortLabel: 'Nutri.',   icon: 'restaurant' },
+  { id: 'checkin',   label: 'Check-in',      shortLabel: 'Check-in', icon: 'edit_note' },
+  { id: 'roadmap',   label: 'Road map',      shortLabel: 'Mapa',     icon: 'map' },
 ];
 
-const COACH_TABS: { id: NavTab; label: string; icon: string }[] = [
-  { id: 'clients',   label: 'Clientes',   icon: 'group' },
-  { id: 'reviews',   label: 'Revisiones', icon: 'pending_actions' },
-  { id: 'training',  label: 'Ejercicios', icon: 'fitness_center' },
-  { id: 'nutrition', label: 'Nutrición',  icon: 'restaurant' },
+const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
+  { id: 'clients',   label: 'Clientes',   icon: 'group'           },
+  { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
+  { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
+  { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
+  { id: 'settings',  label: 'Ajustes',    icon: 'settings'        },
 ];
 
 export default function App() {
@@ -42,45 +49,51 @@ export default function App() {
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [loading, setLoading] = useState(true);
-  const [roleSessionKey, setRoleSessionKey] = useState(0);
-
   const loadUserSession = async (user: any) => {
-    // Read synchronously, BEFORE any await, so both concurrent callers
-    // (handleLoginSuccess + onAuthStateChanged) capture the hint before it's removed.
-    // This ensures a sandbox button press always lands on the correct role regardless
-    // of what Firestore has stored from a previous "Presenciar" toggle.
-    const roleHint = localStorage.getItem('enforma_sandbox_role_hint') as 'client' | 'coach' | null;
-
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
-
-    const effectiveRole = roleHint ?? userProfile.role;
-
-    if (roleHint && roleHint !== userProfile.role) {
-      // Persist the forced role so future reloads (without the hint) are correct too
-      updateUserProfile(userProfile.userId, { role: roleHint }).catch(console.error);
-    }
-
-    // Consume the hint (idempotent — whichever concurrent caller gets here second is a no-op)
-    if (roleHint) localStorage.removeItem('enforma_sandbox_role_hint');
-
-    const finalProfile = { ...userProfile, role: effectiveRole };
-    setProfile(finalProfile);
-    setActiveTab(finalProfile.role === 'coach' ? 'clients' : 'home');
+    const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
+    const coachRole = userProfile.role === 'coach' || isOwner;
+    setProfile(userProfile);
+    setActiveTab(coachRole ? 'clients' : 'home');
     await seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com');
-    const checks = await getCheckIns();
+    // Coach reads all check-ins (no userId filter); athlete reads only their own
+    const checks = await getCheckIns(coachRole ? undefined : user.uid);
     setCheckins(checks);
+    // One-time ZZ_TEST cleanup only for coaches (reads full collections)
+    if (coachRole) cleanupTestDataOnce().catch(console.warn);
   };
 
-  // One-time: remove ZZ_TEST data and orphaned workout assignments
-  useEffect(() => { cleanupTestDataOnce().catch(console.warn); }, []);
+  // One-time cleanup runs only for coaches (reads full collections; athletes lack permission)
+  // Called inside loadUserSession after role is known
 
   // Subscribe once on mount — handles session restore when the page reloads with an
   // existing Firebase session. Does NOT re-run on manual logins (those go through
   // handleLoginSuccess directly, avoiding a Firebase null response wiping mock users).
   useEffect(() => {
     const safetyTimeout = setTimeout(() => setLoading(false), 8000);
+    // Track whether the redirect path already loaded the session, so
+    // onAuthStateChanged doesn't call loadUserSession a second time.
+    let sessionLoaded = false;
+
+    // Resolve any pending Google redirect before subscribing to auth state.
+    // onAuthStateChanged fires AFTER Firebase processes the redirect, so this
+    // call completes first and sets sessionLoaded, preventing a double-load.
+    getRedirectResult(auth)
+      .then(async result => {
+        if (result?.user) {
+          clearTimeout(safetyTimeout);
+          sessionLoaded = true;
+          setCurrentUser(result.user);
+          await loadUserSession(result.user);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        console.error('getRedirectResult error:', err);
+      });
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (sessionLoaded) return; // already handled by getRedirectResult
       clearTimeout(safetyTimeout);
       try {
         if (user) {
@@ -109,9 +122,11 @@ export default function App() {
   const handleRefreshData = async () => {
     if (currentUser) {
       try {
-        const userProfile = await getOrCreateUserProfile(currentUser.uid, currentUser.email || 'atleta@enforma.com');
+        const userProfile = await getOrCreateUserProfile(currentUser.uid, currentUser.email || 'atleta@enforma.com', currentUser.displayName || '');
         setProfile(userProfile);
-        const checks = await getCheckIns();
+        const isOwner = (currentUser.email || '').toLowerCase() === OWNER_EMAIL;
+        const coachRole = userProfile.role === 'coach' || isOwner;
+        const checks = await getCheckIns(coachRole ? undefined : currentUser.uid);
         setCheckins(checks);
       } catch (err) {
         console.error(err);
@@ -131,24 +146,6 @@ export default function App() {
     }
   };
 
-  const handleNewCheckInAdded = (newCheckIn: WeightCheckIn) => {
-    setCheckins(prev => [newCheckIn, ...prev]);
-    handleRefreshData();
-  };
-
-  const handleToggleUserRole = async () => {
-    if (!profile) return;
-    const nextRole = profile.role === 'client' ? 'coach' : 'client';
-    try {
-      await updateUserProfile(profile.userId, { role: nextRole });
-      setProfile(prev => prev ? { ...prev, role: nextRole } : null);
-      setActiveTab(nextRole === 'coach' ? 'clients' : 'home');
-      setRoleSessionKey(k => k + 1);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0e0e0e] flex items-center justify-center flex-col gap-4">
@@ -165,7 +162,7 @@ export default function App() {
     return <WelcomeScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const isCoach = profile.role === 'coach';
+  const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
   const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
   const pendingCount = checkins.filter(c => !c.approved || !c.coachFeedback).length;
 
@@ -182,15 +179,8 @@ export default function App() {
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <button
-            onClick={handleToggleUserRole}
-            className="text-xs font-mono text-[#c6c9ab] hover:text-[#e2ff00] transition-colors bg-[#1c1b1b] border border-[#2a2a2a] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95"
-          >
-            <span className="material-symbols-outlined text-xs">sync_alt</span>
-            Presenciar como {isCoach ? 'Atleta' : 'Entrenador'}
-          </button>
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#e2ff00] cursor-pointer hover:opacity-80 transition-opacity">notifications</span>
+            <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
             <span className="w-px h-6 bg-[#2a2a2a]"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('profile')}>
               <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-[#e2ff00]/40" />
@@ -202,15 +192,15 @@ export default function App() {
 
       {/* MOBILE HEADER */}
       <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#131313] border-b border-[#2a2a2a] sticky top-0 z-40">
-        <div className="flex items-center gap-2 text-[#e2ff00]" onClick={handleToggleUserRole} title="Cambiar rol">
+        <div className="flex items-center gap-2 text-[#e2ff00]">
           <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
           <span className="text-[8px] bg-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded font-bold uppercase select-none">
-            {profile.role[0].toUpperCase()}
+            {isCoach ? 'C' : 'A'}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-[#e2ff00]">notifications</span>
+          <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
           <div className="w-6 h-6 rounded-full overflow-hidden border border-[#e2ff00]/40" onClick={() => setActiveTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>
@@ -239,83 +229,85 @@ export default function App() {
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab] hover:text-white'}`}
-        >
-          <span className="material-symbols-outlined">person</span>
-          <span className="font-mono text-xs uppercase tracking-wider">Mi Perfil</span>
-        </button>
+        {isCoach && (
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab] hover:text-white'}`}
+          >
+            <span className="material-symbols-outlined">person</span>
+            <span className="font-mono text-xs uppercase tracking-wider">Mi Perfil</span>
+          </button>
+        )}
       </nav>
 
-      {/* MAIN CONTENT — key forces full remount on every role toggle */}
-      <main key={roleSessionKey} className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
 
         {/* ATHLETE */}
-        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} />}
+        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} />}
         {!isCoach && activeTab === 'training'  && <TrainingScreen profile={profile} />}
         {!isCoach && activeTab === 'nutrition' && <NutritionHubScreen profile={profile} />}
         {!isCoach && activeTab === 'checkin'   && (
           <CheckInScreen
             profile={profile}
-            onCheckInAdded={handleNewCheckInAdded}
-            onRefreshProfile={handleRefreshData}
+            checkins={checkins}
           />
         )}
-        {!isCoach && activeTab === 'progress'  && <ProgressScreen profile={profile} checkins={checkins} />}
+        {!isCoach && activeTab === 'roadmap'   && <AthleteRoadmapScreen profile={profile} />}
 
         {/* COACH */}
-        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
-        {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} />}
+        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />}
+        {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} />}
         {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
         {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
+        {isCoach && activeTab === 'settings'  && <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />}
 
         {/* SHARED */}
         {activeTab === 'profile' && (
           <ProfileScreen
             profile={profile}
             onRefreshProfile={handleRefreshData}
-            onLogOut={() => {
-              localStorage.removeItem('enforma_sandbox_role_hint');
-              setCurrentUser(null);
-            }}
-            onToggleRole={handleToggleUserRole}
+            onLogOut={() => setCurrentUser(null)}
           />
         )}
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-2 pb-5 pt-2.5 bg-[#0e0e0e] border-t border-[#2a2a2a] select-none shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center px-1 pt-2 bg-[#0e0e0e] border-t border-[#2a2a2a] select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl w-14 transition-all relative ${activeTab === tab.id ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
+            className={`flex flex-col items-center justify-center py-1 flex-1 min-w-0 rounded-lg transition-all relative ${activeTab === tab.id ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
           >
             <span
-              className="material-symbols-outlined mb-0.5"
+              className="material-symbols-outlined text-[22px] mb-0.5"
               style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
             >
               {tab.icon}
             </span>
-            <span className="font-mono text-[9px] uppercase tracking-wider font-bold leading-tight text-center">{tab.label}</span>
+            <span className="font-mono text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
+              {tab.shortLabel ?? tab.label}
+            </span>
             {tab.id === 'reviews' && pendingCount > 0 && (
-              <span className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-[#00eefc]"></span>
+              <span className="absolute top-0.5 right-1 w-1.5 h-1.5 rounded-full bg-[#00eefc]"></span>
             )}
           </button>
         ))}
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl w-14 transition-all ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
-        >
-          <span
-            className="material-symbols-outlined mb-0.5"
-            style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}
+        {/* Athletes reach their profile via the avatar bubble in the header — no separate nav item needed */}
+        {isCoach && (
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center justify-center py-1 flex-1 min-w-0 rounded-lg transition-all ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
           >
-            person
-          </span>
-          <span className="font-mono text-[9px] uppercase tracking-wider font-bold">Perfil</span>
-        </button>
+            <span
+              className="material-symbols-outlined text-[22px] mb-0.5"
+              style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              person
+            </span>
+            <span className="font-mono text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">Perfil</span>
+          </button>
+        )}
       </nav>
 
     </div>

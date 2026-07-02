@@ -39,7 +39,7 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
   return (
     <div className="space-y-6">
       {/* Sub-tab selector */}
-      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit">
+      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-full sm:w-fit">
         {([
           { id: 'progreso', label: 'Progreso', icon: 'trending_down' },
           { id: 'fotos',    label: 'Fotos',    icon: 'photo_camera' },
@@ -47,7 +47,7 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeTab === tab.id
                 ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10'
                 : 'text-[#c6c9ab] hover:text-white'
@@ -69,7 +69,7 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
 
       {/* Weight summary + SVG chart */}
       <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-5 relative overflow-hidden">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col">
             <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">ACTUAL</span>
             <span className="font-sans font-black text-2xl md:text-3xl text-white">
@@ -136,9 +136,9 @@ export default function ProgressScreen({ profile, checkins }: ProgressScreenProp
           </div>
         </div>
 
-        <div className="flex justify-between items-center bg-[#1e1e1e] p-3 rounded-lg border border-[#2a2a2a]">
-          <span className="font-sans text-xs text-[#c6c9ab]">Tendencia últimos 7 días</span>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap justify-between items-center gap-x-3 gap-y-1 bg-[#1e1e1e] p-3 rounded-lg border border-[#2a2a2a]">
+          <span className="font-sans text-xs text-[#c6c9ab] flex-shrink-0">Tendencia últimos 7 días</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
             <span className="text-[#00eefc] text-xs font-mono">
               ({difference <= 0 ? 'Progreso positivo' : 'Fase de volumen'})

@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile } from '../types';
-import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
+import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile, OnboardingData } from '../types';
+import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles, uploadDietVideo } from '../dbService';
+import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
+import CoachNoteEditor from './CoachNoteEditor';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
+// Only HC, PROT, GRASA appear in budget and live-distribution panels.
+// MIX_HC / MIX_GRASA exist only at food-item level.
+const BUDGET_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
 
 const CAT_LABEL: Record<FoodCategory, string> = {
   HC: 'HC', PROT: 'Proteína', GRASA: 'Grasa', MIX_HC: '½P+½HC', MIX_GRASA: '½P+½Grasa',
@@ -60,19 +65,30 @@ function fmtQty(q: number): string {
   return s.replace(/\.?0+$/, '');
 }
 
+// MIX_HC  → +0.5 HC  +0.5 PROT per exchange
+// MIX_GRASA → +0.5 GRASA +0.5 PROT per exchange
+function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {
+  if (category === 'MIX_HC') {
+    p.HC   = round2(p.HC   + qty * 0.5);
+    p.PROT = round2(p.PROT + qty * 0.5);
+  } else if (category === 'MIX_GRASA') {
+    p.GRASA = round2(p.GRASA + qty * 0.5);
+    p.PROT  = round2(p.PROT  + qty * 0.5);
+  } else {
+    p[category] = round2(p[category] + qty);
+  }
+}
+
 function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
   const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const meal of meals) {
-    for (const item of meal.items) {
-      p[item.category] = round2(p[item.category] + item.quantity);
-    }
-  }
+  for (const meal of meals)
+    for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
   return p;
 }
 
 function computeMealPlaced(meal: DietMeal): Record<FoodCategory, number> {
   const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const item of meal.items) p[item.category] = round2(p[item.category] + item.quantity);
+  for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
   return p;
 }
 
@@ -89,11 +105,21 @@ function blankBudget(): Record<FoodCategory, number> {
   return { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
 }
 
+// Grams of pure macronutrient per 1 intercambio (exchange).
+// System rule: 1 intercambio = 100 kcal.
+// HC:    100 kcal / 4 kcal·g⁻¹ = 25 g
+// PROT:  100 kcal / 4 kcal·g⁻¹ = 25 g
+// GRASA: 100 kcal / 9 kcal·g⁻¹ ≈ 11 g
+const G_PER_EXCH = { HC: 25, PROT: 25, GRASA: 11 } as const;
+
+const roundHalf = (n: number) => Math.round(n * 2) / 2;
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface FormState {
   name: string;
   coachNote: string;
+  coachVideoUrl?: string;
   budget: Record<FoodCategory, number>;
   meals: DietMeal[];
 }
@@ -102,30 +128,49 @@ function blankForm(): FormState {
   return {
     name: '',
     coachNote: '',
+    coachVideoUrl: undefined,
     budget: blankBudget(),
     meals: [{ id: makeId(), name: '', items: [] }],
   };
 }
 
-interface Props { coachId: string; }
+interface Props {
+  coachId: string;
+  // Embedded mode (used from ClientHub):
+  athleteEmail?: string;        // pre-select athlete, hide selector
+  embeddedDiet?: Diet | null;   // undefined=standalone; null=new diet; Diet=edit diet
+  onSaved?: (diet: Diet) => void;
+  onCancelled?: () => void;
+  onboardingData?: OnboardingData | null; // athlete intake data for reference panel
+}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
+export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, embeddedDiet, onSaved, onCancelled, onboardingData }: Props) {
+  const isEmbedded = athleteEmail !== undefined;
+
   // Athlete selector
   const [athletes, setAthletes] = useState<UserProfile[]>([]);
-  const [selectedEmail, setSelectedEmail] = useState('');
+  const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
 
   // Diet list
   const [diets, setDiets] = useState<Diet[]>([]);
   const [loadingDiets, setLoadingDiets] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Editor
-  const [view, setView] = useState<'list' | 'editor'>('list');
+  // Editor — start in editor mode when embedded
+  const [view, setView] = useState<'list' | 'editor'>(isEmbedded ? 'editor' : 'list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(blankForm());
   const [saving, setSaving] = useState(false);
+
+  // Video note upload state (outside FormState — blob can't go in plain object)
+  const [pendingVideoBlob, setPendingVideoBlob] = useState<Blob | null>(null);
+  const [removeVideo, setRemoveVideo] = useState(false);
+
+  // Preview view mode (shared localStorage key with athlete)
+  const [previewMode, setPreviewMode] = useDietViewMode();
+  const [showPreview, setShowPreview] = useState(false);
 
   // Food picker
   const [foodItems, setFoodItems] = useState<MealItem[]>([]);
@@ -135,19 +180,42 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Load athletes on mount
+  // In embedded mode, initialise the form from the diet passed by the parent
   useEffect(() => {
+    if (!isEmbedded) return;
+    if (embeddedDiet) {
+      setEditingId(embeddedDiet.id);
+      setForm({
+        name: embeddedDiet.name,
+        coachNote: embeddedDiet.coachNote ?? '',
+        coachVideoUrl: embeddedDiet.coachVideoUrl,
+        budget: { ...embeddedDiet.budget },
+        meals: embeddedDiet.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
+      });
+    } else {
+      setEditingId(null);
+      setForm(blankForm());
+    }
+    setPendingVideoBlob(null);
+    setRemoveVideo(false);
+    setView('editor');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount
+
+  // Load athletes on mount (standalone only)
+  useEffect(() => {
+    if (isEmbedded) return;
     getAllUserProfiles()
       .then(list => setAthletes(list.filter(p => p.role === 'client')))
       .catch(console.error);
-  }, []);
+  }, [isEmbedded]);
 
   // Load diets + food config when athlete selected
   useEffect(() => {
     if (!selectedEmail) return;
     setLoadingDiets(true);
-    setDiets([]);
-    setView('list');
+    if (!isEmbedded) setDiets([]);
+    if (!isEmbedded) setView('list');
     Promise.all([
       getDietsForAthlete(selectedEmail),
       (async () => {
@@ -166,7 +234,7 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
         setActiveDietMode('OMNIVORO');
       }
     }).catch(console.error).finally(() => setLoadingDiets(false));
-  }, [selectedEmail]);
+  }, [selectedEmail, isEmbedded]);
 
   // ── Live dashboard ───────────────────────────────────────────────────────────
   const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
@@ -188,6 +256,8 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
   const openCreate = () => {
     setEditingId(null);
     setForm(blankForm());
+    setPendingVideoBlob(null);
+    setRemoveVideo(false);
     setView('editor');
   };
 
@@ -196,9 +266,12 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
     setForm({
       name: dt.name,
       coachNote: dt.coachNote ?? '',
+      coachVideoUrl: dt.coachVideoUrl,
       budget: { ...dt.budget },
       meals: dt.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
     });
+    setPendingVideoBlob(null);
+    setRemoveVideo(false);
     setView('editor');
   };
 
@@ -206,24 +279,53 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
     if (!selectedEmail || !form.name.trim()) return;
     setSaving(true);
     try {
+      // Resolve video URL: keep existing unless removed/replaced
+      const resolvedVideoUrl = removeVideo
+        ? undefined
+        : (form.coachVideoUrl ?? undefined);
+
       const data: Omit<Diet, 'id'> = {
         athleteId: selectedEmail,
         name: form.name.trim(),
         budget: form.budget,
         meals: form.meals,
         coachNote: form.coachNote.trim() || undefined,
+        coachVideoUrl: resolvedVideoUrl,
       };
+
+      let savedDiet: Diet;
       if (editingId) {
-        await updateDiet(editingId, data);
-        setDiets(prev => prev.map(d => d.id === editingId ? { ...d, ...data } : d));
+        await updateDiet(editingId, { ...data, isDraft: false });
+        savedDiet = { id: editingId, ...data };
       } else {
-        const created = await createDiet(data);
-        setDiets(prev => [...prev, created]);
+        savedDiet = await createDiet(data);
       }
-      setView('list');
+
+      // Upload pending video (needs dietId, so always after create/update)
+      if (pendingVideoBlob) {
+        const videoUrl = await uploadDietVideo(selectedEmail, savedDiet.id, pendingVideoBlob);
+        await updateDiet(savedDiet.id, { coachVideoUrl: videoUrl });
+        savedDiet = { ...savedDiet, coachVideoUrl: videoUrl };
+      }
+
+      setDiets(prev =>
+        editingId
+          ? prev.map(d => d.id === savedDiet.id ? savedDiet : d)
+          : [...prev, savedDiet],
+      );
+      if (onSaved) {
+        onSaved(savedDiet);
+      } else {
+        setView('list');
+      }
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleBack = () => {
+    if (onCancelled) onCancelled();
+    else setView('list');
   };
 
   const handleDelete = async (id: string) => {
@@ -332,22 +434,24 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
   if (view === 'list') {
     return (
       <div className="space-y-5">
-        {/* Athlete selector */}
-        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">
-            Atleta
-          </label>
-          <select
-            value={selectedEmail}
-            onChange={e => setSelectedEmail(e.target.value)}
-            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
-          >
-            <option value="">— Seleccionar atleta —</option>
-            {athletes.map(a => (
-              <option key={a.email} value={a.email}>{a.displayName}</option>
-            ))}
-          </select>
-        </div>
+        {/* Athlete selector — hidden in embedded mode */}
+        {!isEmbedded && (
+          <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">
+              Atleta
+            </label>
+            <select
+              value={selectedEmail}
+              onChange={e => setSelectedEmail(e.target.value)}
+              className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            >
+              <option value="">— Seleccionar atleta —</option>
+              {athletes.map(a => (
+                <option key={a.email} value={a.email}>{a.displayName}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {selectedEmail && (
           <div className="flex items-center justify-between">
@@ -383,7 +487,15 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
               return (
                 <div key={dt.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
                   <div>
-                    <h3 className="font-sans font-bold text-white text-lg leading-tight mb-1">{dt.name}</h3>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
+                      {dt.coachVideoUrl && (
+                        <span className="flex-shrink-0 flex items-center gap-1 bg-[#00eefc]/10 border border-[#00eefc]/20 text-[#00eefc] font-mono text-[8px] uppercase font-bold px-2 py-0.5 rounded-full">
+                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>videocam</span>
+                          vídeo
+                        </span>
+                      )}
+                    </div>
                     {dt.coachNote && (
                       <p className="text-[10px] text-[#00eefc] italic font-sans mb-2">{dt.coachNote}</p>
                     )}
@@ -444,7 +556,7 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => setView('list')}
+          onClick={handleBack}
           className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#e2ff00] border border-[#2a2a2a] text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
@@ -453,8 +565,11 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
           <h2 className="font-sans font-bold text-xl text-white">
             {editingId ? 'Editar dieta' : 'Nueva dieta'}
           </h2>
-          {selectedAthlete && (
+          {!isEmbedded && selectedAthlete && (
             <p className="text-[10px] font-mono text-[#c6c9ab]">Atleta: {selectedAthlete.displayName}</p>
+          )}
+          {isEmbedded && (
+            <p className="text-[10px] font-mono text-[#c6c9ab]">{athleteEmail}</p>
           )}
         </div>
       </div>
@@ -462,8 +577,8 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
       {/* Live dashboard */}
       <div className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl p-4 sticky top-0 z-10">
         <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">Distribución en vivo</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
-          {CATS.map(cat => {
+        <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
+          {BUDGET_CATS.map(cat => {
             const b = form.budget[cat];
             const p = placed[cat];
             const isOver = b > 0 && p > b;
@@ -501,27 +616,87 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
             className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
           />
         </div>
-        <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">Nota del coach</label>
-          <input
-            value={form.coachNote}
-            onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
-            placeholder="Indicaciones opcionales para el atleta"
-            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
-          />
-        </div>
+        <CoachNoteEditor
+          note={form.coachNote}
+          videoUrl={form.coachVideoUrl}
+          onNoteChange={note => setForm(f => ({ ...f, coachNote: note }))}
+          onVideoPending={blob => setPendingVideoBlob(blob)}
+          onRemoveVideo={r => setRemoveVideo(r)}
+        />
       </div>
+
+      {/* Onboarding reference panel */}
+      {onboardingData && (
+        <div className="bg-[#0e0e0e] border border-[#e2ff00]/15 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-[10px] text-[#e2ff00] uppercase tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">person_check</span>
+              Referencia del atleta
+            </p>
+          </div>
+
+          {/* Macros */}
+          <div className="flex flex-wrap gap-3 text-xs font-mono">
+            <span className="text-[#c6c9ab]">
+              {onboardingData.dietType === 'omnivoro' ? 'Omnívoro' : onboardingData.dietType === 'vegano' ? 'Vegano' : onboardingData.dietType === 'vegetariano' ? 'Vegetariano' : 'Otro'}
+              {' · '}<span className="text-white font-bold">{onboardingData.targetCalories} kcal</span>
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { label: 'HC',    g: onboardingData.macroGrams.hc,    pct: onboardingData.macroSplit.hc,    color: 'text-amber-300',  bg: 'bg-amber-500/10 border-amber-500/20' },
+              { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  color: 'text-blue-300',   bg: 'bg-blue-500/10 border-blue-500/20' },
+              { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
+            ]).map(m => (
+              <div key={m.label} className={`border rounded-lg px-3 py-1.5 text-center ${m.bg}`}>
+                <p className={`font-mono text-[9px] uppercase font-bold ${m.color}`}>{m.label}</p>
+                <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
+                <p className="font-mono text-[9px] text-[#555]">{m.pct}%</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Warnings */}
+          {onboardingData.dislikedFoods.length > 0 && (
+            <p className="font-mono text-[10px] text-[#c6c9ab]">
+              <span className="text-[#555] mr-1">No le gusta:</span>
+              {onboardingData.dislikedFoods.join(', ')}
+            </p>
+          )}
+          {onboardingData.allergies.length > 0 && (
+            <p className="font-mono text-[10px] text-amber-400">
+              <span className="material-symbols-outlined text-xs align-middle mr-1">warning</span>
+              Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Budget */}
       <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
-        <h3 className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
-          Presupuesto diario (intercambios por categoría)
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {CATS.map(cat => (
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
+            Presupuesto diario (intercambios por categoría)
+          </h3>
+          {onboardingData && (
+            <button
+              onClick={() => {
+                setBudget('HC',    roundHalf(onboardingData.macroGrams.hc    / G_PER_EXCH.HC));
+                setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
+                setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-[#e2ff00] hover:bg-[#e2ff00]/20 font-mono text-[9px] uppercase tracking-wide rounded-lg transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">auto_fix_high</span>
+              Prefijar desde macros
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {BUDGET_CATS.map(cat => (
             <div key={cat}>
               <label className={`block font-mono text-[10px] uppercase mb-1.5 ${CAT_COLOR[cat]}`}>
-                {cat.replace('_', ' ')}
+                {cat}
               </label>
               <div className="flex items-center bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg overflow-hidden">
                 <button
@@ -687,9 +862,62 @@ export default function NutritionPlansScreen({ coachId: _coachId }: Props) {
         ))}
       </div>
 
+      {/* Vista previa del atleta */}
+      <div className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowPreview(p => !p)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#111] transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#555] text-sm">visibility</span>
+            <span className="font-mono text-[10px] text-[#555] uppercase tracking-wide">Vista previa del atleta</span>
+          </div>
+          <span className={`material-symbols-outlined text-[#555] text-sm transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
+        </button>
+        {showPreview && (
+          <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e]">
+            <div className="pt-3">
+              <DietViewSelector mode={previewMode} onChange={setPreviewMode} />
+            </div>
+            {previewMode === 'fotos' && (
+              <DietFotosView meals={form.meals} recipes={[]} />
+            )}
+            {previewMode === 'numeros' && (
+              <DietNumerosView meals={form.meals} budget={form.budget} />
+            )}
+            {previewMode === 'lista' && (
+              <div className="space-y-2">
+                {form.meals.map((meal, mi) => (
+                  <div key={meal.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3">
+                    <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
+                    {meal.items.length === 0 ? (
+                      <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {meal.items.map((it, idx) => (
+                          <div key={idx} className="flex items-center gap-2 font-mono text-[10px] text-[#c6c9ab]">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                              it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
+                              it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
+                              'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                            }`}>{it.category.replace('_', ' ')}</span>
+                            <span>{it.foodLabel}</span>
+                            <span className="text-[#444]">×{it.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Save */}
       <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-[#131313]">
-        <button onClick={() => setView('list')} className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
+        <button onClick={handleBack} className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
           Cancelar
         </button>
         <button

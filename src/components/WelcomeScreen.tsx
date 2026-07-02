@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
 
 interface WelcomeScreenProps {
@@ -13,23 +13,33 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Authenticate using Google Auth
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setError('');
     setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      onLoginSuccess(result.user);
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/popup-blocked') {
-        setError('El navegador bloqueó la ventana emergente. Por favor, usa el inicio de sesión por correo alternativo o permite las ventanas.');
-      } else {
-        setError('Error al iniciar sesión con Google.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    // Try popup first (works in most browsers). On popup-blocked fall back to redirect.
+    signInWithPopup(auth, googleProvider)
+      .then(result => {
+        setLocalBypassMode(false);
+        onLoginSuccess(result.user);
+      })
+      .catch(err => {
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+          if (err.code === 'auth/popup-closed-by-user') {
+            setLoading(false);
+            return;
+          }
+          // Popup blocked → navigate via redirect instead
+          signInWithRedirect(auth, googleProvider).catch(redirectErr => {
+            console.error('signInWithRedirect error:', redirectErr);
+            setError(`Error al iniciar sesión con Google (${redirectErr.code ?? redirectErr.message})`);
+            setLoading(false);
+          });
+        } else {
+          console.error('Google sign-in error:', err);
+          setError(`Error al iniciar sesión con Google (${err.code ?? err.message})`);
+          setLoading(false);
+        }
+      });
   };
 
   // Regular email authentication
@@ -75,34 +85,42 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     const sandboxPassword = 'enforma_sandbox_123';
     
     try {
-      // First try standard Firebase Auth
       let user;
+
+      // 1. Intenta sign-in con credenciales existentes
       try {
         const result = await signInWithEmailAndPassword(auth, sandboxEmail, sandboxPassword);
         user = result.user;
       } catch (loginErr: any) {
-        if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential' || loginErr.code === 'auth/wrong-password') {
+        // 2. Solo si el usuario no existe, intenta crearlo
+        if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') {
           const result = await createUserWithEmailAndPassword(auth, sandboxEmail, sandboxPassword);
           user = result.user;
         } else {
           throw loginErr;
         }
       }
+
+      // 3. Éxito — flujo Firebase real, sin bypass
       setLocalBypassMode(false);
-      // Signal the intended role so loadUserSession can override whatever Firestore has
-      // (the toggle "Presenciar" may have left the profile with the wrong role)
       localStorage.setItem('enforma_sandbox_role_hint', role);
       onLoginSuccess(user);
     } catch (err: any) {
-      console.warn('Firebase Auth blocked or misconfigured in Console. Entering through Offline Local Bypass:', err);
-      setLocalBypassMode(true);
-      localStorage.setItem('enforma_sandbox_role_hint', role);
-      const mockUser = {
-        uid: role === 'coach' ? 'coach_dani_local' : 'client_alex_default',
-        email: sandboxEmail,
-        displayName: role === 'coach' ? 'Dani Coach (En Forma)' : 'Atleta En Forma',
-      };
-      onLoginSuccess(mockUser);
+      // 4. Bypass SOLO ante operation-not-allowed o error de red (sin código Firebase)
+      if (err.code === 'auth/operation-not-allowed' || !err.code) {
+        console.warn('Firebase Auth bloqueado o sin red. Entrando en Offline Local Bypass:', err);
+        setLocalBypassMode(true);
+        localStorage.setItem('enforma_sandbox_role_hint', role);
+        const mockUser = {
+          uid: role === 'coach' ? 'coach_dani_local' : 'client_alex_default',
+          email: sandboxEmail,
+          displayName: role === 'coach' ? 'Dani Coach (En Forma)' : 'Atleta En Forma',
+        };
+        onLoginSuccess(mockUser);
+      } else {
+        console.error('Sandbox login error:', err.code, err.message);
+        setError(`Error de acceso (${err.code}). Intenta con Google o el formulario.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -196,31 +214,23 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           Google Sign-In
         </button>
 
-        {/* Guest Demo Bypasses (One-Button Action) */}
-        <div className="mt-8 pt-6 border-t border-[#2a2a2a]/60 text-center">
-          <span className="block text-xs font-mono text-[#e2ff00] uppercase mb-4 tracking-wider font-extrabold">🚀 Acceso de Un Solo Clic</span>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Guest Demo — solo en entorno de desarrollo */}
+        {import.meta.env.DEV && (
+          <div className="mt-8 pt-6 border-t border-[#2a2a2a]/60 text-center">
+            <span className="block text-xs font-mono text-[#e2ff00] uppercase mb-4 tracking-wider font-extrabold">DEV · Acceso Sandbox</span>
             <button
               onClick={() => handleSandboxLogin('client')}
               disabled={loading}
-              className="py-3 px-3 bg-gradient-to-r from-teal-950 to-[#121414] hover:from-teal-900 border border-teal-700/60 rounded-md text-teal-200 text-xs font-mono flex flex-col items-center gap-1.5 active:scale-95 transition-all shadow-md hover:shadow-teal-900/10"
+              className="w-full py-3 px-3 bg-gradient-to-r from-teal-950 to-[#121414] hover:from-teal-900 border border-teal-700/60 rounded-md text-teal-200 text-xs font-mono flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-lg">fitness_center</span>
-              <span className="font-bold">Modo Atleta / Cliente</span>
+              <span className="font-bold">Sandbox Atleta</span>
             </button>
-            <button
-              onClick={() => handleSandboxLogin('coach')}
-              disabled={loading}
-              className="py-3 px-3 bg-gradient-to-r from-[#d1b000]/10 to-[#121414] hover:from-[#d1b000]/25 border border-[#e2ff00]/40 rounded-md text-[#e2ff00] text-xs font-mono flex flex-col items-center gap-1.5 active:scale-95 transition-all shadow-md hover:shadow-[#e2ff00]/10"
-            >
-              <span className="material-symbols-outlined text-lg">assignment_ind</span>
-              <span className="font-bold">Modo Entrenador</span>
-            </button>
+            <p className="text-[10px] text-[#c6c9ab] mt-2 font-mono">
+              Solo visible en desarrollo. En producción, usa Google Sign-In.
+            </p>
           </div>
-          <p className="text-[10px] text-[#c6c9ab] mt-3 font-mono leading-tight">
-            Diseñado para ingresar en forma directa estés donde estés.
-          </p>
-        </div>
+        )}
 
         <div className="mt-6 text-center">
           <button

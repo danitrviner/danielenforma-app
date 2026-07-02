@@ -1,17 +1,54 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Exercise } from '../types';
+import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
 }
 
-type ExerciseType = Exercise['type'];
+type ExerciseType  = Exercise['type'];
 type ExerciseLevel = Exercise['level'];
 
-const MUSCLE_GROUPS = ['pecho', 'espalda', 'hombros', 'bíceps', 'tríceps', 'core', 'piernas', 'glúteos', 'cuerpo completo', 'cardio'];
-const TYPES: ExerciseType[] = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
+// ─── Macrocycle muscle groups (the 14 typed keys) ─────────────────────────────
+
+const MACRO_MUSCLE_GROUPS: MuscleGroup[] = [
+  'pecho', 'dorsal', 'trapecio',
+  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
+  'biceps', 'triceps', 'antebrazo',
+  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
+];
+
+const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = {
+  pecho:         'Pecho',
+  dorsal:        'Dorsal',
+  trapecio:      'Trapecio',
+  deltoide_ant:  'Deltoides Ant.',
+  deltoide_lat:  'Deltoides Lat.',
+  deltoide_post: 'Deltoides Post.',
+  biceps:        'Bíceps',
+  triceps:       'Tríceps',
+  antebrazo:     'Antebrazo',
+  cuadriceps:    'Cuádriceps',
+  isquios:       'Isquiotibiales',
+  gluteo:        'Glúteo',
+  gemelo:        'Gemelo',
+  core:          'Core',
+};
+
+const TYPES:  ExerciseType[]  = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
 const LEVELS: ExerciseLevel[] = ['principiante', 'intermedio', 'avanzado'];
+
+const EQUIPMENT_OPTIONS = [
+  'peso corporal',
+  'mancuernas',
+  'barra',
+  'máquina',
+  'polea',
+  'kettlebell',
+  'banco',
+  'gomas',
+] as const;
+type EquipmentOption = typeof EQUIPMENT_OPTIONS[number];
 
 const TYPE_STYLES: Record<ExerciseType, string> = {
   fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
@@ -27,31 +64,33 @@ const LEVEL_STYLES: Record<ExerciseLevel, string> = {
 };
 
 const EMPTY_FORM: Omit<Exercise, 'id'> = {
-  ownerId: '',
-  name: '',
-  primaryFocus: 'piernas',
-  type: 'fuerza',
-  level: 'principiante',
-  videoUrl: '',
-  imageUrl: '',
+  ownerId:      '',
+  name:         '',
+  primaryFocus: 'pecho',
+  type:         'fuerza',
+  level:        'principiante',
+  equipment:    [],
+  videoUrl:     '',
+  imageUrl:     '',
   instructions: '',
-  isCustom: true,
+  isCustom:     true,
 };
 
 export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreenProps) {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterFocus, setFilterFocus] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterLevel, setFilterLevel] = useState('');
+  const [exercises, setExercises]               = useState<Exercise[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [search, setSearch]                     = useState('');
+  const [filterMuscleGroup, setFilterMuscleGroup] = useState<MuscleGroup | ''>('');
+  const [filterType, setFilterType]             = useState('');
+  const [filterLevel, setFilterLevel]           = useState('');
+  const [filterEquipment, setFilterEquipment]   = useState('');
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<Exercise, 'id'>>(EMPTY_FORM);
-  const [isSaving, setIsSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [showForm, setShowForm]                 = useState(false);
+  const [editingId, setEditingId]               = useState<string | null>(null);
+  const [form, setForm]                         = useState<Omit<Exercise, 'id'>>(EMPTY_FORM);
+  const [isSaving, setIsSaving]                 = useState(false);
+  const [deleteConfirm, setDeleteConfirm]       = useState<string | null>(null);
+  const [successMsg, setSuccessMsg]             = useState('');
 
   const loadExercises = useCallback(async () => {
     setLoading(true);
@@ -70,9 +109,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
   const filtered = exercises.filter(ex => {
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterFocus && ex.primaryFocus !== filterFocus) return false;
+    if (filterMuscleGroup && ex.muscleGroup !== filterMuscleGroup) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterLevel && ex.level !== filterLevel) return false;
+    if (filterEquipment) {
+      const eq = ex.equipment ?? [];
+      if (eq.length === 0) return false;
+      if (!eq.some(e => e.toLowerCase() === filterEquipment.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -84,7 +128,19 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
   const openEdit = (ex: Exercise) => {
     setEditingId(ex.id);
-    setForm({ ownerId: ex.ownerId, name: ex.name, primaryFocus: ex.primaryFocus, type: ex.type, level: ex.level, videoUrl: ex.videoUrl || '', imageUrl: ex.imageUrl || '', instructions: ex.instructions || '', isCustom: ex.isCustom });
+    setForm({
+      ownerId:      ex.ownerId,
+      name:         ex.name,
+      primaryFocus: ex.primaryFocus,
+      muscleGroup:  ex.muscleGroup,
+      type:         ex.type,
+      level:        ex.level,
+      equipment:    ex.equipment ?? [],
+      videoUrl:     ex.videoUrl || '',
+      imageUrl:     ex.imageUrl || '',
+      instructions: ex.instructions || '',
+      isCustom:     ex.isCustom,
+    });
     setShowForm(true);
   };
 
@@ -93,12 +149,17 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     if (!form.name.trim()) return;
     setIsSaving(true);
     try {
+      // Keep primaryFocus in sync with muscleGroup for backward compat
+      const payload: Omit<Exercise, 'id'> = {
+        ...form,
+        primaryFocus: form.muscleGroup ? MACRO_MUSCLE_LABELS[form.muscleGroup] : form.primaryFocus,
+      };
       if (editingId) {
-        await updateExercise(editingId, form);
-        setExercises(prev => prev.map(ex => ex.id === editingId ? { ...ex, ...form } : ex));
+        await updateExercise(editingId, payload);
+        setExercises(prev => prev.map(ex => ex.id === editingId ? { ...ex, ...payload } : ex));
         flash('Ejercicio actualizado.');
       } else {
-        const newEx = await createExercise({ ...form, ownerId: coachId, isCustom: true });
+        const newEx = await createExercise({ ...payload, ownerId: coachId, isCustom: true });
         setExercises(prev => [...prev, newEx]);
         flash('Ejercicio creado.');
       }
@@ -128,6 +189,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
   const canEdit = (ex: Exercise) => ex.isCustom && ex.ownerId === coachId;
 
+  // Display helper: prefer typed muscleGroup label, fall back to legacy primaryFocus
+  function muscleLabel(ex: Exercise): string {
+    return ex.muscleGroup ? MACRO_MUSCLE_LABELS[ex.muscleGroup] : ex.primaryFocus;
+  }
+
+  const hasFilters = !!(filterMuscleGroup || filterType || filterLevel || filterEquipment || search);
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
@@ -135,7 +203,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
           <p className="text-[#c6c9ab] text-sm mt-1">
-            {exercises.length} ejercicios en la base de datos · {exercises.filter(e => e.isCustom).length} personalizados
+            {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
+            {exercises.filter(e => e.muscleGroup).length > 0 && (
+              <span className="ml-2 text-[#e2ff00]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo macrociclo</span>
+            )}
           </p>
         </div>
         <button
@@ -170,13 +241,16 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
         {/* Filter pills */}
         <div className="flex gap-2 flex-wrap">
+          {/* Muscle group filter — 14 macrocycle keys */}
           <select
-            value={filterFocus}
-            onChange={e => setFilterFocus(e.target.value)}
+            value={filterMuscleGroup}
+            onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
             className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
           >
-            <option value="">Todos los músculos</option>
-            {MUSCLE_GROUPS.map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
+            <option value="">Todos los grupos</option>
+            {MACRO_MUSCLE_GROUPS.map(g => (
+              <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
+            ))}
           </select>
 
           <select
@@ -197,9 +271,20 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
           </select>
 
-          {(filterFocus || filterType || filterLevel || search) && (
+          <select
+            value={filterEquipment}
+            onChange={e => setFilterEquipment(e.target.value)}
+            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+          >
+            <option value="">Todo el material</option>
+            {EQUIPMENT_OPTIONS.map(e => (
+              <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>
+            ))}
+          </select>
+
+          {hasFilters && (
             <button
-              onClick={() => { setFilterFocus(''); setFilterType(''); setFilterLevel(''); setSearch(''); }}
+              onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterLevel(''); setFilterEquipment(''); setSearch(''); }}
               className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-[#2a2a2a] rounded-lg hover:border-[#3a3a3a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
@@ -209,10 +294,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </div>
       </div>
 
-      {/* RESULTS COUNT */}
       {!loading && (
         <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
+          {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
       )}
 
@@ -228,18 +313,23 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="bg-[#121212] border border-dashed border-[#2a2a2a] rounded-xl p-16 text-center">
           <span className="material-symbols-outlined text-4xl text-[#e2ff00]/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-sm">Sin resultados</p>
-          <p className="text-[#c6c9ab] text-xs mt-1">Ajusta los filtros o añade un nuevo ejercicio.</p>
+          <p className="text-[#c6c9ab] text-xs mt-1">
+            {filterMuscleGroup
+              ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo macrociclo en el editor.`
+              : 'Ajusta los filtros o añade un nuevo ejercicio.'}
+          </p>
         </div>
       ) : (
         <>
           {/* Desktop table */}
           <div className="hidden md:block bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-md">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+              <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-[#1a1a1a] border-b border-[#2a2a2a]">
                     <th className="p-4 pl-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Ejercicio</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Músculo</th>
+                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
+                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Material</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Tipo</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Nivel</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Origen</th>
@@ -270,7 +360,25 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="font-mono text-xs text-[#e5e2e1] capitalize">{ex.primaryFocus}</span>
+                        <div className="space-y-0.5">
+                          {ex.muscleGroup ? (
+                            <span className="inline-flex items-center gap-1 font-mono text-xs text-[#e2ff00] bg-[#e2ff00]/8 border border-[#e2ff00]/20 px-1.5 py-0.5 rounded">
+                              <span className="material-symbols-outlined text-[10px]">link</span>
+                              {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
+                            </span>
+                          ) : (
+                            <span className="font-mono text-xs text-[#c6c9ab]">{ex.primaryFocus}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {(ex.equipment ?? []).length === 0 ? (
+                            <span className="font-mono text-[9px] text-[#333]">—</span>
+                          ) : (ex.equipment!).map(eq => (
+                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                          ))}
+                        </div>
                       </td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
@@ -329,7 +437,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     )}
                     <div>
                       <p className="font-sans font-bold text-sm text-white">{ex.name}</p>
-                      <p className="font-mono text-[10px] text-[#c6c9ab] capitalize">{ex.primaryFocus}</p>
+                      <p className="font-mono text-[10px] text-[#c6c9ab]">{muscleLabel(ex)}</p>
+                      {ex.muscleGroup && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#e2ff00]/80">
+                          <span className="material-symbols-outlined text-[9px]">link</span>
+                          Macro
+                        </span>
+                      )}
                     </div>
                   </div>
                   {canEdit(ex) && (
@@ -346,6 +460,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${LEVEL_STYLES[ex.level]}`}>{ex.level}</span>
+                  {(ex.equipment ?? []).map(eq => (
+                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                  ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-[#00eefc]/70 flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-xs">play_circle</span>
@@ -413,18 +530,29 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 />
               </div>
 
-              {/* Muscle group, type, level — 3 cols */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Grupo muscular *</label>
-                  <select
-                    value={form.primaryFocus}
-                    onChange={e => setForm(f => ({ ...f, primaryFocus: e.target.value }))}
-                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
-                  >
-                    {MUSCLE_GROUPS.map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
-                  </select>
-                </div>
+              {/* Grupo macrociclo — the 14 typed keys */}
+              <div>
+                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                  Grupo macrociclo
+                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
+                </label>
+                <select
+                  value={form.muscleGroup ?? ''}
+                  onChange={e => setForm(f => ({
+                    ...f,
+                    muscleGroup: (e.target.value as MuscleGroup) || undefined,
+                  }))}
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                >
+                  <option value="">— Sin asignar —</option>
+                  {MACRO_MUSCLE_GROUPS.map(g => (
+                    <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type + Level — 2 cols */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipo *</label>
                   <select
@@ -444,6 +572,38 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   >
                     {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
                   </select>
+                </div>
+              </div>
+
+              {/* Equipment multi-select */}
+              <div>
+                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                  Material necesario
+                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {EQUIPMENT_OPTIONS.map(eq => {
+                    const selected = (form.equipment ?? []).includes(eq);
+                    return (
+                      <button
+                        key={eq}
+                        type="button"
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          equipment: selected
+                            ? (f.equipment ?? []).filter(e => e !== eq)
+                            : [...(f.equipment ?? []), eq],
+                        }))}
+                        className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border capitalize transition-all ${
+                          selected
+                            ? 'bg-[#e2ff00]/15 border-[#e2ff00]/40 text-[#e2ff00] font-bold'
+                            : 'bg-[#121212] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a]'
+                        }`}
+                      >
+                        {selected && '✓ '}{eq}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

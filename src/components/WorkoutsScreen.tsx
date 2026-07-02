@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Exercise, Workout, WorkoutExercise } from '../types';
+import { Exercise, Workout, WorkoutExercise, MUSCLE_LABELS } from '../types';
 import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises, seedExercisesIfEmpty } from '../dbService';
 
 interface WorkoutsScreenProps {
@@ -54,7 +54,13 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
     }
   }, []);
 
-  useEffect(() => { loadWorkouts(); }, [loadWorkouts]);
+  useEffect(() => {
+    loadWorkouts();
+    seedExercisesIfEmpty()
+      .then(() => getExercises())
+      .then(setAllExercises)
+      .catch(console.error);
+  }, [loadWorkouts]);
 
   const ensureExercisesLoaded = async () => {
     if (allExercises.length > 0) return;
@@ -243,7 +249,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       return (
                         <div key={i} className="flex items-center gap-2 text-xs font-mono text-[#c6c9ab]">
                           <span className="text-[#2a2a2a] font-bold w-4 text-center">{i + 1}</span>
-                          <span className="truncate">{ex?.name || 'Ejercicio'}</span>
+                          <span className="truncate">{ex?.name || (we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : '—')}</span>
                           <span className="flex-shrink-0 text-[10px]">{we.sets}×{we.reps}</span>
                         </div>
                       );
