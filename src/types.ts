@@ -357,7 +357,6 @@ export interface Diet {
   budget: Record<FoodCategory, number>; // total exchanges per category for the day
   meals: DietMeal[];
   coachNote?: string;
-  coachVideoUrl?: string;
   isDraft?: boolean;
   selfManaged?: boolean; // true = created by the athlete in "Mis Dietas", private to them
 }

@@ -596,22 +596,6 @@ export default function NutritionScreen({ profile }: Props) {
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
                 )}
-                {selectedDiet.coachVideoUrl && (
-                  <div className="mt-3">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="material-symbols-outlined text-[#00eefc]" style={{ fontSize: '14px' }}>videocam</span>
-                      <span className="font-mono text-[9px] text-[#00eefc] uppercase font-bold tracking-wide">Mensaje en vídeo del coach</span>
-                    </div>
-                    <div className="relative w-full bg-black rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                      <video
-                        src={selectedDiet.coachVideoUrl}
-                        controls
-                        playsInline
-                        className="w-full h-full"
-                      />
-                    </div>
-                  </div>
-                )}
                 <span className="block font-mono text-[9px] text-[#c6c9ab] mt-1.5">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>

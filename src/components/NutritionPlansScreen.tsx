@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile, OnboardingData } from '../types';
-import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles, uploadDietVideo } from '../dbService';
+import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
-import CoachNoteEditor from './CoachNoteEditor';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -73,7 +72,6 @@ const roundHalf = (n: number) => Math.round(n * 2) / 2;
 interface FormState {
   name: string;
   coachNote: string;
-  coachVideoUrl?: string;
   budget: Record<FoodCategory, number>;
   meals: DietMeal[];
 }
@@ -82,7 +80,6 @@ function blankForm(): FormState {
   return {
     name: '',
     coachNote: '',
-    coachVideoUrl: undefined,
     budget: blankBudget(),
     meals: [{ id: makeId(), name: '', items: [] }],
   };
@@ -118,10 +115,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const [form, setForm] = useState<FormState>(blankForm());
   const [saving, setSaving] = useState(false);
 
-  // Video note upload state (outside FormState — blob can't go in plain object)
-  const [pendingVideoBlob, setPendingVideoBlob] = useState<Blob | null>(null);
-  const [removeVideo, setRemoveVideo] = useState(false);
-
   // Preview view mode (shared localStorage key with athlete)
   const [previewMode, setPreviewMode] = useDietViewMode();
   const [showPreview, setShowPreview] = useState(false);
@@ -142,7 +135,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       setForm({
         name: embeddedDiet.name,
         coachNote: embeddedDiet.coachNote ?? '',
-        coachVideoUrl: embeddedDiet.coachVideoUrl,
         budget: { ...embeddedDiet.budget },
         meals: embeddedDiet.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
       });
@@ -150,8 +142,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       setEditingId(null);
       setForm(blankForm());
     }
-    setPendingVideoBlob(null);
-    setRemoveVideo(false);
     setView('editor');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount
@@ -212,8 +202,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const openCreate = () => {
     setEditingId(null);
     setForm(blankForm());
-    setPendingVideoBlob(null);
-    setRemoveVideo(false);
     setView('editor');
   };
 
@@ -222,12 +210,9 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     setForm({
       name: dt.name,
       coachNote: dt.coachNote ?? '',
-      coachVideoUrl: dt.coachVideoUrl,
       budget: { ...dt.budget },
       meals: dt.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
     });
-    setPendingVideoBlob(null);
-    setRemoveVideo(false);
     setView('editor');
   };
 
@@ -235,18 +220,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     if (!selectedEmail || !form.name.trim()) return;
     setSaving(true);
     try {
-      // Resolve video URL: keep existing unless removed/replaced
-      const resolvedVideoUrl = removeVideo
-        ? undefined
-        : (form.coachVideoUrl ?? undefined);
-
       const data: Omit<Diet, 'id'> = {
         athleteId: selectedEmail,
         name: form.name.trim(),
         budget: form.budget,
         meals: form.meals,
         coachNote: form.coachNote.trim() || undefined,
-        coachVideoUrl: resolvedVideoUrl,
       };
 
       let savedDiet: Diet;
@@ -255,13 +234,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         savedDiet = { id: editingId, ...data };
       } else {
         savedDiet = await createDiet(data);
-      }
-
-      // Upload pending video (needs dietId, so always after create/update)
-      if (pendingVideoBlob) {
-        const videoUrl = await uploadDietVideo(selectedEmail, savedDiet.id, pendingVideoBlob);
-        await updateDiet(savedDiet.id, { coachVideoUrl: videoUrl });
-        savedDiet = { ...savedDiet, coachVideoUrl: videoUrl };
       }
 
       setDiets(prev =>
@@ -445,12 +417,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
-                      {dt.coachVideoUrl && (
-                        <span className="flex-shrink-0 flex items-center gap-1 bg-[#00eefc]/10 border border-[#00eefc]/20 text-[#00eefc] font-mono text-[8px] uppercase font-bold px-2 py-0.5 rounded-full">
-                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>videocam</span>
-                          vídeo
-                        </span>
-                      )}
                     </div>
                     {dt.coachNote && (
                       <p className="text-[10px] text-[#00eefc] italic font-sans mb-2">{dt.coachNote}</p>
@@ -558,6 +524,19 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             );
           })}
         </div>
+
+        {targetMismatches.length > 0 && (
+          <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
+            <span className="font-mono text-[9px] text-amber-400 uppercase tracking-wider w-full mb-0.5">
+              ⚠ Objetivos por comida no cuadran con el presupuesto
+            </span>
+            {targetMismatches.map(({ cat, sum, budget: b }) => (
+              <span key={cat} className="font-mono text-[9px] text-amber-300">
+                {cat.replace('_', ' ')}: suma {fmtQty(sum)} ≠ {fmtQty(b)}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Metadata */}
@@ -572,13 +551,18 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
           />
         </div>
-        <CoachNoteEditor
-          note={form.coachNote}
-          videoUrl={form.coachVideoUrl}
-          onNoteChange={note => setForm(f => ({ ...f, coachNote: note }))}
-          onVideoPending={blob => setPendingVideoBlob(blob)}
-          onRemoveVideo={r => setRemoveVideo(r)}
-        />
+        <div>
+          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">
+            Nota del coach
+          </label>
+          <textarea
+            value={form.coachNote}
+            onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
+            rows={3}
+            placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
+            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] resize-none"
+          />
+        </div>
       </div>
 
       {/* Onboarding reference panel */}
@@ -694,19 +678,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </button>
           </div>
         </div>
-
-        {targetMismatches.length > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="font-mono text-[9px] text-amber-400 uppercase tracking-wider w-full mb-0.5">
-              ⚠ Objetivos por comida no cuadran con el presupuesto
-            </span>
-            {targetMismatches.map(({ cat, sum, budget: b }) => (
-              <span key={cat} className="font-mono text-[9px] text-amber-300">
-                {cat.replace('_', ' ')}: suma {fmtQty(sum)} ≠ {fmtQty(b)}
-              </span>
-            ))}
-          </div>
-        )}
 
         {form.meals.map((meal, mi) => (
           <div key={meal.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">

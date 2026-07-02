@@ -1917,20 +1917,6 @@ export async function deactivatePhotoAssignment(id: string): Promise<void> {
   }
 }
 
-// Storage path: dietNotes/{athleteEmail}/{dietId}.{ext}
-// Needs: allow read, write: if request.auth != null; (same rule as progressPhotos)
-export async function uploadDietVideo(
-  athleteEmail: string,
-  dietId: string,
-  blob: Blob,
-): Promise<string> {
-  const ext = blob.type.includes('mp4') ? 'mp4' : blob.type.includes('quicktime') ? 'mov' : 'webm';
-  const path = `dietNotes/${athleteEmail}/${dietId}.${ext}`;
-  const sRef = storageRef(storage, path);
-  await uploadBytes(sRef, blob);
-  return getDownloadURL(sRef);
-}
-
 // ─── MESOCYCLES ───────────────────────────────────────────────────────────────
 
 const MESOCYCLES_LOCAL_KEY = 'enforma_mesocycles_v1';
