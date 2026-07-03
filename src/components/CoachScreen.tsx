@@ -532,7 +532,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       {/* VIEW DIRECTORY 3: HISTORIAL COMPLETO DE CHECK-INS */}
       {!selectedAthlete && activeSubTab === 'history' && (
         <div className="space-y-4">
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
+          <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-violet-400 text-sm">history_edu</span>
               Historial Completo de Reportes Generales

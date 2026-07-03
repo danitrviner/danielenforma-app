@@ -103,7 +103,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
       {isCoach && (
         showCoaches ? (
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
+          <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">groups</span>
@@ -245,7 +245,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             />
           </div>
         ) : (
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4">
+          <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl flex items-center justify-between gap-4">
             <div>
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">assignment_ind</span>
@@ -270,7 +270,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       {/* ── Food preferences ──────────────────────────────────────────────────── */}
       {!isCoach && onboarding && !editingFicha && (
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
+        <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant</span>
             Preferencias alimentarias
@@ -288,7 +288,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Edit profile form ─────────────────────────────────────────────────── */}
-      <form onSubmit={handleUpdate} className="bg-[#181816] border border-white/7 p-4 rounded-2xl space-y-4">
+      <form onSubmit={handleUpdate} className="bg-[#181816] border border-white/7 p-5 rounded-2xl space-y-4">
         <h3 className="font-sans font-bold text-base text-[#fbcb1a] uppercase tracking-wide border-b border-white/7 pb-2">Editar Marca de Ficha</h3>
 
         <div>

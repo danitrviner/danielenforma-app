@@ -128,8 +128,8 @@ export const COLORS = {
 
   // Brand / accent colors.
   accent: {
-    volt: '#e2ff00',        // primary CTA / highlight color across the app
-    voltHover: '#bad200',   // hover/active state of volt
+    volt: '#fbcb1a',        // primary CTA / highlight color across the app (rebrand: oro)
+    voltHover: '#d4a800',   // hover/active state of volt
     voltDim: '#cde600',
     voltFaint: '#f7ff80',
     cyan: '#00eefc',        // secondary accent (used for "linked athlete" tags, charts)
