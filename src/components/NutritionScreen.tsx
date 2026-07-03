@@ -606,7 +606,7 @@ export default function NutritionScreen({ profile }: Props) {
                 <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
                   Progreso por categoría
                 </p>
-                <div className="grid grid-cols-3 gap-x-4 gap-y-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
                   {BUDGET_CATS.map(cat => {
                     const b = selectedDiet.budget[cat];
                     const d = doneByCat[cat];
