@@ -1,0 +1,17 @@
+{
+  "name": "En Forma",
+  "short_name": "En Forma",
+  "description": "App de coaching fitness: entrenamiento, nutrición y seguimiento.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111110",
+  "theme_color": "#111110",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
