@@ -86,7 +86,7 @@ export default function FoodPreferencesPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -116,11 +116,11 @@ export default function FoodPreferencesPanel({
                 onClick={() => { setActiveGroup(g); setSearch(''); }}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
                   hasAny
-                    ? 'bg-[#1a1c12] border-[#e2ff00]/30 hover:border-[#e2ff00]/60'
-                    : 'bg-[#121212] border-[#2a2a2a] hover:border-[#3a3a3a]'
+                    ? 'bg-[#1a1c12] border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60'
+                    : 'bg-[#181816] border-white/7 hover:border-[#3a3a3a]'
                 }`}
               >
-                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-[#e2ff00]' : 'text-[#555]'}`}>
+                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-[#fbcb1a]' : 'text-[#555]'}`}>
                   {g.icon}
                 </span>
                 <span className="font-mono text-[9px] text-[#c6c9ab] text-center leading-tight">{g.name}</span>
@@ -162,7 +162,7 @@ export default function FoodPreferencesPanel({
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e2ff00] text-base">{activeGroup.icon}</span>
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">{activeGroup.icon}</span>
             <h3 className="font-sans font-bold text-sm text-white">{activeGroup.name}</h3>
           </div>
           <div className="flex gap-3 font-mono text-[10px] mt-0.5">
@@ -173,7 +173,7 @@ export default function FoodPreferencesPanel({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
           {saving ? '…' : saved ? 'OK' : 'Guardar'}
@@ -188,7 +188,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-[#e2ff00]/50 font-mono"
+          className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-[#fbcb1a]/50 font-mono"
         />
         {search && (
           <button
@@ -201,7 +201,7 @@ export default function FoodPreferencesPanel({
       </div>
 
       {/* Food list */}
-      <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-[#2a2a2a]">
+      <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
         {filteredFoods.length === 0 ? (
           <p className="py-6 text-center font-mono text-xs text-[#555]">Sin resultados</p>
         ) : (
@@ -216,7 +216,7 @@ export default function FoodPreferencesPanel({
                 key={food}
                 className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                   pref === 'favorite' ? 'bg-amber-400/5' :
-                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-[#121212]'
+                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-[#181816]'
                 }`}
               >
                 <span className={`flex-1 font-mono text-xs ${
@@ -237,7 +237,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                          : 'bg-[#1c1b1b] border border-[#2a2a2a] text-[#444] hover:text-red-400 hover:border-red-500/30'
+                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-red-400 hover:border-red-500/30'
                       }`}
                       title="No me gusta"
                     >
@@ -248,7 +248,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
-                          : 'bg-[#1c1b1b] border border-[#2a2a2a] text-[#444] hover:text-amber-400 hover:border-amber-400/30'
+                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-amber-400 hover:border-amber-400/30'
                       }`}
                       title="Favorito"
                     >

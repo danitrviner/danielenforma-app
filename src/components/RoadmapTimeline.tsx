@@ -34,12 +34,12 @@ function fmtMonth(d: Date): string {
 
 // ─── Block color palettes ─────────────────────────────────────────────────────
 
-const MESO_COLORS = ['#e2ff00', '#bad200', '#f7ff80'];
+const MESO_COLORS = ['#fbcb1a', '#d4a800', '#f7ff80'];
 const NUTRI_COLORS = ['#00eefc', '#0cbcce', '#b3f6ff'];
 
 function statusColor(status?: RoadmapItem['status']): string {
   if (status === 'logrado') return '#86efac';
-  if (status === 'en_progreso') return '#e2ff00';
+  if (status === 'en_progreso') return '#fbcb1a';
   if (status === 'pendiente') return '#ff8c69';
   return '#c6c9ab';
 }
@@ -89,7 +89,7 @@ interface EditorProps {
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-[#191919] border border-[#2a2a2a] rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
@@ -107,7 +107,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             value={item.title}
             onChange={e => onChange({ ...item, title: e.target.value })}
             placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
         </div>
 
@@ -119,7 +119,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] resize-none"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
           />
         </div>
 
@@ -130,7 +130,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
             >
               <option value="objetivo">Objetivo</option>
               <option value="hito">Hito</option>
@@ -142,7 +142,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
             >
               <option value="entreno">Entreno</option>
               <option value="nutricion">Nutrición</option>
@@ -160,7 +160,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.startDate ?? ''}
               onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
             />
           </div>
           <div>
@@ -169,7 +169,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.targetDate ?? ''}
               onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
             />
           </div>
         </div>
@@ -180,7 +180,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="pendiente">Pendiente</option>
             <option value="en_progreso">En progreso</option>
@@ -200,14 +200,14 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+            className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -499,7 +499,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           const cx = xOf(log.date);
           const cy = weightToLocalY(log.weight);
           return (
-            <circle key={i} cx={cx} cy={cy} r={3.5} fill="#e2ff00" opacity={0.85}>
+            <circle key={i} cx={cx} cy={cy} r={3.5} fill="#fbcb1a" opacity={0.85}>
               <title>{log.date}: {log.weight} kg</title>
             </circle>
           );
@@ -512,7 +512,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl border border-[#2a2a2a] bg-[#0e0e0e] overflow-hidden">
+      <div className="rounded-xl border border-white/7 bg-[#0e0e0e] overflow-hidden">
         <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[#c6c9ab]" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
@@ -530,7 +530,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             ))}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height, zIndex: 10 }}
-              className="bg-[#e2ff00]/40"
+              className="bg-[#fbcb1a]/40"
             />
             {children}
           </div>
@@ -549,7 +549,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e2ff00] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo
@@ -576,7 +576,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-[#2a2a2a] rounded-xl bg-[#0e0e0e] overflow-hidden">
+      <div className="hidden sm:flex border border-white/7 rounded-xl bg-[#0e0e0e] overflow-hidden">
 
         {/* Sidebar — never scrolls */}
         <div
@@ -641,11 +641,11 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             {/* HOY vertical line */}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 10 }}
-              className="bg-[#e2ff00]/40"
+              className="bg-[#fbcb1a]/40"
             >
               <span
                 style={{ position: 'absolute', top: 2, left: 4 }}
-                className="font-mono text-[8px] text-[#e2ff00] uppercase whitespace-nowrap"
+                className="font-mono text-[8px] text-[#fbcb1a] uppercase whitespace-nowrap"
               >
                 Hoy
               </span>
@@ -669,7 +669,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
-        <div className="border border-[#2a2a2a] rounded-xl p-4 space-y-2">
+        <div className="border border-white/7 rounded-xl p-4 space-y-2">
           <p className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
@@ -677,7 +677,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#2a2a2a] text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-[#e2ff00]/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/7 text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-[#fbcb1a]/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >
@@ -714,7 +714,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Pendiente</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#e2ff00' }} />
+          <div className="w-3 h-3 rounded-sm" style={{ background: '#fbcb1a' }} />
           <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">En progreso</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -730,7 +730,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Plan peso</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ background: '#e2ff00' }} />
+              <div className="w-3 h-3 rounded-full" style={{ background: '#fbcb1a' }} />
               <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Peso real</span>
             </div>
           </>

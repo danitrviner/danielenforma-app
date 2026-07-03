@@ -28,9 +28,9 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   return (
     <div className="space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
-        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+        <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="material-symbols-outlined text-[#e2ff00] text-base">insights</span>
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
           </div>
           <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
@@ -44,14 +44,14 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         </div>
       )}
 
-      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit">
+      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
-                ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10'
+                ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
                 : 'text-[#c6c9ab] hover:text-white'
             }`}
           >

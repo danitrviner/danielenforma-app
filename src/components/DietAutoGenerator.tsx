@@ -257,11 +257,11 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#e2ff00]/50 font-mono"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a]/50 font-mono"
           />
         </div>
 
-        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 grid grid-cols-3 gap-4">
+        <div className="bg-[#181816] border border-white/7 rounded-xl p-4 grid grid-cols-3 gap-4">
           {([
             { label: 'HC',    val: budget.HC,    color: 'text-amber-400'  },
             { label: 'PROT',  val: budget.PROT,  color: 'text-blue-400'   },
@@ -284,8 +284,8 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                 onClick={() => handleCountChange(n)}
                 className={`px-5 py-2.5 rounded-lg font-mono font-bold text-sm transition-all ${
                   count === n
-                    ? 'bg-[#e2ff00] text-black'
-                    : 'bg-[#121212] border border-[#2a2a2a] text-[#c6c9ab] hover:text-white'
+                    ? 'bg-[#fbcb1a] text-black'
+                    : 'bg-[#181816] border border-white/7 text-[#c6c9ab] hover:text-white'
                 }`}
               >
                 {n}
@@ -303,11 +303,11 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
           </div>
           <div className="space-y-2">
             {slots.map((sl, i) => (
-              <div key={i} className="flex items-center gap-3 bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3">
+              <div key={i} className="flex items-center gap-3 bg-[#181816] border border-white/7 rounded-lg px-4 py-3">
                 <span className="font-mono text-xs text-white w-28 flex-shrink-0">{sl.name}</span>
                 <div className="flex-1 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#e2ff00]/50 rounded-full transition-all"
+                    className="h-full bg-[#fbcb1a]/50 rounded-full transition-all"
                     style={{ width: `${Math.min(sl.pct, 100)}%` }}
                   />
                 </div>
@@ -317,7 +317,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                   max={100}
                   value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
-                  className="w-16 text-right bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-[#e2ff00]/50"
+                  className="w-16 text-right bg-[#1e1e1e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-[#fbcb1a]/50"
                 />
                 <span className="font-mono text-[#555] text-xs">%</span>
               </div>
@@ -325,7 +325,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
           </div>
         </div>
 
-        <div className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl p-4">
+        <div className="bg-[#0e0e0e] border border-white/7 rounded-xl p-4">
           <p className="font-mono text-[10px] text-[#555] uppercase mb-3">Presupuesto por ingesta</p>
           <div className="space-y-1.5">
             {slots.map((sl, i) => {
@@ -346,14 +346,14 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
           <button
             onClick={handleGenerate}
             disabled={pctSum !== 100}
-            className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-sm uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar dieta
           </button>
           <button
             onClick={onCancel}
-            className="px-5 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-sm rounded-xl transition-all"
+            className="px-5 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-sm rounded-xl transition-all"
           >
             Cancelar
           </button>
@@ -367,7 +367,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
   if (step === 'generating') {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <span className="material-symbols-outlined text-4xl text-[#e2ff00] animate-spin">progress_activity</span>
+        <span className="material-symbols-outlined text-4xl text-[#fbcb1a] animate-spin">progress_activity</span>
         <p className="font-mono text-sm text-white">{genPhase}</p>
         <p className="font-mono text-[10px] text-[#555]">Buscando las mejores recetas de la biblioteca Indya…</p>
       </div>
@@ -389,7 +389,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
       </div>
 
       {/* Daily totals summary */}
-      <div className="flex gap-4 bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+      <div className="flex gap-4 bg-[#181816] border border-white/7 rounded-xl p-4">
         {(['HC', 'PROT', 'GRASA'] as const).map(cat => {
           const budgetVal  = budget[cat];
           const totalAct   = rQ(meals.reduce((s, m) => s + m.exch[cat], 0));
@@ -407,11 +407,11 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
       {/* Meal cards */}
       <div className="space-y-4">
         {meals.map((m, idx) => (
-          <div key={idx} className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
+          <div key={idx} className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
             {/* Meal header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#0e0e0e] border-b border-[#2a2a2a]">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0e0e0e] border-b border-white/7">
               <span className="font-mono font-bold text-xs text-white uppercase">{m.name}</span>
-              <span className="font-mono text-[9px] text-[#555] bg-[#1a1a1a] px-2 py-0.5 rounded">
+              <span className="font-mono text-[9px] text-[#555] bg-[#1e1e1b] px-2 py-0.5 rounded">
                 {m.pct}% · obj {m.target.HC}HC {m.target.PROT}P {m.target.GRASA}G
               </span>
             </div>
@@ -421,7 +421,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                 <div className="space-y-3">
                   {/* Recipe row */}
                   <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-[#2a2a2a]">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7">
                       {m.recipe.image
                         ? <img src={m.recipe.image} alt={m.recipe.name} className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center">
@@ -432,7 +432,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                     <div className="flex-1 min-w-0">
                       <p className="font-sans font-bold text-sm text-white leading-tight mb-1">{m.recipe.name}</p>
                       {m.recipe.categoria && (
-                        <span className="font-mono text-[9px] text-[#555] bg-[#1a1a1a] px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-[9px] text-[#555] bg-[#1e1e1b] px-1.5 py-0.5 rounded">
                           {m.recipe.categoria}
                         </span>
                       )}
@@ -442,7 +442,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                       <select
                         value={m.scale}
                         onChange={e => updateScale(idx, Number(e.target.value))}
-                        className="bg-[#1c1b1b] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-[#e2ff00]/50"
+                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-[#fbcb1a]/50"
                       >
                         {SCALES.map(s => (
                           <option key={s} value={s}>×{s}</option>
@@ -459,7 +459,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                       const cls = devCls(t, a);
                       const diff = +(a - t).toFixed(2);
                       return (
-                        <div key={cat} className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg p-2.5 text-center">
+                        <div key={cat} className="bg-[#0e0e0e] border border-white/7 rounded-lg p-2.5 text-center">
                           <span className="block font-mono text-[9px] text-[#555] uppercase mb-1">{cat}</span>
                           <span className={`block font-bold text-base ${cls}`}>{a}</span>
                           <span className="block font-mono text-[9px] text-[#555]">
@@ -510,7 +510,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
 
             {/* Inline recipe picker */}
             {pickIdx === idx && m.candidates.length > 0 && (
-              <div className="border-t border-[#2a2a2a] max-h-64 overflow-y-auto">
+              <div className="border-t border-white/7 max-h-64 overflow-y-auto">
                 {m.candidates.map((c, ci) => {
                   const e          = c.bestExch;
                   const isSelected = m.recipe?.id === c.recipe.id;
@@ -518,7 +518,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                     <button
                       key={ci}
                       onClick={() => pickRecipe(idx, c)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1a1a1a] transition-colors ${isSelected ? 'bg-[#1a1c12]' : ''}`}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1e1e1b] transition-colors ${isSelected ? 'bg-[#1a1c12]' : ''}`}
                     >
                       <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
                         {c.recipe.image
@@ -533,7 +533,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
                         </p>
                       </div>
                       {isSelected && (
-                        <span className="material-symbols-outlined text-[#e2ff00] text-sm flex-shrink-0">check_circle</span>
+                        <span className="material-symbols-outlined text-[#fbcb1a] text-sm flex-shrink-0">check_circle</span>
                       )}
                     </button>
                   );
@@ -549,7 +549,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
         <button
           onClick={() => handleSave(false)}
           disabled={saving}
-          className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-sm uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">publish</span>
           {saving ? 'Guardando…' : 'Publicar dieta'}
@@ -557,14 +557,14 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
         <button
           onClick={() => handleSave(true)}
           disabled={saving}
-          className="flex-1 py-3 bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">save</span>
           Guardar borrador
         </button>
         <button
           onClick={onCancel}
-          className="px-5 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-sm rounded-xl transition-all"
+          className="px-5 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-sm rounded-xl transition-all"
         >
           Cancelar
         </button>

@@ -51,8 +51,8 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   };
 
   return (
-    <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2a2a2a]">
+    <section className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">folder_open</span>
           Recursos
@@ -60,7 +60,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
         {isCoach && (
           <button
             onClick={() => setShowForm(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#e2ff00] hover:text-[#bad200] transition-colors"
+            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800] transition-colors"
           >
             <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
             {showForm ? 'Cancelar' : 'Nuevo'}
@@ -69,20 +69,20 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       </div>
 
       {isCoach && showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-lg p-3 mb-3 space-y-2">
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded p-2 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-[#0e0e0e] border border-[#2a2a2a] rounded p-2 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -93,14 +93,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-[#0e0e0e] border border-[#2a2a2a] rounded p-2 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
               required
             />
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
+            className="w-full py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando...' : 'Compartir recurso'}
           </button>
@@ -116,10 +116,10 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       ) : (
         <div className="space-y-2">
           {resources.map(r => (
-            <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-3">
+            <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
               <span className="material-symbols-outlined text-[#00eefc] flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white hover:text-[#e2ff00] transition-colors truncate">{r.title}</p>
+                <p className="font-sans font-semibold text-sm text-white hover:text-[#fbcb1a] transition-colors truncate">{r.title}</p>
                 <p className="font-mono text-[10px] text-[#c6c9ab]">{KIND_LABEL[r.kind]}</p>
               </a>
               {isCoach && (

@@ -197,12 +197,12 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   if (awaitingInviteEmail) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#e2ff00]/5 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
 
-        <div className="w-full max-w-md bg-[#131313] border border-[#2a2a2a] p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
+        <div className="w-full max-w-md bg-[#131313] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
           <div className="flex flex-col items-center mb-6">
-            <div className="flex items-center gap-2 text-[#e2ff00] mb-2">
+            <div className="flex items-center gap-2 text-[#fbcb1a] mb-2">
               <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
               <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
             </div>
@@ -225,14 +225,14 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={inviteEmailInput}
               onChange={e => setInviteEmailInput(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-3 text-sm text-white focus:outline-none focus:border-[#e2ff00] transition-colors"
+              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
               required
               autoFocus
             />
             <button
               type="submit"
               disabled={completingInvite}
-              className="w-full h-[48px] bg-[#e2ff00] text-black font-mono font-bold uppercase rounded-md hover:bg-[#bad200] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
+              className="w-full h-[48px] bg-[#fbcb1a] text-black font-mono font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
             >
               {completingInvite ? 'Verificando...' : 'Continuar'}
             </button>
@@ -245,13 +245,13 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
       {/* Background glow designs */}
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#e2ff00]/5 blur-[120px] rounded-full"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
 
-      <div className="w-full max-w-md bg-[#131313] border border-[#2a2a2a] p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
+      <div className="w-full max-w-md bg-[#131313] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
-          <div className="flex items-center gap-2 text-[#e2ff00] mb-2 animate-pulse">
+          <div className="flex items-center gap-2 text-[#fbcb1a] mb-2 animate-pulse">
             <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
             <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
           </div>
@@ -260,7 +260,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
 
         {/* Instant Access Instructions Box */}
         <div className="bg-[#1a1e20] border border-teal-500/25 rounded-lg p-3.5 mb-6 text-xs text-slate-300 space-y-2 font-sans shadow-inner">
-          <div className="flex items-center gap-2 text-[#e2ff00] font-bold font-mono uppercase tracking-wider text-[10px]">
+          <div className="flex items-center gap-2 text-[#fbcb1a] font-bold font-mono uppercase tracking-wider text-[10px]">
             <span className="material-symbols-outlined text-sm animate-pulse">lock_open</span>
             <span>Acceso Garantizado 100%</span>
           </div>
@@ -276,7 +276,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         )}
 
         {resetMessage && (
-          <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/35 text-[#e2ff00] p-3 rounded text-sm mb-6 text-center">
+          <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/35 text-[#fbcb1a] p-3 rounded text-sm mb-6 text-center">
             {resetMessage}
           </div>
         )}
@@ -289,7 +289,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="atleta@enforma.com"
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-3 text-sm text-white focus:outline-none focus:border-[#e2ff00] transition-colors"
+              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
               required
             />
           </div>
@@ -302,7 +302,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
                   type="button"
                   onClick={handleForgotPassword}
                   disabled={resetting}
-                  className="text-[10px] text-[#e2ff00] hover:underline transition-colors font-mono disabled:opacity-50"
+                  className="text-[10px] text-[#fbcb1a] hover:underline transition-colors font-mono disabled:opacity-50"
                 >
                   {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
                 </button>
@@ -313,7 +313,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-3 text-sm text-white focus:outline-none focus:border-[#e2ff00] transition-colors"
+              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
               required
             />
           </div>
@@ -321,7 +321,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-[48px] bg-[#e2ff00] text-black font-mono font-bold uppercase rounded-md hover:bg-[#bad200] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
+            className="w-full h-[48px] bg-[#fbcb1a] text-black font-mono font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
           >
             {loading ? 'Procesando...' : isRegistering ? 'Crear Cuenta Atleta' : 'Ingresar al Portal'}
             <span className="material-symbols-outlined text-sm">login</span>
@@ -338,7 +338,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full h-[48px] bg-[#1a1c1c] hover:bg-[#282a2b] text-white font-mono rounded-md border border-[#2a2a2a] active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
+          className="w-full h-[48px] bg-[#1a1c1c] hover:bg-[#282a2b] text-white font-mono rounded-md border border-white/7 active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
         >
           <img 
             src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 
@@ -350,8 +350,8 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
 
         {/* Guest Demo — solo en entorno de desarrollo */}
         {import.meta.env.DEV && (
-          <div className="mt-8 pt-6 border-t border-[#2a2a2a]/60 text-center">
-            <span className="block text-xs font-mono text-[#e2ff00] uppercase mb-4 tracking-wider font-extrabold">DEV · Acceso Sandbox</span>
+          <div className="mt-8 pt-6 border-t border-white/60 text-center">
+            <span className="block text-xs font-mono text-[#fbcb1a] uppercase mb-4 tracking-wider font-extrabold">DEV · Acceso Sandbox</span>
             <button
               onClick={() => handleSandboxLogin('client')}
               disabled={loading}
@@ -370,7 +370,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <button
             type="button"
             onClick={() => setIsRegistering(!isRegistering)}
-            className="text-xs text-[#e2ff00] hover:underline transition-colors font-mono"
+            className="text-xs text-[#fbcb1a] hover:underline transition-colors font-mono"
           >
             {isRegistering ? '¿Ya tienes una cuenta? Iniciar sesión' : '¿Nuevo en En Forma? Regístrate aquí'}
           </button>

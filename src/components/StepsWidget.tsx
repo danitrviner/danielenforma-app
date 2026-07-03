@@ -63,17 +63,17 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+      <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
         <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando pasos...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-5">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00] text-base">directions_walk</span>
+          <span className="material-symbols-outlined text-[#fbcb1a] text-base">directions_walk</span>
           Pasos de hoy
         </h2>
         {!editing && (
@@ -98,12 +98,12 @@ export default function StepsWidget({ athleteEmail }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+            className="flex-1 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#e2ff00] flex items-center justify-center text-black transition-all hover:bg-[#bad200] active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#fbcb1a] flex items-center justify-center text-black transition-all hover:bg-[#d4a800] active:scale-95 disabled:opacity-50"
           >
             {saving
               ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
@@ -124,11 +124,11 @@ export default function StepsWidget({ athleteEmail }: Props) {
             </div>
             <div>
               <span className="block text-[9px] text-[#c6c9ab] uppercase">Restantes</span>
-              <span className="block text-sm font-bold text-[#e2ff00]">{remaining.toLocaleString('es-ES')}</span>
+              <span className="block text-sm font-bold text-[#fbcb1a]">{remaining.toLocaleString('es-ES')}</span>
             </div>
           </div>
           <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
-            <div className="h-full bg-[#e2ff00] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-[#fbcb1a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
           <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest mt-2 text-center">
             +{kcalEarned.toLocaleString('es-ES')} kcal por actividad

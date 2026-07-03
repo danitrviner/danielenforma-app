@@ -95,14 +95,14 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* View selector */}
-      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-xl gap-1 w-fit">
+      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 w-fit">
         {(['front', 'side', 'back'] as PhotoView[]).map(v => (
           <button
             key={v}
             onClick={() => setSelectedView(v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               selectedView === v
-                ? 'bg-[#e2ff00] text-black shadow-md'
+                ? 'bg-[#fbcb1a] text-black shadow-md'
                 : 'text-[#c6c9ab] hover:text-white'
             }`}
           >
@@ -113,7 +113,7 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* Upload bar */}
-      <div className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="material-symbols-outlined text-[#c6c9ab] text-sm">calendar_today</span>
           <input
@@ -126,7 +126,7 @@ export default function PhotosScreen({ profile }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-[#e2ff00] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#bad200] disabled:opacity-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
             ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
@@ -147,7 +147,7 @@ export default function PhotosScreen({ profile }: Props) {
 
       {/* Gallery */}
       {visiblePhotos.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-[#2a2a2a] rounded-2xl">
+        <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">photo_camera</span>
           <p className="text-[#c6c9ab] text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
           <p className="text-[#c6c9ab] text-xs font-mono mt-1">Sube tu primera foto para empezar a registrar tu evolución.</p>
@@ -155,7 +155,7 @@ export default function PhotosScreen({ profile }: Props) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {visiblePhotos.map((photo, idx) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-[#2a2a2a] bg-[#1c1b1b] aspect-[3/4]">
+            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-white/7 bg-[#1c1b1b] aspect-[3/4]">
               <img
                 src={photo.url}
                 alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
@@ -167,7 +167,7 @@ export default function PhotosScreen({ profile }: Props) {
               </div>
               {/* Latest badge */}
               {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-[#e2ff00] px-2 py-0.5 rounded font-mono text-[9px] font-black text-black">
+                <div className="absolute top-2 right-2 bg-[#fbcb1a] px-2 py-0.5 rounded font-mono text-[9px] font-black text-black">
                   ACTUAL
                 </div>
               )}

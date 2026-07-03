@@ -84,7 +84,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
         <button
           onClick={() => openEditor()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#e2ff00] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>Nuevo
         </button>
@@ -93,7 +93,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       {loading ? (
         <div className="text-center py-16 font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando…</div>
       ) : questionnaires.length === 0 ? (
-        <div className="border border-dashed border-[#2a2a2a] rounded-2xl py-20 text-center">
+        <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
           <p className="text-[#c6c9ab] text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
@@ -101,15 +101,15 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       ) : (
         <div className="space-y-3">
           {questionnaires.map(q => (
-            <div key={q.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 flex items-center gap-4">
-              <div className="w-9 h-9 bg-[#e2ff00]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-[#e2ff00] text-base">quiz</span>
+            <div key={q.id} className="bg-[#181816] border border-white/7 rounded-xl p-4 flex items-center gap-4">
+              <div className="w-9 h-9 bg-[#fbcb1a]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-[#fbcb1a] text-base">quiz</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-sans font-bold text-white text-sm truncate">{q.title}</p>
                   {q.questions.some(qq => qq.graphable) && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-mono text-[#e2ff00] bg-[#e2ff00]/10 px-1.5 py-0.5 rounded border border-[#e2ff00]/20">
+                    <span className="flex items-center gap-0.5 text-[9px] font-mono text-[#fbcb1a] bg-[#fbcb1a]/10 px-1.5 py-0.5 rounded border border-[#fbcb1a]/20">
                       <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
                       Graficable
                     </span>
@@ -123,7 +123,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => openEditor(q)}
-                  className="p-2 bg-[#1c1b1b] border border-[#2a2a2a] text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                  className="p-2 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
                   title="Editar"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
@@ -131,7 +131,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                 <button
                   onClick={() => handleDelete(q.id)}
                   disabled={deleting === q.id}
-                  className="p-2 bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
+                  className="p-2 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-sm">{deleting === q.id ? 'progress_activity' : 'delete'}</span>

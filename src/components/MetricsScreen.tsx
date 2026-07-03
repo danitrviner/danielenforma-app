@@ -99,8 +99,8 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       </div>
 
       {successMsg && (
-        <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-white p-4 rounded-lg text-sm flex items-center gap-3 animate-bounce">
-          <span className="material-symbols-outlined text-[#e2ff00]">energy_savings_leaf</span>
+        <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-white p-4 rounded-lg text-sm flex items-center gap-3 animate-bounce">
+          <span className="material-symbols-outlined text-[#fbcb1a]">energy_savings_leaf</span>
           <div>
             <p className="font-bold">{successMsg}</p>
           </div>
@@ -117,7 +117,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Section A: Visual Summary Weight & Core Chart */}
-        <section className="lg:col-span-8 bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
+        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
               <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">ACTUAL</span>
@@ -145,7 +145,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Core Weight Chart SVG */}
-          <div className="w-full bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-3 relative overflow-hidden mb-5">
+          <div className="w-full bg-[#1e1e1e] border border-white/7 rounded-lg p-3 relative overflow-hidden mb-5">
             <div className="absolute top-2 left-3 font-mono text-[10px] text-[#c6c9ab]/60 uppercase">Evolución de Peso (kg)</div>
             
             <div className="w-full overflow-x-auto hide-scrollbar">
@@ -196,7 +196,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                         cx={p.x}
                         cy={p.y}
                         r={isLast ? "5" : "4"}
-                        fill={isLast ? "#e2ff00" : "#00eefc"}
+                        fill={isLast ? "#fbcb1a" : "#00eefc"}
                         className={isLast ? "volt-glow" : ""}
                       />
                       <text x={p.x} y={p.y - 10} fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
@@ -213,7 +213,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Sub summary info */}
-          <div className="flex justify-between items-center bg-[#1e1e1e] p-3 rounded-lg border border-[#2a2a2a]">
+          <div className="flex justify-between items-center bg-[#1e1e1e] p-3 rounded-lg border border-white/7">
             <span className="font-sans text-xs text-[#c6c9ab]">Tendencia últimos 7 días</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
@@ -225,10 +225,10 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section B: New Check-in Form */}
-        <section className="lg:col-span-4 bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between">
           <div>
-            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#e2ff00]">edit_note</span>
+            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
               Nuevo Check-in
             </h2>
             
@@ -243,20 +243,20 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="0.0"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-[#2a2a2a] text-white font-mono p-2.5 focus:ring-0 focus:border-[#e2ff00] transition-colors"
+                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors"
                   required
                 />
               </div>
 
               <div>
                 <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Estado de Ánimo</label>
-                <div className="flex justify-between items-center bg-[#1e1e1e] p-2 rounded-lg border border-[#2a2a2a] gap-1">
+                <div className="flex justify-between items-center bg-[#1e1e1e] p-2 rounded-lg border border-white/7 gap-1">
                   {['😩', '😴', '😐', '😊', '🔥'].map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
                       onClick={() => setMood(emoji)}
-                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-[#201f1f] ring-1 ring-[#e2ff00] scale-110' : 'opacity-55'}`}
+                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-[#201f1f] ring-1 ring-[#fbcb1a] scale-110' : 'opacity-55'}`}
                     >
                       {emoji}
                     </button>
@@ -272,7 +272,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-mono text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-[#e2ff00] text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-[#2a2a2a]'}`}
+                      className={`flex-1 py-2 font-mono text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-[#fbcb1a] text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
                     >
                       {opt}
                     </button>
@@ -286,14 +286,14 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-[#2a2a2a] text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#e2ff00] transition-colors min-h-[75px]"
+                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[75px]"
                 ></textarea>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-[44px] bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
+                className="w-full h-[44px] bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
               >
                 {isSubmitting ? 'Enviando...' : 'Enviar al Entrenador'}
                 <span className="material-symbols-outlined text-sm">send</span>
@@ -308,18 +308,18 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
-        <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#e2ff00]/5 blur-3xl rounded-full pointer-events-none"></div>
+        <section className="bg-[#181816] border border-white/7 rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-16 h-16 rounded-full bg-[#1e1e1e] border-2 border-[#e2ff00] overflow-hidden relative shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-[#1e1e1e] border-2 border-[#fbcb1a] overflow-hidden relative shadow-lg">
                 <img 
                   alt="Athlete avatar" 
                   className="w-full h-full object-cover" 
                   src={profile.avatarUrl}
                 />
-                <div className="absolute bottom-0 right-0 bg-[#e2ff00] text-black text-[10px] font-bold px-1 rounded-sm">L{profile.level}</div>
+                <div className="absolute bottom-0 right-0 bg-[#fbcb1a] text-black text-[10px] font-bold px-1 rounded-sm">L{profile.level}</div>
               </div>
               
               <div className="flex-1">
@@ -334,7 +334,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
             </div>
 
             {/* Streak metrics */}
-            <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-[#2a2a2a] mb-5">
+            <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-white/7 mb-5">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🔥</span>
                 <div className="flex flex-col">
@@ -358,7 +358,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   return (
                     <div 
                       key={idx} 
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#e2ff00] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-[#2a2a2a]'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#fbcb1a] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
                       title={isActive ? "Entrenamiento registrado" : "Próximo entreno"}
                     />
                   );
@@ -371,13 +371,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           <div>
             <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Insignias Desbloqueadas</span>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span>🏅</span> Primera semana
               </span>
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
-                <span className="text-[#e2ff00]">⚡</span> 10 días de racha
+              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="text-[#fbcb1a]">⚡</span> 10 días de racha
               </span>
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
               </span>
             </div>
@@ -385,9 +385,9 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section D: Historial weight & coach directives logs */}
-        <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between">
+        <section className="bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between">
           <div>
-            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
+            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc]">history</span>
               Historial de Revisiones
             </h2>
@@ -396,7 +396,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               {checkins.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-[#2a2a2a]'}`}
+                  className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-white/7'}`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">
@@ -405,7 +405,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-base">{item.mood}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#e2ff00]/10 text-[#e2ff00]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#fbcb1a]/10 text-[#fbcb1a]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
                         {item.adherence}
                       </span>
                     </div>
@@ -419,13 +419,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
                   {/* Coach feedback loop displayed directly in notes checks! */}
                   {item.coachFeedback ? (
-                    <div className="text-xs border-l-2 border-[#e2ff00] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
-                      <span className="font-mono font-semibold text-[#e2ff00] block mb-1">Nota del Entrenador:</span>
+                    <div className="text-xs border-l-2 border-[#fbcb1a] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
+                      <span className="font-mono font-semibold text-[#fbcb1a] block mb-1">Nota del Entrenador:</span>
                       <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                     </div>
                   ) : (
                     <div className="text-[11px] text-[#c6c9ab]/60 font-mono italic pl-1 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs animate-spin text-[#e2ff00]">sync</span>
+                      <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
                       Pendiente de revisión del Entrenador
                     </div>
                   )}

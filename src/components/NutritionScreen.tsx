@@ -486,8 +486,8 @@ export default function NutritionScreen({ profile }: Props) {
             <button key={mode} onClick={() => setActiveDietMode(mode)}
               className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
                 activeDietMode === mode
-                  ? 'bg-[#e2ff00] text-black shadow-md'
-                  : 'bg-[#1c1b1b] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/40 hover:text-white'
+                  ? 'bg-[#fbcb1a] text-black shadow-md'
+                  : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
               }`}
             >{MODE_LABEL[mode]}</button>
           ))}
@@ -507,14 +507,14 @@ export default function NutritionScreen({ profile }: Props) {
                 onClick={() => setViewDay(day)}
                 className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl font-mono text-[11px] font-bold uppercase tracking-wider border transition-all ${
                   isViewing
-                    ? 'bg-[#e2ff00]/10 border-[#e2ff00]/50 text-[#e2ff00]'
+                    ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/50 text-[#fbcb1a]'
                     : isToday
                     ? 'bg-[#1c1b1b] border-[#3a3a3a] text-white'
-                    : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a] hover:text-white'
+                    : 'bg-[#1e1e1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a] hover:text-white'
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
-                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-[#e2ff00]' : hasDiet ? 'bg-[#00eefc]/50' : 'bg-transparent'}`} />
+                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-[#fbcb1a]' : hasDiet ? 'bg-[#00eefc]/50' : 'bg-transparent'}`} />
               </button>
             );
           })}
@@ -524,7 +524,7 @@ export default function NutritionScreen({ profile }: Props) {
       {loading ? (
         <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dieta...</div>
       ) : activeDiets.length === 0 && !selectedDiet ? (
-        <div className="text-center py-16 border border-dashed border-[#2a2a2a] rounded-2xl">
+        <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
           <p className="text-[#c6c9ab] text-sm font-sans">Sin dietas asignadas.</p>
           <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu entrenador aún no ha activado ninguna dieta para ti.</p>
@@ -534,7 +534,7 @@ export default function NutritionScreen({ profile }: Props) {
         const browseDiet = browseDietId ? allDietsList.find(d => d.id === browseDietId) ?? null : null;
         return (
           <div className="space-y-4">
-            <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
+            <div className="bg-[#1c1b1b] rounded-xl p-4 border border-white/7">
               <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-1">
                 {WD_FULL[viewDay].charAt(0).toUpperCase() + WD_FULL[viewDay].slice(1)}
               </span>
@@ -561,7 +561,7 @@ export default function NutritionScreen({ profile }: Props) {
             </div>
             <button
               onClick={() => setViewDay(TODAY_WD)}
-              className="w-full py-2.5 rounded-xl border border-[#e2ff00]/30 text-[#e2ff00] font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#e2ff00]/10 transition-all"
+              className="w-full py-2.5 rounded-xl border border-[#fbcb1a]/30 text-[#fbcb1a] font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#fbcb1a]/10 transition-all"
             >
               ← Volver a hoy
             </button>
@@ -576,8 +576,8 @@ export default function NutritionScreen({ profile }: Props) {
                 <button key={dt.id} onClick={() => handleSelectDiet(dt)}
                   className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
                     selectedDiet?.id === dt.id
-                      ? 'bg-[#e2ff00] text-black shadow-md'
-                      : 'bg-[#1c1b1b] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/40 hover:text-white'
+                      ? 'bg-[#fbcb1a] text-black shadow-md'
+                      : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
                   }`}
                 >{dt.name}</button>
               ))}
@@ -587,10 +587,10 @@ export default function NutritionScreen({ profile }: Props) {
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
               {/* Diet header */}
-              <div className="bg-[#1c1b1b] rounded-xl p-4 border border-[#2a2a2a]">
+              <div className="bg-[#1c1b1b] rounded-xl p-4 border border-white/7">
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold">DIETA ACTIVA</span>
-                  <span className="font-mono text-[9px] text-[#e2ff00] uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
+                  <span className="font-mono text-[9px] text-[#fbcb1a] uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
                 </div>
                 <span className="block font-sans font-bold text-lg text-white leading-tight">{selectedDiet.name}</span>
                 {selectedDiet.coachNote && (
@@ -602,7 +602,7 @@ export default function NutritionScreen({ profile }: Props) {
               </div>
 
               {/* Budget dashboard */}
-              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+              <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
                 <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
                   Progreso por categoría
                 </p>
@@ -613,7 +613,7 @@ export default function NutritionScreen({ profile }: Props) {
                     const isOver = b > 0 && d > b;
                     const isOk = b > 0 && round2(d) === round2(b);
                     const pct = b > 0 ? Math.min(100, (d / b) * 100) : (d > 0 ? 100 : 0);
-                    const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#e2ff00]';
+                    const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#fbcb1a]';
                     return (
                       <div key={cat}>
                         <div className="flex items-center justify-between mb-1">
@@ -634,14 +634,14 @@ export default function NutritionScreen({ profile }: Props) {
               </div>
 
               {/* Overall progress bar */}
-              <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+              <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
                 <div className="flex justify-between items-end mb-2">
                   <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Completados hoy</h2>
-                  <span className="font-mono text-xs text-[#e2ff00] font-bold">{doneItems} / {totalItems}</span>
+                  <span className="font-mono text-xs text-[#fbcb1a] font-bold">{doneItems} / {totalItems}</span>
                 </div>
                 <div className="h-2 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#e2ff00] rounded-full transition-all duration-500 volt-glow"
+                    className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500 volt-glow"
                     style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
                   />
                 </div>
@@ -664,12 +664,12 @@ export default function NutritionScreen({ profile }: Props) {
                   const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
                     <div key={meal.id}
-                      className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${mealDone ? 'border-[#e2ff00]/40' : 'border-[#2a2a2a]'}`}
+                      className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${mealDone ? 'border-[#fbcb1a]/40' : 'border-white/7'}`}
                     >
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-[#1c1b1b]/80 flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#e2ff00] border-[#e2ff00]' : 'border-[#3a3a3a]'}`}>
+                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
                           <span className="font-sans font-bold text-white text-base">{mealLabel(meal.name, mi + 1)}</span>
@@ -682,7 +682,7 @@ export default function NutritionScreen({ profile }: Props) {
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
                               title="Usar receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#e2ff00]/50 hover:text-[#e2ff00] text-[#c6c9ab] transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
                             >
                               <span className="material-symbols-outlined text-xs select-none">skillet</span>
                               <span className="font-mono text-[9px] uppercase tracking-wider hidden sm:block">Receta</span>
@@ -696,7 +696,7 @@ export default function NutritionScreen({ profile }: Props) {
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
-                          <div className="px-4 py-2 bg-[#0e0e0e]/60 border-b border-[#2a2a2a]/60 flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+                          <div className="px-4 py-2 bg-[#0e0e0e]/60 border-b border-white/60 flex flex-wrap gap-x-3 gap-y-1.5 items-center">
                             {targetCats.map(cat => {
                               const tgt = meal.target![cat]!;
                               const d = mDone[cat] ?? 0;
@@ -712,7 +712,7 @@ export default function NutritionScreen({ profile }: Props) {
                                   </span>
                                   <div className="w-10 h-1 bg-[#1c1b1b] rounded-full overflow-hidden">
                                     <div
-                                      className={`h-full rounded-full transition-all duration-300 ${isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#e2ff00]'}`}
+                                      className={`h-full rounded-full transition-all duration-300 ${isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#fbcb1a]'}`}
                                       style={{ width: `${tgt > 0 ? Math.min(100, (d / tgt) * 100) : 0}%` }}
                                     />
                                   </div>
@@ -724,7 +724,7 @@ export default function NutritionScreen({ profile }: Props) {
                       })()}
 
                       {/* Item list */}
-                      <div className="p-3 border-t border-[#2a2a2a]/60 bg-[#131313]/40 space-y-2">
+                      <div className="p-3 border-t border-white/60 bg-[#131313]/40 space-y-2">
                         {meal.items.length === 0 ? (
                           <p className="text-center py-3 font-mono text-[10px] text-[#c6c9ab] italic">Sin alimentos en esta comida.</p>
                         ) : meal.items.map((item, idx) => {
@@ -732,12 +732,12 @@ export default function NutritionScreen({ profile }: Props) {
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
                           return (
                             <div key={key}
-                              className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all ${st.done ? 'bg-[#121212] border-[#e2ff00]/20 opacity-75' : 'bg-[#121212] border-[#2a2a2a]'}`}
+                              className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all ${st.done ? 'bg-[#181816] border-[#fbcb1a]/20 opacity-75' : 'bg-[#181816] border-white/7'}`}
                             >
                               {/* Checkbox */}
                               <button
                                 onClick={() => handleToggleDone(meal.id, idx)}
-                                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#e2ff00] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#e2ff00]'}`}
+                                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#fbcb1a] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#fbcb1a]'}`}
                               >
                                 {st.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
                               </button>
@@ -762,7 +762,7 @@ export default function NutritionScreen({ profile }: Props) {
                                 <button
                                   onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
                                   title="Cambiar comida"
-                                  className="text-[#c6c9ab] hover:text-[#e2ff00] transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                  className="text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors flex-shrink-0 p-1.5 -m-1.5"
                                 >
                                   <span className="material-symbols-outlined text-sm select-none">skillet</span>
                                 </button>
@@ -803,12 +803,12 @@ export default function NutritionScreen({ profile }: Props) {
         const targetMeal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
         return (
           <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+              <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#e2ff00] text-base">skillet</span>
+                    <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
                     Usar receta
                   </h3>
                   {targetMeal && (
@@ -826,7 +826,7 @@ export default function NutritionScreen({ profile }: Props) {
               </div>
 
               {/* Search */}
-              <div className="px-4 py-2 bg-[#121212] flex items-center gap-2 border-b border-[#2a2a2a]">
+              <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
                 <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
                 <input
                   type="text"
@@ -839,15 +839,15 @@ export default function NutritionScreen({ profile }: Props) {
 
               {/* Category filter */}
               {availableRecipeCats.length > 0 && (
-                <div className="px-4 py-2 bg-[#121212] border-b border-[#2a2a2a] flex gap-1.5 overflow-x-auto">
+                <div className="px-4 py-2 bg-[#181816] border-b border-white/7 flex gap-1.5 overflow-x-auto">
                   {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setRecipeCatFilter(cat.id)}
                       className={`px-3 py-1.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                         recipeCatFilter === cat.id
-                          ? 'bg-[#e2ff00] text-black shadow-md'
-                          : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-[#2a2a2a]'
+                          ? 'bg-[#fbcb1a] text-black shadow-md'
+                          : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'
                       }`}
                     >{cat.label}</button>
                   ))}
@@ -877,21 +877,21 @@ export default function NutritionScreen({ profile }: Props) {
                     <button
                       key={recipe.id}
                       onClick={() => handleApplyRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-xl border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-white/7 flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           {isFav && (
-                            <span className="material-symbols-outlined text-[#e2ff00] text-xs" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
+                            <span className="material-symbols-outlined text-[#fbcb1a] text-xs" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
-                          <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors truncate">{recipe.name}</span>
+                          <span className="font-sans font-bold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate">{recipe.name}</span>
                         </div>
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
@@ -900,9 +900,9 @@ export default function NutritionScreen({ profile }: Props) {
                             ))}
                           </div>
                         )}
-                        <span className="font-mono text-[9px] text-[#e2ff00]/70">{exchStr}</span>
+                        <span className="font-mono text-[9px] text-[#fbcb1a]/70">{exchStr}</span>
                       </div>
-                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">add_circle</span>
                     </button>
                   );
                 })}
@@ -915,11 +915,11 @@ export default function NutritionScreen({ profile }: Props) {
       {/* Cambiar comida sheet */}
       {swapContext && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
               <div>
                 <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-base">skillet</span>
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
                   Cambiar comida
                 </h3>
                 {swapSourceRecipe && (
@@ -944,20 +944,20 @@ export default function NutritionScreen({ profile }: Props) {
                 <button
                   key={recipe.id}
                   onClick={() => handleApplySwap(recipe)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-xl border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                 >
                   {recipe.photoUrl ? (
                     <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-white/7 flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="font-sans font-bold text-sm text-white group-hover:text-[#e2ff00] transition-colors truncate block">{recipe.name}</span>
-                    <span className="font-mono text-[9px] text-[#e2ff00]/70">{recipe.kcal} kcal</span>
+                    <span className="font-sans font-bold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate block">{recipe.name}</span>
+                    <span className="font-mono text-[9px] text-[#fbcb1a]/70">{recipe.kcal} kcal</span>
                   </div>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
                 </button>
               ))}
             </div>
@@ -968,8 +968,8 @@ export default function NutritionScreen({ profile }: Props) {
       {/* Food picker sheet */}
       {pickerItem && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-[#2a2a2a] w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
               <div>
                 <h3 className="font-sans font-bold text-lg text-white">Cambiar alimento</h3>
                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
@@ -982,24 +982,24 @@ export default function NutritionScreen({ profile }: Props) {
             </div>
 
             {enabledModes.length > 1 && (
-              <div className="px-4 py-2 bg-[#111] border-b border-[#2a2a2a] flex gap-2 flex-wrap">
+              <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
                   <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#e2ff00] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-[#2a2a2a]'}`}
+                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
                   >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
             )}
 
-            <div className="p-3 bg-[#121212] border-b border-[#2a2a2a] flex gap-1.5 flex-wrap">
+            <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#e2ff00] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-[#2a2a2a]'}`}
+                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>
 
-            <div className="px-4 py-2 bg-[#121212] flex items-center gap-2 border-b border-[#2a2a2a]">
+            <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
               <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -1012,10 +1012,10 @@ export default function NutritionScreen({ profile }: Props) {
                 <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#121212] hover:bg-[#201f1f] rounded-lg border border-[#2a2a2a] hover:border-[#e2ff00]/40 text-left transition-all group"
+                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                 >
-                  <span className="block font-sans text-xs text-white group-hover:text-[#e2ff00] transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                  <span className="block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
                 </button>
               ))}
             </div>

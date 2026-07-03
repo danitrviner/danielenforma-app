@@ -98,14 +98,14 @@ export function DietViewSelector({ mode, onChange }: SelectorProps) {
     { value: 'numeros', icon: 'tag',                   label: 'Números' },
   ];
   return (
-    <div className="flex gap-1 bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl p-1">
+    <div className="flex gap-1 bg-[#0e0e0e] border border-white/7 rounded-xl p-1">
       {modes.map(m => (
         <button
           key={m.value}
           onClick={() => onChange(m.value)}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wide transition-all active:scale-95 ${
             mode === m.value
-              ? 'bg-[#e2ff00] text-black shadow-sm'
+              ? 'bg-[#fbcb1a] text-black shadow-sm'
               : 'text-[#555] hover:text-[#c6c9ab]'
           }`}
         >
@@ -135,7 +135,7 @@ export function DietFotosView({ meals, recipes }: FotosProps) {
         const label  = labelForMeal(meal.name, mi + 1);
 
         return (
-          <div key={meal.id} className="bg-[#121212] border border-[#2a2a2a] rounded-2xl overflow-hidden">
+          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
             {/* Photo */}
             {photo ? (
               <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
@@ -144,7 +144,7 @@ export function DietFotosView({ meals, recipes }: FotosProps) {
                 <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
                   <h3 className="font-sans font-bold text-white text-lg leading-tight drop-shadow-md">{label}</h3>
                   {kcal > 0 && (
-                    <span className="font-mono text-[#e2ff00] font-bold text-sm flex-shrink-0 drop-shadow-md">{kcal} kcal</span>
+                    <span className="font-mono text-[#fbcb1a] font-bold text-sm flex-shrink-0 drop-shadow-md">{kcal} kcal</span>
                   )}
                 </div>
               </div>
@@ -154,7 +154,7 @@ export function DietFotosView({ meals, recipes }: FotosProps) {
                 <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
                   <h3 className="font-sans font-bold text-white text-lg leading-tight">{label}</h3>
                   {kcal > 0 && (
-                    <span className="font-mono text-[#e2ff00] font-bold text-sm flex-shrink-0">{kcal} kcal</span>
+                    <span className="font-mono text-[#fbcb1a] font-bold text-sm flex-shrink-0">{kcal} kcal</span>
                   )}
                 </div>
               </div>
@@ -214,11 +214,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
         const kcal = mealKcal(meal.items);
         const exch = mealExch(meal.items);
         return (
-          <div key={meal.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
+          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e1e1e]">
               <span className="font-sans font-bold text-white text-sm">{labelForMeal(meal.name, mi + 1)}</span>
-              <span className="font-mono text-[#e2ff00] font-bold text-sm">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
+              <span className="font-mono text-[#fbcb1a] font-bold text-sm">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
             </div>
             {/* Category grid */}
             <div className="grid grid-cols-3 divide-x divide-[#1e1e1e]">
@@ -245,11 +245,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       })}
 
       {/* Day totals */}
-      <div className="bg-[#0e0e0e] border border-[#e2ff00]/20 rounded-xl overflow-hidden">
+      <div className="bg-[#0e0e0e] border border-[#fbcb1a]/20 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e]">
-          <span className="font-mono text-[10px] text-[#e2ff00] uppercase font-bold tracking-wide">Total del día</span>
+          <span className="font-mono text-[10px] text-[#fbcb1a] uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
-            <span className="font-mono font-bold text-[#e2ff00]">{totalKcal} kcal</span>
+            <span className="font-mono font-bold text-[#fbcb1a]">{totalKcal} kcal</span>
             {budgetKcal > 0 && (
               <span className={`block font-mono text-[9px] ${kcalDelta > 0 ? 'text-red-400' : kcalDelta < 0 ? 'text-[#555]' : 'text-green-400'}`}>
                 {kcalDelta === 0 ? '✓ en presupuesto' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${budgetKcal}`}

@@ -73,7 +73,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
       <button
         type="button"
         onClick={() => { setOpen(o => !o); if (!open) load(); }}
-        className="relative p-1 text-[#e2ff00] hover:opacity-80 transition-opacity"
+        className="relative p-1 text-[#fbcb1a] hover:opacity-80 transition-opacity"
         title="Notificaciones"
       >
         <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>notifications</span>
@@ -86,11 +86,11 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-[#131313] border border-[#2a2a2a] rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-[#131313] border border-white/7 rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/7">
             <h3 className="font-sans font-bold text-white text-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#e2ff00] text-base">notifications</span>
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">notifications</span>
               Notificaciones
               {unread > 0 && (
                 <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
@@ -101,7 +101,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-[9px] font-mono text-[#c6c9ab] hover:text-[#e2ff00] transition-colors uppercase">
+                  className="text-[9px] font-mono text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors uppercase">
                   Leer todas
                 </button>
               )}
@@ -127,14 +127,14 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   key={n.id}
                   type="button"
                   onClick={() => handleClickNotif(n)}
-                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#1a1a1a] ${
+                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#1e1e1b] ${
                     !n.read ? 'bg-[#181a18]' : ''
                   }`}
                 >
                   {/* Icon */}
                   <span
                     className={`material-symbols-outlined text-base mt-0.5 flex-shrink-0 ${
-                      !n.read ? 'text-[#e2ff00]' : 'text-[#555]'
+                      !n.read ? 'text-[#fbcb1a]' : 'text-[#555]'
                     }`}
                     style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}
                   >
@@ -152,7 +152,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
                   {/* Unread dot */}
                   {!n.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#e2ff00] flex-shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#fbcb1a] flex-shrink-0 mt-1.5" />
                   )}
                 </button>
               ))

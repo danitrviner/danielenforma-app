@@ -54,7 +54,7 @@ const TYPE_STYLES: Record<ExerciseType, string> = {
   fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
   cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
   estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  pliometría:   'bg-[#e2ff00]/10 text-[#e2ff00] border border-[#e2ff00]/20',
+  pliometría:   'bg-[#fbcb1a]/10 text-[#fbcb1a] border border-[#fbcb1a]/20',
 };
 
 const ENDURANCE_STYLES: Record<EnduranceProfile, string> = {
@@ -204,19 +204,19 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-[#2a2a2a]/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
           <p className="text-[#c6c9ab] text-sm mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
-              <span className="ml-2 text-[#e2ff00]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo macrociclo</span>
+              <span className="ml-2 text-[#fbcb1a]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo macrociclo</span>
             )}
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 h-[42px] px-5 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all shadow-md shadow-[#e2ff00]/10 self-start md:self-auto"
+          className="flex items-center gap-2 h-[42px] px-5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md shadow-[#fbcb1a]/10 self-start md:self-auto"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir ejercicio
@@ -224,8 +224,8 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       </header>
 
       {successMsg && (
-        <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/25 text-white p-3 rounded-xl text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00] text-base">check_circle</span>
+        <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-white p-3 rounded-xl text-sm flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#fbcb1a] text-base">check_circle</span>
           {successMsg}
         </div>
       )}
@@ -240,7 +240,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             placeholder="Buscar ejercicio..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#c6c9ab]/50 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+            className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#c6c9ab]/50 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
           />
         </div>
 
@@ -250,7 +250,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterMuscleGroup}
             onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los grupos</option>
             {MACRO_MUSCLE_GROUPS.map(g => (
@@ -261,7 +261,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los tipos</option>
             {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
@@ -270,7 +270,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEndurance}
             onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los perfiles de resistencia</option>
             {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -279,7 +279,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEquipment}
             onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todo el material</option>
             {EQUIPMENT_OPTIONS.map(e => (
@@ -290,7 +290,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {hasFilters && (
             <button
               onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-[#2a2a2a] rounded-lg hover:border-[#3a3a3a] transition-all"
+              className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-[#3a3a3a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
               Limpiar
@@ -310,13 +310,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex items-center gap-3 text-[#c6c9ab]">
-            <span className="material-symbols-outlined text-2xl animate-spin text-[#e2ff00]">refresh</span>
+            <span className="material-symbols-outlined text-2xl animate-spin text-[#fbcb1a]">refresh</span>
             <span className="font-mono text-xs uppercase tracking-widest">Cargando ejercicios...</span>
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#121212] border border-dashed border-[#2a2a2a] rounded-xl p-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-[#e2ff00]/40 block mb-3">fitness_center</span>
+        <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-16 text-center">
+          <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-sm">Sin resultados</p>
           <p className="text-[#c6c9ab] text-xs mt-1">
             {filterMuscleGroup
@@ -327,11 +327,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-md">
+          <div className="hidden md:block bg-[#181816] border border-white/7 rounded-xl overflow-hidden shadow-md">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-[#1a1a1a] border-b border-[#2a2a2a]">
+                  <tr className="bg-[#1e1e1b] border-b border-white/7">
                     <th className="p-4 pl-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Ejercicio</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
                     <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Material</th>
@@ -343,13 +343,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-[#2a2a2a]/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-[#131313]'}`}>
+                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-[#131313]'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (
-                            <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-lg object-cover border border-[#2a2a2a] flex-shrink-0" />
+                            <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                            <div className="w-9 h-9 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
                               <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
                             </div>
                           )}
@@ -367,7 +367,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         <div className="space-y-0.5">
                           {ex.muscleGroup ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-xs text-[#e2ff00] bg-[#e2ff00]/8 border border-[#e2ff00]/20 px-1.5 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1 font-mono text-xs text-[#fbcb1a] bg-[#fbcb1a]/8 border border-[#fbcb1a]/20 px-1.5 py-0.5 rounded">
                               <span className="material-symbols-outlined text-[10px]">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
@@ -381,7 +381,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           {(ex.equipment ?? []).length === 0 ? (
                             <span className="font-mono text-[9px] text-[#333]">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
@@ -407,7 +407,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-[#c6c9ab] hover:text-[#e2ff00] p-1.5 rounded hover:bg-[#e2ff00]/10 transition-all"
+                              className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded hover:bg-[#fbcb1a]/10 transition-all"
                               title="Editar"
                             >
                               <span className="material-symbols-outlined text-sm">edit</span>
@@ -434,13 +434,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {filtered.map(ex => (
-              <div key={ex.id} className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+              <div key={ex.id} className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {ex.imageUrl ? (
-                      <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-[#2a2a2a] flex-shrink-0" />
+                      <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
                         <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
                       </div>
                     )}
@@ -448,7 +448,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <p className="font-sans font-bold text-sm text-white">{ex.name}</p>
                       <p className="font-mono text-[10px] text-[#c6c9ab]">{muscleLabel(ex)}</p>
                       {ex.muscleGroup && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#e2ff00]/80">
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#fbcb1a]/80">
                           <span className="material-symbols-outlined text-[9px]">link</span>
                           Macro
                         </span>
@@ -457,7 +457,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </div>
                   {canEdit(ex) && (
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => openEdit(ex)} className="text-[#c6c9ab] hover:text-[#e2ff00] p-1.5 rounded transition-all">
+                      <button onClick={() => openEdit(ex)} className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded transition-all">
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
                       <button onClick={() => setDeleteConfirm(ex.id)} className="text-[#c6c9ab] hover:text-red-400 p-1.5 rounded transition-all">
@@ -472,7 +472,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-[#00eefc]/70 flex items-center gap-0.5">
@@ -490,7 +490,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* DELETE CONFIRM MODAL */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a1a1a] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+          <div className="bg-[#1e1e1b] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
               <h3 className="font-sans font-bold text-white text-lg">¿Eliminar ejercicio?</h3>
@@ -499,7 +499,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-lg transition-all"
+                className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-lg transition-all"
               >
                 Cancelar
               </button>
@@ -517,7 +517,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* CREATE / EDIT FORM MODAL */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+          <div className="bg-[#1e1e1b] border border-white/7 rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
                 {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
@@ -537,7 +537,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="ej. Press inclinado con mancuernas"
-                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
@@ -553,7 +553,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     ...f,
                     muscleGroup: (e.target.value as MuscleGroup) || undefined,
                   }))}
-                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
                 >
                   <option value="">— Sin asignar —</option>
                   {MACRO_MUSCLE_GROUPS.map(g => (
@@ -569,7 +569,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
-                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
                   >
                     {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
                   </select>
@@ -579,7 +579,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   <select
                     value={form.enduranceProfile ?? ''}
                     onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
-                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00] cursor-pointer"
+                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
                   >
                     <option value="">— Sin asignar —</option>
                     {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -608,8 +608,8 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         }))}
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border capitalize transition-all ${
                           selected
-                            ? 'bg-[#e2ff00]/15 border-[#e2ff00]/40 text-[#e2ff00] font-bold'
-                            : 'bg-[#121212] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a]'
+                            ? 'bg-[#fbcb1a]/15 border-[#fbcb1a]/40 text-[#fbcb1a] font-bold'
+                            : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
                         }`}
                       >
                         {selected && '✓ '}{eq}
@@ -627,7 +627,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   value={form.imageUrl}
                   onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
                   placeholder="https://..."
-                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
@@ -639,7 +639,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   value={form.videoUrl}
                   onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
                   placeholder="https://youtube.com/..."
-                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
@@ -654,7 +654,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
-                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#e2ff00] transition-all resize-none"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all resize-none"
                 />
               </div>
 
@@ -663,14 +663,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+                  className="flex-1 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving || !form.name.trim()}
-                  className="flex-1 py-3 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <>

@@ -144,10 +144,10 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
     <div className="space-y-6">
       
       {/* Dynamic Header Block */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-[#2a2a2a]/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-mono border border-[#e2ff00]/30 text-[#e2ff00] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-mono border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
               Consola de Entrenador (CRM)
             </span>
             <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
@@ -159,13 +159,13 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setSelectedAthlete(null)}
-                className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#e2ff00] border border-[#2a2a2a] text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+                className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#fbcb1a] border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-sm">arrow_back</span>
                 <span>Volver</span>
               </button>
               <h1 className="font-sans font-extrabold text-2xl tracking-tight text-white m-0">
-                Auditoría: <span className="text-[#e2ff00]">{selectedAthlete.displayName}</span>
+                Auditoría: <span className="text-[#fbcb1a]">{selectedAthlete.displayName}</span>
               </h1>
             </div>
           ) : (
@@ -174,12 +174,12 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
         </div>
 
         {!selectedAthlete && (
-          <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1">
+          <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1">
             <button
               onClick={() => setActiveSubTab('athletes')}
               className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
                 activeSubTab === 'athletes' 
-                  ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10' 
+                  ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' 
                   : 'text-[#c6c9ab] hover:text-white'
               }`}
             >
@@ -190,7 +190,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
               onClick={() => setActiveSubTab('pending')}
               className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all relative ${
                 activeSubTab === 'pending' 
-                  ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10' 
+                  ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' 
                   : 'text-[#c6c9ab] hover:text-white'
               }`}
             >
@@ -206,7 +206,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
               onClick={() => setActiveSubTab('history')}
               className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
                 activeSubTab === 'history' 
-                  ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10' 
+                  ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' 
                   : 'text-[#c6c9ab] hover:text-white'
               }`}
             >
@@ -218,8 +218,8 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       </header>
 
       {successMsg && (
-        <div className="bg-[#e2ff00]/15 border border-[#e2ff00]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(226,255,0,0.1)]">
-          <span className="material-symbols-outlined text-[#e2ff00]">check_circle</span>
+        <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(226,255,0,0.1)]">
+          <span className="material-symbols-outlined text-[#fbcb1a]">check_circle</span>
           <p className="font-sans font-medium">{successMsg}</p>
         </div>
       )}
@@ -234,12 +234,12 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       {!selectedAthlete && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
           {/* Card 1: Resumen Atletas */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-[#121212] border border-[#2a2a2a] p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#e2ff00]/5 rounded-bl-full pointer-events-none" />
+          <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-[#121212] border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-xl">group</span>
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-xl">group</span>
                   <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
                 </div>
                 <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-mono font-bold uppercase">
@@ -257,14 +257,14 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-[#2a2a2a]/60">
-              <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-[#2a2a2a]/40 text-center font-mono">
+            <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-white/60">
+              <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-white/40 text-center font-mono">
                 <span className="block text-[8px] text-[#c6c9ab] uppercase">Racha Promedio</span>
-                <span className="block text-sm font-black text-[#e2ff00] mt-0.5">
+                <span className="block text-sm font-black text-[#fbcb1a] mt-0.5">
                   {athletes.length > 0 ? Math.round(athletes.reduce((acc, curr) => acc + (curr.currentStreak || 0), 0) / athletes.length) : 0} semanas
                 </span>
               </div>
-              <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-[#2a2a2a]/40 text-center font-mono">
+              <div className="bg-[#1b1c1c]/50 p-2.5 rounded-xl border border-white/40 text-center font-mono">
                 <span className="block text-[8px] text-[#00eefc] uppercase">Nivel Medio</span>
                 <span className="block text-sm font-black text-white mt-0.5">
                   Lvl {athletes.length > 0 ? (athletes.reduce((acc, curr) => acc + (curr.level || 0), 0) / athletes.length).toFixed(1) : '1.0'}
@@ -274,7 +274,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
           </div>
 
           {/* Card 2: Revisiones Pendientes */}
-          <div className="lg:col-span-7 bg-[#121212] border border-[#2a2a2a] p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
+          <div className="lg:col-span-7 bg-[#181816] border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                     {pendingCheckins.length} por evaluar
                   </span>
                 ) : (
-                  <span className="text-[10px] bg-[#e2ff00]/10 text-[#e2ff00] px-2.5 py-0.5 border border-[#e2ff00]/20 rounded font-mono uppercase font-bold">
+                  <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-mono uppercase font-bold">
                     Al día
                   </span>
                 )}
@@ -294,7 +294,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
 
               {pendingCheckins.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-[#c6c9ab]">
-                  <span className="material-symbols-outlined text-3xl text-[#e2ff00] mb-2 animate-pulse">verified_user</span>
+                  <span className="material-symbols-outlined text-3xl text-[#fbcb1a] mb-2 animate-pulse">verified_user</span>
                   <p className="text-xs font-bold text-white">¡No tienes revisiones de peso pendientes!</p>
                   <p className="text-[11px] mt-0.5">Todos tus atletas ya tienen sus directrices de entrenamiento actualizadas.</p>
                 </div>
@@ -308,10 +308,10 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       <div 
                         key={check.id}
                         onClick={() => handleSelectPendingCheckIn(check)}
-                        className="bg-[#181818] hover:bg-[#202020] border border-[#2a2a2a] hover:border-[#00eefc]/50 p-3 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group"
+                        className="bg-[#181818] hover:bg-[#202020] border border-white/7 hover:border-[#00eefc]/50 p-3 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-full overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a] flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/7 bg-[#1e1e1b] flex-shrink-0">
                             <img 
                               src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'} 
                               alt="Avatar" 
@@ -335,7 +335,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                           }`}>
                             {check.adherence}
                           </span>
-                          <button className="p-1 px-2.5 bg-[#e2ff00] hover:bg-[#bad200] text-black font-extrabold font-mono text-[10px] uppercase rounded flex items-center gap-1 shadow transition-all active:scale-95">
+                          <button className="p-1 px-2.5 bg-[#fbcb1a] hover:bg-[#d4a800] text-black font-extrabold font-mono text-[10px] uppercase rounded flex items-center gap-1 shadow transition-all active:scale-95">
                             <span>EVALUAR</span>
                             <span className="material-symbols-outlined text-[10px]">edit</span>
                           </button>
@@ -347,7 +347,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
               )}
             </div>
 
-            <div className="mt-4 pt-3.5 border-t border-[#2a2a2a]/60 text-right">
+            <div className="mt-4 pt-3.5 border-t border-white/60 text-right">
               <button 
                 onClick={() => setActiveSubTab('pending')}
                 className="text-[10px] font-mono text-[#00eefc] hover:text-[#00eefc]/80 transition-colors uppercase tracking-wider font-bold flex items-center gap-1 ml-auto"
@@ -363,7 +363,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       {/* VIEW DIRECTORY 1: ACTIVE ATHLETES LIST (LANDING) */}
       {!selectedAthlete && activeSubTab === 'athletes' && (
         <div className="space-y-4">
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between">
             <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed">
               Mostrando atletas registrados en el sistema. Selecciona cualquier atleta para ver su histórico progresivo de peso corporal, bitácoras nutricionales y fotos semanales.
             </p>
@@ -387,31 +387,31 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                   <div 
                     key={athlete.userId}
                     onClick={() => handleSelectAthlete(athlete)}
-                    className="bg-[#131313] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#e2ff00]/50 hover:shadow-[0_4px_20px_rgba(226,255,0,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden"
+                    className="bg-[#131313] border border-white/7 rounded-xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(226,255,0,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden"
                   >
-                    <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-[#e2ff00]/5 rounded-bl-full pointer-events-none" />
+                    <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
                     
                     <div className="space-y-4">
                       {/* Athlete Identity */}
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#2a2a2a] group-hover:border-[#e2ff00]/60 transition-all">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-[#fbcb1a]/60 transition-all">
                           <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-[#e2ff00] transition-colors">{athlete.displayName}</h3>
+                          <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-[#fbcb1a] transition-colors">{athlete.displayName}</h3>
                           <p className="font-mono text-[10px] text-[#c6c9ab] truncate max-w-[200px]">{athlete.email}</p>
                         </div>
                       </div>
 
                       {/* Weight Progress & Objectives Row */}
-                      <div className="grid grid-cols-3 gap-2 bg-[#1b1c1c]/50 p-2.5 rounded-lg border border-[#2a2a2a]/40 text-center font-mono">
+                      <div className="grid grid-cols-3 gap-2 bg-[#1b1c1c]/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
                         <div>
                           <span className="block text-[8px] text-[#c6c9ab] uppercase">INICIAL</span>
                           <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
                         </div>
                         <div>
-                          <span className="block text-[8px] text-[#e2ff00] uppercase font-bold">ACTUAL</span>
-                          <span className="block text-xs font-bold text-[#e2ff00]">{athlete.actualWeight || athlete.initialWeight} kg</span>
+                          <span className="block text-[8px] text-[#fbcb1a] uppercase font-bold">ACTUAL</span>
+                          <span className="block text-xs font-bold text-[#fbcb1a]">{athlete.actualWeight || athlete.initialWeight} kg</span>
                         </div>
                         <div>
                           <span className="block text-[8px] text-[#00eefc] uppercase">META</span>
@@ -436,9 +436,9 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-3.5 border-t border-[#2a2a2a]/60 flex items-center justify-between text-xs font-mono">
+                    <div className="mt-5 pt-3.5 border-t border-white/60 flex items-center justify-between text-xs font-mono">
                       <span className="text-[#c6c9ab]">{totalCheckCount} Reportes</span>
-                      <span className="text-[#e2ff00] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      <span className="text-[#fbcb1a] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                         <span>Ver Auditoría</span>
                         <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
                       </span>
@@ -454,18 +454,18 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       {/* VIEW DIRECTORY 2: REVISIONES PENDIENTES */}
       {!selectedAthlete && activeSubTab === 'pending' && (
         <div className="space-y-4">
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between">
             <p className="text-xs text-[#c6c9ab] font-sans">
               La siguiente bandeja muestra los reportes pendientes que requieren aprobación y retroalimentación (devolución del coach). Al darles feedback se aprueban instantáneamente.
             </p>
-            <span className="text-[10px] bg-[#e2ff00]/10 text-[#e2ff00] px-3 py-1 border border-[#e2ff00]/20 rounded font-mono uppercase font-black">
+            <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-3 py-1 border border-[#fbcb1a]/20 rounded font-mono uppercase font-black">
               {pendingCheckins.length} PENDIENTES
             </span>
           </div>
 
           {pendingCheckins.length === 0 ? (
-            <div className="bg-[#131313] border border-dashed border-[#2a2a2a] rounded-xl p-12 text-center text-[#c6c9ab] font-sans">
-              <span className="material-symbols-outlined text-4xl text-[#e2ff00] mb-2 animate-pulse">verified_user</span>
+            <div className="bg-[#131313] border border-dashed border-white/7 rounded-xl p-12 text-center text-[#c6c9ab] font-sans">
+              <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 animate-pulse">verified_user</span>
               <p className="text-sm font-bold text-white">¡No tienes revisiones pendientes!</p>
               <p className="text-xs mt-1">Todos tus atletas ya tienen sus directrices de entrenamiento y nutrición actualizadas para esta semana.</p>
             </div>
@@ -480,10 +480,10 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                   <div 
                     key={check.id}
                     onClick={() => handleSelectPendingCheckIn(check)}
-                    className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 hover:border-[#00eefc]/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
+                    className="bg-[#181816] border border-white/7 rounded-xl p-4 hover:border-[#00eefc]/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a] flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-white/7 bg-[#1e1e1b] flex-shrink-0">
                         <img 
                           src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'} 
                           alt="Avatar" 
@@ -510,13 +510,13 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       </div>
                       <div className="font-mono text-center">
                         <span className="block text-[8px] text-[#c6c9ab] uppercase">Adherencia</span>
-                        <strong className="block text-xs text-[#e2ff00]">{check.adherence}</strong>
+                        <strong className="block text-xs text-[#fbcb1a]">{check.adherence}</strong>
                       </div>
                       <div className="font-mono text-center max-w-[200px] hidden lg:block">
                         <span className="block text-[8px] text-[#c6c9ab] uppercase">Comentario Atleta</span>
                         <p className="text-[10px] text-slate-300 truncate">{check.notes || 'Ninguno'}</p>
                       </div>
-                      <button className="h-[36px] px-4 bg-[#e2ff00] hover:bg-[#bad200] text-black font-semibold font-mono text-xs uppercase rounded flex items-center gap-1 shadow-md">
+                      <button className="h-[36px] px-4 bg-[#fbcb1a] hover:bg-[#d4a800] text-black font-semibold font-mono text-xs uppercase rounded flex items-center gap-1 shadow-md">
                         <span>Evaluar ahora</span>
                         <span className="material-symbols-outlined text-xs">edit</span>
                       </button>
@@ -532,7 +532,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
       {/* VIEW DIRECTORY 3: HISTORIAL COMPLETO DE CHECK-INS */}
       {!selectedAthlete && activeSubTab === 'history' && (
         <div className="space-y-4">
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
             <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-violet-400 text-sm">history_edu</span>
               Historial Completo de Reportes Generales
@@ -542,11 +542,11 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
             </p>
           </div>
 
-          <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-md">
+          <section className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden shadow-md">
             <div className="overflow-x-auto hide-scrollbar">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-[#1a1a1a] border-b border-[#2a2a2a]">
+                  <tr className="bg-[#1e1e1b] border-b border-white/7">
                     <th className="p-3.5 pl-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Fecha de reporte</th>
                     <th className="p-3.5 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Deportista</th>
                     <th className="p-3.5 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Peso (kg)</th>
@@ -566,7 +566,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       <tr 
                         key={item.id}
                         onClick={() => handleSelectPendingCheckIn(item)}
-                        className={`border-b border-[#2a2a2a]/30 hover:bg-[#1e1e1e] cursor-pointer transition-colors`}
+                        className={`border-b border-white/30 hover:bg-[#1e1e1e] cursor-pointer transition-colors`}
                       >
                         <td className="p-4 pl-6 text-[#c5c6c5]">{item.dateStr || 'S/D'}</td>
                         <td className="p-4 text-white font-bold">{athleteProfile?.displayName || item.email.split('@')[0]}</td>
@@ -582,7 +582,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                         <td className="p-4 text-sm">{item.mood || '😐'}</td>
                         <td className="p-4">
                           {item.approved ? (
-                            <span className="text-[#e2ff00] flex items-center gap-1 text-[10px] font-bold">
+                            <span className="text-[#fbcb1a] flex items-center gap-1 text-[10px] font-bold">
                               <span className="material-symbols-outlined text-xs">verified</span> EVALUADO
                             </span>
                           ) : (
@@ -592,7 +592,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                           )}
                         </td>
                         <td className="p-4 text-right pr-6">
-                          <span className="text-[#e2ff00] hover:underline">
+                          <span className="text-[#fbcb1a] hover:underline">
                             {item.approved ? 'Editar Feed' : 'Evaluar'} →
                           </span>
                         </td>
@@ -615,9 +615,9 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
           <section className="lg:col-span-4 flex flex-col gap-6">
             
             {/* Athlete quick stat board */}
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all space-y-4">
-              <div className="flex items-center gap-4 border-b border-[#2a2a2a] pb-3">
-                <div className="w-14 h-14 rounded-full overflow-hidden border border-[#e2ff00]/25">
+            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all space-y-4">
+              <div className="flex items-center gap-4 border-b border-white/7 pb-3">
+                <div className="w-14 h-14 rounded-full overflow-hidden border border-[#fbcb1a]/25">
                   <img src={selectedAthlete.avatarUrl} alt="Athlete Avatar" className="w-full h-full object-cover" />
                 </div>
                 <div>
@@ -647,8 +647,8 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
             </div>
 
             {/* Selector of historical reports of THIS athlete */}
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all flex-1 space-y-4">
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 border-b border-[#2a2a2a] pb-2 uppercase tracking-wide">
+            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all flex-1 space-y-4">
+              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 border-b border-white/7 pb-2 uppercase tracking-wide">
                 <span className="material-symbols-outlined text-[#00eefc] text-sm">history_edu</span>
                 Historial Progresivo
               </h3>
@@ -663,14 +663,14 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       onClick={() => handleSelectCheckIn(check.id, check.coachFeedback || '')}
                       className={`p-3 rounded-lg border cursor-pointer transition-all ${
                         activeCheckInId === check.id 
-                          ? 'bg-[#1e1e1a] border-[#e2ff00] text-white' 
-                          : 'bg-[#131313] border-[#2a2a2a] hover:border-slate-500 text-slate-300'
+                          ? 'bg-[#1e1e1a] border-[#fbcb1a] text-white' 
+                          : 'bg-[#131313] border-white/7 hover:border-slate-500 text-slate-300'
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-mono text-xs font-bold">{check.dateStr}</span>
                         <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
-                          check.approved ? 'bg-[#e2ff00]/10 text-[#e2ff00]' : 'bg-red-500/10 text-red-300'
+                          check.approved ? 'bg-[#fbcb1a]/10 text-[#fbcb1a]' : 'bg-red-500/10 text-red-300'
                         }`}>
                           {check.approved ? 'Evaluado' : 'Pendiente'}
                         </span>
@@ -687,7 +687,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
             </div>
 
             {/* ADHERENCE CARD CUMPLIMIENTO */}
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all space-y-4">
+            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 hover:border-[#c6c9ab]/30 transition-all space-y-4">
               <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
                 Cumplimiento Semanal
@@ -710,7 +710,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                     <span className="text-white">92%</span>
                   </div>
                   <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#e2ff00] w-[92%] rounded-full shadow-[0_0_6px_rgba(226,255,0,0.3)]"></div>
+                    <div className="h-full bg-[#fbcb1a] w-[92%] rounded-full shadow-[0_0_6px_rgba(226,255,0,0.3)]"></div>
                   </div>
                 </div>
               </div>
@@ -721,10 +721,10 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
           <section className="lg:col-span-8 flex flex-col gap-6">
             
             {/* Progress photos comparison */}
-            <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden flex flex-col hover:border-[#c6c9ab]/30 transition-all">
-              <div className="p-4 border-b border-[#2a2a2a] flex items-center justify-between bg-[#1c1b1b]">
+            <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden flex flex-col hover:border-[#c6c9ab]/30 transition-all">
+              <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
                 <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-sm">photo_camera</span>
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
                   Historial Fotográfico de Control
                 </h3>
                 
@@ -735,7 +735,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                       key={view}
                       type="button"
                       onClick={() => setSelectedDateView(view)}
-                      className={`px-3 py-1 rounded font-mono text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === view ? 'bg-[#e2ff00] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
+                      className={`px-3 py-1 rounded font-mono text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === view ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
                     >
                       {view}
                     </button>
@@ -745,8 +745,8 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
 
               <div className="p-3 grid grid-cols-2 gap-3 bg-[#131313]/90">
                 {/* Baseline Week 1 */}
-                <div className="relative rounded-lg overflow-hidden border border-[#2a2a2a] group">
-                  <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-[#2a2a2a] px-2.5 py-0.5 rounded text-white font-mono text-[10px] tracking-wide">
+                <div className="relative rounded-lg overflow-hidden border border-white/7 group">
+                  <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-white/7 px-2.5 py-0.5 rounded text-white font-mono text-[10px] tracking-wide">
                     Baseline (S1)
                   </div>
                   <img 
@@ -757,8 +757,8 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                 </div>
 
                 {/* Current Week 6 */}
-                <div className="relative rounded-lg overflow-hidden border border-[#e2ff00]/20 group">
-                  <div className="absolute top-2 left-2 z-10 bg-[#e2ff00] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md tracking-wide">
+                <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group">
+                  <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md tracking-wide">
                     Actual (Simanal)
                   </div>
                   <img 
@@ -772,8 +772,8 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
 
             {/* Details panel of selected check-in */}
             {activeCheckIn ? (
-              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-                <div className="flex justify-between items-center border-b border-[#2a2a2a] pb-3">
+              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-white/7 pb-3">
                   <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2 uppercase tracking-wide text-[#00eefc]">
                     <span className="material-symbols-outlined text-sm">folder_open</span>
                     Datos de la Entrada: {activeCheckIn.dateStr}
@@ -782,21 +782,21 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
-                  <div className="bg-[#191919] p-3 rounded-lg border border-[#2a2a2a]/40">
+                  <div className="bg-[#1e1e1b] p-3 rounded-lg border border-white/40">
                     <span className="block text-[#c6c9ab] text-[9px] uppercase">Peso Registrado</span>
                     <strong className="text-white text-base font-bold">{activeCheckIn.weight} kg</strong>
                   </div>
-                  <div className="bg-[#191919] p-3 rounded-lg border border-[#2a2a2a]/40">
+                  <div className="bg-[#1e1e1b] p-3 rounded-lg border border-white/40">
                     <span className="block text-[#c6c9ab] text-[9px] uppercase">Cumplimiento Dieta</span>
-                    <strong className="text-base font-bold text-[#e2ff00]">{activeCheckIn.adherence}</strong>
+                    <strong className="text-base font-bold text-[#fbcb1a]">{activeCheckIn.adherence}</strong>
                   </div>
-                  <div className="bg-[#191919] p-3 rounded-lg border border-[#2a2a2a]/40">
+                  <div className="bg-[#1e1e1b] p-3 rounded-lg border border-white/40">
                     <span className="block text-[#c6c9ab] text-[9px] uppercase">Humor Atleta</span>
                     <strong className="text-base text-white">{activeCheckIn.mood || '😊'}</strong>
                   </div>
                 </div>
 
-                <div className="bg-[#181818]/60 p-3.5 rounded-lg border border-[#2a2a2a]/30">
+                <div className="bg-[#181818]/60 p-3.5 rounded-lg border border-white/30">
                   <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Notas del deportista</span>
                   <p className="text-xs text-slate-300 font-sans italic">
                     "{activeCheckIn.notes || 'El deportista no ha ingresado notas adicionales en esta pasada semanal.'}"
@@ -804,28 +804,28 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                 </div>
               </div>
             ) : (
-              <div className="bg-[#121212] border border-dashed border-[#2a2a2a] p-8 text-center rounded-xl text-xs text-[#c6c9ab]">
+              <div className="bg-[#181816] border border-dashed border-white/7 p-8 text-center rounded-xl text-xs text-[#c6c9ab]">
                 Selecciona una entrada del histórico de la izquierda para evaluar o inspeccionar detalladamente.
               </div>
             )}
 
             {/* Evaluative directrice form */}
-            <form onSubmit={handleSendFeedback} className="bg-[#121212] border border-[#2a2a2a] p-5 rounded-xl space-y-4 hover:border-[#c6c9ab]/30 transition-all relative overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#e2ff00]" />
+            <form onSubmit={handleSendFeedback} className="bg-[#181816] border border-white/7 p-5 rounded-xl space-y-4 hover:border-[#c6c9ab]/30 transition-all relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#fbcb1a]" />
               
               <div className="flex justify-between items-center">
                 <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-sm">rate_review</span>
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">rate_review</span>
                   Redacción de Directriz &amp; Devolución (Coach Note)
                 </h3>
                 {activeCheckIn?.approved && (
-                  <span className="bg-[#e2ff00]/10 text-[#e2ff00] font-mono text-[9px] font-black uppercase px-2 py-0.5 rounded border border-[#e2ff00]/25">
+                  <span className="bg-[#fbcb1a]/10 text-[#fbcb1a] font-mono text-[9px] font-black uppercase px-2 py-0.5 rounded border border-[#fbcb1a]/25">
                     Evaluación Completa
                   </span>
                 )}
               </div>
 
-              <div className="bg-[#1c1b1b] p-3.5 rounded-lg border border-[#2a2a2a]/60 space-y-3">
+              <div className="bg-[#1c1b1b] p-3.5 rounded-lg border border-white/60 space-y-3">
                 <p className="text-[10px] font-mono text-[#c6c9ab]">
                   Ajustes nutricionales, indicaciones de cargas rítmicas en el gimnasio u observaciones motivacionales:
                 </p>
@@ -834,7 +834,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   placeholder="Ej: Mantén el cardio diario constante. Subimos carbohidratos complejos en comidas pre-entreno para maximizar la fuerza el día de piernas..."
-                  className="w-full bg-[#121212] border border-[#2a2a2a]/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#e2ff00] focus:border-[#e2ff00] focus:outline-none min-h-[110px] resize-none placeholder-slate-600 font-sans"
+                  className="w-full bg-[#181816] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:border-[#fbcb1a] focus:outline-none min-h-[110px] resize-none placeholder-slate-600 font-sans"
                 />
               </div>
 
@@ -845,7 +845,7 @@ export default function CoachScreen({ checkins, onRefreshCheckIns }: CoachScreen
                 <button
                   type="submit"
                   disabled={isSubmitting || !activeCheckIn}
-                  className="h-[40px] px-6 bg-[#e2ff00] hover:bg-[#bad200] text-black font-mono font-bold text-xs uppercase rounded flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(226,255,0,0.25)] active:scale-95 transition-all self-end flex-shrink-0 disabled:opacity-50 disabled:pointer-events-none"
+                  className="h-[40px] px-6 bg-[#fbcb1a] hover:bg-[#d4a800] text-black font-mono font-bold text-xs uppercase rounded flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(226,255,0,0.25)] active:scale-95 transition-all self-end flex-shrink-0 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                   <span className="material-symbols-outlined text-sm font-bold">send</span>

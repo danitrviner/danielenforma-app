@@ -22,14 +22,14 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
     <div className="space-y-6">
       {/* Sub-tab switcher */}
       <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5">
-        <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
+        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-[#e2ff00] text-black shadow-lg shadow-[#e2ff00]/10'
+                  ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
                   : 'text-[#c6c9ab] hover:text-white'
               }`}
             >

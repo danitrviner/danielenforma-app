@@ -70,11 +70,11 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-[#c6c9ab] mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
-      <p className="text-[#e2ff00] font-bold text-sm">
+      <p className="text-[#fbcb1a] font-bold text-sm">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
@@ -102,16 +102,16 @@ function QuestionChart({
   if (raw.length === 0) return null;
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
       <div>
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
-            <span className="font-mono text-[9px] text-[#c6c9ab] bg-[#1a1a1a] border border-[#2a2a2a] px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[9px] text-[#c6c9ab] bg-[#1e1e1b] border border-white/7 px-1.5 py-0.5 rounded">
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-[9px] text-[#e2ff00] bg-[#e2ff00]/10 border border-[#e2ff00]/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+          <span className="font-mono text-[9px] text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
@@ -147,10 +147,10 @@ function QuestionChart({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#e2ff00"
+            stroke="#fbcb1a"
             strokeWidth={2}
-            dot={{ fill: '#e2ff00', stroke: '#121212', strokeWidth: 2, r: 3 }}
-            activeDot={{ fill: '#e2ff00', stroke: '#121212', strokeWidth: 2, r: 5 }}
+            dot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 3 }}
+            activeDot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 5 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -193,17 +193,17 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00] text-base">show_chart</span>
+          <span className="material-symbols-outlined text-[#fbcb1a] text-base">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
-        <div className="flex bg-[#121212] border border-[#2a2a2a] rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-[#181816] border border-white/7 rounded-lg p-0.5 gap-0.5">
           {(['Puntos', 'Media semanal'] as const).map((label, i) => (
             <button
               key={label}
               onClick={() => setWeekly(i === 1)}
               className={`px-3 min-h-[44px] rounded-md font-mono text-[10px] uppercase font-bold transition-all ${
                 weekly === (i === 1)
-                  ? 'bg-[#e2ff00] text-black shadow'
+                  ? 'bg-[#fbcb1a] text-black shadow'
                   : 'text-[#c6c9ab] hover:text-white'
               }`}
             >{label}</button>

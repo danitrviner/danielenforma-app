@@ -95,7 +95,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {success && (
-        <div className="bg-[#e2ff00]/10 border border-[#e2ff00]/30 text-white p-3.5 rounded-lg text-xs font-bold text-center">
+        <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-white p-3.5 rounded-lg text-xs font-bold text-center">
           {success}
         </div>
       )}
@@ -103,10 +103,10 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
       {isCoach && (
         showCoaches ? (
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#e2ff00] text-base">groups</span>
+                <span className="material-symbols-outlined text-[#fbcb1a] text-base">groups</span>
                 Entrenadores
               </h3>
               <button
@@ -121,10 +121,10 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         ) : (
           <button
             onClick={() => setShowCoaches(true)}
-            className="w-full bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
+            className="w-full bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#e2ff00] text-base">groups</span>
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">groups</span>
               <span className="font-sans font-bold text-sm text-white">Entrenadores</span>
             </div>
             <span className="material-symbols-outlined text-[#c6c9ab] text-sm">chevron_right</span>
@@ -133,16 +133,16 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Gamification card ─────────────────────────────────────────────────── */}
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 relative overflow-hidden flex flex-col gap-5">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#e2ff00]/5 blur-3xl rounded-full pointer-events-none"></div>
+      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 relative overflow-hidden flex flex-col gap-5">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
 
         {/* Avatar + XP */}
         <div className="flex items-center gap-4">
           <div className="relative inline-block flex-shrink-0">
-            <div className="w-16 h-16 rounded-full border-2 border-[#e2ff00] overflow-hidden shadow-lg">
+            <div className="w-16 h-16 rounded-full border-2 border-[#fbcb1a] overflow-hidden shadow-lg">
               <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-[#e2ff00] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+            <div className="absolute -bottom-1 -right-1 bg-[#fbcb1a] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-sans font-bold text-lg text-white">{profile.displayName}</h3>
@@ -157,7 +157,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
 
         {/* Streak */}
-        <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-[#2a2a2a]">
+        <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-white/7">
           <div className="flex items-center gap-3">
             <span className="text-3xl">🔥</span>
             <div className="flex flex-col">
@@ -180,7 +180,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               return (
                 <div
                   key={idx}
-                  className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#e2ff00] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-[#2a2a2a]'}`}
+                  className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#fbcb1a] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
                   title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
                 />
               );
@@ -192,27 +192,27 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         <div>
           <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Insignias Desbloqueadas</span>
           <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
               <span>🏅</span> Primera semana
             </span>
-            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
-              <span className="text-[#e2ff00]">⚡</span> 10 días de racha
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="text-[#fbcb1a]">⚡</span> 10 días de racha
             </span>
-            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-[#2a2a2a] flex items-center gap-1.5">
+            <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
               <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
             </span>
           </div>
         </div>
 
         {/* Level metrics */}
-        <div className="grid grid-cols-3 gap-3 bg-[#1c1b1b] p-3 rounded-lg border border-[#2a2a2a] text-center font-mono">
+        <div className="grid grid-cols-3 gap-3 bg-[#1c1b1b] p-3 rounded-lg border border-white/7 text-center font-mono">
           <div>
             <span className="block text-[9px] text-[#c6c9ab] uppercase">Racha</span>
             <span className="block text-sm font-bold text-white mt-0.5">{profile.currentStreak} días</span>
           </div>
           <div>
             <span className="block text-[9px] text-[#c6c9ab] uppercase">Nivel</span>
-            <span className="block text-sm font-bold text-[#e2ff00] mt-0.5">{profile.level} (Élite)</span>
+            <span className="block text-sm font-bold text-[#fbcb1a] mt-0.5">{profile.level} (Élite)</span>
           </div>
           <div>
             <span className="block text-[9px] text-[#c6c9ab] uppercase">Meta</span>
@@ -222,13 +222,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {/* ── Bodyweight panel ──────────────────────────────────────────────────── */}
-      <div className="bg-[#121212] border border-[#2a2a2a] p-4 sm:p-6 rounded-xl">
+      <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-xl">
         <BodyweightPanel athleteEmail={profile.email} />
       </div>
 
       {/* ── Questionnaire charts ──────────────────────────────────────────────── */}
       {questionnaires.length > 0 && responses.length > 0 && (
-        <div className="bg-[#121212] border border-[#2a2a2a] p-4 sm:p-6 rounded-xl">
+        <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-xl">
           <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
         </div>
       )}
@@ -236,7 +236,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Ficha de iniciación (solo atleta — el coach no rellena ficha propia) ── */}
       {!isCoach && (
         editingFicha ? (
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
             <OnboardingForm
               athleteEmail={profile.email}
               initialData={onboarding}
@@ -245,10 +245,10 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             />
           </div>
         ) : (
-          <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl flex items-center justify-between gap-4">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between gap-4">
             <div>
               <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#e2ff00] text-base">assignment_ind</span>
+                <span className="material-symbols-outlined text-[#fbcb1a] text-base">assignment_ind</span>
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
               <p className="font-mono text-[10px] text-[#555] mt-1">
@@ -259,7 +259,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#bad200] active:scale-95 transition-all"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
@@ -270,9 +270,9 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       {/* ── Food preferences ──────────────────────────────────────────────────── */}
       {!isCoach && onboarding && !editingFicha && (
-        <div className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl">
+        <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
           <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-[#e2ff00] text-base">restaurant</span>
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant</span>
             Preferencias alimentarias
           </h3>
           <FoodPreferencesPanel
@@ -288,8 +288,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Edit profile form ─────────────────────────────────────────────────── */}
-      <form onSubmit={handleUpdate} className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl space-y-4">
-        <h3 className="font-sans font-bold text-sm text-[#e2ff00] uppercase tracking-wide border-b border-[#2a2a2a] pb-2">Editar Marca de Ficha</h3>
+      <form onSubmit={handleUpdate} className="bg-[#181816] border border-white/7 p-4 rounded-xl space-y-4">
+        <h3 className="font-sans font-bold text-sm text-[#fbcb1a] uppercase tracking-wide border-b border-white/7 pb-2">Editar Marca de Ficha</h3>
 
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1">Nombre deportivo</label>
@@ -297,7 +297,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
             required
           />
         </div>
@@ -309,7 +309,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
           />
         </div>
 
@@ -319,7 +319,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-[#e2ff00]"
+            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-[#fbcb1a]"
           />
         </div>
 

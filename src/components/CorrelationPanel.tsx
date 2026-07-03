@@ -17,7 +17,7 @@ type DataPoint = { date: string; value: number };
 type Series = { id: string; label: string; points: DataPoint[]; unit?: string };
 
 const COLORS = [
-  '#e2ff00', '#00eefc', '#ff8c69', '#a78bfa', '#86efac', '#fb923c', '#f472b6', '#67e8f9',
+  '#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa', '#86efac', '#fb923c', '#f472b6', '#67e8f9',
 ];
 
 function pearson(a: DataPoint[], b: DataPoint[]): number | null {
@@ -259,7 +259,7 @@ export default function CorrelationPanel({
 
   if (!hasData) {
     return (
-      <div className="py-20 text-center border border-dashed border-[#2a2a2a] rounded-2xl">
+      <div className="py-20 text-center border border-dashed border-white/7 rounded-2xl">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">insights</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Sin datos suficientes</p>
         <p className="text-[#c6c9ab] text-xs font-mono">Completa más registros para ver correlaciones.</p>
@@ -271,14 +271,14 @@ export default function CorrelationPanel({
     <div className="space-y-6">
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00]" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
+          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
         <p className="font-mono text-xs text-[#c6c9ab] mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
+      <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
         {/* Mobile accordion header */}
         <button
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
@@ -287,7 +287,7 @@ export default function CorrelationPanel({
           <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
             Series disponibles
             {selectedIds.length > 0 && (
-              <span className="ml-2 text-[#e2ff00] font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
+              <span className="ml-2 text-[#fbcb1a] font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
             )}
           </span>
           <span className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
@@ -307,7 +307,7 @@ export default function CorrelationPanel({
                 className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-xs font-bold border transition-all ${
                   active
                     ? 'text-black'
-                    : 'bg-transparent text-[#c6c9ab] border-[#2a2a2a] hover:border-[#3a3a3a] hover:text-white'
+                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#3a3a3a] hover:text-white'
                 }`}
                 style={active ? { backgroundColor: color, borderColor: color } : {}}
               >
@@ -324,13 +324,13 @@ export default function CorrelationPanel({
       </div>
 
       {selectedSeries.length === 0 ? (
-        <div className="py-10 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+        <div className="py-10 text-center border border-dashed border-white/7 rounded-xl">
           <p className="font-mono text-xs text-[#c6c9ab]">Selecciona una o más series para visualizar.</p>
         </div>
       ) : (
         <>
           {/* Chart */}
-          <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4">
+          <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
                 {multiNorm
@@ -355,7 +355,7 @@ export default function CorrelationPanel({
                 />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#181818', border: '1px solid #2a2a2a', borderRadius: 8, fontFamily: 'monospace', fontSize: 11 }}
-                  labelStyle={{ color: '#e2ff00', marginBottom: 4 }}
+                  labelStyle={{ color: '#fbcb1a', marginBottom: 4 }}
                   labelFormatter={(label) => fmtDate(String(label))}
                   formatter={(value: number, name: string, item: { payload?: Record<string, number> }) => {
                     const s = selectedSeries.find(s => s.id === name);
@@ -394,17 +394,17 @@ export default function CorrelationPanel({
 
           {/* Pearson result */}
           {correlationResult && (
-            <div className={`bg-[#121212] border rounded-xl p-5 space-y-2 ${
+            <div className={`bg-[#181816] border rounded-xl p-5 space-y-2 ${
               correlationResult.r === null
-                ? 'border-[#2a2a2a]'
+                ? 'border-white/7'
                 : Math.abs(correlationResult.r) > 0.7
-                  ? 'border-[#e2ff00]/30'
+                  ? 'border-[#fbcb1a]/30'
                   : Math.abs(correlationResult.r) >= 0.4
                     ? 'border-[#fb923c]/30'
-                    : 'border-[#2a2a2a]'
+                    : 'border-white/7'
             }`}>
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#e2ff00] text-sm">functions</span>
+                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">functions</span>
                 <p className="font-sans font-bold text-sm text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (
@@ -414,7 +414,7 @@ export default function CorrelationPanel({
                   <div className="flex items-baseline gap-3">
                     <span className="font-mono font-black text-3xl" style={{
                       color: Math.abs(correlationResult.r) > 0.7
-                        ? '#e2ff00'
+                        ? '#fbcb1a'
                         : Math.abs(correlationResult.r) >= 0.4
                           ? '#fb923c'
                           : '#c6c9ab',

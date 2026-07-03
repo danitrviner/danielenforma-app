@@ -3,11 +3,44 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Acento principal: volt → oro */
+  --color-accent: #fbcb1a;
+  --color-accent-dark: #d4a800;
+  --color-accent-bg: rgba(251, 203, 26, 0.10);
+  --color-accent-border: rgba(251, 203, 26, 0.30);
+
+  /* Fondos (más cálidos, menos pitch black) */
+  --color-bg-base: #111110;
+  --color-bg-card: #181816;
+  --color-bg-elevated: #1e1e1b;
+  --color-bg-input: #141413;
+
+  /* Bordes */
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Texto */
+  --color-text-primary: #f5f5f0;
+  --color-text-secondary: #a8a89e;
+  --color-text-muted: #555550;
+
+  /* Estados (sin cambio) */
+  --color-success: #86efac;
+  --color-warning: #fdba74;
+  --color-danger: #fca5a5;
+  --color-cyan: #00eefc;
+
+  /* Radio consistente */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
 @layer utilities {
   .volt-glow {
-    box-shadow: 0 0 12px 2px rgba(226, 255, 0, 0.2);
+    box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);
   }
   .cyan-glow {
     box-shadow: 0 0 12px 2px rgba(0, 238, 252, 0.2);
@@ -48,10 +81,10 @@ input[type=range]::-webkit-slider-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #e2ff00;
+  background: #fbcb1a;
   cursor: pointer;
   margin-top: -8px;
-  box-shadow: 0 0 0 3px #131313;
+  box-shadow: 0 0 0 3px #141413;
 }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;

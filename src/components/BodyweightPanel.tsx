@@ -44,10 +44,10 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-[#c6c9ab] mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
-        <p className="text-[#e2ff00] font-bold text-sm">{rawEntry.value} kg</p>
+        <p className="text-[#fbcb1a] font-bold text-sm">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
         <p className="text-[#00eefc] text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
@@ -166,14 +166,14 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00] min-h-[44px]';
+  const INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[44px]';
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00] text-base">monitor_weight</span>
+          <span className="material-symbols-outlined text-[#fbcb1a] text-base">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
             <span className="font-mono text-[10px] text-[#c6c9ab] font-normal">
@@ -184,7 +184,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
-              <span className="inline-block w-4 h-px bg-[#e2ff00]" />
+              <span className="inline-block w-4 h-px bg-[#fbcb1a]" />
               Diario
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
@@ -235,10 +235,10 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#e2ff00"
+                  stroke="#fbcb1a"
                   strokeWidth={2}
-                  dot={{ fill: '#e2ff00', stroke: '#121212', strokeWidth: 2, r: 3 }}
-                  activeDot={{ fill: '#e2ff00', stroke: '#121212', strokeWidth: 2, r: 5 }}
+                  dot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 3 }}
+                  activeDot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -271,7 +271,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               <button
                 onClick={handleAdd}
                 disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-40"
+                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
               >
                 {adding ? '…' : 'Añadir'}
               </button>
@@ -280,7 +280,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
           {/* Empty state */}
           {logs.length === 0 && (
-            <div className="text-center py-8 border border-dashed border-[#2a2a2a] rounded-xl">
+            <div className="text-center py-8 border border-dashed border-white/7 rounded-xl">
               <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitor_weight</span>
               <p className="font-mono text-xs text-[#c6c9ab]">
                 {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
@@ -298,7 +298,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 {listEntries.map(b => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2"
+                    className="flex items-center gap-2 bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2"
                   >
                     {editId === b.id ? (
                       // ── Inline edit ──────────────────────────────────────
@@ -322,13 +322,13 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
-                            className="px-2 py-1 bg-[#e2ff00] text-black font-mono text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
+                            className="px-2 py-1 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
                           >
                             {saving ? '…' : 'OK'}
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-[#2a2a2a] text-[#c6c9ab] font-mono text-[9px] uppercase rounded transition-all hover:text-white"
+                            className="px-2 py-1 border border-white/7 text-[#c6c9ab] font-mono text-[9px] uppercase rounded transition-all hover:text-white"
                           >
                             ✕
                           </button>

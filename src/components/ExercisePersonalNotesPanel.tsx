@@ -45,9 +45,9 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
   const withNotes = new Set(notes.filter(n => n.observation.trim()).map(n => n.exerciseId));
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
       <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-3">
-        <span className="material-symbols-outlined text-[#e2ff00] text-base">edit_note</span>
+        <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
         Observación personalizada por ejercicio
         <span className="ml-2 text-[9px] font-mono text-[#555] normal-case font-sans">(solo la ve este atleta)</span>
       </h3>
@@ -59,7 +59,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
           <select
             value={selectedExerciseId}
             onChange={e => setSelectedExerciseId(e.target.value)}
-            className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#e2ff00]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
           >
             <option value="">Selecciona un ejercicio...</option>
             {exercises.map(ex => (
@@ -74,12 +74,12 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
                 onChange={e => setText(e.target.value)}
                 placeholder="ej. Utiliza elevación de talones..."
                 rows={3}
-                className="w-full bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#e2ff00] resize-none"
+                className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none"
               />
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
               >
                 {saving ? 'Guardando...' : 'Guardar observación'}
               </button>

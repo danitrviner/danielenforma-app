@@ -225,7 +225,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 py-0.5 rounded text-base sm:text-xs font-mono transition-all flex items-center justify-center ${
-            value === o.v ? 'bg-[#e2ff00] text-black font-bold' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
+            value === o.v ? 'bg-[#fbcb1a] text-black font-bold' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
           }`}
         >{o.icon}</button>
       ))}
@@ -241,8 +241,8 @@ const DayCard: React.FC<{ day: DayPlan; dayNumber: number }> = ({ day, dayNumber
   const totalBg    = optimal ? 'rgba(34,197,94,.12)' : over ? 'rgba(249,115,22,.12)' : 'transparent';
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 flex-1 min-w-[140px] max-w-[200px]">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2a2a2a]">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 flex-1 min-w-[140px] max-w-[200px]">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Día {dayNumber}</span>
         {over && <span className="material-symbols-outlined text-sm text-orange-400" title=">12 series">warning</span>}
       </div>
@@ -286,7 +286,7 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
 
   if (sorted.length < 2) {
     return (
-      <div className="text-center py-20 border border-dashed border-[#2a2a2a] rounded-2xl">
+      <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">trending_up</span>
         <p className="text-[#c6c9ab] text-sm font-sans">Crea un segundo mesociclo para comparar la progresión.</p>
         <p className="text-[#555] text-xs font-mono mt-1">Necesitas al menos 2 mesociclos.</p>
@@ -305,16 +305,16 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
         <span className="text-[#c6c9ab] ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[#2a2a2a]">
+      <div className="overflow-x-auto rounded-xl border border-white/7">
         <table className="w-full border-collapse text-sm" style={{ minWidth: `${130 + sorted.length * 120}px` }}>
           <thead>
             <tr className="bg-[#0e0e0e]">
-              <th className="sticky left-0 z-10 bg-[#0e0e0e] text-left px-4 py-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider border-b border-r border-[#2a2a2a] w-[130px]">
+              <th className="sticky left-0 z-10 bg-[#0e0e0e] text-left px-4 py-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider border-b border-r border-white/7 w-[130px]">
                 Grupo muscular
               </th>
               {sorted.map(m => (
-                <th key={m.id} className="px-3 py-3 border-b border-r border-[#2a2a2a] last:border-r-0 text-center align-bottom">
-                  <span className="font-mono text-[10px] text-[#e2ff00] uppercase tracking-wider block">Meso #{m.number}</span>
+                <th key={m.id} className="px-3 py-3 border-b border-r border-white/7 last:border-r-0 text-center align-bottom">
+                  <span className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider block">Meso #{m.number}</span>
                   <span className="font-mono text-[9px] text-[#c6c9ab] block mt-0.5">{m.startDate}</span>
                   <span className="font-mono text-[9px] text-[#555] block">{m.daysPerWeek}d · {m.weeks} sem</span>
                   {m.objective && (
@@ -329,7 +329,7 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
           <tbody>
             {MUSCLE_GROUPS.map((group, rowIdx) => (
               <tr key={group} className={rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}>
-                <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-[#2a2a2a] font-sans text-xs text-[#c6c9ab] whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}`}>
+                <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-white/7 font-sans text-xs text-[#c6c9ab] whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}`}>
                   {MUSCLE_LABELS[group]}
                 </td>
                 {sorted.map((m, mIdx) => {
@@ -338,7 +338,7 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
                   const delta = prev !== null ? cfg.series - prev.series : null;
                   const zeroToZero = prev !== null && prev.series === 0 && cfg.series === 0;
                   return (
-                    <td key={m.id} className="px-3 py-2.5 border-r border-[#2a2a2a] last:border-r-0 text-center"
+                    <td key={m.id} className="px-3 py-2.5 border-r border-white/7 last:border-r-0 text-center"
                       style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
                     >
                       {cfg.series === 0 ? (
@@ -361,12 +361,12 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
           <tfoot>
             <tr><td colSpan={sorted.length + 1} className="h-px bg-[#2a2a2a] p-0" /></tr>
             <tr className="bg-[#0e0e0e]">
-              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-[#2a2a2a] font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Total series</td>
+              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Total series</td>
               {sorted.map((m, mIdx) => {
                 const total = totals[mIdx];
                 const delta = mIdx > 0 ? total - totals[mIdx - 1] : null;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-[#2a2a2a] last:border-r-0 text-center">
+                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-sm font-black text-white tabular-nums">{total}</span>
                       <Delta delta={delta} showEqual />
@@ -376,11 +376,11 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
               })}
             </tr>
             <tr className="bg-[#111]">
-              <td className="sticky left-0 z-10 bg-[#111] px-4 py-2.5 border-r border-t border-[#2a2a2a] font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Días / semana</td>
+              <td className="sticky left-0 z-10 bg-[#111] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Días / semana</td>
               {sorted.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.daysPerWeek - sorted[mIdx - 1].daysPerWeek : null;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-[#2a2a2a] last:border-r-0 text-center">
+                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-xs font-bold text-[#c6c9ab]">{m.daysPerWeek}d</span>
                       <Delta delta={delta} />
@@ -390,11 +390,11 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
               })}
             </tr>
             <tr className="bg-[#0e0e0e]">
-              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-[#2a2a2a] font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Semanas</td>
+              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Semanas</td>
               {sorted.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.weeks - sorted[mIdx - 1].weeks : null;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-[#2a2a2a] last:border-r-0 text-center">
+                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-xs font-bold text-[#c6c9ab]">{m.weeks} sem</span>
                       <Delta delta={delta} />
@@ -846,7 +846,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <select
               value={selectedEmail}
               onChange={e => { setSelectedEmail(e.target.value); setEditing(null); setGenPhase('idle'); }}
-              className="bg-[#1c1b1b] border border-[#2a2a2a] text-white font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#e2ff00] min-w-[220px]"
+              className="bg-[#1c1b1b] border border-white/7 text-white font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#fbcb1a] min-w-[220px]"
             >
               <option value="">— Selecciona un atleta —</option>
               {athletes.map(a => (
@@ -854,11 +854,11 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               ))}
             </select>
             {selectedAthlete && (
-              <img src={selectedAthlete.avatarUrl} alt="" className="w-8 h-8 rounded-full border border-[#2a2a2a] object-cover" />
+              <img src={selectedAthlete.avatarUrl} alt="" className="w-8 h-8 rounded-full border border-white/7 object-cover" />
             )}
           </div>
           {!selectedEmail && (
-            <div className="text-center py-24 border border-dashed border-[#2a2a2a] rounded-2xl">
+            <div className="text-center py-24 border border-dashed border-white/7 rounded-2xl">
               <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">calendar_view_month</span>
               <p className="text-[#c6c9ab] text-sm">Selecciona un atleta para ver o crear sus mesociclos.</p>
             </div>
@@ -869,7 +869,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       {selectedEmail && (
         <>
         {/* View toggle */}
-        <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-xl gap-1 w-full sm:w-fit">
+        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 w-full sm:w-fit">
           {([
             { id: 'list',      label: 'Mesociclos', icon: 'calendar_view_month' },
             { id: 'dashboard', label: 'Dashboard',  icon: 'dashboard' },
@@ -878,7 +878,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               key={v.id}
               onClick={() => setMesoView(v.id)}
               className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wide transition-all ${
-                mesoView === v.id ? 'bg-[#e2ff00] text-black' : 'text-[#c6c9ab] hover:text-white'
+                mesoView === v.id ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-sm">{v.icon}</span>
@@ -896,14 +896,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           <div className="xl:w-64 flex-shrink-0 space-y-3">
             <button
               onClick={handleNew} disabled={creating}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#e2ff00] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               {creating ? 'Creando…' : 'Nuevo mesociclo'}
             </button>
             <button
               onClick={handleOpenTemplatePicker}
-              className="w-full flex items-center justify-center gap-2 py-2 border border-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px] font-bold uppercase tracking-wider rounded-xl hover:border-[#e2ff00]/40 hover:text-[#e2ff00] transition-all"
+              className="w-full flex items-center justify-center gap-2 py-2 border border-white/7 text-[#c6c9ab] font-mono text-[10px] font-bold uppercase tracking-wider rounded-xl hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">library_books</span>
               Usar plantilla
@@ -920,8 +920,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 onClick={() => { setEditing(m); setEditorTab('volume'); setConfirmDelete(false); setGenPhase('idle'); }}
                 className={`w-full text-left p-3 rounded-xl border transition-all ${
                   editing?.id === m.id
-                    ? 'border-[#e2ff00]/60 bg-[#e2ff00]/5'
-                    : 'border-[#2a2a2a] bg-[#121212] hover:border-[#3a3a3a]'
+                    ? 'border-[#fbcb1a]/60 bg-[#fbcb1a]/5'
+                    : 'border-white/7 bg-[#181816] hover:border-[#3a3a3a]'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -946,13 +946,13 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <div className="flex-1 min-w-0 space-y-4">
 
               {/* Mesocycle header */}
-              <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-white text-base">Mesociclo #{editing.number}</h2>
                   <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-[#86efac]' :
                     saveState === 'error'  ? 'text-red-400' :
-                    saveState === 'saving' ? 'text-[#e2ff00] animate-pulse' : 'text-[#c6c9ab]'
+                    saveState === 'saving' ? 'text-[#fbcb1a] animate-pulse' : 'text-[#c6c9ab]'
                   }`}>{saveLabel}</span>
                 </div>
 
@@ -962,7 +962,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#e2ff00]"
+                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#fbcb1a]"
                     />
                   </div>
                   <div>
@@ -970,7 +970,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#e2ff00]"
+                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#fbcb1a]"
                     />
                   </div>
                   <div>
@@ -978,7 +978,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="date"
                       value={editing.startDate}
                       onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#e2ff00]"
+                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-[#fbcb1a]"
                     />
                   </div>
                   <div>
@@ -987,7 +987,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       {[2,3,4,5,6].map(d => (
                         <button key={d} onClick={() => updateField('daysPerWeek', d)}
                           className={`w-11 h-11 rounded font-mono text-xs font-bold transition-all ${
-                            editing.daysPerWeek === d ? 'bg-[#e2ff00] text-black' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
+                            editing.daysPerWeek === d ? 'bg-[#fbcb1a] text-black' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
                           }`}
                         >{d}</button>
                       ))}
@@ -1001,14 +1001,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
                     value={editing.objective}
                     onChange={e => updateField('objective', e.target.value)}
-                    className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#e2ff00]"
+                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#fbcb1a]"
                   />
                 </div>
               </div>
 
               {/* Tab bar */}
               <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-xl gap-1 min-w-max">
+                <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 min-w-max">
                   {([
                     { id: 'volume',       label: 'Volumen y Prioridad', icon: 'bar_chart'   },
                     { id: 'distribution', label: 'Distribución',        icon: 'grid_view'   },
@@ -1018,7 +1018,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       key={tab.id}
                       onClick={() => { setEditorTab(tab.id); if (tab.id !== 'distribution') setGenPhase('idle'); }}
                       className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
-                        editorTab === tab.id ? 'bg-[#e2ff00] text-black' : 'text-[#c6c9ab] hover:text-white'
+                        editorTab === tab.id ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
                       }`}
                     >
                       <span className="material-symbols-outlined text-sm">{tab.icon}</span>
@@ -1043,8 +1043,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     ))}
                   </div>
 
-                  <div className="rounded-xl border border-[#2a2a2a] overflow-hidden">
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-4 py-2 bg-[#0e0e0e] border-b border-[#2a2a2a]">
+                  <div className="rounded-xl border border-white/7 overflow-hidden">
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-4 py-2 bg-[#0e0e0e] border-b border-white/7">
                       <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo muscular</span>
                       <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-center w-24">Series/sem</span>
                       <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-center w-28">Prioridad</span>
@@ -1075,7 +1075,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     })}
                   </div>
 
-                  <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3 flex items-center justify-between">
+                  <div className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3 flex items-center justify-between">
                     <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">Total series semanales</span>
                     <span className="font-mono font-black text-xl text-white">
                       {MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0)}
@@ -1105,7 +1105,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={handleGenerateDistribution}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-[#e2ff00] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#bad200] active:scale-95 transition-all"
+                          className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
                         >
                           <span className="material-symbols-outlined text-sm">shuffle</span>
                           Distribución Automática
@@ -1148,7 +1148,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             ))}
                           </div>
 
-                          <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+                          <div className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div>
                                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block">Series totales</span>
@@ -1169,7 +1169,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center py-12 border border-dashed border-[#2a2a2a] rounded-2xl">
+                        <div className="text-center py-12 border border-dashed border-white/7 rounded-2xl">
                           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">grid_view</span>
                           <p className="text-[#c6c9ab] text-sm">Pulsa «Distribución Automática» para repartir las series.</p>
                         </div>
@@ -1177,13 +1177,13 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                       {/* ── Generar rutinas ── */}
                       {((editing.days?.length ?? 0) > 0 || (editing.distribution && !isStale(editing, editing.distribution))) && (
-                        <div className="border-t border-[#2a2a2a] pt-4 mt-2 space-y-3">
+                        <div className="border-t border-white/7 pt-4 mt-2 space-y-3">
                           <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Rutinas del mesociclo</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <button
                               onClick={handleGenerate}
                               disabled={genPhase === 'loading'}
-                              className="flex items-center gap-2 px-4 py-2.5 bg-[#1c1b1b] border border-[#e2ff00]/40 text-[#e2ff00] font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#e2ff00]/10 active:scale-95 transition-all disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-2.5 bg-[#1c1b1b] border border-[#fbcb1a]/40 text-[#fbcb1a] font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#fbcb1a]/10 active:scale-95 transition-all disabled:opacity-50"
                             >
                               {genPhase === 'loading' ? (
                                 <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Analizando…</>
@@ -1212,20 +1212,20 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           <p className="font-sans font-bold text-white text-sm">Vista previa de rutinas</p>
                           <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
                             Meso #{editing.number} · {editing.weeks} semanas × {editing.daysPerWeek} días =&nbsp;
-                            <span className="text-[#e2ff00]">{editing.weeks * editing.daysPerWeek} sesiones</span>
+                            <span className="text-[#fbcb1a]">{editing.weeks * editing.daysPerWeek} sesiones</span>
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => { setGenPhase('idle'); setPreviewDays([]); }}
-                            className="px-3 py-2 font-mono text-xs text-[#c6c9ab] hover:text-white border border-[#2a2a2a] rounded-lg transition-all flex items-center gap-1"
+                            className="px-3 py-2 font-mono text-xs text-[#c6c9ab] hover:text-white border border-white/7 rounded-lg transition-all flex items-center gap-1"
                           >
                             <span className="material-symbols-outlined text-sm">arrow_back</span>
                             Volver
                           </button>
                           <button
                             onClick={handleAssign}
-                            className="px-4 py-2 bg-[#e2ff00] text-black font-mono text-xs font-bold uppercase rounded-lg hover:bg-[#bad200] active:scale-95 transition-all flex items-center gap-2"
+                            className="px-4 py-2 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
                           >
                             <span className="material-symbols-outlined text-sm">assignment_turned_in</span>
                             Asignar al atleta
@@ -1235,10 +1235,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                       <div className="flex flex-wrap gap-3">
                         {previewDays.map((pd, dayIdx) => (
-                          <div key={dayIdx} className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 flex-1 min-w-[260px]">
+                          <div key={dayIdx} className="bg-[#181816] border border-white/7 rounded-xl p-4 flex-1 min-w-[260px]">
                             {/* Day header */}
-                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2a2a2a]">
-                              <span className="font-mono text-xs font-bold text-[#e2ff00] uppercase">Día {dayIdx + 1}</span>
+                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
+                              <span className="font-mono text-xs font-bold text-[#fbcb1a] uppercase">Día {dayIdx + 1}</span>
                               <span className="font-mono text-[10px] text-[#c6c9ab]">
                                 {pd.exercises.reduce((s, e) => s + e.sets, 0)} series
                               </span>
@@ -1259,7 +1259,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             {/* Exercise rows */}
                             <div className="space-y-2">
                               {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-[#1a1a1a] rounded-lg p-2.5 space-y-1.5">
+                                <div key={peIdx} className="bg-[#1e1e1b] rounded-lg p-2.5 space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-xs font-sans font-semibold text-white truncate">{pe.name}</p>
@@ -1287,7 +1287,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                         type="number" min={1} max={20}
                                         value={pe.sets}
                                         onChange={e => updatePEx(dayIdx, peIdx, 'sets', parseInt(e.target.value) || 1)}
-                                        className="w-full bg-[#121212] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#e2ff00]"
+                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
                                       />
                                     </div>
                                     <div>
@@ -1296,7 +1296,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                         type="text"
                                         value={pe.reps}
                                         onChange={e => updatePEx(dayIdx, peIdx, 'reps', e.target.value)}
-                                        className="w-full bg-[#121212] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#e2ff00]"
+                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
                                       />
                                     </div>
                                     <div>
@@ -1305,7 +1305,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                         type="number" min={0} max={5}
                                         value={pe.rir}
                                         onChange={e => updatePEx(dayIdx, peIdx, 'rir', parseInt(e.target.value) ?? 0)}
-                                        className="w-full bg-[#121212] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#e2ff00]"
+                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
                                       />
                                     </div>
                                   </div>
@@ -1318,7 +1318,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-[#1a1a1a] border border-dashed border-[#3a3a3a] rounded-lg px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:border-[#e2ff00] cursor-pointer"
+                                className="w-full bg-[#1e1e1b] border border-dashed border-[#3a3a3a] rounded-lg px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a] cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (
@@ -1342,12 +1342,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {/* === Assigning progress === */}
                   {genPhase === 'assigning' && (
                     <div className="text-center py-16 space-y-4">
-                      <span className="material-symbols-outlined text-4xl text-[#e2ff00] animate-spin block">refresh</span>
+                      <span className="material-symbols-outlined text-4xl text-[#fbcb1a] animate-spin block">refresh</span>
                       <p className="font-sans font-bold text-white text-sm">Creando sesiones en Firestore…</p>
                       <div className="max-w-xs mx-auto">
                         <div className="bg-[#2a2a2a] rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-[#e2ff00] h-2 rounded-full transition-all duration-300"
+                            className="bg-[#fbcb1a] h-2 rounded-full transition-all duration-300"
                             style={{ width: `${assignProgress.total ? (assignProgress.done / assignProgress.total) * 100 : 0}%` }}
                           />
                         </div>
@@ -1370,7 +1370,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       </div>
                       <button
                         onClick={() => setGenPhase('idle')}
-                        className="px-4 py-2 font-mono text-xs text-[#c6c9ab] border border-[#2a2a2a] rounded-lg hover:text-white hover:border-[#3a3a3a] transition-all"
+                        className="px-4 py-2 font-mono text-xs text-[#c6c9ab] border border-white/7 rounded-lg hover:text-white hover:border-[#3a3a3a] transition-all"
                       >
                         Volver a la distribución
                       </button>
@@ -1421,7 +1421,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             </div>
           ) : (
             selectedEmail && !loadingMeso && (
-              <div className="flex-1 flex items-center justify-center text-center py-20 border border-dashed border-[#2a2a2a] rounded-2xl">
+              <div className="flex-1 flex items-center justify-center text-center py-20 border border-dashed border-white/7 rounded-2xl">
                 <div>
                   <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">edit_note</span>
                   <p className="text-[#c6c9ab] text-sm">Selecciona un mesociclo o crea uno nuevo.</p>
@@ -1437,12 +1437,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       {/* ── Template picker modal ── */}
       {showTemplatePicker && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
+          <div className="bg-[#1c1b1b] border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2a] flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/7 flex-shrink-0">
               <div>
                 <h3 className="font-sans font-bold text-white text-sm flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#e2ff00] text-base">library_books</span>
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">library_books</span>
                   Usar plantilla
                 </h3>
                 <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
@@ -1472,13 +1472,13 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
                 return (
                   <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} disabled={applyingTemplate}
-                    className="w-full text-left p-4 bg-[#121212] border border-[#2a2a2a] rounded-xl hover:border-[#e2ff00]/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
+                    className="w-full text-left p-4 bg-[#181816] border border-white/7 rounded-xl hover:border-[#fbcb1a]/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
-                        <p className="font-sans font-bold text-white text-sm group-hover:text-[#e2ff00] transition-colors">{tpl.name}</p>
+                        <p className="font-sans font-bold text-white text-sm group-hover:text-[#fbcb1a] transition-colors">{tpl.name}</p>
                         {tpl.description && <p className="font-mono text-[9px] text-[#c6c9ab] mt-0.5">{tpl.description}</p>}
                       </div>
-                      <span className="font-mono text-[10px] text-[#e2ff00] font-bold flex-shrink-0 bg-[#e2ff00]/10 px-2 py-0.5 rounded">Usar →</span>
+                      <span className="font-mono text-[10px] text-[#fbcb1a] font-bold flex-shrink-0 bg-[#fbcb1a]/10 px-2 py-0.5 rounded">Usar →</span>
                     </div>
                     <div className="flex gap-3 flex-wrap">
                       <span className="font-mono text-[10px] text-[#c6c9ab]">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
@@ -1486,7 +1486,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     </div>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {tpl.stages.map((st) => (
-                        <span key={st.id} className="font-mono text-[9px] bg-[#1a1a1a] border border-[#2a2a2a] px-2 py-0.5 rounded text-[#c6c9ab]">
+                        <span key={st.id} className="font-mono text-[9px] bg-[#1e1e1b] border border-white/7 px-2 py-0.5 rounded text-[#c6c9ab]">
                           {st.name} · {st.weeks}sem
                         </span>
                       ))}

@@ -115,7 +115,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-[#2a2a2a]/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
           <p className="text-[#c6c9ab] text-sm mt-1">
@@ -136,8 +136,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       </header>
 
       {successMsg && (
-        <div className="bg-[#e2ff00]/15 border border-[#e2ff00]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00]">check_circle</span>
+        <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#fbcb1a]">check_circle</span>
           <p>{successMsg}</p>
         </div>
       )}
@@ -146,15 +146,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
-        <div className="bg-[#131313] border border-dashed border-[#2a2a2a] rounded-xl p-16 text-center text-[#c6c9ab]">
-          <span className="material-symbols-outlined text-4xl text-[#e2ff00] mb-2 block">verified_user</span>
+        <div className="bg-[#131313] border border-dashed border-white/7 rounded-xl p-16 text-center text-[#c6c9ab]">
+          <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 block">verified_user</span>
           <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí.</p>
         </div>
       ) : (
-        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-[#2a2a2a] bg-[#1c1b1b] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e2ff00] text-sm">history_edu</span>
+        <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-[#c6c9ab] ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
@@ -185,9 +185,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <div key={key}>
                     <div
                       onClick={toggle}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1a1a1a] ${isExpanded ? 'bg-[#1a1a1a]' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
                     >
-                      <div className="w-7 h-7 rounded-full overflow-hidden border border-[#2a2a2a] flex-shrink-0">
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
                         <img
                           src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                           alt=""
@@ -196,7 +196,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       <span
                         className="material-symbols-outlined flex-shrink-0 text-lg"
-                        style={{ color: c.approved ? '#e2ff00' : '#fb923c', fontVariationSettings: "'FILL' 1" }}
+                        style={{ color: c.approved ? '#fbcb1a' : '#fb923c', fontVariationSettings: "'FILL' 1" }}
                       >rate_review</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -216,7 +216,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#e2ff00] hover:bg-[#1c1b1b] transition-colors"
+                          className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                         >
                           <span className="material-symbols-outlined text-base">account_circle</span>
                         </button>
@@ -227,28 +227,28 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       >expand_more</span>
                     </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-[#2a2a2a]/40 space-y-3">
+                      <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-3">
                         <div className="grid grid-cols-3 gap-2 font-mono text-xs">
                           {[
                             { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
-                            { label: 'Adherencia', value: c.adherence, color: 'text-[#e2ff00]' },
+                            { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-[#191919] p-2.5 rounded-lg border border-[#2a2a2a]/40">
+                            <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-lg border border-white/40">
                               <span className="block text-[#c6c9ab] text-[9px] uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
                         </div>
                         {c.notes && (
-                          <div className="bg-[#181818] p-3 rounded-lg border border-[#2a2a2a]/30">
+                          <div className="bg-[#181818] p-3 rounded-lg border border-white/30">
                             <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Notas del atleta</span>
                             <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                           </div>
                         )}
                         {successMsg && expandedId === key && (
-                          <div className="bg-[#e2ff00]/15 border border-[#e2ff00]/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#e2ff00] text-sm">check_circle</span>
+                          <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">check_circle</span>
                             {successMsg}
                           </div>
                         )}
@@ -260,12 +260,12 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu directriz para el atleta..."
-                            className="w-full bg-[#1c1b1b] border border-[#2a2a2a]/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#e2ff00] focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#bad200] active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-sm">send</span>
@@ -294,9 +294,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div key={key}>
                   <div
                     onClick={toggle}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1a1a1a] ${isExpanded ? 'bg-[#1a1a1a]' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
                   >
-                    <div className="w-7 h-7 rounded-full overflow-hidden border border-[#2a2a2a] flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
                       <img
                         src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                         alt=""
@@ -320,7 +320,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#e2ff00] hover:bg-[#1c1b1b] transition-colors"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">account_circle</span>
                       </button>
@@ -331,7 +331,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     >expand_more</span>
                   </div>
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-[#2a2a2a]/40 space-y-2">
+                    <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-2">
                       {r.answers.map(ans => {
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (

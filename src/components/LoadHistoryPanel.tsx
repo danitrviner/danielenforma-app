@@ -15,7 +15,7 @@ type Metric = 'tonnage' | 'orm' | 'reps' | 'sets';
 const METRICS: Metric[] = ['tonnage', 'orm', 'reps', 'sets'];
 
 const METRIC_COLOR: Record<Metric, string> = {
-  tonnage: '#e2ff00',
+  tonnage: '#fbcb1a',
   orm:     '#00eefc',
   reps:    '#ff8c69',
   sets:    '#a78bfa',
@@ -97,7 +97,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   const point = payload[0]?.payload as ChartPoint | undefined;
   if (!point) return null;
   return (
-    <div className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-lg px-3 py-2 shadow-xl">
+    <div className="bg-[#1c1b1b] border border-white/7 rounded-lg px-3 py-2 shadow-xl">
       <p className="font-mono text-[10px] text-[#c6c9ab] mb-1.5">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
@@ -227,12 +227,12 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
 
   if (logs.length === 0) {
     return (
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">
+      <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
         <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
           Historial de carga
         </h3>
-        <div className="py-8 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+        <div className="py-8 text-center border border-dashed border-white/7 rounded-xl">
           <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitoring</span>
           <p className="text-xs text-[#c6c9ab] font-mono">Sin registros de carga aún.</p>
         </div>
@@ -241,7 +241,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
   }
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-5">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-5">
       <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
         <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
         Historial de carga
@@ -258,7 +258,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
                 className={`px-3 min-h-[44px] rounded-full font-mono text-[10px] uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
-                    : 'bg-transparent text-[#c6c9ab] border-[#2a2a2a] hover:border-[#555]'
+                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#555]'
                 }`}
                 style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
               >
@@ -274,7 +274,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
                   key={s}
                   onClick={toggle}
                   className={`px-2.5 min-h-[44px] rounded-full font-mono text-[10px] uppercase tracking-wider transition-all border ${
-                    active ? 'bg-white/10 border-white/30 text-white' : 'border-[#2a2a2a] text-[#555] hover:text-[#c6c9ab]'
+                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-[#c6c9ab]'
                   }`}
                 >
                   {s === 'mean' ? 'Media' : 'Mediana'}
@@ -294,7 +294,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-[#1c1b1b] border border-[#2a2a2a] text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-[#1c1b1b] border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -305,7 +305,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
 
       {/* ── Chart ── */}
       {activeMetrics.size === 0 ? (
-        <div className="py-6 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+        <div className="py-6 text-center border border-dashed border-white/7 rounded-xl">
           <p className="font-mono text-[10px] text-[#555]">Selecciona al menos una métrica.</p>
         </div>
       ) : (
@@ -384,7 +384,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
-            <div key={row.date} className="bg-[#111] border border-[#2a2a2a]/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+            <div key={row.date} className="bg-[#111] border border-white/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
               <span className="font-mono text-[11px] text-[#c6c9ab] flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-[11px]">
                 <span className="text-[#c6c9ab]"><span className="text-white font-bold">{row.sets}</span>s</span>
@@ -401,10 +401,10 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
         </div>
 
         {/* Desktop table */}
-        <div className="hidden sm:block overflow-x-auto rounded-lg border border-[#2a2a2a]/50">
+        <div className="hidden sm:block overflow-x-auto rounded-lg border border-white/50">
           <table className="w-full text-left" style={{ minWidth: ormActive ? 460 : 360 }}>
             <thead>
-              <tr className="bg-[#111] border-b border-[#2a2a2a]/40">
+              <tr className="bg-[#111] border-b border-white/40">
                 {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
                   <th key={h} className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{h}</th>
                 ))}
@@ -414,7 +414,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
               {[...sessionRows].reverse().map((row, i) => (
                 <tr
                   key={row.date}
-                  className={`border-b border-[#2a2a2a]/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-[#1a1a1a] transition-colors`}
+                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-[#1e1e1b] transition-colors`}
                 >
                   <td className="px-3 py-2.5 font-mono text-[11px] text-[#c6c9ab]">{row.label}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>

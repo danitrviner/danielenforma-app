@@ -25,7 +25,7 @@ const MUSCLE_LABELS: Record<MuscleGroup, string> = {
 };
 
 const PALETTE = [
-  '#e2ff00', '#00eefc', '#ff6b6b', '#ffa500', '#9d4edd',
+  '#fbcb1a', '#00eefc', '#ff6b6b', '#ffa500', '#9d4edd',
   '#06d6a0', '#ff5e78', '#fb5607', '#8ac926', '#ffbe0b',
   '#3a86ff', '#f72585', '#43aa8b', '#f8961e',
 ];
@@ -51,7 +51,7 @@ const AXIS_TICK = { fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' };
 
 function EmptyChart({ message }: { message: string }) {
   return (
-    <div className="h-36 flex items-center justify-center border border-dashed border-[#2a2a2a] rounded-xl">
+    <div className="h-36 flex items-center justify-center border border-dashed border-white/7 rounded-xl">
       <p className="font-mono text-xs text-[#c6c9ab]">{message}</p>
     </div>
   );
@@ -61,9 +61,9 @@ function EmptyChart({ message }: { message: string }) {
 
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
       <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#e2ff00]" style={{ fontSize: '16px' }}>{icon}</span>
+        <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontSize: '16px' }}>{icon}</span>
         {title}
       </p>
       {children}
@@ -248,7 +248,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-20 border border-dashed border-[#2a2a2a] rounded-2xl">
+      <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">bar_chart</span>
         <p className="text-[#c6c9ab] text-sm">Sin mesociclos para mostrar.</p>
       </div>
@@ -259,7 +259,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00]">dashboard</span>
+          <span className="material-symbols-outlined text-[#fbcb1a]">dashboard</span>
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (
@@ -278,7 +278,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
               <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v} series`, 'Total']} />
-              <Bar dataKey="series" fill="#e2ff00" radius={[3, 3, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="series" fill="#fbcb1a" radius={[3, 3, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -328,7 +328,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                     })}
                     className={`px-2 py-0.5 rounded font-mono text-[9px] uppercase font-bold border transition-all ${
                       hidden
-                        ? 'bg-transparent border-[#2a2a2a] text-[#555]'
+                        ? 'bg-transparent border-white/7 text-[#555]'
                         : 'border-transparent text-black'
                     }`}
                     style={hidden ? {} : { backgroundColor: GROUP_COLOR[g] }}
@@ -340,7 +340,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               {hiddenGroups.size > 0 && (
                 <button
                   onClick={() => setHiddenGroups(new Set())}
-                  className="px-2 py-0.5 rounded font-mono text-[9px] text-[#c6c9ab] hover:text-white border border-[#2a2a2a] transition-colors"
+                  className="px-2 py-0.5 rounded font-mono text-[9px] text-[#c6c9ab] hover:text-white border border-white/7 transition-colors"
                 >
                   Mostrar todos
                 </button>
@@ -376,7 +376,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
 
       {/* ── Row 3: Carga real (Charts 3 + 4) ── */}
       {!hasLogs ? (
-        <div className="bg-[#121212] border border-dashed border-[#2a2a2a] rounded-xl p-6 flex items-center gap-3">
+        <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-6 flex items-center gap-3">
           <span className="material-symbols-outlined text-2xl text-[#2a2a2a]">fitness_center</span>
           <p className="font-mono text-xs text-[#c6c9ab]">
             Sin datos de carga registrados — las gráficas de tonelaje y 1RM aparecerán aquí cuando el atleta complete sesiones.
@@ -428,7 +428,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                         className={`px-2 py-0.5 rounded font-mono text-[9px] border transition-all truncate max-w-[120px] ${
                           shown
                             ? 'border-transparent text-black'
-                            : 'bg-transparent border-[#2a2a2a] text-[#555]'
+                            : 'bg-transparent border-white/7 text-[#555]'
                         }`}
                         style={shown ? { backgroundColor: color } : {}}
                         title={exName(exId)}

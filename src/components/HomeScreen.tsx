@@ -47,13 +47,13 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <StepsWidget athleteEmail={profile.email} />
 
       {/* ── Entrenamientos pendientes de esta semana + atrasados ─────────────── */}
-      <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-5">
-        <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
+      <section className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
+        <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
           Entrenamiento
           <button
             onClick={() => onNavigate('training')}
-            className="ml-auto text-[10px] font-mono font-bold uppercase text-[#c6c9ab] hover:text-[#e2ff00] transition-colors"
+            className="ml-auto text-[10px] font-mono font-bold uppercase text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors"
           >
             Ver todo
           </button>
@@ -67,12 +67,12 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
               <div className="space-y-1.5">
-                <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-[#e2ff00]">Esta semana</span>
+                <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-[#fbcb1a]">Esta semana</span>
                 {thisWeekPending.map(a => (
                   <button
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a] hover:border-[#e2ff00]/40 rounded-lg p-3 text-left transition-all"
+                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all"
                   >
                     <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
                     <span className="font-mono text-[10px] text-[#c6c9ab] flex-shrink-0 ml-2">{formatDate(a.date)}</span>

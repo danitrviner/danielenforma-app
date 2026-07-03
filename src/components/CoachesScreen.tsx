@@ -65,7 +65,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]/70 w-full';
+const MINI = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -143,11 +143,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[9px] uppercase border border-[#2a2a2a] text-[#c6c9ab] hover:text-white rounded-lg transition-all">
+            className="px-3 py-1.5 font-mono text-[9px] uppercase border border-white/7 text-[#c6c9ab] hover:text-white rounded-lg transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-mono text-[9px] uppercase bg-[#e2ff00] text-black font-bold rounded-lg hover:bg-[#bad200] disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 font-mono text-[9px] uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -158,8 +158,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const meta = SECTION_META[section];
         const qs   = questions.filter(q => q.section === section);
         return (
-          <div key={section} className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#e2ff00] flex items-center gap-2">
+          <div key={section} className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
+            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#fbcb1a] flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
               <span className="ml-auto font-mono text-[9px] text-[#555] normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
@@ -171,7 +171,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-[#e2ff00]/30 bg-[#111]' : 'border-[#1e1e1e] bg-[#0a0a0a]'}`}>
+                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-[#fbcb1a]/30 bg-[#111]' : 'border-[#1e1e1e] bg-[#0a0a0a]'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
@@ -183,7 +183,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
                             className={`px-2.5 py-1 rounded font-mono text-[9px] font-bold uppercase border transition-all ${
-                              q.type === t ? 'bg-[#e2ff00] text-black border-transparent' : 'text-[#c6c9ab] border-[#2a2a2a] hover:text-white'
+                              q.type === t ? 'bg-[#fbcb1a] text-black border-transparent' : 'text-[#c6c9ab] border-white/7 hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
                           </button>
@@ -198,10 +198,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
@@ -232,7 +232,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-[#e2ff00] text-black font-mono text-[9px] font-bold uppercase rounded hover:bg-[#bad200]">
+                          className="px-2.5 py-1 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded hover:bg-[#d4a800]">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
@@ -247,8 +247,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
                         q.type === 'scale'   ? 'text-[#00eefc] border-[#00eefc]/20 bg-[#00eefc]/5' :
-                        q.type === 'choice'  ? 'text-[#e2ff00] border-[#e2ff00]/20 bg-[#e2ff00]/5' :
-                                               'text-[#c6c9ab] border-[#3a3a3a] bg-[#1a1a1a]'
+                        q.type === 'choice'  ? 'text-[#fbcb1a] border-[#fbcb1a]/20 bg-[#fbcb1a]/5' :
+                                               'text-[#c6c9ab] border-[#3a3a3a] bg-[#1e1e1b]'
                       }`}>{TYPE_LABEL[q.type]}</span>
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-[#555]">sin etiqueta</em>}
@@ -269,7 +269,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[9px] uppercase text-[#c6c9ab] hover:text-[#e2ff00] border border-dashed border-[#2a2a2a] hover:border-[#e2ff00]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-[9px] uppercase text-[#c6c9ab] hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -280,7 +280,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-mono text-xs uppercase bg-[#e2ff00] text-black font-bold rounded-lg hover:bg-[#bad200] disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-mono text-xs uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -406,7 +406,7 @@ function IndyaImportPanel() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+    <div className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
       <div>
         <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-[#00eefc] flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">library_books</span>
@@ -449,13 +449,13 @@ function IndyaImportPanel() {
 
       {status === 'done' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-[#e2ff00] font-mono text-xs font-bold">
+          <div className="flex items-center gap-2 text-[#fbcb1a] font-mono text-xs font-bold">
             <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             {done.toLocaleString('es')} recetas importadas en {elapsed}s
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-[#2a2a2a] text-[#c6c9ab] hover:text-white font-mono text-[9px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-[9px] uppercase rounded-lg transition-all"
           >
             Reimportar
           </button>
@@ -520,7 +520,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-[#121212] border border-[#2a2a2a] p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
         {([
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
@@ -529,7 +529,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
           <button key={t.id} onClick={() => setSettingsTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-              settingsTab === t.id ? 'bg-[#e2ff00] text-black shadow-lg' : 'text-[#c6c9ab] hover:text-white'
+              settingsTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-[#c6c9ab] hover:text-white'
             }`}>
             <span className="material-symbols-outlined text-base">{t.icon}</span>
             {t.label}
@@ -555,7 +555,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando usuarios…</span>
           </div>
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-[#2a2a2a] rounded-2xl">
+          <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
             <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">group</span>
             <p className="text-[#c6c9ab] text-sm">Sin usuarios registrados todavía.</p>
           </div>
@@ -568,20 +568,20 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-[#121212] border rounded-xl p-4 flex items-center gap-4 ${isOwner ? 'border-[#e2ff00]/30' : 'border-[#2a2a2a]'}`}>
+                  className={`bg-[#181816] border rounded-xl p-4 flex items-center gap-4 ${isOwner ? 'border-[#fbcb1a]/30' : 'border-white/7'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
-                    className="w-10 h-10 rounded-full object-cover border border-[#2a2a2a] flex-shrink-0" />
+                    className="w-10 h-10 rounded-full object-cover border border-white/7 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#e2ff00]/15 text-[#e2ff00] uppercase font-bold border border-[#e2ff00]/25">PROPIETARIO</span>}
+                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#fbcb1a]/15 text-[#fbcb1a] uppercase font-bold border border-[#fbcb1a]/25">PROPIETARIO</span>}
                       {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#00eefc]/10 text-[#00eefc] uppercase border border-[#00eefc]/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-xs text-[#c6c9ab] truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                      isCoach ? 'bg-[#e2ff00]/10 text-[#e2ff00] border-[#e2ff00]/20' : 'bg-[#2a2a2a] text-[#c6c9ab] border-[#3a3a3a]'
+                      isCoach ? 'bg-[#fbcb1a]/10 text-[#fbcb1a] border-[#fbcb1a]/20' : 'bg-[#2a2a2a] text-[#c6c9ab] border-[#3a3a3a]'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
@@ -601,9 +601,9 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             })}
           </div>
         )}
-        <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 space-y-1">
+        <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-1">
           <p className="font-mono text-xs text-[#c6c9ab]">
-            <span className="text-[#e2ff00] font-bold">Colección Firestore:</span>{' '}
+            <span className="text-[#fbcb1a] font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
             <code className="text-white">role: 'coach' | 'client'</code>
           </p>

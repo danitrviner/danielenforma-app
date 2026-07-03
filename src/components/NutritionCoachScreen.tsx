@@ -22,9 +22,9 @@ export default function NutritionCoachScreen({ coachId }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-[#2a2a2a]/60">
+      <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-mono border border-[#e2ff00]/30 text-[#e2ff00] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-mono border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
@@ -42,8 +42,8 @@ export default function NutritionCoachScreen({ coachId }: Props) {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all ${
               activeTab === tab.id
-                ? 'bg-[#e2ff00] text-black shadow-md'
-                : 'bg-[#1c1b1b] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/40 hover:text-white'
+                ? 'bg-[#fbcb1a] text-black shadow-md'
+                : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-sm">{tab.icon}</span>

@@ -61,8 +61,8 @@ function QuestionnaireForm({
   };
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-5 pb-2 border-b border-[#2a2a2a]">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
         <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
           {questionnaire.title}
@@ -94,7 +94,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-[#1e1e1e] border-0 border-b border-[#2a2a2a] text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#e2ff00] transition-colors min-h-[60px]"
+                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[60px]"
               />
             )}
 
@@ -106,7 +106,7 @@ function QuestionnaireForm({
                 max={q.max}
                 value={(answers[q.id] as string) ?? ''}
                 onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-[#1e1e1e] border-0 border-b border-[#2a2a2a] text-white font-mono p-2.5 focus:ring-0 focus:border-[#e2ff00] transition-colors"
+                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors"
               />
             )}
 
@@ -120,8 +120,8 @@ function QuestionnaireForm({
                       onClick={() => setAnswer(q.id, v)}
                       className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
                         answers[q.id] === v
-                          ? 'bg-[#e2ff00] text-black'
-                          : 'bg-[#1e1e1e] text-[#c6c9ab] border border-[#2a2a2a] hover:border-[#e2ff00]/50'
+                          ? 'bg-[#fbcb1a] text-black'
+                          : 'bg-[#1e1e1e] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/50'
                       }`}
                     >{v}</button>
                   ))}
@@ -144,8 +144,8 @@ function QuestionnaireForm({
                     onClick={() => setAnswer(q.id, v)}
                     className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
                       answers[q.id] === v
-                        ? 'bg-[#e2ff00] text-black font-bold border-transparent'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-[#2a2a2a]'
+                        ? 'bg-[#fbcb1a] text-black font-bold border-transparent'
+                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
                     }`}
                   >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
                 ))}
@@ -173,8 +173,8 @@ function QuestionnaireForm({
                     }}
                     className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
                       isSelected
-                        ? 'bg-[#e2ff00] text-black border-transparent font-bold'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-[#2a2a2a]'
+                        ? 'bg-[#fbcb1a] text-black border-transparent font-bold'
+                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
                     }`}
                   >{opt}</button>
                   );
@@ -187,7 +187,7 @@ function QuestionnaireForm({
         <button
           type="submit"
           disabled={saving}
-          className="w-full h-[44px] bg-[#e2ff00] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full h-[44px] bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           {saving ? 'Enviando...' : 'Enviar Respuesta'}
           <span className="material-symbols-outlined text-sm">send</span>
@@ -339,7 +339,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl px-4 py-3 flex items-center gap-3">
+      <div className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3 flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg bg-[#00eefc]/10 flex items-center justify-center flex-shrink-0">
           <span className="material-symbols-outlined text-[#00eefc] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
         </div>
@@ -362,7 +362,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#00eefc] placeholder-[#444]"
+                className="w-24 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#00eefc] placeholder-[#444]"
               />
               <span className="font-mono text-xs text-[#555]">kg</span>
             </div>
@@ -373,7 +373,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         {!bwEditing && bwToday ? (
           <button
             onClick={() => { setBwInput(String(bwToday.weight)); setBwEditing(true); }}
-            className="flex-shrink-0 w-9 h-9 rounded-lg border border-[#2a2a2a] flex items-center justify-center text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] transition-all"
+            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] transition-all"
             title="Editar"
           >
             <span className="material-symbols-outlined text-sm">edit</span>
@@ -406,11 +406,11 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending questionnaires list */}
       {!activeAssignment && !loadingQ && pendingAssignments.length > 0 && (
-        <section className="bg-[#121212] border border-[#e2ff00]/20 rounded-xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e2ff00]">assignment_late</span>
+        <section className="bg-[#181816] border border-[#fbcb1a]/20 rounded-xl p-4 sm:p-6">
+          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#fbcb1a]">assignment_late</span>
             Cuestionarios pendientes
-            <span className="ml-auto bg-[#e2ff00] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
+            <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingAssignments.map(a => {
@@ -420,14 +420,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <button
                   key={a.id}
                   onClick={() => setActiveAssignment(a)}
-                  className="w-full flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a] hover:border-[#e2ff00]/40 rounded-lg p-3.5 text-left transition-all group"
+                  className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3.5 text-left transition-all group"
                 >
                   <div>
-                    <p className="font-sans font-semibold text-sm text-white group-hover:text-[#e2ff00] transition-colors">{q.title}</p>
+                    <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors">{q.title}</p>
                     {q.description && <p className="text-[11px] text-[#c6c9ab] mt-0.5 font-sans">{q.description}</p>}
                     <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#e2ff00] transition-colors flex-shrink-0 ml-3">chevron_right</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
               );
             })}
@@ -437,7 +437,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring questionnaires */}
       {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
-        <details className="group bg-[#121212] border border-[#2a2a2a] rounded-xl">
+        <details className="group bg-[#181816] border border-white/7 rounded-xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
@@ -451,7 +451,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               const q = templates.get(a.questionnaireId);
               if (!q) return null;
               return (
-                <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a]/60 rounded-lg p-3">
+                <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
                   <p className="font-sans text-xs text-[#c6c9ab]">{q.title}</p>
                   <span className="font-mono text-[9px] text-[#555] uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
@@ -465,15 +465,15 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending photo check-ins */}
       {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
-        <section className="bg-[#121212] border border-[#e2ff00]/20 rounded-xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#e2ff00]">photo_camera</span>
+        <section className="bg-[#181816] border border-[#fbcb1a]/20 rounded-xl p-4 sm:p-6">
+          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#fbcb1a]">photo_camera</span>
             Fotos pendientes
-            <span className="ml-auto bg-[#e2ff00] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
+            <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-3.5">
+              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/7 rounded-lg p-3.5">
                 <p className="font-sans font-semibold text-sm text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
@@ -486,7 +486,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring photo check-ins */}
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
-        <details className="group bg-[#121212] border border-[#2a2a2a] rounded-xl">
+        <details className="group bg-[#181816] border border-white/7 rounded-xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
@@ -497,7 +497,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-[#2a2a2a]/60 rounded-lg p-3">
+              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
                 <p className="font-sans text-xs text-[#c6c9ab]">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
                 <span className="font-mono text-[9px] text-[#555] uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
@@ -509,17 +509,17 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
-      <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 sm:p-6">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#e2ff00]">photo_camera</span>
+      <section className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-6">
+        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#fbcb1a]">photo_camera</span>
           Fotografías de Progreso
         </h2>
         <PhotosScreen profile={profile} />
       </section>
 
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
-      <section className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-[#2a2a2a] flex items-center gap-2">
+      <section className="bg-[#181816] border border-white/7 rounded-xl p-5">
+        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">history</span>
           Historial de Revisiones
         </h2>
@@ -527,7 +527,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           {checkins.map((item) => (
             <div
               key={item.id}
-              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-[#2a2a2a]'}`}
+              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-white/7'}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
@@ -536,7 +536,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.mood}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#e2ff00]/10 text-[#e2ff00]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#fbcb1a]/10 text-[#fbcb1a]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
                     {item.adherence}
                   </span>
                 </div>
@@ -545,13 +545,13 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
               )}
               {item.coachFeedback ? (
-                <div className="text-xs border-l-2 border-[#e2ff00] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
-                  <span className="font-mono font-semibold text-[#e2ff00] block mb-1">Nota del Entrenador:</span>
+                <div className="text-xs border-l-2 border-[#fbcb1a] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
+                  <span className="font-mono font-semibold text-[#fbcb1a] block mb-1">Nota del Entrenador:</span>
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (
                 <div className="text-[11px] text-[#c6c9ab]/60 font-mono italic pl-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs animate-spin text-[#e2ff00]">sync</span>
+                  <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
                   Pendiente de revisión del Entrenador
                 </div>
               )}

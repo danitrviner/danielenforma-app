@@ -24,11 +24,11 @@ interface FormState {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const PHASE_COLORS = ['#e2ff00', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
 
 function phaseTextColor(bgColor: string): string {
-  // #e2ff00 and #00eefc are light, others are darker
-  if (bgColor === '#e2ff00') return '#000';
+  // #fbcb1a and #00eefc are light, others are darker
+  if (bgColor === '#fbcb1a') return '#000';
   if (bgColor === '#00eefc') return '#000';
   return '#fff';
 }
@@ -270,7 +270,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
 
   if (loading) {
     return (
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5">
+      <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
         <p className="text-[#c6c9ab] text-xs font-mono animate-pulse">Cargando periodización...</p>
       </div>
     );
@@ -283,7 +283,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
     const totalWeeks = program?.phases.reduce((s, p) => s + p.weeks, 0) ?? 0;
 
     return (
-      <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
@@ -292,20 +292,20 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
           {program ? (
             <button
               onClick={handleEdit}
-              className="text-[10px] font-mono font-bold text-[#e2ff00] hover:text-white transition-colors uppercase tracking-wider"
+              className="text-[10px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider"
             >Editar</button>
           ) : null}
         </div>
 
         {program === null ? (
-          <div className="border border-dashed border-[#2a2a2a] rounded-xl py-8 flex flex-col items-center gap-3">
+          <div className="border border-dashed border-white/7 rounded-xl py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">timeline</span>
             <p className="text-[#c6c9ab] text-xs font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#e2ff00]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#fbcb1a]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
             >
-              <span className="material-symbols-outlined text-sm text-[#e2ff00]">add</span>
+              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">add</span>
               Crear periodización
             </button>
           </div>
@@ -349,7 +349,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
   };
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 space-y-5">
+    <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#e2ff00] text-black text-[10px] font-mono font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black text-[10px] font-mono font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
           >
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
@@ -388,14 +388,14 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
           type="date"
           value={form.startDate}
           onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-[#1c1b1b] border border-[#2a2a2a] text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-[#a78bfa]/50 hover:border-[#3a3a3a] transition-colors"
+          className="bg-[#1c1b1b] border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-[#a78bfa]/50 hover:border-[#3a3a3a] transition-colors"
         />
       </div>
 
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-[#c6c9ab] text-xs font-mono text-center py-4 border border-dashed border-[#2a2a2a] rounded-xl">
+          <p className="text-[#c6c9ab] text-xs font-mono text-center py-4 border border-dashed border-white/7 rounded-xl">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -404,7 +404,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
           return (
             <div
               key={phase.id}
-              className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
+              className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 space-y-3"
               style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px' }}
             >
               {/* Phase header */}

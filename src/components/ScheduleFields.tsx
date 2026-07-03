@@ -31,7 +31,7 @@ export default function ScheduleFields({
       <select
         value={schedType}
         onChange={e => { onSchedTypeChange(e.target.value as QScheduleType); onWeekdaysChange([]); }}
-        className="bg-[#0e0e0e] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+        className="bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
       >
         <option value="once">Una vez</option>
         <option value="weekdays">Días de la semana</option>
@@ -52,8 +52,8 @@ export default function ScheduleFields({
                   onClick={() => onWeekdaysChange(active ? weekdays.filter(d => d !== dayNum) : [...weekdays, dayNum])}
                   className={`w-9 h-9 rounded-lg font-mono text-xs font-bold border transition-all ${
                     active
-                      ? 'bg-[#e2ff00] border-[#e2ff00] text-black'
-                      : 'bg-[#1c1b1b] border-[#2a2a2a] text-[#c6c9ab] hover:border-[#3a3a3a]'
+                      ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                      : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
                   }`}
                 >{label}</button>
               );
@@ -70,7 +70,7 @@ export default function ScheduleFields({
             value={intervalDays}
             min={1}
             onChange={e => onIntervalDaysChange(Math.max(1, Number(e.target.value)))}
-            className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
           <span className="font-mono text-xs text-[#c6c9ab]">días</span>
         </div>
@@ -84,7 +84,7 @@ export default function ScheduleFields({
             value={dayOfMonth}
             min={1} max={28}
             onChange={e => onDayOfMonthChange(Math.min(28, Math.max(1, Number(e.target.value))))}
-            className="w-20 bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
           <span className="font-mono text-xs text-[#c6c9ab]">de cada mes</span>
         </div>
@@ -96,7 +96,7 @@ export default function ScheduleFields({
           type="date"
           value={startDate}
           onChange={e => onStartDateChange(e.target.value)}
-          className="bg-[#0e0e0e] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#e2ff00]"
+          className="bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
         />
       </div>
     </div>
