@@ -5,6 +5,7 @@ import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
 import PendingTasksPanel from './PendingTasksPanel';
 import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
+import ProgressRing from './ProgressRing';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -12,32 +13,6 @@ interface HomeScreenProps {
   profile: UserProfile;
   checkins: WeightCheckIn[];
   onNavigate: (tab: NavTarget) => void;
-}
-
-// Circular progress ring — plain SVG, no charting lib needed for a single value.
-function ProgressRing({ pct }: { pct: number }) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  const r = 42;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - clamped / 100);
-  return (
-    <div className="relative w-[104px] h-[104px] flex-shrink-0">
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#1e1e1b" strokeWidth="9" />
-        <circle
-          cx="50" cy="50" r={r} fill="none" stroke="#fbcb1a" strokeWidth="9"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-500"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-sans font-extrabold text-2xl text-white leading-none">{Math.round(clamped)}%</span>
-        <span className="font-mono text-[8px] text-[#c6c9ab] uppercase tracking-widest mt-1">Semana</span>
-      </div>
-    </div>
-  );
 }
 
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
