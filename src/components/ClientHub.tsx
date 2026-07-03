@@ -1866,8 +1866,11 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="material-symbols-outlined text-base text-[#c6c9ab] flex-shrink-0">event</span>
                         <div className="min-w-0">
-                          <p className="font-sans font-bold text-sm text-white truncate">
+                          <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
                             {wo?.name || <span className="italic text-[#c6c9ab]">Rutina eliminada</span>}
+                            {wo?.exercises.some(e => e.recordVideoSet) && (
+                              <span className="material-symbols-outlined text-[#fbcb1a] text-sm flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
+                            )}
                           </p>
                           <p className="font-mono text-[10px] text-[#c6c9ab]">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
                         </div>

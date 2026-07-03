@@ -195,8 +195,11 @@ quiere que el atleta grabe con el móvil un ejercicio entero (`'all'`) o solo un
 (número 1-indexado, dropdown que aparece al activar el botón). En el player del atleta
 (`TrainingScreen.tsx`): la tarjeta del ejercicio se resalta con borde dorado + banner "🎥 Tu
 entrenador quiere que grabes..." bajo el header, y la fila de la serie afectada en la tabla se
-resalta con fondo dorado tenue + icono de cámara junto a "S{n}". No requiere colección nueva ni
-cambios en `dbService.ts` (viaja dentro de `Workout.exercises`, ya cubierto por `stripUndefined`
+resalta con fondo dorado tenue + icono de cámara junto a "S{n}". Reflejado también en el lado
+coach: icono de cámara junto al ejercicio en la vista previa de cada tarjeta de rutina
+(`WorkoutsScreen.tsx`, lista de rutinas) y junto al nombre de la rutina en "Entrenamientos
+asignados" de `ClientHub.tsx` (si algún ejercicio de esa rutina tiene el flag activo). No requiere
+colección nueva ni cambios en `dbService.ts` (viaja dentro de `Workout.exercises`, ya cubierto por `stripUndefined`
 al guardar).
 
 `tsc --noEmit` + `npm run build` limpios. **Sin verificar visualmente en navegador.**
