@@ -187,6 +187,80 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-07-04 — Reportes de desempeño coach→atleta + micronutrientes estimados
+
+Objetivo de Dani: unificar el feedback del entrenador (hoy fragmentado — dashboard nutricional
+suelto en la consola global, sin histórico, sin nada de entrenamiento) dentro de **Análisis**
+de cada cliente, con reportes persistentes y micronutrientes. Nuevo sub-switcher en
+`ClientHub.tsx` → Análisis: **Reportes / Nutrición / Correlaciones**.
+
+**Motor de reporte de entrenamiento** (`src/utils/trainingReport.ts`, determinístico, sin IA):
+tonelaje del periodo vs. comparación (X semanas o macrociclo anterior), desempeño por ejercicio
+(series/reps/tonelaje/1RM est., detección de PR — exige historial previo, no marca el primer
+registro como récord), progresión conjunta por grupo muscular en **ambas** métricas (tonelaje y
+1RM medio), highlights automáticos. `epley()` y `addDays()` extraídos a utils compartidos
+(`src/utils/oneRepMax.ts`, `src/utils/trainingWeek.ts`) — antes duplicados en varios componentes.
+
+**Sistema de reportes persistentes, coach en el bucle** (`CoachReport`/`CoachReportSection` en
+`types.ts`, colección `coachReports`, CRUD en `dbService.ts`): el coach genera un borrador
+(`ReportsPanel.tsx`), edita título/mensaje/qué secciones se cuentan/notas por sección
+(`ReportEditor.tsx`, vista previa en vivo = `ReportView.tsx`, el mismo componente que ve el
+atleta), guarda o envía. Los números son snapshot al generar (histórico no se reescribe); el
+coach solo edita curaduría. El atleta los ve en una card nueva en Inicio
+(`AthleteReportsPanel.tsx`) con histórico completo.
+
+**Micronutrientes estimados** (`src/data/micronutrients.ts` + `src/utils/micronutrients.ts`):
+el sistema de intercambios no guarda gramos reales ni micros — se construyó un dataset de ~63
+alimentos canónicos (valores por 100g estilo BEDCA/USDA) y un matcher que empareja las
+~310 etiquetas de texto del banco (`nutricion_seed_en_forma.ts`) por palabra clave, **99% de
+cobertura**. El matcher prioriza la coincidencia más temprana en la etiqueta (no la más larga)
+para que el nombre principal del alimento gane sobre un descriptor posterior (evita que "pan"
+se empareje con "semillas" solo por estar el keyword más largo). Como las verduras son
+"libres" (no se registran) pero aportan casi todos los micros, se suma una línea base
+configurable (`AthleteNutritionConfig.vegServingsPerDay`, default 3 raciones/día), etiquetada
+siempre como estimación, no analítica. El dashboard viejo (`NutritionAIDashboard.tsx`, con
+selector de atleta suelto en la consola global) se eliminó; su lógica vive ahora en
+`NutritionAnalysisPanel.tsx`, por cliente, con la sección de micros añadida.
+
+**Progresión 1RM de `LoadHistoryPanel.tsx`** ganó selector Semana/Día (exclusión de tramos
+individuales) y el selector de macrociclo quedó cableado de verdad (antes `athleteId` no se
+pasaba desde `ClientHub.tsx`/`TrainingScreen.tsx`, así que el dropdown nunca aparecía).
+
+**Revisión de código (8 ángulos, alto esfuerzo) encontró y se corrigieron 6 bugs reales:**
+falsos positivos del matcher de micros (verificado ejecutando contra datos reales — ver arriba),
+solapamiento de ventanas en reportes de 14 días con comparación por defecto de 1 semana
+(el rango "anterior" se metía dentro del rango "actual", doblando el conteo de 7 días — ahora
+el desplegable "Comparar con" se filtra dinámicamente según el periodo), `targetWeight` no
+llegaba de `ClientHub` a `NutritionAnalysisPanel` (regresión silenciosa del refactor, invisible
+hoy porque nada la renderiza pero corregida), clave de deduplicación de notificación con
+timestamp (anulaba su propio mecanismo anti-duplicados), fallback silencioso si un macrociclo
+no se encuentra al generar reporte, badge "Nuevo" con tipografía incorrecta (`font-mono` en vez
+de `font-sans` para badges de estado, por convención del rebrand). **Sin arreglar, limitación de
+producto no de código:** `epley()` con peso=0 (ejercicios a peso corporal, dominadas/fondos)
+nunca genera 1RM ni PR porque la fórmula multiplica por el peso externo — requeriría decidir
+otra métrica de progreso para esos ejercicios, no es un bug de una línea.
+
+**Verificación:** `tsc --noEmit` + `npm run build` limpios. Motor de entrenamiento y matcher de
+micros verificados con datos sintéticos/reales vía `npx tsx` (no solo lectura de código). Flujo
+atleta verificado en navegador real (Playwright headless, login Sandbox Atleta, sin errores de
+consola) — home muestra la card de reportes, el modal abre y renderiza todas las secciones.
+**No se pudo verificar visualmente la consola del coach** — no existe login sandbox de coach
+(`danitrviner@gmail.com` es la cuenta real de Dani, contraseña de sandbox no coincide, y
+`firestore.rules` fija `isCoach()` a ese email exacto, así que ninguna cuenta alternativa sirve).
+Los paneles de coach están limpios de tipos/build pero nunca se vieron renderizados — pendiente
+que Dani o el asistente de QA de navegador los revisen visualmente.
+
+**Desplegado:** `firebase deploy --only firestore:rules,firestore:indexes` — reglas de
+`coachReports` (coach lee/escribe todo; atleta solo lee sus propios reportes con
+`status=='sent'`) y los dos índices compuestos (`athleteId+createdAt`,
+`athleteId+status+createdAt`) ya están en producción (proyecto `fleet-operator-z5xj8`,
+verificado con `firebase firestore:indexes`). Colección nueva y vacía, sin demora de build.
+
+**Commiteado en `main`** (commit `4594fa3`), **NO pusheado a `origin`** — pendiente de que
+Dani decida cuándo. 27 archivos, +2004/-286.
+
+---
+
 ## Sesión 2026-07-03 (cont.) — Intercambios pasa a ser constructor de menús
 
 Reescritura grande de la nutrición del atleta, a petición de Dani. Antes: "Intercambios"
