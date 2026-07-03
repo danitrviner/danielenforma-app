@@ -187,12 +187,13 @@ interface OnboardingData {
 
 ---
 
-## Sesión 2026-07-03 — Rebrand visual completo (rama `rebranding`, NO mergeada a `main`)
+## Sesión 2026-07-03 — Rebrand visual completo (mergeado a `main`)
 
-**⚠️ Estado: todo el trabajo de esta sesión vive en la rama `rebranding` (subida a `origin/rebranding`),
-`main` sigue en la paleta antigua. Falta decidir cuándo/si hacer merge.** Todos los commits tienen
+**✅ Estado: `rebranding` se mergeó a `main` (fast-forward limpio, sin conflictos) y se subió a
+`origin/main`.** `main` tiene ahora la paleta dorada completa. Todos los commits tienen
 `tsc --noEmit` + `npm run build` limpios, pero **nada se ha verificado visualmente en navegador**
-(sin herramienta de browser en esta CLI — ver [[feedback-enforma-workflow]]).
+(sin herramienta de browser en esta CLI — ver [[feedback-enforma-workflow]]). Sin deploy todavía
+(pendiente de que Dani decida publicar).
 
 **1. Rebrand de color/tipografía/spacing** (todo `src/components/**` + `App.tsx` + `index.html`):
 - Acento volt `#e2ff00` → dorado `#fbcb1a` (hover `#bad200` → `#d4a800`) en los 49 componentes,
@@ -255,10 +256,11 @@ que un análisis automático marcó como alta prioridad, para no aplicar cambios
     `p-1.5 -m-1.5` para ampliar el área táctil sin más espacio visual.
 
 **Pendiente / próximos pasos posibles (nada urgente, a decidir con Dani):**
-- Merge de `rebranding` → `main` (y despliegue, cuando Dani decida publicar).
+- Despliegue de `main` (cuando Dani decida publicar) — el merge ya está hecho.
 - QA visual real en navegador de todo lo anterior (checklist: anillo en 375px, nav inferior no se
   corta, contraste de texto sobre los fondos nuevos, grid de macros en Nutrición).
-- Logo/favicon real (hoy es un monograma "EF" placeholder).
+- Logo/favicon real (hoy es un monograma "EF" placeholder) — **pospuesto explícitamente por Dani**
+  (2026-07-03: "aún no tengo logo, de momento que se quede ese").
 - Subida de fotos para ejercicios/rutinas (campo `Exercise.imageUrl` existe, sin flujo de subida —
   se dejó fuera de alcance a petición explícita de Dani).
 - ~~`TrainingCoachScreen.tsx` / `NutritionCoachScreen.tsx` no exploradas~~ **Hecho 2026-07-03:**
