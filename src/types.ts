@@ -5,7 +5,8 @@ export type NotificationType =
   | 'questionnaire_submitted'
   | 'nutrition_phase_change'
   | 'plan_expiring'
-  | 'checkin_late';
+  | 'checkin_late'
+  | 'report_sent';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -16,6 +17,39 @@ export interface AppNotification {
   link?: string;               // tab to navigate to on click
   createdAt: string;           // ISO string
   read: boolean;
+}
+
+// ─── COACH REPORTS ────────────────────────────────────────────────────────────
+// Persistent, coach-authored performance/nutrition report the athlete keeps and
+// can revisit. The coach reviews an auto-generated draft, edits the message and
+// decides which sections are shown, then sends. The numeric `data` of each
+// section is a SNAPSHOT taken at generation time, so the history never changes
+// retroactively; the coach only curates title/intro/section visibility/notes.
+
+export type CoachReportKind = 'entrenamiento' | 'nutricion' | 'combinado';
+
+export interface CoachReportSection {
+  id: string;            // 'tonnage' | 'per-exercise' | 'muscle-progression' | 'nutrition' | 'micros'
+  title: string;
+  included: boolean;     // coach toggles whether this section is shown to the athlete
+  data: unknown;         // structured payload, snapshotted at generation time
+  coachNote?: string;    // optional per-section note from the coach
+}
+
+export interface CoachReport {
+  id: string;
+  athleteId: string;     // email
+  coachId: string;
+  kind: CoachReportKind;
+  periodStart: string;   // YYYY-MM-DD
+  periodEnd: string;
+  createdAt: string;     // ISO
+  updatedAt: string;     // ISO
+  status: 'draft' | 'sent';
+  sentAt?: string;       // ISO, set when status flips to 'sent'
+  title: string;         // editable
+  intro: string;         // editable free-text message from the coach
+  sections: CoachReportSection[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +101,7 @@ export interface AthleteNutritionConfig {
   enabledModes: DietMode[];
   stepGoal?: number;      // daily step target set by the coach
   kcalPerStep?: number;   // configurable conversion rate; falls back to DEFAULT_KCAL_PER_STEP when unset
+  vegServingsPerDay?: number; // assumed daily vegetable servings for the micronutrient estimate (veg are "libre" in the exchange system, so uncounted)
   // AI dashboard "share with athlete" — private by default, only set when the coach shares a snapshot
   sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
 }

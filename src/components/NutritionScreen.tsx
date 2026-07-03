@@ -273,14 +273,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
 
-  const filteredFoods = useMemo(() =>
-    foodItems.filter(f =>
+  // While buscando, ignora la pestaña de categoría activa y busca en todas — así
+  // el atleta no tiene que salir y volver a entrar cambiando de categoría para
+  // encontrar un alimento que no sabía en qué grupo estaba.
+  const isSearchingFoods = searchTerm.trim().length > 0;
+  const filteredFoods = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      f.category === pickerCategory &&
-      (!searchTerm || f.label.toLowerCase().includes(searchTerm.toLowerCase()))
-    ),
-    [foodItems, activeDietMode, pickerCategory, searchTerm]
-  );
+      (term ? f.label.toLowerCase().includes(term) : f.category === pickerCategory)
+    );
+  }, [foodItems, activeDietMode, pickerCategory, searchTerm]);
 
   const availableRecipeCats = useMemo(() => {
     const s = new Set<string>();
@@ -377,7 +380,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const { mealId, itemIdx } = pickerItem;
 
     if (itemIdx === null) {
-      // Add a brand-new item to the meal
+      // Add a brand-new item to the meal — keep the picker open (just clear the
+      // search) so the athlete can add HC, then proteína, then grasa... in one go
+      // instead of opening/closing the picker for every single food.
       const meal = selectedDiet.meals.find(m => m.id === mealId);
       if (!meal) { setPickerItem(null); return; }
       const newIdx = meal.items.length;
@@ -387,8 +392,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
       });
       setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: false } }));
+      setSearchTerm('');
     } else {
-      // Swap an existing item in place
+      // Swap an existing item in place — a single replacement, so close afterwards.
       const key = `${mealId}_${itemIdx}`;
       setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
       setSelectedDiet(prev => {
@@ -401,8 +407,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           }),
         };
       });
+      setPickerItem(null);
     }
-    setPickerItem(null);
   };
 
   // ── Recipe picker handlers ─────────────────────────────────────────────────
@@ -961,14 +967,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           <span className="font-mono text-[9px] text-[#c6c9ab] hidden sm:block">
                             {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
-                          <button
-                            onClick={() => handleOpenAddPicker(meal.id)}
-                            title="Añadir alimento"
-                            className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
-                          >
-                            <span className="material-symbols-outlined text-xs select-none">add_circle</span>
-                            <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Alimento</span>
-                          </button>
                           {recipes.length > 0 && (
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
@@ -1026,7 +1024,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {/* Item list */}
                       <div className="p-3 border-t border-white/60 bg-[#111110]/40 space-y-2">
                         {meal.items.length === 0 ? (
-                          <p className="text-center py-3 font-mono text-[10px] text-[#c6c9ab] italic">Sin alimentos en esta comida.</p>
+                          <div className="text-center py-4">
+                            <p className="font-mono text-[10px] text-[#c6c9ab] italic mb-2">Sin alimentos en esta comida.</p>
+                            <button
+                              onClick={() => handleOpenAddPicker(meal.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
+                            >
+                              <span className="material-symbols-outlined text-sm select-none">add_circle</span>
+                              <span className="font-mono text-[10px] uppercase tracking-wider">Añadir alimento</span>
+                            </button>
+                          </div>
                         ) : meal.items.map((item, idx) => {
                           const key = `${meal.id}_${idx}`;
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
@@ -1088,6 +1095,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             </div>
                           );
                         })}
+                        {meal.items.length > 0 && (
+                          <button
+                            onClick={() => handleOpenAddPicker(meal.id)}
+                            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-white/7 text-[#c6c9ab] hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] transition-all"
+                          >
+                            <span className="material-symbols-outlined text-sm select-none">add_circle</span>
+                            <span className="font-mono text-[10px] uppercase tracking-wider">Añadir alimento</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1294,7 +1310,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <div>
                 <h3 className="font-sans font-bold text-lg text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
-                  {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
+                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                 </span>
               </div>
               <button onClick={() => setPickerItem(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
@@ -1312,17 +1328,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </div>
             )}
 
-            <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
+            <div className={`p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (
-                <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
+                <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
+                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>
 
             <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
               <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
-              <input type="text" placeholder="Buscar alimento..." value={searchTerm}
+              <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-[#c6c9ab]/45"
               />
@@ -1333,10 +1349,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                 >
-                  <span className="block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                  {isSearchingFoods && (
+                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                      {food.category.replace('_', ' ')}
+                    </span>
+                  )}
+                  <span className="flex-1 block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">add_circle</span>
                 </button>
               ))}
             </div>

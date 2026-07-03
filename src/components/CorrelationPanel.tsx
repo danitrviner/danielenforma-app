@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog } from '../types';
+import { epley } from '../utils/oneRepMax';
 
 interface Props {
   athleteEmail: string;
@@ -124,7 +125,7 @@ export default function CorrelationPanel({
         const eid = entry.exerciseId;
         for (const set of entry.sets) {
           if (!set.weight || !set.repsDone) continue;
-          const orm = set.weight * (1 + set.repsDone / 30);
+          const orm = epley(set.weight, set.repsDone);
           if (!orm1Map[eid]) orm1Map[eid] = {};
           const prev = orm1Map[eid][log.date] ?? 0;
           if (orm > prev) orm1Map[eid][log.date] = orm;

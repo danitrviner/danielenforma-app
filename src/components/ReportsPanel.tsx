@@ -1,0 +1,219 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { CoachReport, WorkoutLog, Exercise, Mesocycle } from '../types';
+import { getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped } from '../dbService';
+import { buildTrainingReportDraft, fmtReportDate } from '../utils/reportBuilder';
+import { addDays } from '../utils/trainingWeek';
+import ReportEditor from './ReportEditor';
+
+interface Props {
+  athleteEmail: string;
+  athleteName: string;
+  coachId: string;
+  logs: WorkoutLog[];
+  exercises: Exercise[];
+}
+
+type PeriodMode = '7d' | '14d' | 'meso';
+
+const PERIOD_DAYS: Record<'7d' | '14d', number> = { '7d': 7, '14d': 14 };
+const COMPARE_WEEK_OPTIONS = [1, 2, 4, 8];
+
+function today(): string { return new Date().toISOString().split('T')[0]; }
+
+export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs, exercises }: Props) {
+  const [reports, setReports] = useState<CoachReport[]>([]);
+  const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<CoachReport | null>(null);
+
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('7d');
+  const [compareWeeks, setCompareWeeks] = useState(1);
+
+  // The comparison window must span at least as many days as the report period,
+  // or it overlaps the current period and double-counts logs in both totals.
+  const minCompareWeeks = periodMode === 'meso' ? 1 : Math.ceil(PERIOD_DAYS[periodMode] / 7);
+  const compareWeekOptions = COMPARE_WEEK_OPTIONS.filter(w => w >= minCompareWeeks);
+
+  useEffect(() => {
+    if (compareWeeks < minCompareWeeks) setCompareWeeks(minCompareWeeks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minCompareWeeks]);
+
+  const refresh = () => {
+    setLoading(true);
+    getCoachReportsForAthlete(athleteEmail)
+      .then(setReports)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    refresh();
+    getMesocycles(athleteEmail).then(setMesocycles).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athleteEmail]);
+
+  // Current + previous mesocycle by startDate (most recent that has started; the one before it).
+  const mesoPair = useMemo(() => {
+    const started = [...mesocycles].filter(m => m.startDate <= today()).sort((a, b) => b.startDate.localeCompare(a.startDate));
+    return { current: started[0] ?? null, previous: started[1] ?? null };
+  }, [mesocycles]);
+
+  const canMeso = mesoPair.current != null;
+
+  const handleGenerate = () => {
+    if (periodMode === 'meso') {
+      // Guarded by `canMeso` disabling the option, but mesocycles can change
+      // between render and click — bail rather than silently generate a
+      // same-day, effectively empty report.
+      if (!mesoPair.current) return;
+      const draft = buildTrainingReportDraft({
+        athleteEmail, coachId, logs, exercises, mesocycles,
+        periodStart: today(), periodEnd: today(),
+        comparison: { mode: 'mesocycle', currentId: mesoPair.current.id, previousId: mesoPair.previous?.id ?? null },
+      });
+      setEditing(draft);
+      return;
+    }
+
+    const periodStart = addDays(today(), -(PERIOD_DAYS[periodMode] - 1));
+    const draft = buildTrainingReportDraft({
+      athleteEmail, coachId, logs, exercises, mesocycles,
+      periodStart, periodEnd: today(),
+      comparison: { mode: 'weeks', n: compareWeeks },
+    });
+    setEditing(draft);
+  };
+
+  const handleSaveDraft = async (r: CoachReport) => {
+    const next: CoachReport = { ...r, updatedAt: new Date().toISOString() };
+    await saveCoachReport(next);
+    setEditing(null);
+    refresh();
+  };
+
+  const handleSend = async (r: CoachReport) => {
+    const now = new Date().toISOString();
+    const next: CoachReport = { ...r, status: 'sent', sentAt: now, updatedAt: now };
+    await saveCoachReport(next);
+    // Stable key (no timestamp) so createNotificationDeduped's own dedup guarantee
+    // actually holds — a wall-clock-suffixed key would defeat it on any retry/race.
+    await createNotificationDeduped(`notif_report_${r.id}`, {
+      recipientEmail: r.athleteId,
+      type: 'report_sent',
+      title: 'Nuevo reporte de tu entrenador',
+      body: r.title,
+      link: 'home',
+      createdAt: now,
+      read: false,
+    }).catch(console.error);
+    setEditing(null);
+    refresh();
+  };
+
+  const handleDelete = async (r: CoachReport) => {
+    await deleteCoachReport(r.id);
+    setEditing(null);
+    refresh();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+          Reportes
+        </h2>
+        <p className="font-mono text-xs text-[#c6c9ab] mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
+      </div>
+
+      {/* Generator */}
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
+        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Nuevo reporte</p>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-1">Periodo</label>
+            <select
+              value={periodMode}
+              onChange={e => setPeriodMode(e.target.value as PeriodMode)}
+              className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-[#fbcb1a]/50 cursor-pointer"
+            >
+              <option value="7d">Últimos 7 días</option>
+              <option value="14d">Últimos 14 días</option>
+              <option value="meso" disabled={!canMeso}>Este macrociclo{!canMeso ? ' (sin datos)' : ''}</option>
+            </select>
+          </div>
+          {periodMode !== 'meso' && (
+            <div>
+              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-1">Comparar con</label>
+              <select
+                value={compareWeeks}
+                onChange={e => setCompareWeeks(Number(e.target.value))}
+                className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-[#fbcb1a]/50 cursor-pointer"
+              >
+                {compareWeekOptions.map(w => (
+                  <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {periodMode === 'meso' && (
+            <p className="font-mono text-[10px] text-[#c6c9ab] pb-2">
+              {mesoPair.previous ? `vs Macrociclo ${mesoPair.previous.number}` : 'sin macrociclo previo para comparar'}
+            </p>
+          )}
+          <button
+            onClick={handleGenerate}
+            className="px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-base">auto_awesome</span>
+            Generar
+          </button>
+        </div>
+      </div>
+
+      {/* History */}
+      <div className="space-y-3">
+        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Historial</p>
+        {loading ? (
+          <div className="text-center py-8 font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando…</div>
+        ) : reports.length === 0 ? (
+          <div className="py-10 text-center border border-dashed border-white/7 rounded-2xl">
+            <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">description</span>
+            <p className="font-mono text-xs text-[#c6c9ab]">Aún no hay reportes para este atleta.</p>
+          </div>
+        ) : (
+          reports.map(r => (
+            <button
+              key={r.id}
+              onClick={() => setEditing(r)}
+              className="w-full flex items-center justify-between gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-[#fbcb1a]/40 transition-all text-left"
+            >
+              <div className="min-w-0">
+                <p className="text-sm text-white font-sans font-bold truncate">{r.title}</p>
+                <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                  {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
+                </p>
+              </div>
+              <span className={`flex-shrink-0 font-sans text-[9px] font-bold uppercase px-2 py-1 rounded-full ${
+                r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-[#1e1e1b] text-[#c6c9ab] border border-white/7'
+              }`}>
+                {r.status === 'sent' ? 'Enviado' : 'Borrador'}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
+
+      {editing && (
+        <ReportEditor
+          initial={editing}
+          onSaveDraft={handleSaveDraft}
+          onSend={handleSend}
+          onDelete={handleDelete}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </div>
+  );
+}

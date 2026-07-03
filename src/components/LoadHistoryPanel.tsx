@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer,
 } from 'recharts';
-import { WorkoutLog, Exercise } from '../types';
+import { WorkoutLog, Exercise, Mesocycle } from '../types';
+import { getMesocycles } from '../dbService';
+import { epley } from '../utils/oneRepMax';
+import { addDays } from '../utils/trainingWeek';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -43,13 +46,6 @@ function fmtDate(dateStr: string): string {
   return `${parseInt(d)} ${MONTHS_ES[parseInt(m) - 1]} '${y.slice(2)}`;
 }
 
-function epley(weight: number | string, reps: number | string): number {
-  const w = Number(weight);
-  const r = Number(reps);
-  if (!r || !w) return 0;
-  return Math.round(w * (1 + r / 30) * 10) / 10;
-}
-
 function avg(values: number[]): number {
   if (!values.length) return 0;
   return values.reduce((s, v) => s + v, 0) / values.length;
@@ -84,9 +80,23 @@ interface ChartPoint extends SessionRow {
   ormPct: number | null;
 }
 
+type Granularity = 'week' | 'day';
+
+// Bucket de 1RM para el ejercicio activo — semanal o diario según `granularity`,
+// usado para elegir qué tramos cuentan en el cálculo de progresión y (en modo
+// semanal) para rellenar huecos sin registro.
+interface ProgressBucket {
+  id: string;                // clave de exclusión: 'w3' (semana 3) o la fecha ISO
+  label: string;             // 'S3' o '22 jun'
+  orm: number | null;        // mejor 1RM real registrado en el tramo (null = sin datos)
+  filledOrm: number | null;  // orm, o valor estimado si el tramo está vacío (solo aplica en semanal)
+  isFilled: boolean;         // true si filledOrm viene de una estimación, no de un registro real
+}
+
 interface Props {
   logs: WorkoutLog[];
   exercises: Exercise[];
+  athleteId?: string; // si se pasa, permite acotar la progresión semanal a un macrociclo concreto
 }
 
 // ── Tooltip ────────────────────────────────────────────────────────────────────
@@ -114,11 +124,24 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function LoadHistoryPanel({ logs, exercises }: Props) {
+export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) {
   const [activeMetrics, setActiveMetrics] = useState<Set<Metric>>(new Set(['tonnage']));
   const [selectedExId, setSelectedExId]   = useState('');
   const [showMean, setShowMean]           = useState(false);
   const [showMedian, setShowMedian]       = useState(false);
+
+  // Progresión de 1RM por ejercicio (semanas o días seleccionados + relleno de huecos)
+  const [mesocycles, setMesocycles]       = useState<Mesocycle[]>([]);
+  const [mesocycleFilter, setMesocycleFilter] = useState<string>(''); // '' = todo el historial
+  const [granularity, setGranularity]     = useState<Granularity>('week');
+  const [excludedBuckets, setExcludedBuckets] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!athleteId) return;
+    let cancelled = false;
+    getMesocycles(athleteId).then(ms => { if (!cancelled) setMesocycles(ms); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [athleteId]);
 
   // Exercise IDs that appear in logs — no dependency on exercises prop for visibility
   const loggedExerciseIds = useMemo<string[]>(() => {
@@ -135,6 +158,12 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
   [loggedExerciseIds, exercises]);
 
   const activeExId = selectedExId || loggedExerciseIds[0] || '';
+  const selectedMesocycle = useMemo(() => mesocycles.find(m => m.id === mesocycleFilter) ?? null, [mesocycles, mesocycleFilter]);
+
+  // Cambiar de ejercicio, macrociclo o granularidad cambia qué tramos existen — reinicia la selección
+  useEffect(() => {
+    setExcludedBuckets(new Set());
+  }, [activeExId, mesocycleFilter, granularity]);
 
   // Per-date session aggregation (with best Epley 1RM for activeExId)
   const sessionRows = useMemo<SessionRow[]>(() => {
@@ -159,6 +188,100 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
     }
     return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [logs, activeExId]);
+
+  // ── Progresión semanal o diaria (solo 1RM) ──────────────────────────────────
+  // Best 1RM real por fecha para el ejercicio activo, acotado al macrociclo si hay uno elegido.
+  const ormByDate = useMemo(() => {
+    const byDate = new Map<string, number>();
+    if (!activeExId) return byDate;
+    const mesoStart = selectedMesocycle?.startDate ?? null;
+    const mesoEnd = selectedMesocycle ? addDays(selectedMesocycle.startDate, selectedMesocycle.weeks * 7 - 1) : null;
+    for (const log of logs) {
+      if (mesoStart && (log.date < mesoStart || log.date > mesoEnd!)) continue;
+      for (const entry of log.entries) {
+        if (entry.exerciseId !== activeExId) continue;
+        for (const s of entry.sets) {
+          const v = epley(s.weight, s.repsDone);
+          if (v > (byDate.get(log.date) ?? 0)) byDate.set(log.date, v);
+        }
+      }
+    }
+    return byDate;
+  }, [logs, activeExId, selectedMesocycle]);
+
+  // Semana 1 = primera semana con datos de este ejercicio (o el inicio del
+  // macrociclo elegido, si se acota uno). Huecos sin registro se rellenan con
+  // la media de la semana anterior y posterior con dato real; si solo hay dato
+  // anterior (aún no hay semanas futuras), se repite ese valor.
+  const weekBuckets = useMemo<ProgressBucket[]>(() => {
+    const dates = Array.from(ormByDate.keys()).sort();
+    if (dates.length === 0) return [];
+
+    const mesoStart = selectedMesocycle?.startDate ?? null;
+    const anchor = mesoStart ?? dates[0];
+    const lastDate = dates[dates.length - 1];
+    const totalWeeks = selectedMesocycle
+      ? selectedMesocycle.weeks
+      : Math.floor((new Date(lastDate + 'T00:00:00').getTime() - new Date(anchor + 'T00:00:00').getTime()) / (7 * 86400000)) + 1;
+
+    const buckets: ProgressBucket[] = [];
+    for (let w = 1; w <= totalWeeks; w++) {
+      const start = addDays(anchor, (w - 1) * 7);
+      const end = addDays(anchor, w * 7 - 1);
+      let best: number | null = null;
+      for (const [date, v] of ormByDate) {
+        if (date >= start && date <= end && v > (best ?? 0)) best = v;
+      }
+      buckets.push({ id: `w${w}`, label: `S${w}`, orm: best, filledOrm: best, isFilled: false });
+    }
+
+    // Relleno de huecos
+    for (let i = 0; i < buckets.length; i++) {
+      if (buckets[i].orm != null) continue;
+      let prevIdx = -1;
+      for (let j = i - 1; j >= 0; j--) { if (buckets[j].orm != null) { prevIdx = j; break; } }
+      let nextIdx = -1;
+      for (let j = i + 1; j < buckets.length; j++) { if (buckets[j].orm != null) { nextIdx = j; break; } }
+      if (prevIdx >= 0 && nextIdx >= 0) {
+        buckets[i].filledOrm = Math.round(((buckets[prevIdx].orm! + buckets[nextIdx].orm!) / 2) * 10) / 10;
+        buckets[i].isFilled = true;
+      } else if (prevIdx >= 0) {
+        buckets[i].filledOrm = buckets[prevIdx].orm;
+        buckets[i].isFilled = true;
+      }
+    }
+
+    return buckets;
+  }, [ormByDate, selectedMesocycle]);
+
+  // Un tramo por sesión real registrada — sin relleno de huecos, cada día o tiene
+  // dato o no existe como tramo (a diferencia de semanal, que sí rellena).
+  const dayBuckets = useMemo<ProgressBucket[]>(() => {
+    return Array.from(ormByDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, orm]) => ({ id: date, label: fmtDate(date), orm, filledOrm: orm, isFilled: false }));
+  }, [ormByDate]);
+
+  const progressBuckets = granularity === 'week' ? weekBuckets : dayBuckets;
+
+  const toggleBucket = (id: string) => {
+    setExcludedBuckets(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  // Progresión = primer vs último tramo incluido (con hueco relleno en semanal), solo con datos
+  const progression = useMemo(() => {
+    const included = progressBuckets.filter(b => !excludedBuckets.has(b.id) && b.filledOrm != null);
+    if (included.length < 2) return null;
+    const first = included[0];
+    const last = included[included.length - 1];
+    const delta = Math.round((last.filledOrm! - first.filledOrm!) * 10) / 10;
+    const pct = first.filledOrm! > 0 ? Math.round((delta / first.filledOrm!) * 1000) / 10 : 0;
+    return { first, last, delta, pct };
+  }, [progressBuckets, excludedBuckets]);
 
   // Normalised chart points (0-100 per metric)
   const chartData = useMemo<ChartPoint[]>(() => {
@@ -300,6 +423,84 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
               <option key={ex.id} value={ex.id}>{ex.name}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* ── Progresión semanal/diaria (qué tramos cuentan para el cálculo) ── */}
+      {ormActive && progressBuckets.length > 0 && (
+        <div className="bg-[#111] border border-white/7 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="font-mono text-[10px] uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
+              Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-[#1c1b1b] border border-white/7 rounded-lg p-0.5">
+                {(['week', 'day'] as const).map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setGranularity(g)}
+                    className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-all ${
+                      granularity === g ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'text-[#555] hover:text-[#c6c9ab]'
+                    }`}
+                  >
+                    {g === 'week' ? 'Semana' : 'Día'}
+                  </button>
+                ))}
+              </div>
+              {mesocycles.length > 0 && (
+                <select
+                  value={mesocycleFilter}
+                  onChange={e => setMesocycleFilter(e.target.value)}
+                  className="bg-[#1c1b1b] border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+                >
+                  <option value="">Todo el historial</option>
+                  {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (
+                    <option key={m.id} value={m.id}>Macrociclo {m.number} · {m.objective}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* Bucket checkboxes */}
+          <div className="flex flex-wrap gap-1.5">
+            {progressBuckets.map(b => {
+              const included = !excludedBuckets.has(b.id);
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => toggleBucket(b.id)}
+                  title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-lg font-mono text-[10px] font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                    included
+                      ? 'bg-[#00eefc]/10 border-[#00eefc]/40 text-[#00eefc]'
+                      : 'bg-transparent border-white/7 text-[#555] opacity-50'
+                  }`}
+                >
+                  <span>{b.label}</span>
+                  {b.isFilled && <span className="text-[8px] opacity-70">~</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Progression summary */}
+          {progression ? (
+            <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+              <span className="text-[#c6c9ab]">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
+              <span className="text-[#555]">→</span>
+              <span className="text-[#c6c9ab]">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
+              <span className={`font-bold ${progression.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ({progression.delta >= 0 ? '+' : ''}{progression.delta}kg · {progression.pct >= 0 ? '+' : ''}{progression.pct}%)
+              </span>
+            </div>
+          ) : (
+            <p className="font-mono text-[10px] text-[#555]">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
+          )}
+          <p className="font-mono text-[9px] text-[#444]">
+            Destilda {granularity === 'week' ? 'las semanas' : 'los días'} de adaptación que no quieres que cuenten (ej. las primeras del bloque).
+            {granularity === 'week' && ' "~" = semana sin registro, estimada a partir de semanas cercanas.'}
+          </p>
         </div>
       )}
 

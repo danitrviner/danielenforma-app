@@ -772,7 +772,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
       {/* ── PROGRESIÓN TAB ─────────────────────────────────────────────────── */}
       {mainTab === 'progresion' && (
-        <LoadHistoryPanel logs={logs} exercises={exercises} />
+        <LoadHistoryPanel logs={logs} exercises={exercises} athleteId={profile.email} />
       )}
     </div>
   );

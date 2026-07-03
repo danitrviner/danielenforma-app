@@ -5,6 +5,7 @@ import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
 import PendingTasksPanel from './PendingTasksPanel';
 import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
+import AthleteReportsPanel from './AthleteReportsPanel';
 import ProgressRing from './ProgressRing';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
@@ -70,6 +71,8 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       )}
 
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
+
+      <AthleteReportsPanel athleteEmail={profile.email} />
 
       <StepsWidget athleteEmail={profile.email} />
 

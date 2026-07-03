@@ -616,7 +616,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     <div className="space-y-8">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Recetas</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Tus recetas y la biblioteca completa de Indya.</p>
+        <p className="text-[#c6c9ab] text-sm mt-1">Tus recetas y la biblioteca completa de recetas.</p>
       </div>
 
       {/* ── Coach / athlete recipes ─────────────────────────────────────────── */}
@@ -668,11 +668,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </div>
       )}
 
-      {/* ── Biblioteca Indya (paginated) ──────────────────────────────────── */}
+      {/* ── Biblioteca de recetas (paginated, backed by the Indya dataset — never shown to the user) ──── */}
       <section className="space-y-4">
         <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc] text-base">library_books</span>
-          Biblioteca Indya
+          Biblioteca de recetas
           <span className="font-mono text-[10px] text-[#c6c9ab] normal-case font-normal">8 850 recetas</span>
         </h2>
 
@@ -736,7 +736,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         {/* Grid */}
         {indyaLoading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas Indya…</span>
+            <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas…</span>
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
           <div className="flex flex-col items-center gap-3 py-16">

@@ -73,14 +73,15 @@ export default function MyDietsScreen({ profile }: Props) {
 
   const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
 
-  const filteredFoods = useMemo(() =>
-    foodItems.filter(f =>
+  // Buscando, ignora la categoría del botón que abrió el picker y busca en todas.
+  const isSearchingFoods = pickerTab === 'alimentos' && searchTerm.trim().length > 0;
+  const filteredFoods = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      f.category === pickerCategory &&
-      (!searchTerm || f.label.toLowerCase().includes(searchTerm.toLowerCase()))
-    ),
-    [foodItems, activeDietMode, pickerCategory, searchTerm]
-  );
+      (term ? f.label.toLowerCase().includes(term) : f.category === pickerCategory)
+    );
+  }, [foodItems, activeDietMode, pickerCategory, searchTerm]);
 
   const filteredRecipes = useMemo(() =>
     recipes.filter(r => r.ingredients.some(ing => enabledModes.includes(ing.mode)))
@@ -162,7 +163,9 @@ export default function MyDietsScreen({ profile }: Props) {
       ...prev,
       meals: prev.meals.map(m => m.id !== pickerMealId ? m : { ...m, items: [...m.items, newItem] }),
     }));
-    setPickerMealId(null);
+    // Deja el picker abierto (solo limpia la búsqueda) para poder seguir añadiendo
+    // HC, proteína, grasa... sin cerrar y reabrir por cada alimento.
+    setSearchTerm('');
   };
 
   const addRecipe = (recipe: Recipe) => {
@@ -306,7 +309,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
                     <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
-                      {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
+                      {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                     </span>
                   )}
                 </div>
@@ -351,10 +354,15 @@ export default function MyDietsScreen({ profile }: Props) {
                     <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
-                      className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                     >
-                      <span className="block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
-                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                      {isSearchingFoods && (
+                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]}`}>
+                          {food.category.replace('_', ' ')}
+                        </span>
+                      )}
+                      <span className="flex-1 block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
+                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">add_circle</span>
                     </button>
                   ))
                 ) : (

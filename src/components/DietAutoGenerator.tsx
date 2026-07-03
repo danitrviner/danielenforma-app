@@ -369,7 +369,7 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <span className="material-symbols-outlined text-4xl text-[#fbcb1a] animate-spin">progress_activity</span>
         <p className="font-mono text-sm text-white">{genPhase}</p>
-        <p className="font-mono text-[10px] text-[#555]">Buscando las mejores recetas de la biblioteca Indya…</p>
+        <p className="font-mono text-[10px] text-[#555]">Buscando las mejores recetas de la biblioteca…</p>
       </div>
     );
   }

@@ -247,5 +247,16 @@ service cloud.firestore {
       allow read, write: if isCoach();
     }
 
+    // ── coachReports (athleteId = EMAIL) ─────────────────────────────────────
+    // Coach reads/writes everything; the athlete may only read their own SENT
+    // reports (drafts stay hidden), so athlete queries must filter status=='sent'.
+    match /coachReports/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null
+                      && request.auth.token.email == resource.data.athleteId
+                      && resource.data.status == 'sent');
+      allow write: if isCoach();
+    }
+
   }
 }

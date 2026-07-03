@@ -4,6 +4,12 @@
 
 function padDate(n: number): string { return String(n).padStart(2, '0'); }
 
+export function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
 export function getWeekRange(): { start: string; end: string } {
   const today = new Date();
   const day = today.getDay();

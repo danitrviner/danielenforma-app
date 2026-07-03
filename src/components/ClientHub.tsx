@@ -36,6 +36,8 @@ import OnboardingForm from './OnboardingForm';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm } from './QuestionnaireEditor';
 import CorrelationPanel from './CorrelationPanel';
+import ReportsPanel from './ReportsPanel';
+import NutritionAnalysisPanel from './NutritionAnalysisPanel';
 import CoachRoadmapView from './CoachRoadmapView';
 import DietAutoGenerator from './DietAutoGenerator';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
@@ -126,6 +128,7 @@ function fmtExch(g: number, ef: number): string {
 
 export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack, initialTab }: ClientHubProps) {
   const [activeTab, setActiveTab] = useState<HubTab>(initialTab ?? 'revisiones');
+  const [analisisTab, setAnalisisTab] = useState<'correlaciones' | 'nutricion' | 'reportes'>('reportes');
 
   // Onboarding
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
@@ -1785,7 +1788,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           )}
 
           {/* Load history */}
-          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} />
+          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
 
           {/* Notas del atleta (por ejercicio + entreno completo) */}
           {(() => {
@@ -2157,14 +2160,56 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
       {/* ── Tab: Análisis ─────────────────────────────────────────────────── */}
       {activeTab === 'analisis' && (
-        <CorrelationPanel
-          athleteEmail={athlete.email}
-          logs={athleteLogs}
-          exercises={exercises}
-          responses={athleteQResponses}
-          questionnaires={coachQuestionnaires}
-          bodyweightLogs={bodyweightLogs}
-        />
+        <div className="space-y-6">
+          {/* Sub-switcher */}
+          <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit">
+            {([
+              { id: 'reportes',      label: 'Reportes',      icon: 'analytics' },
+              { id: 'nutricion',     label: 'Nutrición',     icon: 'nutrition' },
+              { id: 'correlaciones', label: 'Correlaciones', icon: 'insights'  },
+            ] as const).map(t => (
+              <button
+                key={t.id}
+                onClick={() => setAnalisisTab(t.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+                  analisisTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {analisisTab === 'reportes' && (
+            <ReportsPanel
+              athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              coachId={coachId}
+              logs={athleteLogs}
+              exercises={exercises}
+            />
+          )}
+
+          {analisisTab === 'nutricion' && (
+            <NutritionAnalysisPanel
+              athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              targetWeight={athlete.targetWeight}
+            />
+          )}
+
+          {analisisTab === 'correlaciones' && (
+            <CorrelationPanel
+              athleteEmail={athlete.email}
+              logs={athleteLogs}
+              exercises={exercises}
+              responses={athleteQResponses}
+              questionnaires={coachQuestionnaires}
+              bodyweightLogs={bodyweightLogs}
+            />
+          )}
+        </div>
       )}
 
       {/* ── Assign modal ──────────────────────────────────────────────────── */}

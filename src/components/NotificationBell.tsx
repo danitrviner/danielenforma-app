@@ -21,6 +21,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   nutrition_phase_change:  'restaurant',
   plan_expiring:           'calendar_today',
   checkin_late:            'warning',
+  report_sent:             'analytics',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate }: Props) {
