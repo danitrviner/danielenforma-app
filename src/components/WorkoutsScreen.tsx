@@ -178,6 +178,18 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
     setEditorExercises(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const toggleRecordVideo = (idx: number) => {
+    setEditorExercises(prev => prev.map((we, i) => {
+      if (i !== idx) return we;
+      if (we.recordVideoSet) { const { recordVideoSet, ...rest } = we; return rest; }
+      return { ...we, recordVideoSet: 'all' };
+    }));
+  };
+
+  const setRecordVideoSet = (idx: number, value: number | 'all') => {
+    setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, recordVideoSet: value } : we));
+  };
+
   const getExerciseInfo = (exerciseId: string) =>
     allExercises.find(e => e.id === exerciseId);
 
@@ -464,6 +476,34 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       placeholder="Notas opcionales (técnica, variante, carga...)"
                       className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-3 py-1.5 text-xs text-[#c6c9ab] placeholder-[#c6c9ab]/30 font-sans focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                     />
+                  </div>
+
+                  {/* Grabar con el móvil */}
+                  <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => toggleRecordVideo(idx)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                        we.recordVideoSet
+                          ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
+                          : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">videocam</span>
+                      Grabar con el móvil
+                    </button>
+                    {we.recordVideoSet && (
+                      <select
+                        value={we.recordVideoSet}
+                        onChange={e => setRecordVideoSet(idx, e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                        className="bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+                      >
+                        <option value="all">Todas las series</option>
+                        {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>Solo serie {n}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
               );

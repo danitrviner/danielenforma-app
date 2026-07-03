@@ -187,6 +187,22 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-07-03 (cont.) — Recordatorio de vídeo por serie/ejercicio
+
+`WorkoutExercise.recordVideoSet?: number | 'all'` (`types.ts`) — el coach marca en el editor de
+rutinas (`WorkoutsScreen.tsx`, botón "Grabar con el móvil" bajo las notas de cada ejercicio) que
+quiere que el atleta grabe con el móvil un ejercicio entero (`'all'`) o solo una serie concreta
+(número 1-indexado, dropdown que aparece al activar el botón). En el player del atleta
+(`TrainingScreen.tsx`): la tarjeta del ejercicio se resalta con borde dorado + banner "🎥 Tu
+entrenador quiere que grabes..." bajo el header, y la fila de la serie afectada en la tabla se
+resalta con fondo dorado tenue + icono de cámara junto a "S{n}". No requiere colección nueva ni
+cambios en `dbService.ts` (viaja dentro de `Workout.exercises`, ya cubierto por `stripUndefined`
+al guardar).
+
+`tsc --noEmit` + `npm run build` limpios. **Sin verificar visualmente en navegador.**
+
+---
+
 ## Sesión 2026-07-03 (cont.) — Clientes: buscador + cuadrícula ajustable
 
 `ClientsScreen.tsx`, a petición de Dani:

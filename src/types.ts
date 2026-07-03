@@ -106,6 +106,9 @@ export interface WorkoutExercise {
   rir: number;         // reps in reserve (0-5)
   notes?: string;
   muscleGroup?: MuscleGroup;
+  // Coach flags this exercise so the athlete is reminded to film it with the phone —
+  // 'all' highlights every set, a number highlights only that set (1-indexed).
+  recordVideoSet?: number | 'all';
 }
 
 export interface TemplateDay {

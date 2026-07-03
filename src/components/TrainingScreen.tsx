@@ -387,7 +387,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
           const doneSets = exSets.filter(s => s.done).length;
           return (
-            <div key={`${we.exerciseId}-${exIdx}`} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div
+              key={`${we.exerciseId}-${exIdx}`}
+              className={`bg-[#181816] border rounded-2xl overflow-hidden ${
+                we.recordVideoSet ? 'border-[#fbcb1a]/50 shadow-[0_0_0_1px_rgba(251,203,26,0.15)]' : 'border-white/7'
+              }`}
+            >
               {/* Exercise header */}
               <div className="flex items-center gap-3 p-4 bg-[#161616] border-b border-white/50">
                 <span className="font-mono text-[10px] text-[#c6c9ab]/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
@@ -422,6 +427,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               </div>
 
+              {we.recordVideoSet && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a]/10 border-b border-[#fbcb1a]/20">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">videocam</span>
+                  <p className="font-sans text-xs font-bold text-[#fbcb1a]">
+                    {we.recordVideoSet === 'all'
+                      ? 'Tu entrenador quiere que grabes todas las series con el móvil'
+                      : `Tu entrenador quiere que grabes la serie ${we.recordVideoSet} con el móvil`}
+                  </p>
+                </div>
+              )}
+
               {/* Set table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[480px]">
@@ -438,13 +454,21 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <tbody>
                     {exSets.map((setInput, sIdx) => {
                       const prev = prevEntry?.sets[sIdx];
+                      const shouldRecord = we.recordVideoSet === 'all' || we.recordVideoSet === sIdx + 1;
                       return (
                         <tr
                           key={sIdx}
-                          className={`border-b border-white/20 transition-colors ${setInput.done ? 'bg-emerald-500/5' : 'hover:bg-[#1e1e1b]'}`}
+                          className={`border-b border-white/20 transition-colors ${
+                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-[#fbcb1a]/5' : 'hover:bg-[#1e1e1b]'
+                          }`}
                         >
                           <td className="px-4 py-2.5">
-                            <span className="font-mono text-xs font-bold text-[#c6c9ab]">S{sIdx + 1}</span>
+                            <span className="font-mono text-xs font-bold text-[#c6c9ab] flex items-center gap-1">
+                              S{sIdx + 1}
+                              {shouldRecord && (
+                                <span className="material-symbols-outlined text-[#fbcb1a] text-sm" title="Grabar con el móvil">videocam</span>
+                              )}
+                            </span>
                           </td>
                           <td className="px-3 py-2">
                             <input
