@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
-import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
+import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
+const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+
+function blankDiet(athleteId: string): Diet {
+  return {
+    id: `draft_${makeId()}`,
+    athleteId,
+    name: 'Mi menú',
+    budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+    meals: [{ id: makeId(), name: 'Comida 1', items: [] }],
+    selfManaged: true,
+  };
+}
+
+function dietSnapshot(dt: Pick<Diet, 'name' | 'budget' | 'meals'>): string {
+  return JSON.stringify({ name: dt.name, budget: dt.budget, meals: dt.meals });
+}
 
 // ── Weekly schedule constants ──────────────────────────────────────────────────
 
@@ -28,15 +44,22 @@ function mealLabel(name: string, n: number): string {
 type ItemState = { foodLabel: string; done: boolean };
 // key = `${mealId}_${itemIdx}`
 
-interface Props { profile: UserProfile; }
+interface Props {
+  profile: UserProfile;
+  pendingRecipe?: Recipe | null;
+  onConsumedPendingRecipe?: () => void;
+}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function NutritionScreen({ profile }: Props) {
+export default function NutritionScreen({ profile, pendingRecipe, onConsumedPendingRecipe }: Props) {
   // Diets
-  const [activeDiets, setActiveDiets] = useState<Diet[]>([]);
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
+  const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [flashMsg, setFlashMsg] = useState('');
 
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
@@ -46,8 +69,8 @@ export default function NutritionScreen({ profile }: Props) {
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
 
-  // Food picker (for swapping an item)
-  const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number; category: FoodCategory } | null>(null);
+  // Food picker — itemIdx null means "add a new item", a number means "swap that item"
+  const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number | null; category: FoodCategory } | null>(null);
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -63,6 +86,9 @@ export default function NutritionScreen({ profile }: Props) {
   // Recipe swap ("Cambiar comida")
   const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string } | null>(null);
 
+  // "Añadir a Intercambios" desde Recetas — con varias comidas, hay que elegir a cuál
+  const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
+
   // Weekly schedule
   const [allDietsList, setAllDietsList]     = useState<Diet[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Partial<Record<WeekDay, string | null>>>({});
@@ -72,8 +98,10 @@ export default function NutritionScreen({ profile }: Props) {
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
   const [nutritionProgram, setNutritionProgram] = useState<NutritionProgram | null>(null);
 
-  // View mode (lista / fotos / numeros)
-  const [viewMode, setViewMode] = useDietViewMode();
+  function flash(msg: string) {
+    setFlashMsg(msg);
+    setTimeout(() => setFlashMsg(''), 3000);
+  }
 
   // ── Load on mount ────────────────────────────────────────────────────────────
   // Phase 1: diets + config BEFORE seedFoodItemsIfEmpty, which on Firestore failure
@@ -147,15 +175,19 @@ export default function NutritionScreen({ profile }: Props) {
         const activeIds = new Set(dietConfig?.activeDietIds ?? []);
         const active = allDiets.filter(d => activeIds.has(d.id));
         const schedule = dietConfig?.weeklySchedule ?? {};
-        setActiveDiets(active);
         setAllDietsList(allDiets);
         setWeeklySchedule(schedule);
 
+        const rememberedId = localStorage.getItem(`enforma_intercambios_diet_${profile.email}`);
         const todayId = schedule[TODAY_WD] ?? null;
-        let initDiet: Diet | null = todayId ? (allDiets.find(d => d.id === todayId) ?? null) : null;
-        if (!initDiet && active.length >= 1) initDiet = active[0];
+        const initDiet: Diet | null =
+          (todayId && allDiets.find(d => d.id === todayId)) ||
+          (rememberedId && allDiets.find(d => d.id === rememberedId)) ||
+          (active.length >= 1 ? active[0] : null) ||
+          (allDiets.length >= 1 ? allDiets[0] : null);
         if (initDiet) {
           setSelectedDiet(initDiet);
+          setSavedDietSnapshot(dietSnapshot(initDiet));
           const counts: Record<string, number> = {};
           initDiet.meals.forEach(m => { counts[m.id] = m.items.length; });
           setOrigItemCounts(counts);
@@ -285,7 +317,13 @@ export default function NutritionScreen({ profile }: Props) {
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  const handleSelectDiet = (dt: Diet) => {
+  const isDirty = selectedDiet ? dietSnapshot(selectedDiet) !== savedDietSnapshot : false;
+  const isPersisted = selectedDiet ? allDietsList.some(d => d.id === selectedDiet.id) : true;
+
+  const handleSelectDiet = (dt: Diet, opts?: { skipDirtyCheck?: boolean }) => {
+    if (!opts?.skipDirtyCheck && isDirty && !window.confirm('Tienes cambios sin guardar en este menú. ¿Cambiar de dieta y descartarlos?')) {
+      return;
+    }
     // Build itemStates for the new diet immediately in the same event handler so
     // React batches both updates into one render. Relying only on a useEffect meant
     // the content rendered once with the new selectedDiet but stale itemStates.
@@ -300,6 +338,12 @@ export default function NutritionScreen({ profile }: Props) {
     setItemStates(initial);
     setOrigItemCounts(counts);
     setSelectedDiet(dt);
+    setSavedDietSnapshot(dietSnapshot(dt));
+    localStorage.setItem(`enforma_intercambios_diet_${profile.email}`, dt.id);
+  };
+
+  const handleStartBlank = () => {
+    handleSelectDiet(blankDiet(profile.email));
   };
 
   const handleToggleDone = (mealId: string, itemIdx: number) => {
@@ -322,10 +366,42 @@ export default function NutritionScreen({ profile }: Props) {
     setSearchTerm('');
   };
 
+  const handleOpenAddPicker = (mealId: string) => {
+    setPickerItem({ mealId, itemIdx: null, category: 'HC' });
+    setPickerCategory('HC');
+    setSearchTerm('');
+  };
+
   const handleSelectFood = (food: MealItem) => {
-    if (!pickerItem) return;
-    const key = `${pickerItem.mealId}_${pickerItem.itemIdx}`;
-    setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
+    if (!pickerItem || !selectedDiet) return;
+    const { mealId, itemIdx } = pickerItem;
+
+    if (itemIdx === null) {
+      // Add a brand-new item to the meal
+      const meal = selectedDiet.meals.find(m => m.id === mealId);
+      if (!meal) { setPickerItem(null); return; }
+      const newIdx = meal.items.length;
+      const newItem: DietItem = { category: food.category, foodLabel: food.label, quantity: 1 };
+      setSelectedDiet(prev => {
+        if (!prev) return prev;
+        return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
+      });
+      setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: false } }));
+    } else {
+      // Swap an existing item in place
+      const key = `${mealId}_${itemIdx}`;
+      setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
+      setSelectedDiet(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          meals: prev.meals.map(m => m.id !== mealId ? m : {
+            ...m,
+            items: m.items.map((it, i) => i !== itemIdx ? it : { ...it, category: food.category, foodLabel: food.label }),
+          }),
+        };
+      });
+    }
     setPickerItem(null);
   };
 
@@ -454,14 +530,176 @@ export default function NutritionScreen({ profile }: Props) {
     setSwapContext(null);
   };
 
+  // ── Menu building: meals + budget ───────────────────────────────────────────
+
+  const renameDiet = (name: string) => {
+    setSelectedDiet(prev => prev ? { ...prev, name } : prev);
+  };
+
+  const updateBudgetCat = (cat: FoodCategory, value: number) => {
+    setSelectedDiet(prev => prev ? { ...prev, budget: { ...prev.budget, [cat]: value } } : prev);
+  };
+
+  const addMeal = () => {
+    if (!selectedDiet) return;
+    const newMeal: DietMeal = { id: makeId(), name: `Comida ${selectedDiet.meals.length + 1}`, items: [] };
+    setSelectedDiet(prev => prev ? { ...prev, meals: [...prev.meals, newMeal] } : prev);
+    setOrigItemCounts(prev => ({ ...prev, [newMeal.id]: 0 }));
+  };
+
+  const removeMeal = (mealId: string) => {
+    setSelectedDiet(prev => prev ? { ...prev, meals: prev.meals.filter(m => m.id !== mealId) } : prev);
+    setItemStates(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(k => { if (k.startsWith(`${mealId}_`)) delete next[k]; });
+      return next;
+    });
+  };
+
+  const renameMeal = (mealId: string, name: string) => {
+    setSelectedDiet(prev => prev ? { ...prev, meals: prev.meals.map(m => m.id === mealId ? { ...m, name } : m) } : prev);
+  };
+
+  // ── Guardar ──────────────────────────────────────────────────────────────────
+
+  const handleSaveDiet = async () => {
+    if (!selectedDiet) return;
+    if (!isPersisted) {
+      setSaving(true);
+      try {
+        const created = await createDiet({
+          athleteId: profile.email,
+          name: selectedDiet.name.trim() || 'Mi menú',
+          budget: selectedDiet.budget,
+          meals: selectedDiet.meals,
+          selfManaged: true,
+        });
+        setAllDietsList(prev => [...prev, created]);
+        setSelectedDiet(created);
+        setSavedDietSnapshot(dietSnapshot(created));
+        localStorage.setItem(`enforma_intercambios_diet_${profile.email}`, created.id);
+        // Re-point today's completion log from the temporary draft id to the real one,
+        // so checkmarks made before the first save survive a reload.
+        const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+        if (doneItemIds.length > 0) {
+          saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds }).catch(() => {});
+        }
+        flash('Menú guardado en Mis Dietas.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    if (selectedDiet.selfManaged) {
+      setSaving(true);
+      try {
+        await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
+        setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
+        setSavedDietSnapshot(dietSnapshot(selectedDiet));
+        flash('Cambios guardados.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    setSaveChoiceOpen(true);
+  };
+
+  const handleUpdateInPlace = async () => {
+    if (!selectedDiet) return;
+    setSaving(true);
+    try {
+      await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
+      setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
+      setSavedDietSnapshot(dietSnapshot(selectedDiet));
+      flash('Dieta actualizada.');
+    } finally {
+      setSaving(false);
+      setSaveChoiceOpen(false);
+    }
+  };
+
+  const handleSaveAsNew = async () => {
+    if (!selectedDiet) return;
+    setSaving(true);
+    try {
+      const created = await createDiet({
+        athleteId: profile.email,
+        name: `${selectedDiet.name} (copia)`,
+        budget: selectedDiet.budget,
+        meals: selectedDiet.meals.map(m => ({ ...m, id: makeId() })),
+        selfManaged: true,
+      });
+      setAllDietsList(prev => [...prev, created]);
+      handleSelectDiet(created, { skipDirtyCheck: true });
+      flash('Guardado como nueva dieta en Mis Dietas.');
+    } finally {
+      setSaving(false);
+      setSaveChoiceOpen(false);
+    }
+  };
+
+  // ── Recipe hand-off from Recetas (favoritos → "Añadir a Intercambios") ──────
+
+  // Mirrors handleApplyRecipe, but takes an explicit mealId instead of reading it
+  // from recipePickerMealId state — needed when the target meal is decided
+  // programmatically (auto when there's a single meal, or via chooseMealForRecipe).
+  const addRecipeToMeal = (recipe: Recipe, mealId: string, currentDiet: Diet) => {
+    const meal = currentDiet.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    const newItems: DietItem[] = recipe.ingredients
+      .filter(ing => enabledModes.includes(ing.mode))
+      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
+    if (newItems.length === 0) return;
+    const startIdx = meal.items.length;
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, ...newItems] }) };
+    });
+    const newStates: Record<string, ItemState> = {};
+    newItems.forEach((item, i) => { newStates[`${mealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false }; });
+    setItemStates(prev => ({ ...prev, ...newStates }));
+    flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`);
+  };
+
+  useEffect(() => {
+    if (!pendingRecipe || loading) return;
+    if (!selectedDiet) {
+      // No menu loaded yet — start a blank one and add the recipe to its first meal
+      const blank = blankDiet(profile.email);
+      const newItems: DietItem[] = pendingRecipe.ingredients
+        .filter(ing => enabledModes.includes(ing.mode))
+        .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: pendingRecipe.id }));
+      blank.meals[0].items = newItems;
+      handleSelectDiet(blank, { skipDirtyCheck: true });
+      onConsumedPendingRecipe?.();
+      return;
+    }
+    if (selectedDiet.meals.length === 1) {
+      addRecipeToMeal(pendingRecipe, selectedDiet.meals[0].id, selectedDiet);
+      onConsumedPendingRecipe?.();
+    } else {
+      setChooseMealForRecipe(pendingRecipe);
+      onConsumedPendingRecipe?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingRecipe, loading]);
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="w-full space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Registra los intercambios del día según tu dieta activa.</p>
+        <p className="text-[#c6c9ab] text-sm mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
       </div>
+
+      {flashMsg && (
+        <div className="flex items-center gap-2 bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-white px-4 py-3 rounded-xl text-sm">
+          <span className="material-symbols-outlined text-[#fbcb1a] text-base">check_circle</span>
+          {flashMsg}
+        </div>
+      )}
 
       {/* Phase change banner */}
       {phaseBanner && (
@@ -523,11 +761,18 @@ export default function NutritionScreen({ profile }: Props) {
 
       {loading ? (
         <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dieta...</div>
-      ) : activeDiets.length === 0 && !selectedDiet ? (
+      ) : allDietsList.length === 0 && !selectedDiet ? (
         <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
-          <p className="text-[#c6c9ab] text-sm font-sans">Sin dietas asignadas.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu entrenador aún no ha activado ninguna dieta para ti.</p>
+          <p className="text-[#c6c9ab] text-sm font-sans">Aún no tienes ningún menú.</p>
+          <p className="text-[#c6c9ab] text-xs font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
+          <button
+            onClick={handleStartBlank}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            Crear mi primer menú
+          </button>
         </div>
       ) : viewDay !== TODAY_WD ? (() => {
         const browseDietId = weeklySchedule[viewDay] ?? null;
@@ -569,18 +814,30 @@ export default function NutritionScreen({ profile }: Props) {
         );
       })() : (
         <>
-          {/* Diet selector (only when multiple active) */}
-          {activeDiets.length > 1 && (
-            <div className="flex gap-2 flex-wrap">
-              {activeDiets.map(dt => (
+          {/* Diet selector — free choice among all of the athlete's diets (own + coach's) */}
+          {allDietsList.length > 0 && (
+            <div className="flex gap-2 flex-wrap items-center">
+              {allDietsList.map(dt => (
                 <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
                     selectedDiet?.id === dt.id
                       ? 'bg-[#fbcb1a] text-black shadow-md'
                       : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
                   }`}
-                >{dt.name}</button>
+                >
+                  {!dt.selfManaged && (
+                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }} title="De tu entrenador">military_tech</span>
+                  )}
+                  {dt.name}
+                </button>
               ))}
+              <button
+                onClick={handleStartBlank}
+                className="flex items-center gap-1 px-3 py-2.5 rounded-xl border border-dashed border-white/7 text-[#c6c9ab] hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] font-mono text-xs font-bold uppercase tracking-wider transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Nuevo
+              </button>
             </div>
           )}
 
@@ -589,16 +846,45 @@ export default function NutritionScreen({ profile }: Props) {
               {/* Diet header */}
               <div className="bg-[#1c1b1b] rounded-xl p-4 border border-white/7">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold">DIETA ACTIVA</span>
+                  <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold">
+                    {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
+                  </span>
                   <span className="font-mono text-[9px] text-[#fbcb1a] uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
                 </div>
-                <span className="block font-sans font-bold text-lg text-white leading-tight">{selectedDiet.name}</span>
+                <input
+                  type="text"
+                  value={selectedDiet.name}
+                  onChange={e => renameDiet(e.target.value)}
+                  className="block w-full bg-transparent border-none font-sans font-bold text-lg text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                />
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
                 )}
                 <span className="block font-mono text-[9px] text-[#c6c9ab] mt-1.5">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>
+              </div>
+
+              {/* Objetivo diario de intercambios (editable) */}
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+                <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
+                  Objetivo diario de intercambios
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {BUDGET_CATS.map(cat => (
+                    <div key={cat}>
+                      <label className={`block font-mono text-[9px] font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.25}
+                        value={selectedDiet.budget[cat]}
+                        onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
+                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Budget dashboard */}
@@ -647,19 +933,10 @@ export default function NutritionScreen({ profile }: Props) {
                 </div>
               </div>
 
-              {/* View mode selector */}
-              <DietViewSelector mode={viewMode} onChange={setViewMode} />
+              {/* Resumen numérico (colocado/objetivo por comida + total del día) — siempre visible */}
+              <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
 
-              {/* FOTOS / NÚMEROS views */}
-              {viewMode === 'fotos' && (
-                <DietFotosView meals={selectedDiet.meals} recipes={recipes} />
-              )}
-              {viewMode === 'numeros' && (
-                <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
-              )}
-
-              {/* LISTA (interactive, original) */}
-              {viewMode === 'lista' && <div className="space-y-4">
+              <div className="space-y-4">
                 {selectedDiet.meals.map((meal, mi) => {
                   const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
@@ -667,17 +944,31 @@ export default function NutritionScreen({ profile }: Props) {
                       className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${mealDone ? 'border-[#fbcb1a]/40' : 'border-white/7'}`}
                     >
                       {/* Meal header */}
-                      <div className="px-4 py-3 bg-[#1c1b1b]/80 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                      <div className="px-4 py-3 bg-[#1c1b1b]/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
-                          <span className="font-sans font-bold text-white text-base">{mealLabel(meal.name, mi + 1)}</span>
+                          <input
+                            type="text"
+                            value={meal.name}
+                            onChange={e => renameMeal(meal.id, e.target.value)}
+                            placeholder={`Comida ${mi + 1}`}
+                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-base focus:outline-none focus:ring-0 p-0"
+                          />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-[#c6c9ab]">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="font-mono text-[9px] text-[#c6c9ab] hidden sm:block">
                             {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
+                          <button
+                            onClick={() => handleOpenAddPicker(meal.id)}
+                            title="Añadir alimento"
+                            className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
+                          >
+                            <span className="material-symbols-outlined text-xs select-none">add_circle</span>
+                            <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Alimento</span>
+                          </button>
                           {recipes.length > 0 && (
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
@@ -686,6 +977,15 @@ export default function NutritionScreen({ profile }: Props) {
                             >
                               <span className="material-symbols-outlined text-xs select-none">skillet</span>
                               <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Receta</span>
+                            </button>
+                          )}
+                          {selectedDiet.meals.length > 1 && (
+                            <button
+                              onClick={() => removeMeal(meal.id)}
+                              title="Quitar comida"
+                              className="text-[#c6c9ab] hover:text-red-400 transition-colors p-1"
+                            >
+                              <span className="material-symbols-outlined text-sm select-none">delete</span>
                             </button>
                           )}
                         </div>
@@ -792,7 +1092,28 @@ export default function NutritionScreen({ profile }: Props) {
                     </div>
                   );
                 })}
-              </div>}
+                <button
+                  onClick={addMeal}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-white/7 text-[#c6c9ab] font-mono text-xs font-bold uppercase tracking-wider hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
+                >
+                  + Añadir comida
+                </button>
+              </div>
+
+              {/* Guardar */}
+              <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-[#1c1b1b] border border-white/7 rounded-xl p-3 shadow-2xl">
+                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider pl-1">
+                  {!isPersisted || isDirty ? 'Cambios sin guardar' : 'Todo guardado'}
+                </span>
+                <button
+                  onClick={handleSaveDiet}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-sm">save</span>
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
             </React.Fragment>
           )}
         </>
@@ -971,7 +1292,7 @@ export default function NutritionScreen({ profile }: Props) {
           <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
               <div>
-                <h3 className="font-sans font-bold text-lg text-white">Cambiar alimento</h3>
+                <h3 className="font-sans font-bold text-lg text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
                   {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
                 </span>
@@ -1019,6 +1340,71 @@ export default function NutritionScreen({ profile }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save-choice sheet — only when saving edits to a diet the coach created */}
+      {saveChoiceOpen && (
+        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
+          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
+            <h3 className="font-sans font-bold text-lg text-white">¿Cómo quieres guardar?</h3>
+            <p className="text-xs text-[#c6c9ab]">
+              Esta dieta la creó tu entrenador. Puedes actualizarla directamente o guardar tus
+              cambios como una dieta nueva tuya, sin tocar la original.
+            </p>
+            <button
+              onClick={handleUpdateInPlace}
+              disabled={saving}
+              className="w-full flex items-center gap-2 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all disabled:opacity-40"
+            >
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit</span>
+              <span className="text-sm text-white font-sans">Actualizar esta dieta</span>
+            </button>
+            <button
+              onClick={handleSaveAsNew}
+              disabled={saving}
+              className="w-full flex items-center gap-2 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all disabled:opacity-40"
+            >
+              <span className="material-symbols-outlined text-[#00eefc] text-base">bookmark_add</span>
+              <span className="text-sm text-white font-sans">Guardar como nueva dieta mía</span>
+            </button>
+            <button
+              onClick={() => setSaveChoiceOpen(false)}
+              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Choose which meal to add a recipe to (hand-off from Recetas, multi-meal case) */}
+      {chooseMealForRecipe && selectedDiet && (
+        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
+          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
+            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
+              ¿A qué comida añadir "{chooseMealForRecipe.name}"?
+            </h3>
+            <div className="space-y-2">
+              {selectedDiet.meals.map((meal, mi) => (
+                <button
+                  key={meal.id}
+                  onClick={() => { addRecipeToMeal(chooseMealForRecipe, meal.id, selectedDiet); setChooseMealForRecipe(null); }}
+                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all"
+                >
+                  <span className="text-sm text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] text-base">add_circle</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setChooseMealForRecipe(null)}
+              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}

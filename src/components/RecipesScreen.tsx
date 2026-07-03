@@ -209,9 +209,10 @@ interface DetailProps {
   savingFav: boolean;
   onBack: () => void;
   onToggleFav: (id: string) => void;
+  onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggleFav }: DetailProps) {
+function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggleFav, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const isIndya = recipe.ownerId === 'indya';
   const exch = calcExchanges(recipe);
@@ -232,18 +233,29 @@ function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggle
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Recetas
         </button>
-        <button
-          onClick={() => onToggleFav(recipe.id)}
-          disabled={savingFav}
-          className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
-          style={{ color: isFav ? '#fbcb1a' : '#c6c9ab' }}
-        >
-          <span
-            className="material-symbols-outlined text-xl"
-            style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
-          >favorite</span>
-          {isFav ? 'Favorita' : 'Guardar'}
-        </button>
+        <div className="flex items-center gap-4">
+          {onAddToIntercambios && (
+            <button
+              onClick={() => onAddToIntercambios(recipe)}
+              className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#00eefc] hover:text-white transition-all"
+            >
+              <span className="material-symbols-outlined text-xl">playlist_add</span>
+              Añadir a Intercambios
+            </button>
+          )}
+          <button
+            onClick={() => onToggleFav(recipe.id)}
+            disabled={savingFav}
+            className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            style={{ color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+          >
+            <span
+              className="material-symbols-outlined text-xl"
+              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+            >favorite</span>
+            {isFav ? 'Favorita' : 'Guardar'}
+          </button>
+        </div>
       </div>
 
       {/* Photo */}
@@ -429,9 +441,10 @@ function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggle
 
 interface Props {
   profile: UserProfile;
+  onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-export default function RecipesScreen({ profile }: Props) {
+export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // Coach/athlete recipes
   const [recipes, setRecipes]           = useState<Recipe[]>([]);
   const [favorites, setFavorites]       = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [] });
@@ -592,6 +605,7 @@ export default function RecipesScreen({ profile }: Props) {
         savingFav={savingFav}
         onBack={() => setActiveRecipe(null)}
         onToggleFav={toggleFavorite}
+        onAddToIntercambios={onAddToIntercambios}
       />
     );
   }

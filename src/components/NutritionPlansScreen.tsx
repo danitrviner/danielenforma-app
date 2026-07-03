@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile, OnboardingData } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
-import { DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode } from './DietMealsView';
+import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -116,7 +116,6 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const [saving, setSaving] = useState(false);
 
   // Preview view mode (shared localStorage key with athlete)
-  const [previewMode, setPreviewMode] = useDietViewMode();
   const [showPreview, setShowPreview] = useState(false);
 
   // Food picker
@@ -802,42 +801,32 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <span className={`material-symbols-outlined text-[#555] text-sm transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
         </button>
         {showPreview && (
-          <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e]">
-            <div className="pt-3">
-              <DietViewSelector mode={previewMode} onChange={setPreviewMode} />
+          <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e] pt-3">
+            <div className="space-y-2">
+              {form.meals.map((meal, mi) => (
+                <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3">
+                  <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
+                  {meal.items.length === 0 ? (
+                    <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {meal.items.map((it, idx) => (
+                        <div key={idx} className="flex items-center gap-2 font-mono text-[10px] text-[#c6c9ab]">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                            it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
+                            it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
+                            'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                          }`}>{it.category.replace('_', ' ')}</span>
+                          <span>{it.foodLabel}</span>
+                          <span className="text-[#444]">×{it.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-            {previewMode === 'fotos' && (
-              <DietFotosView meals={form.meals} recipes={[]} />
-            )}
-            {previewMode === 'numeros' && (
-              <DietNumerosView meals={form.meals} budget={form.budget} />
-            )}
-            {previewMode === 'lista' && (
-              <div className="space-y-2">
-                {form.meals.map((meal, mi) => (
-                  <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3">
-                    <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
-                    {meal.items.length === 0 ? (
-                      <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
-                    ) : (
-                      <div className="space-y-1">
-                        {meal.items.map((it, idx) => (
-                          <div key={idx} className="flex items-center gap-2 font-mono text-[10px] text-[#c6c9ab]">
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                              it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
-                              it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
-                              'bg-orange-500/10 border-orange-500/20 text-orange-300'
-                            }`}>{it.category.replace('_', ' ')}</span>
-                            <span>{it.foodLabel}</span>
-                            <span className="text-[#444]">×{it.quantity}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <DietNumerosView meals={form.meals} budget={form.budget} />
           </div>
         )}
       </div>

@@ -1,10 +1,7 @@
 import React, { useMemo } from 'react';
-import { DietMeal, FoodCategory, Recipe } from '../types';
+import { DietMeal, FoodCategory } from '../types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-export type DietViewMode = 'lista' | 'fotos' | 'numeros';
-const LS_KEY = 'enforma_diet_view_mode';
 
 const KCAL_INT: Record<FoodCategory, number> = {
   HC: 100, PROT: 100, GRASA: 99, MIX_HC: 100, MIX_GRASA: 100,
@@ -16,19 +13,8 @@ const CAT_COLOR: Record<FoodCategory, string> = {
   HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
   MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
 };
-const CAT_BG: Record<FoodCategory, string> = {
-  HC: 'bg-amber-500/10 border-amber-500/20',
-  PROT: 'bg-blue-500/10 border-blue-500/20',
-  GRASA: 'bg-orange-500/10 border-orange-500/20',
-  MIX_HC: 'bg-violet-500/10 border-violet-500/20',
-  MIX_GRASA: 'bg-pink-500/10 border-pink-500/20',
-};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function norm(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
 
 function mealKcal(items: DietMeal['items']): number {
   return Math.round(items.reduce((s, it) => s + it.quantity * KCAL_INT[it.category], 0));
@@ -52,142 +38,10 @@ function labelForMeal(name: string, n: number): string {
   return stripped || `Comida ${n}`;
 }
 
-function findPhoto(meal: DietMeal, recipes: Recipe[]): string | null {
-  // Best-effort: find recipe whose ingredientsText names appear in the most item food labels
-  let best: Recipe | null = null;
-  let bestScore = 0;
-  for (const recipe of recipes) {
-    const photo = recipe.image ?? recipe.photoUrl;
-    if (!photo) continue;
-    const ingNames = (recipe.ingredientsText ?? []).map(i => norm(i.name));
-    let score = 0;
-    for (const item of meal.items) {
-      const lbl = norm(item.foodLabel);
-      if (ingNames.some(n => n.length > 2 && lbl.includes(n))) score++;
-    }
-    if (score > bestScore) { best = recipe; bestScore = score; }
-  }
-  return (best && bestScore > 0) ? (best.image ?? best.photoUrl ?? null) : null;
-}
-
-// ── localStorage hook ─────────────────────────────────────────────────────────
-
-export function useDietViewMode(): [DietViewMode, (m: DietViewMode) => void] {
-  const [mode, setModeState] = React.useState<DietViewMode>(() => {
-    const v = localStorage.getItem(LS_KEY);
-    return v === 'fotos' || v === 'numeros' ? v : 'lista';
-  });
-  const setMode = (m: DietViewMode) => {
-    localStorage.setItem(LS_KEY, m);
-    setModeState(m);
-  };
-  return [mode, setMode];
-}
-
-// ── DietViewSelector ──────────────────────────────────────────────────────────
-
-interface SelectorProps {
-  mode: DietViewMode;
-  onChange: (m: DietViewMode) => void;
-}
-
-export function DietViewSelector({ mode, onChange }: SelectorProps) {
-  const modes: { value: DietViewMode; icon: string; label: string }[] = [
-    { value: 'lista',   icon: 'format_list_bulleted', label: 'Lista'   },
-    { value: 'fotos',   icon: 'photo_library',         label: 'Fotos'   },
-    { value: 'numeros', icon: 'tag',                   label: 'Números' },
-  ];
-  return (
-    <div className="flex gap-1 bg-[#0e0e0e] border border-white/7 rounded-xl p-1">
-      {modes.map(m => (
-        <button
-          key={m.value}
-          onClick={() => onChange(m.value)}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wide transition-all active:scale-95 ${
-            mode === m.value
-              ? 'bg-[#fbcb1a] text-black shadow-sm'
-              : 'text-[#555] hover:text-[#c6c9ab]'
-          }`}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{m.icon}</span>
-          <span className="hidden sm:inline">{m.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ── DietFotosView ─────────────────────────────────────────────────────────────
-
-interface FotosProps {
-  meals: DietMeal[];
-  recipes: Recipe[];
-}
-
-export function DietFotosView({ meals, recipes }: FotosProps) {
-  return (
-    <div className="space-y-4">
-      {meals.map((meal, mi) => {
-        const photo  = findPhoto(meal, recipes);
-        const kcal   = mealKcal(meal.items);
-        const exch   = mealExch(meal.items);
-        const hasExch = DISPLAY_CATS.some(c => exch[c] > 0);
-        const label  = labelForMeal(meal.name, mi + 1);
-
-        return (
-          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
-            {/* Photo */}
-            {photo ? (
-              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                <img src={photo} alt={label} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
-                  <h3 className="font-sans font-bold text-white text-lg leading-tight drop-shadow-md">{label}</h3>
-                  {kcal > 0 && (
-                    <span className="font-mono text-[#fbcb1a] font-bold text-sm flex-shrink-0 drop-shadow-md">{kcal} kcal</span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="relative w-full bg-[#0a0a0a] flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
-                <span className="material-symbols-outlined text-[#1e1e1e]" style={{ fontSize: '72px' }}>restaurant</span>
-                <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
-                  <h3 className="font-sans font-bold text-white text-lg leading-tight">{label}</h3>
-                  {kcal > 0 && (
-                    <span className="font-mono text-[#fbcb1a] font-bold text-sm flex-shrink-0">{kcal} kcal</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Exchanges */}
-            {hasExch && (
-              <div className="px-4 pb-4 pt-3 flex flex-wrap gap-2">
-                {DISPLAY_CATS.filter(c => exch[c] > 0).map(c => (
-                  <span key={c} className={`font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg border ${CAT_BG[c]} ${CAT_COLOR[c]}`}>
-                    {fmtQ(exch[c])} {c}
-                  </span>
-                ))}
-                {exch.MIX_HC > 0 && (
-                  <span className={`font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg border ${CAT_BG.MIX_HC} ${CAT_COLOR.MIX_HC}`}>
-                    {fmtQ(exch.MIX_HC)} MIX HC
-                  </span>
-                )}
-                {exch.MIX_GRASA > 0 && (
-                  <span className={`font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg border ${CAT_BG.MIX_GRASA} ${CAT_COLOR.MIX_GRASA}`}>
-                    {fmtQ(exch.MIX_GRASA)} MIX G
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── DietNumerosView ───────────────────────────────────────────────────────────
+// Resumen numérico de intercambios (colocado/objetivo por comida + total del día).
+// Se muestra siempre integrado dentro de la vista de lista — ya no es una pestaña
+// aparte (antes existía junto a "Fotos" bajo un selector Lista/Fotos/Números).
 
 interface NumerosProps {
   meals: DietMeal[];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, AthleteNutritionConfig } from '../types';
+import { UserProfile, AthleteNutritionConfig, Recipe } from '../types';
 import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyDietsScreen from './MyDietsScreen';
@@ -20,6 +20,12 @@ const TABS: { id: NutritionTab; label: string; icon: string }[] = [
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('intercambios');
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
+  const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
+
+  const handleAddToIntercambios = (recipe: Recipe) => {
+    setPendingRecipe(recipe);
+    setActiveSubTab('intercambios');
+  };
 
   useEffect(() => {
     getAthleteNutritionConfig(profile.email).then(setNutritionConfig).catch(() => {});
@@ -61,9 +67,15 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         ))}
       </div>
 
-      {activeSubTab === 'intercambios' && <NutritionScreen profile={profile} />}
+      {activeSubTab === 'intercambios' && (
+        <NutritionScreen
+          profile={profile}
+          pendingRecipe={pendingRecipe}
+          onConsumedPendingRecipe={() => setPendingRecipe(null)}
+        />
+      )}
       {activeSubTab === 'mis-dietas'   && <MyDietsScreen profile={profile} />}
-      {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} />}
+      {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}
     </div>
   );
 }

@@ -187,6 +187,53 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-07-03 (cont.) — Intercambios pasa a ser constructor de menús
+
+Reescritura grande de la nutrición del atleta, a petición de Dani. Antes: "Intercambios"
+(`NutritionScreen.tsx`) era un tracker de solo lectura de la dieta que montaba el
+entrenador; "Mis Dietas" (`MyDietsScreen.tsx`) era una pantalla aislada donde el atleta
+creaba dietas 100% propias (solo alimentos, sin recetas), invisibles para el entrenador.
+Ahora:
+
+- **`NutritionScreen.tsx` (Intercambios)** — el atleta puede añadir alimentos
+  (`handleOpenAddPicker`/`handleSelectFood` con `pickerItem.itemIdx: number | null`,
+  `null` = añadir nuevo en vez de sustituir) y recetas a cualquier comida, editar el
+  objetivo diario de intercambios y gestionar comidas (añadir/renombrar/quitar). Nuevo
+  **selector libre de dieta**: lista todas sus dietas (`allDietsList`, propias +
+  entrenador, con icono si es del entrenador) para elegir cuál está trabajando, recordado
+  en `localStorage` (`enforma_intercambios_diet_${email}`). **Guardar**: si la dieta es
+  suya (`selfManaged`) actualiza directo (`updateDiet`); si es del entrenador, pregunta
+  "Actualizar esta dieta" (edición directa, confirmado con Dani) vs "Guardar como nueva
+  dieta mía" (copia vía `createDiet`, no toca el original). Si el atleta no tiene ninguna
+  dieta, botón "Crear mi primer menú" arranca una en blanco (`blankDiet()`, id temporal
+  `draft_...`, se detecta como no persistida comparando contra `allDietsList` para saber
+  si Guardar debe crear o actualizar). Aviso de cambios sin guardar (`isDirty`,
+  comparación de snapshot JSON) al cambiar de dieta. **Números** (antes pestaña aparte)
+  ahora es un bloque siempre visible (`DietNumerosView`, sin toggle).
+- **`MyDietsScreen.tsx` (Mis Dietas)** — ya no filtra por `selfManaged`: lista TODAS las
+  dietas del atleta, con badge "De tu entrenador" en las que no son suyas. Editable
+  siempre (edición directa); **Eliminar** sigue restringido a dietas propias (borrar el
+  documento de una dieta del entrenador no se pidió explícitamente — ver plan de sesión
+  si Dani quiere cambiarlo). Nuevo botón **Duplicar** en cada tarjeta (propia o del
+  entrenador) → copia vía `createDiet` con `selfManaged: true`, para usar como base. El
+  picker de alimentos ganó una pestaña "Recetas" (antes solo alimentos sueltos).
+- **`RecipesScreen.tsx` → Intercambios**: botón "Añadir a Intercambios" en el detalle de
+  receta (`onAddToIntercambios` prop) — cambia a la pestaña Intercambios y añade la
+  receta a la comida (si hay una sola) o pregunta a cuál (`chooseMealForRecipe`, si hay
+  varias); si no hay ninguna dieta cargada, arranca una en blanco. Estado del hand-off
+  vive en `NutritionHubScreen.tsx` (`pendingRecipe`), el puente entre pestañas.
+- **`DietMealsView.tsx`**: se eliminó `DietFotosView`/`DietViewSelector`/
+  `useDietViewMode`/`DietViewMode` por completo (Dani: "el apartado de fotos... no
+  aporta nada"). Solo queda `DietNumerosView`, ahora renderizado siempre (no detrás de
+  un selector) tanto en `NutritionScreen.tsx` como en la vista previa del entrenador en
+  `NutritionPlansScreen.tsx` (mismo cambio ahí, por consistencia — confirmado con Dani).
+
+`tsc --noEmit` + `npm run build` limpios. **Sin verificar visualmente en navegador** —
+superficie de cambio grande (6 archivos), este es el punto donde más vale la pena un
+pase de QA real antes de dar por bueno el flujo completo.
+
+---
+
 ## Sesión 2026-07-03 (cont.) — Recordatorio de vídeo por serie/ejercicio
 
 `WorkoutExercise.recordVideoSet?: number | 'all'` (`types.ts`) — el coach marca en el editor de
