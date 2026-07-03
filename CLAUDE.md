@@ -187,6 +187,21 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-07-03 (cont.) — Clientes: buscador + cuadrícula ajustable
+
+`ClientsScreen.tsx`, a petición de Dani:
+- El formulario de invitar atleta por email (antes en el header, junto al título) ya no está
+  ahí — es su propia sección al final de la página, junto con "Invitaciones pendientes"
+  (se movieron juntos porque están funcionalmente ligados).
+- Barra de búsqueda por nombre/email sobre la cuadrícula de atletas.
+- Selector de columnas (2/3/4, botones junto al buscador) para la cuadrícula de tarjetas,
+  pensado para cuando crezca el número de clientes — persistido en `localStorage`
+  (`enforma_clients_grid_cols`), mismo patrón que `useDietViewMode` en `DietMealsView.tsx`.
+
+`tsc --noEmit` + `npm run build` limpios. **Sin verificar visualmente en navegador.**
+
+---
+
 ## Sesión 2026-07-03 — Rebrand visual completo (mergeado a `main`)
 
 **✅ Estado: `rebranding` se mergeó a `main` (fast-forward limpio, sin conflictos) y se subió a
