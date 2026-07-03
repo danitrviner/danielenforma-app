@@ -146,10 +146,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0e0e0e] flex items-center justify-center flex-col gap-4">
-        <div className="flex items-center gap-2 text-[#e2ff00] animate-pulse">
+      <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
+        <div className="flex items-center gap-2 text-[#fbcb1a] animate-pulse">
           <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#e2ff00]">EN FORMA</span>
+          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Sincronizando portal deportista...</p>
       </div>
@@ -165,23 +165,23 @@ export default function App() {
   const pendingCount = checkins.filter(c => !c.approved || !c.coachFeedback).length;
 
   return (
-    <div className="min-h-screen text-[#e5e2e1] bg-[#131313] flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen text-[#e5e2e1] bg-[#111110] flex flex-col md:flex-row pb-24 md:pb-0">
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#131313] fixed top-0 left-0 border-b border-[#2a2a2a] z-40">
-        <div className="flex items-center gap-2 text-[#e2ff00]">
+      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#111110] fixed top-0 left-0 border-b border-white/7 z-40">
+        <div className="flex items-center gap-2 text-[#fbcb1a]">
           <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-[#1c1b1b] border border-[#2a2a2a] text-[#c6c9ab] px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
+          <span className="text-[10px] bg-[#181816] border border-white/7 text-[#c6c9ab] px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
             {profile.role.toUpperCase()} MODE
           </span>
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
-            <span className="w-px h-6 bg-[#2a2a2a]"></span>
+            <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('profile')}>
-              <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-[#e2ff00]/40" />
+              <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-[#fbcb1a]/40" />
               <span className="text-xs font-mono font-medium text-white">{profile.displayName}</span>
             </div>
           </div>
@@ -189,30 +189,30 @@ export default function App() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#131313] border-b border-[#2a2a2a] sticky top-0 z-40">
-        <div className="flex items-center gap-2 text-[#e2ff00]">
+      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#111110] border-b border-white/7 sticky top-0 z-40">
+        <div className="flex items-center gap-2 text-[#fbcb1a]">
           <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-[8px] bg-[#2a2a2a] text-[#c6c9ab] px-1.5 py-0.5 rounded font-bold uppercase select-none">
+          <span className="text-[8px] bg-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#e2ff00]/40" onClick={() => setActiveTab('profile')}>
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#fbcb1a]/40" onClick={() => setActiveTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>
         </div>
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[280px] bg-[#0c0f0f] h-screen fixed left-0 top-[65px] border-r border-[#2a2a2a] p-6 justify-between select-none">
+      <nav className="hidden md:flex flex-col w-[280px] bg-[#111110] h-screen fixed left-0 top-[65px] border-r border-white/7 p-6 justify-between select-none">
         <div className="flex flex-col gap-3">
           {mainTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${activeTab === tab.id ? 'bg-[#e2ff00] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1a1c1c] hover:text-white'}`}
+              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${activeTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1e1e1b] hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
@@ -220,7 +220,7 @@ export default function App() {
               >
                 {tab.icon}
               </span>
-              <span className="font-sans text-xs uppercase tracking-wider font-mono flex-1">{tab.label}</span>
+              <span className="font-sans text-xs uppercase tracking-wider font-bold flex-1">{tab.label}</span>
               {tab.id === 'reviews' && pendingCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00eefc] animate-pulse"></span>
               )}
@@ -230,10 +230,10 @@ export default function App() {
         {isCoach && (
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#e2ff00]' : 'text-[#c6c9ab] hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#fbcb1a]' : 'text-[#c6c9ab] hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
-            <span className="font-mono text-xs uppercase tracking-wider">Mi Perfil</span>
+            <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
           </button>
         )}
       </nav>
@@ -270,20 +270,20 @@ export default function App() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center px-1 pt-2 bg-[#0e0e0e] border-t border-[#2a2a2a] select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
+      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-[#111110] border-t border-white/7 select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-col items-center justify-center py-1 flex-1 min-w-0 rounded-lg transition-all relative ${activeTab === tab.id ? 'text-[#e2ff00]' : 'text-[#c6c9ab]'}`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${activeTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-[#c6c9ab]'}`}
           >
             <span
-              className="material-symbols-outlined text-[22px] mb-0.5"
+              className="material-symbols-outlined text-[22px]"
               style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
             >
               {tab.icon}
             </span>
-            <span className="font-mono text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
+            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
               {tab.shortLabel ?? tab.label}
             </span>
             {tab.id === 'reviews' && pendingCount > 0 && (
