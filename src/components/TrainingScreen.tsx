@@ -277,7 +277,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div
         key={a.id}
-        className={`border rounded-xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        className={`border rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
             ? 'bg-[#1a1c12] border-[#fbcb1a]/50 shadow-lg shadow-[#fbcb1a]/5'
             : 'bg-[#181816] border-white/7'
@@ -392,9 +392,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <div className="flex items-center gap-3 p-4 bg-[#161616] border-b border-white/50">
                 <span className="font-mono text-[10px] text-[#c6c9ab]/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
-                  <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
+                  <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-white/7 flex-shrink-0" />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-[#1e1e1b] border border-white/7 flex items-center justify-center flex-shrink-0">
                     <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
                   </div>
                 )}
@@ -410,9 +410,15 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${doneSets === we.sets ? 'bg-emerald-500/15 text-emerald-300' : 'bg-[#2a2a2a] text-[#c6c9ab]'}`}>
-                    {doneSets}/{we.sets}
-                  </span>
+                  {doneSets === we.sets ? (
+                    <span className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-white/7 text-[#c6c9ab]">
+                      {doneSets}/{we.sets}
+                    </span>
+                  )}
                 </div>
               </div>
 

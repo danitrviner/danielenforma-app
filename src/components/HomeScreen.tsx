@@ -14,6 +14,32 @@ interface HomeScreenProps {
   onNavigate: (tab: NavTarget) => void;
 }
 
+// Circular progress ring — plain SVG, no charting lib needed for a single value.
+function ProgressRing({ pct }: { pct: number }) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const r = 42;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - clamped / 100);
+  return (
+    <div className="relative w-[104px] h-[104px] flex-shrink-0">
+      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#1e1e1b" strokeWidth="9" />
+        <circle
+          cx="50" cy="50" r={r} fill="none" stroke="#fbcb1a" strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-sans font-extrabold text-2xl text-white leading-none">{Math.round(clamped)}%</span>
+        <span className="font-mono text-[8px] text-[#c6c9ab] uppercase tracking-widest mt-1">Semana</span>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
   const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -35,12 +61,38 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const overdue = sorted.filter(a => a.status === 'pending' && getWeekStart(a.date) < curWeekStart);
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
 
+  const weekAssignments = sorted.filter(a => getWeekStart(a.date) === curWeekStart);
+  const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
+  const weekPct = weekAssignments.length > 0 ? (weekCompleted / weekAssignments.length) * 100 : 0;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Inicio</h1>
         <p className="text-[#c6c9ab] text-sm mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
       </div>
+
+      {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
+      {!loadingTraining && weekAssignments.length > 0 && (
+        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+          <h2 className="font-sans font-bold text-base text-white mb-4">Resumen de hoy</h2>
+          <div className="flex items-center gap-5">
+            <ProgressRing pct={weekPct} />
+            <div className="flex-1 grid grid-cols-1 gap-2.5 font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#c6c9ab] uppercase tracking-wide">Entrenamientos</span>
+                <span className="text-sm font-bold text-white">{weekCompleted}/{weekAssignments.length}</span>
+              </div>
+              <div className="h-px bg-white/7"></div>
+              <p className="text-[10px] text-[#c6c9ab] leading-relaxed">
+                {weekCompleted === weekAssignments.length
+                  ? '¡Semana completada! 💪'
+                  : `Te ${weekAssignments.length - weekCompleted === 1 ? 'queda' : 'quedan'} ${weekAssignments.length - weekCompleted} entrenamiento${weekAssignments.length - weekCompleted === 1 ? '' : 's'} esta semana.`}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
 
