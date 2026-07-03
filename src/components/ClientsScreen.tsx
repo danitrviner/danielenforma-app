@@ -22,6 +22,22 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
   const [allWorkoutLogs, setAllWorkoutLogs] = useState<Map<string, WorkoutLog[]>>(new Map());
 
+  // Search + grid density for the athlete list
+  const [search, setSearch] = useState('');
+  const [gridCols, setGridCols] = useState<2 | 3 | 4>(() => {
+    const v = Number(localStorage.getItem('enforma_clients_grid_cols'));
+    return v === 2 || v === 3 || v === 4 ? v : 3;
+  });
+  const changeGridCols = (n: 2 | 3 | 4) => {
+    localStorage.setItem('enforma_clients_grid_cols', String(n));
+    setGridCols(n);
+  };
+  const GRID_COLS_CLASS: Record<2 | 3 | 4, string> = {
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-2 lg:grid-cols-3',
+    4: 'md:grid-cols-2 lg:grid-cols-4',
+  };
+
   // Invite a new client by email
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -132,6 +148,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     }).sort((a, b) => a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
 
+  const filteredAthletes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return enrichedAthletes;
+    return enrichedAthletes.filter(a =>
+      a.displayName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
+    );
+  }, [enrichedAthletes, search]);
+
   const athletesFinishingSoon = useMemo(
     () => enrichedAthletes.filter(a => a.planSoon).sort((a, b) => (a.planDaysLeft ?? 0) - (b.planDaysLeft ?? 0)),
     [enrichedAthletes]
@@ -217,71 +241,18 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
-              Consola de Entrenador
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
-              <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
-              Sincronizado
-            </span>
-          </div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
+      <header className="pb-4 border-b border-white/60">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
+            Consola de Entrenador
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
+            <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
+            Sincronizado
+          </span>
         </div>
-
-        {/* Invite a new client by email */}
-        <div className="w-full md:w-auto md:min-w-[320px]">
-          <form onSubmit={handleInvite} className="flex gap-2">
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={e => setInviteEmail(e.target.value)}
-              placeholder="correo del nuevo cliente"
-              className="flex-1 bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={inviting || !inviteEmail.trim()}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-sm">mail</span>
-              {inviting ? 'Enviando...' : 'Invitar'}
-            </button>
-          </form>
-          {inviteError && <p className="font-mono text-[10px] text-red-400 mt-1.5">{inviteError}</p>}
-          {inviteSuccess && <p className="font-mono text-[10px] text-[#fbcb1a] mt-1.5">{inviteSuccess}</p>}
-        </div>
+        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
       </header>
-
-      {/* Pending invites */}
-      {pendingInvites.length > 0 && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
-            Invitaciones pendientes ({pendingInvites.length})
-          </p>
-          <div className="space-y-1.5">
-            {pendingInvites.map(inv => (
-              <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans text-xs text-white truncate">{inv.email}</p>
-                  <p className="font-mono text-[9px] text-[#555]">
-                    Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleResendInvite(inv.email)}
-                  className="font-mono text-[9px] text-[#00eefc] hover:underline uppercase tracking-wide flex-shrink-0"
-                >
-                  Reenviar
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
@@ -393,20 +364,47 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between">
-          <p className="text-xs text-[#c6c9ab] font-sans">Selecciona un atleta para ver su hub completo.</p>
-          <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1 border border-teal-500/20 rounded font-sans uppercase">
-            {athletes.length} ATLETAS
-          </span>
+        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar atleta por nombre o email..."
+              className="w-full bg-[#111110] border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-[#fbcb1a] transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex bg-[#111110] border border-white/7 p-1 rounded-lg gap-1">
+              {([2, 3, 4] as const).map(n => (
+                <button
+                  key={n}
+                  onClick={() => changeGridCols(n)}
+                  title={`${n} columnas`}
+                  className={`w-7 h-7 rounded-md font-sans text-xs font-bold transition-all ${
+                    gridCols === n ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1.5 border border-teal-500/20 rounded font-sans uppercase whitespace-nowrap">
+              {filteredAthletes.length} ATLETAS
+            </span>
+          </div>
         </div>
 
         {loadingAthletes ? (
           <div className="text-center py-12 text-[#c6c9ab] font-mono tracking-widest uppercase text-xs animate-pulse">Cargando atletas...</div>
         ) : athletes.length === 0 ? (
           <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</div>
+        ) : filteredAthletes.length === 0 ? (
+          <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">Ningún atleta coincide con "{search}".</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {enrichedAthletes.map(athlete => {
+          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
+            {filteredAthletes.map(athlete => {
               const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
                       totalCheckCount, pendingCount, adherenceScore } = athlete;
               const adh = scoreStyle(adherenceScore);
@@ -508,6 +506,60 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               );
             })}
 
+          </div>
+        )}
+      </div>
+
+      {/* Invite a new client by email */}
+      <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-outlined text-[#fbcb1a] text-xl">person_add</span>
+          <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
+        </div>
+        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
+          <input
+            type="email"
+            value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            placeholder="correo del nuevo cliente"
+            className="flex-1 bg-[#111110] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={inviting || !inviteEmail.trim()}
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-sm">mail</span>
+            {inviting ? 'Enviando...' : 'Invitar'}
+          </button>
+        </form>
+        {inviteError && <p className="font-mono text-[10px] text-red-400 mt-1.5">{inviteError}</p>}
+        {inviteSuccess && <p className="font-mono text-[10px] text-[#fbcb1a] mt-1.5">{inviteSuccess}</p>}
+
+        {pendingInvites.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/60">
+            <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
+              Invitaciones pendientes ({pendingInvites.length})
+            </p>
+            <div className="space-y-1.5">
+              {pendingInvites.map(inv => (
+                <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                  <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-sans text-xs text-white truncate">{inv.email}</p>
+                    <p className="font-mono text-[9px] text-[#555]">
+                      Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleResendInvite(inv.email)}
+                    className="font-mono text-[9px] text-[#00eefc] hover:underline uppercase tracking-wide flex-shrink-0"
+                  >
+                    Reenviar
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
