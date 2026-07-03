@@ -261,8 +261,17 @@ que un análisis automático marcó como alta prioridad, para no aplicar cambios
 - Logo/favicon real (hoy es un monograma "EF" placeholder).
 - Subida de fotos para ejercicios/rutinas (campo `Exercise.imageUrl` existe, sin flujo de subida —
   se dejó fuera de alcance a petición explícita de Dani).
-- `TrainingCoachScreen.tsx` / `NutritionCoachScreen.tsx` (las otras 2 pestañas del coach) — no
-  exploradas ni tocadas en este rebrand.
+- ~~`TrainingCoachScreen.tsx` / `NutritionCoachScreen.tsx` no exploradas~~ **Hecho 2026-07-03:**
+  `TrainingCoachScreen.tsx` no tenía header (único shell de coach sin título) — añadido
+  badge "Consola de Entrenador" + h1 "Entrenamiento" igual que `ClientsScreen`/`ReviewsScreen`.
+  `NutritionCoachScreen.tsx` tenía el switcher de tabs con un patrón viejo (chips `font-mono`
+  individuales con borde) — migrado al patrón de píldora segmentada (`bg-[#181816] p-1
+  rounded-lg`) que ya usan `TrainingCoachScreen`/`NutritionHubScreen`/`CoachesScreen`; badge
+  "Consola de Entrenador" `font-mono` → `font-sans`. `tsc --noEmit` + `npm run build` limpios,
+  **sin verificar visualmente en navegador**. Sus pantallas hijas (`ExerciseLibraryScreen`,
+  `WorkoutsScreen`, `MesocycleTemplateLibrary`, `FoodLibraryScreen`, `NutritionPlansScreen`,
+  `RecipeBuilderScreen`, `NutritionAIDashboard`) ya habían recibido el swap de color base en
+  el sed inicial — revisadas, sin restos de paleta antigua.
 
 ---
 
