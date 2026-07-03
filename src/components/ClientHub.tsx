@@ -40,6 +40,7 @@ import CoachRoadmapView from './CoachRoadmapView';
 import DietAutoGenerator from './DietAutoGenerator';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
+import ProgressRing from './ProgressRing';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
@@ -559,7 +560,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
   const daysLeft = getPlanDaysLeft();
   const planBadge = daysLeft !== null ? (
-    <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border flex-shrink-0 ${
+    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg border flex-shrink-0 ${
       daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
       daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                        'bg-red-500/10     text-red-300     border-red-500/20'
@@ -1065,21 +1066,17 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
               Cumplimiento Semanal
             </h3>
-            <div>
-              <div className="flex justify-between mb-1.5 font-mono text-[10px]">
-                <span className="text-[#c6c9ab] uppercase">Entrenamientos</span>
-                <span className="text-white">{weekCompleted} / {weekTotal > 0 ? weekTotal : '—'}</span>
+            {weekTotal === 0 ? (
+              <p className="font-mono text-[9px] text-[#c6c9ab]">Sin entrenamientos esta semana</p>
+            ) : (
+              <div className="flex items-center gap-4">
+                <ProgressRing pct={weekPct} color="#00eefc" />
+                <div className="flex-1 font-mono text-[10px]">
+                  <span className="text-[#c6c9ab] uppercase block mb-1">Entrenamientos</span>
+                  <span className="text-white text-sm font-bold">{weekCompleted} / {weekTotal}</span>
+                </div>
               </div>
-              <div className="h-1.5 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#00eefc] rounded-full transition-all"
-                  style={{ width: weekTotal > 0 ? `${weekPct}%` : '0%' }}
-                />
-              </div>
-              {weekTotal === 0 && (
-                <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">Sin entrenamientos esta semana</p>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -1155,7 +1152,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-sans font-bold text-white text-xs">Check-in</span>
                               <span className="font-mono text-[9px] text-[#c6c9ab]">{c.dateStr}</span>
-                              <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
+                              <span className={`text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-lg flex-shrink-0 ${
                                 c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                               }`}>
                                 {c.approved ? 'Revisado' : 'Pendiente'}
@@ -1818,7 +1815,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                               updateWorkoutLog(log.id, { noteCoachSeen: true }).catch(console.error);
                               setAthleteLogs(prev => prev.map(l => l.id === log.id ? { ...l, noteCoachSeen: true } : l));
                             }}
-                            className="flex-shrink-0 flex items-center gap-1 text-[9px] font-mono font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded"
+                            className="flex-shrink-0 flex items-center gap-1 text-[9px] font-sans font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded-lg"
                           >
                             <span className="material-symbols-outlined text-xs">visibility</span>
                             Marcar visto
@@ -1876,7 +1873,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded ${STATUS_STYLE[a.status]}`}>
+                        <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg ${STATUS_STYLE[a.status]}`}>
                           {STATUS_LABEL[a.status]}
                         </span>
                         <button onClick={() => handleDeleteAssignment(a.id)} className="text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors" title="Eliminar">
@@ -1993,7 +1990,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         </div>
 
                         {active && (
-                          <span className="text-[9px] font-mono font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 px-2 py-0.5 rounded border border-[#fbcb1a]/20 flex-shrink-0">
+                          <span className="text-[9px] font-sans font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 px-2 py-0.5 rounded-lg border border-[#fbcb1a]/20 flex-shrink-0">
                             Activa
                           </span>
                         )}
