@@ -124,7 +124,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
-            <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-lg font-mono font-bold uppercase">
+            <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-lg font-sans font-bold uppercase">
               <span className="material-symbols-outlined text-sm">pending_actions</span>
               {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
             </span>

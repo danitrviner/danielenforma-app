@@ -220,7 +220,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-mono border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
               Consola de Entrenador
             </span>
             <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
@@ -294,7 +294,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <span className="material-symbols-outlined text-[#fbcb1a] text-xl">group</span>
                 <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
-              <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-mono font-bold uppercase">Activos</span>
+              <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
@@ -335,11 +335,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
-                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-mono uppercase font-black animate-pulse">
+                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-sans uppercase font-black animate-pulse">
                   {pendingCheckins.length} por evaluar
                 </span>
               ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-mono uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {pendingCheckins.length === 0 ? (
@@ -359,11 +359,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
-                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-mono uppercase font-black">
+                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-sans uppercase font-black">
                   {totalPendingNotes} por leer
                 </span>
               ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-mono uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {totalPendingNotes === 0 ? (
@@ -395,7 +395,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <div className="space-y-4">
         <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between">
           <p className="text-xs text-[#c6c9ab] font-sans">Selecciona un atleta para ver su hub completo.</p>
-          <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1 border border-teal-500/20 rounded font-mono uppercase">
+          <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1 border border-teal-500/20 rounded font-sans uppercase">
             {athletes.length} ATLETAS
           </span>
         </div>
@@ -416,7 +416,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-[#111110] border rounded-xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  className={`bg-[#111110] border rounded-2xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-white/7'
                   }`}
                 >
@@ -432,7 +432,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {planDaysLeft !== null ? (
-                            <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${
+                            <span className={`text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border ${
                               planDaysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
                               planDaysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                                                    'bg-red-500/10     text-red-400     border-red-500/20'
@@ -440,13 +440,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-[#4a4a4a] border-white/7">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-[#4a4a4a] border-white/7">
                               Sin plan
                             </span>
                           )}
                           {/* Check-in atrasado badge */}
                           {checkinLate && (
-                            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border bg-orange-500/10 text-orange-300 border-orange-500/20">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-orange-500/10 text-orange-300 border-orange-500/20">
                               {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
                             </span>
                           )}
@@ -494,7 +494,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     <div className="flex items-center gap-2">
                       <span className="text-[#c6c9ab]">{totalCheckCount} Reportes</span>
                       {pendingCount > 0 && (
-                        <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded font-mono uppercase">
+                        <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded font-sans uppercase">
                           {pendingCount} pend.
                         </span>
                       )}
