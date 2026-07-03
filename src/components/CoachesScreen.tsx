@@ -143,11 +143,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[9px] uppercase border border-white/7 text-[#c6c9ab] hover:text-white rounded-lg transition-all">
+            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-white/7 text-[#c6c9ab] hover:text-white rounded-lg transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-mono text-[9px] uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -232,11 +232,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded hover:bg-[#d4a800]">
+                          className="px-2.5 py-1 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded hover:bg-[#d4a800]">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-2.5 py-1 font-mono text-[9px] uppercase text-red-400 border border-red-500/30 rounded hover:bg-red-500/10">
+                          className="px-2.5 py-1 font-mono text-[10px] uppercase text-red-400 border border-red-500/30 rounded hover:bg-red-500/10">
                           Eliminar
                         </button>
                       </div>
@@ -269,7 +269,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[9px] uppercase text-[#c6c9ab] hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-[#c6c9ab] hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -280,7 +280,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-mono text-xs uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-xs uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -455,7 +455,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-[9px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             Reimportar
           </button>
@@ -469,7 +469,7 @@ function IndyaImportPanel() {
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/10 font-mono text-[9px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/10 font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             Reintentar
           </button>
@@ -568,7 +568,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-[#181816] border rounded-xl p-4 flex items-center gap-4 ${isOwner ? 'border-[#fbcb1a]/30' : 'border-white/7'}`}>
+                  className={`bg-[#181816] border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-[#fbcb1a]/30' : 'border-white/7'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
                     className="w-10 h-10 rounded-full object-cover border border-white/7 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -601,7 +601,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             })}
           </div>
         )}
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-1">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-1">
           <p className="font-mono text-xs text-[#c6c9ab]">
             <span className="text-[#fbcb1a] font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}

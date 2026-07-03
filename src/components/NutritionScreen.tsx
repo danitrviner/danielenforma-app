@@ -602,7 +602,7 @@ export default function NutritionScreen({ profile }: Props) {
               </div>
 
               {/* Budget dashboard */}
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
                 <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
                   Progreso por categoría
                 </p>
@@ -634,7 +634,7 @@ export default function NutritionScreen({ profile }: Props) {
               </div>
 
               {/* Overall progress bar */}
-              <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
+              <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
                 <div className="flex justify-between items-end mb-2">
                   <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Completados hoy</h2>
                   <span className="font-mono text-xs text-[#fbcb1a] font-bold">{doneItems} / {totalItems}</span>
@@ -682,10 +682,10 @@ export default function NutritionScreen({ profile }: Props) {
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
                               title="Usar receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
                             >
                               <span className="material-symbols-outlined text-xs select-none">skillet</span>
-                              <span className="font-mono text-[9px] uppercase tracking-wider hidden sm:block">Receta</span>
+                              <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Receta</span>
                             </button>
                           )}
                         </div>
@@ -877,7 +877,7 @@ export default function NutritionScreen({ profile }: Props) {
                     <button
                       key={recipe.id}
                       onClick={() => handleApplyRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-2xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
@@ -944,7 +944,7 @@ export default function NutritionScreen({ profile }: Props) {
                 <button
                   key={recipe.id}
                   onClick={() => handleApplySwap(recipe)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-2xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
                 >
                   {recipe.photoUrl ? (
                     <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
@@ -985,7 +985,7 @@ export default function NutritionScreen({ profile }: Props) {
               <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
                   <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
+                    className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
                   >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
@@ -994,7 +994,7 @@ export default function NutritionScreen({ profile }: Props) {
             <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
+                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>

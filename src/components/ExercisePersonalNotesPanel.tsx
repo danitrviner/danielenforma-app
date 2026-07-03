@@ -45,8 +45,8 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
   const withNotes = new Set(notes.filter(n => n.observation.trim()).map(n => n.exerciseId));
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
-      <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-3">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
         Observación personalizada por ejercicio
         <span className="ml-2 text-[9px] font-mono text-[#555] normal-case font-sans">(solo la ve este atleta)</span>
@@ -79,7 +79,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
               >
                 {saving ? 'Guardando...' : 'Guardar observación'}
               </button>

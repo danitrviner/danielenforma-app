@@ -270,7 +270,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
         <p className="text-[#c6c9ab] text-xs font-mono animate-pulse">Cargando periodización...</p>
       </div>
     );
@@ -283,9 +283,9 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
     const totalWeeks = program?.phases.reduce((s, p) => s + p.weeks, 0) ?? 0;
 
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
             Periodización nutricional
           </h3>
@@ -349,10 +349,10 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
   };
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-5">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
           Periodización nutricional
         </h3>
@@ -372,7 +372,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black text-[10px] font-mono font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black text-[10px] font-sans font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
           >
             {saving ? 'Guardando...' : 'Guardar'}
           </button>

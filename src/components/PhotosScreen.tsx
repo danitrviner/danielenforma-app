@@ -95,7 +95,7 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* View selector */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 w-fit">
+      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-fit">
         {(['front', 'side', 'back'] as PhotoView[]).map(v => (
           <button
             key={v}
@@ -126,7 +126,7 @@ export default function PhotosScreen({ profile }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
             ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>

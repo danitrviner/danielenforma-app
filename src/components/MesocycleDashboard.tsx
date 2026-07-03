@@ -61,7 +61,7 @@ function EmptyChart({ message }: { message: string }) {
 
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
       <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontSize: '16px' }}>{icon}</span>
         {title}
@@ -326,7 +326,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       next.has(g) ? next.delete(g) : next.add(g);
                       return next;
                     })}
-                    className={`px-2 py-0.5 rounded font-mono text-[9px] uppercase font-bold border transition-all ${
+                    className={`px-2 py-0.5 rounded font-mono text-[10px] uppercase font-bold border transition-all ${
                       hidden
                         ? 'bg-transparent border-white/7 text-[#555]'
                         : 'border-transparent text-black'
@@ -376,7 +376,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
 
       {/* ── Row 3: Carga real (Charts 3 + 4) ── */}
       {!hasLogs ? (
-        <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-6 flex items-center gap-3">
+        <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-6 flex items-center gap-3">
           <span className="material-symbols-outlined text-2xl text-[#2a2a2a]">fitness_center</span>
           <p className="font-mono text-xs text-[#c6c9ab]">
             Sin datos de carga registrados — las gráficas de tonelaje y 1RM aparecerán aquí cuando el atleta complete sesiones.

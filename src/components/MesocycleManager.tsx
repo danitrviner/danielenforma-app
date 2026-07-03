@@ -241,7 +241,7 @@ const DayCard: React.FC<{ day: DayPlan; dayNumber: number }> = ({ day, dayNumber
   const totalBg    = optimal ? 'rgba(34,197,94,.12)' : over ? 'rgba(249,115,22,.12)' : 'transparent';
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 flex-1 min-w-[140px] max-w-[200px]">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[140px] max-w-[200px]">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Día {dayNumber}</span>
         {over && <span className="material-symbols-outlined text-sm text-orange-400" title=">12 series">warning</span>}
@@ -869,7 +869,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       {selectedEmail && (
         <>
         {/* View toggle */}
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 w-full sm:w-fit">
+        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-full sm:w-fit">
           {([
             { id: 'list',      label: 'Mesociclos', icon: 'calendar_view_month' },
             { id: 'dashboard', label: 'Dashboard',  icon: 'dashboard' },
@@ -896,7 +896,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           <div className="xl:w-64 flex-shrink-0 space-y-3">
             <button
               onClick={handleNew} disabled={creating}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               {creating ? 'Creando…' : 'Nuevo mesociclo'}
@@ -946,10 +946,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <div className="flex-1 min-w-0 space-y-4">
 
               {/* Mesocycle header */}
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-white text-base">Mesociclo #{editing.number}</h2>
-                  <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors ${
+                  <span className={`font-mono text-xs uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-[#86efac]' :
                     saveState === 'error'  ? 'text-red-400' :
                     saveState === 'saving' ? 'text-[#fbcb1a] animate-pulse' : 'text-[#c6c9ab]'
@@ -1008,7 +1008,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
               {/* Tab bar */}
               <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 min-w-max">
+                <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
                   {([
                     { id: 'volume',       label: 'Volumen y Prioridad', icon: 'bar_chart'   },
                     { id: 'distribution', label: 'Distribución',        icon: 'grid_view'   },
@@ -1075,7 +1075,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     })}
                   </div>
 
-                  <div className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3 flex items-center justify-between">
+                  <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex items-center justify-between">
                     <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">Total series semanales</span>
                     <span className="font-mono font-black text-xl text-white">
                       {MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0)}
@@ -1105,7 +1105,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={handleGenerateDistribution}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+                          className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
                         >
                           <span className="material-symbols-outlined text-sm">shuffle</span>
                           Distribución Automática
@@ -1148,7 +1148,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             ))}
                           </div>
 
-                          <div className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+                          <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div>
                                 <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block">Series totales</span>
@@ -1225,7 +1225,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           </button>
                           <button
                             onClick={handleAssign}
-                            className="px-4 py-2 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
+                            className="px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
                           >
                             <span className="material-symbols-outlined text-sm">assignment_turned_in</span>
                             Asignar al atleta
@@ -1235,7 +1235,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                       <div className="flex flex-wrap gap-3">
                         {previewDays.map((pd, dayIdx) => (
-                          <div key={dayIdx} className="bg-[#181816] border border-white/7 rounded-xl p-4 flex-1 min-w-[260px]">
+                          <div key={dayIdx} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[260px]">
                             {/* Day header */}
                             <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
                               <span className="font-mono text-xs font-bold text-[#fbcb1a] uppercase">Día {dayIdx + 1}</span>
@@ -1259,7 +1259,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             {/* Exercise rows */}
                             <div className="space-y-2">
                               {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-[#1e1e1b] rounded-lg p-2.5 space-y-1.5">
+                                <div key={peIdx} className="bg-[#1e1e1b] rounded-xl p-2.5 space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-xs font-sans font-semibold text-white truncate">{pe.name}</p>
@@ -1318,7 +1318,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-[#1e1e1b] border border-dashed border-[#3a3a3a] rounded-lg px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a] cursor-pointer"
+                                className="w-full bg-[#1e1e1b] border border-dashed border-[#3a3a3a] rounded-xl px-3 py-2 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a] cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (
@@ -1441,7 +1441,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/7 flex-shrink-0">
               <div>
-                <h3 className="font-sans font-bold text-white text-sm flex items-center gap-2">
+                <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#fbcb1a] text-base">library_books</span>
                   Usar plantilla
                 </h3>
@@ -1472,7 +1472,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
                 return (
                   <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} disabled={applyingTemplate}
-                    className="w-full text-left p-4 bg-[#181816] border border-white/7 rounded-xl hover:border-[#fbcb1a]/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
+                    className="w-full text-left p-4 bg-[#181816] border border-white/7 rounded-2xl hover:border-[#fbcb1a]/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-white text-sm group-hover:text-[#fbcb1a] transition-colors">{tpl.name}</p>

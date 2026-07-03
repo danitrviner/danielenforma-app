@@ -202,7 +202,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </p>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva receta
@@ -225,11 +225,11 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   </div>
                 )}
                 <div className="p-4 flex-1 space-y-2">
-                  <h3 className="font-sans font-bold text-sm text-white">{recipe.name}</h3>
+                  <h3 className="font-sans font-bold text-base text-white">{recipe.name}</h3>
                   {recipe.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {recipe.categories.map(c => (
-                        <span key={c} className="px-2 py-0.5 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[9px] uppercase tracking-wider">{c}</span>
+                        <span key={c} className="px-2 py-0.5 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px] uppercase tracking-wider">{c}</span>
                       ))}
                     </div>
                   )}
@@ -245,14 +245,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <>
                       <button
                         onClick={() => setConfirmDelete(null)}
-                        className="flex-1 py-1.5 rounded-lg bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px] uppercase tracking-wider hover:text-white transition-all"
+                        className="flex-1 py-1.5 rounded-lg bg-[#2a2a2a] text-[#c6c9ab] font-mono text-xs uppercase tracking-wider hover:text-white transition-all"
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={() => handleDelete(recipe.id)}
                         disabled={deleting === recipe.id}
-                        className="flex-1 py-1.5 rounded-lg bg-red-600 text-white font-mono text-[10px] uppercase tracking-wider font-bold hover:bg-red-700 transition-all disabled:opacity-40"
+                        className="flex-1 py-1.5 rounded-lg bg-red-600 text-white font-mono text-xs uppercase tracking-wider font-bold hover:bg-red-700 transition-all disabled:opacity-40"
                       >
                         {deleting === recipe.id ? '...' : '¿Eliminar?'}
                       </button>
@@ -261,14 +261,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <>
                       <button
                         onClick={() => openEdit(recipe)}
-                        className="flex-1 py-1.5 rounded-lg bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px] uppercase tracking-wider hover:text-white hover:bg-[#3a3a3a] transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-1.5 rounded-lg bg-[#2a2a2a] text-[#c6c9ab] font-mono text-xs uppercase tracking-wider hover:text-white hover:bg-[#3a3a3a] transition-all flex items-center justify-center gap-1"
                       >
                         <span className="material-symbols-outlined text-xs">edit</span>
                         Editar
                       </button>
                       <button
                         onClick={() => setConfirmDelete(recipe.id)}
-                        className="flex-1 py-1.5 rounded-lg bg-red-900/20 text-red-400 font-mono text-[10px] uppercase tracking-wider hover:bg-red-900/40 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-1.5 rounded-lg bg-red-900/20 text-red-400 font-mono text-xs uppercase tracking-wider hover:bg-red-900/40 transition-all flex items-center justify-center gap-1"
                       >
                         <span className="material-symbols-outlined text-xs">delete</span>
                         Eliminar
@@ -337,7 +337,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     key={cat}
                     type="button"
                     onClick={() => toggleCategory(cat)}
-                    className={`px-3 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider font-bold transition-all ${
+                    className={`px-3 py-1 rounded-full font-mono text-xs uppercase tracking-wider font-bold transition-all ${
                       form.categories.includes(cat)
                         ? 'bg-[#fbcb1a] text-black'
                         : 'bg-[#2a2a2a] text-[#c6c9ab] hover:text-white'
@@ -494,7 +494,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black font-mono text-xs uppercase tracking-wider font-bold hover:bg-[#d4a800] disabled:opacity-40 transition-all active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-xs uppercase tracking-wider font-bold hover:bg-[#d4a800] disabled:opacity-40 transition-all active:scale-95"
               >
                 {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
               </button>

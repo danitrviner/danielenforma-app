@@ -152,10 +152,10 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí.</p>
         </div>
       ) : (
-        <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
             <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
-            <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wide">Historial unificado</h3>
+            <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-[#c6c9ab] ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-[#2a2a2a]/40">
@@ -234,8 +234,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-lg border border-white/40">
-                              <span className="block text-[#c6c9ab] text-[9px] uppercase">{cell.label}</span>
+                            <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
+                              <span className="block text-[#c6c9ab] text-[10px] uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
@@ -265,7 +265,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-sm">send</span>

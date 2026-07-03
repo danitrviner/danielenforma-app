@@ -411,7 +411,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+                className={`px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
                   tab === t ? 'text-[#fbcb1a] border-b-2 border-[#fbcb1a]' : 'text-[#555] hover:text-[#c6c9ab]'
                 }`}
               >
@@ -600,10 +600,10 @@ function TemplateEditor({
   const totalWeeks = form.stages.reduce((s, st) => s + st.weeks, 0);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/7">
-        <h3 className="font-sans font-bold text-white text-sm flex items-center gap-2">
+        <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
@@ -675,7 +675,7 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
@@ -728,7 +728,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 hover:border-[#3a3a3a] transition-all">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 hover:border-[#3a3a3a] transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
@@ -885,7 +885,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -902,7 +902,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <p className="text-[#c6c9ab] text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
+            className="mt-4 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
           >
             Crear plantilla
           </button>

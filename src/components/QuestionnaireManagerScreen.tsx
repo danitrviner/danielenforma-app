@@ -84,7 +84,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
         <button
           onClick={() => openEditor()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>Nuevo
         </button>
@@ -101,7 +101,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       ) : (
         <div className="space-y-3">
           {questionnaires.map(q => (
-            <div key={q.id} className="bg-[#181816] border border-white/7 rounded-xl p-4 flex items-center gap-4">
+            <div key={q.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex items-center gap-4">
               <div className="w-9 h-9 bg-[#fbcb1a]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">quiz</span>
               </div>

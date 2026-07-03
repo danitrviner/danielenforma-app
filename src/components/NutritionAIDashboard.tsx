@@ -114,7 +114,7 @@ export default function NutritionAIDashboard() {
       <select
         value={selectedEmail}
         onChange={e => setSelectedEmail(e.target.value)}
-        className="w-full bg-[#181816] border border-white/7 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50"
+        className="w-full bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50"
       >
         <option value="">Selecciona un atleta...</option>
         {athletes.map(a => (
@@ -128,7 +128,7 @@ export default function NutritionAIDashboard() {
 
       {!loading && report && (
         <div className="space-y-4">
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
             <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2">Resumen</p>
             <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
           </div>
@@ -144,7 +144,7 @@ export default function NutritionAIDashboard() {
           </div>
 
           {report.macroDeviation.length > 0 && (
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
               <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
               <div className="grid grid-cols-3 gap-3">
                 {report.macroDeviation.map(m => (
@@ -169,7 +169,7 @@ export default function NutritionAIDashboard() {
             </div>
           )}
 
-          <div className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-xl p-4">
+          <div className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-2xl p-4">
             <div>
               <p className="text-xs text-white font-sans font-bold">
                 {nutritionConfig?.sharedReportSnapshot ? 'Reporte compartido con el atleta' : 'Reporte privado'}
@@ -190,7 +190,7 @@ export default function NutritionAIDashboard() {
               <button
                 onClick={handleShare}
                 disabled={sharing}
-                className="px-3.5 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
+                className="px-3.5 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
               >Compartir con el atleta</button>
             )}
           </div>
@@ -206,7 +206,7 @@ export default function NutritionAIDashboard() {
 
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 text-center">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 text-center">
       <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
       <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">{sub}</span>

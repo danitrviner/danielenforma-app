@@ -117,7 +117,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Section A: Visual Summary Weight & Core Chart */}
-        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between relative overflow-hidden">
+        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
               <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">ACTUAL</span>
@@ -225,7 +225,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section B: New Check-in Form */}
-        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
@@ -272,7 +272,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-mono text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-[#fbcb1a] text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
+                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-[#fbcb1a] text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
                     >
                       {opt}
                     </button>
@@ -293,7 +293,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-[44px] bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
+                className="w-full h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
               >
                 {isSubmitting ? 'Enviando...' : 'Enviar al Entrenador'}
                 <span className="material-symbols-outlined text-sm">send</span>
@@ -308,7 +308,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
-        <section className="bg-[#181816] border border-white/7 rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
@@ -385,7 +385,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section D: Historial weight & coach directives logs */}
-        <section className="bg-[#181816] border border-white/7 rounded-xl p-5 flex flex-col justify-between">
+        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc]">history</span>

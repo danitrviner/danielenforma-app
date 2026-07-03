@@ -1259,7 +1259,7 @@ export default function OnboardingForm({
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex gap-3">
         <button type="button" onClick={handleSave} disabled={saving}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando…' : isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
         </button>
         {onCancel && (

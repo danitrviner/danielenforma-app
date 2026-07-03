@@ -60,9 +60,9 @@ export default function CoachNotesPanel({ athletes }: Props) {
   const done = notes.filter(n => n.done);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
           Mis notas
           {pending.length > 0 && (
@@ -82,7 +82,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
       </p>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-lg p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 space-y-2">
           <input
             type="text"
             value={text}
@@ -105,7 +105,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Guardar nota'}
           </button>

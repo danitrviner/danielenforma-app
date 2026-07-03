@@ -171,11 +171,11 @@ export default function MyDietsScreen({ profile }: Props) {
           placeholder="Nombre de la dieta"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full bg-[#181816] border border-white/7 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-full bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50"
         />
 
         {/* Budget */}
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
           <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Objetivo diario de intercambios</p>
           <div className="grid grid-cols-3 gap-3">
             {BUDGET_CATS.map(cat => (
@@ -187,7 +187,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   step={0.25}
                   value={form.budget[cat]}
                   onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+                  className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
                 />
                 <span className="block font-mono text-[9px] text-[#c6c9ab]/70 mt-0.5">Colocado: {fmtQty(placed[cat])}</span>
               </div>
@@ -275,7 +275,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
                   {enabledModes.map(mode => (
                     <button key={mode} onClick={() => setActiveDietMode(mode)}
-                      className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
+                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
                     >{MODE_LABEL[mode]}</button>
                   ))}
                 </div>
@@ -317,7 +317,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -334,7 +334,7 @@ export default function MyDietsScreen({ profile }: Props) {
           {diets.map(dt => {
             const dPlaced = computePlaced(dt.meals);
             return (
-              <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-xl p-4 flex items-center justify-between gap-3">
+              <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <span className="block font-sans font-bold text-sm text-white truncate">{dt.name}</span>
                   <div className="flex gap-2 mt-1.5 flex-wrap">

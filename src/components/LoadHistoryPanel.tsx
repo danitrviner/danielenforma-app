@@ -227,8 +227,8 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
 
   if (logs.length === 0) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
-        <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
           Historial de carga
         </h3>
@@ -241,8 +241,8 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-5">
-      <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
+      <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
         <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
         Historial de carga
       </h3>
@@ -255,7 +255,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
               <button
                 key={m}
                 onClick={() => toggleMetric(m)}
-                className={`px-3 min-h-[44px] rounded-full font-mono text-[10px] uppercase tracking-wider transition-all border ${
+                className={`px-3 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
                     : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#555]'
@@ -273,7 +273,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
                 <button
                   key={s}
                   onClick={toggle}
-                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-[10px] uppercase tracking-wider transition-all border ${
+                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
                     active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-[#c6c9ab]'
                   }`}
                 >
@@ -288,7 +288,7 @@ export default function LoadHistoryPanel({ logs, exercises }: Props) {
       {/* ── Exercise selector (only when 1RM metric is active) ── */}
       {ormActive && loggedExercises.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[9px] uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
+          <span className="font-mono text-[10px] uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
             Ejercicio (1RM):
           </span>
           <select

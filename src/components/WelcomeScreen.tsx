@@ -232,7 +232,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <button
               type="submit"
               disabled={completingInvite}
-              className="w-full h-[48px] bg-[#fbcb1a] text-black font-mono font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
+              className="w-full h-[48px] bg-[#fbcb1a] text-black font-sans font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
             >
               {completingInvite ? 'Verificando...' : 'Continuar'}
             </button>
@@ -321,7 +321,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-[48px] bg-[#fbcb1a] text-black font-mono font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
+            className="w-full h-[48px] bg-[#fbcb1a] text-black font-sans font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
           >
             {loading ? 'Procesando...' : isRegistering ? 'Crear Cuenta Atleta' : 'Ingresar al Portal'}
             <span className="material-symbols-outlined text-sm">login</span>

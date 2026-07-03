@@ -44,7 +44,7 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-[#c6c9ab] mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-[#fbcb1a] font-bold text-sm">{rawEntry.value} kg</p>
@@ -172,7 +172,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
@@ -271,7 +271,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               <button
                 onClick={handleAdd}
                 disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
               >
                 {adding ? '…' : 'Añadir'}
               </button>
@@ -298,7 +298,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 {listEntries.map(b => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-2 bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2"
+                    className="flex items-center gap-2 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2"
                   >
                     {editId === b.id ? (
                       // ── Inline edit ──────────────────────────────────────
@@ -322,13 +322,13 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
-                            className="px-2 py-1 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
+                            className="px-2 py-1 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
                           >
                             {saving ? '…' : 'OK'}
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-white/7 text-[#c6c9ab] font-mono text-[9px] uppercase rounded transition-all hover:text-white"
+                            className="px-2 py-1 border border-white/7 text-[#c6c9ab] font-mono text-[10px] uppercase rounded transition-all hover:text-white"
                           >
                             ✕
                           </button>

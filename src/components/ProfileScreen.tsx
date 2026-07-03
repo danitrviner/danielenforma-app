@@ -103,9 +103,9 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
       {isCoach && (
         showCoaches ? (
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">groups</span>
                 Entrenadores
               </h3>
@@ -121,7 +121,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         ) : (
           <button
             onClick={() => setShowCoaches(true)}
-            className="w-full bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
+            className="w-full bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#fbcb1a] text-base">groups</span>
@@ -133,7 +133,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Gamification card ─────────────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 relative overflow-hidden flex flex-col gap-5">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 relative overflow-hidden flex flex-col gap-5">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
 
         {/* Avatar + XP */}
@@ -222,13 +222,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {/* ── Bodyweight panel ──────────────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-xl">
+      <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-2xl">
         <BodyweightPanel athleteEmail={profile.email} />
       </div>
 
       {/* ── Questionnaire charts ──────────────────────────────────────────────── */}
       {questionnaires.length > 0 && responses.length > 0 && (
-        <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-xl">
+        <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-2xl">
           <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
         </div>
       )}
@@ -236,7 +236,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Ficha de iniciación (solo atleta — el coach no rellena ficha propia) ── */}
       {!isCoach && (
         editingFicha ? (
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
             <OnboardingForm
               athleteEmail={profile.email}
               initialData={onboarding}
@@ -245,9 +245,9 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             />
           </div>
         ) : (
-          <div className="bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between gap-4">
+          <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">assignment_ind</span>
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
@@ -259,7 +259,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
@@ -270,8 +270,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       {/* ── Food preferences ──────────────────────────────────────────────────── */}
       {!isCoach && onboarding && !editingFicha && (
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-xl">
-          <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
+        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
+          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant</span>
             Preferencias alimentarias
           </h3>
@@ -288,8 +288,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Edit profile form ─────────────────────────────────────────────────── */}
-      <form onSubmit={handleUpdate} className="bg-[#181816] border border-white/7 p-4 rounded-xl space-y-4">
-        <h3 className="font-sans font-bold text-sm text-[#fbcb1a] uppercase tracking-wide border-b border-white/7 pb-2">Editar Marca de Ficha</h3>
+      <form onSubmit={handleUpdate} className="bg-[#181816] border border-white/7 p-4 rounded-2xl space-y-4">
+        <h3 className="font-sans font-bold text-base text-[#fbcb1a] uppercase tracking-wide border-b border-white/7 pb-2">Editar Marca de Ficha</h3>
 
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1">Nombre deportivo</label>

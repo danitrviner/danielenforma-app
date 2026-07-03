@@ -214,7 +214,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
         const kcal = mealKcal(meal.items);
         const exch = mealExch(meal.items);
         return (
-          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e1e1e]">
               <span className="font-sans font-bold text-white text-sm">{labelForMeal(meal.name, mi + 1)}</span>

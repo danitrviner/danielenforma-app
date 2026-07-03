@@ -106,14 +106,14 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
         <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando tareas...</span>
       </div>
     );
   }
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
+    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
       <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
         <span className="material-symbols-outlined text-[#fbcb1a]">checklist</span>
         Tareas pendientes

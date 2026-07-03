@@ -28,7 +28,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   return (
     <div className="space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>

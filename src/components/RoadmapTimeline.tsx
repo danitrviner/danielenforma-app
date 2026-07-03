@@ -207,7 +207,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -515,7 +515,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div className="rounded-xl border border-white/7 bg-[#0e0e0e] overflow-hidden">
         <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[#c6c9ab]" style={{ fontSize: 13 }}>{icon}</span>
-          <span className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+          <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
         </div>
         <div className="overflow-x-auto">
           <div style={{ position: 'relative', width: containerWidth, height }}>
@@ -549,7 +549,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo
@@ -590,7 +590,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               style={{ height: LANE_H }}
               className="flex items-center justify-end pr-3 border-b border-[#1e1e1e]"
             >
-              <span className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
             </div>
           ))}
           {showWeightChart && (
@@ -599,7 +599,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               className="flex flex-col justify-between pr-2 py-1.5 border-b border-[#1e1e1e]"
             >
               <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMax.toFixed(1)}</span>
-              <span className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest text-right block">Peso</span>
+              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest text-right block">Peso</span>
               <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMin.toFixed(1)}</span>
             </div>
           )}
@@ -616,7 +616,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: HEADER_H }}
                 className="flex items-end pb-1.5 pl-1.5"
               >
-                <span className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
 
@@ -670,7 +670,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
         <div className="border border-white/7 rounded-xl p-4 space-y-2">
-          <p className="font-mono text-[9px] uppercase text-[#c6c9ab] tracking-widest mb-2">Sin fecha asignada</p>
+          <p className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
               <button

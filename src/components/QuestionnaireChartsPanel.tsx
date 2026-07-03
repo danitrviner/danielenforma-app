@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-[#c6c9ab] mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
@@ -102,7 +102,7 @@ function QuestionChart({
   if (raw.length === 0) return null;
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
       <div>
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -192,7 +192,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
     <div className="space-y-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>

@@ -298,7 +298,7 @@ function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggle
         {(recipe.categoria || recipe.categories.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
-              <span key={c} className="px-2.5 py-0.5 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[9px] uppercase tracking-wider">{c}</span>
+              <span key={c} className="px-2.5 py-0.5 rounded-full bg-[#2a2a2a] text-[#c6c9ab] font-mono text-[10px] uppercase tracking-wider">{c}</span>
             ))}
           </div>
         )}
@@ -683,7 +683,7 @@ export default function RecipesScreen({ profile }: Props) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setIndyaIntake(null)}
-            className={`px-3 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-wide transition-all ${
+            className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
               indyaIntake === null
                 ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
                 : 'bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white'
@@ -693,7 +693,7 @@ export default function RecipesScreen({ profile }: Props) {
             <button
               key={k}
               onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-wide transition-all ${
+              className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
                   ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
                   : 'bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white'

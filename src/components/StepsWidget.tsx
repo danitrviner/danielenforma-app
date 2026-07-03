@@ -63,14 +63,14 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
         <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando pasos...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">directions_walk</span>
@@ -98,7 +98,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+            className="flex-1 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
           <button
             onClick={handleSave}

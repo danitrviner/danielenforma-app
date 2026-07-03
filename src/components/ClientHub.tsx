@@ -617,7 +617,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           <button
             onClick={handleSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -626,7 +626,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
       {/* Sub-tab bar */}
       <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5 sticky top-0 z-20 bg-[#141414]/95 backdrop-blur-sm">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-xl gap-1 min-w-max">
+        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
           {([
             { id: 'revisiones',    label: 'Revisiones',    icon: 'rate_review'        },
             { id: 'entrenamientos',label: 'Entrenamientos',icon: 'fitness_center'     },
@@ -656,7 +656,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
         <TaskManagerPanel athleteEmail={athlete.email} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
           {editingOnboarding ? (
             <OnboardingForm
               athleteEmail={athlete.email}
@@ -668,7 +668,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           ) : onboardingData ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#fbcb1a] text-base">person_check</span>
                   Ficha de iniciación
                 </h3>
@@ -738,8 +738,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                     { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  ef: 25, color: '#00eefc' },
                     { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: '#ff6b6b' },
                   ]).map(m => (
-                    <div key={m.label} className="bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-1.5 text-center">
-                      <p className="font-mono text-[9px] uppercase" style={{ color: m.color }}>{m.label}</p>
+                    <div key={m.label} className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-1.5 text-center">
+                      <p className="font-mono text-[10px] uppercase" style={{ color: m.color }}>{m.label}</p>
                       <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
                       <p className="font-mono text-[9px] text-[#555]">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
                     </div>
@@ -764,7 +764,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Comidas ({onboardingData.mealCount ?? onboardingData.meals.length} ingestas)</p>
                   <div className="flex flex-wrap gap-1.5">
                     {onboardingData.meals.map(m => (
-                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5">
+                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5">
                         <span className="font-mono text-[10px] text-[#c6c9ab]">{m.name}</span>
                         {m.needsTupper && (
                           <span className="font-mono text-[8px] bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] rounded px-1.5 py-0.5">tupper</span>
@@ -1016,7 +1016,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm">add</span>Crear ficha
               </button>
@@ -1026,8 +1026,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
         {/* ── Preferencias alimentarias ────────────────────────────────── */}
         {onboardingData && (
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
-            <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2 mb-4">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant</span>
               Preferencias alimentarias
             </h3>
@@ -1045,7 +1045,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
         {/* ── Quick stats + weekly compliance ────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-3">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
             {[
               { label: 'Correo',     value: athlete.email,                                        color: 'text-white'     },
               { label: 'Racha',      value: `${athlete.currentStreak || 0} Semanas`,              color: 'text-orange-400'},
@@ -1060,8 +1060,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               </div>
             ))}
           </div>
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-            <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
               Cumplimiento Semanal
             </h3>
@@ -1107,7 +1107,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
           if (items.length === 0) {
             return (
-              <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-12 text-center text-[#c6c9ab]">
+              <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-12 text-center text-[#c6c9ab]">
                 <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">history_edu</span>
                 <p className="text-sm font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-xs mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
@@ -1116,10 +1116,10 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           }
 
           return (
-            <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
-                <h3 className="font-sans font-bold text-sm text-white uppercase tracking-wide">Historial unificado</h3>
+                <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-[9px] text-[#c6c9ab] ml-1">({items.length} entradas)</span>
               </div>
               <div className="divide-y divide-[#2a2a2a]/40">
@@ -1174,14 +1174,14 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                               <div className="flex items-center gap-2 pb-1">
                                 <button
                                   onClick={() => handleStartEditCheckin(c, key)}
-                                  className="flex items-center gap-1 font-mono text-[9px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
                                 >
                                   <span className="material-symbols-outlined text-xs">edit</span>Editar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCheckin(c.id, key)}
                                   disabled={deletingReviewKey === key}
-                                  className="flex items-center gap-1 font-mono text-[9px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
+                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
                                 >
                                   <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                                 </button>
@@ -1230,11 +1230,11 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
                                     <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                   </button>
                                   <button onClick={() => { setEditingReviewKey(null); setCheckinEditForm(null); }}
-                                    className="px-3 py-1.5 font-mono text-[9px] uppercase text-[#c6c9ab] border border-white/7 rounded-lg hover:border-[#c6c9ab]/40 transition-all">
+                                    className="px-3 py-1.5 font-mono text-[10px] uppercase text-[#c6c9ab] border border-white/7 rounded-lg hover:border-[#c6c9ab]/40 transition-all">
                                     Cancelar
                                   </button>
                                 </div>
@@ -1247,8 +1247,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                                 { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
                                 { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                               ].map(cell => (
-                                <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-lg border border-white/40">
-                                  <span className="block text-[#c6c9ab] text-[9px] uppercase">{cell.label}</span>
+                                <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
+                                  <span className="block text-[#c6c9ab] text-[10px] uppercase">{cell.label}</span>
                                   <strong className={`${cell.color}`}>{cell.value}</strong>
                                 </div>
                               ))}
@@ -1278,7 +1278,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                               <button
                                 type="submit"
                                 disabled={unifiedSubmitting}
-                                className="h-[36px] px-5 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                                className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                                 <span className="material-symbols-outlined text-sm">send</span>
@@ -1329,14 +1329,14 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                             <div className="flex items-center gap-2 pb-1">
                               <button
                                 onClick={() => handleStartEditResponse(r, key)}
-                                className="flex items-center gap-1 font-mono text-[9px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
                               >
                                 <span className="material-symbols-outlined text-xs">edit</span>Editar
                               </button>
                               <button
                                 onClick={() => handleDeleteResponse(r.id, key)}
                                 disabled={deletingReviewKey === key}
-                                className="flex items-center gap-1 font-mono text-[9px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
+                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
                               >
                                 <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                               </button>
@@ -1379,11 +1379,11 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                               })}
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleSaveResponseEdit(r.id)} disabled={savingEdit}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
                                   <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingReviewKey(null); setResponseEditAnswers([]); }}
-                                  className="px-3 py-1.5 font-mono text-[9px] uppercase text-[#c6c9ab] border border-white/7 rounded-lg hover:border-[#c6c9ab]/40 transition-all">
+                                  className="px-3 py-1.5 font-mono text-[10px] uppercase text-[#c6c9ab] border border-white/7 rounded-lg hover:border-[#c6c9ab]/40 transition-all">
                                   Cancelar
                                 </button>
                               </div>
@@ -1422,9 +1422,9 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
 
           return (
-            <div className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
                   Historial Fotográfico
                   {athletePhotos.length > 0 && (
@@ -1440,7 +1440,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                     <button
                       key={v.id}
                       onClick={() => setSelectedView(v.id)}
-                      className={`px-3 py-1 rounded font-mono text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
+                      className={`px-3 py-1 rounded font-sans text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
                     >{v.label}</button>
                   ))}
                 </div>
@@ -1456,7 +1456,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                 <div className="p-3 bg-[#131313]/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -1470,7 +1470,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
                       <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-mono text-[10px] font-black shadow-md">
+                        <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -1489,9 +1489,9 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
         })()}
 
         {/* ── Asignar cuestionario ───────────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#fbcb1a] text-sm">quiz</span>
                   Asignar cuestionario
                 </h3>
@@ -1561,7 +1561,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>
@@ -1576,7 +1576,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                     const tmpl = coachQuestionnaires.find(q => q.id === a.questionnaireId);
                     const schedLabel = scheduleLabel(a.schedule);
                     return (
-                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2">
+                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
                         <span className="material-symbols-outlined text-[#fbcb1a] text-sm">quiz</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-bold text-white text-xs truncate">{tmpl?.title ?? a.questionnaireId}</p>
@@ -1593,8 +1593,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             </div>
 
             {/* ── Asignar fotos de check-in ─────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
                 Asignar fotos de check-in
               </h3>
@@ -1637,7 +1637,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                 <button
                   onClick={handleAssignPhotoCheckIn}
                   disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                  className="px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                  className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                 >
                   {assigningPhoto ? '…' : 'Asignar'}
                 </button>
@@ -1650,7 +1650,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                     const schedLabel = scheduleLabel(a.schedule);
                     const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
                     return (
-                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2">
+                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
                         <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
@@ -1667,13 +1667,13 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             </div>
 
             {/* ── Peso corporal (coach view) ────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
               <BodyweightPanel athleteEmail={athlete.email} readOnly />
             </div>
 
             {/* ── Gráficas de evolución ──────────────────────────────────── */}
             {athleteQResponses.length > 0 && coachQuestionnaires.length > 0 && (
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
                 <QuestionnaireChartsPanel
                   questionnaires={coachQuestionnaires}
                   responses={athleteQResponses}
@@ -1683,8 +1683,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
             {/* ── Respuestas del atleta ──────────────────────────────────── */}
             {athleteQResponses.length > 0 && (
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
                   Respuestas enviadas
                 </h3>
@@ -1696,7 +1696,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                       const tmpl = coachQuestionnaires.find(q => q.id === r.questionnaireId);
                       const date = new Date(r.submittedAt);
                       return (
-                        <details key={r.id} className="bg-[#1e1e1b] border border-white/7 rounded-lg overflow-hidden">
+                        <details key={r.id} className="bg-[#1e1e1b] border border-white/7 rounded-xl overflow-hidden">
                           <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-[#222]">
                             <span className="material-symbols-outlined text-[#c6c9ab] text-sm">expand_more</span>
                             <div className="flex-1 min-w-0">
@@ -1797,8 +1797,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               .sort((a, b) => b.date.localeCompare(a.date));
             if (logsWithNotes.length === 0) return null;
             return (
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-3">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-amber-300 text-base">sticky_note_2</span>
                   Notas del atleta
                 </h3>
@@ -1841,9 +1841,9 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           })()}
 
           {/* Workout assignments */}
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm">fitness_center</span>
                 Entrenamientos asignados
               </h3>
@@ -1926,9 +1926,9 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
           /* ── Diet list + config ── */
           <div className="space-y-6">
             {/* Diets */}
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#fbcb1a] text-sm">nutrition</span>
                   Dietas disponibles
                 </h3>
@@ -1944,7 +1944,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   )}
                   <button
                     onClick={() => setDietEditorDiet(null)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
                   >
                     <span className="material-symbols-outlined text-sm">add</span>
                     Nueva dieta
@@ -2001,7 +2001,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         {/* Edit button */}
                         <button
                           onClick={() => setDietEditorDiet(dt)}
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[9px] uppercase rounded-lg transition-all"
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                           title="Editar dieta"
                         >
                           <span className="material-symbols-outlined text-sm">edit</span>
@@ -2015,8 +2015,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             </div>
 
             {/* Weekly schedule grid */}
-            <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-              <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_month</span>
                 Programación semanal
               </h3>
@@ -2067,8 +2067,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
             {/* Nutrition mode config */}
             {nutritionConfig && (
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00eefc] text-sm">tune</span>
                   Modos de alimentación habilitados
                 </h3>
@@ -2097,8 +2097,8 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
             {/* Step goal config */}
             {nutritionConfig && (
-              <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
-                <h3 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00eefc] text-sm">directions_walk</span>
                   Objetivo de pasos
                 </h3>
@@ -2114,7 +2114,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         const val = parseInt(e.target.value, 10);
                         handleSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                       }}
-                      className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                      className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
                     />
                   </div>
                   <div>
@@ -2128,7 +2128,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                         const val = parseFloat(e.target.value);
                         handleSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                       }}
-                      className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                      className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
                     />
                   </div>
                 </div>
@@ -2213,7 +2213,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               <button
                 onClick={handleCreateAssignment}
                 disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isAssigning ? (
                   <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>

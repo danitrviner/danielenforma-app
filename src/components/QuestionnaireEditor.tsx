@@ -106,7 +106,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       </div>
 
       {/* Title + description */}
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">Título *</label>
           <input
@@ -142,7 +142,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         </div>
 
         {form.questions.map((q, idx) => (
-          <div key={q.id} className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-3">
+          <div key={q.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
 
             {/* Main row */}
             <div className="flex items-start gap-2">
@@ -330,7 +330,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         <button
           onClick={onSave}
           disabled={saving || !form.title.trim()}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? 'Guardando…' : isNew ? 'Crear cuestionario' : 'Guardar cambios'}
         </button>

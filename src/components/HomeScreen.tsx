@@ -47,7 +47,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <StepsWidget athleteEmail={profile.email} />
 
       {/* ── Entrenamientos pendientes de esta semana + atrasados ─────────────── */}
-      <section className="bg-[#181816] border border-white/7 rounded-xl p-4 sm:p-5">
+      <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
         <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
           Entrenamiento
@@ -67,7 +67,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
               <div className="space-y-1.5">
-                <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-[#fbcb1a]">Esta semana</span>
+                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-[#fbcb1a]">Esta semana</span>
                 {thisWeekPending.map(a => (
                   <button
                     key={a.id}
@@ -82,7 +82,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             )}
             {overdue.length > 0 && (
               <div className="space-y-1.5">
-                <span className="font-mono text-[9px] uppercase font-bold tracking-widest text-red-300">Atrasados</span>
+                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-red-300">Atrasados</span>
                 {overdue.map(a => (
                   <button
                     key={a.id}

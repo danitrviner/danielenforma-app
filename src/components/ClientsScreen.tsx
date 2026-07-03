@@ -244,7 +244,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               type="submit"
               disabled={inviting || !inviteEmail.trim()}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-mono font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-sm">mail</span>
               {inviting ? 'Enviando...' : 'Invitar'}
@@ -257,13 +257,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Pending invites */}
       {pendingInvites.length > 0 && (
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
           <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
             Invitaciones pendientes ({pendingInvites.length})
           </p>
           <div className="space-y-1.5">
             {pendingInvites.map(inv => (
-              <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-lg px-3 py-2">
+              <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
                 <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans text-xs text-white truncate">{inv.email}</p>
@@ -393,7 +393,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex items-center justify-between">
           <p className="text-xs text-[#c6c9ab] font-sans">Selecciona un atleta para ver su hub completo.</p>
           <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1 border border-teal-500/20 rounded font-mono uppercase">
             {athletes.length} ATLETAS
@@ -482,7 +482,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       {/* Adherence score */}
                       <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border font-mono ${adh.bg}`}>
-                        <span className={`text-[9px] uppercase font-bold flex items-center gap-1 ${adh.text}`}>
+                        <span className={`text-[10px] uppercase font-bold flex items-center gap-1 ${adh.text}`}>
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
                         </span>

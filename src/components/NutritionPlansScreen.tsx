@@ -364,7 +364,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       <div className="space-y-5">
         {/* Athlete selector — hidden in embedded mode */}
         {!isEmbedded && (
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-4">
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
             <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">
               Atleta
             </label>
@@ -388,7 +388,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Crear dieta
@@ -413,7 +413,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {diets.map(dt => {
               const dtPlaced = computePlaced(dt.meals);
               return (
-                <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
+                <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-2xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
@@ -462,7 +462,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <p className="text-sm text-[#c6c9ab]">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] font-mono text-xs uppercase rounded-xl">Cancelar</button>
-                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-mono font-bold text-xs uppercase rounded-xl hover:bg-red-500/30 transition-colors">Eliminar</button>
+                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-xs uppercase rounded-xl hover:bg-red-500/30 transition-colors">Eliminar</button>
               </div>
             </div>
           </div>
@@ -540,7 +540,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       </div>
 
       {/* Metadata */}
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-4">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <h3 className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">Datos generales</h3>
         <div>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">Nombre *</label>
@@ -589,7 +589,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
             ]).map(m => (
               <div key={m.label} className={`border rounded-lg px-3 py-1.5 text-center ${m.bg}`}>
-                <p className={`font-mono text-[9px] uppercase font-bold ${m.color}`}>{m.label}</p>
+                <p className={`font-mono text-[10px] uppercase font-bold ${m.color}`}>{m.label}</p>
                 <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
                 <p className="font-mono text-[9px] text-[#555]">{m.pct}%</p>
               </div>
@@ -613,7 +613,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       )}
 
       {/* Budget */}
-      <div className="bg-[#181816] border border-white/7 rounded-xl p-5 space-y-3">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
             Presupuesto diario (intercambios por categoría)
@@ -625,7 +625,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
                 setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[9px] uppercase tracking-wide rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[10px] uppercase tracking-wide rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-sm">auto_fix_high</span>
               Prefijar desde macros
@@ -680,10 +680,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         </div>
 
         {form.meals.map((meal, mi) => (
-          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-[#1c1b1b]/60 border-b border-white/7">
-              <span className="w-6 h-6 rounded-full bg-[#fbcb1a] text-black font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-[#fbcb1a] text-black font-sans text-xs font-bold flex items-center justify-center flex-shrink-0">
                 {mi + 1}
               </span>
               <input
@@ -815,7 +815,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {previewMode === 'lista' && (
               <div className="space-y-2">
                 {form.meals.map((meal, mi) => (
-                  <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-xl px-4 py-3">
+                  <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3">
                     <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
                     {meal.items.length === 0 ? (
                       <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
@@ -850,7 +850,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(226,255,0,0.2)]"
+          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(226,255,0,0.2)]"
         >
           {saving
             ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -877,7 +877,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
                   <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
+                    className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
                   >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
@@ -886,7 +886,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
+                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>

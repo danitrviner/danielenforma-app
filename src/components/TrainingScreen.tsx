@@ -329,7 +329,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {wo && (
                 <button
                   onClick={() => openPlayer(a)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-mono font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
                 >
                   <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
@@ -387,7 +387,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
           const doneSets = exSets.filter(s => s.done).length;
           return (
-            <div key={`${we.exerciseId}-${exIdx}`} className="bg-[#181816] border border-white/7 rounded-xl overflow-hidden">
+            <div key={`${we.exerciseId}-${exIdx}`} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
               {/* Exercise header */}
               <div className="flex items-center gap-3 p-4 bg-[#161616] border-b border-white/50">
                 <span className="font-mono text-[10px] text-[#c6c9ab]/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
@@ -540,7 +540,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         })}
 
         {/* Nota del entrenamiento completo */}
-        <div className="bg-[#181816] border border-white/7 rounded-xl p-4 space-y-2">
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
           <label className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
           <textarea
             value={workoutNoteInput}
@@ -570,7 +570,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <button
             onClick={handleFinish}
             disabled={!canFinish || isFinishing}
-            className="flex items-center gap-2 px-8 py-4 bg-[#fbcb1a] text-black font-mono font-black text-sm uppercase rounded-2xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-[#fbcb1a]/20 disabled:shadow-none"
+            className="flex items-center gap-2 px-8 py-4 bg-[#fbcb1a] text-black font-sans font-black text-sm uppercase rounded-2xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-[#fbcb1a]/20 disabled:shadow-none"
           >
             {isFinishing ? (
               <><span className="material-symbols-outlined animate-spin">refresh</span>Guardando...</>
@@ -597,7 +597,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </p>
         </div>
         {/* Week summary chip */}
-        <div className="flex items-center gap-2 bg-[#181816] border border-white/7 px-4 py-2 rounded-xl">
+        <div className="flex items-center gap-2 bg-[#181816] border border-white/7 px-4 py-2 rounded-2xl">
           <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_today</span>
           <span className="font-mono text-xs text-[#c6c9ab]">Esta semana:</span>
           <span className="font-mono text-sm font-black text-white">{weekCompleted}/{weekAssignments.length}</span>
@@ -659,7 +659,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             </div>
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
-              <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-14 text-center">
+              <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
                 <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/30 block mb-3">fitness_center</span>
                 <p className="text-white font-bold text-sm">Sin entrenamientos pendientes</p>
                 <p className="text-[#c6c9ab] text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>
@@ -696,7 +696,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
             )
           ) : filteredAssignments.length === 0 ? (
-            <div className="bg-[#181816] border border-dashed border-white/7 rounded-xl p-14 text-center">
+            <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
               <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/30 block mb-3">fitness_center</span>
               <p className="text-white font-bold text-sm">Sin entrenamientos {listFilter === 'completed' ? 'completados' : ''}</p>
               <p className="text-[#c6c9ab] text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>
