@@ -126,12 +126,19 @@ components/
   NutritionScreen.tsx        — tracker nutrición del atleta (vista LISTA/FOTOS/NÚMEROS)
   NutritionPlansScreen.tsx   — editor de dietas del coach
   DietMealsView.tsx          — DietViewSelector, DietFotosView, DietNumerosView, useDietViewMode
-  CoachNoteEditor.tsx        — textarea nota + upload/grabar vídeo (MediaRecorder)
-  OnboardingForm.tsx         — anamnesis completa (Mifflin, comidas, cocina, objetivo)
-  ClientHub.tsx              — hub del coach (Revisiones, Entrenamientos, Dietas, etc.)
-  ProfileScreen.tsx          — perfil atleta (gamificación + Editar ficha)
+  OnboardingForm.tsx         — anamnesis completa (Mifflin, comidas, cocina, objetivo, salud, descanso)
+  ClientHub.tsx              — hub del coach (Revisiones, Entrenamientos, Dietas, etc.) — 2230 líneas
+  ProfileScreen.tsx          — perfil atleta (gamificación + Editar ficha, oculto para el coach)
   DietAutoGenerator.tsx      — generador automático de dieta desde onboarding
+  ProgressRing.tsx           — anillo SVG de progreso compartido (HomeScreen + ClientHub)
+  theme.ts                   — constantes de color/tipografía/spacing extraídas (solo referencia, no
+                                interpolable en className por las reglas de JIT de Tailwind — ver
+                                comentario en el propio archivo)
 ```
+
+**Nota:** `CoachNoteEditor.tsx` (nota + vídeo-nota de dieta) se **eliminó** en la sesión 2026-07-02 —
+la vídeo-nota no se usaba y se quitó por completo (`Diet.coachVideoUrl`, `uploadDietVideo` también
+eliminados). La nota de texto de dieta hoy es un `<textarea>` simple inline en `NutritionPlansScreen.tsx`.
 
 ---
 
@@ -140,15 +147,6 @@ components/
 - **Nueva ficha:** `saveOnboarding(data)` → `setDoc` (overwrite completo)
 - **Editar ficha:** `updateOnboarding(data)` → `updateDoc` (merge parcial)
 - `likedFoods` / `dislikedFoods` los gestiona `FoodPreferencesPanel` por separado vía `updateOnboardingFoods`
-
-## Persistencia dieta + vídeo
-
-```ts
-// Nueva dieta con vídeo:
-const diet = await createDiet(data);                          // 1. crea doc
-const url  = await uploadDietVideo(email, diet.id, blob);     // 2. sube Storage
-await updateDiet(diet.id, { coachVideoUrl: url });            // 3. actualiza URL
-```
 
 ---
 
@@ -160,7 +158,6 @@ interface Diet {
   budget: Record<FoodCategory, number>;
   meals: DietMeal[];
   coachNote?: string;
-  coachVideoUrl?: string;
   isDraft?: boolean;
 }
 
@@ -187,6 +184,85 @@ interface OnboardingData {
   completedAt: string;
 }
 ```
+
+---
+
+## Sesión 2026-07-03 — Rebrand visual completo (rama `rebranding`, NO mergeada a `main`)
+
+**⚠️ Estado: todo el trabajo de esta sesión vive en la rama `rebranding` (subida a `origin/rebranding`),
+`main` sigue en la paleta antigua. Falta decidir cuándo/si hacer merge.** Todos los commits tienen
+`tsc --noEmit` + `npm run build` limpios, pero **nada se ha verificado visualmente en navegador**
+(sin herramienta de browser en esta CLI — ver [[feedback-enforma-workflow]]).
+
+**1. Rebrand de color/tipografía/spacing** (todo `src/components/**` + `App.tsx` + `index.html`):
+- Acento volt `#e2ff00` → dorado `#fbcb1a` (hover `#bad200` → `#d4a800`) en los 49 componentes,
+  variantes de opacidad e inline styles incluidos.
+- Fondos más cálidos: `#121212`/`#171717`/`#131313` → `#181816`; `#1a1a1a`/`#191919` → `#1e1e1b`;
+  bordes sólidos `#2a2a2a` → `border-white/N` translúcido (preservando la opacidad original de
+  cada variante).
+- Botones de acción sobre fondo dorado y badges de estado: `font-mono` → `font-sans`.
+- h3 de cards: `text-sm` → `text-base`. Labels uppercase reducidos un paso (`10px→xs`, `9px→10px`).
+- Radios: `rounded-xl` → `rounded-2xl` en cards contenedor; `rounded-lg` → `rounded-xl` en
+  secundarias. `p-4` → `p-5` solo en las cards principales con h3 dentro (no en list items).
+- `index.html`: quitado el flash de color viejo antes de que cargue React (bg/text/selection del
+  `<body>`), añadido `favicon.svg` (monograma "EF", placeholder) + `manifest.json` + `theme-color`.
+- `src/theme.ts` (nuevo): centraliza todos los valores de color/tipografía/spacing extraídos,
+  como referencia — no se usa para generar clases Tailwind (ver comentario en el archivo sobre
+  por qué el JIT de Tailwind v4 exige strings literales en `className`).
+
+**2. Rediseño de pantallas clave del atleta** (Home + Entrenamiento), inspirado en una referencia
+visual que compartió Dani (mockup con anillo de progreso circular, tarjetas de foto, nav pill):
+- **`HomeScreen.tsx`:** nueva card "Resumen de hoy" con `ProgressRing` (ver abajo) mostrando % de
+  entrenamientos completados esta semana — dato real, mismo cálculo que ya existía en
+  `TrainingScreen`. **Decisión explícita: sin fotos en tarjetas (no hay flujo de subida) ni
+  calorías/tiempo activo inventados** — solo métricas con datos reales ya disponibles.
+- **`TrainingScreen.tsx`:** thumbnail de ejercicio cuadrado → circular; cuando se completan todas
+  las series se muestra un check circular en vez del contador de texto.
+- **`App.tsx`:** el header/sidebar/nav inferior se había quedado **fuera** del sed original del
+  rebrand (usaba patrones de color que no estaban en la lista de swap) — corregido. Nav inferior
+  móvil rediseñada: el tab activo ahora es una píldora con fondo/borde dorado translúcido.
+- **`src/components/ProgressRing.tsx`** (nuevo, extraído de `HomeScreen.tsx`): anillo SVG de
+  progreso reutilizable (`stroke-dasharray`/`stroke-dashoffset`, sin librería de gráficos), prop
+  `color` opcional. Usado en dorado en `HomeScreen` y en cian en `ClientHub` (ver abajo).
+
+**3. Rediseño del lado coach** (`ClientsScreen.tsx`, `ReviewsScreen.tsx`, `ClientHub.tsx`):
+- Limpieza de restos del rebrand que el sed inicial no cubrió: `#131313` (fondo, nunca estuvo en
+  la lista de swap) y sombras `rgba(226,255,0,*)` (glow volt en rgba crudo, no hex) — 10+ archivos.
+- Card de atleta en `ClientsScreen.tsx`: `rounded-xl` → `rounded-2xl`.
+- Badges de estado (`Revisado`/`Pendiente`/`Activos`/`Al día`/vencimiento de plan/etc.) en
+  `ClientsScreen.tsx`, `ReviewsScreen.tsx` y `ClientHub.tsx`: `font-mono` → `font-sans`,
+  `rounded` → `rounded-lg`.
+- `ClientHub.tsx` → card "Cumplimiento Semanal": la barra lineal cian se sustituyó por
+  `<ProgressRing pct={weekPct} color="#00eefc" />` (mismos `weekCompleted`/`weekTotal` ya
+  calculados) — mismo lenguaje visual que `HomeScreen`, color distinto para diferenciar coach/atleta.
+- **`src/components/CoachScreen.tsx` (862 líneas) eliminado** — código muerto, nunca importado en
+  `App.tsx` (`ClientsScreen.tsx` es la pantalla real del coach). Confirmado con `grep` antes de
+  borrar; build limpio después (y el CSS final bajó de tamaño).
+
+**4. Auditoría móvil de pantallas del atleta** — se revisaron a mano (no ciegamente) los "problemas"
+que un análisis automático marcó como alta prioridad, para no aplicar cambios que fueran regresiones:
+- **Corregido de verdad:** `NutritionScreen.tsx` — grid de "Progreso por categoría" (5-6 categorías
+  de macros) iba en `grid-cols-3` fijo, apretado en 375px → `grid-cols-2 sm:grid-cols-3`.
+- **Revisado y descartado a propósito** (documentado para que nadie lo "arregle" sin motivo):
+  - Tríos de estadísticas cortas (`StepsWidget.tsx`, `ProfileScreen.tsx` Racha/Nivel/Meta,
+    `MetricsScreen.tsx` Actual/Inicial/Dif) en `grid-cols-3` — son números cortos, colapsar a 1
+    columna se vería peor, no mejor.
+  - Tabla de series (`TrainingScreen.tsx`, `min-w-[480px]`) y gráfico SVG (`MetricsScreen.tsx`,
+    `min-w-[450px]`) — ya envueltos en `overflow-x-auto`; son datos densos que necesitan ese ancho
+    para que los inputs sigan siendo usables. El scroll horizontal contenido es el patrón correcto.
+  - Iron Calendar (`ProfileScreen.tsx`, `grid-cols-7` de casillas sin texto) — cabe bien en 375px.
+  - Botones de icono en `NutritionScreen.tsx` (swap/eliminar alimento) — ya usan el truco
+    `p-1.5 -m-1.5` para ampliar el área táctil sin más espacio visual.
+
+**Pendiente / próximos pasos posibles (nada urgente, a decidir con Dani):**
+- Merge de `rebranding` → `main` (y despliegue, cuando Dani decida publicar).
+- QA visual real en navegador de todo lo anterior (checklist: anillo en 375px, nav inferior no se
+  corta, contraste de texto sobre los fondos nuevos, grid de macros en Nutrición).
+- Logo/favicon real (hoy es un monograma "EF" placeholder).
+- Subida de fotos para ejercicios/rutinas (campo `Exercise.imageUrl` existe, sin flujo de subida —
+  se dejó fuera de alcance a petición explícita de Dani).
+- `TrainingCoachScreen.tsx` / `NutritionCoachScreen.tsx` (las otras 2 pestañas del coach) — no
+  exploradas ni tocadas en este rebrand.
 
 ---
 
@@ -249,5 +325,12 @@ interface OnboardingData {
 - `stripUndefined` en **todo** `setDoc` / `updateDoc` / `addDoc`
 - No añadir comentarios salvo WHY no obvio
 - Mobile-first en el lado atleta
-- Tailwind dark: fondo `#131313`, cards `#121212`, bordes `#2a2a2a`, acento `#e2ff00`, info `#00eefc`
-- `font-mono` para datos/métricas, `font-sans` para títulos
+- **Paleta (rebrand 2026-07-03, rama `rebranding`):** fondo `#111110`, cards `#181816`, cards
+  elevadas `#1e1e1b`, bordes `border-white/7` (translúcido, no hex sólido), acento **dorado**
+  `#fbcb1a` (hover `#d4a800`), info `#00eefc`. Radios: `rounded-2xl` en cards contenedor,
+  `rounded-xl`/`rounded-lg` en cards secundarias/chips. Variables espejo en `src/index.css`
+  (`@theme`: `--color-accent`, `--color-bg-card`, etc.) y documentadas (no interpolables en
+  className) en `src/theme.ts`. **El antiguo acento volt `#e2ff00` ya no se usa en ningún sitio.**
+- `font-mono` para datos/métricas/fechas/códigos cortos (HC, MEV...). `font-sans` para títulos,
+  botones de acción, nombres propios y **badges de estado** (Revisado/Pendiente/Activos/etc. —
+  antes eran `font-mono`, se corrigió en el rebrand).
