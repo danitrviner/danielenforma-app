@@ -354,7 +354,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div className="space-y-5 pb-24">
         {/* Player header */}
-        <header className="flex items-center gap-3 pb-4 border-b border-white/60 sticky top-[65px] bg-[#131313] z-30 pt-2">
+        <header className="flex items-center gap-3 pb-4 border-b border-white/60 sticky top-[65px] bg-[#111110] z-30 pt-2">
           <button
             onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); }}
             className="flex items-center gap-1.5 text-xs font-mono text-[#c6c9ab] hover:text-white border border-white/7 hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all flex-shrink-0"

@@ -1453,7 +1453,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   <p className="font-mono text-xs text-[#c6c9ab]">Sin fotos todavía.</p>
                 </div>
               ) : (
-                <div className="p-3 bg-[#131313]/90">
+                <div className="p-3 bg-[#111110]/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group max-w-[240px] mx-auto">
                       <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">

@@ -416,7 +416,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-[#131313] border rounded-xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(226,255,0,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  className={`bg-[#111110] border rounded-xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-white/7'
                   }`}
                 >

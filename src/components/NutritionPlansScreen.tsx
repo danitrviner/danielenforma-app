@@ -843,14 +843,14 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       </div>
 
       {/* Save */}
-      <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-[#131313]">
+      <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-[#111110]">
         <button onClick={handleBack} className="flex-1 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
           Cancelar
         </button>
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(226,255,0,0.2)]"
+          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
         >
           {saving
             ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>

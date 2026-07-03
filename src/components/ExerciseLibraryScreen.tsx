@@ -343,7 +343,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-[#131313]'}`}>
+                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-[#111110]'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (

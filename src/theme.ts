@@ -81,7 +81,7 @@ export const COLORS = {
     surfaceAlt: '#111',
     card: '#121212',
     cardAlt: '#121414',
-    panel: '#131313',
+    panel: '#111110', // rebrand: reemplaza el antiguo #131313
     panelAlt: '#141414',
     raised: '#161616',
     raisedAlt: '#171717',

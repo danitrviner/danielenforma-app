@@ -146,7 +146,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
-        <div className="bg-[#131313] border border-dashed border-white/7 rounded-xl p-16 text-center text-[#c6c9ab]">
+        <div className="bg-[#111110] border border-dashed border-white/7 rounded-xl p-16 text-center text-[#c6c9ab]">
           <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 block">verified_user</span>
           <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí.</p>

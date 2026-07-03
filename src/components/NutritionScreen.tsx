@@ -724,7 +724,7 @@ export default function NutritionScreen({ profile }: Props) {
                       })()}
 
                       {/* Item list */}
-                      <div className="p-3 border-t border-white/60 bg-[#131313]/40 space-y-2">
+                      <div className="p-3 border-t border-white/60 bg-[#111110]/40 space-y-2">
                         {meal.items.length === 0 ? (
                           <p className="text-center py-3 font-mono text-[10px] text-[#c6c9ab] italic">Sin alimentos en esta comida.</p>
                         ) : meal.items.map((item, idx) => {

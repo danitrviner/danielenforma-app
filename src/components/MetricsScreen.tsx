@@ -358,7 +358,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   return (
                     <div 
                       key={idx} 
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#fbcb1a] border-transparent shadow-[0_0_6px_rgba(226,255,0,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#fbcb1a] border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
                       title={isActive ? "Entrenamiento registrado" : "Próximo entreno"}
                     />
                   );

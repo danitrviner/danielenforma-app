@@ -200,7 +200,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
 
-        <div className="w-full max-w-md bg-[#131313] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
+        <div className="w-full max-w-md bg-[#111110] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 text-[#fbcb1a] mb-2">
               <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
@@ -248,7 +248,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
 
-      <div className="w-full max-w-md bg-[#131313] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
+      <div className="w-full max-w-md bg-[#111110] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 text-[#fbcb1a] mb-2 animate-pulse">

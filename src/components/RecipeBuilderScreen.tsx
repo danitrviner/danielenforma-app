@@ -285,7 +285,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       {/* ── FORM MODAL ──────────────────────────────────────────────────── */}
       {showForm && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto p-4">
-          <div className="w-full max-w-2xl bg-[#131313] border border-white/7 rounded-2xl p-6 my-6 space-y-5">
+          <div className="w-full max-w-2xl bg-[#111110] border border-white/7 rounded-2xl p-6 my-6 space-y-5">
 
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
