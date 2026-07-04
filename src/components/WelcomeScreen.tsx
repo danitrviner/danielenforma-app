@@ -203,7 +203,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <div className="w-full max-w-md bg-[#111110] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 text-[#fbcb1a] mb-2">
-              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+              <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
               <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
             </div>
             <p className="text-[#c6c9ab] text-xs font-mono tracking-widest uppercase">Confirma tu invitación</p>
@@ -252,7 +252,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 text-[#fbcb1a] mb-2 animate-pulse">
-            <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+            <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
             <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
           </div>
           <p className="text-[#c6c9ab] text-xs font-mono tracking-widest uppercase">ELITE PERFORMANCE SYSTEM</p>

@@ -148,7 +148,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-[#fbcb1a] animate-pulse">
-          <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Sincronizando portal deportista...</p>
@@ -170,7 +170,7 @@ export default function App() {
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#111110] fixed top-0 left-0 border-b border-white/7 z-40">
         <div className="flex items-center gap-2 text-[#fbcb1a]">
-          <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-[10px] bg-[#181816] border border-white/7 text-[#c6c9ab] px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
             {profile.role.toUpperCase()} MODE
@@ -191,7 +191,7 @@ export default function App() {
       {/* MOBILE HEADER */}
       <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#111110] border-b border-white/7 sticky top-0 z-40">
         <div className="flex items-center gap-2 text-[#fbcb1a]">
-          <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
           <span className="text-[8px] bg-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
