@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Exercise, Workout, WorkoutExercise, MUSCLE_LABELS } from '../types';
 import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises, seedExercisesIfEmpty } from '../dbService';
+import StatTile from './StatTile';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -240,19 +241,23 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workouts.map(w => (
+            {workouts.map(w => {
+              const totalSets = w.exercises.reduce((s, we) => s + (we.sets || 0), 0);
+              return (
               <div
                 key={w.id}
-                className="bg-[#181816] border border-white/7 rounded-2xl p-5 hover:border-[#fbcb1a]/30 transition-all group relative overflow-hidden"
+                className="bg-[#181816] border border-white/7 rounded-3xl p-5 hover:border-[#fbcb1a]/30 hover:shadow-[0_0_30px_-10px_rgba(251,203,26,0.35)] transition-all group relative overflow-hidden"
               >
                 <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
 
-                <h3 className="font-sans font-bold text-white text-base mb-1 group-hover:text-[#fbcb1a] transition-colors pr-4">
+                <h3 className="font-sans font-black text-white text-base mb-3 group-hover:text-[#fbcb1a] transition-colors pr-4">
                   {w.name}
                 </h3>
-                <p className="font-mono text-[11px] text-[#c6c9ab] mb-3">
-                  {w.exercises.length} {w.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
-                </p>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <StatTile icon="format_list_numbered" label="Ejercicios" value={w.exercises.length} />
+                  <StatTile icon="repeat" label="Series totales" value={totalSets} />
+                </div>
 
                 {w.exercises.length > 0 && (
                   <div className="space-y-1 mb-4">
@@ -293,7 +298,8 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -337,6 +343,13 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           {editingId ? 'Editar rutina' : 'Nueva rutina'}
         </h1>
       </header>
+
+      {editorExercises.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 max-w-sm">
+          <StatTile icon="format_list_numbered" label="Ejercicios" value={editorExercises.length} />
+          <StatTile icon="repeat" label="Series totales" value={editorExercises.reduce((s, we) => s + (we.sets || 0), 0)} />
+        </div>
+      )}
 
       {/* Name */}
       <div>
