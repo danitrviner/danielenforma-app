@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
+import StatTile from './StatTile';
 import {
   getWorkoutAssignmentsForAthlete, getWorkouts, getExercises, seedExercisesIfEmpty,
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
@@ -277,10 +278,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div
         key={a.id}
-        className={`border rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
-            ? 'bg-[#1a1c12] border-[#fbcb1a]/50 shadow-lg shadow-[#fbcb1a]/5'
-            : 'bg-[#181816] border-white/7'
+            ? 'rounded-3xl bg-[#1a1c12] border-[#fbcb1a]/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
+            : 'rounded-2xl bg-[#181816] border-white/7'
         }`}
       >
         <div className="flex items-center gap-4">
@@ -376,8 +377,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
           <div
             className="h-full bg-[#fbcb1a] rounded-full transition-all duration-300"
-            style={{ width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%' }}
+            style={{
+              width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%',
+              filter: 'drop-shadow(0 0 5px rgba(251,203,26,0.6))',
+            }}
           />
+        </div>
+
+        {/* Stat tiles: real progress metrics */}
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile icon="check_circle" label="Series hechas" value={`${doneSetsTotal}/${totalSets}`} />
+          <StatTile icon="format_list_numbered" label="Ejercicios" value={orderedExercises.length} />
         </div>
 
         {/* Exercise cards */}
