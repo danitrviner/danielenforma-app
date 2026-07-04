@@ -331,7 +331,7 @@ export default function CorrelationPanel({
       ) : (
         <>
           {/* Chart */}
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+          <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
               <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
                 {multiNorm
@@ -355,7 +355,7 @@ export default function CorrelationPanel({
                   domain={multiNorm ? [0, 100] : (singleDomain ?? ['auto', 'auto'])}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#181818', border: '1px solid #2a2a2a', borderRadius: 8, fontFamily: 'monospace', fontSize: 11 }}
+                  contentStyle={{ backgroundColor: '#1e1e1b', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, fontFamily: 'monospace', fontSize: 11 }}
                   labelStyle={{ color: '#fbcb1a', marginBottom: 4 }}
                   labelFormatter={(label) => fmtDate(String(label))}
                   formatter={(value: number, name: string, item: { payload?: Record<string, number> }) => {
@@ -395,7 +395,7 @@ export default function CorrelationPanel({
 
           {/* Pearson result */}
           {correlationResult && (
-            <div className={`bg-[#181816] border rounded-2xl p-5 space-y-2 ${
+            <div className={`bg-[#181816] border rounded-3xl p-5 space-y-2 ${
               correlationResult.r === null
                 ? 'border-white/7'
                 : Math.abs(correlationResult.r) > 0.7

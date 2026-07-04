@@ -200,13 +200,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {/* ── Bodyweight panel ──────────────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-2xl">
+      <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl">
         <BodyweightPanel athleteEmail={profile.email} />
       </div>
 
       {/* ── Questionnaire charts ──────────────────────────────────────────────── */}
       {questionnaires.length > 0 && responses.length > 0 && (
-        <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-2xl">
+        <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl">
           <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
         </div>
       )}

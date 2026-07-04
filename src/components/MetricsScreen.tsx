@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, WeightCheckIn } from '../types';
 import { addWeightCheckIn } from '../dbService';
+import StatTile from './StatTile';
 
 interface MetricsScreenProps {
   profile: UserProfile;
@@ -117,7 +118,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Section A: Visual Summary Weight & Core Chart */}
-        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
               <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">ACTUAL</span>
@@ -225,7 +226,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section B: New Check-in Form */}
-        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
@@ -308,7 +309,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
-        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
+        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
@@ -333,19 +334,11 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               </div>
             </div>
 
-            {/* Streak metrics */}
-            <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-white/7 mb-5">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🔥</span>
-                <div className="flex flex-col">
-                  <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Actual</span>
-                  <span className="font-sans font-bold text-lg text-white">{streakDays} Días</span>
-                </div>
-              </div>
-              <div className="text-right flex flex-col">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Máxima</span>
-                <span className="font-mono font-bold text-white text-sm">{maxStreakDays} Días</span>
-              </div>
+            {/* Streak + level metrics */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
+              <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
+              <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
             </div>
 
             {/* Iron Calendar design */}
@@ -385,7 +378,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section D: Historial weight & coach directives logs */}
-        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5 flex flex-col justify-between">
+        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc]">history</span>
