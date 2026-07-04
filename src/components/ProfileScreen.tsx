@@ -7,6 +7,7 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
+import StatTile from './StatTile';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -133,7 +134,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       )}
 
       {/* ── Gamification card ─────────────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 relative overflow-hidden flex flex-col gap-5">
+      <div className="bg-[#181816] border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col gap-5 shadow-[0_0_40px_-10px_rgba(251,203,26,0.3)]">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
 
         {/* Avatar + XP */}
@@ -156,19 +157,12 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           </div>
         </div>
 
-        {/* Streak */}
-        <div className="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-lg border border-white/7">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">🔥</span>
-            <div className="flex flex-col">
-              <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Actual</span>
-              <span className="font-sans font-bold text-lg text-white">{streakDays} Días</span>
-            </div>
-          </div>
-          <div className="text-right flex flex-col">
-            <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Racha Máxima</span>
-            <span className="font-mono font-bold text-white text-sm">{maxStreakDays} Días</span>
-          </div>
+        {/* Streak + level stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
+          <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
+          <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
+          <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="#00eefc" />
         </div>
 
         {/* Iron Calendar */}
@@ -201,22 +195,6 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
               <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
             </span>
-          </div>
-        </div>
-
-        {/* Level metrics */}
-        <div className="grid grid-cols-3 gap-3 bg-[#1c1b1b] p-3 rounded-lg border border-white/7 text-center font-mono">
-          <div>
-            <span className="block text-[9px] text-[#c6c9ab] uppercase">Racha</span>
-            <span className="block text-sm font-bold text-white mt-0.5">{profile.currentStreak} días</span>
-          </div>
-          <div>
-            <span className="block text-[9px] text-[#c6c9ab] uppercase">Nivel</span>
-            <span className="block text-sm font-bold text-[#fbcb1a] mt-0.5">{profile.level} (Élite)</span>
-          </div>
-          <div>
-            <span className="block text-[9px] text-[#c6c9ab] uppercase">Meta</span>
-            <span className="block text-sm font-bold text-[#00eefc] mt-0.5">{profile.targetWeight} kg</span>
           </div>
         </div>
       </div>
