@@ -7,6 +7,7 @@ import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import ProgressRing from './ProgressRing';
+import StatTile from './StatTile';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -50,17 +51,17 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
       {!loadingTraining && weekAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-          <h2 className="font-sans font-bold text-base text-white mb-4">Resumen de hoy</h2>
+        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
+          <h2 className="font-sans font-black uppercase tracking-tight text-lg text-white mb-4">Resumen de hoy</h2>
           <div className="flex items-center gap-5">
             <ProgressRing pct={weekPct} />
-            <div className="flex-1 grid grid-cols-1 gap-2.5 font-mono">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-[#c6c9ab] uppercase tracking-wide">Entrenamientos</span>
-                <span className="text-sm font-bold text-white">{weekCompleted}/{weekAssignments.length}</span>
-              </div>
-              <div className="h-px bg-white/7"></div>
-              <p className="text-[10px] text-[#c6c9ab] leading-relaxed">
+            <div className="flex-1 flex flex-col gap-3">
+              <StatTile
+                icon="fitness_center"
+                label="Entrenamientos"
+                value={`${weekCompleted}/${weekAssignments.length}`}
+              />
+              <p className="text-[10px] text-[#c6c9ab] font-mono leading-relaxed">
                 {weekCompleted === weekAssignments.length
                   ? '¡Semana completada! 💪'
                   : `Te ${weekAssignments.length - weekCompleted === 1 ? 'queda' : 'quedan'} ${weekAssignments.length - weekCompleted} entrenamiento${weekAssignments.length - weekCompleted === 1 ? '' : 's'} esta semana.`}
@@ -78,7 +79,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       {/* ── Entrenamientos pendientes de esta semana + atrasados ─────────────── */}
       <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
-        <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+        <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
           Entrenamiento
           <button
