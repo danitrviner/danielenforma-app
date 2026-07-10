@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds } from '../dbService';
-import ClientHub from './ClientHub';
+import { usePendingReviews } from '../hooks/usePendingReviews';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -15,14 +16,18 @@ type UnifiedItem =
   | { kind: 'response'; sortKey: number; data: QuestionnaireResponse; questionnaire?: Questionnaire };
 
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
+  const navigate = useNavigate();
   const [athletes, setAthletes] = useState<UserProfile[]>([]);
-  const [selectedAthlete, setSelectedAthlete] = useState<UserProfile | null>(null);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [allResponses, setAllResponses] = useState<QuestionnaireResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(true);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
+  // What feedbackText was pre-filled with when this row was expanded (or just
+  // saved to) — compared against the live textarea value to know whether
+  // switching/collapsing rows would silently throw away an unsent draft.
+  const [feedbackDraftOriginal, setFeedbackDraftOriginal] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -79,7 +84,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     return items.sort((a, b) => a.sortKey - b.sortKey);
   }, [checkins, allResponses, questionnaires]);
 
-  const pendingCount = checkins.filter(c => !c.approved || !c.coachFeedback).length;
+  const pendingCount = usePendingReviews(checkins).length;
+
+  const goToAthleteProfile = (email: string) => {
+    const hasUnsentDraft = expandedId !== null && feedbackText !== feedbackDraftOriginal;
+    if (hasUnsentDraft && !window.confirm('Tienes feedback sin enviar para este check-in. ¿Descartarlo y continuar?')) {
+      return;
+    }
+    navigate(`/clients/${encodeURIComponent(email)}`);
+  };
 
   const handleSendFeedback = async (checkInId: string, e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +103,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     try {
       await submitCoachFeedback(checkInId, feedbackText);
       setSuccessMsg('¡Directiva enviada y check-in aprobado!');
+      setFeedbackDraftOriginal(feedbackText);
       onRefreshCheckIns();
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
@@ -99,19 +113,6 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       setIsSubmitting(false);
     }
   };
-
-  if (selectedAthlete) {
-    return (
-      <ClientHub
-        athlete={selectedAthlete}
-        coachId={coachId}
-        coachEmail={coachEmail}
-        checkins={checkins}
-        onRefreshCheckIns={onRefreshCheckIns}
-        onBack={() => setSelectedAthlete(null)}
-      />
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -164,12 +165,17 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               const isExpanded = expandedId === key;
 
               const toggle = () => {
+                const hasUnsentDraft = expandedId !== null && feedbackText !== feedbackDraftOriginal;
+                if (hasUnsentDraft && !window.confirm('Tienes feedback sin enviar para este check-in. ¿Descartarlo y continuar?')) {
+                  return;
+                }
                 if (isExpanded) {
                   setExpandedId(null);
                 } else {
                   setExpandedId(key);
                   if (item.kind === 'checkin') {
                     setFeedbackText(item.data.coachFeedback || '');
+                    setFeedbackDraftOriginal(item.data.coachFeedback || '');
                     setErrorMsg('');
                     setSuccessMsg('');
                   }
@@ -214,7 +220,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       {athleteProfile && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
+                          onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
                           className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                         >
@@ -318,7 +324,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     </div>
                     {athleteProfile && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedAthlete(athleteProfile); }}
+                        onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
                         className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                       >

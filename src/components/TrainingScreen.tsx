@@ -7,6 +7,10 @@ import {
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
 } from '../dbService';
 import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
+import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
+import { generateWarmup } from '../utils/warmup/WarmupGenerator';
+import { parseTargetReps } from '../utils/warmup/WarmupEngine';
+import { expandSetGroups } from '../utils/setGroups';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -149,14 +153,16 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
 
   // ── Player helpers ─────────────────────────────────────────────────────────
+  // Top-set/back-off-set blocks (setGroups) expand into one row per set, each carrying
+  // its own target RIR — a plain uniform exercise expands into `sets` identical rows.
   const initPlayerSets = (workout: Workout): SetInput[][] =>
     workout.exercises
       .slice()
       .sort((a, b) => a.order - b.order)
-      .map(we => Array.from({ length: we.sets }, () => ({
+      .map(we => expandSetGroups(we).map(row => ({
         weight: '',
         repsDone: '',
-        rir: String(we.rir),
+        rir: String(row.rir),
         done: false,
       })));
 
@@ -395,7 +401,20 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           const ex = getExercise(we.exerciseId);
           const exSets = playerSets[exIdx] || [];
           const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
+          const expanded = expandSetGroups(we);
+          const totalSets = expanded.length;
           const doneSets = exSets.filter(s => s.done).length;
+          // Warm-up reacts live to whatever the athlete is currently typing for the first
+          // effective set (first row of the first block, top set included) — there's no
+          // separate "prescribed weight" field, it's only known once the athlete types it.
+          const set1Weight = parseFloat(exSets[0]?.weight || '') || 0;
+          const warmup = generateWarmup({
+            mode: we.warmupMode,
+            manualSets: we.manualWarmupSets,
+            targetWeight: set1Weight,
+            targetReps: parseTargetReps(expanded[0]?.reps ?? we.reps),
+            previousSets: prevEntry?.sets,
+          });
           return (
             <div
               key={`${we.exerciseId}-${exIdx}`}
@@ -414,24 +433,45 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-sm text-white truncate">{ex?.name || we.exerciseId}</p>
+                  <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
+                    {ex?.name || we.exerciseId}
+                    {we.technique && (
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
+                        {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
+                      </span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="font-mono text-[9px] text-[#c6c9ab]">
-                      Prescripción: {we.sets}×{we.reps} · {we.restSeconds}s · RIR {we.rir}
+                      Prescripción: {we.setGroups && we.setGroups.length > 0
+                        ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
+                        : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
                     {ex?.type && (
                       <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
+                    {warmup.readiness && (
+                      <span
+                        title={warmup.readiness.message}
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                          warmup.readiness.score >= 75 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
+                          : warmup.readiness.score >= 45 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
+                          : 'text-red-300 border-red-500/30 bg-red-500/10'
+                        }`}
+                      >
+                        🔥 Readiness {warmup.readiness.score}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  {doneSets === we.sets ? (
+                  {doneSets === totalSets ? (
                     <span className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
                       <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                     </span>
                   ) : (
                     <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-white/7 text-[#c6c9ab]">
-                      {doneSets}/{we.sets}
+                      {doneSets}/{totalSets}
                     </span>
                   )}
                 </div>
@@ -444,6 +484,16 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                     {we.recordVideoSet === 'all'
                       ? 'Tu entrenador quiere que grabes todas las series con el móvil'
                       : `Tu entrenador quiere que grabes la serie ${we.recordVideoSet} con el móvil`}
+                  </p>
+                </div>
+              )}
+
+              {we.technique && (
+                <div className={`flex items-start gap-2 px-4 py-2.5 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
+                  <span className="text-base flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
+                  <p className="font-sans text-xs leading-relaxed">
+                    <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]}. </span>
+                    {TECHNIQUE_DESCRIPTION[we.technique]}
                   </p>
                 </div>
               )}
@@ -462,6 +512,24 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                     </tr>
                   </thead>
                   <tbody>
+                    {warmup.sets.map((w, wIdx) => (
+                      <tr key={`warmup-${wIdx}`} className="border-b border-white/20 bg-orange-500/5">
+                        <td className="px-4 py-2.5">
+                          <span className="font-mono text-xs font-bold text-orange-300 flex items-center gap-1">
+                            🔥 W{wIdx + 1}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="w-20 inline-block text-center text-orange-200 font-mono text-sm">{w.weight}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="w-16 inline-block text-center text-orange-200 font-mono text-sm">{w.reps}</span>
+                        </td>
+                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-sm">—</td>
+                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-[10px]">Warm-up</td>
+                        <td className="px-4 py-2 text-center text-orange-200/30 font-mono text-sm">—</td>
+                      </tr>
+                    ))}
                     {exSets.map((setInput, sIdx) => {
                       const prev = prevEntry?.sets[sIdx];
                       const shouldRecord = we.recordVideoSet === 'all' || we.recordVideoSet === sIdx + 1;
@@ -479,6 +547,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm" title="Grabar con el móvil">videocam</span>
                               )}
                             </span>
+                            {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
+                              <span className="block font-mono text-[8px] text-[#fbcb1a]/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             <input
@@ -498,7 +569,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               min={0}
                               value={setInput.repsDone}
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
-                              placeholder="—"
+                              placeholder={expanded[sIdx]?.reps || '—'}
                               disabled={setInput.done}
                               className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
                             />

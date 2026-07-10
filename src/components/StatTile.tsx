@@ -5,6 +5,7 @@ interface StatTileProps {
   label: string;
   value: React.ReactNode;
   accent?: string;
+  key?: React.Key;
 }
 
 // Small reusable stat tile: icon badge + uppercase mono label + bold value.

@@ -6,7 +6,11 @@ export type NotificationType =
   | 'nutrition_phase_change'
   | 'plan_expiring'
   | 'checkin_late'
-  | 'report_sent';
+  | 'report_sent'
+  | 'weekly_challenge_new'
+  | 'weekly_challenge_won'
+  | 'plan_phase_change'
+  | 'level_up';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -69,6 +73,12 @@ export interface UserProfile {
   actualWeight: number;
   planStartDate?: string;       // ISO YYYY-MM-DD set by coach
   planDurationMonths?: 3 | 6 | 12;
+  // Personal reorder of ProfileScreen's content blocks — block ids not present here
+  // fall back to the default order (see ProfileScreen.tsx DEFAULT_BLOCK_ORDER).
+  dashboardOrder?: string[];
+  // Cached result of computeSetupChecklist, refreshed whenever the coach opens
+  // the Setup tab — lets the clients grid show a % without recomputing per card.
+  setupSummary?: { pct: number; attention: number; updatedAt: string };
 }
 
 export interface WeightCheckIn {
@@ -132,6 +142,34 @@ export interface ExercisePersonalNote {
   updatedAt: string; // ISO timestamp
 }
 
+// High-intensity techniques a coach can flag on an exercise so the athlete sees a
+// distinct badge + explanation of what to actually do. See utils/workoutTechniques.ts.
+export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause';
+
+// One warm-up approximation set — display-only, never logged, never counts toward
+// volume/records/progression. See src/utils/warmup/.
+export interface WarmupSet {
+  weight: number;
+  reps: number;
+}
+
+// 'none' (default, opt-in) — no warm-up shown. 'auto' — WarmupGenerator computes the
+// ramp live from the athlete's typed set-1 weight + exercise history. 'manual' — coach's
+// own `manualWarmupSets` are shown as-is (still scored by ReadinessCalculator).
+export type WarmupMode = 'none' | 'auto' | 'manual';
+
+// A block of sets sharing the same rep range/RIR within one exercise — lets a coach
+// split e.g. "4 series" into "2 series @ 10-12" (top sets) + "2 series @ 14-19"
+// (back-off sets). `label` is free text (not a fixed enum) so it isn't limited to
+// exactly those two names. All of these are effective sets — unlike warm-up sets they
+// count for volume/records/progression like any other logged set.
+export interface WorkoutSetGroup {
+  label?: string;      // e.g. "Top set", "Back-off" — optional, shown as a badge
+  sets: number;
+  reps: string;        // "8-10", "AMRAP", "12", etc.
+  rir: number;
+}
+
 export interface WorkoutExercise {
   exerciseId: string;
   order: number;
@@ -144,6 +182,14 @@ export interface WorkoutExercise {
   // Coach flags this exercise so the athlete is reminded to film it with the phone —
   // 'all' highlights every set, a number highlights only that set (1-indexed).
   recordVideoSet?: number | 'all';
+  technique?: WorkoutTechnique;
+  warmupMode?: WarmupMode;            // undefined behaves as 'none'
+  manualWarmupSets?: WarmupSet[];     // only read when warmupMode === 'manual'
+  // When present (non-empty), overrides the uniform `sets`/`reps`/`rir` scheme above —
+  // those three fields stay in sync as an aggregate (total sets, joined rep ranges,
+  // first group's RIR) purely so summary views that just print "3×8-10" keep working
+  // without knowing about groups. See src/utils/setGroups.ts.
+  setGroups?: WorkoutSetGroup[];
 }
 
 export interface TemplateDay {
@@ -472,6 +518,7 @@ export interface NutritionPhase {
   weeks: number;
   dietId: string;
   targetWeight?: number; // kg at end of phase; undefined = not projected
+  targetKcal?: number;   // kcal/day objective driving the deficit/surplus calc; undefined = derive from the linked diet's exchange budget
 }
 
 export interface NutritionProgram {
@@ -495,6 +542,142 @@ export interface RoadmapItem {
 export interface Roadmap {
   athleteId: string;    // email, also Firestore doc id
   items: RoadmapItem[];
+  planPhases?: PlanPhase[];   // fases macro por progresión; ausente en docs antiguos
+  levelLadder?: LevelLadder;  // undefined → usar DEFAULT_LEVEL_LADDER
+  challengeConfig?: ChallengeConfig;
+}
+
+// Configuración de retos por atleta (dentro del doc roadmap).
+export interface ChallengeConfig {
+  // Ejercicios en los que se pueden proponer retos de carga; undefined/vacío →
+  // fallback a los básicos por keyword (BASIC_LIFT_KEYWORDS).
+  liftExerciseIds?: string[];
+}
+
+// ─── PLAN PHASES ──────────────────────────────────────────────────────────────
+// Fases macro del asesoramiento por PROGRESIÓN, no por tiempo (metodología del
+// coach). El paso de fase lo decide el coach manualmente; la app solo informa
+// del % de avance de las métricas objetivo de la fase actual.
+
+export type PhaseMetricKind =
+  | 'peso'            // llegar a X kg
+  | 'peso_perdido'    // perder X kg desde el inicio
+  | 'sentadilla_xbw'  // e1RM sentadilla ÷ peso corporal ≥ X
+  | 'pasos_media'     // media diaria de pasos ≥ X
+  | 'adherencia'      // adherencia semanal a la dieta ≥ X %
+  | 'manual';         // el coach lo marca a mano (sin datos en la app)
+
+export interface PhaseMetricTarget {
+  id: string;
+  kind: PhaseMetricKind;
+  label: string;            // "Bajar a 82 kg", "Sentadilla 1.25x peso corporal"
+  targetValue?: number;
+  unit?: string;            // 'kg' | 'xBW' | 'pasos' | '%'
+  manualDone?: boolean;     // solo kind 'manual'
+}
+
+export type WeightDirection = 'deficit' | 'superavit' | 'mantenimiento';
+
+export interface PlanPhase {
+  id: string;
+  order: number;
+  name: string;             // "Pérdida de grasa", "Recomposición"…
+  motto?: string;           // frase motivadora corta
+  description?: string;
+  color: string;            // de PHASE_COLORS (theme.ts)
+  icon: string;             // material symbol
+  status: 'futura' | 'actual' | 'completada';
+  startedAt?: string;       // YYYY-MM-DD
+  completedAt?: string;
+  metrics: PhaseMetricTarget[];
+  exitCriteria?: string;    // texto libre: qué hace falta para pasar de fase
+  // Datos para generar la periodización nutricional desde las fases del plan.
+  suggestedWeeks?: number;       // duración orientativa (las fases van por progresión)
+  weightDirection?: WeightDirection;
+  weightRateKgWeek?: number;     // magnitud kg/semana; el signo lo da weightDirection
+  nutritionPhaseId?: string;     // NutritionPhase generada/enlazada (`nph_${id}`)
+}
+
+// ─── LEVEL LADDER ─────────────────────────────────────────────────────────────
+// Escalera vertical de niveles con nombres motivadores. Un nivel se alcanza
+// cuando se cumplen TODOS sus criterios; una vez alcanzado no se pierde
+// (achievedLevelIds persiste el logro).
+
+export type LevelCriterionKind =
+  | 'peso_perdido_kg'     // kg perdidos desde el peso inicial
+  | 'sentadilla_xbw'      // e1RM del ejercicio ÷ peso corporal ≥ target
+  | 'pasos_media_diaria'  // media diaria de pasos (4 semanas) ≥ target
+  | 'manual';             // verificado por el coach (flexiones, dominadas…)
+
+export interface LevelCriterion {
+  id: string;
+  kind: LevelCriterionKind;
+  label: string;              // "10 dominadas estrictas", "Sentadilla 1x peso corporal"
+  targetValue?: number;       // no aplica a 'manual'
+  exerciseNameMatch?: string; // sentadilla_xbw: substring del nombre del ejercicio
+  manualDone?: boolean;       // el coach lo marca al verificarlo
+}
+
+export interface LadderLevel {
+  id: string;
+  order: number;              // 0 = base
+  name: string;               // "Club" → "Hombre Sano" → …
+  icon: string;
+  criteria: LevelCriterion[]; // deben cumplirse TODOS
+}
+
+export interface LevelLadder {
+  levels: LadderLevel[];
+  achievedLevelIds?: Record<string, string>; // levelId → YYYY-MM-DD en que se logró
+}
+
+// ─── WEEKLY CHALLENGES ────────────────────────────────────────────────────────
+// Reto semanal del atleta. Doc ID determinista `${athleteId}_${isoWeek}` en la
+// colección weeklyChallenges: garantiza un único reto por semana y hace
+// idempotente la auto-generación (generate-on-read, sin backend).
+
+export type ChallengeKind =
+  | 'pasos_media'          // media diaria de pasos ≥ target
+  | 'pasos_total'          // pasos totales de la semana ≥ target
+  | 'carga_ejercicio'      // superar e1RM en un ejercicio concreto
+  | 'adherencia_dieta'     // adherencia semanal ≥ target %
+  | 'peso_objetivo'        // terminar la semana en ≤/≥ target kg (según baseline)
+  | 'entrenos_completados' // completar los entrenos asignados de la semana
+  | 'custom';              // creado por el coach sin métrica automática
+
+export interface WeeklyChallenge {
+  id: string;               // `${athleteId}_${isoWeek}`
+  athleteId: string;        // email
+  isoWeek: string;          // '2026-W28'
+  weekStart: string;        // YYYY-MM-DD (lunes)
+  weekEnd: string;          // YYYY-MM-DD (domingo)
+  kind: ChallengeKind;
+  title: string;
+  description: string;
+  origin: 'coach' | 'auto';
+  templateId?: string;
+  metric: {
+    unit: string;           // 'pasos' | 'kg' | '%' | 'sesiones'
+    target: number;
+    baseline?: number;      // punto de partida (media previa, peso actual…)
+    exerciseId?: string;    // carga_ejercicio
+    exerciseName?: string;  // snapshot para pintar sin lookup
+  };
+  status: 'activo' | 'conseguido' | 'fallido';
+  progressValue?: number;   // snapshot de la última evaluación
+  createdAt: string;        // ISO
+  resolvedAt?: string;      // ISO
+}
+
+// Plantilla de la biblioteca de retos del coach (colección challengeTemplates).
+export interface ChallengeTemplate {
+  id: string;
+  ownerId: string;          // UID del coach
+  kind: ChallengeKind;
+  title: string;
+  description: string;
+  defaultTarget?: number;
+  unit: string;
 }
 
 // Coach invites a new client by email (passwordless sign-in link). Doc id = email.
@@ -676,6 +859,23 @@ export interface CoachNote {
   relatedAthleteName?: string;   // denormalized for display without extra lookups
   done: boolean;
   createdAt: string;             // ISO timestamp
+}
+
+// Coach's setup checklist for a single client: seeded items (auto-detected steps
+// the coach must confirm manually, e.g. "contacto diario semana 1") plus free-form
+// extras the coach adds. Distinct from TaskItem (assigned TO the athlete, visible
+// to them) and CoachNote (a global to-do, not tied to a checklist item/phase).
+export interface CoachClientTask {
+  id: string;
+  athleteId: string;        // email
+  itemId?: string;          // links to a SetupItem id when createdBy === 'seed'
+  title: string;
+  phase?: string;           // SetupPhaseId, when relevant
+  done: boolean;
+  doneAt?: string;          // ISO timestamp
+  dueDate?: string;         // YYYY-MM-DD
+  createdBy: 'seed' | 'coach';
+  createdAt: string;        // ISO timestamp
 }
 
 // ─── RESOURCES (coach-shared files/links) ──────────────────────────────────────

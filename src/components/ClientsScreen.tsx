@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog, Invite } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
-import ClientHub, { HubTab } from './ClientHub';
+import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
 import ResourcesPanel from './ResourcesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { calcPlanExpiry } from '../hooks/usePlanExpiry';
+import { getPendingReviews } from '../hooks/usePendingReviews';
+import { estimateSetupPct } from '../utils/clientSetup';
+import ProgressRing from './ProgressRing';
+
+const DEFAULT_HUB_TAB: HubTab = 'revisiones';
+const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -15,10 +23,10 @@ interface ClientsScreenProps {
 }
 
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
+  const navigate = useNavigate();
+  const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
   const [athletes, setAthletes]           = useState<UserProfile[]>([]);
   const [loadingAthletes, setLoadingAthletes] = useState(true);
-  const [selectedAthlete, setSelectedAthlete] = useState<UserProfile | null>(null);
-  const [selectedHubTab, setSelectedHubTab] = useState<HubTab | undefined>(undefined);
   const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
   const [allWorkoutLogs, setAllWorkoutLogs] = useState<Map<string, WorkoutLog[]>>(new Map());
 
@@ -83,12 +91,40 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     }
   };
 
-  const openAthleteHub = (athlete: UserProfile, hubTab?: HubTab) => {
-    setSelectedHubTab(hubTab);
-    setSelectedAthlete(athlete);
+  const openAthleteHub = (athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
+    const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
+    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
   };
 
-  const pendingCheckins = checkins.filter(c => !c.approved || !c.coachFeedback);
+  const selectedAthlete = useMemo(() => {
+    if (!athleteId) return null;
+    const decoded = decodeURIComponent(athleteId).toLowerCase();
+    return athletes.find(a => a.email.toLowerCase() === decoded) ?? null;
+  }, [athletes, athleteId]);
+
+  // Deep-linked to an athlete that doesn't exist (typo, deleted account, stale
+  // link) — once the athlete list has actually loaded, bounce back to the grid
+  // instead of silently rendering nothing.
+  useEffect(() => {
+    if (athleteId && !loadingAthletes && !selectedAthlete) {
+      navigate('/clients', { replace: true });
+    }
+  }, [athleteId, loadingAthletes, selectedAthlete, navigate]);
+
+  // The "/clients/:athleteId/analisis/:subTab" route (needed for the extra sub-tab
+  // segment) doesn't capture a `hubTab` param at all, so `subTab` being present is
+  // what actually means "we're on the Análisis tab" — falling back to `hubTab` alone
+  // would default to DEFAULT_HUB_TAB and silently bounce back to Revisiones.
+  const activeHubTab: HubTab = subTab
+    ? 'analisis'
+    : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
+      ? (hubTab as HubTab)
+      : DEFAULT_HUB_TAB;
+  const activeAnalisisTab: AnalisisTab = (subTab && (ANALISIS_TABS as readonly string[]).includes(subTab))
+    ? (subTab as AnalisisTab)
+    : DEFAULT_ANALISIS_TAB;
+
+  const pendingCheckins = getPendingReviews(checkins);
 
   const todayMs = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
@@ -109,22 +145,18 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         : Math.floor((todayMs - lastCheckinMs) / 86_400_000);
       const checkinLate = daysSince === null || daysSince > 7;
 
-      const planDaysLeft = (() => {
-        if (!athlete.planStartDate || !athlete.planDurationMonths) return null;
-        const [y, m, d] = athlete.planStartDate.split('-').map(Number);
-        const end = new Date(y, m - 1 + athlete.planDurationMonths, d);
-        return Math.floor((end.getTime() - todayMs) / 86_400_000);
-      })();
-      const planExpired = planDaysLeft !== null && planDaysLeft < 0;
-      const planSoon   = planDaysLeft !== null && planDaysLeft >= 0 && planDaysLeft <= 30;
+      const { daysLeft: planDaysLeft, expired: planExpired, expiringSoon: planSoon } = calcPlanExpiry(athlete);
+
+      const athleteAssignments = allAssignments.get(athlete.email) ?? [];
+      const setupPct = athlete.setupSummary?.pct ?? estimateSetupPct(athlete, athleteCheckins, athleteAssignments);
 
       // 0 = most urgent
       let sortScore = 100;
-      if (planExpired)  sortScore = Math.min(sortScore, 0);
-      if (planSoon)     sortScore = Math.min(sortScore, 1);
-      if (checkinLate)  sortScore = Math.min(sortScore, 2);
+      if (planExpired)    sortScore = Math.min(sortScore, 0);
+      if (planSoon)       sortScore = Math.min(sortScore, 1);
+      if (checkinLate)    sortScore = Math.min(sortScore, 2);
+      if (setupPct < 100) sortScore = Math.min(sortScore, 3);
 
-      const athleteAssignments = allAssignments.get(athlete.email) ?? [];
       const adherence = computeAdherenceScore(athleteAssignments, athleteCheckins);
 
       const athleteLogs = allWorkoutLogs.get(athlete.email) ?? [];
@@ -140,9 +172,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         planDaysLeft, planExpired, planSoon,
         daysSince, checkinLate,
         totalCheckCount: athleteCheckins.length,
-        pendingCount: athleteCheckins.filter(c => !c.approved || !c.coachFeedback).length,
+        pendingCount: getPendingReviews(athleteCheckins).length,
         pendingNotesCount,
         sortScore,
+        setupPct,
         adherenceScore: adherence.score,
       };
     }).sort((a, b) => a.sortScore - b.sortScore);
@@ -175,7 +208,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   useEffect(() => {
     if (athletes.length === 0) return;
-    Promise.all(athletes.map(a => getWorkoutAssignments(a.email).then(wa => [a.email, wa] as const)))
+    // Keyed by userId, matching how createWorkoutAssignment actually writes
+    // athleteId (see ClientHub.handleCreateAssignment) — this used to be keyed
+    // by email here, which never matched, so every athlete's adherence score
+    // silently ignored their training data. allAssignments is still keyed by
+    // .email below for lookup convenience against the athlete list.
+    Promise.all(athletes.map(a => getWorkoutAssignments(a.userId).then(wa => [a.email, wa] as const)))
       .then(pairs => setAllAssignments(new Map(pairs)))
       .catch(console.error);
     Promise.all(athletes.map(a => getWorkoutLogs(a.email).then(logs => [a.email, logs] as const)))
@@ -224,16 +262,21 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     }
   }, [enrichedAthletes, coachEmail, todayMs]);
 
-  if (selectedAthlete) {
+  if (athleteId) {
+    if (!selectedAthlete) return null; // still loading athletes, or about to redirect back to /clients
     return (
       <ClientHub
+        key={selectedAthlete.email}
         athlete={selectedAthlete}
         coachId={coachId}
         coachEmail={coachEmail}
         checkins={checkins}
         onRefreshCheckIns={onRefreshCheckIns}
-        onBack={() => { setSelectedAthlete(null); setSelectedHubTab(undefined); }}
-        initialTab={selectedHubTab}
+        onBack={() => navigate('/clients')}
+        activeTab={activeHubTab}
+        onTabChange={tab => navigate(`/clients/${athleteId}${tab === 'analisis' ? `/analisis/${DEFAULT_ANALISIS_TAB}` : `/${tab}`}`)}
+        analisisTab={activeAnalisisTab}
+        onAnalisisTabChange={sub => navigate(`/clients/${athleteId}/analisis/${sub}`)}
       />
     );
   }
@@ -406,7 +449,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {
               const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
-                      totalCheckCount, pendingCount, adherenceScore } = athlete;
+                      totalCheckCount, pendingCount, adherenceScore, setupPct } = athlete;
               const adh = scoreStyle(adherenceScore);
               const needsAttention = planExpired || planSoon || checkinLate;
 
@@ -419,6 +462,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   }`}
                 >
                   <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
+                  <button
+                    onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
+                    title={`Setup ${setupPct}%`}
+                    className="absolute right-3 top-3 z-10"
+                  >
+                    <ProgressRing pct={setupPct} size={32} color={setupPct >= 100 ? '#34d399' : '#fbcb1a'} />
+                  </button>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-[#fbcb1a]/60 transition-all flex-shrink-0">

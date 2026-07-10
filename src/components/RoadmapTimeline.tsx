@@ -5,13 +5,13 @@ import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog } from
 
 const WEEK_PX = 48;
 const MIN_WEEKS = 12;
-const LANE_HEADER_W = 100;
-const HEADER_H = 40;
-const LANE_H = 60;
-const ITEM_H = 32;
+const LANE_HEADER_W = 140;
+const HEADER_H = 48;
+const LANE_H = 80;
+const ITEM_H = 40;
 const ITEM_Y = (LANE_H - ITEM_H) / 2;
-const WEIGHT_LANE_H = 80;
-const WEIGHT_PAD = 10;
+const WEIGHT_LANE_H = 100;
+const WEIGHT_PAD = 12;
 
 // ─── Date helpers (no external libs) ─────────────────────────────────────────
 
@@ -48,6 +48,17 @@ function typeIcon(type: RoadmapItem['type']): string {
   if (type === 'objetivo') return 'target';
   if (type === 'hito') return 'flag';
   return 'sticky_note_2';
+}
+
+type BlockTiming = 'past' | 'current' | 'future';
+
+// Solo para la vista del atleta (readonly): distingue tramos pasados
+// (atenuados), el actual (glow, resaltado) y futuros — refuerza "dónde estás
+// y qué te queda por delante" directamente en el timeline.
+function blockTiming(startStr: string, endStr: string, today: string): BlockTiming {
+  if (endStr <= today) return 'past';
+  if (startStr <= today) return 'current';
+  return 'future';
 }
 
 // ─── Blank item factory ───────────────────────────────────────────────────────
@@ -390,6 +401,22 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   const totalHeight = HEADER_H + 3 * LANE_H + (showWeightChart ? WEIGHT_LANE_H : 0);
 
+  // Clases de atenuado/glow según el tramo — solo se aplican en la vista del
+  // atleta (readonly): refuerza visualmente "dónde estás y qué te queda".
+  // El coach ve siempre opacidad plena (son fases que puede seguir editando).
+  function goldTimingClasses(timing: BlockTiming): string {
+    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(251,203,26,0.2)]';
+    if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
+    if (timing === 'current') return 'shadow-[0_0_24px_rgba(251,203,26,0.4)]';
+    return 'opacity-70';
+  }
+  function cyanTimingClasses(timing: BlockTiming): string {
+    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(0,238,252,0.2)]';
+    if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
+    if (timing === 'current') return 'shadow-[0_0_24px_rgba(0,238,252,0.35)]';
+    return 'opacity-70';
+  }
+
   // ── Lane content builders — shared between the mobile stacked view (own mini-scroll-X per
   // lane, topBase = MOBILE_HEADER_H) and the desktop combined canvas (topBase = HEADER_H + i*LANE_H) ──
   const trainingContent = (topBase: number) => sortedMesos.map((m, idx) => {
@@ -397,18 +424,19 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
     const x = xOf(m.startDate);
     const w = widthOf(m.startDate, mEnd);
     const color = MESO_COLORS[idx % MESO_COLORS.length];
+    const timing = blockTiming(m.startDate, mEnd, today);
     return (
       <div
         key={m.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className="rounded-md overflow-hidden cursor-default"
+        className={`rounded-xl overflow-hidden cursor-default transition-all ${goldTimingClasses(timing)}`}
         title={`${m.objective || `Mes. ${m.number}`} · ${m.weeks} semanas · ${fmtDate(m.startDate)} – ${fmtDate(mEnd)}`}
       >
-        <div style={{ background: color }} className="h-full px-2 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-[9px] truncate leading-tight">
+        <div style={{ background: color }} className="h-full px-3 flex flex-col justify-center">
+          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">
             {m.objective || `Mes. ${m.number}`}
           </p>
-          <p className="font-mono text-[7px] text-black/70 leading-tight">{m.weeks} sem</p>
+          <p className="font-mono text-[8px] text-black/60 leading-tight">{m.weeks} sem · {fmtDate(m.startDate)}</p>
         </div>
       </div>
     );
@@ -417,16 +445,17 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
   const nutritionContent = (topBase: number) => nutriBlocks.map(b => {
     const x = xOf(b.start);
     const w = widthOf(b.start, b.end);
+    const timing = blockTiming(b.start, b.end, today);
     return (
       <div
         key={b.key}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className="rounded-md overflow-hidden cursor-default"
+        className={`rounded-xl overflow-hidden cursor-default transition-all ${cyanTimingClasses(timing)}`}
         title={`${b.label} · ${fmtDate(b.start)} – ${fmtDate(b.end)}`}
       >
-        <div style={{ background: b.color }} className="h-full px-2 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-[9px] truncate leading-tight">{b.label}</p>
-          <p className="font-mono text-[7px] text-black/70 leading-tight">
+        <div style={{ background: b.color }} className="h-full px-3 flex flex-col justify-center">
+          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">{b.label}</p>
+          <p className="font-mono text-[8px] text-black/60 leading-tight">
             {fmtDate(b.start)} – {fmtDate(b.end)}
           </p>
         </div>
@@ -445,18 +474,18 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={item.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-md overflow-hidden ${readonly ? 'cursor-default' : 'cursor-pointer hover:opacity-90'}`}
+        className={`rounded-xl overflow-hidden border border-white/10 transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
         title={`${item.title}${item.description ? ' — ' + item.description : ''}${item.targetDate ? ' · ' + fmtDate(item.targetDate) : ''}`}
         onClick={() => !readonly && openEdit(item)}
       >
-        <div style={{ background: color }} className="h-full px-2 flex items-center gap-1">
+        <div style={{ background: color }} className="h-full px-3 flex items-center gap-1.5">
           <span
             className="material-symbols-outlined text-black/70 shrink-0"
-            style={{ fontSize: 10, fontVariationSettings: "'FILL' 1" }}
+            style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}
           >
             {typeIcon(item.type)}
           </span>
-          <p className="font-sans font-bold text-black text-[9px] truncate leading-tight">{item.title}</p>
+          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">{item.title}</p>
         </div>
       </div>
     );
@@ -512,7 +541,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl border border-white/7 bg-[#0e0e0e] overflow-hidden">
+      <div className="rounded-2xl border border-white/5 bg-[#141414] overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[#c6c9ab]" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
@@ -530,7 +559,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             ))}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height, zIndex: 10 }}
-              className="bg-[#fbcb1a]/40"
+              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
             />
             {children}
           </div>
@@ -549,7 +578,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo
@@ -576,12 +605,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-white/7 rounded-xl bg-[#0e0e0e] overflow-hidden">
+      <div className="hidden sm:flex border border-white/5 rounded-2xl bg-[#141414] overflow-hidden shadow-2xl">
 
         {/* Sidebar — never scrolls */}
         <div
           style={{ width: LANE_HEADER_W, flexShrink: 0, height: totalHeight }}
-          className="bg-[#0e0e0e] border-r border-[#1e1e1e] relative z-10"
+          className="bg-[#141414] border-r border-white/10 relative z-10"
         >
           <div style={{ height: HEADER_H }} />
           {(['Entrenamiento', 'Nutrición', 'Objetivos'] as const).map((label, i) => (
@@ -638,17 +667,26 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               />
             ))}
 
-            {/* HOY vertical line */}
+            {/* HOY vertical line — para el atleta, badge celebratorio "estás aquí" */}
             <div
-              style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 10 }}
-              className="bg-[#fbcb1a]/40"
+              style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 30 }}
+              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
             >
-              <span
-                style={{ position: 'absolute', top: 2, left: 4 }}
-                className="font-mono text-[8px] text-[#fbcb1a] uppercase whitespace-nowrap"
-              >
-                Hoy
-              </span>
+              {readonly ? (
+                <span
+                  style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
+                  className="bg-[#fbcb1a] text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-[#141414] whitespace-nowrap uppercase animate-pulse"
+                >
+                  Estás aquí
+                </span>
+              ) : (
+                <span
+                  style={{ position: 'absolute', top: 2, left: 4 }}
+                  className="font-mono text-[8px] text-[#fbcb1a] uppercase whitespace-nowrap"
+                >
+                  Hoy
+                </span>
+              )}
             </div>
 
             {/* ── Lane 0: Entrenamiento ──────────────────────────────────────── */}
@@ -700,7 +738,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 px-1">
+      <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-white/5">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: MESO_COLORS[0] }} />
           <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Mesociclo</span>

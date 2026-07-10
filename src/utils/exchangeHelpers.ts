@@ -1,4 +1,4 @@
-import { FoodCategory, DietMode } from '../types';
+import { FoodCategory, DietMode, DietItem, DietMeal, Diet, Recipe } from '../types';
 
 // Shared constants + helpers for the food-exchange (intercambios) system.
 // Extracted from NutritionScreen.tsx / NutritionPlansScreen.tsx, which duplicated
@@ -66,4 +66,45 @@ export function addToPlaced(p: Record<FoodCategory, number>, category: FoodCateg
   } else {
     p[category] = round2(p[category] + qty);
   }
+}
+
+// Builds the DietItems to insert into a meal when a recipe is "added to Intercambios".
+// Coach/athlete-built recipes carry a structured `ingredients` list (food-by-food,
+// tagged per diet mode) — use that when present. Indya-imported recipes (the vast
+// majority of the library) never populate `ingredients` (see scripts/importIndya.mjs);
+// they only carry an aggregate `exchanges` total computed from their macros at import
+// time, so fall back to one item per non-zero category, labeled with the recipe name.
+// Total exchanges actually placed in a diet's meals, regardless of whether the
+// athlete has checked them off as eaten (contrast with the daily "done" tracking
+// in NutritionScreen, which is a different, date-scoped notion of progress).
+export function computeDietPlaced(meals: DietMeal[] | undefined): Record<FoodCategory, number> {
+  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+  for (const meal of meals ?? []) for (const item of meal.items ?? []) addToPlaced(p, item.category, item.quantity);
+  return p;
+}
+
+// A coach-dictated diet is "pending" until the athlete has placed enough food
+// items to cover every category the coach budgeted for. Firestore docs aren't
+// guaranteed to match the TS shape (older diets can predate a field) — guard
+// against `budget`/`meals` being missing rather than trusting the type.
+export function isDietPending(diet: Pick<Diet, 'budget' | 'meals'>): boolean {
+  const placed = computeDietPlaced(diet.meals);
+  return BUDGET_CATS.some(cat => (diet.budget?.[cat] ?? 0) > 0 && placed[cat] < (diet.budget?.[cat] ?? 0));
+}
+
+export function recipeToDietItems(recipe: Recipe, enabledModes: DietMode[]): DietItem[] {
+  // Indya-imported recipes (the vast majority) never populate `ingredients` at all —
+  // it's not just empty, it's absent — so don't assume the array exists.
+  const structured: DietItem[] = (recipe.ingredients ?? [])
+    .filter(ing => enabledModes.includes(ing.mode))
+    .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
+  if (structured.length > 0) return structured;
+
+  if (recipe.exchanges) {
+    return BUDGET_CATS
+      .filter(cat => (recipe.exchanges![cat] ?? 0) > 0)
+      .map(cat => ({ category: cat, foodLabel: recipe.name, quantity: recipe.exchanges![cat], originRecipeId: recipe.id }));
+  }
+
+  return [];
 }

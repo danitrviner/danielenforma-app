@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile,
+  MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
   MUSCLE_LABELS,
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
-  getAllUserProfiles, getExercises,
+  getAllUserProfiles, getExercises, getWorkouts, updateWorkout,
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates,
 } from '../dbService';
-import MesocycleDashboard from './MesocycleDashboard';
+import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 
@@ -160,15 +160,13 @@ function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
 
 // ─── Generator types & helpers ────────────────────────────────────────────────
 
-interface PreviewExercise {
-  exerciseId: string;
+// Extends WorkoutExercise (not a parallel shape) so the generator preview can carry —
+// and let the coach configure — the exact same fields as the routine editor: technique,
+// warm-up, recordVideoSet, setGroups. `name`/`muscleGroup`/`equipmentMismatch` are
+// preview-only display extras, stripped back out to a plain WorkoutExercise on assign.
+interface PreviewExercise extends WorkoutExercise {
   name: string;
   muscleGroup: MuscleGroup;
-  sets: number;
-  reps: string;
-  rir: number;
-  restSeconds: number;
-  order: number;
   equipmentMismatch?: boolean; // exercise needs equipment athlete doesn't have
 }
 
@@ -233,15 +231,29 @@ function PrioritySelector({ value, onChange }: {
   );
 }
 
-const DayCard: React.FC<{ day: DayPlan; dayNumber: number }> = ({ day, dayNumber }) => {
+// Editable — the auto-generated distribution is a starting point, not a final answer;
+// the coach can nudge series, remove a group, move one to another day, or add a group
+// that the algorithm didn't place, all without recalculating from scratch.
+const DayCard: React.FC<{
+  day: DayPlan;
+  dayNumber: number;
+  dayIdx: number;
+  daysPerWeek: number;
+  onSeriesChange: (aIdx: number, series: number) => void;
+  onRemove: (aIdx: number) => void;
+  onMove: (aIdx: number, targetDayIdx: number) => void;
+  onAddGroup: (group: MuscleGroup) => void;
+}> = ({ day, dayNumber, dayIdx, daysPerWeek, onSeriesChange, onRemove, onMove, onAddGroup }) => {
   const total   = day.totalSeries;
   const optimal = total >= 9 && total <= 12;
   const over    = total > 12;
   const totalColor = optimal ? '#86efac' : over ? '#fdba74' : '#c6c9ab';
   const totalBg    = optimal ? 'rgba(34,197,94,.12)' : over ? 'rgba(249,115,22,.12)' : 'transparent';
+  const placedGroups = new Set(day.assignments.map(a => a.group));
+  const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[140px] max-w-[200px]">
+    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[200px] max-w-[260px]">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Día {dayNumber}</span>
         {over && <span className="material-symbols-outlined text-sm text-orange-400" title=">12 series">warning</span>}
@@ -251,9 +263,28 @@ const DayCard: React.FC<{ day: DayPlan; dayNumber: number }> = ({ day, dayNumber
           <p className="text-[10px] text-[#555] font-mono italic">Descanso</p>
         ) : (
           day.assignments.map((a, i) => (
-            <div key={i} className="flex items-center justify-between gap-2">
-              <span className="text-xs text-white truncate">{MUSCLE_LABELS[a.group]}</span>
-              <span className="font-mono text-xs font-bold text-[#c6c9ab] flex-shrink-0">{a.series}</span>
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="text-xs text-white truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
+              <input
+                type="number" min={0} max={25}
+                value={a.series}
+                onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
+                className="w-11 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs focus:outline-none focus:border-[#fbcb1a]"
+              />
+              {otherDays.length > 0 && (
+                <select
+                  value=""
+                  onChange={e => { if (e.target.value) onMove(i, parseInt(e.target.value)); }}
+                  title="Mover a otro día"
+                  className="bg-[#0e0e0e] border border-white/7 rounded text-[9px] font-mono text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a] cursor-pointer"
+                >
+                  <option value="">→</option>
+                  {otherDays.map(d => <option key={d} value={d}>Día {d + 1}</option>)}
+                </select>
+              )}
+              <button onClick={() => onRemove(i)} className="text-[#555] hover:text-red-400 transition-colors flex-shrink-0">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
             </div>
           ))
         )}
@@ -264,6 +295,16 @@ const DayCard: React.FC<{ day: DayPlan; dayNumber: number }> = ({ day, dayNumber
         <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Total</span>
         <span className="font-mono text-sm font-black" style={{ color: totalColor }}>{total}</span>
       </div>
+      <select
+        value=""
+        onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
+        className="mt-2 w-full bg-[#0e0e0e] border border-dashed border-white/20 rounded-lg px-2 py-1 text-[10px] font-mono text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a] cursor-pointer"
+      >
+        <option value="">+ Añadir grupo…</option>
+        {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (
+          <option key={g} value={g}>{MUSCLE_LABELS[g]}</option>
+        ))}
+      </select>
     </div>
   );
 };
@@ -281,23 +322,105 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
   return showEqual ? <span className="font-mono text-[10px] text-[#555] ml-1">=</span> : null;
 }
 
-function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
-  const sorted = [...mesocycles].sort((a, b) => a.number - b.number);
-
-  if (sorted.length < 2) {
+// Shows what "Generar rutinas" (in Distribución) actually produced for this mesocycle —
+// the meso's volume/priority config and the exercises it generates are the same thing
+// end to end, not two disconnected screens the coach has to reconcile by hand.
+function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExercise, onGoToDistribution }: {
+  groups: MesoWorkoutGroup[];
+  loading: boolean;
+  weeks: number;
+  allExercises: Exercise[];
+  onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
+  onGoToDistribution: () => void;
+}) {
+  if (loading) {
     return (
-      <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
-        <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">trending_up</span>
-        <p className="text-[#c6c9ab] text-sm font-sans">Crea un segundo mesociclo para comparar la progresión.</p>
-        <p className="text-[#555] text-xs font-mono mt-1">Necesitas al menos 2 mesociclos.</p>
+      <div className="flex items-center justify-center py-16">
+        <span className="material-symbols-outlined animate-spin text-[#fbcb1a] mr-2">refresh</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-[#c6c9ab]">Cargando ejercicios programados...</span>
       </div>
     );
   }
 
-  const totals = sorted.map(m => MUSCLE_GROUPS.reduce((s, g) => s + m.groups[g].series, 0));
+  if (groups.length === 0) {
+    return (
+      <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
+        <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">fitness_center</span>
+        <p className="text-[#c6c9ab] text-sm">Aún no se han generado rutinas para este mesociclo.</p>
+        <button
+          onClick={onGoToDistribution}
+          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] font-mono text-xs uppercase rounded-lg hover:bg-[#fbcb1a]/20 transition-all"
+        >
+          <span className="material-symbols-outlined text-sm">grid_view</span>
+          Ir a Distribución para generarlas
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
+      <p className="font-mono text-[10px] text-[#c6c9ab]">
+        Cada día se repite igual en las {weeks} semanas del mesociclo — edita aquí y se aplica a todas las semanas a la vez.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {groups.map(group => (
+          <div key={group.name} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0e0e0e] border-b border-white/7">
+              <p className="font-sans font-bold text-sm text-white">{group.name}</p>
+              <span className="font-mono text-[10px] text-[#c6c9ab]">
+                {group.exercises.reduce((s, e) => s + e.sets, 0)} series · {group.exercises.length} ejercicios
+              </span>
+            </div>
+            <div className="p-3 space-y-2">
+              {group.exercises.length === 0 ? (
+                <p className="text-xs text-[#555] font-mono px-1 py-2">Sin ejercicios en este día.</p>
+              ) : (
+                group.exercises.map((we, exIdx) => {
+                  const ex = allExercises.find(e => e.id === we.exerciseId);
+                  return (
+                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-[#1e1e1b] rounded-xl p-2.5 space-y-2">
+                      <p className="text-xs font-sans font-semibold text-white truncate">
+                        {ex?.name || we.exerciseId}
+                        {we.muscleGroup && <span className="text-[9px] font-mono text-[#c6c9ab] ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                      </p>
+                      <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Volume/priority config and cross-mesocycle progression used to be two separate tabs —
+// merged here so setting this mesocycle's series/priority per group happens with last
+// mesocycle's numbers right there for reference, instead of tabbing back and forth.
+function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
+  editing: Mesocycle;
+  mesocycles: Mesocycle[];
+  onUpdateGroup: (group: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => void;
+}) {
+  const history = [...mesocycles].filter(m => m.id !== editing.id).sort((a, b) => a.number - b.number);
+  const columns = [...history, editing]; // current mesocycle always last, editable
+  const totals = columns.map(m => MUSCLE_GROUPS.reduce((s, g) => s + m.groups[g].series, 0));
+  const currentTotal = MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {LEGEND.map(l => (
+          <div key={l.label} className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-white/5" style={{ backgroundColor: l.bg }}>
+            <span className="font-mono text-[10px] font-bold" style={{ color: l.text }}>{l.label}</span>
+            <span className="font-mono text-[9px] opacity-70" style={{ color: l.text }}>{l.range}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-3 text-[10px] font-mono">
         <span className="text-[#86efac]">▲ Sube</span>
         <span className="text-[#fca5a5]">▼ Baja</span>
@@ -306,24 +429,29 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-white/7">
-        <table className="w-full border-collapse text-sm" style={{ minWidth: `${130 + sorted.length * 120}px` }}>
+        <table className="w-full border-collapse text-sm" style={{ minWidth: `${130 + columns.length * 140}px` }}>
           <thead>
             <tr className="bg-[#0e0e0e]">
               <th className="sticky left-0 z-10 bg-[#0e0e0e] text-left px-4 py-3 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider border-b border-r border-white/7 w-[130px]">
                 Grupo muscular
               </th>
-              {sorted.map(m => (
-                <th key={m.id} className="px-3 py-3 border-b border-r border-white/7 last:border-r-0 text-center align-bottom">
-                  <span className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider block">Meso #{m.number}</span>
-                  <span className="font-mono text-[9px] text-[#c6c9ab] block mt-0.5">{m.startDate}</span>
-                  <span className="font-mono text-[9px] text-[#555] block">{m.daysPerWeek}d · {m.weeks} sem</span>
-                  {m.objective && (
-                    <span className="block mt-1 text-[9px] text-[#c6c9ab] font-sans font-medium max-w-[100px] mx-auto leading-tight"
-                      style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                    >{m.objective}</span>
-                  )}
-                </th>
-              ))}
+              {columns.map(m => {
+                const isCurrent = m.id === editing.id;
+                return (
+                  <th key={m.id} className={`px-3 py-3 border-b border-r border-white/7 last:border-r-0 text-center align-bottom ${isCurrent ? 'bg-[#fbcb1a]/5' : ''}`}>
+                    <span className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider block">
+                      {isCurrent ? `Meso #${m.number} (actual)` : `Meso #${m.number}`}
+                    </span>
+                    <span className="font-mono text-[9px] text-[#c6c9ab] block mt-0.5">{m.startDate}</span>
+                    <span className="font-mono text-[9px] text-[#555] block">{m.daysPerWeek}d · {m.weeks} sem</span>
+                    {m.objective && (
+                      <span className="block mt-1 text-[9px] text-[#c6c9ab] font-sans font-medium max-w-[120px] mx-auto leading-tight"
+                        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                      >{m.objective}</span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -332,11 +460,27 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
                 <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-white/7 font-sans text-xs text-[#c6c9ab] whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}`}>
                   {MUSCLE_LABELS[group]}
                 </td>
-                {sorted.map((m, mIdx) => {
+                {columns.map((m, mIdx) => {
+                  const isCurrent = m.id === editing.id;
                   const cfg  = m.groups[group];
-                  const prev = mIdx > 0 ? sorted[mIdx - 1].groups[group] : null;
+                  const prev = mIdx > 0 ? columns[mIdx - 1].groups[group] : null;
                   const delta = prev !== null ? cfg.series - prev.series : null;
                   const zeroToZero = prev !== null && prev.series === 0 && cfg.series === 0;
+
+                  if (isCurrent) {
+                    return (
+                      <td key={m.id} className="px-3 py-2 border-r border-white/7 last:border-r-0 bg-[#fbcb1a]/5"
+                        style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
+                      >
+                        <div className="flex flex-col items-center gap-1.5">
+                          <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
+                          <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
+                          {!zeroToZero && <Delta delta={delta} showEqual />}
+                        </div>
+                      </td>
+                    );
+                  }
+
                   return (
                     <td key={m.id} className="px-3 py-2.5 border-r border-white/7 last:border-r-0 text-center"
                       style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
@@ -359,14 +503,15 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
             ))}
           </tbody>
           <tfoot>
-            <tr><td colSpan={sorted.length + 1} className="h-px bg-[#2a2a2a] p-0" /></tr>
+            <tr><td colSpan={columns.length + 1} className="h-px bg-[#2a2a2a] p-0" /></tr>
             <tr className="bg-[#0e0e0e]">
               <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Total series</td>
-              {sorted.map((m, mIdx) => {
+              {columns.map((m, mIdx) => {
                 const total = totals[mIdx];
                 const delta = mIdx > 0 ? total - totals[mIdx - 1] : null;
+                const isCurrent = m.id === editing.id;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
+                  <td key={m.id} className={`px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center ${isCurrent ? 'bg-[#fbcb1a]/5' : ''}`}>
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-sm font-black text-white tabular-nums">{total}</span>
                       <Delta delta={delta} showEqual />
@@ -377,8 +522,8 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
             </tr>
             <tr className="bg-[#111]">
               <td className="sticky left-0 z-10 bg-[#111] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Días / semana</td>
-              {sorted.map((m, mIdx) => {
-                const delta = mIdx > 0 ? m.daysPerWeek - sorted[mIdx - 1].daysPerWeek : null;
+              {columns.map((m, mIdx) => {
+                const delta = mIdx > 0 ? m.daysPerWeek - columns[mIdx - 1].daysPerWeek : null;
                 return (
                   <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
@@ -391,8 +536,8 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
             </tr>
             <tr className="bg-[#0e0e0e]">
               <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider whitespace-nowrap">Semanas</td>
-              {sorted.map((m, mIdx) => {
-                const delta = mIdx > 0 ? m.weeks - sorted[mIdx - 1].weeks : null;
+              {columns.map((m, mIdx) => {
+                const delta = mIdx > 0 ? m.weeks - columns[mIdx - 1].weeks : null;
                 return (
                   <td key={m.id} className="px-3 py-2.5 border-r border-t border-white/7 last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
@@ -406,7 +551,15 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
           </tfoot>
         </table>
       </div>
-      <p className="font-mono text-[9px] text-[#555]">{sorted.length} mesociclos · Ordenados por número de mesociclo</p>
+
+      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex items-center justify-between">
+        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">Total series semanales (meso actual)</span>
+        <span className="font-mono font-black text-xl text-white">{currentTotal}</span>
+      </div>
+
+      <p className="font-mono text-[9px] text-[#555]">
+        {history.length > 0 ? `${columns.length} mesociclos · ` : ''}La columna «actual» es editable — el resto es historial de solo lectura.
+      </p>
     </div>
   );
 }
@@ -414,7 +567,30 @@ function ProgressionView({ mesocycles }: { mesocycles: Mesocycle[] }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type SaveState  = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-type EditorTab  = 'volume' | 'distribution' | 'progression';
+type EditorTab  = 'distribution' | 'exercises' | 'progression';
+
+// One row per distinct day pattern (name) generated for this mesocycle — every week
+// repeats the same exercises per day (see handleAssign), so grouping by name collapses
+// e.g. an 8-week × 4-day meso from 32 near-identical Workout docs down to 4 real cards.
+interface MesoWorkoutGroup {
+  name: string;
+  workoutIds: string[];
+  exercises: WorkoutExercise[];
+}
+
+function groupMesoWorkouts(workouts: Workout[], mesocycleId: string): MesoWorkoutGroup[] {
+  const byName = new Map<string, MesoWorkoutGroup>();
+  for (const w of workouts) {
+    if (w.mesocycleId !== mesocycleId) continue;
+    let group = byName.get(w.name);
+    if (!group) {
+      group = { name: w.name, workoutIds: [], exercises: w.exercises };
+      byName.set(w.name, group);
+    }
+    group.workoutIds.push(w.id);
+  }
+  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
 
 interface MesocycleManagerProps {
   coachId: string;
@@ -429,9 +605,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   const [loadingMeso, setLoadingMeso]     = useState(false);
   const [creating, setCreating]           = useState(false);
 
-  const [mesoView, setMesoView]           = useState<'list' | 'dashboard'>('list');
   const [editing, setEditing]             = useState<Mesocycle | null>(null);
-  const [editorTab, setEditorTab]         = useState<EditorTab>('volume');
+  const [editorTab, setEditorTab]         = useState<EditorTab>('progression');
   const [saveState, setSaveState]         = useState<SaveState>('idle');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -449,7 +624,36 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   const [assignProgress, setAssignProgress] = useState({ done: 0, total: 0 });
   const [genError, setGenError]           = useState('');
 
+  // Workouts actually generated for the mesocycle currently being edited — the "Ejercicios
+  // programados" tab reads from here so the meso block and the exercise config it produced
+  // aren't two disconnected screens.
+  const [mesoWorkouts, setMesoWorkouts]           = useState<Workout[]>([]);
+  const [loadingMesoWorkouts, setLoadingMesoWorkouts] = useState(false);
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const reloadMesoWorkouts = useCallback(async (mesocycleId: string) => {
+    setLoadingMesoWorkouts(true);
+    try {
+      const all = await getWorkouts();
+      setMesoWorkouts(all.filter(w => w.mesocycleId === mesocycleId));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMesoWorkouts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!editing?.id) { setMesoWorkouts([]); return; }
+    reloadMesoWorkouts(editing.id);
+  }, [editing?.id, reloadMesoWorkouts]);
+
+  // Exercise names for "Ejercicios programados" are needed as soon as that tab is opened,
+  // independent of the generator flow (which only loads them once it actually runs).
+  useEffect(() => {
+    if (allExercises.length === 0) getExercises().then(setAllExercises).catch(console.error);
+  }, [allExercises.length]);
 
   // Only load the full athlete list in standalone mode (no athleteEmail prop)
   useEffect(() => { if (!athleteEmail) getAllUserProfiles().then(setAthletes); }, [athleteEmail]);
@@ -464,7 +668,6 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     setLoadingMeso(true);
     setEditing(null);
     setGenPhase('idle');
-    setMesoView('list');
     getMesocycles(selectedEmail)
       .then(list => setMesocycles([...list].sort((a, b) => a.number - b.number)))
       .finally(() => setLoadingMeso(false));
@@ -519,6 +722,60 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     scheduleAutoSave(updated);
     setGenPhase('idle');
   };
+
+  // ── Distribution edit helpers ───────────────────────────────────────────────
+  // The auto-generated distribution is a starting point, not a final answer — the coach
+  // can hand-tweak it afterwards (series, remove/move/add a group) without losing the
+  // edit the next time the algorithm runs, since these mutate `editing.distribution`
+  // directly rather than regenerating it.
+  function updateDistribution(mutate: (days: DayPlan[]) => DayPlan[]) {
+    if (!editing?.distribution) return;
+    const days = mutate(editing.distribution.days).map(d => ({
+      ...d, totalSeries: d.assignments.reduce((s, a) => s + a.series, 0),
+    }));
+    const distribution: WeekDistribution = { ...editing.distribution, days };
+    const updated = { ...editing, distribution };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+  }
+
+  function updateAssignmentSeries(dayIdx: number, aIdx: number, series: number) {
+    updateDistribution(days => days.map((d, i) =>
+      i !== dayIdx ? d : { ...d, assignments: d.assignments.map((a, j) => j !== aIdx ? a : { ...a, series }) }
+    ));
+  }
+
+  function removeAssignment(dayIdx: number, aIdx: number) {
+    updateDistribution(days => days.map((d, i) =>
+      i !== dayIdx ? d : { ...d, assignments: d.assignments.filter((_, j) => j !== aIdx) }
+    ));
+  }
+
+  function moveAssignment(dayIdx: number, aIdx: number, targetDayIdx: number) {
+    if (targetDayIdx === dayIdx) return;
+    updateDistribution(days => {
+      const moving = days[dayIdx]?.assignments[aIdx];
+      if (!moving) return days;
+      return days.map((d, i) => {
+        if (i === dayIdx) return { ...d, assignments: d.assignments.filter((_, j) => j !== aIdx) };
+        if (i === targetDayIdx) {
+          const existing = d.assignments.find(a => a.group === moving.group);
+          const assignments = existing
+            ? d.assignments.map(a => a.group === moving.group ? { ...a, series: a.series + moving.series } : a)
+            : [...d.assignments, moving];
+          return { ...d, assignments };
+        }
+        return d;
+      });
+    });
+  }
+
+  function addGroupToDay(dayIdx: number, group: MuscleGroup) {
+    updateDistribution(days => days.map((d, i) => {
+      if (i !== dayIdx || d.assignments.some(a => a.group === group)) return d;
+      return { ...d, assignments: [...d.assignments, { group, series: 3 }] };
+    }));
+  }
 
   // ── Generator ──────────────────────────────────────────────────────────────
 
@@ -645,33 +902,35 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       await deleteWorkoutsByMesocycleIdStrict(editing.id);
       await deleteWorkoutAssignmentsByMesocycleIdStrict(editing.id);
 
+      // One Workout doc per distinct training day — reused across every week instead of
+      // duplicated. A 10-week × 4-day/week mesocycle used to create 40 near-identical
+      // Workout docs (one per calendar date); it now creates 4, and every week's
+      // WorkoutAssignment points back to the same doc. Editing a day's exercises later
+      // (in "Ejercicios programados") edits that single doc, so it applies to every week
+      // at once — there's nothing to keep in sync across duplicates anymore.
+      const dayWorkoutIds: string[] = [];
+      for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
+        const pd = previewDays[dayIdx] ?? { dayIndex: dayIdx, exercises: [], warnings: [] };
+        const exercises: WorkoutExercise[] = pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
+
+        // createWorkoutStrict throws on Firestore failure — no silent local fallback
+        const workout = await createWorkoutStrict({
+          ownerId:     coachId,
+          name:        `Día ${dayIdx + 1} – Meso #${editing.number}`,
+          mesocycleId: editing.id,
+          exercises,
+        });
+        dayWorkoutIds.push(workout.id);
+      }
+
       let done = 0;
       for (let week = 1; week <= editing.weeks; week++) {
         for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
-          const pd   = previewDays[dayIdx] ?? { exercises: [], warnings: [] };
           const date = addDays(editing.startDate, (week - 1) * 7 + dayIdx);
-
-          const exercises: WorkoutExercise[] = pd.exercises.map(pe => ({
-            exerciseId:  pe.exerciseId,
-            order:       pe.order,
-            sets:        pe.sets,
-            reps:        pe.reps,
-            rir:         pe.rir,
-            restSeconds: pe.restSeconds,
-            muscleGroup: pe.muscleGroup,
-          }));
-
-          // createWorkoutStrict throws on Firestore failure — no silent local fallback
-          const workout = await createWorkoutStrict({
-            ownerId:     coachId,
-            name:        `Día ${dayIdx + 1} – Meso #${editing.number}`,
-            mesocycleId: editing.id,
-            exercises,
-          });
 
           // athleteId is the resolved UID (not email) so athlete security rules match
           await createWorkoutAssignmentStrict({
-            workoutId:   workout.id,
+            workoutId:   dayWorkoutIds[dayIdx],
             athleteId:   athleteUid,
             mesocycleId: editing.id,
             date,
@@ -683,6 +942,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
         }
       }
 
+      await reloadMesoWorkouts(editing.id);
       setGenPhase('done');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -694,13 +954,11 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
   // ── Preview edit helpers ───────────────────────────────────────────────────
 
-  function updatePEx(dayIdx: number, exIdx: number, field: keyof PreviewExercise, value: unknown) {
+  function updatePExPatch(dayIdx: number, exIdx: number, patch: Partial<WorkoutExercise>) {
     setPreviewDays(prev => prev.map((d, di) =>
       di !== dayIdx ? d : {
         ...d,
-        exercises: d.exercises.map((e, ei) =>
-          ei !== exIdx ? e : { ...e, [field]: value }
-        ),
+        exercises: d.exercises.map((e, ei) => ei !== exIdx ? e : { ...e, ...patch }),
       }
     ));
   }
@@ -732,6 +990,21 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       };
       return { ...d, exercises: [...d.exercises, newEx] };
     }));
+  }
+
+  // ── "Ejercicios programados" edit helpers ──────────────────────────────────
+  // Since handleAssign now creates one Workout doc per day (reused across every week),
+  // a group normally wraps a single workoutId — but old mesocycles generated before this
+  // change may still have one duplicate per week under the same name, so this still
+  // writes through to every id in the group to keep both generations of data correct.
+  async function updateMesoWorkoutExercise(
+    group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>,
+  ) {
+    const updatedExercises = group.exercises.map((e, i) => i === exIdx ? { ...e, ...patch } : e);
+    setMesoWorkouts(prev => prev.map(w =>
+      group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
+    ));
+    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
   }
 
   // ── Template picker ─────────────────────────────────────────────────────────
@@ -868,28 +1141,6 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
       {selectedEmail && (
         <>
-        {/* View toggle */}
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-full sm:w-fit">
-          {([
-            { id: 'list',      label: 'Mesociclos', icon: 'calendar_view_month' },
-            { id: 'dashboard', label: 'Dashboard',  icon: 'dashboard' },
-          ] as { id: 'list' | 'dashboard'; label: string; icon: string }[]).map(v => (
-            <button
-              key={v.id}
-              onClick={() => setMesoView(v.id)}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wide transition-all ${
-                mesoView === v.id ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm">{v.icon}</span>
-              {v.label}
-            </button>
-          ))}
-        </div>
-
-        {mesoView === 'dashboard' ? (
-          <MesocycleDashboard mesocycles={mesocycles} athleteEmail={selectedEmail} />
-        ) : (
         <div className="flex flex-col xl:flex-row gap-6">
 
           {/* ── Left: list ── */}
@@ -1010,9 +1261,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
                 <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
                   {([
-                    { id: 'volume',       label: 'Volumen y Prioridad', icon: 'bar_chart'   },
+                    { id: 'progression',  label: 'Progresión y volumen', icon: 'trending_up' },
                     { id: 'distribution', label: 'Distribución',        icon: 'grid_view'   },
-                    { id: 'progression',  label: 'Progresión',          icon: 'trending_up' },
+                    { id: 'exercises',    label: 'Ejercicios programados', icon: 'fitness_center' },
                   ] as { id: EditorTab; label: string; icon: string }[]).map(tab => (
                     <button
                       key={tab.id}
@@ -1028,60 +1279,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 </div>
               </div>
 
-              {/* ── Volumen y Prioridad ── */}
-              {editorTab === 'volume' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {LEGEND.map(l => (
-                      <div key={l.label}
-                        className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-white/5"
-                        style={{ backgroundColor: l.bg }}
-                      >
-                        <span className="font-mono text-[10px] font-bold" style={{ color: l.text }}>{l.label}</span>
-                        <span className="font-mono text-[9px] opacity-70" style={{ color: l.text }}>{l.range}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="rounded-xl border border-white/7 overflow-hidden">
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-4 py-2 bg-[#0e0e0e] border-b border-white/7">
-                      <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo muscular</span>
-                      <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-center w-24">Series/sem</span>
-                      <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-center w-28">Prioridad</span>
-                    </div>
-                    {MUSCLE_GROUPS.map((group, idx) => {
-                      const cfg = editing.groups[group];
-                      return (
-                        <div key={group}
-                          className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto_auto] sm:gap-3 sm:items-center px-4 py-3 transition-colors"
-                          style={{
-                            backgroundColor: heatmapBg(cfg.series),
-                            borderBottom: idx < MUSCLE_GROUPS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                          }}
-                        >
-                          <span className="font-sans text-sm font-semibold" style={{ color: cfg.series === 0 ? '#555' : '#fff' }}>
-                            {MUSCLE_LABELS[group]}
-                          </span>
-                          <div className="flex items-center justify-between gap-3 sm:contents">
-                            <div className="flex sm:w-24 sm:justify-center">
-                              <Stepper value={cfg.series} onChange={v => updateGroup(group, 'series', v)} />
-                            </div>
-                            <div className="flex sm:w-28 sm:justify-center">
-                              <PrioritySelector value={cfg.priority} onChange={v => updateGroup(group, 'priority', v)} />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex items-center justify-between">
-                    <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">Total series semanales</span>
-                    <span className="font-mono font-black text-xl text-white">
-                      {MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0)}
-                    </span>
-                  </div>
-                </div>
+              {/* ── Progresión y volumen ── */}
+              {editorTab === 'progression' && (
+                <ProgressionView editing={editing} mesocycles={mesocycles} onUpdateGroup={updateGroup} />
               )}
 
               {/* ── Distribución ── */}
@@ -1144,7 +1344,17 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                           <div className="flex flex-wrap gap-3">
                             {editing.distribution.days.map((day, i) => (
-                              <DayCard key={i} day={day} dayNumber={i + 1} />
+                              <DayCard
+                                key={i}
+                                day={day}
+                                dayNumber={i + 1}
+                                dayIdx={i}
+                                daysPerWeek={editing.daysPerWeek}
+                                onSeriesChange={(aIdx, series) => updateAssignmentSeries(i, aIdx, series)}
+                                onRemove={aIdx => removeAssignment(i, aIdx)}
+                                onMove={(aIdx, targetDayIdx) => moveAssignment(i, aIdx, targetDayIdx)}
+                                onAddGroup={group => addGroupToDay(i, group)}
+                              />
                             ))}
                           </div>
 
@@ -1280,35 +1490,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                       <span className="material-symbols-outlined text-sm">close</span>
                                     </button>
                                   </div>
-                                  <div className="grid grid-cols-3 gap-1.5">
-                                    <div>
-                                      <label className="block font-mono text-[9px] text-[#555] mb-0.5">Series</label>
-                                      <input
-                                        type="number" min={1} max={20}
-                                        value={pe.sets}
-                                        onChange={e => updatePEx(dayIdx, peIdx, 'sets', parseInt(e.target.value) || 1)}
-                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block font-mono text-[9px] text-[#555] mb-0.5">Reps</label>
-                                      <input
-                                        type="text"
-                                        value={pe.reps}
-                                        onChange={e => updatePEx(dayIdx, peIdx, 'reps', e.target.value)}
-                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block font-mono text-[9px] text-[#555] mb-0.5">RIR</label>
-                                      <input
-                                        type="number" min={0} max={5}
-                                        value={pe.rir}
-                                        onChange={e => updatePEx(dayIdx, peIdx, 'rir', parseInt(e.target.value) ?? 0)}
-                                        className="w-full bg-[#181816] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-[#fbcb1a]"
-                                      />
-                                    </div>
-                                  </div>
+                                  <ExerciseConfigEditor we={pe} onChange={patch => updatePExPatch(dayIdx, peIdx, patch)} />
                                 </div>
                               ))}
                             </div>
@@ -1393,8 +1575,17 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 </div>
               )}
 
-              {/* ── Progresión ── */}
-              {editorTab === 'progression' && <ProgressionView mesocycles={mesocycles} />}
+              {/* ── Ejercicios programados ── */}
+              {editorTab === 'exercises' && (
+                <MesoExercisesView
+                  groups={groupMesoWorkouts(mesoWorkouts, editing.id)}
+                  loading={loadingMesoWorkouts}
+                  weeks={editing.weeks}
+                  allExercises={allExercises}
+                  onUpdateExercise={updateMesoWorkoutExercise}
+                  onGoToDistribution={() => setEditorTab('distribution')}
+                />
+              )}
 
               {/* Delete zone */}
               <div className="flex justify-end pt-2">
@@ -1430,7 +1621,6 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             )
           )}
         </div>
-        )}
         </>
       )}
 

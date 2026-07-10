@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
+import { invalidateResource } from '../hooks/useResourceCache';
 
 interface Props {
   athleteEmail: string;
@@ -130,6 +131,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
       setLogs(prev => [...prev, entry]);
       setNewWeight('');
       setNewDate(todayStr());
+      invalidateResource(`weight:${athleteEmail}`);
     } catch (err) { console.error(err); }
     finally { setAdding(false); }
   };
@@ -151,6 +153,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
       await updateBodyweight(editId, { date: editDate, weight: w });
       setLogs(prev => prev.map(b => b.id === editId ? { ...b, date: editDate, weight: w } : b));
       setEditId(null);
+      invalidateResource(`weight:${athleteEmail}`);
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
   };
@@ -160,6 +163,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     try {
       await deleteBodyweight(id);
       setLogs(prev => prev.filter(b => b.id !== id));
+      invalidateResource(`weight:${athleteEmail}`);
     } catch (err) { console.error(err); }
     finally { setDeletingId(null); }
   };

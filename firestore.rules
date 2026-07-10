@@ -208,6 +208,29 @@ service cloud.firestore {
       allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
+    // ── weeklyChallenges (docId = `${email}_${isoWeek}`; athleteId = EMAIL) ──
+    // El atleta puede crear su propio reto (el auto-fallback semanal corre bajo
+    // su sesión) y actualizar el progreso/estado; el coach puede todo.
+    // `resource == null` cubre el primer `get` de la semana, antes de que el
+    // doc exista (generate-on-read): no hay dato que proteger todavía, así que
+    // se permite leer "no existe" en vez de denegar por falta de resource.data.
+    match /weeklyChallenges/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null
+                      && (resource == null || request.auth.token.email == resource.data.athleteId));
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.resource.data.athleteId == request.auth.token.email);
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+    }
+
+    // ── challengeTemplates (biblioteca de retos; ownerId = UID del coach) ────
+    match /challengeTemplates/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+
     // ── invites (docId = email) — coach invites a new client by email ────────
     // Update is also allowed to the invited email itself: markInviteJoined()
     // runs under the newly-created client's own auth session right after they
@@ -244,6 +267,11 @@ service cloud.firestore {
 
     // ── coachNotes (private to-do list — never visible to athletes) ──────────
     match /coachNotes/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // ── coachClientTasks (Setup panel checklist — private to the coach) ──────
+    match /coachClientTasks/{docId} {
       allow read, write: if isCoach();
     }
 

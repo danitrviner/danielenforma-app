@@ -23,6 +23,72 @@ export function fmtReportDate(dateStr: string): string {
   return `${parseInt(d)} ${MONTHS_ES[parseInt(m) - 1]}`;
 }
 
+function fmtDelta(pct: number | null): string {
+  if (pct == null) return '—';
+  return `${pct >= 0 ? '+' : ''}${pct}%`;
+}
+
+// Plain-text rendering of a report, for the coach to copy/paste into WhatsApp,
+// email, etc. Mirrors ReportView.tsx's per-section formatting but as text —
+// keep the two in sync when adding a new section type.
+export function buildReportText(report: CoachReport): string {
+  const lines: string[] = [];
+  lines.push(report.title);
+  lines.push(`${fmtReportDate(report.periodStart)} – ${fmtReportDate(report.periodEnd)}`);
+  lines.push('');
+  if (report.intro.trim()) {
+    lines.push(report.intro.trim());
+    lines.push('');
+  }
+
+  for (const s of report.sections.filter(sec => sec.included)) {
+    switch (s.id) {
+      case 'highlights': {
+        const d = s.data as HighlightsSectionData;
+        if (!d.items?.length) break;
+        lines.push(`🏆 ${s.title}`);
+        d.items.forEach(it => lines.push(`- ${it}`));
+        lines.push('');
+        break;
+      }
+      case 'tonnage': {
+        const d = s.data as TonnageSectionData;
+        lines.push(`📊 ${s.title}`);
+        lines.push(`${d.current.toLocaleString('es-ES')} kg (${fmtDelta(d.deltaPct)}${d.previous != null ? ` vs ${d.comparisonLabel}: ${d.previous.toLocaleString('es-ES')} kg` : ''})`);
+        lines.push(`${d.sessions} sesión${d.sessions !== 1 ? 'es' : ''} en el periodo`);
+        lines.push('');
+        break;
+      }
+      case 'per-exercise': {
+        const d = s.data as PerExerciseSectionData;
+        if (!d.rows?.length) break;
+        lines.push(`💪 ${s.title}`);
+        d.rows.forEach(r => {
+          lines.push(`- ${r.name}${r.isPR ? ' [PR]' : ''}: ${r.sets} series · ${r.reps} reps · ${r.tonnage.toLocaleString('es-ES')} kg · 1RM est. ${r.bestOrm} kg (${fmtDelta(r.deltaOrmPct)})`);
+        });
+        lines.push('');
+        break;
+      }
+      case 'muscle-progression': {
+        const d = s.data as MuscleSectionData;
+        if (!d.rows?.length) break;
+        lines.push(`🎯 ${s.title}`);
+        d.rows.forEach(r => {
+          lines.push(`- ${r.label}: ${r.tonnage.toLocaleString('es-ES')} kg vol. (${fmtDelta(r.tonnageDeltaPct)}) · 1RM medio ${r.meanOrm != null ? `${r.meanOrm} kg` : '—'} (${fmtDelta(r.ormDeltaPct)})`);
+        });
+        lines.push('');
+        break;
+      }
+    }
+    if (s.coachNote) {
+      lines.push(`Nota: ${s.coachNote}`);
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n').trim();
+}
+
 export function buildTrainingReportDraft(params: {
   athleteEmail: string;
   coachId: string;

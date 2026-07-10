@@ -4,17 +4,19 @@ import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyDietsScreen from './MyDietsScreen';
 import RecipesScreen from './RecipesScreen';
+import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 
 interface NutritionHubScreenProps {
   profile: UserProfile;
 }
 
-type NutritionTab = 'intercambios' | 'mis-dietas' | 'recetas';
+type NutritionTab = 'intercambios' | 'mis-dietas' | 'recetas' | 'periodizacion';
 
 const TABS: { id: NutritionTab; label: string; icon: string }[] = [
-  { id: 'intercambios', label: 'Intercambios', icon: 'restaurant' },
-  { id: 'mis-dietas',   label: 'Mis Dietas',    icon: 'bookmark' },
-  { id: 'recetas',      label: 'Recetas',        icon: 'skillet' },
+  { id: 'intercambios',  label: 'Intercambios',  icon: 'restaurant' },
+  { id: 'mis-dietas',    label: 'Mis Dietas',     icon: 'bookmark' },
+  { id: 'recetas',       label: 'Recetas',        icon: 'skillet' },
+  { id: 'periodizacion', label: 'Periodización',  icon: 'monitoring' },
 ];
 
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
@@ -76,6 +78,9 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       )}
       {activeSubTab === 'mis-dietas'   && <MyDietsScreen profile={profile} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}
+      {activeSubTab === 'periodizacion' && (
+        <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />
+      )}
     </div>
   );
 }

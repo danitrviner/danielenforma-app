@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CoachReport, WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped } from '../dbService';
-import { buildTrainingReportDraft, fmtReportDate } from '../utils/reportBuilder';
+import { buildTrainingReportDraft, buildReportText, fmtReportDate } from '../utils/reportBuilder';
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 
@@ -25,6 +25,13 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
   const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CoachReport | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = async (r: CoachReport) => {
+    await navigator.clipboard.writeText(buildReportText(r));
+    setCopiedId(r.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const [periodMode, setPeriodMode] = useState<PeriodMode>('7d');
   const [compareWeeks, setCompareWeeks] = useState(1);
@@ -184,23 +191,38 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           </div>
         ) : (
           reports.map(r => (
-            <button
+            <div
               key={r.id}
-              onClick={() => setEditing(r)}
-              className="w-full flex items-center justify-between gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-[#fbcb1a]/40 transition-all text-left"
+              className="w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-[#fbcb1a]/40 transition-all"
             >
-              <div className="min-w-0">
-                <p className="text-sm text-white font-sans font-bold truncate">{r.title}</p>
-                <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
-                  {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
-                </p>
-              </div>
+              <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-sans font-bold truncate">{r.title}</p>
+                  <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                    {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
+                  </p>
+                </div>
+              </button>
               <span className={`flex-shrink-0 font-sans text-[9px] font-bold uppercase px-2 py-1 rounded-full ${
                 r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-[#1e1e1b] text-[#c6c9ab] border border-white/7'
               }`}>
                 {r.status === 'sent' ? 'Enviado' : 'Borrador'}
               </span>
-            </button>
+              <button
+                onClick={() => handleCopy(r)}
+                title="Copiar texto del reporte"
+                className="flex-shrink-0 p-1.5 text-[#c6c9ab] hover:text-[#00eefc] transition-colors"
+              >
+                <span className="material-symbols-outlined text-base">{copiedId === r.id ? 'check' : 'content_copy'}</span>
+              </button>
+              <button
+                onClick={() => handleSend(r)}
+                title={r.status === 'sent' ? 'Reenviar al atleta' : 'Enviar al atleta'}
+                className="flex-shrink-0 p-1.5 text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors"
+              >
+                <span className="material-symbols-outlined text-base">send</span>
+              </button>
+            </div>
           ))
         )}
       </div>

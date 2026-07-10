@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe } from '../types';
+import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes } from '../dbService';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, computeDietPlaced } from '../utils/exchangeHelpers';
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 
@@ -13,12 +13,6 @@ function blankDiet(athleteId: string): Omit<Diet, 'id'> {
     meals: [{ id: makeId(), name: 'Comida 1', items: [] }],
     selfManaged: true,
   };
-}
-
-function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const meal of meals) for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
-  return p;
 }
 
 interface Props { profile: UserProfile; }
@@ -54,7 +48,7 @@ export default function MyDietsScreen({ profile }: Props) {
         if (cancelled) return;
         setDiets(allDiets);
         setRecipes(recs);
-        if (config && config.enabledModes.length > 0) {
+        if (config && config.enabledModes?.length > 0) {
           setEnabledModes(config.enabledModes);
           setActiveDietMode(config.enabledModes[0]);
         }
@@ -71,7 +65,7 @@ export default function MyDietsScreen({ profile }: Props) {
     return () => { cancelled = true; };
   }, [profile.email]);
 
-  const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
+  const placed = useMemo(() => computeDietPlaced(form.meals), [form.meals]);
 
   // Buscando, ignora la categoría del botón que abrió el picker y busca en todas.
   const isSearchingFoods = pickerTab === 'alimentos' && searchTerm.trim().length > 0;
@@ -219,21 +213,29 @@ export default function MyDietsScreen({ profile }: Props) {
           className="w-full bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50"
         />
 
-        {/* Budget */}
+        {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Objetivo diario de intercambios</p>
+          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+            {form.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
+          </p>
           <div className="grid grid-cols-3 gap-3">
             {BUDGET_CATS.map(cat => (
               <div key={cat}>
                 <label className="block font-mono text-[9px] text-[#c6c9ab] mb-1">{CAT_LABEL[cat]}</label>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.25}
-                  value={form.budget[cat]}
-                  onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
-                />
+                {form.selfManaged ? (
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.25}
+                    value={form.budget[cat]}
+                    onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
+                    className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+                  />
+                ) : (
+                  <div className="w-full bg-[#1e1e1b]/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
+                    {fmtQty(form.budget[cat])}
+                  </div>
+                )}
                 <span className="block font-mono text-[9px] text-[#c6c9ab]/70 mt-0.5">Colocado: {fmtQty(placed[cat])}</span>
               </div>
             ))}
@@ -418,7 +420,7 @@ export default function MyDietsScreen({ profile }: Props) {
       ) : (
         <div className="space-y-2">
           {diets.map(dt => {
-            const dPlaced = computePlaced(dt.meals);
+            const dPlaced = computeDietPlaced(dt.meals);
             return (
               <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">

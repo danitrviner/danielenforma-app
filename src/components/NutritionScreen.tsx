@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
@@ -86,7 +86,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Recipe swap ("Cambiar comida")
   const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string } | null>(null);
 
-  // "Añadir a Intercambios" desde Recetas — con varias comidas, hay que elegir a cuál
+  // "Añadir a Intercambios" desde Recetas — primero elegir a qué dieta, luego (si
+  // tiene varias comidas) a cuál comida
+  const [chooseDietForRecipe, setChooseDietForRecipe] = useState<Recipe | null>(null);
   const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
 
   // Weekly schedule
@@ -124,7 +126,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
         if (cancelled) return;
 
-        if (config && config.enabledModes.length > 0) {
+        if (config && config.enabledModes?.length > 0) {
           setEnabledModes(config.enabledModes);
           setActiveDietMode(config.enabledModes[0]);
         }
@@ -272,6 +274,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     }
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
+
+  // Distinct coach diets scheduled across the week (the "día A/B/C" concept) that
+  // still don't have enough food items placed to cover the budget the coach set.
+  const pendingScheduledDiets = useMemo(() => {
+    const scheduledIds = new Set(
+      WD_ORDER.map(d => weeklySchedule[d]).filter((id): id is string => typeof id === 'string'),
+    );
+    return allDietsList.filter(d => scheduledIds.has(d.id) && !d.selfManaged && isDietPending(d));
+  }, [weeklySchedule, allDietsList]);
 
   // While buscando, ignora la pestaña de categoría activa y busca en todas — así
   // el atleta no tiene que salir y volver a entrar cambiando de categoría para
@@ -653,10 +664,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const addRecipeToMeal = (recipe: Recipe, mealId: string, currentDiet: Diet) => {
     const meal = currentDiet.meals.find(m => m.id === mealId);
     if (!meal) return;
-    const newItems: DietItem[] = recipe.ingredients
-      .filter(ing => enabledModes.includes(ing.mode))
-      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
-    if (newItems.length === 0) return;
+    const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
+    if (newItems.length === 0) {
+      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      return;
+    }
     const startIdx = meal.items.length;
     setSelectedDiet(prev => {
       if (!prev) return prev;
@@ -670,26 +682,49 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   useEffect(() => {
     if (!pendingRecipe || loading) return;
-    if (!selectedDiet) {
-      // No menu loaded yet — start a blank one and add the recipe to its first meal
+    if (allDietsList.length === 0) {
+      // Athlete has no diets at all yet — nothing to choose from, start a blank one
       const blank = blankDiet(profile.email);
-      const newItems: DietItem[] = pendingRecipe.ingredients
-        .filter(ing => enabledModes.includes(ing.mode))
-        .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: pendingRecipe.id }));
-      blank.meals[0].items = newItems;
+      blank.meals[0].items = recipeToDietItems(pendingRecipe, enabledModes);
       handleSelectDiet(blank, { skipDirtyCheck: true });
       onConsumedPendingRecipe?.();
       return;
     }
-    if (selectedDiet.meals.length === 1) {
-      addRecipeToMeal(pendingRecipe, selectedDiet.meals[0].id, selectedDiet);
-      onConsumedPendingRecipe?.();
-    } else {
-      setChooseMealForRecipe(pendingRecipe);
-      onConsumedPendingRecipe?.();
-    }
+    // Let the athlete choose which diet to add the recipe to (or start a new one)
+    setChooseDietForRecipe(pendingRecipe);
+    onConsumedPendingRecipe?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRecipe, loading]);
+
+  const handleChooseDietForRecipe = (target: Diet | 'new') => {
+    const recipe = chooseDietForRecipe;
+    setChooseDietForRecipe(null);
+    if (!recipe) return;
+
+    const newItems = recipeToDietItems(recipe, enabledModes);
+    if (newItems.length === 0) {
+      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      return;
+    }
+
+    if (target === 'new') {
+      const blank = blankDiet(profile.email);
+      blank.meals[0].items = newItems;
+      handleSelectDiet(blank, { skipDirtyCheck: true });
+      flash(`"${recipe.name}" añadida a un nuevo menú.`);
+      return;
+    }
+
+    if (target.meals.length === 1) {
+      const meal = target.meals[0];
+      const updated: Diet = { ...target, meals: [{ ...meal, items: [...meal.items, ...newItems] }] };
+      handleSelectDiet(updated, { skipDirtyCheck: true });
+      flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`);
+    } else {
+      handleSelectDiet(target, { skipDirtyCheck: true });
+      setChooseMealForRecipe(recipe);
+    }
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -720,6 +755,19 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           >
             <span className="material-symbols-outlined text-base">close</span>
           </button>
+        </div>
+      )}
+
+      {/* Pending coach diets banner — different days can carry different diets
+          (día A/B/C); this flags the ones still missing food items to hit budget. */}
+      {pendingScheduledDiets.length > 0 && (
+        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-xl text-sm">
+          <span className="material-symbols-outlined text-amber-400 text-base flex-shrink-0">pending_actions</span>
+          <span>
+            Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
+            {': '}
+            {pendingScheduledDiets.map(d => d.name).join(', ')}
+          </span>
         </div>
       )}
 
@@ -871,23 +919,30 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </span>
               </div>
 
-              {/* Objetivo diario de intercambios (editable) */}
+              {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
+                  en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
               <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
                 <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
-                  Objetivo diario de intercambios
+                  {selectedDiet.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   {BUDGET_CATS.map(cat => (
                     <div key={cat}>
                       <label className={`block font-mono text-[9px] font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.25}
-                        value={selectedDiet.budget[cat]}
-                        onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
-                      />
+                      {selectedDiet.selfManaged ? (
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.25}
+                          value={selectedDiet.budget[cat]}
+                          onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
+                          className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+                        />
+                      ) : (
+                        <div className="w-full bg-[#1e1e1b]/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
+                          {fmtQty(selectedDiet.budget[cat])}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1392,6 +1447,43 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </button>
             <button
               onClick={() => setSaveChoiceOpen(false)}
+              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}
+      {chooseDietForRecipe && (
+        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
+          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
+            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
+              ¿A qué dieta añadir "{chooseDietForRecipe.name}"?
+            </h3>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {allDietsList.map(dt => (
+                <button
+                  key={dt.id}
+                  onClick={() => handleChooseDietForRecipe(dt)}
+                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all"
+                >
+                  <span className="text-sm text-white font-sans truncate">{dt.name}</span>
+                  <span className="material-symbols-outlined text-[#c6c9ab] text-base flex-shrink-0">add_circle</span>
+                </button>
+              ))}
+              <button
+                onClick={() => handleChooseDietForRecipe('new')}
+                className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-dashed border-[#fbcb1a]/40 hover:border-[#fbcb1a] text-left transition-all"
+              >
+                <span className="text-sm text-[#fbcb1a] font-sans font-bold">Nueva dieta</span>
+                <span className="material-symbols-outlined text-[#fbcb1a] text-base flex-shrink-0">add_circle</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setChooseDietForRecipe(null)}
               className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
             >
               Cancelar

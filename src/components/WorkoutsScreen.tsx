@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Exercise, Workout, WorkoutExercise, MUSCLE_LABELS } from '../types';
 import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises, seedExercisesIfEmpty } from '../dbService';
 import StatTile from './StatTile';
+import ExerciseConfigEditor from './ExerciseConfigEditor';
+import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -161,10 +163,6 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const TYPE_OPTIONS = Array.from(new Set<string>(allExercises.map(e => e.type))).sort();
 
   // ── Editor helpers ────────────────────────────────────────────────────────
-  const updateWE = (idx: number, field: keyof WorkoutExercise, value: string | number) => {
-    setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, [field]: value } : we));
-  };
-
   const moveWE = (idx: number, dir: -1 | 1) => {
     const next = idx + dir;
     if (next < 0 || next >= editorExercises.length) return;
@@ -179,16 +177,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
     setEditorExercises(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const toggleRecordVideo = (idx: number) => {
-    setEditorExercises(prev => prev.map((we, i) => {
-      if (i !== idx) return we;
-      if (we.recordVideoSet) { const { recordVideoSet, ...rest } = we; return rest; }
-      return { ...we, recordVideoSet: 'all' };
-    }));
-  };
-
-  const setRecordVideoSet = (idx: number, value: number | 'all') => {
-    setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, recordVideoSet: value } : we));
+  // Patch-style update used by the shared ExerciseConfigEditor (series/reps/rir or
+  // setGroups, notes, video, technique, warm-up — one merge instead of one setter per field).
+  const updateWEPatch = (idx: number, patch: Partial<WorkoutExercise>) => {
+    setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, ...patch } : we));
   };
 
   const getExerciseInfo = (exerciseId: string) =>
@@ -269,6 +261,9 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                           <span className="truncate">{ex?.name || (we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : '—')}</span>
                           {we.recordVideoSet && (
                             <span className="material-symbols-outlined text-[#fbcb1a] text-[13px] flex-shrink-0" title="Recordatorio de vídeo activo">videocam</span>
+                          )}
+                          {we.technique && (
+                            <span className="flex-shrink-0" title={TECHNIQUE_LABEL[we.technique]}>{TECHNIQUE_EMOJI[we.technique]}</span>
                           )}
                           <span className="flex-shrink-0 text-[10px]">{we.sets}×{we.reps}</span>
                         </div>
@@ -404,7 +399,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-sans font-bold text-sm text-white truncate">{ex?.name || we.exerciseId}</p>
+                      <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
+                        {ex?.name || we.exerciseId}
+                        {we.technique && (
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${TECHNIQUE_COLOR[we.technique]}`}>
+                            {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
+                          </span>
+                        )}
+                      </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="font-mono text-[9px] text-[#c6c9ab] capitalize">{ex?.primaryFocus}</span>
                         {ex?.type && (
@@ -439,87 +441,12 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     </div>
                   </div>
 
-                  {/* Parameters */}
-                  <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Series</label>
-                      <input
-                        type="number"
-                        min={1} max={20}
-                        value={we.sets}
-                        onChange={e => updateWE(idx, 'sets', parseInt(e.target.value) || 1)}
-                        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Reps</label>
-                      <input
-                        type="text"
-                        value={we.reps}
-                        onChange={e => updateWE(idx, 'reps', e.target.value)}
-                        placeholder="8-10"
-                        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Descanso (s)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={we.restSeconds}
-                        onChange={e => updateWE(idx, 'restSeconds', parseInt(e.target.value) || 0)}
-                        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">RIR</label>
-                      <input
-                        type="number"
-                        min={0} max={5}
-                        value={we.rir}
-                        onChange={e => updateWE(idx, 'rir', parseInt(e.target.value) || 0)}
-                        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  <div className="px-4 pb-3">
-                    <input
-                      type="text"
-                      value={we.notes || ''}
-                      onChange={e => updateWE(idx, 'notes', e.target.value)}
-                      placeholder="Notas opcionales (técnica, variante, carga...)"
-                      className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-3 py-1.5 text-xs text-[#c6c9ab] placeholder-[#c6c9ab]/30 font-sans focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
-                    />
-                  </div>
-
-                  {/* Grabar con el móvil */}
-                  <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => toggleRecordVideo(idx)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                        we.recordVideoSet
-                          ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
-                          : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-sm">videocam</span>
-                      Grabar con el móvil
-                    </button>
-                    {we.recordVideoSet && (
-                      <select
-                        value={we.recordVideoSet}
-                        onChange={e => setRecordVideoSet(idx, e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                        className="bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-                      >
-                        <option value="all">Todas las series</option>
-                        {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
-                          <option key={n} value={n}>Solo serie {n}</option>
-                        ))}
-                      </select>
-                    )}
+                  {/* Configuración de ejecución — series/reps/rir (uniforme o por bloques),
+                      descanso, notas, vídeo, técnica y warm-up. Componente compartido con
+                      el generador de mesociclos para que configurar un ejercicio se sienta
+                      igual en cualquier pantalla. */}
+                  <div className="px-4 py-3">
+                    <ExerciseConfigEditor we={we} onChange={patch => updateWEPatch(idx, patch)} />
                   </div>
                 </div>
               );

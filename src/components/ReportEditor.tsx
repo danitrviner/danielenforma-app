@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CoachReport } from '../types';
 import ReportView from './ReportView';
+import { buildReportText } from '../utils/reportBuilder';
 
 interface Props {
   initial: CoachReport;
@@ -16,6 +17,13 @@ interface Props {
 export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, onClose }: Props) {
   const [draft, setDraft] = useState<CoachReport>(initial);
   const [busy, setBusy] = useState<null | 'save' | 'send' | 'delete'>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(buildReportText(draft));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const setSection = (id: string, patch: Partial<{ included: boolean; coachNote: string }>) =>
     setDraft(d => ({ ...d, sections: d.sections.map(s => s.id === id ? { ...s, ...patch } : s) }));
@@ -112,6 +120,13 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>
             <div className="flex-1" />
+            <button
+              onClick={handleCopy}
+              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#00eefc]/50 transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
+              {copied ? '¡Copiado!' : 'Copiar texto'}
+            </button>
             <button
               onClick={() => run('save', () => onSaveDraft(draft))}
               disabled={busy !== null}

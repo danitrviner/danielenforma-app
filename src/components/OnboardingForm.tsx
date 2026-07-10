@@ -6,6 +6,7 @@ import {
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
 import { saveOnboarding, updateOnboarding } from '../dbService';
+import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -16,19 +17,6 @@ const SECTION_META: Record<OnboardingSection, { icon: string; label: string }> =
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
-  sedentario:  1.2,
-  poco_activo: 1.375,
-  activo:      1.55,
-  muy_activo:  1.725,
-};
-
-const GOAL_ADJUSTMENTS: Record<GoalBody, number> = {
-  reducir_grasa:    0.80,
-  mantener:         1.00,
-  aumentar_musculo: 1.10,
-};
 
 const GOAL_ADJ_LABEL: Record<GoalBody, string> = {
   reducir_grasa:    '−20%',
@@ -66,19 +54,6 @@ const INTAKE_ICONS: Record<number, string> = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function calcAge(birthDate: string): number {
-  const dob = new Date(birthDate);
-  const now = new Date();
-  let age = now.getFullYear() - dob.getFullYear();
-  if (now.getMonth() < dob.getMonth() ||
-    (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate())) age--;
-  return Math.max(0, age);
-}
-
-function mifflinBMR(sex: 'male' | 'female', w: number, h: number, age: number): number {
-  return Math.round(10 * w + 6.25 * h - 5 * age + (sex === 'male' ? 5 : -161));
-}
 
 function roundQ(x: number): number { return Math.round(x / 0.25) * 0.25; }
 

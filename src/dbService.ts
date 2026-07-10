@@ -23,7 +23,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -1636,6 +1636,142 @@ export async function saveRoadmap(roadmap: Roadmap): Promise<void> {
   }
 }
 
+// ─── WEEKLY CHALLENGES (docId = `${email}_${isoWeek}`) ────────────────────────
+
+const LOCAL_CHALLENGES = 'enforma_weekly_challenges_v1';
+
+function getLocalChallenges(): WeeklyChallenge[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_CHALLENGES) || '[]'); } catch { return []; }
+}
+function saveLocalChallenges(list: WeeklyChallenge[]): void {
+  localStorage.setItem(LOCAL_CHALLENGES, JSON.stringify(list));
+}
+function upsertLocalChallenge(ch: WeeklyChallenge): void {
+  saveLocalChallenges([...getLocalChallenges().filter(c => c.id !== ch.id), ch]);
+}
+
+export function weeklyChallengeDocId(athleteEmail: string, isoWeek: string): string {
+  return `${athleteEmail}_${isoWeek}`;
+}
+
+export async function getWeeklyChallenge(athleteEmail: string, isoWeek: string): Promise<WeeklyChallenge | null> {
+  const id = weeklyChallengeDocId(athleteEmail, isoWeek);
+  if (forceLocalOnly) {
+    return getLocalChallenges().find(c => c.id === id) ?? null;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'weeklyChallenges', id));
+    if (!snap.exists()) return null;
+    return { ...snap.data(), id } as WeeklyChallenge;
+  } catch (err) {
+    console.warn('getWeeklyChallenge Firestore failed:', err);
+    setLocalBypassMode(true);
+    return getLocalChallenges().find(c => c.id === id) ?? null;
+  }
+}
+
+// Blind setDoc sobre ID determinista: un único reto por atleta y semana ISO,
+// idempotente para el auto-generador (generate-on-read) y sobrescribible por
+// el coach al asignar manualmente.
+export async function saveWeeklyChallenge(challenge: WeeklyChallenge): Promise<void> {
+  const data = stripUndefined(challenge);
+  if (forceLocalOnly) {
+    upsertLocalChallenge(challenge);
+    return;
+  }
+  try {
+    await setDoc(doc(db, 'weeklyChallenges', challenge.id), data);
+    upsertLocalChallenge(challenge);
+  } catch (err) {
+    console.warn('saveWeeklyChallenge Firestore failed:', err);
+    setLocalBypassMode(true);
+    upsertLocalChallenge(challenge);
+  }
+}
+
+export async function getWeeklyChallengesForAthlete(athleteEmail: string): Promise<WeeklyChallenge[]> {
+  if (forceLocalOnly) {
+    return getLocalChallenges()
+      .filter(c => c.athleteId === athleteEmail)
+      .sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
+  }
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'weeklyChallenges'), where('athleteId', '==', athleteEmail))
+    );
+    const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as WeeklyChallenge));
+    list.sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
+    return list;
+  } catch (err) {
+    console.warn('getWeeklyChallengesForAthlete Firestore failed:', err);
+    setLocalBypassMode(true);
+    return getLocalChallenges()
+      .filter(c => c.athleteId === athleteEmail)
+      .sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
+  }
+}
+
+// ─── CHALLENGE TEMPLATES (biblioteca de retos del coach) ──────────────────────
+
+const LOCAL_CHALLENGE_TEMPLATES = 'enforma_challenge_templates_v1';
+
+function getLocalChallengeTemplates(): ChallengeTemplate[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_CHALLENGE_TEMPLATES) || '[]'); } catch { return []; }
+}
+function saveLocalChallengeTemplates(list: ChallengeTemplate[]): void {
+  localStorage.setItem(LOCAL_CHALLENGE_TEMPLATES, JSON.stringify(list));
+}
+
+export async function getChallengeTemplates(): Promise<ChallengeTemplate[]> {
+  if (forceLocalOnly) return getLocalChallengeTemplates();
+  try {
+    const snap = await getDocs(collection(db, 'challengeTemplates'));
+    const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as ChallengeTemplate));
+    list.sort((a, b) => a.title.localeCompare(b.title));
+    saveLocalChallengeTemplates(list);
+    return list;
+  } catch (err) {
+    console.warn('getChallengeTemplates Firestore failed:', err);
+    setLocalBypassMode(true);
+    return getLocalChallengeTemplates();
+  }
+}
+
+export async function saveChallengeTemplate(template: ChallengeTemplate): Promise<void> {
+  const data = stripUndefined(template);
+  const upsertLocal = () =>
+    saveLocalChallengeTemplates([...getLocalChallengeTemplates().filter(t => t.id !== template.id), template]);
+  if (forceLocalOnly) {
+    upsertLocal();
+    return;
+  }
+  try {
+    await setDoc(doc(db, 'challengeTemplates', template.id), data);
+    upsertLocal();
+  } catch (err) {
+    console.warn('saveChallengeTemplate Firestore failed:', err);
+    setLocalBypassMode(true);
+    upsertLocal();
+  }
+}
+
+export async function deleteChallengeTemplate(templateId: string): Promise<void> {
+  const removeLocal = () =>
+    saveLocalChallengeTemplates(getLocalChallengeTemplates().filter(t => t.id !== templateId));
+  if (forceLocalOnly) {
+    removeLocal();
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'challengeTemplates', templateId));
+    removeLocal();
+  } catch (err) {
+    console.warn('deleteChallengeTemplate Firestore failed:', err);
+    setLocalBypassMode(true);
+    removeLocal();
+  }
+}
+
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 
 const LOCAL_INVITES = 'enforma_invites_v1';
@@ -3214,6 +3350,100 @@ export async function deleteCoachNote(id: string): Promise<void> {
     console.warn('deleteCoachNote Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     saveLocalCoachNotes(filtered);
+  }
+}
+
+// ─── COACH CLIENT TASKS (Setup panel checklist) ────────────────────────────────
+// Seeded items get a deterministic doc id (`${email}_${itemId}`) and are only
+// written the first time the coach toggles them — cheap idempotent upserts,
+// same pattern as weeklyChallengeDocId. Extras use Firestore auto-ids.
+
+const COACH_CLIENT_TASKS_LOCAL_KEY = 'enforma_coach_client_tasks_v1';
+
+function getLocalCoachClientTasks(): CoachClientTask[] {
+  try { return JSON.parse(localStorage.getItem(COACH_CLIENT_TASKS_LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function saveLocalCoachClientTasks(list: CoachClientTask[]): void {
+  localStorage.setItem(COACH_CLIENT_TASKS_LOCAL_KEY, JSON.stringify(list));
+}
+
+export async function getCoachClientTasks(athleteEmail: string): Promise<CoachClientTask[]> {
+  if (forceLocalOnly) return getLocalCoachClientTasks().filter(t => t.athleteId === athleteEmail);
+  try {
+    const snap = await getDocs(query(collection(db, 'coachClientTasks'), where('athleteId', '==', athleteEmail)));
+    const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() } as CoachClientTask));
+    const merged = [...getLocalCoachClientTasks().filter(t => t.athleteId !== athleteEmail), ...tasks];
+    saveLocalCoachClientTasks(merged);
+    return tasks;
+  } catch (err) {
+    console.warn('getCoachClientTasks Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalCoachClientTasks().filter(t => t.athleteId === athleteEmail);
+  }
+}
+
+export async function setSeededTaskDone(athleteEmail: string, itemId: string, title: string, phase: string, done: boolean): Promise<void> {
+  const id = `${athleteEmail}_${itemId}`;
+  const task: CoachClientTask = {
+    id, athleteId: athleteEmail, itemId, title, phase, done,
+    doneAt: done ? new Date().toISOString() : undefined,
+    createdBy: 'seed', createdAt: new Date().toISOString(),
+  };
+  const updated = [...getLocalCoachClientTasks().filter(t => t.id !== id), task];
+  if (forceLocalOnly) { saveLocalCoachClientTasks(updated); return; }
+  try {
+    await setDoc(doc(db, 'coachClientTasks', id), stripUndefined(task), { merge: true });
+    saveLocalCoachClientTasks(updated);
+  } catch (err) {
+    console.warn('setSeededTaskDone Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalCoachClientTasks(updated);
+  }
+}
+
+export async function createCoachClientTask(data: Omit<CoachClientTask, 'id'>): Promise<CoachClientTask> {
+  if (forceLocalOnly) {
+    const task: CoachClientTask = { ...data, id: `local_cct_${Date.now()}` };
+    saveLocalCoachClientTasks([...getLocalCoachClientTasks(), task]);
+    return task;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'coachClientTasks'), stripUndefined(data));
+    const task: CoachClientTask = { ...data, id: ref.id };
+    saveLocalCoachClientTasks([...getLocalCoachClientTasks(), task]);
+    return task;
+  } catch (err) {
+    console.warn('createCoachClientTask Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const task: CoachClientTask = { ...data, id: `local_cct_${Date.now()}` };
+    saveLocalCoachClientTasks([...getLocalCoachClientTasks(), task]);
+    return task;
+  }
+}
+
+export async function updateCoachClientTask(id: string, updates: Partial<CoachClientTask>): Promise<void> {
+  const updated = getLocalCoachClientTasks().map(t => t.id === id ? { ...t, ...updates } : t);
+  if (forceLocalOnly) { saveLocalCoachClientTasks(updated); return; }
+  try {
+    await updateDoc(doc(db, 'coachClientTasks', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalCoachClientTasks(updated);
+  } catch (err) {
+    console.warn('updateCoachClientTask Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalCoachClientTasks(updated);
+  }
+}
+
+export async function deleteCoachClientTask(id: string): Promise<void> {
+  const filtered = getLocalCoachClientTasks().filter(t => t.id !== id);
+  if (forceLocalOnly) { saveLocalCoachClientTasks(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'coachClientTasks', id));
+    saveLocalCoachClientTasks(filtered);
+  } catch (err) {
+    console.warn('deleteCoachClientTask Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalCoachClientTasks(filtered);
   }
 }
 

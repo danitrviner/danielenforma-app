@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
   Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
   FoodCategory, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
   QSchedule, QScheduleType, OnboardingData, WeekDay, BodyweightLog,
-  OnboardingTemplateQuestion,
+  OnboardingTemplateQuestion, Mesocycle,
 } from '../types';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { calcPlanExpiry } from '../hooks/usePlanExpiry';
+import { invalidateResource } from '../hooks/useResourceCache';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { scheduleLabel } from '../utils/scheduleEngine';
+import { isDietPending } from '../utils/exchangeHelpers';
 import {
   submitCoachFeedback, getWorkouts, getWorkoutAssignments,
   createWorkoutAssignment, deleteWorkoutAssignment, getWorkoutLogs, updateWorkoutLog,
@@ -24,11 +27,12 @@ import {
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
-  getOnboardingTemplate,
+  getOnboardingTemplate, getMesocycles,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ScheduleFields from './ScheduleFields';
 import MesocycleManager from './MesocycleManager';
+import MesocycleDashboard from './MesocycleDashboard';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import BodyweightPanel from './BodyweightPanel';
@@ -44,6 +48,7 @@ import FoodPreferencesPanel from './FoodPreferencesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
 import ProgressRing from './ProgressRing';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
+import ClientSetupPanel from './ClientSetupPanel';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -72,16 +77,25 @@ const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
-export type HubTab = 'revisiones' | 'entrenamientos' | 'dietas' | 'macrociclos' | 'roadmap' | 'analisis';
+export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'periodizacion' | 'roadmap' | 'analisis';
+export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
+export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'periodizacion', 'roadmap', 'analisis'];
+export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', 'correlaciones'];
 
 interface ClientHubProps {
+  key?: React.Key;
   athlete: UserProfile;
   coachId: string;
   coachEmail: string;
   checkins: WeightCheckIn[];
   onRefreshCheckIns: () => void;
   onBack: () => void;
-  initialTab?: HubTab;
+  // Tab position is owned by the URL (see ClientsScreen) so refreshing or
+  // deep-linking lands on the exact same tab instead of always resetting.
+  activeTab: HubTab;
+  onTabChange: (tab: HubTab) => void;
+  analisisTab: AnalisisTab;
+  onAnalisisTabChange: (tab: AnalisisTab) => void;
 }
 
 const DIET_LABELS: Record<string, string> = {
@@ -126,9 +140,10 @@ function fmtExch(g: number, ef: number): string {
   return r % 1 === 0 ? r.toFixed(0) : r.toFixed(2);
 }
 
-export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack, initialTab }: ClientHubProps) {
-  const [activeTab, setActiveTab] = useState<HubTab>(initialTab ?? 'revisiones');
-  const [analisisTab, setAnalisisTab] = useState<'correlaciones' | 'nutricion' | 'reportes'>('reportes');
+export default function ClientHub({
+  athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack,
+  activeTab, onTabChange, analisisTab, onAnalisisTabChange,
+}: ClientHubProps) {
 
   // Onboarding
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
@@ -153,11 +168,20 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
   // Load history
   const [athleteLogs, setAthleteLogs] = useState<WorkoutLog[]>([]);
+  const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   // Nutrition/diet
   const [athleteDiets, setAthleteDiets] = useState<Diet[]>([]);
   const [athleteDietConfig, setAthleteDietConfig] = useState<AthleteDietConfig | null>(null);
   const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
+
+  // Diets scheduled across the week (día A/B/C) that the athlete hasn't finished
+  // filling in yet — surfaced so the coach knows who still owes the athlete nothing,
+  // but the athlete still owes themselves food items to hit the budget assigned.
+  const pendingScheduledDiets = useMemo(() => {
+    const scheduledIds = new Set(Object.values(athleteDietConfig?.weeklySchedule ?? {}).filter((id): id is string => typeof id === 'string'));
+    return athleteDiets.filter(d => scheduledIds.has(d.id) && isDietPending(d));
+  }, [athleteDiets, athleteDietConfig]);
 
   // Photos
   const [athletePhotos, setAthletePhotos] = useState<ProgressPhoto[]>([]);
@@ -167,10 +191,20 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
   const [showGenerator,  setShowGenerator]  = useState(false);
 
-  // Plan duration
+  // Plan duration — snapshot-diff dirty check, same pattern as NutritionScreen's
+  // dietSnapshot/isDirty (src/components/NutritionScreen.tsx), so an edit here
+  // can't be silently discarded by switching tabs or leaving the Hub.
+  const planSnapshot = (start: string, months: number) => `${start}|${months}`;
   const [planStart, setPlanStart] = useState(athlete.planStartDate ?? '');
   const [planMonths, setPlanMonths] = useState<3 | 6 | 12>(athlete.planDurationMonths ?? 3);
+  const [savedPlanSnapshot, setSavedPlanSnapshot] = useState(() => planSnapshot(athlete.planStartDate ?? '', athlete.planDurationMonths ?? 3));
   const [savingPlan, setSavingPlan] = useState(false);
+  const isPlanDirty = planSnapshot(planStart, planMonths) !== savedPlanSnapshot;
+
+  const confirmDiscardPlanChanges = () =>
+    !isPlanDirty || window.confirm('Tienes cambios sin guardar en la duración del plan. ¿Continuar y descartarlos?');
+  const guardedTabChange = (tab: HubTab) => { if (confirmDiscardPlanChanges()) onTabChange(tab); };
+  const guardedBack = () => { if (confirmDiscardPlanChanges()) onBack(); };
 
   // Questionnaires
   const [coachQuestionnaires, setCoachQuestionnaires] = useState<Questionnaire[]>([]);
@@ -252,6 +286,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     getOnboardingTemplate(coachEmail).then(tpl => setOnboardingTemplate(tpl?.questions ?? [])).catch(console.error);
     getWorkoutAssignments(athlete.userId).then(setAssignments).catch(console.error);
     getWorkoutLogs(athlete.email).then(setAthleteLogs).catch(console.error);
+    getMesocycles(athlete.email).then(setMesocycles).catch(console.error);
     getAthleteNutritionConfig(athlete.email).then(setNutritionConfig).catch(console.error);
     // Self-managed diets ("Mis Dietas") are private to the athlete — the coach's
     // "Dietas disponibles" tab only lists/assigns diets the coach itself authored.
@@ -403,6 +438,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       setAssignments(prev => [...prev, newA].sort((a, b) => a.date.localeCompare(b.date)));
       setShowAssignModal(false);
       setAssignWorkoutId('');
+      invalidateResource(`assignments:${athlete.userId}`);
     } catch (err) { console.error(err); }
     finally { setIsAssigning(false); }
   };
@@ -411,16 +447,19 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     try {
       await deleteWorkoutAssignment(id);
       setAssignments(prev => prev.filter(a => a.id !== id));
+      invalidateResource(`assignments:${athlete.userId}`);
     } catch (err) { console.error(err); }
   };
 
   const handleToggleDiet = async (dietId: string) => {
     const current = athleteDietConfig ?? { athleteId: athlete.email, activeDietIds: [] };
+    // Old docs can predate this field — never trust it to be present just because the type says so.
+    const activeDietIds = current.activeDietIds ?? [];
     const next: AthleteDietConfig = {
       ...current,
-      activeDietIds: current.activeDietIds.includes(dietId)
-        ? current.activeDietIds.filter(id => id !== dietId)
-        : [...current.activeDietIds, dietId],
+      activeDietIds: activeDietIds.includes(dietId)
+        ? activeDietIds.filter(id => id !== dietId)
+        : [...activeDietIds, dietId],
     };
     setAthleteDietConfig(next);
     await saveAthleteDietConfig(next).catch(console.error);
@@ -438,10 +477,11 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
   const handleToggleDietMode = async (mode: DietMode) => {
     if (!nutritionConfig) return;
-    const already  = nutritionConfig.enabledModes.includes(mode);
+    const enabledModes = nutritionConfig.enabledModes ?? [];
+    const already  = enabledModes.includes(mode);
     const updated  = already
-      ? nutritionConfig.enabledModes.filter(m => m !== mode)
-      : [...nutritionConfig.enabledModes, mode];
+      ? enabledModes.filter(m => m !== mode)
+      : [...enabledModes, mode];
     if (updated.length === 0) return;
     const next: AthleteNutritionConfig = { ...nutritionConfig, enabledModes: updated };
     setNutritionConfig(next);
@@ -538,15 +578,6 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     finally { setSavingNewQ(false); }
   };
 
-  // ── Plan duration helpers ──────────────────────────────────────────────────
-  function getPlanDaysLeft(): number | null {
-    if (!planStart || !planMonths) return null;
-    const [y, m, d] = planStart.split('-').map(Number);
-    const end = new Date(y, m - 1 + planMonths, d);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    return Math.floor((end.getTime() - today.getTime()) / 86_400_000);
-  }
-
   const handleSavePlan = async () => {
     setSavingPlan(true);
     try {
@@ -554,6 +585,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
         planStartDate: planStart || undefined,
         planDurationMonths: planStart ? planMonths : undefined,
       });
+      setSavedPlanSnapshot(planSnapshot(planStart, planMonths));
     } catch (err) {
       console.error('Error guardando plan:', err);
     } finally {
@@ -561,7 +593,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
     }
   };
 
-  const daysLeft = getPlanDaysLeft();
+  const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
   const planBadge = daysLeft !== null ? (
     <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg border flex-shrink-0 ${
       daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
@@ -579,7 +611,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       <div className="pb-4 border-b border-white/60 space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
           <button
-            onClick={onBack}
+            onClick={guardedBack}
             className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#fbcb1a] border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
@@ -632,16 +664,17 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5 sticky top-0 z-20 bg-[#141414]/95 backdrop-blur-sm">
         <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
           {([
+            { id: 'setup',         label: 'Setup',         icon: 'checklist'          },
             { id: 'revisiones',    label: 'Revisiones',    icon: 'rate_review'        },
             { id: 'entrenamientos',label: 'Entrenamientos',icon: 'fitness_center'     },
             { id: 'dietas',        label: 'Dietas',        icon: 'nutrition'          },
-            { id: 'macrociclos',   label: 'Macrociclos',   icon: 'calendar_view_month'},
+            { id: 'periodizacion', label: 'Periodización', icon: 'monitoring'         },
             { id: 'roadmap',       label: 'Road map',      icon: 'map'                },
             { id: 'analisis',      label: 'Análisis',      icon: 'insights'           },
           ] as { id: HubTab; label: string; icon: string }[]).map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => guardedTabChange(tab.id)}
               className={`snap-start flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-lg font-mono text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
                 activeTab === tab.id ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
               }`}
@@ -653,11 +686,33 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
         </div>
       </div>
 
+      {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
+      {activeTab === 'setup' && (
+        <ClientSetupPanel
+          athlete={athlete}
+          checkins={athleteCheckins}
+          onboarding={onboardingData}
+          mesocycles={mesocycles}
+          workoutAssignments={assignments}
+          diets={athleteDiets}
+          dietConfig={athleteDietConfig}
+          nutritionConfig={nutritionConfig}
+          qAssignments={athleteQAssignments}
+          photoAssignments={athletePhotoAssignments}
+          photos={athletePhotos}
+          workoutLogs={athleteLogs}
+          onGoToTab={guardedTabChange}
+          onGoToAnalisis={onAnalisisTabChange}
+        />
+      )}
+
       {/* ── Tab: Revisiones ────────────────────────────────────────────────── */}
       {activeTab === 'revisiones' && (
         <div className="space-y-6">
 
         <TaskManagerPanel athleteEmail={athlete.email} />
+
+        <ExercisePersonalNotesPanel athleteEmail={athlete.email} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
@@ -1484,6 +1539,80 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   )}
                 </div>
               )}
+
+              {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
+              <div className="p-4 border-t border-white/7 space-y-4">
+                <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">edit_calendar</span>
+                  Asignar fotos de check-in
+                </h4>
+
+                <div className="space-y-3">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {([
+                      { id: 'front', label: 'Frente' },
+                      { id: 'side',  label: 'Lateral' },
+                      { id: 'back',  label: 'Espalda' },
+                    ] as { id: PhotoView; label: string }[]).map(v => {
+                      const active = assignPhotoViews.includes(v.id);
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
+                          className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                            active
+                              ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                              : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
+                          }`}
+                        >{v.label}</button>
+                      );
+                    })}
+                  </div>
+
+                  <ScheduleFields
+                    schedType={assignPhotoSchedType}
+                    onSchedTypeChange={setAssignPhotoSchedType}
+                    weekdays={assignPhotoWeekdays}
+                    onWeekdaysChange={setAssignPhotoWeekdays}
+                    intervalDays={assignPhotoIntervalDays}
+                    onIntervalDaysChange={setAssignPhotoIntervalDays}
+                    dayOfMonth={assignPhotoDayOfMonth}
+                    onDayOfMonthChange={setAssignPhotoDayOfMonth}
+                    startDate={assignPhotoStartDate}
+                    onStartDateChange={setAssignPhotoStartDate}
+                  />
+
+                  <button
+                    onClick={handleAssignPhotoCheckIn}
+                    disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
+                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                  >
+                    {assigningPhoto ? '…' : 'Asignar'}
+                  </button>
+                </div>
+
+                {athletePhotoAssignments.filter(a => a.active).length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-white/60">
+                    <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
+                    {athletePhotoAssignments.filter(a => a.active).map(a => {
+                      const schedLabel = scheduleLabel(a.schedule);
+                      const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
+                      return (
+                        <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
+                            <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
+                          </div>
+                          <button onClick={() => handleDeactivatePhoto(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
+                            <span className="material-symbols-outlined text-sm">close</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })()}
@@ -1592,80 +1721,6 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               )}
             </div>
 
-            {/* ── Asignar fotos de check-in ─────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
-                Asignar fotos de check-in
-              </h3>
-
-              <div className="space-y-3">
-                <div className="flex gap-1.5 flex-wrap">
-                  {([
-                    { id: 'front', label: 'Frente' },
-                    { id: 'side',  label: 'Lateral' },
-                    { id: 'back',  label: 'Espalda' },
-                  ] as { id: PhotoView; label: string }[]).map(v => {
-                    const active = assignPhotoViews.includes(v.id);
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
-                        className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                          active
-                            ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
-                            : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
-                        }`}
-                      >{v.label}</button>
-                    );
-                  })}
-                </div>
-
-                <ScheduleFields
-                  schedType={assignPhotoSchedType}
-                  onSchedTypeChange={setAssignPhotoSchedType}
-                  weekdays={assignPhotoWeekdays}
-                  onWeekdaysChange={setAssignPhotoWeekdays}
-                  intervalDays={assignPhotoIntervalDays}
-                  onIntervalDaysChange={setAssignPhotoIntervalDays}
-                  dayOfMonth={assignPhotoDayOfMonth}
-                  onDayOfMonthChange={setAssignPhotoDayOfMonth}
-                  startDate={assignPhotoStartDate}
-                  onStartDateChange={setAssignPhotoStartDate}
-                />
-
-                <button
-                  onClick={handleAssignPhotoCheckIn}
-                  disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                  className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
-                >
-                  {assigningPhoto ? '…' : 'Asignar'}
-                </button>
-              </div>
-
-              {athletePhotoAssignments.filter(a => a.active).length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-white/60">
-                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
-                  {athletePhotoAssignments.filter(a => a.active).map(a => {
-                    const schedLabel = scheduleLabel(a.schedule);
-                    const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
-                    return (
-                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                        <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
-                          <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
-                        </div>
-                        <button onClick={() => handleDeactivatePhoto(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
             {/* ── Peso corporal (coach view) ────────────────────────────── */}
             <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
               <BodyweightPanel athleteEmail={athlete.email} readOnly />
@@ -1733,8 +1788,6 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
       {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
       {activeTab === 'entrenamientos' && (
         <div className="space-y-6">
-          <ExercisePersonalNotesPanel athleteEmail={athlete.email} />
-
           {/* Onboarding exercise reference */}
           {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
             <div className="bg-[#0e0e0e] border border-[#fbcb1a]/15 rounded-xl p-4 space-y-3">
@@ -1786,9 +1839,6 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               )}
             </div>
           )}
-
-          {/* Load history */}
-          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
 
           {/* Notas del atleta (por ejercicio + entreno completo) */}
           {(() => {
@@ -1892,6 +1942,13 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               </div>
             )}
           </div>
+
+          {/* Macrociclos — programación de volumen/semanas (el análisis vive en Periodización) */}
+          <MesocycleManager
+            coachId={coachId}
+            athleteEmail={athlete.email}
+            athleteEquipment={onboardingData?.equipment ?? []}
+          />
         </div>
       )}
 
@@ -1963,7 +2020,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               ) : (
                 <div className="space-y-2">
                   {athleteDiets.map(dt => {
-                    const active = athleteDietConfig?.activeDietIds.includes(dt.id) ?? false;
+                    const active = athleteDietConfig?.activeDietIds?.includes(dt.id) ?? false;
                     return (
                       <div
                         key={dt.id}
@@ -2019,10 +2076,18 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
 
             {/* Weekly schedule grid */}
             <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_month</span>
-                Programación semanal
-              </h3>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_month</span>
+                  Programación semanal
+                </h3>
+                {pendingScheduledDiets.length > 0 && (
+                  <span className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-2 py-1 rounded-lg border border-amber-400/20">
+                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>pending_actions</span>
+                    {pendingScheduledDiets.length} {pendingScheduledDiets.length === 1 ? 'pendiente de generar' : 'pendientes de generar'}
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-[#c6c9ab] font-mono">
                 Asigna una dieta a cada día. El atleta la verá cargada automáticamente.
               </p>
@@ -2032,7 +2097,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                   const scheduledId = athleteDietConfig?.weeklySchedule?.[day] ?? null;
                   const scheduledDiet = scheduledId ? athleteDiets.find(d => d.id === scheduledId) ?? null : null;
                   const totalExch = scheduledDiet
-                    ? scheduledDiet.budget.HC + scheduledDiet.budget.PROT + scheduledDiet.budget.GRASA
+                    ? (scheduledDiet.budget?.HC ?? 0) + (scheduledDiet.budget?.PROT ?? 0) + (scheduledDiet.budget?.GRASA ?? 0)
                     : null;
                   return (
                     <div key={day} className="flex flex-col gap-1">
@@ -2062,10 +2127,23 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
               </div>{/* end overflow-x-auto */}
             </div>
 
-            {/* Periodización nutricional */}
+            {/* Periodización nutricional — el panel es dueño del estado de
+                edición y renderiza el dashboard de rendimiento (gráfico +
+                stats) como su propia vista de lectura; son una sola sección. */}
             <NutritionPeriodizationPanel
               athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              targetWeightKg={athlete.targetWeight}
               diets={athleteDiets}
+              onboarding={onboardingData}
+              currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}
+              stepGoal={nutritionConfig?.stepGoal ?? 8000}
+              kcalPerStep={nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
+              onDietsChanged={() => {
+                getDietsForAthlete(athlete.email)
+                  .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
+                  .catch(console.error);
+              }}
             />
 
             {/* Nutrition mode config */}
@@ -2080,7 +2158,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
                 </p>
                 <div className="flex gap-3 flex-wrap">
                   {(['OMNIVORO', 'VEGANO', 'SIN_PESAR'] as DietMode[]).map(mode => {
-                    const active = nutritionConfig.enabledModes.includes(mode);
+                    const active = nutritionConfig.enabledModes?.includes(mode) ?? false;
                     return (
                       <button
                         key={mode}
@@ -2144,13 +2222,12 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
         )
       )}
 
-      {/* ── Tab: Macrociclos ──────────────────────────────────────────────── */}
-      {activeTab === 'macrociclos' && (
-        <MesocycleManager
-          coachId={coachId}
-          athleteEmail={athlete.email}
-          athleteEquipment={onboardingData?.equipment ?? []}
-        />
+      {/* ── Tab: Periodización — análisis de entrenamiento + nutrición ──────── */}
+      {activeTab === 'periodizacion' && (
+        <div className="space-y-6">
+          <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
+          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
+        </div>
       )}
 
       {/* ── Tab: Road map ─────────────────────────────────────────────────── */}
@@ -2170,7 +2247,7 @@ export default function ClientHub({ athlete, coachId, coachEmail, checkins, onRe
             ] as const).map(t => (
               <button
                 key={t.id}
-                onClick={() => setAnalisisTab(t.id)}
+                onClick={() => onAnalisisTabChange(t.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
                   analisisTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
                 }`}

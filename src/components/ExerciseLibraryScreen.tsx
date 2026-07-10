@@ -210,7 +210,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <p className="text-[#c6c9ab] text-sm mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
-              <span className="ml-2 text-[#fbcb1a]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo macrociclo</span>
+              <span className="ml-2 text-[#fbcb1a]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo muscular</span>
             )}
           </p>
         </div>
@@ -320,7 +320,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <p className="text-white font-bold text-sm">Sin resultados</p>
           <p className="text-[#c6c9ab] text-xs mt-1">
             {filterMuscleGroup
-              ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo macrociclo en el editor.`
+              ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo muscular en el editor.`
               : 'Ajusta los filtros o añade un nuevo ejercicio.'}
           </p>
         </div>
@@ -541,10 +541,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 />
               </div>
 
-              {/* Grupo macrociclo — the 14 typed keys */}
+              {/* Grupo muscular — the 14 typed keys */}
               <div>
                 <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
-                  Grupo macrociclo
+                  Grupo muscular
                   <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
                 </label>
                 <select

@@ -22,6 +22,10 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   plan_expiring:           'calendar_today',
   checkin_late:            'warning',
   report_sent:             'analytics',
+  weekly_challenge_new:    'flag',
+  weekly_challenge_won:    'emoji_events',
+  plan_phase_change:       'route',
+  level_up:                'military_tech',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate }: Props) {

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, cleanupTestDataOnce } from './dbService';
+import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 
 import WelcomeScreen from './components/WelcomeScreen';
@@ -47,12 +49,43 @@ export default function App() {
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // The "clients" tab is the only part of the app backed by real routes (see
+  // ClientsScreen/ClientHub) — keep the URL bar in sync whenever the coach
+  // switches tabs, and push a coach who just logged in onto /clients so a
+  // refresh there lands back on the exact athlete/hub-tab instead of the grid.
+  const goToTab = (tab: NavTab) => {
+    setActiveTab(tab);
+    if (tab === 'clients') {
+      if (!location.pathname.startsWith('/clients')) navigate('/clients');
+    } else if (location.pathname.startsWith('/clients')) {
+      navigate('/');
+    }
+  };
+
+  // One-directional: only follows the URL when something *outside* goToTab
+  // pushed us onto a /clients/* URL (e.g. a raw navigate() from ReviewsScreen).
+  // There used to be a symmetric branch that force-navigated back to /clients
+  // whenever activeTab === 'clients' but the URL wasn't — that fired on every
+  // goToTab() call made *from* the clients tab (its own navigate('/') hadn't
+  // landed in location yet on that render), snapping every tab back to Clientes.
+  // The two legitimate "land coach on /clients" cases it covered (initial login,
+  // NotificationBell's raw setActiveTab) are now handled explicitly instead.
+  useEffect(() => {
+    const onClientsUrl = location.pathname.startsWith('/clients');
+    if (onClientsUrl && activeTab !== 'clients') {
+      setActiveTab('clients');
+    }
+  }, [activeTab, location.pathname]);
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
     const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
     const coachRole = userProfile.role === 'coach' || isOwner;
     setProfile(userProfile);
     setActiveTab(coachRole ? 'clients' : 'home');
+    if (coachRole && !location.pathname.startsWith('/clients')) navigate('/clients');
     await seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com');
     // Coach reads all check-ins (no userId filter); athlete reads only their own
     const checks = await getCheckIns(coachRole ? undefined : user.uid);
@@ -162,7 +195,7 @@ export default function App() {
 
   const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
   const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
-  const pendingCount = checkins.filter(c => !c.approved || !c.coachFeedback).length;
+  const pendingCount = getPendingReviews(checkins).length;
 
   return (
     <div className="min-h-screen text-[#e5e2e1] bg-[#111110] flex flex-col md:flex-row pb-24 md:pb-0">
@@ -178,9 +211,9 @@ export default function App() {
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
+            <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
             <span className="w-px h-6 bg-white/7"></span>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('profile')}>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
               <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-[#fbcb1a]/40" />
               <span className="text-xs font-mono font-medium text-white">{profile.displayName}</span>
             </div>
@@ -198,8 +231,8 @@ export default function App() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <NotificationBell recipientEmail={profile.email} onNavigate={setActiveTab} />
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#fbcb1a]/40" onClick={() => setActiveTab('profile')}>
+          <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#fbcb1a]/40" onClick={() => goToTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -211,7 +244,7 @@ export default function App() {
           {mainTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => goToTab(tab.id)}
               className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${activeTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1e1e1b] hover:text-white'}`}
             >
               <span
@@ -229,7 +262,7 @@ export default function App() {
         </div>
         {isCoach && (
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={() => goToTab('profile')}
             className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#fbcb1a]' : 'text-[#c6c9ab] hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
@@ -241,7 +274,7 @@ export default function App() {
       <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
 
         {/* ATHLETE */}
-        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} onNavigate={setActiveTab} />}
+        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />}
         {!isCoach && activeTab === 'training'  && <TrainingScreen profile={profile} />}
         {!isCoach && activeTab === 'nutrition' && <NutritionHubScreen profile={profile} />}
         {!isCoach && activeTab === 'checkin'   && (
@@ -253,7 +286,25 @@ export default function App() {
         {!isCoach && activeTab === 'roadmap'   && <AthleteRoadmapScreen profile={profile} />}
 
         {/* COACH */}
-        {isCoach && activeTab === 'clients'   && <ClientsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} onOpenReviews={() => setActiveTab('reviews')} />}
+        {isCoach && activeTab === 'clients' && (() => {
+          const clientsScreen = (
+            <ClientsScreen
+              checkins={checkins}
+              onRefreshCheckIns={handleRefreshData}
+              coachId={profile.userId}
+              coachEmail={profile.email}
+              onOpenReviews={() => goToTab('reviews')}
+            />
+          );
+          return (
+            <Routes>
+              <Route path="/clients" element={clientsScreen} />
+              <Route path="/clients/:athleteId" element={clientsScreen} />
+              <Route path="/clients/:athleteId/:hubTab" element={clientsScreen} />
+              <Route path="/clients/:athleteId/analisis/:subTab" element={clientsScreen} />
+            </Routes>
+          );
+        })()}
         {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />}
         {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
         {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
@@ -274,7 +325,7 @@ export default function App() {
         {mainTabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => goToTab(tab.id)}
             className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${activeTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-[#c6c9ab]'}`}
           >
             <span

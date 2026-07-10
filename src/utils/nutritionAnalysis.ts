@@ -1,4 +1,5 @@
 import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory } from '../types';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 
 // Deterministic rule-based nutrition analysis engine for the coach-only AI
 // dashboard. No LLM/external API — every threshold below is a named,
@@ -16,11 +17,6 @@ export const DEFAULT_THRESHOLDS: AnalysisThresholds = {
   adherenceOkPct: 80,
   macroDeviationOkPct: 15,
 };
-
-// Same grams-per-exchange convention already used by DietAutoGenerator's
-// dailyBudget() (src/components/DietAutoGenerator.tsx) — kept consistent so
-// exchange budgets and onboarding macro grams are comparable.
-const GRAMS_PER_EXCHANGE: Record<'HC' | 'PROT' | 'GRASA', number> = { HC: 25, PROT: 25, GRASA: 11 };
 
 function recentDates(windowDays: number): Set<string> {
   const dates = new Set<string>();

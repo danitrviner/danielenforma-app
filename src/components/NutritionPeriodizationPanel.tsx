@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Diet, NutritionPhase, NutritionProgram } from '../types';
+import { Diet, NutritionPhase, NutritionProgram, OnboardingData } from '../types';
 import {
   getNutritionProgram,
   saveNutritionProgram,
   deleteNutritionProgram,
+  updateDiet,
   computeActivePhase,
   computePhaseStartDate,
 } from '../dbService';
+import { estimateMaintenanceKcal } from '../utils/energyCalc';
+import {
+  resolvePhaseTargetKcal,
+  suggestPhaseTargetKcal,
+  computePhaseEnergyBalance,
+} from '../utils/nutritionPeriodization';
+import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Props {
   athleteEmail: string;
+  athleteName?: string;
+  targetWeightKg?: number;
   diets: Diet[];
+  onboarding: OnboardingData | null;
+  currentWeightKg?: number;
+  stepGoal: number;
+  kcalPerStep: number;
+  onDietsChanged?: () => void;
 }
 
 type NutritionPhaseForm = NutritionPhase;
@@ -42,6 +57,12 @@ function addWeeks(isoDate: string, weeks: number): string {
   const d = new Date(isoDate + 'T00:00:00');
   d.setDate(d.getDate() + weeks * 7);
   return d.toISOString().split('T')[0];
+}
+
+function roundQuarter(x: number): number { return Math.round(x / 0.25) * 0.25; }
+
+function fmtKcal(n: number | null): string {
+  return n == null ? '—' : `${Math.round(n).toLocaleString('es-ES')} kcal`;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -171,13 +192,22 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Props) {
+export default function NutritionPeriodizationPanel({
+  athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
+}: Props) {
   const [program, setProgram] = useState<NutritionProgram | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adjustingDietFor, setAdjustingDietFor] = useState<string | null>(null);
+  // Bumped after any save/delete/diet-adjust so <NutritionPerformanceDashboard>
+  // (below) remounts and refetches — it owns its own copy of program/diets and
+  // has no other way to learn this panel just changed them.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const today = new Date().toISOString().split('T')[0];
+  const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, currentWeightKg ?? onboarding.weightKg) : null;
+  const stepsKcal = Math.round(stepGoal * kcalPerStep);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +236,7 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
       await deleteNutritionProgram(athleteEmail);
       setProgram(null);
       setForm(null);
+      setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('deleteNutritionProgram failed:', err);
     } finally {
@@ -226,6 +257,11 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
       await saveNutritionProgram(newProgram);
       setProgram(newProgram);
       setForm(null);
+      // NutritionPerformanceDashboard fetches program/diets on its own mount-only
+      // effect (see its `[athleteEmail]` dep) — it has no way to know this save
+      // happened, so it'd keep showing stale data until an unrelated remount.
+      // Bumping the key forces React to remount it and refetch fresh.
+      setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('saveNutritionProgram failed:', err);
     } finally {
@@ -268,6 +304,51 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
     });
   };
 
+  // Fills the phase's kcal objective from its target weight, using the athlete's
+  // estimated maintenance + pautado steps to back out the deficit/surplus needed.
+  const handleSuggestKcal = (idx: number) => {
+    if (!form || maintenanceKcal == null || currentWeightKg == null) return;
+    const phase = form.phases[idx];
+    if (phase.targetWeight == null) return;
+    const suggested = suggestPhaseTargetKcal({
+      currentWeightKg,
+      targetWeightKg: phase.targetWeight,
+      weeks: phase.weeks,
+      maintenanceKcal,
+      stepsKcal,
+    });
+    updatePhase(idx, { targetKcal: suggested });
+  };
+
+  // Rewrites the linked diet's exchange budget so its kcal match the phase's
+  // objective, scaling HC/PROT/GRASA proportionally — the athlete then sees the
+  // adjusted diet automatically, without the coach rebuilding it meal by meal.
+  const handleAdjustDietToPhase = async (idx: number) => {
+    if (!form) return;
+    const phase = form.phases[idx];
+    const diet = diets.find(d => d.id === phase.dietId);
+    if (!diet) return;
+    const { kcal: targetKcal } = resolvePhaseTargetKcal(phase, diet);
+    const currentKcal = resolvePhaseTargetKcal({ ...phase, targetKcal: undefined }, diet).kcal;
+    if (targetKcal == null || currentKcal == null || currentKcal <= 0) return;
+    const scale = targetKcal / currentKcal;
+    setAdjustingDietFor(phase.id);
+    try {
+      const scaledBudget = {
+        HC: roundQuarter((diet.budget?.HC ?? 0) * scale),
+        PROT: roundQuarter((diet.budget?.PROT ?? 0) * scale),
+        GRASA: roundQuarter((diet.budget?.GRASA ?? 0) * scale),
+      };
+      await updateDiet(diet.id, { budget: { ...diet.budget, ...scaledBudget } });
+      onDietsChanged?.();
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error('handleAdjustDietToPhase failed:', err);
+    } finally {
+      setAdjustingDietFor(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
@@ -278,26 +359,21 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
 
   // ── View mode ──────────────────────────────────────────────────────────────
 
+  // No standalone "view mode" here anymore — periodización and su rendimiento
+  // son una sola cosa. NutritionPerformanceDashboard owns the entire read view
+  // (hero de fase activa, gráfico, stats) and calls back into `handleEdit` for
+  // its "Editar" button, so there's a single source of truth instead of a
+  // read-only preview here duplicating what the dashboard already shows.
   if (form === null) {
-    const activePhase = program ? computeActivePhase(program, today) : null;
-    const totalWeeks = program?.phases.reduce((s, p) => s + p.weeks, 0) ?? 0;
-
-    return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
-            Periodización nutricional
-          </h3>
-          {program ? (
-            <button
-              onClick={handleEdit}
-              className="text-[10px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider"
-            >Editar</button>
-          ) : null}
-        </div>
-
-        {program === null ? (
+    if (program === null) {
+      return (
+        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+              Periodización nutricional
+            </h3>
+          </div>
           <div className="border border-dashed border-white/7 rounded-xl py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">timeline</span>
             <p className="text-[#c6c9ab] text-xs font-mono text-center">Sin periodización nutricional.</p>
@@ -309,34 +385,18 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
               Crear periodización
             </button>
           </div>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-3">
-              <div className="bg-[#1c1b1b] rounded-lg px-3 py-1.5">
-                <span className="block text-[9px] font-mono text-[#c6c9ab] uppercase tracking-widest">Inicio</span>
-                <span className="text-xs font-mono text-white">{fmtDate(program.startDate)}/{program.startDate.split('-')[0]}</span>
-              </div>
-              <div className="bg-[#1c1b1b] rounded-lg px-3 py-1.5">
-                <span className="block text-[9px] font-mono text-[#c6c9ab] uppercase tracking-widest">Fases</span>
-                <span className="text-xs font-mono text-white">{program.phases.length}</span>
-              </div>
-              <div className="bg-[#1c1b1b] rounded-lg px-3 py-1.5">
-                <span className="block text-[9px] font-mono text-[#c6c9ab] uppercase tracking-widest">Semanas</span>
-                <span className="text-xs font-mono text-white">{totalWeeks}</span>
-              </div>
-              {activePhase && (
-                <div className="bg-[#a78bfa]/10 border border-[#a78bfa]/30 rounded-lg px-3 py-1.5">
-                  <span className="block text-[9px] font-mono text-[#a78bfa] uppercase tracking-widest">Fase actual</span>
-                  <span className="text-xs font-mono text-white">{activePhase.name}</span>
-                </div>
-              )}
-            </div>
-            {program.phases.length > 0 && (
-              <ProgramTimeline program={program} diets={diets} today={today} />
-            )}
-          </>
-        )}
-      </div>
+        </div>
+      );
+    }
+
+    return (
+      <NutritionPerformanceDashboard
+        refreshToken={refreshKey}
+        athleteEmail={athleteEmail}
+        athleteName={athleteName}
+        targetWeightKg={targetWeightKg}
+        onEdit={handleEdit}
+      />
     );
   }
 
@@ -401,6 +461,13 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
         )}
         {form.phases.map((phase, idx) => {
           const phaseColor = PHASE_COLORS[idx % PHASE_COLORS.length];
+          const linkedDiet = diets.find(d => d.id === phase.dietId);
+          const resolved = resolvePhaseTargetKcal(phase, linkedDiet);
+          const balance = computePhaseEnergyBalance({
+            targetKcal: resolved.kcal, maintenanceKcal, stepGoal, kcalPerStep,
+          });
+          const canSuggest = phase.targetWeight != null && maintenanceKcal != null && currentWeightKg != null;
+          const canAdjustDiet = !!linkedDiet && phase.targetKcal != null && ((linkedDiet.budget?.HC ?? 0) + (linkedDiet.budget?.PROT ?? 0) + (linkedDiet.budget?.GRASA ?? 0)) > 0;
           return (
             <div
               key={phase.id}
@@ -474,6 +541,56 @@ export default function NutritionPeriodizationPanel({ athleteEmail, diets }: Pro
                 />
                 <span className="text-[10px] font-mono text-[#c6c9ab]">kg</span>
               </div>
+
+              {/* Energy objective */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
+                <input
+                  type="number"
+                  step="25"
+                  min="0"
+                  value={phase.targetKcal ?? ''}
+                  onChange={e => updatePhase(idx, { targetKcal: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
+                  className="w-24 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                />
+                <span className="text-[10px] font-mono text-[#c6c9ab]">
+                  kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
+                  {phase.targetKcal == null && resolved.source === 'diet' && ' · desde la dieta'}
+                </span>
+                {canSuggest && (
+                  <button
+                    onClick={() => handleSuggestKcal(idx)}
+                    title="Calcula el objetivo a partir del peso deseado"
+                    className="text-[9px] font-mono font-bold text-[#a78bfa] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#a78bfa]/30 hover:border-[#a78bfa]/60"
+                  >Sugerir</button>
+                )}
+                {canAdjustDiet && (
+                  <button
+                    onClick={() => handleAdjustDietToPhase(idx)}
+                    disabled={adjustingDietFor === phase.id}
+                    title="Escala los intercambios de la dieta vinculada a este objetivo"
+                    className="text-[9px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60 disabled:opacity-40"
+                  >{adjustingDietFor === phase.id ? 'Ajustando…' : 'Ajustar dieta al tramo'}</button>
+                )}
+              </div>
+
+              {/* Resolved energy balance */}
+              {resolved.kcal != null && maintenanceKcal != null && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-[#c6c9ab] bg-[#181816] rounded-lg px-3 py-2">
+                  <span>Mantenimiento: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
+                  <span>+ Pasos: <b className="text-white">{fmtKcal(stepsKcal)}</b></span>
+                  <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>
+                  {balance.dailyDeficit != null && (
+                    <span>
+                      {balance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={balance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#00eefc]'}>{fmtKcal(Math.abs(balance.dailyDeficit))}/día</b>
+                    </span>
+                  )}
+                  {balance.weeklyDeltaKg != null && (
+                    <span>Δ esperado: <b className="text-white">{balance.weeklyDeltaKg >= 0 ? '+' : ''}{balance.weeklyDeltaKg} kg/sem</b></span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
