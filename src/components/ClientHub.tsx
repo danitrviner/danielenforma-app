@@ -50,6 +50,7 @@ import TaskManagerPanel from './TaskManagerPanel';
 import ProgressRing from './ProgressRing';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import ClientSetupPanel from './ClientSetupPanel';
+import PendingTray from './PendingTray';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -82,6 +83,33 @@ export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roa
 export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
 export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'roadmap', 'analisis'];
 export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', 'correlaciones'];
+
+// Las 6 pestañas se agrupan en 3 zonas para responder a una pregunta distinta
+// cada una: qué reviso (Hoy), qué programo (Plan), cómo va (Análisis). La URL
+// sigue direccionando por HubTab — la zona es puramente de navegación/UI, así
+// que los deep links y ClientSetupPanel.onGoToTab no cambian.
+type Zone = 'hoy' | 'plan' | 'analisis';
+const ZONE_TABS: Record<Zone, HubTab[]> = {
+  hoy: ['setup', 'revisiones'],
+  plan: ['entrenamientos', 'dietas', 'roadmap'],
+  analisis: ['analisis'],
+};
+const ZONE_META: Record<Zone, { label: string; icon: string }> = {
+  hoy: { label: 'Hoy', icon: 'today' },
+  plan: { label: 'Plan', icon: 'event_note' },
+  analisis: { label: 'Análisis', icon: 'insights' },
+};
+const TAB_META: Record<HubTab, { label: string; icon: string }> = {
+  setup:          { label: 'Setup',          icon: 'checklist' },
+  revisiones:     { label: 'Revisiones',     icon: 'rate_review' },
+  entrenamientos: { label: 'Entrenamientos', icon: 'fitness_center' },
+  dietas:         { label: 'Dietas',         icon: 'nutrition' },
+  roadmap:        { label: 'Road map',       icon: 'map' },
+  analisis:       { label: 'Análisis',       icon: 'insights' },
+};
+function zoneOf(tab: HubTab): Zone {
+  return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
+}
 
 interface ClientHubProps {
   key?: React.Key;
@@ -207,6 +235,20 @@ export default function ClientHub({
     !isPlanDirty || window.confirm('Tienes cambios sin guardar en la duración del plan. ¿Continuar y descartarlos?');
   const guardedTabChange = (tab: HubTab) => { if (confirmDiscardPlanChanges()) onTabChange(tab); };
   const guardedBack = () => { if (confirmDiscardPlanChanges()) onBack(); };
+
+  // Zona activa (nav de nivel 1) + última pestaña visitada por zona, para que
+  // saltar entre zonas y volver no te devuelva siempre a la primera pestaña.
+  const [activeZone, setActiveZone] = useState<Zone>(() => zoneOf(activeTab));
+  const [lastTabByZone, setLastTabByZone] = useState<Partial<Record<Zone, HubTab>>>({});
+  useEffect(() => {
+    const z = zoneOf(activeTab);
+    setActiveZone(z);
+    setLastTabByZone(prev => ({ ...prev, [z]: activeTab }));
+  }, [activeTab]);
+  const goToZone = (zone: Zone) => {
+    if (zone === activeZone) return;
+    guardedTabChange(lastTabByZone[zone] ?? ZONE_TABS[zone][0]);
+  };
 
   // Questionnaires
   const [coachQuestionnaires, setCoachQuestionnaires] = useState<Questionnaire[]>([]);
@@ -676,29 +718,53 @@ export default function ClientHub({
         </div>
       </div>
 
-      {/* Sub-tab bar */}
-      <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5 sticky top-0 z-20 bg-[#141414]/95 backdrop-blur-sm">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
-          {([
-            { id: 'setup',         label: 'Setup',         icon: 'checklist'          },
-            { id: 'revisiones',    label: 'Revisiones',    icon: 'rate_review'        },
-            { id: 'entrenamientos',label: 'Entrenamientos',icon: 'fitness_center'     },
-            { id: 'dietas',        label: 'Dietas',        icon: 'nutrition'          },
-            { id: 'roadmap',       label: 'Road map',      icon: 'map'                },
-            { id: 'analisis',      label: 'Análisis',      icon: 'insights'           },
-          ] as { id: HubTab; label: string; icon: string }[]).map(tab => (
+      {/* Pendientes de hoy — lo accionable, independiente de la zona/pestaña activa */}
+      <PendingTray
+        athleteLogs={athleteLogs}
+        getWorkout={getWorkout}
+        athleteCheckins={athleteCheckins}
+        onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
+        onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
+      />
+
+      {/* Nav de zonas (nivel 1) */}
+      <div className="sticky top-0 z-20 bg-[#141414]/95 backdrop-blur-sm space-y-1.5 pb-0.5">
+        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1">
+          {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button
-              key={tab.id}
-              onClick={() => guardedTabChange(tab.id)}
-              className={`snap-start flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-lg font-mono text-xs font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
-                activeTab === tab.id ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
+              key={zone}
+              onClick={() => goToZone(zone)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl font-sans text-xs font-bold uppercase tracking-wide transition-all ${
+                activeZone === zone ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
               }`}
             >
-              <span className="material-symbols-outlined text-sm">{tab.icon}</span>
-              {tab.label}
+              <span className="material-symbols-outlined text-base">{ZONE_META[zone].icon}</span>
+              {ZONE_META[zone].label}
             </button>
           ))}
         </div>
+
+        {/* Sub-tabs de la zona activa (solo si tiene más de una) */}
+        {ZONE_TABS[activeZone].length > 1 && (
+          <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1">
+            <div className="flex gap-1 min-w-max">
+              {ZONE_TABS[activeZone].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => guardedTabChange(tab)}
+                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
+                    activeTab === tab
+                      ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
+                      : 'border-transparent text-[#c6c9ab] hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm">{TAB_META[tab].icon}</span>
+                  {TAB_META[tab].label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
