@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, computeDietPlaced } from '../utils/exchangeHelpers';
+import { useToast } from '../hooks/useToast';
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 
@@ -18,6 +19,7 @@ function blankDiet(athleteId: string): Omit<Diet, 'id'> {
 interface Props { profile: UserProfile; }
 
 export default function MyDietsScreen({ profile }: Props) {
+  const { showToast } = useToast();
   const [diets, setDiets] = useState<Diet[]>([]);
   const [loading, setLoading] = useState(true);
   const [foodItems, setFoodItems] = useState<MealItem[]>([]);
@@ -102,30 +104,45 @@ export default function MyDietsScreen({ profile }: Props) {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar esta dieta?')) return;
-    await deleteDiet(id);
-    await refresh();
+    try {
+      await deleteDiet(id);
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo eliminar la dieta.');
+    }
   };
 
   const handleDuplicate = async (dt: Diet) => {
-    await createDiet({
-      athleteId: profile.email,
-      name: `${dt.name} (copia)`,
-      budget: dt.budget,
-      meals: dt.meals.map(m => ({ ...m, id: makeId() })),
-      selfManaged: true,
-    });
-    await refresh();
+    try {
+      await createDiet({
+        athleteId: profile.email,
+        name: `${dt.name} (copia)`,
+        budget: dt.budget,
+        meals: dt.meals.map(m => ({ ...m, id: makeId() })),
+        selfManaged: true,
+      });
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar la dieta.');
+    }
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
-    if (editingId) {
-      await updateDiet(editingId, form);
-    } else {
-      await createDiet(form);
+    try {
+      if (editingId) {
+        await updateDiet(editingId, form);
+      } else {
+        await createDiet(form);
+      }
+      setView('list');
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo guardar la dieta.');
     }
-    setView('list');
-    await refresh();
   };
 
   const addMeal = () => {
@@ -416,6 +433,7 @@ export default function MyDietsScreen({ profile }: Props) {
         <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">bookmark</span>
           <p className="text-[#c6c9ab] text-sm font-sans">Aún no tienes ninguna dieta guardada.</p>
+          <p className="text-[#555] text-xs font-sans mt-1">Créala aquí con "Nueva", o desde Nutrición → Intercambios para partir de tu día a día.</p>
         </div>
       ) : (
         <div className="space-y-2">

@@ -153,7 +153,15 @@ export default function PhotosScreen({ profile }: Props) {
         <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">photo_camera</span>
           <p className="text-[#c6c9ab] text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1">Sube tu primera foto para empezar a registrar tu evolución.</p>
+          <p className="text-[#c6c9ab] text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">upload</span>
+            Subir foto
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

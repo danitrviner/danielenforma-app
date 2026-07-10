@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, cleanupTestDataOnce } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty } from './dbService';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 
@@ -113,12 +113,7 @@ function AppContent() {
     // Coach reads all check-ins (no userId filter); athlete reads only their own
     const checks = await getCheckIns(coachRole ? undefined : user.uid);
     setCheckins(checks);
-    // One-time ZZ_TEST cleanup only for coaches (reads full collections)
-    if (coachRole) cleanupTestDataOnce().catch(console.warn);
   };
-
-  // One-time cleanup runs only for coaches (reads full collections; athletes lack permission)
-  // Called inside loadUserSession after role is known
 
   // Subscribe once on mount — handles session restore when the page reloads with an
   // existing Firebase session. Does NOT re-run on manual logins (those go through

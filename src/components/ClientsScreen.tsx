@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog, Invite } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
@@ -27,6 +27,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
+  const inviteInputRef = useRef<HTMLInputElement>(null);
   const [athletes, setAthletes]           = useState<UserProfile[]>([]);
   const [loadingAthletes, setLoadingAthletes] = useState(true);
   const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
@@ -446,7 +447,16 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         {loadingAthletes ? (
           <div className="text-center py-12 text-[#c6c9ab] font-mono tracking-widest uppercase text-xs animate-pulse">Cargando atletas...</div>
         ) : athletes.length === 0 ? (
-          <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</div>
+          <div className="text-center py-12 flex flex-col items-center gap-3">
+            <p className="text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</p>
+            <button
+              onClick={() => inviteInputRef.current?.focus()}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined text-sm">person_add</span>
+              Invitar a tu primer atleta
+            </button>
+          </div>
         ) : filteredAthletes.length === 0 ? (
           <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">Ningún atleta coincide con "{search}".</div>
         ) : (
@@ -572,6 +582,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
         <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
           <input
+            ref={inviteInputRef}
             type="email"
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}

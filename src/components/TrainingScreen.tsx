@@ -11,6 +11,7 @@ import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTIO
 import { generateWarmup } from '../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
+import { useToast } from '../hooks/useToast';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -62,6 +63,7 @@ const TYPE_CHIP: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function TrainingScreen({ profile }: TrainingScreenProps) {
+  const { showToast } = useToast();
   const [mainTab, setMainTab] = useState<MainTab>('programa');
   const [loading, setLoading] = useState(true);
 
@@ -257,6 +259,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       setTimeout(() => setFinishMsg(''), 5000);
     } catch (err) {
       console.error(err);
+      showToast('No se pudo guardar el entrenamiento.');
     } finally {
       setIsFinishing(false);
     }
@@ -270,6 +273,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ));
     } catch (err) {
       console.error('Error saltando sesión:', err);
+      showToast('No se pudo saltar la sesión.');
     }
   };
 

@@ -4,6 +4,7 @@ import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises,
 import StatTile from './StatTile';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
+import { useToast } from '../hooks/useToast';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -27,6 +28,7 @@ const DEFAULT_WE: Omit<WorkoutExercise, 'exerciseId' | 'order'> = {
 };
 
 export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
+  const { showToast } = useToast();
   const [view, setView] = useState<View>('list');
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,6 +112,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       setView('list');
     } catch (err) {
       console.error(err);
+      showToast('No se pudo guardar la rutina.');
     } finally {
       setIsSaving(false);
     }
@@ -123,6 +126,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       flash('Rutina eliminada.');
     } catch (err) {
       console.error(err);
+      showToast('No se pudo eliminar la rutina.');
     }
   };
 

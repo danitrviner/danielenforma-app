@@ -342,6 +342,11 @@ export default function DietAutoGenerator({ athleteEmail, onboarding, onSaved, o
           </div>
         </div>
 
+        {pctSum !== 100 && (
+          <p className="font-mono text-[10px] text-red-400 -mt-2">
+            La distribución debe sumar 100% para poder generar la dieta (llevas {pctSum}%).
+          </p>
+        )}
         <div className="flex gap-3">
           <button
             onClick={handleGenerate}

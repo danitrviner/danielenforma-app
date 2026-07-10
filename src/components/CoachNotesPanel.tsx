@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
+import { useToast } from '../hooks/useToast';
 
 interface Props {
   athletes: UserProfile[];
@@ -11,6 +12,7 @@ interface Props {
 // athlete can see) and from "Revisiones Pendientes" (check-ins awaiting feedback).
 // Nothing here is ever visible to athletes.
 export default function CoachNotesPanel({ athletes }: Props) {
+  const { showToast } = useToast();
   const [notes, setNotes] = useState<CoachNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -41,6 +43,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
       setShowForm(false);
     } catch (err) {
       console.error(err);
+      showToast('No se pudo crear la nota.');
     } finally {
       setSaving(false);
     }
@@ -48,12 +51,12 @@ export default function CoachNotesPanel({ athletes }: Props) {
 
   const handleToggle = async (note: CoachNote) => {
     setNotes(prev => prev.map(n => n.id === note.id ? { ...n, done: !n.done } : n));
-    try { await updateCoachNote(note.id, { done: !note.done }); } catch (err) { console.error(err); }
+    try { await updateCoachNote(note.id, { done: !note.done }); } catch (err) { console.error(err); showToast('No se pudo actualizar la nota.'); }
   };
 
   const handleDelete = async (id: string) => {
     setNotes(prev => prev.filter(n => n.id !== id));
-    try { await deleteCoachNote(id); } catch (err) { console.error(err); }
+    try { await deleteCoachNote(id); } catch (err) { console.error(err); showToast('No se pudo eliminar la nota.'); }
   };
 
   const pending = notes.filter(n => !n.done);

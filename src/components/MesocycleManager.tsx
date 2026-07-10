@@ -15,6 +15,7 @@ import {
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
+import { useToast } from '../hooks/useToast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -599,6 +600,7 @@ interface MesocycleManagerProps {
 }
 
 export default function MesocycleManager({ coachId, athleteEmail, athleteEquipment = [] }: MesocycleManagerProps) {
+  const { showToast } = useToast();
   const [athletes, setAthletes]           = useState<UserProfile[]>([]);
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
   const [mesocycles, setMesocycles]       = useState<Mesocycle[]>([]);
@@ -1060,6 +1062,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       setShowTemplatePicker(false);
     } catch (err) {
       console.error(err);
+      showToast('No se pudo aplicar la plantilla de mesociclos.');
     } finally {
       setApplyingTemplate(false);
     }
@@ -1092,10 +1095,15 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
   const handleDelete = async () => {
     if (!editing) return;
-    await deleteMesocycle(editing.id);
-    setMesocycles(prev => prev.filter(m => m.id !== editing.id));
-    setEditing(null);
-    setConfirmDelete(false);
+    try {
+      await deleteMesocycle(editing.id);
+      setMesocycles(prev => prev.filter(m => m.id !== editing.id));
+      setEditing(null);
+      setConfirmDelete(false);
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo eliminar el mesociclo.');
+    }
   };
 
   const saveLabel = {
