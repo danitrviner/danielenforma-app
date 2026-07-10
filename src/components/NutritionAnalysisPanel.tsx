@@ -6,6 +6,7 @@ import {
 } from '../dbService';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
+import VegetableSelector from './VegetableSelector';
 
 const DEFAULT_STEP_GOAL = 8000;
 const DEFAULT_VEG_SERVINGS = 3;
@@ -76,15 +77,26 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   }, [athleteEmail, targetWeight]);
 
   const vegServings = nutritionConfig?.vegServingsPerDay ?? DEFAULT_VEG_SERVINGS;
+  const vegTypes = nutritionConfig?.vegTypes ?? [];
 
   const micros = useMemo(
-    () => buildMicronutrientEstimate(activeDiet, { sex: onboarding?.sex, vegServingsPerDay: vegServings }),
-    [activeDiet, onboarding, vegServings],
+    () => buildMicronutrientEstimate(activeDiet, { sex: onboarding?.sex, vegServingsPerDay: vegServings, vegTypes }),
+    [activeDiet, onboarding, vegServings, vegTypes],
   );
 
   const setVegServings = async (n: number) => {
     if (!nutritionConfig || n < 0 || n > 8) return;
     const next: AthleteNutritionConfig = { ...nutritionConfig, vegServingsPerDay: n };
+    setNutritionConfig(next);
+    saveAthleteNutritionConfig(next).catch(console.error);
+  };
+
+  const toggleVegType = (id: string) => {
+    if (!nutritionConfig) return;
+    const next: AthleteNutritionConfig = {
+      ...nutritionConfig,
+      vegTypes: vegTypes.includes(id) ? vegTypes.filter(v => v !== id) : [...vegTypes, id],
+    };
     setNutritionConfig(next);
     saveAthleteNutritionConfig(next).catch(console.error);
   };
@@ -176,6 +188,11 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
               <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Verduras habituales del atleta</p>
+          <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5">

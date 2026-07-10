@@ -114,13 +114,13 @@ function groupOf(exerciseId: string, exercises: Exercise[]): GroupKey {
 
 // ── Window resolution ─────────────────────────────────────────────────────────
 
-interface Windows {
+export interface Windows {
   curStart: string; curEnd: string;
   prevStart: string | null; prevEnd: string | null;
   comparisonLabel: string;
 }
 
-function resolveWindows(
+export function resolveWindows(
   periodStart: string,
   periodEnd: string,
   comparison: ComparisonMode,

@@ -64,6 +64,38 @@ export const VEG_SERVING_PER100: Partial<Record<MicroKey, number>> = {
 };
 export const VEG_SERVING_GRAMS = 100;
 
+// ── Verduras concretas ─────────────────────────────────────────────────────────
+// Perfiles por 100 g de las verduras más habituales (BEDCA/USDA aprox.). Cuando
+// el atleta marca cuáles suele comer, la línea base de verdura usa la MEDIA de
+// sus perfiles en lugar del perfil mixto genérico de arriba — así la estimación
+// refleja, p. ej., que quien vive de espinacas va sobrado de folato/hierro y
+// quien solo come pepino no.
+export interface VegetableProfile {
+  id: string;
+  label: string;
+  per100g: Partial<Record<MicroKey, number>>;
+}
+
+export const VEGETABLES: VegetableProfile[] = [
+  { id: 'brocoli',      label: 'Brócoli',       per100g: { fibra: 2.6, potasio: 316, calcio: 47,  hierro: 0.7, magnesio: 21, zinc: 0.4, vitA: 31,  vitC: 89, folato: 63,  sodio: 33 } },
+  { id: 'espinacas',    label: 'Espinacas',     per100g: { fibra: 2.2, potasio: 558, calcio: 99,  hierro: 2.7, magnesio: 79, zinc: 0.5, vitA: 469, vitC: 28, folato: 194, sodio: 79, omega3: 0.14 } },
+  { id: 'acelgas',      label: 'Acelgas',       per100g: { fibra: 1.6, potasio: 379, calcio: 51,  hierro: 1.8, magnesio: 81, zinc: 0.4, vitA: 306, vitC: 30, folato: 14,  sodio: 213 } },
+  { id: 'kale',         label: 'Kale',          per100g: { fibra: 4.1, potasio: 348, calcio: 254, hierro: 1.6, magnesio: 33, zinc: 0.4, vitA: 241, vitC: 93, folato: 62,  sodio: 53 } },
+  { id: 'pimiento',     label: 'Pimiento',      per100g: { fibra: 2.1, potasio: 211, calcio: 7,   hierro: 0.4, magnesio: 12, zinc: 0.3, vitA: 157, vitC: 128, folato: 46, sodio: 4 } },
+  { id: 'tomate',       label: 'Tomate',        per100g: { fibra: 1.2, potasio: 237, calcio: 10,  hierro: 0.3, magnesio: 11, zinc: 0.2, vitA: 42,  vitC: 14, folato: 15,  sodio: 5 } },
+  { id: 'zanahoria',    label: 'Zanahoria',     per100g: { fibra: 2.8, potasio: 320, calcio: 33,  hierro: 0.3, magnesio: 12, zinc: 0.2, vitA: 835, vitC: 6,  folato: 19,  sodio: 69 } },
+  { id: 'calabacin',    label: 'Calabacín',     per100g: { fibra: 1.0, potasio: 261, calcio: 16,  hierro: 0.4, magnesio: 18, zinc: 0.3, vitA: 10,  vitC: 18, folato: 24,  sodio: 8 } },
+  { id: 'coliflor',     label: 'Coliflor',      per100g: { fibra: 2.0, potasio: 299, calcio: 22,  hierro: 0.4, magnesio: 15, zinc: 0.3, vitC: 48, folato: 57,  sodio: 30 } },
+  { id: 'judias_verdes',label: 'Judías verdes', per100g: { fibra: 2.7, potasio: 211, calcio: 37,  hierro: 1.0, magnesio: 25, zinc: 0.2, vitA: 35,  vitC: 12, folato: 33,  sodio: 6 } },
+  { id: 'lechuga',      label: 'Lechuga',       per100g: { fibra: 1.3, potasio: 194, calcio: 36,  hierro: 0.9, magnesio: 13, zinc: 0.2, vitA: 370, vitC: 9,  folato: 38,  sodio: 28 } },
+  { id: 'cebolla',      label: 'Cebolla',       per100g: { fibra: 1.7, potasio: 146, calcio: 23,  hierro: 0.2, magnesio: 10, zinc: 0.2, vitC: 7,  folato: 19,  sodio: 4 } },
+  { id: 'champinones',  label: 'Champiñones',   per100g: { fibra: 1.0, potasio: 318, calcio: 3,   hierro: 0.5, magnesio: 9,  zinc: 0.5, vitC: 2,  folato: 17,  sodio: 5, vitD: 0.2 } },
+  { id: 'berenjena',    label: 'Berenjena',     per100g: { fibra: 3.0, potasio: 229, calcio: 9,   hierro: 0.2, magnesio: 14, zinc: 0.2, vitA: 1,   vitC: 2,  folato: 22,  sodio: 2 } },
+  { id: 'esparragos',   label: 'Espárragos',    per100g: { fibra: 2.1, potasio: 202, calcio: 24,  hierro: 2.1, magnesio: 14, zinc: 0.5, vitA: 38,  vitC: 6,  folato: 52,  sodio: 2 } },
+  { id: 'col',          label: 'Col / repollo', per100g: { fibra: 2.5, potasio: 170, calcio: 40,  hierro: 0.5, magnesio: 12, zinc: 0.2, vitA: 5,   vitC: 37, folato: 43,  sodio: 18 } },
+  { id: 'pepino',       label: 'Pepino',        per100g: { fibra: 0.5, potasio: 147, calcio: 16,  hierro: 0.3, magnesio: 13, zinc: 0.2, vitA: 5,   vitC: 3,  folato: 7,   sodio: 2 } },
+];
+
 // ── Canonical foods ────────────────────────────────────────────────────────────
 // per100g: valores aproximados de referencia (BEDCA/USDA). Sólo micros notables.
 export const CANONICAL_FOODS: CanonicalFood[] = [

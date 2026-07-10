@@ -1291,10 +1291,14 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
 export async function getAthleteNutritionConfig(athleteEmail: string): Promise<AthleteNutritionConfig> {
   const defaultConfig: AthleteNutritionConfig = { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
   const localKey = `enforma_nutri_config_${athleteEmail}`;
+  // Stored docs can predate fields (or be flat-out `{}` from an old write) — merge
+  // over the defaults and force athleteId so a later save never targets `undefined`.
+  const normalize = (data: Partial<AthleteNutritionConfig>): AthleteNutritionConfig =>
+    ({ ...defaultConfig, ...data, athleteId: athleteEmail });
   if (forceLocalOnly) {
     try {
       const raw = localStorage.getItem(localKey);
-      return raw ? (JSON.parse(raw) as AthleteNutritionConfig) : defaultConfig;
+      return raw ? normalize(JSON.parse(raw)) : defaultConfig;
     } catch (e) { return defaultConfig; }
   }
   await authReady;
@@ -1303,13 +1307,13 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
       const docRef = doc(db, 'athleteNutritionConfigs', athleteEmail);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
-        const data = snap.data() as AthleteNutritionConfig;
+        const data = normalize(snap.data() as Partial<AthleteNutritionConfig>);
         localStorage.setItem(localKey, JSON.stringify(data));
         return data;
       }
       try {
         const raw = localStorage.getItem(localKey);
-        if (raw) return JSON.parse(raw) as AthleteNutritionConfig;
+        if (raw) return normalize(JSON.parse(raw));
       } catch (_) {}
       return defaultConfig;
     });
@@ -1319,7 +1323,7 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
     // must not poison writes for unrelated collections (onboarding, workouts, etc.).
     try {
       const raw = localStorage.getItem(localKey);
-      return raw ? (JSON.parse(raw) as AthleteNutritionConfig) : defaultConfig;
+      return raw ? normalize(JSON.parse(raw)) : defaultConfig;
     } catch (e) { return defaultConfig; }
   }
 }

@@ -4,9 +4,13 @@ import { getExercises, getExerciseNotesForAthlete, saveExerciseNote } from '../d
 
 interface Props {
   athleteEmail: string;
+  // Ejercicios del programa actual (rutinas asignadas). El selector se acota a
+  // ellos — más los que ya tengan observación, para no dejar notas huérfanas
+  // inaccesibles cuando cambia el programa. Vacío/ausente = biblioteca entera.
+  programExerciseIds?: string[];
 }
 
-export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
+export default function ExercisePersonalNotesPanel({ athleteEmail, programExerciseIds }: Props) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [notes, setNotes] = useState<ExercisePersonalNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +48,11 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
 
   const withNotes = new Set(notes.filter(n => n.observation.trim()).map(n => n.exerciseId));
 
+  const inProgram = programExerciseIds?.length ? new Set(programExerciseIds) : null;
+  const selectable = inProgram
+    ? exercises.filter(ex => inProgram.has(ex.id) || withNotes.has(ex.id))
+    : exercises;
+
   return (
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
       <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-3">
@@ -61,11 +70,14 @@ export default function ExercisePersonalNotesPanel({ athleteEmail }: Props) {
             onChange={e => setSelectedExerciseId(e.target.value)}
             className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
           >
-            <option value="">Selecciona un ejercicio...</option>
-            {exercises.map(ex => (
+            <option value="">{inProgram ? 'Selecciona un ejercicio de su programa...' : 'Selecciona un ejercicio...'}</option>
+            {selectable.map(ex => (
               <option key={ex.id} value={ex.id}>{withNotes.has(ex.id) ? '● ' : ''}{ex.name}</option>
             ))}
           </select>
+          {inProgram && (
+            <p className="font-mono text-[9px] text-[#555]">Mostrando los ejercicios de sus rutinas asignadas (y los que ya tienen observación).</p>
+          )}
 
           {selectedExerciseId && (
             <>

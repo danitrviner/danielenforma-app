@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CoachReport, WorkoutLog, Exercise, Mesocycle } from '../types';
-import { getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped } from '../dbService';
-import { buildTrainingReportDraft, buildReportText, fmtReportDate } from '../utils/reportBuilder';
+import {
+  CoachReport, WorkoutLog, Exercise, Mesocycle,
+  WorkoutAssignment, BodyweightLog, DietCompletionLog, Diet, WeeklyChallenge,
+} from '../types';
+import {
+  getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped,
+  getDietCompletionLogsForAthlete, getDietsForAthlete, getWeeklyChallengesForAthlete,
+} from '../dbService';
+import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasInput } from '../utils/reportBuilder';
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 
@@ -11,6 +17,9 @@ interface Props {
   coachId: string;
   logs: WorkoutLog[];
   exercises: Exercise[];
+  assignments: WorkoutAssignment[];
+  bodyweightLogs: BodyweightLog[];
+  targetWeight?: number;
 }
 
 type PeriodMode = '7d' | '14d' | 'meso';
@@ -20,9 +29,12 @@ const COMPARE_WEEK_OPTIONS = [1, 2, 4, 8];
 
 function today(): string { return new Date().toISOString().split('T')[0]; }
 
-export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs, exercises }: Props) {
+export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs, exercises, assignments, bodyweightLogs, targetWeight }: Props) {
   const [reports, setReports] = useState<CoachReport[]>([]);
   const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
+  const [dietLogs, setDietLogs] = useState<DietCompletionLog[]>([]);
+  const [diets, setDiets] = useState<Diet[]>([]);
+  const [challenges, setChallenges] = useState<WeeklyChallenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CoachReport | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -57,6 +69,11 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
   useEffect(() => {
     refresh();
     getMesocycles(athleteEmail).then(setMesocycles).catch(() => {});
+    // Datos para las secciones extra del reporte (nutrición y retos); si fallan,
+    // el reporte simplemente sale sin esas secciones.
+    getDietCompletionLogsForAthlete(athleteEmail).then(setDietLogs).catch(() => {});
+    getDietsForAthlete(athleteEmail).then(setDiets).catch(() => {});
+    getWeeklyChallengesForAthlete(athleteEmail).then(setChallenges).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [athleteEmail]);
 
@@ -69,6 +86,9 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
   const canMeso = mesoPair.current != null;
 
   const handleGenerate = () => {
+    const extras: ReportExtrasInput = {
+      athleteName, assignments, bodyweightLogs, dietLogs, diets, challenges, targetWeight,
+    };
     if (periodMode === 'meso') {
       // Guarded by `canMeso` disabling the option, but mesocycles can change
       // between render and click — bail rather than silently generate a
@@ -78,6 +98,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
         athleteEmail, coachId, logs, exercises, mesocycles,
         periodStart: today(), periodEnd: today(),
         comparison: { mode: 'mesocycle', currentId: mesoPair.current.id, previousId: mesoPair.previous?.id ?? null },
+        extras,
       });
       setEditing(draft);
       return;
@@ -88,6 +109,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
       athleteEmail, coachId, logs, exercises, mesocycles,
       periodStart, periodEnd: today(),
       comparison: { mode: 'weeks', n: compareWeeks },
+      extras,
     });
     setEditing(draft);
   };

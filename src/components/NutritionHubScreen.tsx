@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, AthleteNutritionConfig, Recipe } from '../types';
-import { getAthleteNutritionConfig } from '../dbService';
+import { getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
+import VegetableSelector from './VegetableSelector';
 import NutritionScreen from './NutritionScreen';
 import MyDietsScreen from './MyDietsScreen';
 import RecipesScreen from './RecipesScreen';
@@ -70,11 +71,38 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       </div>
 
       {activeSubTab === 'intercambios' && (
-        <NutritionScreen
-          profile={profile}
-          pendingRecipe={pendingRecipe}
-          onConsumedPendingRecipe={() => setPendingRecipe(null)}
-        />
+        <>
+          <NutritionScreen
+            profile={profile}
+            pendingRecipe={pendingRecipe}
+            onConsumedPendingRecipe={() => setPendingRecipe(null)}
+          />
+          {/* Config al final, tras el contenido del día (visual arriba, ajustes abajo) */}
+          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+            <div>
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#fbcb1a] text-base">eco</span>
+                Tus verduras habituales
+              </h3>
+              <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">
+                Marca las verduras que sueles comer en tu día a día — así tu entrenador afina la estimación de vitaminas y minerales.
+              </p>
+            </div>
+            <VegetableSelector
+              selected={nutritionConfig?.vegTypes ?? []}
+              onToggle={id => {
+                if (!nutritionConfig) return;
+                const cur = nutritionConfig.vegTypes ?? [];
+                const next: AthleteNutritionConfig = {
+                  ...nutritionConfig,
+                  vegTypes: cur.includes(id) ? cur.filter(v => v !== id) : [...cur, id],
+                };
+                setNutritionConfig(next);
+                saveAthleteNutritionConfig(next).catch(() => {});
+              }}
+            />
+          </div>
+        </>
       )}
       {activeSubTab === 'mis-dietas'   && <MyDietsScreen profile={profile} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}

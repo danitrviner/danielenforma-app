@@ -122,9 +122,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // would default to DEFAULT_HUB_TAB and silently bounce back to Revisiones.
   const activeHubTab: HubTab = subTab
     ? 'analisis'
-    : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
-      ? (hubTab as HubTab)
-      : DEFAULT_HUB_TAB;
+    : hubTab === 'periodizacion'
+      // Pestaña retirada: la periodización vive ahora dentro de Entrenamientos.
+      // Los enlaces/bookmarks antiguos aterrizan ahí en vez de en Revisiones.
+      ? 'entrenamientos'
+      : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
+        ? (hubTab as HubTab)
+        : DEFAULT_HUB_TAB;
   const activeAnalisisTab: AnalisisTab = (subTab && (ANALISIS_TABS as readonly string[]).includes(subTab))
     ? (subTab as AnalisisTab)
     : DEFAULT_ANALISIS_TAB;

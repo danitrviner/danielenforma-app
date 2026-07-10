@@ -1,5 +1,17 @@
-import { CoachReport, CoachReportSection, WorkoutLog, Exercise, Mesocycle } from '../types';
-import { buildTrainingReport, ComparisonMode, ExercisePerf, MuscleGroupPerf } from './trainingReport';
+import {
+  CoachReport, CoachReportSection, WorkoutLog, Exercise, Mesocycle,
+  BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge,
+} from '../types';
+import { buildTrainingReport, resolveWindows, ComparisonMode, ExercisePerf, MuscleGroupPerf } from './trainingReport';
+import {
+  computeBodyweightSection, computeAdherenceSection, computeNutritionSection, computeChallengesSection,
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+} from './reportExtras';
+import { buildNarrativeIntro } from './reportNarrative';
+
+export type {
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+} from './reportExtras';
 
 // Assembles a draft CoachReport from the deterministic engines. The coach then
 // edits title/intro, toggles sections and adds notes before sending. Section
@@ -79,6 +91,42 @@ export function buildReportText(report: CoachReport): string {
         lines.push('');
         break;
       }
+      case 'bodyweight': {
+        const d = s.data as BodyweightSectionData;
+        if (d.endWeight == null) break;
+        lines.push(`⚖️ ${s.title}`);
+        const deltaTxt = d.deltaKg != null ? ` (${d.deltaKg > 0 ? '+' : ''}${d.deltaKg} kg en el periodo)` : '';
+        lines.push(`${d.endWeight.toLocaleString('es-ES')} kg${deltaTxt}${d.targetWeight != null ? ` · objetivo ${d.targetWeight} kg` : ''}`);
+        lines.push('');
+        break;
+      }
+      case 'adherence': {
+        const d = s.data as AdherenceSectionData;
+        if (!d.planned) break;
+        lines.push(`✅ ${s.title}`);
+        lines.push(`${d.completed} de ${d.planned} sesiones programadas completadas${d.pct != null ? ` (${d.pct}%)` : ''}${d.prevPct != null ? ` · periodo anterior: ${d.prevPct}%` : ''}`);
+        lines.push('');
+        break;
+      }
+      case 'nutrition': {
+        const d = s.data as NutritionSectionData;
+        if (!d.daysLogged) break;
+        lines.push(`🥗 ${s.title}`);
+        lines.push(`Cumplimiento medio de la dieta: ${d.avgPct}% (${d.daysLogged} día${d.daysLogged !== 1 ? 's' : ''} registrado${d.daysLogged !== 1 ? 's' : ''} de ${d.periodDays})${d.prevAvgPct != null ? ` · antes: ${d.prevAvgPct}%` : ''}`);
+        lines.push('');
+        break;
+      }
+      case 'challenges': {
+        const d = s.data as ChallengesSectionData;
+        if (!d.items?.length) break;
+        lines.push(`🎖️ ${s.title}`);
+        d.items.forEach(c => {
+          const st = c.status === 'conseguido' ? '✔ Conseguido' : c.status === 'fallido' ? '✖ No salió' : 'En marcha';
+          lines.push(`- ${c.title}: ${st}${c.progressValue != null ? ` (${c.progressValue}/${c.target} ${c.unit})` : ''}`);
+        });
+        lines.push('');
+        break;
+      }
     }
     if (s.coachNote) {
       lines.push(`Nota: ${s.coachNote}`);
@@ -87,6 +135,18 @@ export function buildReportText(report: CoachReport): string {
   }
 
   return lines.join('\n').trim();
+}
+
+// Datos opcionales más allá del entrenamiento; cada uno que llegue con datos
+// añade su sección al borrador (el coach puede desmarcarla en el editor).
+export interface ReportExtrasInput {
+  athleteName?: string;
+  bodyweightLogs?: BodyweightLog[];
+  assignments?: WorkoutAssignment[];
+  dietLogs?: DietCompletionLog[];
+  diets?: Diet[];
+  challenges?: WeeklyChallenge[];
+  targetWeight?: number;
 }
 
 export function buildTrainingReportDraft(params: {
@@ -98,6 +158,7 @@ export function buildTrainingReportDraft(params: {
   periodStart: string;
   periodEnd: string;
   comparison: ComparisonMode;
+  extras?: ReportExtrasInput;
 }): CoachReport {
   const tr = buildTrainingReport({
     logs: params.logs,
@@ -107,6 +168,22 @@ export function buildTrainingReportDraft(params: {
     periodEnd: params.periodEnd,
     comparison: params.comparison,
   });
+  const extras = params.extras ?? {};
+  // Las secciones extra comparan sobre las mismas ventanas que el entrenamiento.
+  const w = resolveWindows(params.periodStart, params.periodEnd, params.comparison, params.mesocycles);
+
+  const bodyweight = extras.bodyweightLogs?.length
+    ? computeBodyweightSection(extras.bodyweightLogs, w.curStart, w.curEnd, extras.targetWeight)
+    : null;
+  const adherence = extras.assignments?.length
+    ? computeAdherenceSection(extras.assignments, w.curStart, w.curEnd, w.prevStart, w.prevEnd)
+    : null;
+  const nutrition = extras.dietLogs?.length && extras.diets?.length
+    ? computeNutritionSection(extras.dietLogs, extras.diets, w.curStart, w.curEnd, w.prevStart, w.prevEnd)
+    : null;
+  const challenges = extras.challenges?.length
+    ? computeChallengesSection(extras.challenges, w.curStart, w.curEnd)
+    : null;
 
   const sections: CoachReportSection[] = [];
 
@@ -146,6 +223,48 @@ export function buildTrainingReportDraft(params: {
     data: { rows: tr.muscleGroups } as MuscleSectionData,
   });
 
+  if (bodyweight && bodyweight.endWeight != null) {
+    sections.push({
+      id: 'bodyweight',
+      title: 'Peso corporal',
+      included: true,
+      data: bodyweight,
+    });
+  }
+
+  if (adherence && adherence.planned > 0) {
+    sections.push({
+      id: 'adherence',
+      title: 'Constancia',
+      included: true,
+      data: adherence,
+    });
+  }
+
+  if (nutrition && nutrition.daysLogged > 0) {
+    sections.push({
+      id: 'nutrition',
+      title: 'Nutrición',
+      included: true,
+      data: nutrition,
+    });
+  }
+
+  if (challenges && challenges.items.length > 0) {
+    sections.push({
+      id: 'challenges',
+      title: 'Retos de la semana',
+      included: true,
+      data: challenges,
+    });
+  }
+
+  const intro = buildNarrativeIntro({
+    athleteName: extras.athleteName ?? '',
+    training: tr,
+    bodyweight, adherence, nutrition, challenges,
+  });
+
   const now = new Date().toISOString();
   return {
     id: `report_${params.athleteEmail}_${Date.now()}`,
@@ -158,7 +277,7 @@ export function buildTrainingReportDraft(params: {
     updatedAt: now,
     status: 'draft',
     title: `Reporte · ${fmtReportDate(tr.periodStart)}–${fmtReportDate(tr.periodEnd)}`,
-    intro: '',
+    intro,
     sections,
   };
 }

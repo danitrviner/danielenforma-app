@@ -78,9 +78,9 @@ const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
-export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'periodizacion' | 'roadmap' | 'analisis';
+export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
 export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
-export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'periodizacion', 'roadmap', 'analisis'];
+export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'roadmap', 'analisis'];
 export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', 'correlaciones'];
 
 interface ClientHubProps {
@@ -332,6 +332,17 @@ export default function ClientHub({
   // ── Exercise history ───────────────────────────────────────────────────────
   const getExercise = (id: string) => exercises.find(e => e.id === id);
   const getWorkout  = (id: string) => workouts.find(w => w.id === id);
+
+  // Ejercicios del programa actual del atleta (rutinas asignadas) — acota el
+  // selector de observaciones por ejercicio a lo que realmente entrena.
+  const programExerciseIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const a of assignments) {
+      const wo = workouts.find(w => w.id === a.workoutId);
+      wo?.exercises.forEach(e => ids.add(e.exerciseId));
+    }
+    return [...ids];
+  }, [assignments, workouts]);
 
   const activeCheckIn = activeCheckInId
     ? checkins.find(c => c.id === activeCheckInId)
@@ -673,7 +684,6 @@ export default function ClientHub({
             { id: 'revisiones',    label: 'Revisiones',    icon: 'rate_review'        },
             { id: 'entrenamientos',label: 'Entrenamientos',icon: 'fitness_center'     },
             { id: 'dietas',        label: 'Dietas',        icon: 'nutrition'          },
-            { id: 'periodizacion', label: 'Periodización', icon: 'monitoring'         },
             { id: 'roadmap',       label: 'Road map',      icon: 'map'                },
             { id: 'analisis',      label: 'Análisis',      icon: 'insights'           },
           ] as { id: HubTab; label: string; icon: string }[]).map(tab => (
@@ -717,7 +727,158 @@ export default function ClientHub({
 
         <TaskManagerPanel athleteEmail={athlete.email} />
 
-        <ExercisePersonalNotesPanel athleteEmail={athlete.email} />
+        {/* ── Photos ─────────────────────────────────────────────────────────── */}
+        {(() => {
+          const viewPhotos = athletePhotos
+            .filter(p => p.view === selectedView)
+            .sort((a, b) => a.date.localeCompare(b.date));
+          const baseline = viewPhotos[0];
+          const latest   = viewPhotos[viewPhotos.length - 1];
+          const fmtDate  = (d: string) =>
+            new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
+
+          return (
+            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
+                  Historial Fotográfico
+                  {athletePhotos.length > 0 && (
+                    <span className="font-mono text-[9px] text-[#c6c9ab]">({athletePhotos.length} fotos)</span>
+                  )}
+                </h3>
+                <div className="flex bg-[#2a2a2a] rounded p-0.5">
+                  {([
+                    { id: 'front', label: 'Frente'   },
+                    { id: 'side',  label: 'Lateral'  },
+                    { id: 'back',  label: 'Espalda'  },
+                  ] as { id: PhotoView; label: string }[]).map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedView(v.id)}
+                      className={`px-3 py-1 rounded font-sans text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
+                    >{v.label}</button>
+                  ))}
+                </div>
+              </div>
+              {loadingPhotos ? (
+                <div className="p-8 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando fotos…</div>
+              ) : viewPhotos.length === 0 ? (
+                <div className="p-10 text-center">
+                  <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">photo_camera</span>
+                  <p className="font-mono text-xs text-[#c6c9ab]">Sin fotos todavía.</p>
+                </div>
+              ) : (
+                <div className="p-3 bg-[#111110]/90">
+                  {viewPhotos.length === 1 ? (
+                    <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group max-w-[240px] mx-auto">
+                      <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
+                        Actual · {fmtDate(latest.date)}
+                      </div>
+                      <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative rounded-lg overflow-hidden border border-white/7 group">
+                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-white/7 px-2.5 py-0.5 rounded text-white font-mono text-[10px]">
+                          Baseline · {fmtDate(baseline.date)}
+                        </div>
+                        <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
+                      </div>
+                      <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group">
+                        <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
+                          Actual · {fmtDate(latest.date)}
+                        </div>
+                        <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
+                      </div>
+                    </div>
+                  )}
+                  {viewPhotos.length > 2 && (
+                    <p className="text-center font-mono text-[9px] text-[#c6c9ab] mt-2">
+                      {viewPhotos.length} fotos — mostrando baseline y más reciente
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
+              <div className="p-4 border-t border-white/7 space-y-4">
+                <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">edit_calendar</span>
+                  Asignar fotos de check-in
+                </h4>
+
+                <div className="space-y-3">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {([
+                      { id: 'front', label: 'Frente' },
+                      { id: 'side',  label: 'Lateral' },
+                      { id: 'back',  label: 'Espalda' },
+                    ] as { id: PhotoView; label: string }[]).map(v => {
+                      const active = assignPhotoViews.includes(v.id);
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
+                          className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                            active
+                              ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                              : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
+                          }`}
+                        >{v.label}</button>
+                      );
+                    })}
+                  </div>
+
+                  <ScheduleFields
+                    schedType={assignPhotoSchedType}
+                    onSchedTypeChange={setAssignPhotoSchedType}
+                    weekdays={assignPhotoWeekdays}
+                    onWeekdaysChange={setAssignPhotoWeekdays}
+                    intervalDays={assignPhotoIntervalDays}
+                    onIntervalDaysChange={setAssignPhotoIntervalDays}
+                    dayOfMonth={assignPhotoDayOfMonth}
+                    onDayOfMonthChange={setAssignPhotoDayOfMonth}
+                    startDate={assignPhotoStartDate}
+                    onStartDateChange={setAssignPhotoStartDate}
+                  />
+
+                  <button
+                    onClick={handleAssignPhotoCheckIn}
+                    disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
+                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                  >
+                    {assigningPhoto ? '…' : 'Asignar'}
+                  </button>
+                </div>
+
+                {athletePhotoAssignments.filter(a => a.active).length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-white/60">
+                    <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
+                    {athletePhotoAssignments.filter(a => a.active).map(a => {
+                      const schedLabel = scheduleLabel(a.schedule);
+                      const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
+                      return (
+                        <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
+                            <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
+                          </div>
+                          <button onClick={() => handleDeactivatePhoto(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
+                            <span className="material-symbols-outlined text-sm">close</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        <ExercisePersonalNotesPanel athleteEmail={athlete.email} programExerciseIds={programExerciseIds} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
@@ -1471,157 +1632,6 @@ export default function ClientHub({
           );
         })()}
 
-        {/* ── Photos ─────────────────────────────────────────────────────────── */}
-        {(() => {
-          const viewPhotos = athletePhotos
-            .filter(p => p.view === selectedView)
-            .sort((a, b) => a.date.localeCompare(b.date));
-          const baseline = viewPhotos[0];
-          const latest   = viewPhotos[viewPhotos.length - 1];
-          const fmtDate  = (d: string) =>
-            new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
-
-          return (
-            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
-                  Historial Fotográfico
-                  {athletePhotos.length > 0 && (
-                    <span className="font-mono text-[9px] text-[#c6c9ab]">({athletePhotos.length} fotos)</span>
-                  )}
-                </h3>
-                <div className="flex bg-[#2a2a2a] rounded p-0.5">
-                  {([
-                    { id: 'front', label: 'Frente'   },
-                    { id: 'side',  label: 'Lateral'  },
-                    { id: 'back',  label: 'Espalda'  },
-                  ] as { id: PhotoView; label: string }[]).map(v => (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedView(v.id)}
-                      className={`px-3 py-1 rounded font-sans text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-[#c6c9ab] hover:text-white'}`}
-                    >{v.label}</button>
-                  ))}
-                </div>
-              </div>
-              {loadingPhotos ? (
-                <div className="p-8 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando fotos…</div>
-              ) : viewPhotos.length === 0 ? (
-                <div className="p-10 text-center">
-                  <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">photo_camera</span>
-                  <p className="font-mono text-xs text-[#c6c9ab]">Sin fotos todavía.</p>
-                </div>
-              ) : (
-                <div className="p-3 bg-[#111110]/90">
-                  {viewPhotos.length === 1 ? (
-                    <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
-                        Actual · {fmtDate(latest.date)}
-                      </div>
-                      <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative rounded-lg overflow-hidden border border-white/7 group">
-                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-white/7 px-2.5 py-0.5 rounded text-white font-mono text-[10px]">
-                          Baseline · {fmtDate(baseline.date)}
-                        </div>
-                        <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
-                      </div>
-                      <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
-                          Actual · {fmtDate(latest.date)}
-                        </div>
-                        <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
-                      </div>
-                    </div>
-                  )}
-                  {viewPhotos.length > 2 && (
-                    <p className="text-center font-mono text-[9px] text-[#c6c9ab] mt-2">
-                      {viewPhotos.length} fotos — mostrando baseline y más reciente
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
-              <div className="p-4 border-t border-white/7 space-y-4">
-                <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">edit_calendar</span>
-                  Asignar fotos de check-in
-                </h4>
-
-                <div className="space-y-3">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {([
-                      { id: 'front', label: 'Frente' },
-                      { id: 'side',  label: 'Lateral' },
-                      { id: 'back',  label: 'Espalda' },
-                    ] as { id: PhotoView; label: string }[]).map(v => {
-                      const active = assignPhotoViews.includes(v.id);
-                      return (
-                        <button
-                          key={v.id}
-                          onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
-                          className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                            active
-                              ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
-                              : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
-                          }`}
-                        >{v.label}</button>
-                      );
-                    })}
-                  </div>
-
-                  <ScheduleFields
-                    schedType={assignPhotoSchedType}
-                    onSchedTypeChange={setAssignPhotoSchedType}
-                    weekdays={assignPhotoWeekdays}
-                    onWeekdaysChange={setAssignPhotoWeekdays}
-                    intervalDays={assignPhotoIntervalDays}
-                    onIntervalDaysChange={setAssignPhotoIntervalDays}
-                    dayOfMonth={assignPhotoDayOfMonth}
-                    onDayOfMonthChange={setAssignPhotoDayOfMonth}
-                    startDate={assignPhotoStartDate}
-                    onStartDateChange={setAssignPhotoStartDate}
-                  />
-
-                  <button
-                    onClick={handleAssignPhotoCheckIn}
-                    disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
-                  >
-                    {assigningPhoto ? '…' : 'Asignar'}
-                  </button>
-                </div>
-
-                {athletePhotoAssignments.filter(a => a.active).length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-white/60">
-                    <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Asignados activos</p>
-                    {athletePhotoAssignments.filter(a => a.active).map(a => {
-                      const schedLabel = scheduleLabel(a.schedule);
-                      const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
-                      return (
-                        <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
-                            <p className="font-mono text-[9px] text-[#c6c9ab]">{schedLabel} · desde {a.startDate}</p>
-                          </div>
-                          <button onClick={() => handleDeactivatePhoto(a.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors" title="Desactivar">
-                            <span className="material-symbols-outlined text-sm">close</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
         {/* ── Asignar cuestionario ───────────────────────────────────── */}
             <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
@@ -1791,8 +1801,21 @@ export default function ClientHub({
       )}
 
       {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
+      {/* Orden: análisis/dashboard arriba (periodización + historial de cargas),
+          información del atleta en medio, programación/edición abajo. */}
       {activeTab === 'entrenamientos' && (
         <div className="space-y-6">
+          {/* Periodización de entrenamiento — visión analítica */}
+          <div>
+            <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+              Periodización de entrenamiento
+            </h2>
+            <p className="font-mono text-xs text-[#c6c9ab] mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
+          </div>
+          <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
+          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
+
           {/* Onboarding exercise reference */}
           {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
             <div className="bg-[#0e0e0e] border border-[#fbcb1a]/15 rounded-xl p-4 space-y-3">
@@ -1948,7 +1971,7 @@ export default function ClientHub({
             )}
           </div>
 
-          {/* Macrociclos — programación de volumen/semanas (el análisis vive en Periodización) */}
+          {/* Macrociclos — programación de volumen/semanas (el análisis vive arriba) */}
           <MesocycleManager
             coachId={coachId}
             athleteEmail={athlete.email}
@@ -2227,14 +2250,6 @@ export default function ClientHub({
         )
       )}
 
-      {/* ── Tab: Periodización — análisis de entrenamiento + nutrición ──────── */}
-      {activeTab === 'periodizacion' && (
-        <div className="space-y-6">
-          <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
-          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
-        </div>
-      )}
-
       {/* ── Tab: Road map ─────────────────────────────────────────────────── */}
       {activeTab === 'roadmap' && (
         <CoachRoadmapView athleteEmail={athlete.email} />
@@ -2270,6 +2285,9 @@ export default function ClientHub({
               coachId={coachId}
               logs={athleteLogs}
               exercises={exercises}
+              assignments={assignments}
+              bodyweightLogs={bodyweightLogs}
+              targetWeight={athlete.targetWeight}
             />
           )}
 

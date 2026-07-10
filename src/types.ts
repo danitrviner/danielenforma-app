@@ -112,6 +112,7 @@ export interface AthleteNutritionConfig {
   stepGoal?: number;      // daily step target set by the coach
   kcalPerStep?: number;   // configurable conversion rate; falls back to DEFAULT_KCAL_PER_STEP when unset
   vegServingsPerDay?: number; // assumed daily vegetable servings for the micronutrient estimate (veg are "libre" in the exchange system, so uncounted)
+  vegTypes?: string[];    // ids from data/micronutrients VEGETABLES — the athlete's usual vegetables; empty/unset = generic mixed-veg profile
   // AI dashboard "share with athlete" — private by default, only set when the coach shares a snapshot
   sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
 }

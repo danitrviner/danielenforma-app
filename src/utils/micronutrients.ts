@@ -1,6 +1,6 @@
 import { Diet } from '../types';
 import {
-  MicroKey, MICRO_KEYS, MICRO_META, VEG_SERVING_PER100, VEG_SERVING_GRAMS, matchCanonical,
+  MicroKey, MICRO_KEYS, MICRO_META, VEG_SERVING_PER100, VEG_SERVING_GRAMS, VEGETABLES, matchCanonical,
 } from '../data/micronutrients';
 
 // Deterministic micronutrient ESTIMATE for an exchange-based diet. Because the
@@ -34,12 +34,28 @@ export interface MicronutrientEstimate {
   note: string;
 }
 
+// Perfil de verdura efectivo: media de las verduras habituales del atleta, o el
+// perfil mixto genérico si no ha marcado ninguna (ids desconocidos se ignoran).
+function vegProfile(vegTypes: string[] | undefined): Partial<Record<MicroKey, number>> {
+  const selected = (vegTypes ?? [])
+    .map(id => VEGETABLES.find(v => v.id === id))
+    .filter((v): v is NonNullable<typeof v> => v != null);
+  if (selected.length === 0) return VEG_SERVING_PER100;
+  const avg: Partial<Record<MicroKey, number>> = {};
+  for (const k of MICRO_KEYS) {
+    const sum = selected.reduce((s, v) => s + (v.per100g[k] ?? 0), 0);
+    if (sum > 0) avg[k] = Math.round((sum / selected.length) * 100) / 100;
+  }
+  return avg;
+}
+
 export function buildMicronutrientEstimate(
   diet: Diet | null,
-  opts: { sex?: 'male' | 'female'; vegServingsPerDay?: number } = {},
+  opts: { sex?: 'male' | 'female'; vegServingsPerDay?: number; vegTypes?: string[] } = {},
 ): MicronutrientEstimate {
   const sex = opts.sex ?? 'male';
   const veg = opts.vegServingsPerDay ?? 3;
+  const vegPer100 = vegProfile(opts.vegTypes);
 
   const totals: Record<MicroKey, number> = {} as Record<MicroKey, number>;
   for (const k of MICRO_KEYS) totals[k] = 0;
@@ -66,7 +82,7 @@ export function buildMicronutrientEstimate(
 
   // Vegetable baseline (veg are uncounted in the exchange system)
   for (const k of MICRO_KEYS) {
-    const per100 = VEG_SERVING_PER100[k];
+    const per100 = vegPer100[k];
     if (per100) totals[k] += (per100 * VEG_SERVING_GRAMS * veg) / 100;
   }
 
@@ -84,7 +100,11 @@ export function buildMicronutrientEstimate(
     return { key: k, label: meta.label, unit: meta.unit, intake, rda, rdaPct, status, limit: !!meta.limit };
   });
 
-  const note = `Estimación por porciones tipo · ${veg} ración${veg !== 1 ? 'es' : ''} de verdura/día asumida${veg !== 1 ? 's' : ''}. No sustituye una analítica.`;
+  const vegCount = opts.vegTypes?.filter(id => VEGETABLES.some(v => v.id === id)).length ?? 0;
+  const vegDesc = vegCount > 0
+    ? `perfil de sus ${vegCount} verdura${vegCount !== 1 ? 's' : ''} habitual${vegCount !== 1 ? 'es' : ''}`
+    : 'verdura mixta genérica';
+  const note = `Estimación por porciones tipo · ${veg} ración${veg !== 1 ? 'es' : ''} de verdura/día (${vegDesc}). No sustituye una analítica.`;
 
   return {
     perMicro,
