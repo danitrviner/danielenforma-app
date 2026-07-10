@@ -23,7 +23,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -127,13 +127,13 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
     displayName: displayName || email.split('@')[0],
     role: isDanitrviner ? 'coach' : 'client',
     avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYz2_Air0WvwmWSYIQa5y_UDyaCn_Q6_9svDchpvtBkmUWTc8FiyWhSMuCjtRY7LlsNOw4V_5kLPOiJKltz34rykip9l0MOBlGocGYKgm8e52cdv4ITKm6PCscmnFqa-nyGlSEIQ0SR5yfQ-MMuRYVQuqIVZnGzTjaiE48OhsGciJFk_Ab8qsRKRmi_XQcWbQSWiHga5jHiVNC6Lp1hPwVFbwiVbD_Q4Qd3sMFxZiVeNoyuZKvU-Xm46DHhVyDcfKicnVJGjCcwF1K',
-    level: 5,
-    xp: 320,
-    currentStreak: 12,
-    maxStreak: 24,
-    initialWeight: 82.0,
-    targetWeight: 75.0,
-    actualWeight: 76.5
+    level: 1,
+    xp: 0,
+    currentStreak: 0,
+    maxStreak: 0,
+    initialWeight: 0,
+    targetWeight: 0,
+    actualWeight: 0
   };
   saveLocalUserProfile(userId, defaultProfile);
   return defaultProfile;
@@ -194,7 +194,7 @@ function submitLocalCoachFeedback(checkInId: string, feedback: string) {
 
 // Get or create User Profile (with automatic offline fallback)
 export async function getOrCreateUserProfile(userId: string, email: string, displayName?: string, _retrying = false): Promise<UserProfile> {
-  const isDanitrviner = email.toLowerCase() === 'danitrviner@gmail.com' || email.toLowerCase() === 'coach.alex@enforma.com';
+  const isDanitrviner = email.toLowerCase() === 'danitrviner@gmail.com';
   
   if (forceLocalOnly) {
     return getLocalUserProfile(userId, email, displayName, isDanitrviner);
@@ -234,19 +234,21 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
     }
 
     // Create default Client Profile (Promote danitrviner immediately on first register)
+    // Valores a cero: un atleta recién dado de alta no tiene nivel, racha ni
+    // pesos — los datos de demo aquí contaminaban las métricas reales.
     const defaultProfile: UserProfile = {
       userId,
       email,
       displayName: displayName || email.split('@')[0],
       role: isDanitrviner ? 'coach' : 'client',
       avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYz2_Air0WvwmWSYIQa5y_UDyaCn_Q6_9svDchpvtBkmUWTc8FiyWhSMuCjtRY7LlsNOw4V_5kLPOiJKltz34rykip9l0MOBlGocGYKgm8e52cdv4ITKm6PCscmnFqa-nyGlSEIQ0SR5yfQ-MMuRYVQuqIVZnGzTjaiE48OhsGciJFk_Ab8qsRKRmi_XQcWbQSWiHga5jHiVNC6Lp1hPwVFbwiVbD_Q4Qd3sMFxZiVeNoyuZKvU-Xm46DHhVyDcfKicnVJGjCcwF1K',
-      level: 5,
-      xp: 320,
-      currentStreak: 12,
-      maxStreak: 24,
-      initialWeight: 82.0,
-      targetWeight: 75.0,
-      actualWeight: 76.5
+      level: 1,
+      xp: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      initialWeight: 0,
+      targetWeight: 0,
+      actualWeight: 0
     };
 
     await setDoc(docRef, stripUndefined(defaultProfile));
@@ -1574,6 +1576,26 @@ export async function saveNutritionProgram(program: NutritionProgram): Promise<v
   }
 }
 
+// Escritura parcial para el atleta: solo marca la fase vista, sin reescribir el
+// programa entero desde su snapshot (que podía revertir ediciones concurrentes
+// del coach en la periodización — last-writer-wins sobre el doc completo).
+export async function markNutritionPhaseSeen(athleteEmail: string, phaseId: string): Promise<void> {
+  const patchLocal = () => {
+    const list = getLocalNutProgs();
+    const prog = list.find(p => p.athleteId === athleteEmail);
+    if (prog) saveLocalNutProgs([...list.filter(p => p.athleteId !== athleteEmail), { ...prog, lastSeenPhaseId: phaseId }]);
+  };
+  if (forceLocalOnly) { patchLocal(); return; }
+  try {
+    await setDoc(doc(db, 'nutritionPrograms', athleteEmail), { lastSeenPhaseId: phaseId }, { merge: true });
+    patchLocal();
+  } catch (err) {
+    // Solo afecta al banner de "nueva fase" — si falla, volverá a mostrarse.
+    console.warn('markNutritionPhaseSeen Firestore failed:', err);
+    patchLocal();
+  }
+}
+
 export async function deleteNutritionProgram(athleteEmail: string): Promise<void> {
   if (forceLocalOnly) {
     saveLocalNutProgs(getLocalNutProgs().filter(p => p.athleteId !== athleteEmail));
@@ -1633,6 +1655,27 @@ export async function saveRoadmap(roadmap: Roadmap): Promise<void> {
     setLocalBypassMode(true);
     const list = getLocalRoadmaps().filter(r => r.athleteId !== athleteId);
     saveLocalRoadmaps([...list, roadmap]);
+  }
+}
+
+// Escritura parcial para el atleta al subir de nivel: merge solo del campo
+// levelLadder, sin tocar items/planPhases/challengeConfig. El saveRoadmap
+// completo desde el snapshot del atleta podía revertir ediciones de fases que
+// el coach hubiera hecho después de que el atleta cargara la pantalla.
+export async function saveRoadmapLevelProgress(athleteEmail: string, ladder: LevelLadder): Promise<void> {
+  const patchLocal = () => {
+    const list = getLocalRoadmaps();
+    const rm = list.find(r => r.athleteId === athleteEmail) ?? { athleteId: athleteEmail, items: [] };
+    saveLocalRoadmaps([...list.filter(r => r.athleteId !== athleteEmail), { ...rm, levelLadder: ladder }]);
+  };
+  if (forceLocalOnly) { patchLocal(); return; }
+  try {
+    await setDoc(doc(db, 'roadmaps', athleteEmail), { levelLadder: stripUndefined(ladder) }, { merge: true });
+    patchLocal();
+  } catch (err) {
+    // Auto-reparable: los niveles se recalculan de los logs en la próxima visita.
+    console.warn('saveRoadmapLevelProgress Firestore failed:', err);
+    patchLocal();
   }
 }
 
@@ -1856,7 +1899,7 @@ export function computeActivePhase(program: NutritionProgram, today: string): Nu
 }
 
 export function computePhaseStartDate(program: NutritionProgram, phaseIdx: number): string {
-  let cursor = new Date(program.startDate + 'T00:00:00');
+  const cursor = new Date(program.startDate + 'T00:00:00');
   for (let i = 0; i < phaseIdx; i++) {
     cursor.setDate(cursor.getDate() + program.phases[i].weeks * 7);
   }

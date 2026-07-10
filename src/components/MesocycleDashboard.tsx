@@ -323,7 +323,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                     key={g}
                     onClick={() => setHiddenGroups(prev => {
                       const next = new Set(prev);
-                      next.has(g) ? next.delete(g) : next.add(g);
+                      if (next.has(g)) next.delete(g); else next.add(g);
                       return next;
                     })}
                     className={`px-2 py-0.5 rounded font-mono text-[10px] uppercase font-bold border transition-all ${

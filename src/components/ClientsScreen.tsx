@@ -10,6 +10,7 @@ import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
+import { useToast } from '../hooks/useToast';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
@@ -24,6 +25,7 @@ interface ClientsScreenProps {
 
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
   const [athletes, setAthletes]           = useState<UserProfile[]>([]);
   const [loadingAthletes, setLoadingAthletes] = useState(true);
@@ -86,8 +88,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     try {
       await inviteClient(email);
       loadInvites();
+      showToast(`Invitación reenviada a ${email}.`, 'success');
     } catch (err) {
       console.error('resend invite error:', err);
+      showToast(`No se pudo reenviar la invitación a ${email}.`);
     }
   };
 

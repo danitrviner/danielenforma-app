@@ -231,7 +231,7 @@ export default function CorrelationPanel({
     const r = pearson(a.points, b.points);
     if (r === null) return { r: null, label: 'Datos insuficientes para calcular correlación' };
     const abs = Math.abs(r);
-    let strength = '';
+    let strength: string;
     if (abs > 0.7) strength = 'Correlación fuerte';
     else if (abs >= 0.4) strength = 'Correlación moderada';
     else strength = 'Correlación débil o nula';

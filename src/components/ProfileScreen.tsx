@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Questionnaire, QuestionnaireResponse, OnboardingData } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
+import { useToast } from '../hooks/useToast';
 import BodyweightPanel from './BodyweightPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
@@ -24,6 +25,7 @@ type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'pre
 const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
 
 export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut }: ProfileScreenProps) {
+  const { showToast } = useToast();
   const [showCoaches, setShowCoaches] = useState(false);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
@@ -113,6 +115,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       onRefreshProfile();
     } catch (err) {
       console.error(err);
+      showToast('No se pudo actualizar el perfil.');
     } finally {
       setLoading(false);
     }

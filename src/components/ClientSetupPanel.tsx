@@ -100,12 +100,18 @@ export default function ClientSetupPanel({
     updateUserProfile(athlete.userId, {
       setupSummary: { pct: result.globalPct, attention: result.attentionCount, updatedAt: new Date().toISOString() },
     }).catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- athlete.setupSummary
+    // solo se lee para el guard de "ya coincide"; incluirlo dispararía el
+    // efecto en bucle cada vez que el propio guardado actualiza el perfil.
   }, [loading, result.globalPct, result.attentionCount, athlete.userId]);
 
   useEffect(() => {
     if (expandedPhase !== null) return;
     const firstPending = result.phases.find(p => p.items.some(i => i.status === 'attention' || i.status === 'pending'));
     if (firstPending) setExpandedPhase(firstPending.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a propósito solo
+    // [loading]: auto-expande la primera fase pendiente una vez al cargar, sin
+    // volver a colapsar/expandir si el coach ya interactuó con el acordeón.
   }, [loading]);
 
   const goToItem = (item: SetupItem) => {

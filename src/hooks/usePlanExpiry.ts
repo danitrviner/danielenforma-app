@@ -27,5 +27,9 @@ export function calcPlanExpiry(profile: { planStartDate?: string; planDurationMo
 }
 
 export function usePlanExpiry(profile: { planStartDate?: string; planDurationMonths?: 3 | 6 | 12 }): PlanExpiry {
+  // Deps narrowed a propósito a los dos campos que importan: `profile` cambia
+  // de identidad en cada render del padre, así que depender del objeto entero
+  // recalcularía en cada render sin motivo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => calcPlanExpiry(profile), [profile.planStartDate, profile.planDurationMonths]);
 }

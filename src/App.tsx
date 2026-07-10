@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
@@ -7,22 +7,37 @@ import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 
 import WelcomeScreen from './components/WelcomeScreen';
-import ProfileScreen from './components/ProfileScreen';
+import LocalModeBanner from './components/LocalModeBanner';
+import { ToastProvider } from './hooks/useToast';
+
+// Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
+// necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
+// ~4700 líneas respectivamente que antes iban todas en el bundle inicial.
+// lazy() las trocea en chunks aparte que el navegador solo pide al entrar.
+const ProfileScreen        = lazy(() => import('./components/ProfileScreen'));
 
 // Athlete screens
-import HomeScreen from './components/HomeScreen';
-import TrainingScreen from './components/TrainingScreen';
-import NutritionHubScreen from './components/NutritionHubScreen';
-import CheckInScreen from './components/CheckInScreen';
+const HomeScreen           = lazy(() => import('./components/HomeScreen'));
+const TrainingScreen       = lazy(() => import('./components/TrainingScreen'));
+const NutritionHubScreen   = lazy(() => import('./components/NutritionHubScreen'));
+const CheckInScreen        = lazy(() => import('./components/CheckInScreen'));
 
 // Shared screens
-import AthleteRoadmapScreen from './components/AthleteRoadmapScreen';
+const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScreen'));
 
 // Coach screens
-import ClientsScreen from './components/ClientsScreen';
-import ReviewsScreen from './components/ReviewsScreen';
-import TrainingCoachScreen from './components/TrainingCoachScreen';
-import NutritionCoachScreen from './components/NutritionCoachScreen';
+const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
+const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
+const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
+const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
+
+function ScreenFallback() {
+  return (
+    <div className="text-center py-12 text-[#c6c9ab] font-mono tracking-widest uppercase text-xs animate-pulse">
+      Cargando...
+    </div>
+  );
+}
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
@@ -44,6 +59,14 @@ const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string
 ];
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+}
+
+function AppContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
@@ -200,6 +223,8 @@ export default function App() {
   return (
     <div className="min-h-screen text-[#e5e2e1] bg-[#111110] flex flex-col md:flex-row pb-24 md:pb-0">
 
+      <LocalModeBanner />
+
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#111110] fixed top-0 left-0 border-b border-white/7 z-40">
         <div className="flex items-center gap-2 text-[#fbcb1a]">
@@ -272,6 +297,7 @@ export default function App() {
       </nav>
 
       <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      <Suspense fallback={<ScreenFallback />}>
 
         {/* ATHLETE */}
         {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />}
@@ -318,6 +344,7 @@ export default function App() {
             onLogOut={() => setCurrentUser(null)}
           />
         )}
+      </Suspense>
       </main>
 
       {/* MOBILE BOTTOM NAV */}

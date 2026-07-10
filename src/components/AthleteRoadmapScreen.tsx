@@ -7,7 +7,7 @@ import {
   getMesocycles, getNutritionProgram, getRoadmap, getBodyweightForAthlete,
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
-  getWeeklyChallengesForAthlete, saveRoadmap, createNotificationDeduped,
+  getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
 } from '../dbService';
 import RoadmapTimeline from './RoadmapTimeline';
 import PhaseHeroCard from './roadmap/PhaseHeroCard';
@@ -137,16 +137,17 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     });
   }, [data, profile.initialWeight]);
 
-  // Persiste nuevos niveles alcanzados en el doc del atleta (el único escritor
-  // aquí es el propio atleta leyendo su pantalla — coherente con las reglas).
+  // Persiste nuevos niveles alcanzados con un merge parcial del campo
+  // levelLadder: reescribir el roadmap completo desde el snapshot del atleta
+  // podía revertir fases/items que el coach hubiera editado en paralelo.
   useEffect(() => {
     if (!data?.roadmap || !ladderStatus || ladderStatus.newlyAchieved.length === 0) return;
     const today = new Date().toISOString().split('T')[0];
     const achievedLevelIds = { ...(data.roadmap.levelLadder?.achievedLevelIds ?? {}) };
     for (const lvl of ladderStatus.newlyAchieved) achievedLevelIds[lvl.id] = today;
     const baseLadder = data.roadmap.levelLadder ?? DEFAULT_LEVEL_LADDER;
-    saveRoadmap({ ...data.roadmap, levelLadder: { ...baseLadder, achievedLevelIds } }).catch(err =>
-      console.warn('saveRoadmap (level up) failed:', err),
+    saveRoadmapLevelProgress(profile.email, { ...baseLadder, achievedLevelIds }).catch(err =>
+      console.warn('saveRoadmapLevelProgress (level up) failed:', err),
     );
     for (const lvl of ladderStatus.newlyAchieved) {
       const body = `Has alcanzado el nivel ${lvl.name}. ¡Enorme!`;

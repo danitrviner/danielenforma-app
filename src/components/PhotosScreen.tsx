@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
+import { useToast } from '../hooks/useToast';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function PhotosScreen({ profile }: Props) {
+  const { showToast } = useToast();
   const [photos, setPhotos]           = useState<ProgressPhoto[]>([]);
   const [loading, setLoading]         = useState(true);
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
@@ -71,6 +73,7 @@ export default function PhotosScreen({ profile }: Props) {
       setPhotos(prev => prev.filter(p => p.id !== photo.id));
     } catch (err) {
       console.error('Delete failed:', err);
+      showToast('No se pudo eliminar la foto.');
     } finally {
       setDeleting(null);
     }

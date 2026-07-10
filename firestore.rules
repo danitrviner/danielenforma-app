@@ -18,15 +18,32 @@ service cloud.firestore {
     }
 
     // ── user_profiles (docId = UID) ──────────────────────────────────────────
+    // El atleta gestiona su propio perfil, pero los campos que definen su plan
+    // de pago (planStartDate/planDurationMonths), su rol y el resumen de setup
+    // solo los toca el coach — sin esto, cualquier cliente podía "renovarse"
+    // el plan desde la consola del navegador.
     match /user_profiles/{userId} {
-      allow read, write: if isOwnerUid(userId) || isCoach();
+      allow read: if isOwnerUid(userId) || isCoach();
+      allow create: if isCoach()
+                    || (isOwnerUid(userId) && request.resource.data.role == 'client');
+      allow update: if isCoach()
+                    || (isOwnerUid(userId)
+                        && !request.resource.data.diff(resource.data).affectedKeys()
+                            .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary']));
+      allow delete: if isCoach();
     }
 
     // ── checkins (auto-id; campos: userId=UID, email) ────────────────────────
+    // El create acepta match por UID o por email: getOrCreateUserProfile puede
+    // devolver un perfil con un UID antiguo cuando la misma persona vuelve a
+    // registrarse por otro flujo de auth, y el check-in hereda ese userId.
     match /checkins/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.uid == resource.data.userId);
-      allow create: if request.auth != null;
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && (request.resource.data.userId == request.auth.uid
+                            || request.resource.data.email == request.auth.token.email));
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.uid == resource.data.userId);
     }
@@ -61,7 +78,9 @@ service cloud.firestore {
     match /workoutLogs/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.token.email == resource.data.athleteId);
-      allow create: if request.auth != null;
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.resource.data.athleteId == request.auth.token.email);
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId);
     }
@@ -188,7 +207,9 @@ service cloud.firestore {
     match /questionnaireResponses/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.token.email == resource.data.athleteId);
-      allow create: if request.auth != null;
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.resource.data.athleteId == request.auth.token.email);
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId);
     }
@@ -243,11 +264,19 @@ service cloud.firestore {
     }
 
     // ── notifications (recipientEmail) ───────────────────────────────────────
+    // Create checks request.resource (on create `resource` doesn't exist yet, so
+    // reading resource.data would error out and deny every athlete-side create —
+    // that silently dropped all athlete→coach notifications). Athletes may only
+    // address notifications to themselves or to the coach.
     match /notifications/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.token.email == resource.data.recipientEmail);
-      allow write: if isCoach()
-                   || (request.auth != null && request.auth.token.email == resource.data.recipientEmail);
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && (request.resource.data.recipientEmail == request.auth.token.email
+                            || request.resource.data.recipientEmail == 'danitrviner@gmail.com'));
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.recipientEmail);
     }
 
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
@@ -261,6 +290,16 @@ service cloud.firestore {
 
     // ── resources (coachId = UID del coach; lectura para cualquier atleta autenticado) ──
     match /resources/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+
+    // ── onboardingTemplates (docId = email del coach) ────────────────────────
+    // Sin esta regla la colección caía en el default-deny: ni el propio coach
+    // podía leer su plantilla y la app vivía de la copia en localStorage.
+    // Lectura para cualquier autenticado (la plantilla no contiene datos
+    // personales); escritura solo coach.
+    match /onboardingTemplates/{coachEmail} {
       allow read: if request.auth != null;
       allow write: if isCoach();
     }

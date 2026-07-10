@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, saveNutritionProgram, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
+import { useToast } from '../hooks/useToast';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -53,6 +54,7 @@ interface Props {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function NutritionScreen({ profile, pendingRecipe, onConsumedPendingRecipe }: Props) {
+  const { showToast } = useToast();
   // Diets
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
@@ -149,7 +151,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             }
             if (program.lastSeenPhaseId !== activePhase.id) {
               setPhaseBanner(`Tu plan de nutrición cambió a: ${activePhase.name}`);
-              await saveNutritionProgram({ ...program, lastSeenPhaseId: activePhase.id }).catch(() => {});
+              // Merge parcial: reescribir el programa entero desde este snapshot
+              // podía pisar ediciones concurrentes del coach en la periodización.
+              await markNutritionPhaseSeen(profile.email, activePhase.id).catch(() => {});
               const phaseKey = `notif_np_${profile.email}_${activePhase.id}`;
               const phaseBody = `Plan de nutrición cambió a: ${activePhase.name}`;
               createNotificationDeduped(`${phaseKey}_athlete`, {
@@ -602,6 +606,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds }).catch(() => {});
         }
         flash('Menú guardado en Mis Dietas.');
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudo guardar el menú.');
       } finally {
         setSaving(false);
       }
@@ -614,6 +621,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
         setSavedDietSnapshot(dietSnapshot(selectedDiet));
         flash('Cambios guardados.');
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudieron guardar los cambios.');
       } finally {
         setSaving(false);
       }
@@ -630,6 +640,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
       setSavedDietSnapshot(dietSnapshot(selectedDiet));
       flash('Dieta actualizada.');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo actualizar la dieta.');
     } finally {
       setSaving(false);
       setSaveChoiceOpen(false);
@@ -650,6 +663,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       setAllDietsList(prev => [...prev, created]);
       handleSelectDiet(created, { skipDirtyCheck: true });
       flash('Guardado como nueva dieta en Mis Dietas.');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo guardar la nueva dieta.');
     } finally {
       setSaving(false);
       setSaveChoiceOpen(false);

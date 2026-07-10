@@ -10,6 +10,7 @@ import {
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { invalidateResource } from '../hooks/useResourceCache';
+import { useToast } from '../hooks/useToast';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { scheduleLabel } from '../utils/scheduleEngine';
 import { isDietPending } from '../utils/exchangeHelpers';
@@ -144,6 +145,7 @@ export default function ClientHub({
   athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack,
   activeTab, onTabChange, analisisTab, onAnalisisTabChange,
 }: ClientHubProps) {
+  const { showToast } = useToast();
 
   // Onboarding
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
@@ -439,16 +441,17 @@ export default function ClientHub({
       setShowAssignModal(false);
       setAssignWorkoutId('');
       invalidateResource(`assignments:${athlete.userId}`);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); showToast('No se pudo asignar el entrenamiento.'); }
     finally { setIsAssigning(false); }
   };
 
   const handleDeleteAssignment = async (id: string) => {
+    if (!window.confirm('¿Eliminar este entrenamiento asignado?')) return;
     try {
       await deleteWorkoutAssignment(id);
       setAssignments(prev => prev.filter(a => a.id !== id));
       invalidateResource(`assignments:${athlete.userId}`);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); showToast('No se pudo eliminar el entrenamiento.'); }
   };
 
   const handleToggleDiet = async (dietId: string) => {
@@ -462,7 +465,7 @@ export default function ClientHub({
         : [...activeDietIds, dietId],
     };
     setAthleteDietConfig(next);
-    await saveAthleteDietConfig(next).catch(console.error);
+    await saveAthleteDietConfig(next).catch(err => { console.error(err); showToast('No se pudo guardar el cambio de dieta.'); });
   };
 
   const handleScheduleDay = async (day: WeekDay, dietId: string | null) => {
@@ -472,7 +475,7 @@ export default function ClientHub({
       weeklySchedule: { ...current.weeklySchedule, [day]: dietId },
     };
     setAthleteDietConfig(next);
-    await saveAthleteDietConfig(next).catch(console.error);
+    await saveAthleteDietConfig(next).catch(err => { console.error(err); showToast('No se pudo guardar el calendario de dietas.'); });
   };
 
   const handleToggleDietMode = async (mode: DietMode) => {
@@ -485,14 +488,14 @@ export default function ClientHub({
     if (updated.length === 0) return;
     const next: AthleteNutritionConfig = { ...nutritionConfig, enabledModes: updated };
     setNutritionConfig(next);
-    await saveAthleteNutritionConfig(next).catch(console.error);
+    await saveAthleteNutritionConfig(next).catch(err => { console.error(err); showToast('No se pudo guardar el modo de dieta.'); });
   };
 
   const handleSaveStepConfig = async (updates: Partial<Pick<AthleteNutritionConfig, 'stepGoal' | 'kcalPerStep'>>) => {
     const current = nutritionConfig ?? { athleteId: athlete.email, enabledModes: ['OMNIVORO'] as DietMode[] };
     const next: AthleteNutritionConfig = { ...current, ...updates };
     setNutritionConfig(next);
-    await saveAthleteNutritionConfig(next).catch(console.error);
+    await saveAthleteNutritionConfig(next).catch(err => { console.error(err); showToast('No se pudo guardar la configuración de pasos.'); });
   };
 
   // ── Questionnaire assignment ───────────────────────────────────────────────
@@ -517,12 +520,12 @@ export default function ClientHub({
       setAssignQId('');
       setAssignSchedType('once');
       setAssignWeekdays([]);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); showToast('No se pudo asignar el cuestionario.'); }
     finally { setAssigningQ(false); }
   };
 
   const handleDeactivateQ = async (id: string) => {
-    await deactivateAssignment(id).catch(console.error);
+    await deactivateAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el cuestionario.'); });
     setAthleteQAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
   };
 
@@ -548,12 +551,12 @@ export default function ClientHub({
       setAssignPhotoViews(['front']);
       setAssignPhotoSchedType('once');
       setAssignPhotoWeekdays([]);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); showToast('No se pudo asignar el check-in de fotos.'); }
     finally { setAssigningPhoto(false); }
   };
 
   const handleDeactivatePhoto = async (id: string) => {
-    await deactivatePhotoAssignment(id).catch(console.error);
+    await deactivatePhotoAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el check-in de fotos.'); });
     setAthletePhotoAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
   };
 
@@ -586,8 +589,10 @@ export default function ClientHub({
         planDurationMonths: planStart ? planMonths : undefined,
       });
       setSavedPlanSnapshot(planSnapshot(planStart, planMonths));
+      showToast('Plan actualizado.', 'success');
     } catch (err) {
       console.error('Error guardando plan:', err);
+      showToast('No se pudo guardar el plan.');
     } finally {
       setSavingPlan(false);
     }
