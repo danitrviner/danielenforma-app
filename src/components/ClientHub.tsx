@@ -5,7 +5,7 @@ import {
   FoodCategory, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
   QSchedule, QScheduleType, OnboardingData, WeekDay, BodyweightLog,
-  OnboardingTemplateQuestion, Mesocycle,
+  OnboardingTemplateQuestion, Mesocycle, CoachReport,
 } from '../types';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
@@ -28,7 +28,7 @@ import {
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
-  getOnboardingTemplate, getMesocycles,
+  getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ScheduleFields from './ScheduleFields';
@@ -178,6 +178,10 @@ export default function ClientHub({
   // Onboarding
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [editingOnboarding, setEditingOnboarding] = useState(false);
+  // Colapsada por defecto: es referencia estática (rara vez cambia) y en su día
+  // fue la sección que más ruido metía al abrir Revisiones — un resumen de una
+  // línea basta la mayoría de las veces.
+  const [fichaExpanded, setFichaExpanded] = useState(false);
   const [onboardingTemplate, setOnboardingTemplate] = useState<OnboardingTemplateQuestion[]>([]);
 
   // Check-in / feedback state
@@ -279,6 +283,10 @@ export default function ClientHub({
   // Bodyweight logs (for Análisis tab)
   const [bodyweightLogs, setBodyweightLogs] = useState<BodyweightLog[]>([]);
 
+  // Reportes del atleta — solo se usa aquí para el recordatorio en PendingTray
+  // (ReportsPanel mantiene su propia copia con más detalle cuando esa pestaña está abierta).
+  const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
+
   // Unified review list state
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   const [unifiedFeedbackText, setUnifiedFeedbackText] = useState('');
@@ -340,6 +348,7 @@ export default function ClientHub({
     getResponsesForAthlete(athlete.email).then(setAthleteQResponses).catch(console.error);
     getPhotoAssignmentsForAthlete(athlete.email).then(setAthletePhotoAssignments).catch(console.error);
     getBodyweightForAthlete(athlete.email).then(setBodyweightLogs).catch(console.error);
+    getCoachReportsForAthlete(athlete.email).then(setCoachReports).catch(console.error);
     setLoadingPhotos(true);
     getProgressPhotos(athlete.email)
       .then(p => { setAthletePhotos(p); setLoadingPhotos(false); })
@@ -723,8 +732,10 @@ export default function ClientHub({
         athleteLogs={athleteLogs}
         getWorkout={getWorkout}
         athleteCheckins={athleteCheckins}
+        coachReports={coachReports}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
         onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
+        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
       />
 
       {/* Nav de zonas (nivel 1) */}
@@ -958,18 +969,37 @@ export default function ClientHub({
             />
           ) : onboardingData ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">person_check</span>
-                  Ficha de iniciación
+              <button
+                onClick={() => setFichaExpanded(v => !v)}
+                className="w-full flex items-center justify-between gap-3 text-left"
+              >
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-base flex-shrink-0">person_check</span>
+                  <span className="truncate">Ficha de iniciación</span>
+                  <span className="font-mono text-[10px] text-[#555] font-normal normal-case truncate">
+                    {[
+                      onboardingData.sex && (onboardingData.sex === 'male' ? 'Hombre' : 'Mujer'),
+                      onboardingData.birthDate && `${displayAge(onboardingData.birthDate)} años`,
+                      onboardingData.goalBody && GOAL_BODY_LABELS[onboardingData.goalBody],
+                    ].filter(Boolean).join(' · ')}
+                  </span>
                 </h3>
-                <button
-                  onClick={() => setEditingOnboarding(true)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
-                >
-                  <span className="material-symbols-outlined text-sm">edit</span>Editar
-                </button>
-              </div>
+                <span className="material-symbols-outlined text-[#c6c9ab] flex-shrink-0 transition-transform" style={{ transform: fichaExpanded ? 'rotate(180deg)' : 'none' }}>
+                  expand_more
+                </span>
+              </button>
+              {fichaExpanded && (
+                <div className="flex justify-end -mt-2">
+                  <button
+                    onClick={() => setEditingOnboarding(true)}
+                    className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>Editar
+                  </button>
+                </div>
+              )}
+              {fichaExpanded && (
+              <>
 
               {/* Composición corporal */}
               {(onboardingData.sex || onboardingData.weightKg || onboardingData.heightCm) && (
@@ -1294,7 +1324,8 @@ export default function ClientHub({
                   })}
                 </div>
               )}
-
+              </>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-between gap-4">

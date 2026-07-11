@@ -1,22 +1,39 @@
 import React from 'react';
-import { WorkoutLog, Workout, WeightCheckIn } from '../types';
+import { WorkoutLog, Workout, WeightCheckIn, CoachReport } from '../types';
 
 interface Props {
   athleteLogs: WorkoutLog[];
   getWorkout: (id: string) => Workout | undefined;
   athleteCheckins: WeightCheckIn[];
+  coachReports: CoachReport[];
   onGoToNotes: () => void;
   onGoToCheckins: () => void;
+  onGoToReports: () => void;
 }
+
+const REPORT_REMINDER_DAYS = 7;
+const MS_PER_DAY = 86400000;
 
 // Franja de "qué hay que mirar hoy" para este atleta, independiente de en qué
 // zona/pestaña estés — agrega señales que ya vive dispersas por el Hub
 // (notas de entreno sin ver en Entrenamientos, check-ins sin feedback en
 // Revisiones) en un solo sitio con acceso directo. Se oculta si no hay nada
 // pendiente: el objetivo es reducir ruido, no añadir un banner permanente.
-export default function PendingTray({ athleteLogs, getWorkout, athleteCheckins, onGoToNotes, onGoToCheckins }: Props) {
+export default function PendingTray({
+  athleteLogs, getWorkout, athleteCheckins, coachReports, onGoToNotes, onGoToCheckins, onGoToReports,
+}: Props) {
   const unseenNotes = athleteLogs.filter(l => (l.note || l.entries.some(e => e.note)) && !l.noteCoachSeen);
   const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
+
+  // Días desde el último reporte ENVIADO (drafts no cuentan — el atleta no los ve).
+  const lastSentAt = coachReports
+    .filter(r => r.status === 'sent' && r.sentAt)
+    .map(r => new Date(r.sentAt as string).getTime())
+    .reduce((max, t) => Math.max(max, t), 0);
+  const daysSinceReport = lastSentAt > 0 ? Math.floor((Date.now() - lastSentAt) / MS_PER_DAY) : null;
+  // Solo avisa si ya hay algo que reportar — un atleta recién dado de alta sin
+  // entrenamientos registrados no necesita el recordatorio.
+  const needsReport = athleteLogs.length > 0 && (daysSinceReport == null || daysSinceReport >= REPORT_REMINDER_DAYS);
 
   const items: { key: string; icon: string; text: string; onClick: () => void }[] = [];
 
@@ -39,6 +56,15 @@ export default function PendingTray({ athleteLogs, getWorkout, athleteCheckins, 
       icon: 'monitor_weight',
       text: pendingCheckins.length === 1 ? '1 check-in por revisar' : `${pendingCheckins.length} check-ins por revisar`,
       onClick: onGoToCheckins,
+    });
+  }
+
+  if (needsReport) {
+    items.push({
+      key: 'report',
+      icon: 'analytics',
+      text: daysSinceReport == null ? 'Nunca se ha enviado un reporte' : `Sin reporte en ${daysSinceReport} días`,
+      onClick: onGoToReports,
     });
   }
 
