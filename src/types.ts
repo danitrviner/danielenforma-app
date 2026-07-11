@@ -891,3 +891,56 @@ export interface Resource {
   url: string;
   createdAt: string; // ISO timestamp
 }
+
+// ─── AI ASSISTANT (coach-only) ─────────────────────────────────────────────────
+// Chat del asistente de IA del coach + propuestas de cambio pendientes de
+// aprobación. La IA nunca escribe datos visibles para el atleta: sus tools de
+// escritura solo crean AiProposal; el coach aprueba/rechaza desde la UI y la
+// aprobación llama a los writers normales de dbService.
+
+// Bloques de contenido tal y como los devuelve la Messages API de Anthropic.
+// Se persisten VERBATIM (incluidos los bloques thinking, con su signature) para
+// poder reenviar la conversación al modelo sin alterarla — la API rechaza
+// bloques thinking modificados.
+export interface AiTextBlock { type: 'text'; text: string }
+export interface AiThinkingBlock { type: 'thinking'; thinking: string; signature?: string }
+export interface AiToolUseBlock { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+export interface AiToolResultBlock { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }
+export type AiContentBlock = AiTextBlock | AiThinkingBlock | AiToolUseBlock | AiToolResultBlock;
+
+export interface AiChatMessage {
+  role: 'user' | 'assistant';
+  content: AiContentBlock[];
+}
+
+export interface AiChat {
+  id: string;
+  title: string;
+  athleteId?: string;      // email del cliente activo cuando se abrió el chat
+  createdAt: string;       // ISO
+  updatedAt: string;       // ISO
+  messages: AiChatMessage[];
+}
+
+export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback';
+export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
+
+export type AiProposalPayload =
+  | Omit<Diet, 'id'>
+  | Omit<Mesocycle, 'id'>
+  | { checkInId: string; feedback: string };
+
+export interface AiProposal {
+  id: string;
+  athleteId: string;       // email
+  kind: AiProposalKind;
+  status: AiProposalStatus;
+  chatId: string;          // AiChat que la generó
+  summary: string;         // una línea en español, para la tarjeta
+  rationale: string;       // justificación de la IA, expandible
+  payload: AiProposalPayload;
+  baseEntityId?: string;   // dietId/mesocycleId que modifica (vs. nuevo)
+  resultEntityId?: string; // id de la entidad real creada al aprobar
+  createdAt: string;       // ISO
+  reviewedAt?: string;     // ISO, al aprobar/rechazar
+}

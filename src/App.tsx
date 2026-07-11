@@ -27,6 +27,7 @@ const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScree
 
 // Coach screens
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
+const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
@@ -215,6 +216,11 @@ function AppContent() {
   const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
   const pendingCount = getPendingReviews(checkins).length;
 
+  // Cliente activo para el asistente IA: el :athleteId de /clients/* es el email
+  // URL-encodeado (ver ClientsScreen), así el chat sabe a quién se refiere "este cliente".
+  const clientRouteMatch = location.pathname.match(/^\/clients\/([^/]+)/);
+  const activeAthleteEmail = clientRouteMatch ? decodeURIComponent(clientRouteMatch[1]) : undefined;
+
   return (
     <div className="min-h-screen text-[#e5e2e1] bg-[#111110] flex flex-col md:flex-row pb-24 md:pb-0">
 
@@ -366,6 +372,13 @@ function AppContent() {
         ))}
         {/* Both athletes and coaches reach their profile via the avatar bubble in the header — no separate nav item needed */}
       </nav>
+
+      {/* Asistente IA — solo coach, flotante y global para poder preguntar desde cualquier pantalla */}
+      {isCoach && (
+        <Suspense fallback={null}>
+          <AiChatPanel activeAthleteEmail={activeAthleteEmail} />
+        </Suspense>
+      )}
 
     </div>
   );

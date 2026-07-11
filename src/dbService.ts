@@ -23,7 +23,7 @@ import {
   deleteObject,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -3554,5 +3554,122 @@ export async function deleteCoachReport(id: string): Promise<void> {
     console.warn('deleteCoachReport Firestore failed, deleting local:', err);
     setLocalBypassMode(true);
     saveLocalCoachReports(filtered);
+  }
+}
+
+// ─── AI ASSISTANT (chats + propuestas, solo coach) ──────────────────────────────
+
+const AI_CHATS_LOCAL_KEY = 'enforma_ai_chats_v1';
+const AI_PROPOSALS_LOCAL_KEY = 'enforma_ai_proposals_v1';
+
+function getLocalAiChats(): AiChat[] {
+  try {
+    const raw = localStorage.getItem(AI_CHATS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as AiChat[]) : [];
+  } catch { return []; }
+}
+
+function saveLocalAiChats(chats: AiChat[]): void {
+  localStorage.setItem(AI_CHATS_LOCAL_KEY, JSON.stringify(chats));
+}
+
+export async function getAiChats(): Promise<AiChat[]> {
+  if (forceLocalOnly) return getLocalAiChats().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  try {
+    const snap = await getDocs(collection(db, 'aiChats'));
+    const chats = snap.docs.map(d => ({ id: d.id, ...d.data() } as AiChat));
+    saveLocalAiChats(chats);
+    return chats.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch (err) {
+    console.warn('getAiChats Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalAiChats().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+}
+
+// Upsert — el id lo genera el panel al abrir el chat, así el mismo doc se va
+// reescribiendo turno a turno.
+export async function saveAiChat(chat: AiChat): Promise<void> {
+  const others = getLocalAiChats().filter(c => c.id !== chat.id);
+  saveLocalAiChats([...others, chat]);
+  if (forceLocalOnly) return;
+  try {
+    await setDoc(doc(db, 'aiChats', chat.id), stripUndefined(chat));
+  } catch (err) {
+    console.warn('saveAiChat Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+  }
+}
+
+export async function deleteAiChat(id: string): Promise<void> {
+  const filtered = getLocalAiChats().filter(c => c.id !== id);
+  if (forceLocalOnly) { saveLocalAiChats(filtered); return; }
+  try {
+    await deleteDoc(doc(db, 'aiChats', id));
+    saveLocalAiChats(filtered);
+  } catch (err) {
+    console.warn('deleteAiChat Firestore failed, deleting local:', err);
+    setLocalBypassMode(true);
+    saveLocalAiChats(filtered);
+  }
+}
+
+function getLocalAiProposals(): AiProposal[] {
+  try {
+    const raw = localStorage.getItem(AI_PROPOSALS_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as AiProposal[]) : [];
+  } catch { return []; }
+}
+
+function saveLocalAiProposals(list: AiProposal[]): void {
+  localStorage.setItem(AI_PROPOSALS_LOCAL_KEY, JSON.stringify(list));
+}
+
+export async function getAiProposalsForAthlete(athleteEmail: string): Promise<AiProposal[]> {
+  if (forceLocalOnly) return getLocalAiProposals().filter(p => p.athleteId === athleteEmail);
+  try {
+    const q = query(collection(db, 'aiProposals'), where('athleteId', '==', athleteEmail));
+    const snap = await getDocs(q);
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as AiProposal));
+    const others = getLocalAiProposals().filter(p => p.athleteId !== athleteEmail);
+    saveLocalAiProposals([...others, ...list]);
+    return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (err) {
+    console.warn('getAiProposalsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalAiProposals().filter(p => p.athleteId === athleteEmail);
+  }
+}
+
+export async function createAiProposal(data: Omit<AiProposal, 'id'>): Promise<AiProposal> {
+  if (forceLocalOnly) {
+    const proposal: AiProposal = { id: `aiprop_${Date.now()}`, ...data };
+    saveLocalAiProposals([...getLocalAiProposals(), proposal]);
+    return proposal;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'aiProposals'), stripUndefined(data));
+    const proposal: AiProposal = { id: ref.id, ...data };
+    saveLocalAiProposals([...getLocalAiProposals(), proposal]);
+    return proposal;
+  } catch (err) {
+    console.warn('createAiProposal Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const proposal: AiProposal = { id: `aiprop_${Date.now()}`, ...data };
+    saveLocalAiProposals([...getLocalAiProposals(), proposal]);
+    return proposal;
+  }
+}
+
+export async function updateAiProposal(id: string, updates: Partial<AiProposal>): Promise<void> {
+  const updated = getLocalAiProposals().map(p => p.id === id ? { ...p, ...updates } : p);
+  if (forceLocalOnly) { saveLocalAiProposals(updated); return; }
+  try {
+    await updateDoc(doc(db, 'aiProposals', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalAiProposals(updated);
+  } catch (err) {
+    console.warn('updateAiProposal Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalAiProposals(updated);
   }
 }

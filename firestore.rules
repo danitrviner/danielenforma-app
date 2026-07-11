@@ -314,6 +314,26 @@ service cloud.firestore {
       allow read, write: if isCoach();
     }
 
+    // ── aiChats (conversaciones del asistente IA — privadas del coach) ───────
+    match /aiChats/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // ── aiProposals (propuestas de la IA pendientes de aprobación) ───────────
+    // Nunca visibles para el atleta: la entidad real solo se crea cuando el
+    // coach aprueba desde la UI.
+    match /aiProposals/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // ── aiAuditLog (escrito por el proxy de Vercel con admin SDK) ────────────
+    // El cliente solo puede leer (coach); la escritura va por firebase-admin,
+    // que se salta las reglas — denegar write aquí evita registros falsificados.
+    match /aiAuditLog/{docId} {
+      allow read: if isCoach();
+      allow write: if false;
+    }
+
     // ── coachReports (athleteId = EMAIL) ─────────────────────────────────────
     // Coach reads/writes everything; the athlete may only read their own SENT
     // reports (drafts stay hidden), so athlete queries must filter status=='sent'.
