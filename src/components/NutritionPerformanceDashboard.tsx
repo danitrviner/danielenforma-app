@@ -225,7 +225,12 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       <div className="border border-dashed border-white/7 rounded-2xl py-10 flex flex-col items-center gap-3">
         <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">monitoring</span>
         <p className="font-mono text-xs text-[#c6c9ab] text-center max-w-xs">
-          {athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.
+          {onEdit
+            ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
+            // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
+            // así que el mensaje aclara que depende del entrenador en vez de
+            // dejarle sin ninguna pista de qué hacer.
+            : 'Tu entrenador todavía no ha configurado tu periodización nutricional. Cuando lo haga, verás aquí el plan por fases.'}
         </p>
         {onEdit && (
           <button

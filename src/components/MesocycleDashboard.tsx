@@ -251,6 +251,10 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
       <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">bar_chart</span>
         <p className="text-[#c6c9ab] text-sm">Sin mesociclos para mostrar.</p>
+        {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
+            creación de mesociclos está más abajo (MesocycleManager) — sin esta
+            pista el estado vacío no dice qué hacer ni dónde ir. */}
+        <p className="text-[#555] text-xs font-mono mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
       </div>
     );
   }

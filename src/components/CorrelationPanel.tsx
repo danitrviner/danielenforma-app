@@ -260,10 +260,16 @@ export default function CorrelationPanel({
 
   if (!hasData) {
     return (
-      <div className="py-20 text-center border border-dashed border-white/7 rounded-2xl">
+      <div className="py-20 text-center border border-dashed border-white/7 rounded-2xl px-6">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">insights</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Sin datos suficientes</p>
-        <p className="text-[#c6c9ab] text-xs font-mono">Completa más registros para ver correlaciones.</p>
+        {/* El texto anterior decía "completa más registros", una instrucción
+            dirigida al atleta pero mostrada al coach — se cambia a algo que el
+            coach sí puede accionar: asignar/pedir lo que falta. */}
+        <p className="text-[#c6c9ab] text-xs font-mono max-w-xs mx-auto">
+          Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta.
+          Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones.
+        </p>
       </div>
     );
   }
