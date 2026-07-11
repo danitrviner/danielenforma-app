@@ -67,7 +67,7 @@ export function buildReportText(report: CoachReport): string {
         const d = s.data as TonnageSectionData;
         lines.push(`📊 ${s.title}`);
         lines.push(`${d.current.toLocaleString('es-ES')} kg (${fmtDelta(d.deltaPct)}${d.previous != null ? ` vs ${d.comparisonLabel}: ${d.previous.toLocaleString('es-ES')} kg` : ''})`);
-        lines.push(`${d.sessions} sesión${d.sessions !== 1 ? 'es' : ''} en el periodo`);
+        lines.push(`${d.sessions} ${d.sessions === 1 ? 'sesión' : 'sesiones'} en el periodo`);
         lines.push('');
         break;
       }

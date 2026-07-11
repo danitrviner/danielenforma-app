@@ -66,7 +66,7 @@ export function buildNarrativeIntro(input: NarrativeInput): string {
   }
 
   // ── Volumen / sesiones ──
-  const sesiones = `${tr.sessions} sesión${tr.sessions !== 1 ? 'es' : ''}`;
+  const sesiones = `${tr.sessions} ${tr.sessions === 1 ? 'sesión' : 'sesiones'}`;
   if (delta != null) {
     const dTxt = `${delta >= 0 ? '+' : ''}${delta}%`;
     if (delta >= 0) {

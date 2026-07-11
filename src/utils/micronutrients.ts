@@ -104,7 +104,7 @@ export function buildMicronutrientEstimate(
   const vegDesc = vegCount > 0
     ? `perfil de sus ${vegCount} verdura${vegCount !== 1 ? 's' : ''} habitual${vegCount !== 1 ? 'es' : ''}`
     : 'verdura mixta genérica';
-  const note = `Estimación por porciones tipo · ${veg} ración${veg !== 1 ? 'es' : ''} de verdura/día (${vegDesc}). No sustituye una analítica.`;
+  const note = `Estimación por porciones tipo · ${veg} ${veg === 1 ? 'ración' : 'raciones'} de verdura/día (${vegDesc}). No sustituye una analítica.`;
 
   return {
     perMicro,

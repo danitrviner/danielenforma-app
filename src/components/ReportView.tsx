@@ -63,7 +63,7 @@ function TonnageSection({ section }: { section: CoachReportSection }) {
           {d.previous != null && <span className="font-mono text-[10px] text-[#555]">{d.comparisonLabel} ({d.previous.toLocaleString('es-ES')} kg)</span>}
         </div>
       </div>
-      <p className="font-mono text-[10px] text-[#c6c9ab]">{d.sessions} sesión{d.sessions !== 1 ? 'es' : ''} en el periodo</p>
+      <p className="font-mono text-[10px] text-[#c6c9ab]">{d.sessions} {d.sessions === 1 ? 'sesión' : 'sesiones'} en el periodo</p>
     </SectionShell>
   );
 }
