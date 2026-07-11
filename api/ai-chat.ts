@@ -7,35 +7,51 @@
 //   4. escribe una fila de auditoría en aiAuditLog (admin SDK, el cliente no puede)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue, type Firestore } from 'firebase-admin/firestore';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export const config = { maxDuration: 60 };
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const PROJECT_ID = 'fleet-operator-z5xj8';
-const DATABASE_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870';
 const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
 const MAX_TOKENS_CAP = 8192;
 const DAILY_CALL_LIMIT = 400;
 
-// El service account (JSON en FIREBASE_SERVICE_ACCOUNT) habilita las escrituras
-// de auditoría; sin él la verificación de tokens sigue funcionando (solo
-// necesita el projectId) y la auditoría se omite con un warning.
-function getAdminApp(): App {
-  const existing = getApps();
-  if (existing.length > 0) return existing[0];
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (raw) {
-    return initializeApp({ credential: cert(JSON.parse(raw)), projectId: PROJECT_ID });
+// Verificación manual del ID token de Firebase con `jose` en vez de
+// firebase-admin/auth: esa vía depende de jwks-rsa, que intenta un require()
+// CJS de `jose` (ESM-only) y revienta con ERR_REQUIRE_ESM en el runtime de
+// Vercel. La verificación manual sigue el esquema documentado por Firebase
+// (JWKS público de Google + comprobación de iss/aud/exp) sin esa dependencia rota.
+const FIREBASE_JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.google.com')
+);
+
+async function verifyFirebaseIdToken(idToken: string): Promise<{ email: string } | null> {
+  try {
+    const { payload } = await jwtVerify(idToken, FIREBASE_JWKS, {
+      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+      audience: PROJECT_ID,
+    });
+    if (typeof payload.sub !== 'string' || !payload.sub) return null;
+    if (typeof payload.auth_time === 'number' && payload.auth_time * 1000 > Date.now()) return null;
+    const email = typeof payload.email === 'string' ? payload.email : '';
+    return { email };
+  } catch {
+    return null;
   }
-  return initializeApp({ projectId: PROJECT_ID });
 }
 
-function getDb(): Firestore | null {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) return null;
-  return getFirestore(getAdminApp(), DATABASE_ID);
+// Firestore admin (auditoría + contador diario) es opcional: sin
+// FIREBASE_SERVICE_ACCOUNT configurada en Vercel se omite sin romper el resto.
+// Se importa de forma perezosa (import() dinámico) para no arrastrar
+// firebase-admin/app en el bundle cuando no hace falta.
+async function getDb() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) return null;
+  const { initializeApp, getApps, cert } = await import('firebase-admin/app');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  const app = getApps()[0] ?? initializeApp({ credential: cert(JSON.parse(raw)), projectId: PROJECT_ID });
+  return getFirestore(app, 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870');
 }
 
 function setCors(req: VercelRequest, res: VercelResponse) {
@@ -62,14 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const authHeader = req.headers.authorization || '';
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!idToken) { res.status(401).json({ error: 'Falta el token de autenticación' }); return; }
-  try {
-    const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken);
-    if ((decoded.email || '').toLowerCase() !== COACH_EMAIL) {
-      res.status(403).json({ error: 'Solo el coach puede usar el asistente' });
-      return;
-    }
-  } catch {
-    res.status(401).json({ error: 'Token inválido o caducado' });
+  const decoded = await verifyFirebaseIdToken(idToken);
+  if (!decoded) { res.status(401).json({ error: 'Token inválido o caducado' }); return; }
+  if (decoded.email.toLowerCase() !== COACH_EMAIL) {
+    res.status(403).json({ error: 'Solo el coach puede usar el asistente' });
     return;
   }
 
@@ -94,10 +106,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : 'low';
 
   // ── Guardarraíl de coste: contador diario ─────────────────────────────────
-  const db = getDb();
+  const db = await getDb();
   const today = new Date().toISOString().slice(0, 10);
   if (db) {
     try {
+      const { FieldValue } = await import('firebase-admin/firestore');
       const counterRef = db.collection('aiUsage').doc(`daily_${today}`);
       const snap = await counterRef.get();
       const count = (snap.exists ? (snap.data()?.count as number) : 0) || 0;
