@@ -341,6 +341,11 @@ service cloud.firestore {
       allow read, write: if isCoach();
     }
 
+    // ── coachSettings (instrucciones fijas del coach para la IA — solo-coach) ─
+    match /coachSettings/{docId} {
+      allow read, write: if isCoach();
+    }
+
     // ── coachReports (athleteId = EMAIL) ─────────────────────────────────────
     // Coach reads/writes everything; the athlete may only read their own SENT
     // reports (drafts stay hidden), so athlete queries must filter status=='sent'.

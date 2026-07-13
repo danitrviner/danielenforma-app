@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AiChatMessage } from '../types';
 import { runAgentTurn, messageText } from '../ai/aiClient';
-import { createCoachNote } from '../dbService';
+import { createCoachNote, getCoachInstructions } from '../dbService';
 
 // Fase 5 — Análisis semanal proactivo. Un botón que lanza al mismo agente IA con
 // un prompt enlatado: revisa toda la cartera, señala quién necesita atención y
@@ -24,7 +24,8 @@ export default function WeeklyAnalysisButton() {
     setOpen(true); setBusy(true); setResult(null); setError(null); setStatus(null);
     const chatId = `weekly_${Date.now()}`;
     try {
-      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId }, {
+      const coachInstructions = await getCoachInstructions().catch(() => '');
+      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId, coachInstructions }, {
         onToolStatus: setStatus,
       });
       const last = [...msgs].reverse().find(m => m.role === 'assistant' && messageText(m));

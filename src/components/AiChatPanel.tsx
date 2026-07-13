@@ -3,6 +3,7 @@ import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
+  getCoachInstructions, saveCoachInstructions,
 } from '../dbService';
 import { runAgentTurn, messageText } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
@@ -61,6 +62,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
+  const [coachInstructions, setCoachInstructions] = useState('');
+  const [editingInstructions, setEditingInstructions] = useState(false);
+  const [instructionsDraft, setInstructionsDraft] = useState('');
+  const [savingInstructions, setSavingInstructions] = useState(false);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const vaultInputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +111,22 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   useEffect(() => {
     if (open) getAiChats().then(setChats).catch(() => {});
   }, [open]);
+
+  useEffect(() => {
+    if (open) getCoachInstructions().then(setCoachInstructions).catch(() => {});
+  }, [open]);
+
+  const openInstructionsEditor = () => { setInstructionsDraft(coachInstructions); setEditingInstructions(true); };
+  const saveInstructions = async () => {
+    setSavingInstructions(true);
+    try {
+      await saveCoachInstructions(instructionsDraft.trim());
+      setCoachInstructions(instructionsDraft.trim());
+      setEditingInstructions(false);
+    } finally {
+      setSavingInstructions(false);
+    }
+  };
 
   const refreshProposals = () => {
     if (!activeAthleteEmail) { setProposals([]); return; }
@@ -186,7 +207,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, text, { chatId: chat.id, activeAthlete }, {
+      await runAgentTurn(chat.messages, text, { chatId: chat.id, activeAthlete, coachInstructions }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -235,6 +256,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
         <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Asistente IA</span>
+        <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
+          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          <span className="material-symbols-outlined text-[20px]">tune</span>
+        </button>
         <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
           className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">menu_book</span>
@@ -461,6 +486,39 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             )}
           </div>
         </>
+      )}
+
+      {editingInstructions && (
+        <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
+          <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
+              <span className="material-symbols-outlined text-[#fbcb1a]">tune</span>
+              <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Instrucciones fijas</span>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <p className="text-xs text-[#c6c9ab]">
+                Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
+              </p>
+              <textarea
+                value={instructionsDraft}
+                onChange={e => setInstructionsDraft(e.target.value)}
+                rows={8}
+                placeholder="Escribe tus reglas, una por línea…"
+                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none"
+              />
+            </div>
+            <div className="flex gap-2 p-4 pt-0">
+              <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[#c6c9ab] text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                Cancelar
+              </button>
+              <button onClick={saveInstructions} disabled={savingInstructions}
+                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                {savingInstructions ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

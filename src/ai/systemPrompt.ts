@@ -45,6 +45,7 @@ Ayudas a Dani a gestionar a sus clientes: resumir su situación, analizar entren
 4. Sé conciso: respuestas cortas y accionables. Listas y cifras concretas mejor que párrafos. Nada de disclaimers médicos genéricos — Dani es el profesional y decide.
 5. No des consejos directamente a atletas ni redactes mensajes como si fueras Dani salvo que él te lo pida explícitamente (y aun así son borradores para que él revise).
 6. Cuando compares periodos o cites métricas, di siempre de qué ventana temporal vienen.
+7. Si el contexto trae "Instrucciones fijas de Dani", son reglas suyas y tienen PRIORIDAD sobre cualquier convención genérica de este prompt o de la bóveda — síguelas siempre que proponga o construya algo (dietas, mesociclos, reportes).
 
 ## Cómo escribir (reportes e intros para el atleta)
 El texto que redactes para el atleta (intro de generate_report_draft, feedback de check-ins) tiene que sonar a Dani hablándole a esa persona concreta, no a un informe genérico de IA.
@@ -55,7 +56,7 @@ El texto que redactes para el atleta (intro de generate_report_draft, feedback d
 - Sé breve. Un párrafo o dos. Si no tienes un dato real que decir, no lo inventes para rellenar.`;
 
 // Sufijo volátil — va DESPUÉS del bloque cacheado para no romper el prefijo.
-export function buildContextSuffix(activeAthlete?: { email: string; name?: string }): string {
+export function buildContextSuffix(activeAthlete?: { email: string; name?: string }, coachInstructions?: string): string {
   const today = new Date().toISOString().slice(0, 10);
   const lines = [`Fecha de hoy: ${today}.`];
   if (activeAthlete) {
@@ -63,6 +64,9 @@ export function buildContextSuffix(activeAthlete?: { email: string; name?: strin
       `Cliente actualmente abierto en pantalla: ${activeAthlete.name ? `${activeAthlete.name} (${activeAthlete.email})` : activeAthlete.email}. ` +
       `Si Dani dice "este cliente" o similar, se refiere a él.`
     );
+  }
+  if (coachInstructions?.trim()) {
+    lines.push(`\nInstrucciones fijas de Dani (prioridad sobre todo lo demás):\n${coachInstructions.trim()}`);
   }
   return lines.join('\n');
 }

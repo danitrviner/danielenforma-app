@@ -24,7 +24,7 @@ import {
   writeBatch,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote, CoachInstructions } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -3726,5 +3726,38 @@ export async function bulkUpsertKnowledgeNotes(notes: KnowledgeNote[]): Promise<
     console.warn('bulkUpsertKnowledgeNotes Firestore failed, kept local:', err);
     setLocalBypassMode(true);
     return notes.length;
+  }
+}
+
+// ─── INSTRUCCIONES FIJAS DEL COACH (para el asistente IA) ───────────────────────
+// Doc único (id determinista 'main'): reglas propias de Dani, con prioridad
+// sobre convenciones genéricas del prompt. Editable desde AiChatPanel.
+
+const COACH_INSTRUCTIONS_LOCAL_KEY = 'enforma_coach_instructions_v1';
+const COACH_INSTRUCTIONS_DOC_ID = 'main';
+
+export async function getCoachInstructions(): Promise<string> {
+  if (forceLocalOnly) return localStorage.getItem(COACH_INSTRUCTIONS_LOCAL_KEY) ?? '';
+  try {
+    const snap = await getDoc(doc(db, 'coachSettings', COACH_INSTRUCTIONS_DOC_ID));
+    const text = snap.exists() ? ((snap.data() as CoachInstructions).text ?? '') : '';
+    localStorage.setItem(COACH_INSTRUCTIONS_LOCAL_KEY, text);
+    return text;
+  } catch (err) {
+    console.warn('getCoachInstructions Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return localStorage.getItem(COACH_INSTRUCTIONS_LOCAL_KEY) ?? '';
+  }
+}
+
+export async function saveCoachInstructions(text: string): Promise<void> {
+  localStorage.setItem(COACH_INSTRUCTIONS_LOCAL_KEY, text);
+  if (forceLocalOnly) return;
+  try {
+    const data: CoachInstructions = { text, updatedAt: new Date().toISOString() };
+    await setDoc(doc(db, 'coachSettings', COACH_INSTRUCTIONS_DOC_ID), data);
+  } catch (err) {
+    console.warn('saveCoachInstructions Firestore failed, kept local:', err);
+    setLocalBypassMode(true);
   }
 }

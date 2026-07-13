@@ -71,7 +71,7 @@ async function callProxy(body: Record<string, unknown>): Promise<ProxyResponse['
 export async function runAgentTurn(
   history: AiChatMessage[],
   userText: string,
-  opts: { chatId: string; activeAthlete?: { email: string; name?: string } },
+  opts: { chatId: string; activeAthlete?: { email: string; name?: string }; coachInstructions?: string },
   cb: AgentCallbacks = {},
 ): Promise<AiChatMessage[]> {
   const messages: AiChatMessage[] = [
@@ -80,11 +80,11 @@ export async function runAgentTurn(
   ];
   cb.onUpdate?.(messages);
 
-  // Bloque estático cacheado + sufijo volátil (fecha, cliente activo) fuera de
-  // la caché — ver shared prompt-caching: el prefijo debe ser byte-idéntico.
+  // Bloque estático cacheado + sufijo volátil (fecha, cliente activo, instrucciones
+  // fijas del coach) fuera de la caché — el prefijo debe ser byte-idéntico.
   const system = [
     { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: buildContextSuffix(opts.activeAthlete) },
+    { type: 'text', text: buildContextSuffix(opts.activeAthlete, opts.coachInstructions) },
   ];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {

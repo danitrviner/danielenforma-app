@@ -956,3 +956,12 @@ export interface KnowledgeNote {
   tags: string[];
   text: string;            // cuerpo sin frontmatter
 }
+
+// Reglas fijas del coach para el asistente IA ("siempre empieza el mesociclo
+// con una semana de descarga", etc.) — editables por el coach en la app,
+// se inyectan en TODAS las conversaciones con prioridad sobre convenciones
+// genéricas. Doc único de la colección coachSettings.
+export interface CoachInstructions {
+  text: string;
+  updatedAt: string; // ISO
+}
