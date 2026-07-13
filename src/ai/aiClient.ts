@@ -31,20 +31,29 @@ interface ProxyResponse {
   error?: string;
 }
 
-async function callProxy(body: Record<string, unknown>): Promise<ProxyResponse['message']> {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Sesión caducada — vuelve a iniciar sesión.');
-  const idToken = await user.getIdToken();
-
-  let res: Response;
+async function postToProxy(idToken: string, body: Record<string, unknown>): Promise<Response> {
   try {
-    res = await fetch(PROXY_URL, {
+    return await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify(body),
     });
   } catch {
     throw new Error('No se pudo conectar con el asistente (¿proxy desplegado y VITE_AI_PROXY_URL configurada?).');
+  }
+}
+
+async function callProxy(body: Record<string, unknown>): Promise<ProxyResponse['message']> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sesión caducada — vuelve a iniciar sesión.');
+
+  // El SDK de Firebase cachea el ID token (~1h de validez) y debería refrescarlo
+  // solo, pero en pestañas de larga duración o tras suspender el portátil puede
+  // quedarse enviando uno caducado. Ante un 401 del proxy, forzamos un refresco
+  // real (getIdToken(true)) y reintentamos una vez antes de rendirnos.
+  let res = await postToProxy(await user.getIdToken(), body);
+  if (res.status === 401) {
+    res = await postToProxy(await user.getIdToken(true), body);
   }
 
   let data: ProxyResponse;
@@ -112,7 +121,7 @@ export async function runAgentTurn(
     const results: AiContentBlock[] = [];
     for (const tu of toolUses) {
       cb.onToolStatus?.(toolStatusLabel(tu.name, tu.input));
-      const { content, isError } = await executeTool(tu.name, tu.input);
+      const { content, isError } = await executeTool(tu.name, tu.input, opts.chatId);
       results.push({ type: 'tool_result', tool_use_id: tu.id, content, ...(isError ? { is_error: true } : {}) });
     }
     cb.onToolStatus?.(null);

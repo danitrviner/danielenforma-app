@@ -334,6 +334,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── knowledgeBase (bóveda de metodología del coach — solo-coach) ─────────
+    // Apuntes internos de cursos: nunca visibles para el atleta. La IA los
+    // consulta desde la sesión autenticada del coach.
+    match /knowledgeBase/{docId} {
+      allow read, write: if isCoach();
+    }
+
     // ── coachReports (athleteId = EMAIL) ─────────────────────────────────────
     // Coach reads/writes everything; the athlete may only read their own SENT
     // reports (drafts stay hidden), so athlete queries must filter status=='sent'.

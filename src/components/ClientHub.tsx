@@ -5,8 +5,9 @@ import {
   FoodCategory, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
   QSchedule, QScheduleType, OnboardingData, WeekDay, BodyweightLog,
-  OnboardingTemplateQuestion, Mesocycle, CoachReport,
+  OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal,
 } from '../types';
+import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { invalidateResource } from '../hooks/useResourceCache';
@@ -28,7 +29,7 @@ import {
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
-  getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete,
+  getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ScheduleFields from './ScheduleFields';
@@ -286,6 +287,9 @@ export default function ClientHub({
   // Reportes del atleta — solo se usa aquí para el recordatorio en PendingTray
   // (ReportsPanel mantiene su propia copia con más detalle cuando esa pestaña está abierta).
   const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
+  // Propuestas del asistente IA pendientes de revisión — se aprueban/rechazan
+  // desde las tarjetas del panel de chat (AiChatPanel), no aquí.
+  const [aiProposals, setAiProposals] = useState<AiProposal[]>([]);
 
   // Unified review list state
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
@@ -349,6 +353,7 @@ export default function ClientHub({
     getPhotoAssignmentsForAthlete(athlete.email).then(setAthletePhotoAssignments).catch(console.error);
     getBodyweightForAthlete(athlete.email).then(setBodyweightLogs).catch(console.error);
     getCoachReportsForAthlete(athlete.email).then(setCoachReports).catch(console.error);
+    getAiProposalsForAthlete(athlete.email).then(list => setAiProposals(list.filter(p => p.status === 'proposed'))).catch(console.error);
     setLoadingPhotos(true);
     getProgressPhotos(athlete.email)
       .then(p => { setAthletePhotos(p); setLoadingPhotos(false); })
@@ -733,9 +738,11 @@ export default function ClientHub({
         getWorkout={getWorkout}
         athleteCheckins={athleteCheckins}
         coachReports={coachReports}
+        aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
         onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
         onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
+        onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
       />
 
       {/* Nav de zonas (nivel 1) */}

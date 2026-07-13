@@ -5,6 +5,7 @@ import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, g
 import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
 import ResourcesPanel from './ResourcesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
+import WeeklyAnalysisButton from './WeeklyAnalysisButton';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
@@ -303,7 +304,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             Sincronizado
           </span>
         </div>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
+          <WeeklyAnalysisButton />
+        </div>
       </header>
 
       {/* Summary cards */}

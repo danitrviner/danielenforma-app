@@ -944,3 +944,15 @@ export interface AiProposal {
   createdAt: string;       // ISO
   reviewedAt?: string;     // ISO, al aprobar/rechazar
 }
+
+// Nota de metodología ingerida desde la bóveda de Obsidian del coach (apuntes
+// `interno-only` de cursos). Solo-coach: la IA la consulta vía search_knowledge
+// para fundamentar sus propuestas, pero debe PARAFRASEAR, nunca reproducir el
+// texto del curso al atleta (material de terceros).
+export interface KnowledgeNote {
+  id: string;              // `${folder}/${slug}` — determinista para reimportar sin duplicar
+  title: string;
+  folder: 'entrenamiento' | 'nutricion';
+  tags: string[];
+  text: string;            // cuerpo sin frontmatter
+}

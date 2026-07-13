@@ -1,14 +1,16 @@
 import React from 'react';
-import { WorkoutLog, Workout, WeightCheckIn, CoachReport } from '../types';
+import { WorkoutLog, Workout, WeightCheckIn, CoachReport, AiProposal } from '../types';
 
 interface Props {
   athleteLogs: WorkoutLog[];
   getWorkout: (id: string) => Workout | undefined;
   athleteCheckins: WeightCheckIn[];
   coachReports: CoachReport[];
+  aiProposals?: AiProposal[];
   onGoToNotes: () => void;
   onGoToCheckins: () => void;
   onGoToReports: () => void;
+  onGoToAiProposals?: () => void;
 }
 
 const REPORT_REMINDER_DAYS = 7;
@@ -20,10 +22,12 @@ const MS_PER_DAY = 86400000;
 // Revisiones) en un solo sitio con acceso directo. Se oculta si no hay nada
 // pendiente: el objetivo es reducir ruido, no añadir un banner permanente.
 export default function PendingTray({
-  athleteLogs, getWorkout, athleteCheckins, coachReports, onGoToNotes, onGoToCheckins, onGoToReports,
+  athleteLogs, getWorkout, athleteCheckins, coachReports, aiProposals = [],
+  onGoToNotes, onGoToCheckins, onGoToReports, onGoToAiProposals,
 }: Props) {
   const unseenNotes = athleteLogs.filter(l => (l.note || l.entries.some(e => e.note)) && !l.noteCoachSeen);
   const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
+  const pendingProposals = aiProposals.filter(p => p.status === 'proposed');
 
   // Días desde el último reporte ENVIADO (drafts no cuentan — el atleta no los ve).
   const lastSentAt = coachReports
@@ -65,6 +69,15 @@ export default function PendingTray({
       icon: 'analytics',
       text: daysSinceReport == null ? 'Nunca se ha enviado un reporte' : `Sin reporte en ${daysSinceReport} días`,
       onClick: onGoToReports,
+    });
+  }
+
+  if (pendingProposals.length > 0 && onGoToAiProposals) {
+    items.push({
+      key: 'ai-proposals',
+      icon: 'smart_toy',
+      text: pendingProposals.length === 1 ? '1 propuesta IA por revisar' : `${pendingProposals.length} propuestas IA por revisar`,
+      onClick: onGoToAiProposals,
     });
   }
 

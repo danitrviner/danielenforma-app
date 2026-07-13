@@ -21,9 +21,10 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
+  writeBatch,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 
@@ -3671,5 +3672,59 @@ export async function updateAiProposal(id: string, updates: Partial<AiProposal>)
     console.warn('updateAiProposal Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     saveLocalAiProposals(updated);
+  }
+}
+
+// ─── BASE DE CONOCIMIENTO (bóveda del coach, solo-coach) ────────────────────────
+// Notas de metodología importadas desde Obsidian. La IA las consulta vía la tool
+// search_knowledge. Cache local para búsqueda instantánea sin round-trips.
+
+const KNOWLEDGE_LOCAL_KEY = 'enforma_knowledge_v1';
+
+function getLocalKnowledge(): KnowledgeNote[] {
+  try {
+    const raw = localStorage.getItem(KNOWLEDGE_LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as KnowledgeNote[]) : [];
+  } catch { return []; }
+}
+
+function saveLocalKnowledge(notes: KnowledgeNote[]): void {
+  try { localStorage.setItem(KNOWLEDGE_LOCAL_KEY, JSON.stringify(notes)); } catch { /* quota — la fuente de verdad es Firestore */ }
+}
+
+export async function getKnowledgeNotes(): Promise<KnowledgeNote[]> {
+  if (forceLocalOnly) return getLocalKnowledge();
+  try {
+    const snap = await getDocs(collection(db, 'knowledgeBase'));
+    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() } as KnowledgeNote));
+    saveLocalKnowledge(notes);
+    return notes;
+  } catch (err) {
+    console.warn('getKnowledgeNotes Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalKnowledge();
+  }
+}
+
+// Importa/reemplaza el lote entero de notas (el coach re-sincroniza la bóveda).
+// Doc id determinista (`${folder}/${slug}` saneado) → reimportar no duplica.
+// writeBatch en trozos de 400 (límite de 500 ops/batch de Firestore).
+export async function bulkUpsertKnowledgeNotes(notes: KnowledgeNote[]): Promise<number> {
+  saveLocalKnowledge(notes);
+  if (forceLocalOnly) return notes.length;
+  try {
+    for (let i = 0; i < notes.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const note of notes.slice(i, i + 400)) {
+        const docId = note.id.replace(/\//g, '__');
+        batch.set(doc(db, 'knowledgeBase', docId), stripUndefined(note));
+      }
+      await batch.commit();
+    }
+    return notes.length;
+  } catch (err) {
+    console.warn('bulkUpsertKnowledgeNotes Firestore failed, kept local:', err);
+    setLocalBypassMode(true);
+    return notes.length;
   }
 }

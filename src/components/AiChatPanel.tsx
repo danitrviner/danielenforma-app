@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AiChat, AiChatMessage } from '../types';
-import { getAiChats, saveAiChat, deleteAiChat } from '../dbService';
+import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote } from '../types';
+import {
+  getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
+  submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
+} from '../dbService';
 import { runAgentTurn, messageText } from '../ai/aiClient';
+import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -9,6 +14,24 @@ interface Props {
 }
 
 const MAX_MESSAGES_PER_CHAT = 60; // ~30 turnos; después se pide empezar chat nuevo
+
+// Dictado por voz vía Web Speech API (nativa del navegador, sin backend ni coste
+// extra). Solo Chrome/Edge la implementan de forma fiable (prefijo webkit); en
+// otros navegadores el botón de micrófono no aparece.
+interface SpeechRecognitionResultLike { transcript: string }
+interface SpeechRecognitionEventLike { results: ArrayLike<ArrayLike<SpeechRecognitionResultLike>> }
+interface SpeechRecognitionLike {
+  lang: string; continuous: boolean; interimResults: boolean;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((e: unknown) => void) | null;
+  onend: (() => void) | null;
+  start(): void; stop(): void;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 function newChat(athleteId?: string): AiChat {
   const now = new Date().toISOString();
@@ -34,16 +57,114 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<AiProposal[]>([]);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const vaultInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const speechSupported = getSpeechRecognitionCtor() !== null;
+
+  const toggleDictation = () => {
+    if (listening) { recognitionRef.current?.stop(); return; }
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = 'es-ES';
+    rec.continuous = true;
+    rec.interimResults = true;
+    const baseInput = input.trim();
+    rec.onresult = (e) => {
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      setInput((baseInput ? baseInput + ' ' : '') + transcript);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
+  const importVault = async (file: File) => {
+    setSyncMsg('Importando…');
+    try {
+      const parsed = JSON.parse(await file.text()) as { notes?: KnowledgeNote[] };
+      const notes = parsed.notes ?? [];
+      if (!Array.isArray(notes) || notes.length === 0) { setSyncMsg('El archivo no tiene notas válidas.'); return; }
+      const n = await bulkUpsertKnowledgeNotes(notes);
+      setSyncMsg(`✓ Bóveda sincronizada: ${n} notas.`);
+    } catch {
+      setSyncMsg('No se pudo leer el archivo (¿es el JSON de la bóveda?).');
+    } finally {
+      setTimeout(() => setSyncMsg(null), 5000);
+    }
+  };
 
   useEffect(() => {
     if (open) getAiChats().then(setChats).catch(() => {});
   }, [open]);
 
+  const refreshProposals = () => {
+    if (!activeAthleteEmail) { setProposals([]); return; }
+    getAiProposalsForAthlete(activeAthleteEmail)
+      .then(list => setProposals(list.filter(p => p.status === 'proposed')))
+      .catch(() => {});
+  };
+
+  useEffect(() => { if (open) refreshProposals(); }, [open, activeAthleteEmail]);
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_AI_PANEL_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_AI_PANEL_EVENT, onOpen);
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [chat.messages.length, toolStatus, busy]);
+
+  const approveProposal = async (p: AiProposal) => {
+    setReviewingId(p.id);
+    try {
+      if (p.kind === 'checkinFeedback') {
+        const { checkInId, feedback } = p.payload as { checkInId: string; feedback: string };
+        await submitCoachFeedback(checkInId, feedback);
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: checkInId });
+      } else if (p.kind === 'diet') {
+        const dietPayload = p.payload as Omit<Diet, 'id'>;
+        if (p.baseEntityId) {
+          await updateDiet(p.baseEntityId, dietPayload);
+          await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.baseEntityId });
+        } else {
+          const created = await createDiet(dietPayload);
+          await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+        }
+      } else if (p.kind === 'mesocycle') {
+        const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      }
+      setProposals(prev => prev.filter(x => x.id !== p.id));
+    } catch {
+      setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const rejectProposal = async (p: AiProposal) => {
+    setReviewingId(p.id);
+    try {
+      await updateAiProposal(p.id, { status: 'rejected', reviewedAt: new Date().toISOString() });
+      setProposals(prev => prev.filter(x => x.id !== p.id));
+    } catch {
+      setError('No se pudo rechazar la propuesta — inténtalo de nuevo.');
+    } finally {
+      setReviewingId(null);
+    }
+  };
 
   const persist = async (updated: AiChat) => {
     setChat(updated);
@@ -54,6 +175,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const send = async () => {
     const text = input.trim();
     if (!text || busy) return;
+    if (listening) recognitionRef.current?.stop();
     setInput('');
     setError(null);
     setBusy(true);
@@ -81,6 +203,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         const title = chat.title || (messageText(msgs.find(m => m.role === 'user') ?? msgs[0]) || 'Chat').slice(0, 60);
         await persist({ ...chat, title, messages: msgs, updatedAt: new Date().toISOString() });
       }
+      refreshProposals();
     }
   };
 
@@ -112,6 +235,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
         <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Asistente IA</span>
+        <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
+          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          <span className="material-symbols-outlined text-[20px]">menu_book</span>
+        </button>
+        <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
         <button onClick={() => setShowList(s => !s)} title="Historial de chats"
           className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">history</span>
@@ -125,6 +254,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
+
+      {syncMsg && (
+        <div className="px-4 py-2 text-[11px] font-mono text-[#00eefc] border-b border-white/7 bg-[#00eefc]/5">
+          {syncMsg}
+        </div>
+      )}
 
       {/* Lista de chats */}
       {showList ? (
@@ -218,6 +353,80 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             )}
           </div>
 
+          {/* Propuestas pendientes del cliente activo — la IA propone, Dani aprueba */}
+          {proposals.length > 0 && (
+            <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto">
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300/80">
+                {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
+              </p>
+              {proposals.map(p => {
+                const diet = p.kind === 'diet' ? (p.payload as Omit<Diet, 'id'>) : null;
+                const meso = p.kind === 'mesocycle' ? (p.payload as Omit<Mesocycle, 'id'>) : null;
+                const mesoTrained = meso
+                  ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter(g => meso.groups[g]?.series > 0)
+                  : [];
+                return (
+                <div key={p.id} className="bg-[#161616] border border-amber-500/25 rounded-xl p-3 flex flex-col gap-2">
+                  <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
+                  {p.rationale && <p className="text-[11px] text-[#c6c9ab] italic">{p.rationale}</p>}
+                  {meso && (
+                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
+                      <div className="flex gap-2 flex-wrap text-[10px] font-mono text-[#c6c9ab]">
+                        <span>{meso.weeks} sem</span>
+                        <span>·</span>
+                        <span>{meso.daysPerWeek} días/sem</span>
+                        <span>·</span>
+                        <span>{mesoTrained.reduce((s, g) => s + meso.groups[g].series, 0)} series/sem</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                        {mesoTrained.map(g => (
+                          <div key={g} className="flex justify-between text-[11px]">
+                            <span className="text-[#c6c9ab]">{MUSCLE_LABELS[g]}</span>
+                            <span className="text-[#e5e2e1] font-mono">{meso.groups[g].series}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {diet && (
+                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
+                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-[#e5e2e1]">
+                            {cat} {diet.budget[cat]}
+                          </span>
+                        ))}
+                        <span className="text-[10px] font-mono text-[#c6c9ab]">≈ {exchangeToKcal(diet.budget)} kcal</span>
+                      </div>
+                      <ul className="text-[11px] text-[#c6c9ab] flex flex-col gap-0.5">
+                        {diet.meals.map(m => (
+                          <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => approveProposal(p)}
+                      disabled={reviewingId === p.id}
+                      className="flex-1 py-1.5 rounded-lg bg-[#86efac]/15 border border-[#86efac]/40 text-[#86efac] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                    >
+                      Aprobar
+                    </button>
+                    <button
+                      onClick={() => rejectProposal(p)}
+                      disabled={reviewingId === p.id}
+                      className="flex-1 py-1.5 rounded-lg bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-3 border-t border-white/7">
             {chatFull ? (
@@ -234,10 +443,16 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
                   }}
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
-                  placeholder={busy ? 'Trabajando…' : 'Escribe al asistente…'}
+                  placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
                   className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none disabled:opacity-50"
                 />
+                {speechSupported && (
+                  <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
+                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-[#ff6b6b]/15 border-[#ff6b6b]/40 text-[#ff6b6b] animate-pulse' : 'bg-white/5 border-white/10 text-[#c6c9ab] hover:text-white'}`}>
+                    <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
+                  </button>
+                )}
                 <button onClick={send} disabled={busy || !input.trim()} title="Enviar"
                   className="p-2.5 rounded-xl bg-[#fbcb1a] text-black disabled:opacity-30 transition-opacity">
                   <span className="material-symbols-outlined block text-[20px]">send</span>
