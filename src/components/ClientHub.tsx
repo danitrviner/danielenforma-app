@@ -5,7 +5,7 @@ import {
   FoodCategory, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
   QSchedule, QScheduleType, OnboardingData, WeekDay, BodyweightLog,
-  OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal,
+  OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
@@ -30,6 +30,7 @@ import {
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
+  getWeeklyMenusForAthlete, deleteWeeklyMenu,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ScheduleFields from './ScheduleFields';
@@ -45,7 +46,7 @@ import CorrelationPanel from './CorrelationPanel';
 import ReportsPanel from './ReportsPanel';
 import NutritionAnalysisPanel from './NutritionAnalysisPanel';
 import CoachRoadmapView from './CoachRoadmapView';
-import DietAutoGenerator from './DietAutoGenerator';
+import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
 import ProgressRing from './ProgressRing';
@@ -225,7 +226,16 @@ export default function ClientHub({
 
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
-  const [showGenerator,  setShowGenerator]  = useState(false);
+
+  // Weekly menu (recipe-first): list of drafts/published/archived + editor state.
+  // undefined = editor closed, 'new' = fresh generation, WeeklyMenu = editing/reviewing an existing one.
+  const [weeklyMenus, setWeeklyMenus] = useState<WeeklyMenu[]>([]);
+  const [menuEditor, setMenuEditor] = useState<'new' | WeeklyMenu | undefined>(undefined);
+  const [showSwapHistory, setShowSwapHistory] = useState(false);
+
+  const reloadWeeklyMenus = () => {
+    getWeeklyMenusForAthlete(athlete.email).then(setWeeklyMenus).catch(console.error);
+  };
 
   // Plan duration — snapshot-diff dirty check, same pattern as NutritionScreen's
   // dietSnapshot/isDirty (src/components/NutritionScreen.tsx), so an edit here
@@ -351,6 +361,7 @@ export default function ClientHub({
     // "Dietas disponibles" tab only lists/assigns diets the coach itself authored.
     getDietsForAthlete(athlete.email).then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged))).catch(console.error);
     getAthleteDietConfig(athlete.email).then(setAthleteDietConfig).catch(console.error);
+    getWeeklyMenusForAthlete(athlete.email).then(setWeeklyMenus).catch(console.error);
     getAssignmentsForAthlete(athlete.email).then(setAthleteQAssignments).catch(console.error);
     getResponsesForAthlete(athlete.email).then(setAthleteQResponses).catch(console.error);
     getPhotoAssignmentsForAthlete(athlete.email).then(setAthletePhotoAssignments).catch(console.error);
@@ -2117,18 +2128,17 @@ export default function ClientHub({
 
       {/* ── Tab: Dietas ───────────────────────────────────────────────────── */}
       {activeTab === 'dietas' && (
-        showGenerator && onboardingData ? (
-          /* ── Auto-generator ── */
-          <DietAutoGenerator
+        menuEditor !== undefined ? (
+          /* ── Weekly menu editor (recipe-first generator) ── */
+          <WeeklyMenuEditor
             athleteEmail={athlete.email}
             onboarding={onboardingData}
-            onSaved={async () => {
-              setShowGenerator(false);
-              getDietsForAthlete(athlete.email)
-                .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
-                .catch(console.error);
-            }}
-            onCancel={() => setShowGenerator(false)}
+            diets={athleteDiets}
+            dietConfig={athleteDietConfig}
+            nutritionConfig={nutritionConfig}
+            initialMenu={menuEditor === 'new' ? undefined : menuEditor}
+            onSaved={() => { setMenuEditor(undefined); reloadWeeklyMenus(); }}
+            onCancel={() => { setMenuEditor(undefined); reloadWeeklyMenus(); }}
           />
         ) : dietEditorDiet !== undefined ? (
           /* ── Diet editor (embedded NutritionPlansScreen) ── */
@@ -2156,15 +2166,6 @@ export default function ClientHub({
                   Dietas disponibles
                 </h3>
                 <div className="flex gap-2">
-                  {onboardingData && (
-                    <button
-                      onClick={() => setShowGenerator(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#fbcb1a] font-mono text-[10px] font-bold uppercase rounded-lg hover:bg-[#252511] active:scale-95 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                      Generar auto
-                    </button>
-                  )}
                   <button
                     onClick={() => setDietEditorDiet(null)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
@@ -2288,6 +2289,88 @@ export default function ClientHub({
                 })}
               </div>{/* end grid cols-7 */}
               </div>{/* end overflow-x-auto */}
+            </div>
+
+            {/* Menú semanal — generador automático basado en recetas. Lee sus
+                puntos de las dietas de tipo de día programadas arriba. */}
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">restaurant_menu</span>
+                  Menú semanal
+                </h3>
+                <button
+                  onClick={() => setMenuEditor('new')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                  Generar menú
+                </button>
+              </div>
+              <p className="text-[10px] text-[#c6c9ab] font-mono">
+                Reparte recetas reales por comida según los puntos ya pautados. Se genera como borrador — el atleta solo lo ve tras publicarlo.
+              </p>
+
+              {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
+                <div className="py-4 text-center">
+                  <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">restaurant_menu</span>
+                  <p className="text-xs text-[#c6c9ab]">Aún no hay ningún menú generado.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {weeklyMenus.filter(m => m.status !== 'archived').map(m => (
+                    <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-[#181816] border-white/7">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="font-sans font-bold text-sm text-white truncate">{m.name}</p>
+                          <span className={`flex-shrink-0 text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
+                            {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
+                          </span>
+                        </div>
+                        <p className="font-mono text-[10px] text-[#c6c9ab]">
+                          {m.days.filter(d => d.meals.length > 0).length} días con comidas · variedad {m.varietyLevel}/5
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setMenuEditor(m)}
+                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                        {m.status === 'published' ? 'Revisar' : 'Editar'}
+                      </button>
+                      <button
+                        onClick={() => { if (window.confirm(`¿Eliminar "${m.name}"?`)) deleteWeeklyMenu(m.id).then(reloadWeeklyMenus).catch(console.error); }}
+                        className="flex-shrink-0 text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors"
+                        title="Eliminar"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {weeklyMenus.some(m => m.status === 'published' && m.swapHistory.length > 0) && (
+                <div>
+                  <button
+                    onClick={() => setShowSwapHistory(v => !v)}
+                    className="flex items-center gap-1.5 text-[10px] font-mono text-[#c6c9ab] hover:text-white transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">{showSwapHistory ? 'expand_less' : 'history'}</span>
+                    Historial de cambios del atleta
+                  </button>
+                  {showSwapHistory && (
+                    <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
+                      {weeklyMenus.find(m => m.status === 'published')?.swapHistory
+                        .slice().reverse().map((s, i) => (
+                          <div key={i} className="font-mono text-[10px] text-[#c6c9ab] bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                            <span className="text-[#555]">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-[#fbcb1a]">{s.toRecipeName}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Periodización nutricional — el panel es dueño del estado de

@@ -141,7 +141,7 @@ export const COLORS = {
   },
 
   // Status / semantic colors (success, warning, danger, info) collected
-  // from usage across ReviewsScreen, DietAutoGenerator, badges, charts, etc.
+  // from usage across ReviewsScreen, WeeklyMenuEditor, badges, charts, etc.
   status: {
     successLight: '#86efac',
     success: '#8ac926',

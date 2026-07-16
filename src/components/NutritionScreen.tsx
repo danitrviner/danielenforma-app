@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
@@ -87,6 +88,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Recipe swap ("Cambiar comida")
   const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string } | null>(null);
+
+  // "Guardar como receta" — turns a meal built here into a reusable Recipe,
+  // which then feeds both the manual recipe picker and the weekly-menu generator.
+  const [savingMealAsRecipeId, setSavingMealAsRecipeId] = useState<string | null>(null);
+  const [recipeNameDraft, setRecipeNameDraft] = useState('');
+  const [savingRecipe, setSavingRecipe] = useState(false);
 
   // "Añadir a Intercambios" desde Recetas — primero elegir a qué dieta, luego (si
   // tiene varias comidas) a cuál comida
@@ -432,6 +439,42 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setRecipePickerMealId(mealId);
     setRecipeSearch('');
     setRecipeCatFilter('all');
+  };
+
+  // ── "Guardar como receta" ────────────────────────────────────────────────
+
+  const openSaveMealAsRecipe = (meal: DietMeal) => {
+    setSavingMealAsRecipeId(meal.id);
+    setRecipeNameDraft(meal.name);
+  };
+
+  const confirmSaveMealAsRecipe = async (meal: DietMeal) => {
+    const name = recipeNameDraft.trim();
+    if (!name || meal.items.length === 0) return;
+    setSavingRecipe(true);
+    try {
+      const placed: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+      for (const item of meal.items) addToPlaced(placed, item.category, item.quantity);
+      const exchanges = { HC: placed.HC, PROT: placed.PROT, GRASA: placed.GRASA };
+      const ingredients: Recipe['ingredients'] = meal.items.map(item => ({
+        foodLabel: item.foodLabel, category: item.category, mode: activeDietMode, quantity: item.quantity,
+      }));
+      const saved = await createRecipe({
+        ownerId: profile.userId,
+        name,
+        categories: [],
+        ingredients,
+        extras: [],
+        steps: [],
+        exchanges,
+        kcal: Math.round(exchangeToKcal(exchanges)),
+      });
+      setRecipes(prev => [...prev, saved]);
+      flash(`"${name}" guardada como receta — ya está disponible en Recetas.`);
+      setSavingMealAsRecipeId(null);
+    } finally {
+      setSavingRecipe(false);
+    }
   };
 
   const handleApplyRecipe = (recipe: Recipe) => {
@@ -1048,6 +1091,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Receta</span>
                             </button>
                           )}
+                          {meal.items.length > 0 && (
+                            <button
+                              onClick={() => openSaveMealAsRecipe(meal)}
+                              title="Guardar como receta"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#00eefc]/50 hover:text-[#00eefc] text-[#c6c9ab] transition-all"
+                            >
+                              <span className="material-symbols-outlined text-xs select-none">bookmark_add</span>
+                              <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Guardar receta</span>
+                            </button>
+                          )}
                           {selectedDiet.meals.length > 1 && (
                             <button
                               onClick={() => removeMeal(meal.id)}
@@ -1059,6 +1112,32 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           )}
                         </div>
                       </div>
+
+                      {savingMealAsRecipeId === meal.id && (
+                        <div className="px-4 py-2.5 bg-[#0e0e0e]/60 border-b border-white/60 flex items-center gap-2">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={recipeNameDraft}
+                            onChange={e => setRecipeNameDraft(e.target.value)}
+                            placeholder="Nombre de la receta"
+                            className="flex-1 min-w-0 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#00eefc]/50"
+                          />
+                          <button
+                            onClick={() => confirmSaveMealAsRecipe(meal)}
+                            disabled={savingRecipe || !recipeNameDraft.trim()}
+                            className="px-3 py-1.5 bg-[#00eefc] text-black font-mono text-[10px] font-bold uppercase rounded-lg disabled:opacity-40 transition-all"
+                          >
+                            {savingRecipe ? 'Guardando…' : 'Guardar'}
+                          </button>
+                          <button
+                            onClick={() => setSavingMealAsRecipeId(null)}
+                            className="text-[#c6c9ab] hover:text-white p-1"
+                          >
+                            <span className="material-symbols-outlined text-sm">close</span>
+                          </button>
+                        </div>
+                      )}
 
                       {/* Per-meal target + progress (only when targets are set) */}
                       {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {

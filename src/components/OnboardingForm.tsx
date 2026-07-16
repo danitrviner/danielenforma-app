@@ -143,6 +143,7 @@ interface FormState {
   cookingMaxTime:   number;
   breakfastVariety: number;
   lunchVariety:     number;
+  menuVariety:      number;
   equipment:         string[];
   favoriteExercises: string[];
   hatedExercises:    string[];
@@ -214,6 +215,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     cookingMaxTime:   d.cookingMaxTime ?? 45,
     breakfastVariety: d.breakfastVariety ?? 3,
     lunchVariety:     d.lunchVariety ?? 3,
+    menuVariety:      d.menuVariety ?? 3,
     equipment:         d.equipment,
     favoriteExercises: d.favoriteExercises,
     hatedExercises:    d.hatedExercises,
@@ -284,6 +286,7 @@ const DEFAULTS: FormState = {
   cookingMaxTime:   45,
   breakfastVariety: 3,
   lunchVariety:     3,
+  menuVariety:      3,
   equipment:         [],
   favoriteExercises: [],
   hatedExercises:    [],
@@ -657,6 +660,7 @@ export default function OnboardingForm({
       cookingMaxTime:     form.cookingMaxTime,
       breakfastVariety:   form.breakfastVariety,
       lunchVariety:       form.lunchVariety,
+      menuVariety:        form.menuVariety,
       equipment:          form.equipment,
       favoriteExercises:  form.favoriteExercises,
       hatedExercises:     form.hatedExercises,
@@ -1119,6 +1123,13 @@ export default function OnboardingForm({
           onChange={v => set('lunchVariety', v)}
           minLabel="Siempre lo mismo"
           maxLabel="Mucha variedad"
+        />
+        <SliderField
+          label="Variedad del menú semanal generado"
+          min={1} max={5} value={form.menuVariety}
+          onChange={v => set('menuVariety', v)}
+          minLabel="Prefiero repetir, más sencillo"
+          maxLabel="Prefiero mucha variedad"
         />
       </Section>
 

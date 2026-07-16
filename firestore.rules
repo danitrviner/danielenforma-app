@@ -108,6 +108,24 @@ service cloud.firestore {
                                 && resource.data.selfManaged == true);
     }
 
+    // ── weeklyMenus (recipe-first generated menu; athleteId = EMAIL) ─────────
+    // Coach owns generation/publishing. The athlete only ever sees the published
+    // menu, and may edit `days`/`swapHistory` on it (free recipe swaps) but
+    // cannot touch `status` or anything else.
+    match /weeklyMenus/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null
+                      && request.auth.token.email == resource.data.athleteId
+                      && resource.data.status == 'published');
+      allow create, delete: if isCoach();
+      allow update: if isCoach()
+                    || (request.auth != null
+                        && request.auth.token.email == resource.data.athleteId
+                        && resource.data.status == 'published'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                            .hasOnly(['days', 'swapHistory']));
+    }
+
     // ── athleteDietConfigs (docId = email) ───────────────────────────────────
     match /athleteDietConfigs/{email} {
       allow read, write: if isCoach() || isOwnerEmail(email);
@@ -132,9 +150,13 @@ service cloud.firestore {
     }
 
     // ── recipes (ownerId = UID | 'indya') ────────────────────────────────────
+    // Athletes may create their own (e.g. "guardar como receta" from Intercambios,
+    // or as a weekly-menu swap candidate); Indya bulk-import stays coach-only in
+    // practice since 'indya' isn't a real auth uid.
     match /recipes/{docId} {
       allow read: if request.auth != null;
-      allow create: if isCoach();
+      allow create: if isCoach()
+                    || (request.auth != null && request.resource.data.ownerId == request.auth.uid);
       allow update, delete: if isCoach() || isOwnerUid(resource.data.ownerId);
     }
 

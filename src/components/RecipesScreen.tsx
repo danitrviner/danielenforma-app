@@ -546,9 +546,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   const filteredRecipes = useMemo(() => {
     if (selectedCat === 'Favoritas') return recipes.filter(r => favorites.recipeIds.includes(r.id));
+    if (selectedCat === 'MisRecetas') return recipes.filter(r => r.ownerId === profile.userId);
     if (selectedCat === 'all') return recipes;
     return recipes.filter(r => r.categories.includes(selectedCat));
-  }, [recipes, favorites, selectedCat]);
+  }, [recipes, favorites, selectedCat, profile.userId]);
 
   const { indyaFeatured, indyaNormal, indyaDisliked, indyaTotalVisible } = useMemo(() => {
     const searched = indyaSearch.trim()
@@ -632,6 +633,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               {[
                 { id: 'all',       name: 'Todas' },
                 { id: 'Favoritas', name: '❤ Favoritas' },
+                ...(recipes.some(r => r.ownerId === profile.userId) ? [{ id: 'MisRecetas', name: 'Mis recetas' }] : []),
                 ...availableCategories.map(c => ({ id: c, name: c })),
               ].map(cat => (
                 <button
@@ -649,7 +651,9 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
           {filteredRecipes.length === 0 ? (
             <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs uppercase tracking-widest">
-              {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.' : 'No hay recetas en esta categoría.'}
+              {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.'
+                : selectedCat === 'MisRecetas' ? 'Aún no has guardado ninguna receta propia.'
+                : 'No hay recetas en esta categoría.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5">

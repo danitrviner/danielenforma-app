@@ -1,9 +1,9 @@
 import { Recipe } from '../types';
 
 // Generic L1 distance between a target and an actual macro/exchange vector.
-// Shared by DietAutoGenerator (HC/PROT/GRASA exchange fit) and the "Cambiar
-// comida" recipe swap (carb/prot/fat percentage split fit) — same math, two
-// different vector shapes, hence the generic Record<string, number> signature.
+// Shared by menuEngine's recipe ranking (HC/PROT/GRASA exchange fit) and the
+// "Cambiar comida" recipe swap (carb/prot/fat percentage split fit) — same
+// math, two different vector shapes, hence the generic Record<string, number> signature.
 export function fitScore(target: Record<string, number>, actual: Record<string, number>): number {
   return Object.keys(target).reduce((sum, key) => sum + Math.abs((target[key] ?? 0) - (actual[key] ?? 0)), 0);
 }

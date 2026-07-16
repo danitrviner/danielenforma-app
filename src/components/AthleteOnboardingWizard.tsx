@@ -109,6 +109,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [noInjuries, setNoInjuries] = useState(false);
   const [dietType, setDietType] = useState<DietType | ''>('');
   const [mealCount, setMealCount] = useState<number | null>(null);
+  const [menuVariety, setMenuVariety] = useState<number>(3);
   const [allergies, setAllergies] = useState('');
   const [dislikedFoods, setDislikedFoods] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>('');
@@ -158,6 +159,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         dislikedFoods: dislikedFoods.split(',').map(s => s.trim()).filter(Boolean),
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
         mealCount: mealCount ?? undefined,
+        menuVariety,
         equipment,
         favoriteExercises: [],
         hatedExercises: [],
@@ -330,6 +332,18 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 {[3, 4, 5].map(n => (
                   <Chip key={n} selected={mealCount === n} onClick={() => setMealCount(n)}>{n} comidas</Chip>
                 ))}
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <Chip key={n} selected={menuVariety === n} onClick={() => setMenuVariety(n)}>{n}</Chip>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="font-mono text-[9px] text-[#666]">Repetitivo, sencillo</span>
+                <span className="font-mono text-[9px] text-[#666]">Muy variado</span>
               </div>
             </div>
             <div>
