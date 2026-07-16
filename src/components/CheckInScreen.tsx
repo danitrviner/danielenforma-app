@@ -204,6 +204,12 @@ interface CheckInScreenProps {
   checkins: WeightCheckIn[];
 }
 
+// Modo de registro de peso: día a día, o una media semanal que el atleta ya
+// calcula por su cuenta y solo vuelca como un valor. Se recuerda por atleta
+// (preferencia de UI, no dato crítico — de ahí que viva solo en localStorage).
+type BwMode = 'daily' | 'weekly_avg';
+const bwModeKey = (email: string) => `enforma_bw_mode_${email}`;
+
 export default function CheckInScreen({ profile, checkins }: CheckInScreenProps) {
   // ── Quick bodyweight widget ────────────────────────────────────────────────
   const [bwToday, setBwToday]   = useState<BodyweightLog | null>(null);
@@ -211,6 +217,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const [bwEditing, setBwEditing] = useState(false);
   const [bwSaving, setBwSaving] = useState(false);
   const [bwError, setBwError]   = useState('');
+  const [bwMode, setBwMode] = useState<BwMode>(
+    () => (localStorage.getItem(bwModeKey(profile.email)) as BwMode | null) ?? 'daily'
+  );
   const bwInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -219,12 +228,18 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       const entry = logs.find(l => l.date === today) ?? null;
       setBwToday(entry);
       if (!entry) setBwEditing(true); // start in input mode if nothing logged yet
+      else if (entry.kind) setBwMode(entry.kind); // refleja cómo se registró hoy
     }).catch(console.error);
   }, [profile.email]);
 
   useEffect(() => {
     if (bwEditing) bwInputRef.current?.focus();
   }, [bwEditing]);
+
+  const changeBwMode = (mode: BwMode) => {
+    setBwMode(mode);
+    localStorage.setItem(bwModeKey(profile.email), mode);
+  };
 
   const handleSaveBw = async () => {
     const val = parseFloat(bwInput);
@@ -237,13 +252,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     try {
       const today = todayStr();
       if (bwToday) {
-        await updateBodyweight(bwToday.id, { weight: val });
-        setBwToday(prev => prev ? { ...prev, weight: val } : prev);
+        await updateBodyweight(bwToday.id, { weight: val, kind: bwMode });
+        setBwToday(prev => prev ? { ...prev, weight: val, kind: bwMode } : prev);
       } else {
         const entry = await addBodyweight({
           athleteId: profile.email,
           date: today,
           weight: val,
+          kind: bwMode,
           createdAt: new Date().toISOString(),
         });
         setBwToday(entry);
@@ -339,13 +355,38 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex items-center gap-3">
+      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 space-y-3">
+        {/* Modo: día a día vs. media semanal ya calculada por el atleta */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => changeBwMode('daily')}
+            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
+              bwMode === 'daily' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+            }`}
+          >
+            Me peso cada día
+          </button>
+          <button
+            type="button"
+            onClick={() => changeBwMode('weekly_avg')}
+            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
+              bwMode === 'weekly_avg' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+            }`}
+          >
+            Llevo yo la media semanal
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg bg-[#00eefc]/10 flex items-center justify-center flex-shrink-0">
           <span className="material-symbols-outlined text-[#00eefc] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Peso de hoy</p>
+          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+            {bwMode === 'weekly_avg' ? 'Media semanal' : 'Peso de hoy'}
+          </p>
           {!bwEditing && bwToday ? (
             <p className="font-mono text-lg font-bold text-white leading-tight">
               {bwToday.weight} <span className="text-xs text-[#c6c9ab] font-normal">kg</span>
@@ -390,6 +431,13 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               : <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
             }
           </button>
+        )}
+        </div>
+
+        {bwMode === 'weekly_avg' && (
+          <p className="font-mono text-[10px] text-[#c6c9ab]/70 -mt-1">
+            Pon un único valor con la media que ya llevas calculada de la semana — no hace falta que te peses aquí a diario.
+          </p>
         )}
       </div>
 

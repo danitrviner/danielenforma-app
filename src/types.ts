@@ -326,6 +326,7 @@ export interface BodyweightLog {
   athleteId: string;  // email
   date: string;       // YYYY-MM-DD
   weight: number;
+  kind?: 'daily' | 'weekly_avg'; // cómo lo registró el atleta; undefined (docs antiguos) = 'daily'
   createdAt: string;  // ISO timestamp
 }
 

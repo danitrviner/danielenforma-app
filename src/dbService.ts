@@ -2874,7 +2874,7 @@ export async function addBodyweight(data: Omit<BodyweightLog, 'id'>): Promise<Bo
   }
 }
 
-export async function updateBodyweight(id: string, updates: Partial<Pick<BodyweightLog, 'date' | 'weight'>>): Promise<void> {
+export async function updateBodyweight(id: string, updates: Partial<Pick<BodyweightLog, 'date' | 'weight' | 'kind'>>): Promise<void> {
   const all = getLocalBw();
   const updated = all.map(b => b.id === id ? { ...b, ...updates } : b);
   if (forceLocalOnly) { saveLocalBw(updated); return; }

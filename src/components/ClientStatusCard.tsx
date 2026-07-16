@@ -79,7 +79,10 @@ export default function ClientStatusCard({
     const lastSent = coachReports.filter(r => r.status === 'sent' && r.sentAt).sort((a, b) => (b.sentAt!).localeCompare(a.sentAt!))[0];
     if (lastSent) events.push({ date: lastSent.sentAt!, icon: 'analytics', text: 'Reporte enviado' });
     const lastBw = [...bodyweightLogs].sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (lastBw) events.push({ date: lastBw.date, icon: 'scale', text: `Peso registrado (${lastBw.weight} kg)` });
+    if (lastBw) {
+      const tag = lastBw.kind === 'weekly_avg' ? ' · media semanal' : '';
+      events.push({ date: lastBw.date, icon: 'scale', text: `Peso registrado (${lastBw.weight} kg${tag})` });
+    }
     if (activeMeso) events.push({ date: activeMeso.meso.startDate, icon: 'calendar_month', text: `Empezó mesociclo #${activeMeso.meso.number}` });
     return events
       .filter(e => !isNaN(new Date(e.date).getTime()))
