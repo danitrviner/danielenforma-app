@@ -7,8 +7,9 @@ import { queryIndyaForGenerator, getRecipes, getFoodItems, createWeeklyMenu, upd
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
-  MealSlotSpec, GeneratorPrefs, MenuCandidate,
+  buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
+import { buildShoppingList } from '../utils/menuShoppingList';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -54,6 +55,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
   const [name, setName] = useState(initialMenu?.name ?? `Menú semanal · ${today}`);
   const [slots, setSlots] = useState<MealSlotSpec[]>(() => slotsFromOnboarding(onboarding));
   const [variety, setVariety] = useState(initialMenu?.varietyLevel ?? nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3);
+  const [batch, setBatch] = useState<boolean>(initialMenu?.batchCooking ?? nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false);
   const [genPhase, setGenPhase] = useState('');
   const [menu, setMenu] = useState<WeeklyMenu | null>(initialMenu ?? null);
   const [saving, setSaving] = useState(false);
@@ -61,6 +63,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
   const [pickerFor, setPickerFor] = useState<{ day: WeekDay; mealId: string } | null>(null);
   const [pickerCandidates, setPickerCandidates] = useState<MenuCandidate[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [showPrep, setShowPrep] = useState(false);
 
   // Lazily-populated caches so editing an existing draft doesn't need a fresh
   // full generation, only the pools touched by "cambiar receta"/"regenerar".
@@ -80,6 +83,18 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     cookingMaxTime: onboarding?.cookingMaxTime,
     variety,
   }), [onboarding, variety]);
+
+  // Recipe lookup for the prep/shopping preview, built from the pools + builder
+  // recipes already loaded during generation (no extra fetches).
+  const recipesById = useMemo(() => {
+    const map = new Map<string, Recipe>();
+    for (const list of Object.values(pools) as Recipe[][]) for (const r of list) map.set(r.id, r);
+    for (const r of builderRecipes ?? []) map.set(r.id, r);
+    return map;
+  }, [pools, builderRecipes]);
+
+  const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
+  const shoppingList = useMemo(() => (menu ? buildShoppingList(menu.days, recipesById) : []), [menu, recipesById]);
 
   async function ensureBuilderRecipes(): Promise<Recipe[]> {
     if (builderRecipes) return builderRecipes;
@@ -115,13 +130,14 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs });
+    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
       name: name.trim() || 'Menú semanal',
       createdAt: new Date().toISOString(),
       varietyLevel: variety,
+      batchCooking: batch,
       days,
       swapHistory: [],
     };
@@ -203,7 +219,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     if (!menu) return;
     setSaving(true);
     try {
-      await updateWeeklyMenu(menu.id, { name: menu.name, days: menu.days, varietyLevel: variety });
+      await updateWeeklyMenu(menu.id, { name: menu.name, days: menu.days, varietyLevel: variety, batchCooking: batch });
       onSaved(menu);
     } finally {
       setSaving(false);
@@ -214,8 +230,8 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     if (!menu) return;
     setSaving(true);
     try {
-      await updateWeeklyMenu(menu.id, { name: menu.name, days: menu.days, varietyLevel: variety });
-      await publishWeeklyMenu({ ...menu, varietyLevel: variety });
+      await updateWeeklyMenu(menu.id, { name: menu.name, days: menu.days, varietyLevel: variety, batchCooking: batch });
+      await publishWeeklyMenu({ ...menu, varietyLevel: variety, batchCooking: batch });
       onSaved({ ...menu, status: 'published' });
     } finally {
       setSaving(false);
@@ -296,7 +312,26 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </div>
         </div>
 
-        <div>
+        {/* Batch cooking — supersedes variety when on */}
+        <button
+          onClick={() => setBatch(b => !b)}
+          className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${batch ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40' : 'bg-[#181816] border-white/7 hover:border-white/20'}`}
+        >
+          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
+            {batch && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+          </span>
+          <span className="flex-1">
+            <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+              <span className="material-symbols-outlined text-base text-[#fbcb1a]">inventory_2</span>
+              Batch cooking
+            </span>
+            <span className="block font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+              Una sola receta por comida para toda la semana, portada por día. El atleta cocina de golpe y se lo reparte.
+            </span>
+          </span>
+        </button>
+
+        <div className={batch ? 'opacity-40 pointer-events-none' : ''}>
           <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-2">
             Variedad — cuánto se repiten las recetas entre días
           </label>
@@ -312,7 +347,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             ))}
           </div>
           <div className="flex justify-between mt-1">
-            <span className="font-mono text-[9px] text-[#555]">Monótono (repite)</span>
+            <span className="font-mono text-[9px] text-[#555]">{batch ? 'En batch cooking se minimizan las recetas' : 'Monótono (repite)'}</span>
             <span className="font-mono text-[9px] text-[#555]">Máxima variedad</span>
           </div>
         </div>
@@ -360,11 +395,64 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <span className="material-symbols-outlined text-sm">arrow_back</span>
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="font-sans font-extrabold text-2xl text-white truncate">{menu.name}</h2>
+          <h2 className="font-sans font-extrabold text-2xl text-white truncate flex items-center gap-2">
+            {menu.name}
+            {menu.batchCooking && (
+              <span className="flex-shrink-0 flex items-center gap-1 text-[9px] font-mono font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 px-1.5 py-0.5 rounded">
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>inventory_2</span>batch
+              </span>
+            )}
+          </h2>
           <p className="text-[#c6c9ab] text-xs mt-0.5 font-mono">
             {menu.status === 'published' ? 'Publicado — editable por el atleta vía intercambios' : 'Borrador — revisa antes de publicar'}
           </p>
         </div>
+      </div>
+
+      {/* Prep / shopping preview */}
+      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setShowPrep(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors"
+        >
+          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">{menu.batchCooking ? 'inventory_2' : 'shopping_cart'}</span>
+            {menu.batchCooking ? 'Cocina de la semana + lista de la compra' : 'Lista de la compra'}
+          </span>
+          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{showPrep ? 'expand_less' : 'expand_more'}</span>
+        </button>
+        {showPrep && (
+          <div className="px-4 pb-4 space-y-4">
+            {menu.batchCooking && batchPlan.length > 0 && (
+              <div>
+                <p className="font-mono text-[10px] text-[#555] uppercase mb-2">Cocina de una vez</p>
+                <div className="space-y-1.5">
+                  {batchPlan.map(e => (
+                    <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                      <span className="font-sans text-xs text-white truncate">{e.recipeName}</span>
+                      <span className="font-mono text-[10px] text-[#fbcb1a] flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'} · ×{e.totalScale}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="font-mono text-[10px] text-[#555] uppercase mb-2">Ingredientes de la semana</p>
+              {shoppingList.length === 0 ? (
+                <p className="font-mono text-[10px] text-[#555]">Regenera el menú para calcular los ingredientes.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {shoppingList.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
+                      <span className="font-sans text-[11px] text-[#c6c9ab] truncate">{item.name}</span>
+                      <span className="font-mono text-[10px] text-white flex-shrink-0">{item.display}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">

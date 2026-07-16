@@ -9,6 +9,8 @@ import {
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { isMenuStale } from '../utils/menuEngine';
+import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { invalidateResource } from '../hooks/useResourceCache';
 import { useToast } from '../hooks/useToast';
@@ -30,7 +32,7 @@ import {
   getOnboarding, createQuestionnaire, getBodyweightForAthlete,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
-  getWeeklyMenusForAthlete, deleteWeeklyMenu,
+  getWeeklyMenusForAthlete, deleteWeeklyMenu, getMenuCompletionLogsForAthlete,
 } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ScheduleFields from './ScheduleFields';
@@ -232,10 +234,17 @@ export default function ClientHub({
   const [weeklyMenus, setWeeklyMenus] = useState<WeeklyMenu[]>([]);
   const [menuEditor, setMenuEditor] = useState<'new' | WeeklyMenu | undefined>(undefined);
   const [showSwapHistory, setShowSwapHistory] = useState(false);
+  const [menuCompletionLogs, setMenuCompletionLogs] = useState<import('../types').MenuCompletionLog[]>([]);
 
   const reloadWeeklyMenus = () => {
     getWeeklyMenusForAthlete(athlete.email).then(setWeeklyMenus).catch(console.error);
   };
+
+  const publishedMenu = weeklyMenus.find(m => m.status === 'published') ?? null;
+  const menuAdherence = useMemo(
+    () => computeMenuAdherenceRate(menuCompletionLogs, publishedMenu),
+    [menuCompletionLogs, publishedMenu],
+  );
 
   // Plan duration — snapshot-diff dirty check, same pattern as NutritionScreen's
   // dietSnapshot/isDirty (src/components/NutritionScreen.tsx), so an edit here
@@ -362,6 +371,7 @@ export default function ClientHub({
     getDietsForAthlete(athlete.email).then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged))).catch(console.error);
     getAthleteDietConfig(athlete.email).then(setAthleteDietConfig).catch(console.error);
     getWeeklyMenusForAthlete(athlete.email).then(setWeeklyMenus).catch(console.error);
+    getMenuCompletionLogsForAthlete(athlete.email).then(setMenuCompletionLogs).catch(console.error);
     getAssignmentsForAthlete(athlete.email).then(setAthleteQAssignments).catch(console.error);
     getResponsesForAthlete(athlete.email).then(setAthleteQResponses).catch(console.error);
     getPhotoAssignmentsForAthlete(athlete.email).then(setAthletePhotoAssignments).catch(console.error);
@@ -2311,6 +2321,15 @@ export default function ClientHub({
                 Reparte recetas reales por comida según los puntos ya pautados. Se genera como borrador — el atleta solo lo ve tras publicarlo.
               </p>
 
+              {publishedMenu && menuAdherence.daysLogged > 0 && (
+                <div className="flex items-center gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                  <span className="material-symbols-outlined text-[#00eefc] text-sm">task_alt</span>
+                  <span className="font-mono text-[10px] text-[#c6c9ab]">
+                    Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
+                  </span>
+                </div>
+              )}
+
               {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
                 <div className="py-4 text-center">
                   <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">restaurant_menu</span>
@@ -2321,14 +2340,24 @@ export default function ClientHub({
                   {weeklyMenus.filter(m => m.status !== 'archived').map(m => (
                     <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-[#181816] border-white/7">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
                           <p className="font-sans font-bold text-sm text-white truncate">{m.name}</p>
                           <span className={`flex-shrink-0 text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
                             {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                           </span>
+                          {m.batchCooking && (
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[8px] font-mono font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 px-1.5 py-0.5 rounded">
+                              <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>inventory_2</span>batch
+                            </span>
+                          )}
+                          {isMenuStale(m, athleteDietConfig?.weeklySchedule ?? {}, athleteDiets) && (
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[8px] font-mono font-bold uppercase text-orange-400 bg-orange-400/10 border border-orange-400/25 px-1.5 py-0.5 rounded" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
+                              <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>sync_problem</span>desactualizado
+                            </span>
+                          )}
                         </div>
                         <p className="font-mono text-[10px] text-[#c6c9ab]">
-                          {m.days.filter(d => d.meals.length > 0).length} días con comidas · variedad {m.varietyLevel}/5
+                          {m.days.filter(d => d.meals.length > 0).length} días con comidas · {m.batchCooking ? 'batch cooking' : `variedad ${m.varietyLevel}/5`}
                         </p>
                       </div>
                       <button

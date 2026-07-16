@@ -110,6 +110,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [dietType, setDietType] = useState<DietType | ''>('');
   const [mealCount, setMealCount] = useState<number | null>(null);
   const [menuVariety, setMenuVariety] = useState<number>(3);
+  const [batchCookingPreferred, setBatchCookingPreferred] = useState(false);
   const [allergies, setAllergies] = useState('');
   const [dislikedFoods, setDislikedFoods] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>('');
@@ -160,6 +161,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
         mealCount: mealCount ?? undefined,
         menuVariety,
+        batchCookingPreferred,
         equipment,
         favoriteExercises: [],
         hatedExercises: [],
@@ -344,6 +346,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               <div className="flex justify-between mt-1">
                 <span className="font-mono text-[9px] text-[#666]">Repetitivo, sencillo</span>
                 <span className="font-mono text-[9px] text-[#666]">Muy variado</span>
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
+              <div className="flex gap-2">
+                <Chip selected={batchCookingPreferred} onClick={() => setBatchCookingPreferred(true)}>Sí, cocino de golpe</Chip>
+                <Chip selected={!batchCookingPreferred} onClick={() => setBatchCookingPreferred(false)}>No, cocino cada día</Chip>
               </div>
             </div>
             <div>

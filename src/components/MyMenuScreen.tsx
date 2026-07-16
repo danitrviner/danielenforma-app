@@ -5,10 +5,11 @@ import {
 } from '../types';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
-  updateWeeklyMenu, getDietCompletionLog, saveDietCompletionLog,
+  updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryIndyaForGenerator, getRecipes, getRecipeById,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -52,19 +53,23 @@ export default function MyMenuScreen({ profile }: Props) {
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
   const [savingVariety, setSavingVariety] = useState(false);
+  const [savingBatchPref, setSavingBatchPref] = useState(false);
+
+  const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [shoppingLoading, setShoppingLoading] = useState(false);
+  const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
 
   useEffect(() => {
     Promise.all([
       getPublishedMenu(profile.email),
       getOnboarding(profile.email),
       getAthleteNutritionConfig(profile.email),
-      getDietCompletionLog(profile.email, TODAY_DATE),
+      getMenuCompletionLog(profile.email, TODAY_DATE),
     ]).then(([m, ob, cfg, log]) => {
       setMenu(m);
       setOnboarding(ob);
       setNutritionConfig(cfg);
-      const menuKeys = (log?.doneItemIds ?? []).filter(k => k.startsWith('menu:'));
-      setDoneKeys(new Set(menuKeys));
+      setDoneKeys(new Set(log?.doneMealKeys ?? []));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [profile.email]);
@@ -79,22 +84,41 @@ export default function MyMenuScreen({ profile }: Props) {
   }), [onboarding, nutritionConfig]);
 
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
+  const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
 
-  // Preserve any "menu:"-unrelated keys already in today's completion log
-  // (e.g. written by the Intercambios tracker) — only this screen's own keys
-  // are added/removed here, since saveDietCompletionLog overwrites the whole doc.
+  // Shopping list needs each recipe's full ingredient list — fetched lazily the
+  // first time the athlete opens it (menu meals only store name/image).
+  async function openShoppingList() {
+    setShoppingOpen(o => !o);
+    if (shoppingItems || !menu) return;
+    setShoppingLoading(true);
+    const ids = Array.from(new Set<string>(menu.days.flatMap(d => d.meals.map(m => m.recipeId).filter(Boolean))));
+    const fetched = await Promise.all(ids.map(id => getRecipeById(id)));
+    const map = new Map<string, Recipe>();
+    fetched.forEach((r, i) => { if (r) map.set(ids[i], r); });
+    setShoppingItems(buildShoppingList(menu.days, map));
+    setShoppingLoading(false);
+  }
+
+  async function handleBatchPrefChange(value: boolean) {
+    setSavingBatchPref(true);
+    const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), batchCookingPreferred: value };
+    setNutritionConfig(next);
+    try { await saveAthleteNutritionConfig(next); } finally { setSavingBatchPref(false); }
+  }
+
+  // Menu tick-offs live in their own collection (keys = `${day}_${mealId}`), so
+  // this never touches the Intercambios tracker's per-item state or adherence.
   async function toggleDone(mealId: string) {
     if (!menu) return;
-    const key = `menu:${selectedDay}_${mealId}`;
+    const key = `${selectedDay}_${mealId}`;
     const next = new Set<string>(doneKeys);
     if (next.has(key)) next.delete(key); else next.add(key);
     setDoneKeys(next);
-    const existing = await getDietCompletionLog(profile.email, TODAY_DATE);
-    const preserved = (existing?.doneItemIds ?? []).filter(k => !k.startsWith('menu:'));
-    await saveDietCompletionLog({
+    await saveMenuCompletionLog({
       athleteId: profile.email, date: TODAY_DATE,
-      dietId: existing?.dietId ?? menu.id,
-      doneItemIds: [...preserved, ...Array.from(next)],
+      menuId: menu.id,
+      doneMealKeys: Array.from(next),
     }).catch(() => {});
   }
 
@@ -144,6 +168,7 @@ export default function MyMenuScreen({ profile }: Props) {
     const nextMenu: WeeklyMenu = { ...menu, days: nextDays, swapHistory: [...menu.swapHistory, swapEntry] };
     setMenu(nextMenu);
     setSwapFor(null);
+    setShoppingItems(null); // cached list is now stale
     await updateWeeklyMenu(menu.id, { days: nextDays, swapHistory: nextMenu.swapHistory }).catch(() => {});
   }
 
@@ -195,6 +220,59 @@ export default function MyMenuScreen({ profile }: Props) {
         })}
       </div>
 
+      {/* Batch cooking — cook-once plan for the whole week */}
+      {menu.batchCooking && batchPlan.length > 0 && (
+        <div className="bg-[#fbcb1a]/5 border border-[#fbcb1a]/25 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">inventory_2</span>
+            <div>
+              <p className="font-sans font-bold text-sm text-white">Cocina de la semana</p>
+              <p className="font-mono text-[10px] text-[#c6c9ab]">Prepáralo todo de una vez y repártelo por días.</p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {batchPlan.map(e => (
+              <div key={e.recipeId} className="flex items-center gap-3 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
+                  {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
+                </div>
+                <span className="flex-1 font-sans text-xs text-white truncate">{e.recipeName}</span>
+                <span className="font-mono text-[10px] text-[#fbcb1a] flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Shopping list — available for any menu */}
+      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+        <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
+          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+            <span className="material-symbols-outlined text-[#00eefc] text-base">shopping_cart</span>
+            Lista de la compra de la semana
+          </span>
+          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
+        </button>
+        {shoppingOpen && (
+          <div className="px-4 pb-4">
+            {shoppingLoading ? (
+              <div className="flex justify-center py-4"><span className="material-symbols-outlined text-xl text-[#fbcb1a] animate-spin">progress_activity</span></div>
+            ) : !shoppingItems || shoppingItems.length === 0 ? (
+              <p className="font-mono text-[10px] text-[#555] py-2">No hay ingredientes que listar en este menú.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                {shoppingItems.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
+                    <span className="font-sans text-[11px] text-[#c6c9ab] truncate">{item.name}</span>
+                    <span className="font-mono text-[10px] text-white flex-shrink-0">{item.display}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div>
         <h2 className="font-sans font-extrabold text-xl text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
         <p className="font-mono text-xs text-[#c6c9ab]">{day?.dietName ?? 'Día libre'}</p>
@@ -208,7 +286,7 @@ export default function MyMenuScreen({ profile }: Props) {
       ) : (
         <div className="space-y-3">
           {day.meals.map(meal => {
-            const done = doneKeys.has(`menu:${selectedDay}_${meal.id}`);
+            const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
               <div key={meal.id} className={`bg-[#181816] border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
                 <button
@@ -277,6 +355,24 @@ export default function MyMenuScreen({ profile }: Props) {
           <span className="font-mono text-[9px] text-[#555]">Repetitivo, más sencillo</span>
           <span className="font-mono text-[9px] text-[#555]">Muy variado</span>
         </div>
+
+        <button
+          onClick={() => handleBatchPrefChange(!(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false))}
+          disabled={savingBatchPref}
+          className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-white/7 text-left disabled:opacity-50"
+        >
+          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
+            {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+          </span>
+          <span className="flex-1">
+            <span className="flex items-center gap-1.5 font-sans font-bold text-xs text-white">
+              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">inventory_2</span>
+              Prefiero batch cooking
+            </span>
+            <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
+          </span>
+        </button>
+
         <p className="font-mono text-[9px] text-[#555]">Se aplicará la próxima vez que tu entrenador genere el menú.</p>
       </div>
 

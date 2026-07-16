@@ -144,6 +144,7 @@ interface FormState {
   breakfastVariety: number;
   lunchVariety:     number;
   menuVariety:      number;
+  batchCookingPreferred: boolean;
   equipment:         string[];
   favoriteExercises: string[];
   hatedExercises:    string[];
@@ -216,6 +217,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     breakfastVariety: d.breakfastVariety ?? 3,
     lunchVariety:     d.lunchVariety ?? 3,
     menuVariety:      d.menuVariety ?? 3,
+    batchCookingPreferred: d.batchCookingPreferred ?? false,
     equipment:         d.equipment,
     favoriteExercises: d.favoriteExercises,
     hatedExercises:    d.hatedExercises,
@@ -287,6 +289,7 @@ const DEFAULTS: FormState = {
   breakfastVariety: 3,
   lunchVariety:     3,
   menuVariety:      3,
+  batchCookingPreferred: false,
   equipment:         [],
   favoriteExercises: [],
   hatedExercises:    [],
@@ -661,6 +664,7 @@ export default function OnboardingForm({
       breakfastVariety:   form.breakfastVariety,
       lunchVariety:       form.lunchVariety,
       menuVariety:        form.menuVariety,
+      batchCookingPreferred: form.batchCookingPreferred,
       equipment:          form.equipment,
       favoriteExercises:  form.favoriteExercises,
       hatedExercises:     form.hatedExercises,
@@ -1131,6 +1135,7 @@ export default function OnboardingForm({
           minLabel="Prefiero repetir, más sencillo"
           maxLabel="Prefiero mucha variedad"
         />
+        <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
       </Section>
 
       {/* ── ENTRENAMIENTO ────────────────────────────────────────────── */}

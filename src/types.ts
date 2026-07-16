@@ -116,6 +116,7 @@ export interface AthleteNutritionConfig {
   // AI dashboard "share with athlete" — private by default, only set when the coach shares a snapshot
   sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
   menuVariety?: number; // 1 (repetitive/monotone) - 5 (max variety); athlete-adjustable override of OnboardingData.menuVariety
+  batchCookingPreferred?: boolean; // athlete prefers cooking the whole week at once; pre-fills the coach's batch toggle
 }
 
 export interface Exercise {
@@ -426,6 +427,7 @@ export interface OnboardingData {
   breakfastVariety?:  number;         // 1–5
   lunchVariety?:      number;         // 1–5
   menuVariety?:       number;         // 1–5, preference for the auto-generated weekly menu (1=repetitive, 5=max variety)
+  batchCookingPreferred?: boolean;    // prefers cooking the whole week's meals in one session
   // ── Entrenamiento ─────────────────────────────────────────────────────────
   equipment:          string[];
   favoriteExercises:  string[];
@@ -814,9 +816,22 @@ export interface WeeklyMenu {
   createdAt: string;
   publishedAt?: string;
   varietyLevel: number; // 1 (monotone) - 5 (max variety)
+  batchCooking?: boolean; // true = generated to minimize distinct recipes so the athlete can cook the whole week at once
   days: MenuDay[];
   coachNote?: string;
   swapHistory: MenuSwapEntry[];
+}
+
+// Athlete's tick-off of a published menu's meals. Kept in its own collection
+// (doc id = `${athleteId}_${date}`) rather than reusing DietCompletionLog, so
+// menu progress never mixes with the Intercambios tracker's per-item state and
+// can't inflate that diet's adherence. Keys are `${day}_${mealId}`.
+export interface MenuCompletionLog {
+  id: string;
+  athleteId: string;  // email
+  date: string;        // YYYY-MM-DD
+  menuId: string;
+  doneMealKeys: string[];
 }
 
 // ─── MESOCYCLE ────────────────────────────────────────────────────────────────

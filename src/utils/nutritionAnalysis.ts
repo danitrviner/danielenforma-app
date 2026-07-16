@@ -1,5 +1,7 @@
-import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory } from '../types';
+import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory, MenuCompletionLog, WeeklyMenu, WeekDay } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+
+const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 // Deterministic rule-based nutrition analysis engine for the coach-only AI
 // dashboard. No LLM/external API — every threshold below is a named,
@@ -53,6 +55,34 @@ export function computeAdherenceRate(
   });
   const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
   return { daysLogged: inWindow.length, windowDays: thresholds.windowDays, avgPct };
+}
+
+// Menu adherence: over the window, the average % of a day's menu meals the
+// athlete ticked off. The denominator is the number of meals the menu has for
+// that weekday (menus can have different meals per day), derived from the log's
+// date. Lives beside computeAdherenceRate but is a fully separate signal —
+// menu completion is tracked in its own collection (see MenuCompletionLog).
+export function computeMenuAdherenceRate(
+  logs: MenuCompletionLog[],
+  menu: WeeklyMenu | null,
+  thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
+): AdherenceResult {
+  const window = recentDates(thresholds.windowDays);
+  if (!menu) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
+  const mealsByDay = new Map<WeekDay, number>(menu.days.map(d => [d.day, d.meals.length]));
+
+  const inWindow = logs.filter(l => l.menuId === menu.id && window.has(l.date));
+  const pcts: number[] = [];
+  for (const log of inWindow) {
+    const jsDay = new Date(`${log.date}T00:00:00`).getDay();
+    const weekday = WEEK_DAYS[(jsDay + 6) % 7];
+    const total = mealsByDay.get(weekday) ?? 0;
+    if (total === 0) continue;
+    pcts.push(Math.min(100, (log.doneMealKeys.length / total) * 100));
+  }
+  if (pcts.length === 0) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
+  const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
+  return { daysLogged: pcts.length, windowDays: thresholds.windowDays, avgPct };
 }
 
 export interface StepCompletionResult {

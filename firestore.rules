@@ -205,6 +205,18 @@ service cloud.firestore {
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId);
     }
 
+    // ── menuCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
+    // Athlete's tick-off of their published weekly menu — same ownership shape
+    // as dietCompletionLogs, kept separate so it never touches diet adherence.
+    match /menuCompletionLogs/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+    }
+
     // ── questionnaires (ownerId = UID del coach) ─────────────────────────────
     match /questionnaires/{docId} {
       allow read: if request.auth != null;

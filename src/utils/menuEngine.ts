@@ -254,6 +254,40 @@ function mealKcal(meal: MenuMeal): number {
 
 // ─── Day generation ──────────────────────────────────────────────────────────
 
+function dietBudgetVec(diet: Diet): BudgetVec {
+  return { HC: diet.budget.HC ?? 0, PROT: diet.budget.PROT ?? 0, GRASA: diet.budget.GRASA ?? 0 };
+}
+
+function emptyMeal(id: string, slot: MealSlotSpec): MenuMeal {
+  return { id, slot: slot.slot, name: slot.name, recipeId: '', recipeName: 'Sin receta disponible', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] };
+}
+
+function buildMeal(id: string, slot: MealSlotSpec, recipe: Recipe, scale: number, exch: BudgetVec): MenuMeal {
+  const meal: MenuMeal = {
+    id, slot: slot.slot, name: slot.name,
+    recipeId: recipe.id, recipeName: recipe.name,
+    recipeImage: recipe.image ?? recipe.photoUrl,
+    scale, exch, kcal: 0, complements: [],
+  };
+  meal.kcal = mealKcal(meal);
+  return meal;
+}
+
+// Shared tail of day generation: fill the remaining category gap with simple
+// complements and recompute kcal. Used by both per-day and batch generation.
+function finalizeDay(day: WeekDay, diet: Diet, target: BudgetVec, targets: BudgetVec[], meals: MenuMeal[], foods: MealItem[], mode: DietMode): MenuDay {
+  const totals = meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
+  const gap: BudgetVec = {
+    HC: Math.max(0, round2(target.HC - totals.HC)),
+    PROT: Math.max(0, round2(target.PROT - totals.PROT)),
+    GRASA: Math.max(0, round2(target.GRASA - totals.GRASA)),
+  };
+  const complements = fillComplements(gap, foods, mode);
+  attachComplementsToMeals(meals, targets, complements);
+  for (const meal of meals) meal.kcal = mealKcal(meal);
+  return { day, dietId: diet.id, dietName: diet.name, target, meals };
+}
+
 export interface GenerateDayArgs {
   day: WeekDay;
   diet: Diet | null; // null = free/unassigned day, no meals generated
@@ -273,7 +307,7 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, meals: [] };
   }
 
-  const target: BudgetVec = { HC: diet.budget.HC ?? 0, PROT: diet.budget.PROT ?? 0, GRASA: diet.budget.GRASA ?? 0 };
+  const target = dietBudgetVec(diet);
   const targets = slotTargets(target, slots);
 
   const meals: MenuMeal[] = slots.map((slot, i) => {
@@ -281,31 +315,12 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     const ranked = rankCandidates(pool, targets[i], prefs, usedIds, { needsTupper: slot.needsTupper, mode });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
-    if (!pick) {
-      return { id, slot: slot.slot, name: slot.name, recipeId: '', recipeName: 'Sin receta disponible', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] };
-    }
+    if (!pick) return emptyMeal(id, slot);
     usedIds.add(pick.recipe.id);
-    const meal: MenuMeal = {
-      id, slot: slot.slot, name: slot.name,
-      recipeId: pick.recipe.id, recipeName: pick.recipe.name,
-      recipeImage: pick.recipe.image ?? pick.recipe.photoUrl,
-      scale: pick.scale, exch: pick.exch, kcal: 0, complements: [],
-    };
-    meal.kcal = mealKcal(meal);
-    return meal;
+    return buildMeal(id, slot, pick.recipe, pick.scale, pick.exch);
   });
 
-  const totals = meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
-  const gap: BudgetVec = {
-    HC: Math.max(0, round2(target.HC - totals.HC)),
-    PROT: Math.max(0, round2(target.PROT - totals.PROT)),
-    GRASA: Math.max(0, round2(target.GRASA - totals.GRASA)),
-  };
-  const complements = fillComplements(gap, foods, mode);
-  attachComplementsToMeals(meals, targets, complements);
-  for (const meal of meals) meal.kcal = mealKcal(meal);
-
-  return { day, dietId: diet.id, dietName: diet.name, target, meals };
+  return finalizeDay(day, diet, target, targets, meals, foods, mode);
 }
 
 // ─── Week generation ─────────────────────────────────────────────────────────
@@ -318,6 +333,64 @@ export interface GenerateWeekArgs {
   foods: MealItem[];
   prefs: GeneratorPrefs;
   mode?: DietMode;
+  batch?: boolean; // batch-cooking: one recipe per slot for the whole week, portioned per day
+}
+
+function avgVec(vecs: BudgetVec[]): BudgetVec {
+  if (vecs.length === 0) return { HC: 0, PROT: 0, GRASA: 0 };
+  const sum = vecs.reduce(sumVec, { HC: 0, PROT: 0, GRASA: 0 });
+  return { HC: sum.HC / vecs.length, PROT: sum.PROT / vecs.length, GRASA: sum.GRASA / vecs.length };
+}
+
+// Batch cooking: the athlete wants to cook everything in one session and portion
+// it out over the week, so we fix ONE recipe per meal slot for the whole week
+// (chosen against the average of that slot's targets across scheduled days) and
+// only re-scale it per day. A day whose budget would push that recipe outside
+// the 0.5–2x range falls back to a per-day pick for that slot alone (rare).
+// Distinct recipes are kept across slots so breakfast ≠ lunch. See buildBatchPlan
+// for the consolidated "cook once" view this feeds.
+function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
+  const { schedule, diets, slots, pools, foods, prefs } = args;
+  const mode = args.mode ?? 'OMNIVORO';
+  const dietsById = new Map(diets.map(d => [d.id, d]));
+
+  const scheduledDiets = WEEK_DAYS
+    .map(day => (schedule[day] ? dietsById.get(schedule[day]!) ?? null : null))
+    .filter((d): d is Diet => d != null);
+
+  // One fixed recipe per slot, chosen against the average slot target.
+  const usedAcrossSlots = new Set<string>();
+  const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
+    const slotTargetsAcrossDays = scheduledDiets.map(d => slotTargets(dietBudgetVec(d), slots)[i]);
+    const repTarget = avgVec(slotTargetsAcrossDays);
+    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, mode });
+    const pick = ranked[0]?.recipe ?? null;
+    if (pick) usedAcrossSlots.add(pick.id);
+    return pick;
+  });
+
+  return WEEK_DAYS.map(day => {
+    const dietId = schedule[day] ?? null;
+    const diet = dietId ? dietsById.get(dietId) ?? null : null;
+    if (!diet) return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, meals: [] };
+
+    const target = dietBudgetVec(diet);
+    const targets = slotTargets(target, slots);
+    const meals: MenuMeal[] = slots.map((slot, i) => {
+      const id = `${day}_m${i + 1}`;
+      const fixed = slotRecipe[i];
+      if (fixed) {
+        const fit = bestScaleFit(fixed, targets[i], mode);
+        if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.exch);
+      }
+      // Fixed recipe can't scale to this day's target — pick a one-off for this day.
+      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, mode });
+      const pick = ranked[0];
+      return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.exch) : emptyMeal(id, slot);
+    });
+
+    return finalizeDay(day, diet, target, targets, meals, foods, mode);
+  });
 }
 
 // Variety semantics (prefs.variety):
@@ -326,7 +399,10 @@ export interface GenerateWeekArgs {
 //  3    balanced   — no repeated recipe within the same diet type, but the
 //                     same recipe may reappear across different diet types.
 //  4-5  max variety — no repeated recipe anywhere in the week.
+// args.batch overrides variety entirely (see generateWeekBatch).
 export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
+  if (args.batch) return generateWeekBatch(args);
+
   const { schedule, diets, slots, pools, foods, prefs } = args;
   const mode = args.mode ?? 'OMNIVORO';
   const dietsById = new Map(diets.map(d => [d.id, d]));
@@ -410,4 +486,62 @@ export function findSwapAlternatives(
       return Math.abs(newTotal - targetTotal) <= 1;
     })
     .slice(0, count);
+}
+
+// ─── Batch-cooking plan ──────────────────────────────────────────────────────
+
+export interface BatchRecipeEntry {
+  recipeId: string;
+  recipeName: string;
+  recipeImage?: string;
+  totalScale: number;   // sum of scales across the week (≈ servings to cook)
+  servings: number;     // totalScale rounded to a whole number of portions
+  occurrences: { day: WeekDay; mealName: string; scale: number }[];
+}
+
+// Consolidated "cook once for the week" view: groups every meal of the week by
+// recipe and sums how much of each you need to prep. Works on any menu (even
+// non-batch), but it's most useful — and shortest — for batch-generated ones.
+export function buildBatchPlan(days: MenuDay[]): BatchRecipeEntry[] {
+  const byRecipe = new Map<string, BatchRecipeEntry>();
+  for (const day of days) {
+    for (const meal of day.meals) {
+      if (!meal.recipeId) continue;
+      const entry = byRecipe.get(meal.recipeId) ?? {
+        recipeId: meal.recipeId, recipeName: meal.recipeName, recipeImage: meal.recipeImage,
+        totalScale: 0, servings: 0, occurrences: [],
+      };
+      entry.totalScale = round2(entry.totalScale + meal.scale);
+      entry.occurrences.push({ day: day.day, mealName: meal.name, scale: meal.scale });
+      byRecipe.set(meal.recipeId, entry);
+    }
+  }
+  const list = Array.from(byRecipe.values());
+  for (const e of list) e.servings = Math.max(1, Math.round(e.totalScale));
+  return list.sort((a, b) => b.totalScale - a.totalScale);
+}
+
+// ─── Periodization / staleness ───────────────────────────────────────────────
+
+// A published menu goes stale when the client's weekly schedule or a linked
+// diet's budget changes after generation (e.g. the coach moved to a new
+// periodization phase). Compares each day's snapshot dietId/target against the
+// current schedule + diets so the coach gets nudged to regenerate.
+export function isMenuStale(
+  menu: { days: MenuDay[] },
+  schedule: Partial<Record<WeekDay, string | null>>,
+  diets: Diet[],
+): boolean {
+  const dietsById = new Map(diets.map(d => [d.id, d]));
+  for (const day of menu.days) {
+    const currentDietId = schedule[day.day] ?? null;
+    if (currentDietId !== day.dietId) return true;
+    if (currentDietId) {
+      const diet = dietsById.get(currentDietId);
+      if (!diet) return true;
+      const b = dietBudgetVec(diet);
+      if (b.HC !== day.target.HC || b.PROT !== day.target.PROT || b.GRASA !== day.target.GRASA) return true;
+    }
+  }
+  return false;
 }

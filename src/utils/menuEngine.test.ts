@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { Recipe, Diet, MenuDay, BudgetVec } from '../types';
+import { Recipe, Diet, MenuDay, BudgetVec, WeeklyMenu } from '../types';
 import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
+  buildBatchPlan, isMenuStale,
 } from './menuEngine';
+import { buildShoppingList } from './menuShoppingList';
+import { computeMenuAdherenceRate } from './nutritionAnalysis';
 
 function recipe(overrides: Partial<Recipe>): Recipe {
   return {
@@ -136,5 +139,114 @@ describe('findSwapAlternatives', () => {
   it('returns nothing for an unknown mealId', () => {
     const day: MenuDay = { day: 'mon', dietId: 'd1', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [] };
     expect(findSwapAlternatives(day, 'missing', [recipe({})], basePrefs)).toEqual([]);
+  });
+});
+
+describe('generateWeek batch cooking', () => {
+  const pools = {
+    1: [
+      recipe({ id: 'b1', name: 'Desayuno A', exchanges: { HC: 4, PROT: 4, GRASA: 2 } }),
+      recipe({ id: 'b2', name: 'Desayuno B', exchanges: { HC: 4, PROT: 4, GRASA: 2 } }),
+    ],
+  };
+  const slots = [{ slot: 1, name: 'Desayuno', pct: 100 }];
+  const dietAlto = diet({ id: 'dAlto', name: 'Día Alto', budget: { HC: 4, PROT: 4, GRASA: 2, MIX_HC: 0, MIX_GRASA: 0 } });
+  const dietBajo = diet({ id: 'dBajo', name: 'Día Bajo', budget: { HC: 2, PROT: 4, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 } });
+  const schedule = { mon: 'dAlto', tue: 'dBajo', wed: 'dAlto' } as const;
+
+  it('uses a single recipe for the slot across all days, re-scaled per day', () => {
+    const days = generateWeek({ schedule, diets: [dietAlto, dietBajo], slots, pools, foods: [], prefs: { ...basePrefs, variety: 5 }, batch: true });
+    const withMeals = days.filter(d => d.meals.length > 0);
+    const recipeIds = new Set(withMeals.map(d => d.meals[0].recipeId));
+    expect(recipeIds.size).toBe(1); // same recipe every day despite different diets
+    // Different budgets → different scales (high day scaled up vs low day).
+    const mon = days.find(d => d.day === 'mon')!;
+    const tue = days.find(d => d.day === 'tue')!;
+    expect(mon.meals[0].scale).not.toBe(tue.meals[0].scale);
+  });
+});
+
+describe('buildBatchPlan', () => {
+  it('aggregates repeated recipes across the week into servings to cook', () => {
+    const meal = (id: string, recipeId: string, name: string, scale: number) =>
+      ({ id, slot: 1, name: 'Comida', recipeId, recipeName: name, scale, exch: { HC: 1, PROT: 1, GRASA: 1 }, kcal: 100, complements: [] });
+    const days: MenuDay[] = [
+      { day: 'mon', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [meal('mon_m1', 'r1', 'Pollo', 1.25)] },
+      { day: 'tue', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [meal('tue_m1', 'r1', 'Pollo', 1)] },
+      { day: 'wed', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [meal('wed_m1', 'r2', 'Merluza', 1)] },
+    ];
+    const plan = buildBatchPlan(days);
+    expect(plan[0]).toMatchObject({ recipeId: 'r1', totalScale: 2.25, servings: 2, });
+    expect(plan[0].occurrences).toHaveLength(2);
+    expect(plan.map(p => p.recipeId)).toEqual(['r1', 'r2']); // sorted by total volume desc
+  });
+});
+
+describe('isMenuStale', () => {
+  const menu: WeeklyMenu = {
+    id: 'm1', athleteId: 'a@x.com', status: 'published', name: 'Menú', createdAt: '', varietyLevel: 3, swapHistory: [],
+    days: [{ day: 'mon', dietId: 'd1', target: { HC: 4, PROT: 4, GRASA: 2 }, meals: [] }],
+  };
+
+  it('is not stale when schedule and budget still match', () => {
+    expect(isMenuStale(menu, { mon: 'd1' }, [diet({ id: 'd1' })])).toBe(false);
+  });
+  it('is stale when the scheduled diet changed', () => {
+    expect(isMenuStale(menu, { mon: 'd2' }, [diet({ id: 'd2' })])).toBe(true);
+  });
+  it('is stale when the linked diet budget changed', () => {
+    expect(isMenuStale(menu, { mon: 'd1' }, [diet({ id: 'd1', budget: { HC: 6, PROT: 4, GRASA: 2, MIX_HC: 0, MIX_GRASA: 0 } })])).toBe(true);
+  });
+});
+
+describe('buildShoppingList', () => {
+  it('sums Indya gram ingredients across the week scaled per meal', () => {
+    const pollo = recipe({ id: 'r1', name: 'Pollo con arroz', ingredientsText: [{ name: 'Pollo', quantity: 100 }, { name: 'Arroz', quantity: 50 }] });
+    const meal = (scale: number) => ({ id: 'm', slot: 3, name: 'Comida', recipeId: 'r1', recipeName: 'Pollo con arroz', scale, exch: { HC: 1, PROT: 1, GRASA: 0 }, kcal: 100, complements: [] });
+    const days: MenuDay[] = [
+      { day: 'mon', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 0 }, meals: [meal(1)] },
+      { day: 'tue', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 0 }, meals: [meal(2)] },
+    ];
+    const list = buildShoppingList(days, new Map([['r1', pollo]]));
+    const pollos = list.find(i => i.name === 'Pollo');
+    expect(pollos?.grams).toBe(300); // 100*1 + 100*2
+    expect(list.find(i => i.name === 'Arroz')?.grams).toBe(150);
+  });
+
+  it('recovers grams from a complement portion label', () => {
+    const days: MenuDay[] = [
+      { day: 'mon', dietId: 'd', target: { HC: 1, PROT: 0, GRASA: 0 }, meals: [
+        { id: 'm', slot: 1, name: 'Desayuno', recipeId: '', recipeName: '', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, kcal: 0,
+          complements: [{ foodLabel: '100g plátano (uno pequeño)', category: 'HC', quantity: 2 }] },
+      ] },
+    ];
+    const list = buildShoppingList(days, new Map());
+    expect(list[0]).toMatchObject({ grams: 200 }); // 100g × 2
+  });
+});
+
+describe('computeMenuAdherenceRate', () => {
+  const menu: WeeklyMenu = {
+    id: 'm1', athleteId: 'a@x.com', status: 'published', name: 'Menú', createdAt: '', varietyLevel: 3, swapHistory: [],
+    days: [{ day: 'mon', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 1 },
+      meals: [
+        { id: 'mon_m1', slot: 1, name: 'D', recipeId: 'r', recipeName: 'r', scale: 1, exch: { HC: 1, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] },
+        { id: 'mon_m2', slot: 3, name: 'C', recipeId: 'r', recipeName: 'r', scale: 1, exch: { HC: 1, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] },
+      ] }],
+  };
+  // A Monday date so the log maps to the menu's Monday (2 meals).
+  const monday = '2026-07-13';
+
+  it('averages the % of a day\'s menu meals ticked off', () => {
+    const rate = computeMenuAdherenceRate(
+      [{ id: 'x', athleteId: 'a@x.com', date: monday, menuId: 'm1', doneMealKeys: ['mon_m1'] }],
+      menu, { windowDays: 3650, adherenceOkPct: 80, macroDeviationOkPct: 15 },
+    );
+    expect(rate.avgPct).toBe(50); // 1 of 2 meals
+    expect(rate.daysLogged).toBe(1);
+  });
+
+  it('returns zero when there is no published menu', () => {
+    expect(computeMenuAdherenceRate([], null).avgPct).toBe(0);
   });
 });
