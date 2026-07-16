@@ -3750,6 +3750,41 @@ export async function getCoachInstructions(): Promise<string> {
   }
 }
 
+// ─── NOTA DE ESTADO POR ATLETA (panel visual del ClientHub, solo-coach) ─────────
+// Texto libre del coach: "qué está haciendo ahora" este cliente. Doc por email
+// en athleteStatus. Complementa los datos derivados (fase, objetivo, cambios).
+
+const ATHLETE_STATUS_LOCAL_KEY = 'enforma_athlete_status_v1';
+
+function getLocalStatusNotes(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(ATHLETE_STATUS_LOCAL_KEY) ?? '{}'); } catch { return {}; }
+}
+
+export async function getAthleteStatusNote(email: string): Promise<string> {
+  if (forceLocalOnly) return getLocalStatusNotes()[email] ?? '';
+  try {
+    const snap = await getDoc(doc(db, 'athleteStatus', email));
+    return snap.exists() ? ((snap.data().note as string) ?? '') : '';
+  } catch (err) {
+    console.warn('getAthleteStatusNote Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalStatusNotes()[email] ?? '';
+  }
+}
+
+export async function saveAthleteStatusNote(email: string, note: string): Promise<void> {
+  const all = getLocalStatusNotes();
+  all[email] = note;
+  localStorage.setItem(ATHLETE_STATUS_LOCAL_KEY, JSON.stringify(all));
+  if (forceLocalOnly) return;
+  try {
+    await setDoc(doc(db, 'athleteStatus', email), { note, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.warn('saveAthleteStatusNote Firestore failed, kept local:', err);
+    setLocalBypassMode(true);
+  }
+}
+
 export async function saveCoachInstructions(text: string): Promise<void> {
   localStorage.setItem(COACH_INSTRUCTIONS_LOCAL_KEY, text);
   if (forceLocalOnly) return;

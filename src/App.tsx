@@ -2,9 +2,14 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding } from './dbService';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
+
+// Flag que deja el wizard de onboarding para disparar el tour de bienvenida.
+// Duplicada aquí (y no importada de AppTour) para no arrastrar ese chunk lazy
+// al bundle inicial solo por una lectura de localStorage.
+const isTourPending = (email: string) => localStorage.getItem(`enforma_tour_pending_${email}`) === '1';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
@@ -28,6 +33,8 @@ const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScree
 // Coach screens
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
+const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
+const AppTour              = lazy(() => import('./components/AppTour'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
@@ -73,6 +80,11 @@ function AppContent() {
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [loading, setLoading] = useState(true);
+  // Gating del primer login del atleta: hasta completar el onboarding guiado no
+  // se desbloquea la app. 'checking' mientras consultamos Firestore; el coach
+  // pasa directo a 'done'. Tras el wizard, el tour de bienvenida (AppTour).
+  const [onboardingGate, setOnboardingGate] = useState<'checking' | 'missing' | 'done'>('checking');
+  const [showTour, setShowTour] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -103,6 +115,22 @@ function AppContent() {
       setActiveTab('clients');
     }
   }, [activeTab, location.pathname]);
+
+  // Comprueba si el atleta ya hizo el onboarding guiado. El coach nunca se gatea.
+  useEffect(() => {
+    if (!profile) { setOnboardingGate('checking'); return; }
+    const coachRole = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
+    if (coachRole) { setOnboardingGate('done'); return; }
+    let cancelled = false;
+    getOnboarding(profile.email)
+      .then(o => {
+        if (cancelled) return;
+        setOnboardingGate(o?.completedAt ? 'done' : 'missing');
+        if (o?.completedAt && isTourPending(profile.email)) setShowTour(true);
+      })
+      .catch(() => { if (!cancelled) setOnboardingGate('done'); }); // ante error, no bloquear la app
+    return () => { cancelled = true; };
+  }, [profile]);
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
     const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
@@ -213,6 +241,31 @@ function AppContent() {
   }
 
   const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
+
+  // Primer login del atleta: onboarding guiado obligatorio antes de ver la app.
+  if (!isCoach && onboardingGate !== 'done') {
+    if (onboardingGate === 'missing') {
+      return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0e0e0e]" />}>
+          <AthleteOnboardingWizard
+            profile={profile}
+            onComplete={() => { setOnboardingGate('done'); setShowTour(true); }}
+          />
+        </Suspense>
+      );
+    }
+    // 'checking' — misma splash que la carga de sesión
+    return (
+      <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
+        <div className="flex items-center gap-2 text-[#fbcb1a] animate-pulse">
+          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
+          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
+        </div>
+        <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
+      </div>
+    );
+  }
+
   const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
   const pendingCount = getPendingReviews(checkins).length;
 
@@ -377,6 +430,13 @@ function AppContent() {
       {isCoach && (
         <Suspense fallback={null}>
           <AiChatPanel activeAthleteEmail={activeAthleteEmail} />
+        </Suspense>
+      )}
+
+      {/* Tour de bienvenida del atleta — justo después del onboarding guiado */}
+      {!isCoach && showTour && (
+        <Suspense fallback={null}>
+          <AppTour email={profile.email} onClose={() => setShowTour(false)} />
         </Suspense>
       )}
 

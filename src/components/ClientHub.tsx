@@ -52,6 +52,7 @@ import ProgressRing from './ProgressRing';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import ClientSetupPanel from './ClientSetupPanel';
 import PendingTray from './PendingTray';
+import ClientStatusCard from './ClientStatusCard';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -91,7 +92,7 @@ export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', '
 // que los deep links y ClientSetupPanel.onGoToTab no cambian.
 type Zone = 'hoy' | 'plan' | 'analisis';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
-  hoy: ['setup', 'revisiones'],
+  hoy: ['revisiones', 'setup'],
   plan: ['entrenamientos', 'dietas', 'roadmap'],
   analisis: ['analisis'],
 };
@@ -290,6 +291,8 @@ export default function ClientHub({
   // Propuestas del asistente IA pendientes de revisión — se aprueban/rechazan
   // desde las tarjetas del panel de chat (AiChatPanel), no aquí.
   const [aiProposals, setAiProposals] = useState<AiProposal[]>([]);
+  // Lista de entrenamientos asignados plegada por defecto (puede ser muy larga)
+  const [assignmentsExpanded, setAssignmentsExpanded] = useState(false);
 
   // Unified review list state
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
@@ -743,6 +746,17 @@ export default function ClientHub({
         onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
         onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
+      />
+
+      {/* Estado del cliente — fase, objetivo, últimos cambios y nota del coach */}
+      <ClientStatusCard
+        athlete={athlete}
+        onboardingData={onboardingData}
+        mesocycles={mesocycles}
+        checkins={athleteCheckins}
+        coachReports={coachReports}
+        athleteLogs={athleteLogs}
+        bodyweightLogs={bodyweightLogs}
       />
 
       {/* Nav de zonas (nivel 1) */}
@@ -2022,13 +2036,30 @@ export default function ClientHub({
             );
           })()}
 
-          {/* Workout assignments */}
+          {/* Workout assignments — plegado por defecto: la lista puede ser larga
+              y lo habitual es venir a asignar, no a repasarla entera */}
           <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+              <button
+                onClick={() => setAssignmentsExpanded(e => !e)}
+                className="flex items-center gap-2 text-left group"
+              >
                 <span className="material-symbols-outlined text-[#fbcb1a] text-sm">fitness_center</span>
-                Entrenamientos asignados
-              </h3>
+                <h3 className="font-sans font-bold text-base text-white group-hover:text-[#fbcb1a] transition-colors">
+                  Entrenamientos asignados
+                </h3>
+                {assignments.length > 0 && (
+                  <span className="font-mono text-[10px] text-[#c6c9ab] bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+                    {assignments.length}
+                  </span>
+                )}
+                <span
+                  className="material-symbols-outlined text-[#c6c9ab] text-base transition-transform"
+                  style={{ transform: assignmentsExpanded ? 'rotate(180deg)' : 'none' }}
+                >
+                  expand_more
+                </span>
+              </button>
               <button
                 onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
@@ -2042,7 +2073,7 @@ export default function ClientHub({
                 <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">calendar_today</span>
                 <p className="text-xs text-[#c6c9ab]">Sin entrenamientos asignados todavía.</p>
               </div>
-            ) : (
+            ) : !assignmentsExpanded ? null : (
               <div className="space-y-2">
                 {[...assignments].sort((a, b) => a.date.localeCompare(b.date)).map(a => {
                   const wo = workouts.find(w => w.id === a.workoutId);

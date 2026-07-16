@@ -4,8 +4,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Mesocycle, MuscleGroup, WorkoutAssignment, WorkoutLog, Exercise } from '../types';
-import { getWorkoutAssignmentsByMesocycleIds, getWorkoutLogs, getExercises } from '../dbService';
+import { Mesocycle, MuscleGroup, WorkoutAssignment } from '../types';
+import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -80,32 +80,23 @@ interface Props {
 
 export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) {
   const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
-  const [logs, setLogs] = useState<WorkoutLog[]>([]);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loadState, setLoadState] = useState<'loading' | 'done'>('loading');
 
   // Group-filter state for Chart 2
   const [hiddenGroups, setHiddenGroups] = useState<Set<MuscleGroup>>(new Set());
-  // 1RM exercise selection for Chart 4 (up to 5 shown)
-  const [shownExIds, setShownExIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!athleteEmail || mesocycles.length === 0) return;
     setLoadState('loading');
     const mesoIds = mesocycles.map(m => m.id);
-    Promise.all([
-      getWorkoutAssignmentsByMesocycleIds(mesoIds), // query by mesocycleId — avoids UID vs email mismatch
-      getWorkoutLogs(athleteEmail),
-      getExercises(),
-    ]).then(([a, l, e]) => {
-      setAssignments(a);
-      setLogs(l);
-      setExercises(e);
-      setLoadState('done');
-    }).catch(err => {
-      console.error(err);
-      setLoadState('done');
-    });
+    getWorkoutAssignmentsByMesocycleIds(mesoIds) // query by mesocycleId — avoids UID vs email mismatch
+      .then(a => {
+        setAssignments(a);
+        setLoadState('done');
+      }).catch(err => {
+        console.error(err);
+        setLoadState('done');
+      });
   }, [athleteEmail, mesocycles]);
 
   // ── Sorted mesocycles ──────────────────────────────────────────────────────
@@ -133,95 +124,6 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   }), [sorted, activeGroups]);
 
   const visibleGroups = activeGroups.filter(g => !hiddenGroups.has(g));
-
-  // ── Charts 3–5: derived from logs + assignments ────────────────────────────
-  const hasLogs = logs.length > 0;
-
-  // Map assignmentId → mesocycleId (built from loaded assignments)
-  const assignToMeso = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const a of assignments) {
-      if (a.mesocycleId) map.set(a.id, a.mesocycleId);
-    }
-    return map;
-  }, [assignments]);
-
-  // Resolve the mesocycleId for a log: prefer log.mesocycleId (new logs),
-  // fall back to the assignment map (old logs that lack the field).
-  const logMesoId = (log: { assignmentId: string; mesocycleId?: string }): string | undefined =>
-    log.mesocycleId ?? assignToMeso.get(log.assignmentId);
-
-  // ── Chart 3: Tonelaje por mesociclo ───────────────────────────────────────
-  const tonnageData = useMemo(() => {
-    const byMeso: Record<string, number> = {};
-    for (const m of sorted) byMeso[m.id] = 0;
-    for (const log of logs) {
-      const mesoId = logMesoId(log);
-      if (!mesoId || !(mesoId in byMeso)) continue;
-      for (const entry of log.entries) {
-        for (const set of entry.sets) {
-          byMeso[mesoId] = (byMeso[mesoId] ?? 0) + set.weight * set.repsDone;
-        }
-      }
-    }
-    return sorted.map(m => ({
-      label: `#${m.number}`,
-      tonelaje: Math.round(byMeso[m.id] ?? 0),
-    }));
-  }, [sorted, logs, assignToMeso]);
-
-  const hasTonnage = tonnageData.some(d => d.tonelaje > 0);
-
-  // ── Chart 4: 1RM estimado (Epley) ─────────────────────────────────────────
-  const { oneRMData, topExercises } = useMemo(() => {
-    // max 1RM per (exerciseId, mesoId)
-    const maxByExMeso: Record<string, Record<string, number>> = {};
-    const setCountByEx: Record<string, number> = {};
-
-    for (const log of logs) {
-      const mesoId = logMesoId(log);
-      if (!mesoId) continue;
-      for (const entry of log.entries) {
-        const exId = entry.exerciseId;
-        setCountByEx[exId] = (setCountByEx[exId] ?? 0) + entry.sets.length;
-        if (!maxByExMeso[exId]) maxByExMeso[exId] = {};
-        for (const set of entry.sets) {
-          if (set.repsDone < 1 || set.weight <= 0) continue;
-          const oneRM = Math.round(set.weight * (1 + set.repsDone / 30) * 10) / 10;
-          if (oneRM > (maxByExMeso[exId][mesoId] ?? 0)) {
-            maxByExMeso[exId][mesoId] = oneRM;
-          }
-        }
-      }
-    }
-
-    // Top 5 exercises by set count (that have any 1RM data)
-    const top5 = Object.entries(setCountByEx)
-      .filter(([exId]) => Object.keys(maxByExMeso[exId] ?? {}).length > 0)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([id]) => id);
-
-    const data = sorted.map(m => {
-      const point: Record<string, string | number | null> = { label: `#${m.number}` };
-      for (const exId of top5) {
-        point[exId] = maxByExMeso[exId]?.[m.id] ?? null;
-      }
-      return point;
-    });
-
-    return { oneRMData: data, topExercises: top5 };
-  }, [sorted, logs, assignToMeso]);
-
-  // Initialise shownExIds once top exercises are known
-  useEffect(() => {
-    if (topExercises.length > 0 && shownExIds.length === 0) {
-      setShownExIds(topExercises);
-    }
-  }, [topExercises]);
-
-  const exName = (id: string) =>
-    exercises.find(e => e.id === id)?.name ?? id.slice(-6);
 
   // ── Chart 5: Adherencia por mesociclo ─────────────────────────────────────
   const adherenceData = useMemo(() => {
@@ -378,102 +280,6 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         )}
       </ChartCard>
 
-      {/* ── Row 3: Carga real (Charts 3 + 4) ── */}
-      {!hasLogs ? (
-        <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-6 flex items-center gap-3">
-          <span className="material-symbols-outlined text-2xl text-[#2a2a2a]">fitness_center</span>
-          <p className="font-mono text-xs text-[#c6c9ab]">
-            Sin datos de carga registrados — las gráficas de tonelaje y 1RM aparecerán aquí cuando el atleta complete sesiones.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Chart 3: Tonelaje */}
-          <ChartCard title="Tonelaje total por mesociclo" icon="weight">
-            {!hasTonnage ? (
-              <EmptyChart message="Sin datos de carga registrados" />
-            ) : (
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={tonnageData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                  <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                  <YAxis
-                    tick={AXIS_TICK} axisLine={false} tickLine={false} width={44}
-                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}t` : `${v}`}
-                  />
-                  <Tooltip
-                    {...TOOLTIP_STYLE}
-                    formatter={(v: number) => [`${v.toLocaleString('es-ES')} kg`, 'Tonelaje']}
-                  />
-                  <Bar dataKey="tonelaje" fill="#00eefc" radius={[3, 3, 0, 0]} maxBarSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </ChartCard>
-
-          {/* Chart 4: 1RM estimado */}
-          <ChartCard title="1RM estimado (Epley)" icon="show_chart">
-            {topExercises.length === 0 ? (
-              <EmptyChart message="Sin datos de carga registrados" />
-            ) : (
-              <div className="space-y-2">
-                {/* Exercise toggle */}
-                <div className="flex flex-wrap gap-1.5">
-                  {topExercises.map((exId, i) => {
-                    const shown = shownExIds.includes(exId);
-                    const color = PALETTE[i % PALETTE.length];
-                    return (
-                      <button
-                        key={exId}
-                        onClick={() => setShownExIds(prev =>
-                          prev.includes(exId) ? prev.filter(id => id !== exId) : [...prev, exId]
-                        )}
-                        className={`px-2 py-0.5 rounded font-mono text-[9px] border transition-all truncate max-w-[120px] ${
-                          shown
-                            ? 'border-transparent text-black'
-                            : 'bg-transparent border-white/7 text-[#555]'
-                        }`}
-                        style={shown ? { backgroundColor: color } : {}}
-                        title={exName(exId)}
-                      >
-                        {exName(exId)}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <ResponsiveContainer width="100%" height={148}>
-                  <LineChart data={oneRMData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                    <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis
-                      tick={AXIS_TICK} axisLine={false} tickLine={false} width={40}
-                      tickFormatter={(v: number) => `${v}kg`}
-                    />
-                    <Tooltip
-                      {...TOOLTIP_STYLE}
-                      formatter={(v: number, key: string) => [`${v} kg`, exName(key)]}
-                    />
-                    {shownExIds.map((exId, i) => (
-                      <Line
-                        key={exId}
-                        type="monotone"
-                        dataKey={exId}
-                        stroke={PALETTE[topExercises.indexOf(exId) % PALETTE.length]}
-                        strokeWidth={2}
-                        dot={{ fill: PALETTE[topExercises.indexOf(exId) % PALETTE.length], stroke: '#121212', strokeWidth: 1.5, r: 3 }}
-                        activeDot={{ r: 4 }}
-                        connectNulls
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </ChartCard>
-        </div>
-      )}
     </div>
   );
 }

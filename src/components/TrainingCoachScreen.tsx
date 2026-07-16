@@ -10,12 +10,12 @@ interface TrainingCoachScreenProps {
 type Tab = 'rutinas' | 'ejercicios' | 'plantillas';
 
 export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('rutinas');
+  const [activeTab, setActiveTab] = useState<Tab>('plantillas');
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'rutinas',    label: 'Rutinas',    icon: 'format_list_bulleted' },
-    { id: 'ejercicios', label: 'Ejercicios', icon: 'fitness_center'       },
     { id: 'plantillas', label: 'Plantillas', icon: 'library_books'        },
+    { id: 'ejercicios', label: 'Ejercicios', icon: 'fitness_center'       },
+    { id: 'rutinas',    label: 'Rutinas',    icon: 'format_list_bulleted' },
   ];
 
   return (
