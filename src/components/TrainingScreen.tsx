@@ -12,6 +12,7 @@ import { generateWarmup } from '../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
 import { useToast } from '../hooks/useToast';
+import Coachmark from './Coachmark';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -399,6 +400,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <StatTile icon="check_circle" label="Series hechas" value={`${doneSetsTotal}/${totalSets}`} />
           <StatTile icon="format_list_numbered" label="Ejercicios" value={orderedExercises.length} />
         </div>
+
+        <Coachmark
+          id="training_player_mark_set"
+          email={profile.email}
+          icon="touch_app"
+          text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
+        />
 
         {/* Exercise cards */}
         {orderedExercises.map((we, exIdx) => {

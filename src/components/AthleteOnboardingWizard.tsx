@@ -172,8 +172,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         completedAt: new Date().toISOString(),
       };
       await saveOnboarding(data);
-      // Marca el tour como pendiente: App lo mostrará nada más entrar.
-      localStorage.setItem(`enforma_tour_pending_${profile.email}`, '1');
       onComplete();
     } catch (err) {
       console.error('saveOnboarding failed:', err);

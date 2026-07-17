@@ -8,6 +8,7 @@ import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import ProgressRing from './ProgressRing';
 import StatTile from './StatTile';
+import PlanInPreparationCard from './PlanInPreparationCard';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -49,6 +50,14 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         <p className="text-[#c6c9ab] text-sm mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
       </div>
 
+      {/* ── Sin ningún entrenamiento asignado todavía: recién llegado, el coach
+          aún no le ha montado el plan. Antes esto caía directo en "sin
+          entrenamientos pendientes" — la app se sentía vacía justo en el
+          momento de mayor motivación del atleta nuevo. ──────────────────── */}
+      {!loadingTraining && assignments.length === 0 && (
+        <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />
+      )}
+
       {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
       {!loadingTraining && weekAssignments.length > 0 && (
         <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
@@ -78,6 +87,11 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <StepsWidget athleteEmail={profile.email} />
 
       {/* ── Entrenamientos pendientes de esta semana + atrasados ─────────────── */}
+      {/* Oculta del todo para el atleta sin ningún entrenamiento asignado
+          nunca (PlanInPreparationCard ya cubre ese mensaje arriba) — mostrar
+          "sin entrenamientos pendientes" justo debajo sería contradecir el
+          tono de "tu coach lo está preparando". */}
+      {(loadingTraining || assignments.length > 0) && (
       <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
         <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
@@ -129,6 +143,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           </div>
         )}
       </section>
+      )}
 
       <ResourcesPanel isCoach={false} />
     </div>

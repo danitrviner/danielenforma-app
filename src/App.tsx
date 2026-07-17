@@ -6,11 +6,6 @@ import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnb
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 
-// Flag que deja el wizard de onboarding para disparar el tour de bienvenida.
-// Duplicada aquí (y no importada de AppTour) para no arrastrar ese chunk lazy
-// al bundle inicial solo por una lectura de localStorage.
-const isTourPending = (email: string) => localStorage.getItem(`enforma_tour_pending_${email}`) === '1';
-
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
 import { ToastProvider } from './hooks/useToast';
@@ -34,7 +29,6 @@ const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScree
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
-const AppTour              = lazy(() => import('./components/AppTour'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
@@ -82,9 +76,8 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   // Gating del primer login del atleta: hasta completar el onboarding guiado no
   // se desbloquea la app. 'checking' mientras consultamos Firestore; el coach
-  // pasa directo a 'done'. Tras el wizard, el tour de bienvenida (AppTour).
+  // pasa directo a 'done'.
   const [onboardingGate, setOnboardingGate] = useState<'checking' | 'missing' | 'done'>('checking');
-  const [showTour, setShowTour] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -126,7 +119,6 @@ function AppContent() {
       .then(o => {
         if (cancelled) return;
         setOnboardingGate(o?.completedAt ? 'done' : 'missing');
-        if (o?.completedAt && isTourPending(profile.email)) setShowTour(true);
       })
       .catch(() => { if (!cancelled) setOnboardingGate('done'); }); // ante error, no bloquear la app
     return () => { cancelled = true; };
@@ -253,7 +245,7 @@ function AppContent() {
         <Suspense fallback={<div className="min-h-screen bg-[#0e0e0e]" />}>
           <AthleteOnboardingWizard
             profile={profile}
-            onComplete={() => { setOnboardingGate('done'); setShowTour(true); }}
+            onComplete={() => setOnboardingGate('done')}
           />
         </Suspense>
       );
@@ -434,13 +426,6 @@ function AppContent() {
       {isCoach && (
         <Suspense fallback={null}>
           <AiChatPanel activeAthleteEmail={activeAthleteEmail} />
-        </Suspense>
-      )}
-
-      {/* Tour de bienvenida del atleta — justo después del onboarding guiado */}
-      {!isCoach && showTour && (
-        <Suspense fallback={null}>
-          <AppTour email={profile.email} onClose={() => setShowTour(false)} />
         </Suspense>
       )}
 

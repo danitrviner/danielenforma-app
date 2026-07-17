@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
+import Coachmark from './Coachmark';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -96,6 +97,13 @@ export default function PhotosScreen({ profile }: Props) {
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Fotos de Progreso</h1>
         <p className="text-[#c6c9ab] text-sm mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
       </div>
+
+      <Coachmark
+        id="photos_upload_hint"
+        email={profile.email}
+        icon="photo_camera"
+        text="Sube una foto por cada ángulo — es la forma más clara de ver tu progreso real, más allá del peso."
+      />
 
       {/* View selector */}
       <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-fit">

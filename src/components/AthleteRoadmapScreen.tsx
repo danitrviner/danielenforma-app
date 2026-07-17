@@ -23,6 +23,7 @@ import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
 import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '../utils/nutritionPeriodization';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
+import { markRoadmapVisited } from './PlanInPreparationCard';
 
 const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
 const DEFAULT_STEP_GOAL = 8000;
@@ -54,6 +55,11 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   const [data, setData] = useState<LoadedData | null>(null);
   const [challengeResult, setChallengeResult] = useState<EnsureChallengeResult | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // El checklist de "primeros pasos" en Inicio (PlanInPreparationCard) marca
+  // este ítem como hecho también si el atleta llega aquí directo por la nav,
+  // no solo pulsando el ítem desde el checklist.
+  useEffect(() => { markRoadmapVisited(profile.email); }, [profile.email]);
 
   useEffect(() => {
     let cancelled = false;

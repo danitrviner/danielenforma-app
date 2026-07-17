@@ -6,6 +6,7 @@ import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fm
 import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
+import Coachmark from './Coachmark';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -1055,6 +1056,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
               {/* Resumen numérico (colocado/objetivo por comida + total del día) — siempre visible */}
               <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
+
+              <Coachmark
+                id="nutrition_swap_hint"
+                email={profile.email}
+                icon="swap_horiz"
+                text="¿No te apetece algo? Toca el icono 🔁 junto a cualquier alimento para cambiarlo por un equivalente."
+              />
 
               <div className="space-y-4">
                 {selectedDiet.meals.map((meal, mi) => {
