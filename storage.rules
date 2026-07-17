@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Coach permanente — mismo email que en firestore.rules.
+    function isCoach() {
+      return request.auth != null && request.auth.token.email == 'danitrviner@gmail.com';
+    }
+
+    // ── progressPhotos/{email}/{date}_{view} — fotos de progreso corporal ────
+    // Antes de esta regla, cualquier usuario autenticado podía leer/escribir/
+    // borrar las fotos de CUALQUIER atleta (allow read, write: if request.auth
+    // != null a nivel global). Es el dato más sensible de la app — solo su
+    // dueño y el coach pueden acceder.
+    match /progressPhotos/{email}/{fileName} {
+      allow read: if isCoach() || (request.auth != null && request.auth.token.email == email);
+      allow write: if request.auth != null
+                   && request.auth.token.email == email
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if isCoach() || (request.auth != null && request.auth.token.email == email);
+    }
+
+    // Default deny — cualquier path no cubierto explícitamente arriba.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

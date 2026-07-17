@@ -19,17 +19,24 @@ service cloud.firestore {
 
     // ── user_profiles (docId = UID) ──────────────────────────────────────────
     // El atleta gestiona su propio perfil, pero los campos que definen su plan
-    // de pago (planStartDate/planDurationMonths), su rol y el resumen de setup
-    // solo los toca el coach — sin esto, cualquier cliente podía "renovarse"
-    // el plan desde la consola del navegador.
+    // de pago (planStartDate/planDurationMonths), su rol, el resumen de setup
+    // y la gamificación (xp/level/racha) solo los toca el coach o la propia
+    // lógica de servidor — sin esto, cualquier cliente podía "renovarse" el
+    // plan o subirse el nivel desde la consola del navegador.
+    // El alta propia exige invitación previa del coach (invites/{email}, ver
+    // más abajo): antes cualquier persona autenticada podía crear su perfil y
+    // leer biblioteca/rutinas/recetas del coach sin ser cliente.
     match /user_profiles/{userId} {
       allow read: if isOwnerUid(userId) || isCoach();
       allow create: if isCoach()
-                    || (isOwnerUid(userId) && request.resource.data.role == 'client');
+                    || (isOwnerUid(userId)
+                        && request.resource.data.role == 'client'
+                        && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
-                            .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary']));
+                            .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
+                                     'xp', 'level', 'currentStreak', 'maxStreak']));
       allow delete: if isCoach();
     }
 

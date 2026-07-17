@@ -9,7 +9,6 @@ interface WelcomeScreenProps {
 export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
@@ -107,7 +106,11 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       });
   };
 
-  // Regular email authentication
+  // Regular email authentication — sign-in only. El alta de cuentas nuevas va
+  // siempre por invitación del coach (enlace passwordless, ver
+  // awaitingInviteEmail/completeInviteSignIn arriba) o por Google Sign-In;
+  // el auto-registro por email+contraseña se quitó porque `firestore.rules`
+  // ya no deja crear `user_profiles` sin invitación previa.
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -117,19 +120,12 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     setError('');
     setLoading(true);
     try {
-      if (isRegistering) {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        onLoginSuccess(result.user);
-      } else {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        onLoginSuccess(result.user);
-      }
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      onLoginSuccess(result.user);
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Credenciales incorrectas o usuario no encontrado. Si no te has registrado, selecciona "Regístrate aquí" abajo o usa el botón de Google Sign-On.');
-      } else if (err.code === 'auth/email-already-in-use') {
-        setError('Este correo electrónico ya está registrado.');
+        setError('Credenciales incorrectas o usuario no encontrado. Si tu entrenador te ha invitado, usa el enlace de invitación que te envió por correo.');
       } else if (err.code === 'auth/weak-password') {
         setError('La contraseña debe tener al menos 6 caracteres.');
       } else if (err.code === 'auth/operation-not-allowed') {
@@ -255,18 +251,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
             <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
           </div>
-          <p className="text-[#c6c9ab] text-xs font-mono tracking-widest uppercase">ELITE PERFORMANCE SYSTEM</p>
-        </div>
-
-        {/* Instant Access Instructions Box */}
-        <div className="bg-[#1a1e20] border border-teal-500/25 rounded-lg p-3.5 mb-6 text-xs text-slate-300 space-y-2 font-sans shadow-inner">
-          <div className="flex items-center gap-2 text-[#fbcb1a] font-bold font-mono uppercase tracking-wider text-[10px]">
-            <span className="material-symbols-outlined text-sm animate-pulse">lock_open</span>
-            <span>Acceso Garantizado 100%</span>
-          </div>
-          <p className="leading-relaxed text-[#c6c9ab]">
-            Si estás dentro del visor de AI Studio, haz clic en cualquiera de los botones de <strong className="text-white">Acceso Instantáneo</strong> de abajo. Entrarás inmediatamente sin necesidad de contraseñas ni demoras utilizando el bypass inteligente.
-          </p>
+          <p className="text-[#c6c9ab] text-xs font-mono tracking-widest uppercase">Coaching de alto rendimiento</p>
         </div>
 
         {error && (
@@ -297,16 +282,14 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-mono text-[#c6c9ab] uppercase tracking-wider">Contraseña</label>
-              {!isRegistering && (
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={resetting}
-                  className="text-[10px] text-[#fbcb1a] hover:underline transition-colors font-mono disabled:opacity-50"
-                >
-                  {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetting}
+                className="text-[10px] text-[#fbcb1a] hover:underline transition-colors font-mono disabled:opacity-50"
+              >
+                {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+              </button>
             </div>
             <input
               type="password"
@@ -323,7 +306,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             disabled={loading}
             className="w-full h-[48px] bg-[#fbcb1a] text-black font-sans font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
           >
-            {loading ? 'Procesando...' : isRegistering ? 'Crear Cuenta Atleta' : 'Ingresar al Portal'}
+            {loading ? 'Procesando...' : 'Ingresar al Portal'}
             <span className="material-symbols-outlined text-sm">login</span>
           </button>
         </form>
@@ -365,16 +348,6 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             </p>
           </div>
         )}
-
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-xs text-[#fbcb1a] hover:underline transition-colors font-mono"
-          >
-            {isRegistering ? '¿Ya tienes una cuenta? Iniciar sesión' : '¿Nuevo en En Forma? Regístrate aquí'}
-          </button>
-        </div>
       </div>
     </div>
   );
