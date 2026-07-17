@@ -1448,7 +1448,10 @@ function setWeeklyMenusToLocal(menus: WeeklyMenu[]): void {
   localStorage.setItem(WEEKLY_MENUS_LOCAL_KEY, JSON.stringify(menus));
 }
 
-// Coach view: all menus (draft/published/archived) for a client.
+// Coach view: all menus (draft/published/archived) for a client. Coach-only —
+// the rules let isCoach() read every status, but an athlete calling this would
+// have its query rejected (their rule only allows status == 'published'), so
+// athletes must use getPublishedMenu instead.
 export async function getWeeklyMenusForAthlete(athleteEmail: string): Promise<WeeklyMenu[]> {
   if (forceLocalOnly) {
     return getWeeklyMenusFromLocal().filter(m => m.athleteId === athleteEmail);
@@ -1467,10 +1470,25 @@ export async function getWeeklyMenusForAthlete(athleteEmail: string): Promise<We
   }
 }
 
-// Athlete view: only the currently published menu, if any.
+// Athlete view: only the currently published menu, if any. Must filter by status
+// in the QUERY (not in memory) — the athlete's read rule requires status ==
+// 'published', so a query that could surface a draft is rejected wholesale by
+// Firestore, which would flip the whole app into offline/local mode.
 export async function getPublishedMenu(athleteEmail: string): Promise<WeeklyMenu | null> {
-  const menus = await getWeeklyMenusForAthlete(athleteEmail);
-  return menus.find(m => m.status === 'published') ?? null;
+  if (forceLocalOnly) {
+    return getWeeklyMenusFromLocal().find(m => m.athleteId === athleteEmail && m.status === 'published') ?? null;
+  }
+  try {
+    const q = query(collection(db, 'weeklyMenus'), where('athleteId', '==', athleteEmail), where('status', '==', 'published'));
+    const snap = await getDocs(q);
+    const menu = snap.docs.map(d => ({ id: d.id, ...d.data() } as WeeklyMenu))[0] ?? null;
+    if (menu) setWeeklyMenusToLocal([...getWeeklyMenusFromLocal().filter(m => m.id !== menu.id), menu]);
+    return menu;
+  } catch (err) {
+    console.warn('getPublishedMenu Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getWeeklyMenusFromLocal().find(m => m.athleteId === athleteEmail && m.status === 'published') ?? null;
+  }
 }
 
 export async function createWeeklyMenu(data: Omit<WeeklyMenu, 'id'>): Promise<WeeklyMenu> {

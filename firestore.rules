@@ -196,9 +196,14 @@ service cloud.firestore {
     }
 
     // ── dietCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
+    // These are read via a direct getDoc on today's `${email}_${date}` id. When
+    // that doc doesn't exist yet (a fresh day), `resource` is null and referencing
+    // resource.data would deny — which flips the whole app into offline/local mode.
+    // `resource == null` lets the read return "not found" instead of erroring; an
+    // absent doc leaks nothing.
     match /dietCompletionLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && (resource == null || request.auth.token.email == resource.data.athleteId));
       allow create: if request.auth != null
                     && request.resource.data.athleteId == request.auth.token.email;
       allow update, delete: if isCoach()
@@ -206,11 +211,11 @@ service cloud.firestore {
     }
 
     // ── menuCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
-    // Athlete's tick-off of their published weekly menu — same ownership shape
-    // as dietCompletionLogs, kept separate so it never touches diet adherence.
+    // Athlete's tick-off of their published weekly menu — same ownership shape and
+    // same non-existent-doc handling as dietCompletionLogs.
     match /menuCompletionLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && (resource == null || request.auth.token.email == resource.data.athleteId));
       allow create: if request.auth != null
                     && request.resource.data.athleteId == request.auth.token.email;
       allow update, delete: if isCoach()
