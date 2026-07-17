@@ -93,7 +93,10 @@ function aggregate(logs: WorkoutLog[]): Agg {
 }
 
 // Best all-time Epley per exercise, strictly before `beforeDate` — used for PR detection.
-function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<string, number> {
+// Exportada además del uso interno del reporte: TrainingScreen la reutiliza para
+// detectar un PR en vivo justo al terminar la sesión (mismo criterio: exige
+// historial previo, un primer registro nunca cuenta como récord).
+export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<string, number> {
   const best = new Map<string, number>();
   for (const log of logs) {
     if (log.date >= beforeDate) continue;

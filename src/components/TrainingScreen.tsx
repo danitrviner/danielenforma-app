@@ -13,6 +13,8 @@ import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import { epley } from '../utils/oneRepMax';
+import { allTimeBestBefore } from '../utils/trainingReport';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -27,6 +29,13 @@ interface SetInput {
   repsDone: string;
   rir: string;
   done: boolean;
+}
+
+interface SessionCelebration {
+  isFirstEver: boolean;
+  totalSets: number;
+  tonnage: number;
+  prs: { exerciseId: string; name: string; newBest: number }[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -84,9 +93,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [playerSets, setPlayerSets] = useState<SetInput[][]>([]);
   const [prevEntries, setPrevEntries] = useState<WorkoutEntryLog[]>([]);
   const [isFinishing, setIsFinishing] = useState(false);
-  const [finishMsg, setFinishMsg] = useState('');
+  const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+  // Cronómetro de descanso: se arranca solo al marcar una serie como hecha,
+  // con el restSeconds prescrito del ejercicio — antes el atleta tenía que
+  // llevar la cuenta él mismo en el momento de mayor intensidad de la sesión.
+  const [restTimer, setRestTimer] = useState<{ totalSeconds: number; secondsLeft: number } | null>(null);
 
   // ── Load data ──────────────────────────────────────────────────────────────
   const loadAll = useCallback(async () => {
@@ -126,6 +139,25 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   }, [profile.email]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Cuenta atrás del descanso: se reprograma sola cada segundo vía el propio
+  // cambio de estado; se detiene al llegar a 0 (el efecto de abajo la cierra).
+  useEffect(() => {
+    if (!restTimer || restTimer.secondsLeft <= 0) return;
+    const id = setTimeout(() => {
+      setRestTimer(prev => (prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : null));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [restTimer]);
+
+  // Al llegar a 0: una vibración corta (no pide permiso, no-op si el
+  // navegador no la soporta) y se cierra sola a los pocos segundos.
+  useEffect(() => {
+    if (restTimer?.secondsLeft !== 0) return;
+    navigator.vibrate?.([150, 80, 150]);
+    const id = setTimeout(() => setRestTimer(null), 3000);
+    return () => clearTimeout(id);
+  }, [restTimer?.secondsLeft]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
@@ -177,7 +209,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setPlayerSets(initPlayerSets(wo));
     setExerciseNoteInputs(wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
     setWorkoutNoteInput('');
-    setFinishMsg('');
+    setCelebration(null);
 
     // For each exercise in the workout, find the most recent logged set across ALL previous sessions
     const sortedPrev = logs
@@ -233,6 +265,22 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         }))
         .filter(e => e.sets.length > 0);
 
+      // PRs: mejor 1RM estimado de esta sesión por ejercicio contra el mejor
+      // histórico ANTES de esta fecha — mismo criterio que el motor de
+      // reportes (exige historial previo; un primer registro nunca es récord).
+      const priorBest = allTimeBestBefore(logs, activeAssignment.date);
+      const prs: SessionCelebration['prs'] = [];
+      for (const entry of entries) {
+        const newBest = entry.sets.reduce((max, s) => Math.max(max, epley(s.weight, s.repsDone)), 0);
+        const prevBest = priorBest.get(entry.exerciseId);
+        if (newBest > 0 && prevBest != null && newBest > prevBest) {
+          prs.push({ exerciseId: entry.exerciseId, name: getExercise(entry.exerciseId)?.name || entry.exerciseId, newBest });
+        }
+      }
+      const tonnage = entries.reduce((sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.repsDone, 0), 0);
+      const totalSets = entries.reduce((sum, e) => sum + e.sets.length, 0);
+      const isFirstEver = logs.length === 0;
+
       const now = new Date().toISOString();
       const newLog = await createWorkoutLog({
         athleteId:   profile.email,
@@ -251,19 +299,25 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         a.id === activeAssignment.id ? { ...a, status: 'completed' } : a
       ));
       setLogs(prev => [...prev, newLog]);
-      setActiveAssignment(null);
-      setActiveWorkout(null);
-      setPrevEntries([]);
-      setExerciseNoteInputs([]);
-      setWorkoutNoteInput('');
-      setFinishMsg('¡Entreno completado! Buen trabajo 💪');
-      setTimeout(() => setFinishMsg(''), 5000);
+      setRestTimer(null);
+      // El modal de celebración se muestra ANTES de cerrar el player — el
+      // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
+      setCelebration({ isFirstEver, totalSets, tonnage, prs });
     } catch (err) {
       console.error(err);
       showToast('No se pudo guardar el entrenamiento.');
     } finally {
       setIsFinishing(false);
     }
+  };
+
+  const dismissCelebration = () => {
+    setCelebration(null);
+    setActiveAssignment(null);
+    setActiveWorkout(null);
+    setPrevEntries([]);
+    setExerciseNoteInputs([]);
+    setWorkoutNoteInput('');
   };
 
   const handleSkip = async (assignment: WorkoutAssignment) => {
@@ -368,7 +422,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {/* Player header */}
         <header className="flex items-center gap-3 pb-4 border-b border-white/60 sticky top-[65px] bg-[#111110] z-30 pt-2">
           <button
-            onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); }}
+            onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
             className="flex items-center gap-1.5 text-xs font-mono text-[#c6c9ab] hover:text-white border border-white/7 hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all flex-shrink-0"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
@@ -383,6 +437,30 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase">series hechas</span>
           </div>
         </header>
+
+        {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
+        {restTimer && (
+          <div className="fixed top-20 right-4 z-40 bg-[#181816] border border-[#fbcb1a]/40 rounded-2xl pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
+            <span
+              className={`material-symbols-outlined text-[#fbcb1a] text-lg ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
+            >timer</span>
+            <div className="leading-none">
+              <p className="font-mono text-lg font-black text-white tabular-nums">
+                {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
+              </p>
+              <p className="font-mono text-[8px] text-[#c6c9ab] uppercase tracking-wide mt-0.5">
+                {restTimer.secondsLeft > 0 ? 'Descanso' : '¡Listo!'}
+              </p>
+            </div>
+            <button
+              onClick={() => setRestTimer(null)}
+              aria-label="Saltar descanso"
+              className="text-[#c6c9ab]/60 hover:text-white p-1 -m-1"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
@@ -570,7 +648,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               step={0.5}
                               value={setInput.weight}
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
-                              placeholder="—"
+                              placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
                               className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
                             />
@@ -581,7 +659,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               min={0}
                               value={setInput.repsDone}
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
-                              placeholder={expanded[sIdx]?.reps || '—'}
+                              placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
                               className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
                             />
@@ -608,7 +686,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           </td>
                           <td className="px-4 py-2 text-center">
                             <button
-                              onClick={() => updateSet(exIdx, sIdx, 'done', !setInput.done)}
+                              onClick={() => {
+                                const markingDone = !setInput.done;
+                                updateSet(exIdx, sIdx, 'done', markingDone);
+                                if (markingDone && we.restSeconds) {
+                                  setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
+                                }
+                              }}
                               className={`w-11 h-11 rounded-lg border flex items-center justify-center mx-auto transition-all ${
                                 setInput.done
                                   ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
@@ -684,6 +768,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               setPrevEntries([]);
               setExerciseNoteInputs([]);
               setWorkoutNoteInput('');
+              setRestTimer(null);
             }}
             className="flex items-center gap-2 px-5 py-4 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
           >
@@ -692,7 +777,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </button>
           <button
             onClick={handleFinish}
-            disabled={!canFinish || isFinishing}
+            disabled={!canFinish || isFinishing || !!celebration}
             className="flex items-center gap-2 px-8 py-4 bg-[#fbcb1a] text-black font-sans font-black text-sm uppercase rounded-2xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-[#fbcb1a]/20 disabled:shadow-none"
           >
             {isFinishing ? (
@@ -702,6 +787,54 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             )}
           </button>
         </div>
+
+        {/* Celebración al terminar — se muestra antes de volver a la lista;
+            el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
+        {celebration && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+            <div className="bg-[#181816] border border-[#fbcb1a]/30 rounded-3xl w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 flex items-center justify-center">
+                <span className="material-symbols-outlined text-4xl text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  {celebration.isFirstEver ? 'celebration' : 'bolt'}
+                </span>
+              </div>
+              <div>
+                <h2 className="font-sans font-black text-xl text-white">
+                  {celebration.isFirstEver ? '¡Primera sesión registrada! 💪' : '¡Entreno completado! 💪'}
+                </h2>
+                <p className="text-sm text-[#c6c9ab] mt-1">
+                  {celebration.isFirstEver ? 'Así se empieza — a partir de aquí, todo suma.' : 'Buen trabajo. Sigue así.'}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-[#1e1e1b] rounded-xl p-3">
+                  <p className="font-mono text-2xl font-black text-white tabular-nums">{celebration.totalSets}</p>
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">Series</p>
+                </div>
+                <div className="bg-[#1e1e1b] rounded-xl p-3">
+                  <p className="font-mono text-2xl font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
+                  <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">kg movidos</p>
+                </div>
+              </div>
+              {celebration.prs.length > 0 && (
+                <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 rounded-xl p-3 space-y-1.5 text-left">
+                  {celebration.prs.map(pr => (
+                    <p key={pr.exerciseId} className="text-xs text-[#fbcb1a] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">military_tech</span>
+                      Récord en {pr.name} — {pr.newBest} kg est.
+                    </p>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={dismissCelebration}
+                className="w-full py-3 rounded-xl bg-[#fbcb1a] text-black font-sans font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
+              >
+                Genial
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -727,13 +860,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <span className="font-mono text-xs text-[#c6c9ab]">completados</span>
         </div>
       </header>
-
-      {finishMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-white p-4 rounded-xl text-sm flex items-center gap-3">
-          <span className="material-symbols-outlined text-emerald-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-          <p className="font-sans font-bold">{finishMsg}</p>
-        </div>
-      )}
 
       {/* Main tabs */}
       <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-full sm:w-fit">
