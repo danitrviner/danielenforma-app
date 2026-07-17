@@ -7,6 +7,7 @@ import {
 } from '../types';
 import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
+import { DISH_TYPES } from '../utils/dishTypes';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -144,6 +145,8 @@ interface FormState {
   breakfastVariety: number;
   lunchVariety:     number;
   menuVariety:      number;
+  preferredDishTypes: string[];
+  excludedDishTypes:  string[];
   batchCookingPreferred: boolean;
   equipment:         string[];
   favoriteExercises: string[];
@@ -217,6 +220,8 @@ function fromOnboarding(d: OnboardingData): FormState {
     breakfastVariety: d.breakfastVariety ?? 3,
     lunchVariety:     d.lunchVariety ?? 3,
     menuVariety:      d.menuVariety ?? 3,
+    preferredDishTypes: d.preferredDishTypes ?? [],
+    excludedDishTypes:  d.excludedDishTypes ?? [],
     batchCookingPreferred: d.batchCookingPreferred ?? false,
     equipment:         d.equipment,
     favoriteExercises: d.favoriteExercises,
@@ -290,6 +295,8 @@ const DEFAULTS: FormState = {
   lunchVariety:     3,
   menuVariety:      3,
   batchCookingPreferred: false,
+  preferredDishTypes: [],
+  excludedDishTypes:  [],
   equipment:         [],
   favoriteExercises: [],
   hatedExercises:    [],
@@ -665,6 +672,8 @@ export default function OnboardingForm({
       lunchVariety:       form.lunchVariety,
       menuVariety:        form.menuVariety,
       batchCookingPreferred: form.batchCookingPreferred,
+      preferredDishTypes: form.preferredDishTypes,
+      excludedDishTypes:  form.excludedDishTypes,
       equipment:          form.equipment,
       favoriteExercises:  form.favoriteExercises,
       hatedExercises:     form.hatedExercises,
@@ -1136,6 +1145,36 @@ export default function OnboardingForm({
           maxLabel="Prefiero mucha variedad"
         />
         <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
+
+        <div>
+          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
+          <p className="font-mono text-[9px] text-[#7d7f68] mb-2">
+            Toca: neutral → <span className="text-[#fbcb1a]">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
+              const pref = form.preferredDishTypes.includes(dt.id);
+              const excl = form.excludedDishTypes.includes(dt.id);
+              const cls = pref
+                ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                : excl
+                  ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
+                  : 'bg-[#181818] border-white/10 text-[#c6c9ab] hover:text-white';
+              const cycle = () => {
+                if (pref) { set('preferredDishTypes', form.preferredDishTypes.filter(x => x !== dt.id)); set('excludedDishTypes', [...form.excludedDishTypes, dt.id]); }
+                else if (excl) { set('excludedDishTypes', form.excludedDishTypes.filter(x => x !== dt.id)); }
+                else { set('preferredDishTypes', [...form.preferredDishTypes, dt.id]); }
+              };
+              return (
+                <button type="button" key={dt.id} onClick={cycle}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all ${cls}`}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
+                  {dt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </Section>
 
       {/* ── ENTRENAMIENTO ────────────────────────────────────────────── */}

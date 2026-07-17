@@ -250,3 +250,49 @@ describe('computeMenuAdherenceRate', () => {
     expect(computeMenuAdherenceRate([], null).avgPct).toBe(0);
   });
 });
+
+describe('recipe favorites / dislikes / dish-type prefs', () => {
+  const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+  const batido = recipe({ id: 'batido', name: 'Batido de proteína', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+  const tostada = recipe({ id: 'tostada', name: 'Tostada de aguacate', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+
+  it('hard-excludes a disliked recipe', () => {
+    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, dislikedRecipeIds: ['batido'] }, new Set());
+    expect(ranked.map(c => c.recipe.id)).toEqual(['tostada']);
+  });
+
+  it('hard-excludes an excluded dish type', () => {
+    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, excludedDishTypes: ['batido'] }, new Set());
+    expect(ranked.map(c => c.recipe.id)).toEqual(['tostada']);
+  });
+
+  it('ranks a favorite above an equally-fitting non-favorite', () => {
+    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, favoriteRecipeIds: ['tostada'] }, new Set());
+    expect(ranked[0].recipe.id).toBe('tostada');
+  });
+
+  it('penalizes repeating a dish type already used', () => {
+    const usedDishTypes = new Map([['batido' as const, 1]]);
+    const ranked = rankCandidates([batido, tostada], target, basePrefs, new Set(), { usedDishTypes });
+    expect(ranked[0].recipe.id).toBe('tostada'); // batido penalized for repetition
+  });
+});
+
+describe('findSwapAlternatives diversity', () => {
+  it('surfaces different dish types first', () => {
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 1, name: 'Desayuno', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    const pool = [
+      recipe({ id: 'bat1', name: 'Batido de fresa', exchanges: { HC: 2, PROT: 2, GRASA: 1 } }),
+      recipe({ id: 'bat2', name: 'Batido de plátano', exchanges: { HC: 2, PROT: 2, GRASA: 1 } }),
+      recipe({ id: 'tost', name: 'Tostada integral', exchanges: { HC: 2, PROT: 2, GRASA: 1 } }),
+    ];
+    const alts = findSwapAlternatives(day, 'mon_m1', pool, basePrefs, 2);
+    // Two picks should not both be batidos — the tostada must make the cut.
+    expect(alts.map(a => a.recipe.id)).toContain('tost');
+    expect(alts).toHaveLength(2);
+  });
+});

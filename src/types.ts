@@ -117,6 +117,8 @@ export interface AthleteNutritionConfig {
   sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
   menuVariety?: number; // 1 (repetitive/monotone) - 5 (max variety); athlete-adjustable override of OnboardingData.menuVariety
   batchCookingPreferred?: boolean; // athlete prefers cooking the whole week at once; pre-fills the coach's batch toggle
+  preferredDishTypes?: string[]; // DishType ids the athlete wants to see more of (see utils/dishTypes)
+  excludedDishTypes?: string[];  // DishType ids the athlete never wants in the menu
 }
 
 export interface Exercise {
@@ -428,6 +430,8 @@ export interface OnboardingData {
   lunchVariety?:      number;         // 1–5
   menuVariety?:       number;         // 1–5, preference for the auto-generated weekly menu (1=repetitive, 5=max variety)
   batchCookingPreferred?: boolean;    // prefers cooking the whole week's meals in one session
+  preferredDishTypes?: string[];      // dish types the athlete wants more of (see utils/dishTypes)
+  excludedDishTypes?: string[];       // dish types the athlete wants to avoid
   // ── Entrenamiento ─────────────────────────────────────────────────────────
   equipment:          string[];
   favoriteExercises:  string[];
@@ -760,7 +764,8 @@ export interface Recipe {
 
 export interface RecipeFavorites {
   athleteId: string; // email
-  recipeIds: string[];
+  recipeIds: string[];    // favorites — surface more in the generator/swaps
+  dislikedIds?: string[]; // "no me gusta" — hard-excluded from the generator/swaps
 }
 
 // ─── WEEKLY MENUS ─────────────────────────────────────────────────────────────
@@ -787,6 +792,10 @@ export interface MenuMeal {
   exch: BudgetVec;      // exchanges already scaled
   kcal: number;
   complements: MenuComplement[];
+  // Athlete swapped an ingredient for a same-group equivalent (e.g. leche → bebida
+  // de avena). Approximate equivalence, so exch/kcal are left unchanged; the viewer
+  // renders `to` in place of `from`. See utils/ingredientSubstitutions.
+  ingredientSwaps?: { from: string; to: string }[];
 }
 
 export interface MenuDay {

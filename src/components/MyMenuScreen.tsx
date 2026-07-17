@@ -1,15 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  UserProfile, WeeklyMenu, OnboardingData, AthleteNutritionConfig,
+  UserProfile, WeeklyMenu, OnboardingData, AthleteNutritionConfig, RecipeFavorites,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
 } from '../types';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryIndyaForGenerator, getRecipes, getRecipeById,
+  getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
+import { DISH_TYPES, DishType } from '../utils/dishTypes';
+import { substitutesFor } from '../utils/ingredientSubstitutions';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -46,14 +49,19 @@ export default function MyMenuScreen({ profile }: Props) {
   const [selectedDay, setSelectedDay] = useState<WeekDay>(todayWeekDay());
   const [doneKeys, setDoneKeys] = useState<Set<string>>(new Set());
 
+  const [favorites, setFavorites] = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [], dislikedIds: [] });
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRecipe, setDetailRecipe] = useState<Recipe | null>(null);
+  const [detailMealId, setDetailMealId] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [subForIngredient, setSubForIngredient] = useState<string | null>(null);
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
   const [savingVariety, setSavingVariety] = useState(false);
   const [savingBatchPref, setSavingBatchPref] = useState(false);
+  const [dishPrefsOpen, setDishPrefsOpen] = useState(false);
 
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
@@ -65,11 +73,13 @@ export default function MyMenuScreen({ profile }: Props) {
       getOnboarding(profile.email),
       getAthleteNutritionConfig(profile.email),
       getMenuCompletionLog(profile.email, TODAY_DATE),
-    ]).then(([m, ob, cfg, log]) => {
+      getRecipeFavorites(profile.email),
+    ]).then(([m, ob, cfg, log, favs]) => {
       setMenu(m);
       setOnboarding(ob);
       setNutritionConfig(cfg);
       setDoneKeys(new Set(log?.doneMealKeys ?? []));
+      setFavorites({ ...favs, dislikedIds: favs.dislikedIds ?? [] });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [profile.email]);
@@ -81,10 +91,16 @@ export default function MyMenuScreen({ profile }: Props) {
     dietType: onboarding?.dietType,
     cookingMaxTime: onboarding?.cookingMaxTime,
     variety: nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3,
-  }), [onboarding, nutritionConfig]);
+    favoriteRecipeIds: favorites.recipeIds,
+    dislikedRecipeIds: favorites.dislikedIds ?? [],
+    preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
+    excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
+  }), [onboarding, nutritionConfig, favorites]);
 
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
+  const detailMeal = detailMealId ? menu?.days.flatMap(d => d.meals).find(m => m.id === detailMealId) : undefined;
+  const detailSwaps = new Map((detailMeal?.ingredientSwaps ?? []).map(s => [s.from, s.to]));
 
   // Shopping list needs each recipe's full ingredient list — fetched lazily the
   // first time the athlete opens it (menu meals only store name/image).
@@ -122,12 +138,14 @@ export default function MyMenuScreen({ profile }: Props) {
     }).catch(() => {});
   }
 
-  async function openDetail(recipeId: string) {
-    if (!recipeId) return;
+  async function openDetail(meal: MenuMeal) {
+    if (!meal.recipeId) return;
     setDetailOpen(true);
+    setDetailMealId(meal.id);
+    setSubForIngredient(null);
     setDetailLoading(true);
     setDetailRecipe(null);
-    const r = await getRecipeById(recipeId);
+    const r = await getRecipeById(meal.recipeId);
     setDetailRecipe(r);
     setDetailLoading(false);
   }
@@ -135,6 +153,78 @@ export default function MyMenuScreen({ profile }: Props) {
   function closeDetail() {
     setDetailOpen(false);
     setDetailRecipe(null);
+    setDetailMealId(null);
+    setSubForIngredient(null);
+  }
+
+  // Persist the athlete's recipe favorites / dislikes (feeds the generator + swaps).
+  async function saveFavs(next: RecipeFavorites) {
+    setFavorites(next);
+    await saveRecipeFavorites(next).catch(() => {});
+  }
+  function isFav(recipeId: string) { return favorites.recipeIds.includes(recipeId); }
+  function isDisliked(recipeId: string) { return (favorites.dislikedIds ?? []).includes(recipeId); }
+
+  function toggleFavorite(recipeId: string) {
+    if (!recipeId) return;
+    const fav = isFav(recipeId);
+    saveFavs({
+      ...favorites,
+      recipeIds: fav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
+      dislikedIds: (favorites.dislikedIds ?? []).filter(id => id !== recipeId), // favorite & dislike are mutually exclusive
+    });
+  }
+
+  function toggleDislike(recipeId: string, meal?: MenuMeal) {
+    if (!recipeId) return;
+    const disliked = isDisliked(recipeId);
+    saveFavs({
+      ...favorites,
+      dislikedIds: disliked ? (favorites.dislikedIds ?? []).filter(id => id !== recipeId) : [...(favorites.dislikedIds ?? []), recipeId],
+      recipeIds: favorites.recipeIds.filter(id => id !== recipeId),
+    });
+    // Marking the current meal's recipe as "no me gusta" → offer to replace it now.
+    if (!disliked && meal) openSwap(meal);
+  }
+
+  // Athlete's preferred / excluded dish types (tri-state cycle: neutral → más → evitar).
+  async function cycleDishType(id: DishType) {
+    const pref = new Set((nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[]);
+    const excl = new Set((nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[]);
+    if (pref.has(id)) { pref.delete(id); excl.add(id); }
+    else if (excl.has(id)) { excl.delete(id); }
+    else { pref.add(id); }
+    const next: AthleteNutritionConfig = {
+      ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }),
+      preferredDishTypes: Array.from(pref), excludedDishTypes: Array.from(excl),
+    };
+    setNutritionConfig(next);
+    await saveAthleteNutritionConfig(next).catch(() => {});
+  }
+  function dishState(id: string): 'pref' | 'excl' | 'neutral' {
+    const pref = (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[];
+    const excl = (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[];
+    if (pref.includes(id)) return 'pref';
+    if (excl.includes(id)) return 'excl';
+    return 'neutral';
+  }
+
+  // Swap one ingredient of the current meal for a same-group equivalent (approximate
+  // equivalence, so exchanges/kcal stay the same). Persisted on the meal via `days`.
+  async function applySubstitution(from: string, to: string) {
+    if (!menu || !detailMealId) return;
+    const nextDays = menu.days.map(d => ({
+      ...d,
+      meals: d.meals.map(m => {
+        if (m.id !== detailMealId) return m;
+        const swaps = (m.ingredientSwaps ?? []).filter(s => s.from !== from);
+        // to === from means "revert to original": just drop the swap.
+        return { ...m, ingredientSwaps: to === from ? swaps : [...swaps, { from, to }] };
+      }),
+    }));
+    setMenu({ ...menu, days: nextDays });
+    setSubForIngredient(null);
+    await updateWeeklyMenu(menu.id, { days: nextDays }).catch(() => {});
   }
 
   async function openSwap(meal: MenuMeal) {
@@ -298,7 +388,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 </button>
 
                 <button
-                  onClick={() => openDetail(meal.recipeId)}
+                  onClick={() => openDetail(meal)}
                   className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7"
                 >
                   {meal.recipeImage
@@ -322,19 +412,80 @@ export default function MyMenuScreen({ profile }: Props) {
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => openSwap(meal)}
-                    className="flex items-center gap-1 mt-1.5 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">swap_horiz</span>
-                    Intercambiar
-                  </button>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <button
+                      onClick={() => openSwap(meal)}
+                      className="flex items-center gap-1 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">swap_horiz</span>
+                      Intercambiar
+                    </button>
+                    {meal.recipeId && (
+                      <>
+                        <button
+                          onClick={() => toggleFavorite(meal.recipeId)}
+                          title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
+                          className="flex items-center transition-colors"
+                          style={{ color: isFav(meal.recipeId) ? '#fbcb1a' : '#6b6f52' }}
+                        >
+                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                        </button>
+                        <button
+                          onClick={() => toggleDislike(meal.recipeId, meal)}
+                          title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
+                          className="flex items-center transition-colors"
+                          style={{ color: isDisliked(meal.recipeId) ? '#f87171' : '#6b6f52' }}
+                        >
+                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Dish-type preferences (tri-state) */}
+      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+        <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
+          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+            <span className="material-symbols-outlined text-[#fbcb1a] text-base">tune</span>
+            Tipos de comida que prefieres
+          </span>
+          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
+        </button>
+        {dishPrefsOpen && (
+          <div className="px-4 pb-4 space-y-3">
+            <p className="font-mono text-[9px] text-[#555]">
+              Toca una vez para que salga <span className="text-[#fbcb1a]">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
+                const st = dishState(dt.id);
+                const cls = st === 'pref'
+                  ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                  : st === 'excl'
+                    ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
+                    : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:text-white';
+                return (
+                  <button
+                    key={dt.id}
+                    onClick={() => cycleDishType(dt.id)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all ${cls}`}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
+                    {dt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="font-mono text-[9px] text-[#555]">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
+          </div>
+        )}
+      </div>
 
       {/* Variety preference */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
@@ -438,17 +589,62 @@ export default function MyMenuScreen({ profile }: Props) {
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>
                     <p className="font-mono text-[9px] text-[#555] uppercase mb-1.5">Ingredientes</p>
-                    <ul className="space-y-1">
+                    <ul className="space-y-0.5">
                       {(detailRecipe.ingredientsText?.length
                         ? detailRecipe.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
                         : (detailRecipe.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
-                      ).map((ing, idx) => (
-                        <li key={idx} className="flex items-center justify-between py-1 border-b border-white/7 last:border-0">
-                          <span className="text-xs text-white font-sans flex-1 pr-2">{ing.label}</span>
-                          <span className="font-mono text-[10px] text-[#c6c9ab] shrink-0">{ing.qty}</span>
-                        </li>
-                      ))}
+                      ).map((ing, idx) => {
+                        const swappedTo = detailSwaps.get(ing.label);
+                        const subs = detailMealId ? substitutesFor(ing.label) : [];
+                        const open = subForIngredient === ing.label;
+                        return (
+                          <li key={idx} className="py-1 border-b border-white/7 last:border-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-sans flex-1 pr-2">
+                                {swappedTo ? (
+                                  <>
+                                    <span className="text-[#c6c9ab] line-through">{ing.label}</span>{' '}
+                                    <span className="text-[#fbcb1a]">→ {swappedTo}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-white">{ing.label}</span>
+                                )}
+                              </span>
+                              <span className="font-mono text-[10px] text-[#c6c9ab] shrink-0">{ing.qty}</span>
+                              {subs.length > 0 && (
+                                <button
+                                  onClick={() => setSubForIngredient(open ? null : ing.label)}
+                                  title="Cambiar por un alimento parecido"
+                                  className="text-[#00eefc] hover:text-white shrink-0"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>swap_horiz</span>
+                                </button>
+                              )}
+                            </div>
+                            {open && subs.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5 pb-1">
+                                {swappedTo && (
+                                  <button
+                                    onClick={() => applySubstitution(ing.label, ing.label)}
+                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] hover:text-white"
+                                  >↩ original</button>
+                                )}
+                                {subs.map(s => (
+                                  <button
+                                    key={s}
+                                    onClick={() => applySubstitution(ing.label, s)}
+                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-white font-mono text-[10px] hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a]"
+                                  >{s}</button>
+                                ))}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
+                    {detailMealId && (
+                      <p className="font-mono text-[9px] text-[#555] mt-1.5">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
+                    )}
                   </div>
                 ) : null}
                 {(detailRecipe.stepsText?.length || detailRecipe.steps?.length) ? (

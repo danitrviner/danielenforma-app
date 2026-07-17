@@ -205,14 +205,16 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
 interface DetailProps {
   recipe: Recipe;
   isFav: boolean;
+  isDisliked: boolean;
   enabledModes: DietMode[];
   savingFav: boolean;
   onBack: () => void;
   onToggleFav: (id: string) => void;
+  onToggleDislike: (id: string) => void;
   onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggleFav, onAddToIntercambios }: DetailProps) {
+function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBack, onToggleFav, onToggleDislike, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const isIndya = recipe.ownerId === 'indya';
   const exch = calcExchanges(recipe);
@@ -254,6 +256,18 @@ function RecipeDetail({ recipe, isFav, enabledModes, savingFav, onBack, onToggle
               style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
+          </button>
+          <button
+            onClick={() => onToggleDislike(recipe.id)}
+            disabled={savingFav}
+            title={isDisliked ? 'Quitar el "no me gusta"' : 'No me gusta — que no salga en mis menús'}
+            className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            style={{ color: isDisliked ? '#f87171' : '#c6c9ab' }}
+          >
+            <span
+              className="material-symbols-outlined text-xl"
+              style={{ fontVariationSettings: isDisliked ? "'FILL' 1" : "'FILL' 0" }}
+            >thumb_down</span>
           </button>
         </div>
       </div>
@@ -581,10 +595,25 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   const toggleFavorite = async (recipeId: string) => {
     const isFav = favorites.recipeIds.includes(recipeId);
-    const nextIds = isFav
-      ? favorites.recipeIds.filter(id => id !== recipeId)
-      : [...favorites.recipeIds, recipeId];
-    const nextFavs: RecipeFavorites = { athleteId: profile.email, recipeIds: nextIds };
+    const nextFavs: RecipeFavorites = {
+      athleteId: profile.email,
+      recipeIds: isFav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
+      dislikedIds: (favorites.dislikedIds ?? []).filter(id => id !== recipeId), // favorite & dislike are mutually exclusive
+    };
+    setFavorites(nextFavs);
+    setSavingFav(true);
+    try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
+  };
+
+  const toggleDislike = async (recipeId: string) => {
+    const wasDisliked = (favorites.dislikedIds ?? []).includes(recipeId);
+    const nextFavs: RecipeFavorites = {
+      athleteId: profile.email,
+      recipeIds: favorites.recipeIds.filter(id => id !== recipeId),
+      dislikedIds: wasDisliked
+        ? (favorites.dislikedIds ?? []).filter(id => id !== recipeId)
+        : [...(favorites.dislikedIds ?? []), recipeId],
+    };
     setFavorites(nextFavs);
     setSavingFav(true);
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
@@ -602,10 +631,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       <RecipeDetail
         recipe={activeRecipe}
         isFav={favorites.recipeIds.includes(activeRecipe.id)}
+        isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
         enabledModes={enabledModes}
         savingFav={savingFav}
         onBack={() => setActiveRecipe(null)}
         onToggleFav={toggleFavorite}
+        onToggleDislike={toggleDislike}
         onAddToIntercambios={onAddToIntercambios}
       />
     );

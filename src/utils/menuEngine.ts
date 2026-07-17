@@ -7,6 +7,7 @@ import { ingredientMatch, normalizeStr } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
 import { simpleComplementsFor } from './menuComplements';
+import { dishType, DishType } from './dishTypes';
 
 // Pure, framework-free generator for recipe-first weekly menus. Reads its
 // daily point budget from the client's already-configured exchange-type diets
@@ -32,6 +33,10 @@ export interface GeneratorPrefs {
   dietType?: DietType;
   cookingMaxTime?: number;
   variety: number; // 1 (monotone) - 5 (max variety)
+  favoriteRecipeIds?: string[];  // strong bonus — surface these much more
+  dislikedRecipeIds?: string[];  // hard-excluded ("no me gusta")
+  preferredDishTypes?: DishType[]; // strong bonus for these dish types
+  excludedDishTypes?: DishType[];  // hard-excluded dish types
 }
 
 export interface MenuCandidate {
@@ -184,11 +189,16 @@ function violatesDietType(recipe: Recipe, dietType?: DietType): boolean {
 export interface RankOptions {
   needsTupper?: boolean;
   mode?: DietMode;
+  // Dish types already placed (per day and/or week) with how many times — used to
+  // penalize serving the same *kind* of meal repeatedly (the "always a batido" fix).
+  usedDishTypes?: ReadonlyMap<DishType, number>;
 }
 
 // Hard filters (never appear in output): allergies, dietType violations,
-// cooking time over the athlete's max. Soft signals (nudge the ranking):
-// liked/disliked ingredients, tupper fit, and repetition per `usedIds`.
+// cooking time over the athlete's max, recipes the athlete marked "no me gusta",
+// and dish types they chose to exclude. Soft signals (nudge the ranking):
+// favorite recipes and preferred dish types (strong bonus), liked/disliked
+// ingredients, tupper fit, recipe repetition (`usedIds`) and dish-type repetition.
 export function rankCandidates(
   pool: Recipe[],
   target: BudgetVec,
@@ -197,7 +207,14 @@ export function rankCandidates(
   opts: RankOptions = {},
 ): MenuCandidate[] {
   const mode = opts.mode ?? 'OMNIVORO';
+  const disliked = new Set(prefs.dislikedRecipeIds ?? []);
+  const favorites = new Set(prefs.favoriteRecipeIds ?? []);
+  const excludedDish = new Set(prefs.excludedDishTypes ?? []);
+  const preferredDish = new Set(prefs.preferredDishTypes ?? []);
+
   const safe = pool.filter(r =>
+    !disliked.has(r.id) &&
+    !excludedDish.has(dishType(r)) &&
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&
     !violatesDietType(r, prefs.dietType) &&
     !(prefs.cookingMaxTime != null && r.cookingTime != null && r.cookingTime > prefs.cookingMaxTime),
@@ -208,10 +225,15 @@ export function rankCandidates(
     const fit = bestScaleFit(recipe, target, mode);
     if (!fit) continue;
     let score = fit.score;
+    const dt = dishType(recipe);
+    if (favorites.has(recipe.id)) score -= 3;            // favorites: appear much more
+    if (preferredDish.has(dt)) score -= 1.5;             // preferred dish types: prioritized
     if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += 2;
     if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= 0.5;
     if (opts.needsTupper && recipe.tupper) score -= 0.5;
-    if (usedIds.has(recipe.id)) score += 5; // strong nudge away, not a hard block
+    if (usedIds.has(recipe.id)) score += 5;              // strong nudge away, not a hard block
+    const dishReuse = opts.usedDishTypes?.get(dt) ?? 0;
+    if (dishReuse > 0) score += 2 * dishReuse;           // spread dish types across the day/week
     scored.push({ recipe, scale: fit.scale, exch: fit.exch, score });
   }
   return scored.sort((a, b) => a.score - b.score);
@@ -295,13 +317,21 @@ export interface GenerateDayArgs {
   pools: Record<number, Recipe[]>; // recipe candidates keyed by slot (intakeType)
   foods: MealItem[];
   prefs: GeneratorPrefs;
-  usedIds: Set<string>; // mutated in place to track variety across days
+  usedIds: Set<string>; // mutated in place to track recipe variety across days
+  usedDishTypes?: Map<DishType, number>; // mutated in place to spread dish types across days
   mode?: DietMode;
+}
+
+function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
+  map.set(dt, (map.get(dt) ?? 0) + 1);
 }
 
 export function generateDay(args: GenerateDayArgs): MenuDay {
   const { day, diet, slots, pools, foods, prefs, usedIds } = args;
   const mode = args.mode ?? 'OMNIVORO';
+  // A per-day dish-type tally (seeded from any week-level one passed in) so two
+  // slots on the same day don't both come out as, say, batidos.
+  const dishTypes = args.usedDishTypes ?? new Map<DishType, number>();
 
   if (!diet) {
     return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, meals: [] };
@@ -312,11 +342,12 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
 
   const meals: MenuMeal[] = slots.map((slot, i) => {
     const pool = pools[slot.slot] ?? [];
-    const ranked = rankCandidates(pool, targets[i], prefs, usedIds, { needsTupper: slot.needsTupper, mode });
+    const ranked = rankCandidates(pool, targets[i], prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
     if (!pick) return emptyMeal(id, slot);
     usedIds.add(pick.recipe.id);
+    bumpDishType(dishTypes, dishType(pick.recipe));
     return buildMeal(id, slot, pick.recipe, pick.scale, pick.exch);
   });
 
@@ -410,6 +441,10 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
   const globalUsed = new Set<string>();
   const perDietUsed = new Map<string, Set<string>>();
   const perDietTemplate = new Map<string, MenuDay>();
+  // Week-level dish-type tallies so the same *kind* of meal (e.g. breakfast
+  // batido) doesn't repeat every day. Not used for variety<=2 (we clone there).
+  const globalDishTypes = new Map<DishType, number>();
+  const perDietDishTypes = new Map<string, Map<DishType, number>>();
 
   return WEEK_DAYS.map(day => {
     const dietId = schedule[day] ?? null;
@@ -429,10 +464,12 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
     if (prefs.variety === 3) {
       const usedIds = perDietUsed.get(diet.id) ?? new Set<string>();
       perDietUsed.set(diet.id, usedIds);
-      return generateDay({ day, diet, slots, pools, foods, prefs, usedIds, mode });
+      const usedDishTypes = perDietDishTypes.get(diet.id) ?? new Map<DishType, number>();
+      perDietDishTypes.set(diet.id, usedDishTypes);
+      return generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode });
     }
 
-    return generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, mode });
+    return generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode });
   });
 }
 
@@ -478,14 +515,28 @@ export function findSwapAlternatives(
   const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
-  const ranked = rankCandidates(pool, mealTarget, prefs, usedIds, { mode });
-
-  return ranked
+  const withinTolerance = rankCandidates(pool, mealTarget, prefs, usedIds, { mode })
     .filter(c => {
       const newTotal = otherMealsTotal.HC + c.exch.HC + otherMealsTotal.PROT + c.exch.PROT + otherMealsTotal.GRASA + c.exch.GRASA;
       return Math.abs(newTotal - targetTotal) <= 1;
-    })
-    .slice(0, count);
+    });
+
+  // Diversify the shortlist by dish type so the athlete sees genuinely different
+  // options (a batido, a tostada, a tortilla…) rather than five variations of the
+  // same thing. Take the best of each new dish type first, then fill up to `count`.
+  const picked: MenuCandidate[] = [];
+  const seenTypes = new Set<DishType>();
+  for (const c of withinTolerance) {
+    const dt = dishType(c.recipe);
+    if (!seenTypes.has(dt)) { picked.push(c); seenTypes.add(dt); }
+    if (picked.length >= count) return picked;
+  }
+  for (const c of withinTolerance) {
+    if (picked.includes(c)) continue;
+    picked.push(c);
+    if (picked.length >= count) break;
+  }
+  return picked;
 }
 
 // ─── Batch-cooking plan ──────────────────────────────────────────────────────

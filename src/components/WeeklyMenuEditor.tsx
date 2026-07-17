@@ -1,15 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe,
+  OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory,
 } from '../types';
-import { queryIndyaForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu } from '../dbService';
+import { queryIndyaForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
   buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
 import { buildShoppingList } from '../utils/menuShoppingList';
+import { DISH_TYPES, DishType } from '../utils/dishTypes';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -65,6 +66,17 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
   const [pickerLoading, setPickerLoading] = useState(false);
   const [showPrep, setShowPrep] = useState(false);
 
+  // Athlete's recipe favorites/dislikes + dish-type preferences feed the generator
+  // and swap picker. Dish prefs are prefilled from the athlete's config; the coach
+  // can adjust them here for this generation without changing the athlete's choice.
+  const [favorites, setFavorites] = useState<RecipeFavorites>({ athleteId: athleteEmail, recipeIds: [], dislikedIds: [] });
+  const [preferredDish, setPreferredDish] = useState<string[]>(nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []);
+  const [excludedDish, setExcludedDish] = useState<string[]>(nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []);
+
+  useEffect(() => {
+    getRecipeFavorites(athleteEmail).then(f => setFavorites({ ...f, dislikedIds: f.dislikedIds ?? [] })).catch(() => {});
+  }, [athleteEmail]);
+
   // Lazily-populated caches so editing an existing draft doesn't need a fresh
   // full generation, only the pools touched by "cambiar receta"/"regenerar".
   const [pools, setPools] = useState<Record<number, Recipe[]>>({});
@@ -82,7 +94,22 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     dietType: onboarding?.dietType,
     cookingMaxTime: onboarding?.cookingMaxTime,
     variety,
-  }), [onboarding, variety]);
+    favoriteRecipeIds: favorites.recipeIds,
+    dislikedRecipeIds: favorites.dislikedIds ?? [],
+    preferredDishTypes: preferredDish as DishType[],
+    excludedDishTypes: excludedDish as DishType[],
+  }), [onboarding, variety, favorites, preferredDish, excludedDish]);
+
+  function cycleDishType(id: string) {
+    if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }
+    else if (excludedDish.includes(id)) { setExcludedDish(e => e.filter(x => x !== id)); }
+    else { setPreferredDish(p => [...p, id]); }
+  }
+  function dishState(id: string): 'pref' | 'excl' | 'neutral' {
+    if (preferredDish.includes(id)) return 'pref';
+    if (excludedDish.includes(id)) return 'excl';
+    return 'neutral';
+  }
 
   // Recipe lookup for the prep/shopping preview, built from the pools + builder
   // recipes already loaded during generation (no extra fetches).
@@ -349,6 +376,34 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <div className="flex justify-between mt-1">
             <span className="font-mono text-[9px] text-[#555]">{batch ? 'En batch cooking se minimizan las recetas' : 'Monótono (repite)'}</span>
             <span className="font-mono text-[9px] text-[#555]">Máxima variedad</span>
+          </div>
+        </div>
+
+        {/* Dish-type filter — prefilled from the athlete's preference */}
+        <div>
+          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase mb-1.5">Tipos de plato</label>
+          <p className="font-mono text-[9px] text-[#555] mb-2">
+            Prellenado con lo que eligió el atleta. Toca: neutral → <span className="text-[#fbcb1a]">priorizar</span> → <span className="text-red-400">excluir</span>.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
+              const st = dishState(dt.id);
+              const cls = st === 'pref'
+                ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                : st === 'excl'
+                  ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
+                  : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:text-white';
+              return (
+                <button
+                  key={dt.id}
+                  onClick={() => cycleDishType(dt.id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all ${cls}`}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
+                  {dt.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
