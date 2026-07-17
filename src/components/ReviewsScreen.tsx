@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds } from '../dbService';
@@ -86,6 +86,36 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   const pendingCount = usePendingReviews(checkins).length;
 
+  // Checkins pendientes en el mismo orden que la lista (más antiguo primero) —
+  // base para "Responder y siguiente": en vez de responder, volver a la lista
+  // y buscar el próximo pendiente a mano, el coach encadena uno tras otro sin
+  // salir del panel de feedback. Es el flujo más frecuente del día a día.
+  const pendingCheckinItems = useMemo(
+    () => unifiedItems.filter((i): i is Extract<UnifiedItem, { kind: 'checkin' }> => i.kind === 'checkin' && !i.data.approved),
+    [unifiedItems]
+  );
+
+  const expandedRowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (expandedId) expandedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [expandedId]);
+
+  // No toca errorMsg/successMsg — se usa también para encadenar al siguiente
+  // pendiente justo después de fijar el mensaje de éxito del envío anterior;
+  // si lo limpiara aquí, ese mensaje desaparecería antes de llegar a pintarse.
+  const openCheckinRow = (checkin: WeightCheckIn) => {
+    setExpandedId(`c_${checkin.id}`);
+    setFeedbackText(checkin.coachFeedback || '');
+    setFeedbackDraftOriginal(checkin.coachFeedback || '');
+  };
+
+  const startReviewing = () => {
+    if (pendingCheckinItems.length === 0) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+    openCheckinRow(pendingCheckinItems[0].data);
+  };
+
   const goToAthleteProfile = (email: string) => {
     const hasUnsentDraft = expandedId !== null && feedbackText !== feedbackDraftOriginal;
     if (hasUnsentDraft && !window.confirm('Tienes feedback sin enviar para este check-in. ¿Descartarlo y continuar?')) {
@@ -102,9 +132,19 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     setIsSubmitting(true);
     try {
       await submitCoachFeedback(checkInId, feedbackText);
-      setSuccessMsg('¡Directiva enviada y check-in aprobado!');
-      setFeedbackDraftOriginal(feedbackText);
       onRefreshCheckIns();
+      // Encadena al siguiente pendiente (mismo orden que la lista) en vez de
+      // dejar al coach donde estaba — así procesar la bandeja es "enviar,
+      // enviar, enviar" sin volver a buscar el próximo a mano.
+      const idx = pendingCheckinItems.findIndex(i => i.data.id === checkInId);
+      const next = idx >= 0 ? pendingCheckinItems[idx + 1] : undefined;
+      if (next) {
+        openCheckinRow(next.data);
+        setSuccessMsg('¡Directiva enviada! Siguiente pendiente ↓');
+      } else {
+        setExpandedId(null);
+        setSuccessMsg('¡Directiva enviada y check-in aprobado! Todo revisado 🎉');
+      }
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
@@ -125,10 +165,19 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
-            <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-lg font-sans font-bold uppercase">
-              <span className="material-symbols-outlined text-sm">pending_actions</span>
-              {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
-            </span>
+            <>
+              <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-lg font-sans font-bold uppercase">
+                <span className="material-symbols-outlined text-sm">pending_actions</span>
+                {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={startReviewing}
+                className="flex items-center gap-1.5 text-xs bg-[#fbcb1a] text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-[#d4a800] active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-base">rate_review</span>
+                Empezar a revisar
+              </button>
+            </>
           )}
           {loadingResponses && (
             <span className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">Cargando respuestas...</span>
@@ -186,9 +235,11 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 const c = item.data;
                 const athleteName = getAthleteName(c.email || c.userId);
                 const athleteProfile = getAthleteProfile(c.email || c.userId);
+                const pendingIdx = pendingCheckinItems.findIndex(i => i.data.id === c.id);
+                const hasNextPending = pendingIdx >= 0 && pendingIdx < pendingCheckinItems.length - 1;
 
                 return (
-                  <div key={key}>
+                  <div key={key} ref={isExpanded ? expandedRowRef : undefined}>
                     <div
                       onClick={toggle}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
@@ -261,6 +312,11 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         {errorMsg && expandedId === key && (
                           <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-lg text-xs font-mono">{errorMsg}</div>
                         )}
+                        {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
+                          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+                            Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
+                          </p>
+                        )}
                         <form onSubmit={(e) => handleSendFeedback(c.id, e)} className="space-y-2">
                           <textarea
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
@@ -273,8 +329,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             disabled={isSubmitting}
                             className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                           >
-                            {isSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
-                            <span className="material-symbols-outlined text-sm">send</span>
+                            {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
+                            <span className="material-symbols-outlined text-sm">{hasNextPending ? 'skip_next' : 'send'}</span>
                           </button>
                         </form>
                       </div>

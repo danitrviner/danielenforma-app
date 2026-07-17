@@ -34,6 +34,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   // Editor state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -115,6 +116,27 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       showToast('No se pudo guardar la rutina.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Copia instantánea para usar como base de una progresión o variante —
+  // antes crear "Día 2 parecido al Día 1" exigía recrear cada ejercicio a
+  // mano en el editor.
+  const handleDuplicate = async (w: Workout) => {
+    setDuplicatingId(w.id);
+    try {
+      const copy = await createWorkout({
+        ownerId: w.ownerId,
+        name: `${w.name} (copia)`,
+        exercises: w.exercises,
+      });
+      setWorkouts(prev => [...prev, copy]);
+      flash('Rutina duplicada.');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar la rutina.');
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -290,7 +312,18 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     Editar
                   </button>
                   <button
+                    onClick={() => handleDuplicate(w)}
+                    disabled={duplicatingId === w.id}
+                    title="Duplicar rutina"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1e1e1b] hover:bg-[#fbcb1a]/10 border border-white/7 hover:border-[#fbcb1a]/30 text-[#c6c9ab] hover:text-[#fbcb1a] rounded-xl font-mono text-[10px] uppercase font-bold transition-all disabled:opacity-50"
+                  >
+                    <span className={`material-symbols-outlined text-sm ${duplicatingId === w.id ? 'animate-spin' : ''}`}>
+                      {duplicatingId === w.id ? 'progress_activity' : 'content_copy'}
+                    </span>
+                  </button>
+                  <button
                     onClick={() => setDeleteConfirm(w.id)}
+                    title="Eliminar rutina"
                     className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1e1e1b] hover:bg-red-500/10 border border-white/7 hover:border-red-500/30 text-[#c6c9ab] hover:text-red-400 rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
