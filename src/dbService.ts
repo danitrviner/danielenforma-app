@@ -2144,14 +2144,20 @@ export async function getRecipes(): Promise<Recipe[]> {
 // ingredients/steps on demand when the athlete opens a recipe's detail.
 export async function getRecipeById(id: string): Promise<Recipe | null> {
   const local = getLocalRecipes().find(r => r.id === id);
-  if (forceLocalOnly) return local ?? null;
+  // Only use the local cache outright when it actually has this recipe. Indya
+  // recipes are never persisted to the local cache (getRecipes excludes them),
+  // so in local mode `local` is usually undefined for a menu's recipes — falling
+  // back to it would make the viewer always say "no se pudo cargar la receta".
+  // A single-doc recipe read is cheap and world-readable to any authed user, so
+  // try Firestore even in local mode, and DON'T flip global local mode if it
+  // fails (one recipe read failing shouldn't poison the whole session).
+  if (forceLocalOnly && local) return local;
   try {
     const snap = await getDoc(doc(db, 'recipes', id));
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as Recipe;
+    if (snap.exists()) return { id: snap.id, ...snap.data() } as Recipe;
+    return local ?? null;
   } catch (err) {
     console.warn(`getRecipeById(${id}) Firestore failed, using local:`, err);
-    setLocalBypassMode(true);
     return local ?? null;
   }
 }
