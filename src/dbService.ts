@@ -431,10 +431,14 @@ export async function getCheckIns(userId?: string): Promise<WeightCheckIn[]> {
     const entries: WeightCheckIn[] = [];
     querySnap.forEach((d) => {
       const data = d.data();
+      // Legacy docs can be missing `timestamp` entirely — new Date(undefined) is an
+      // Invalid Date that later blows up any .toISOString() call on it (ClientStatusCard
+      // does this when picking the most recent checkin). Fall back to "now" instead.
+      const parsed = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
       entries.push({
         id: d.id,
         ...data,
-        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp)
+        timestamp: isNaN(parsed.getTime()) ? new Date() : parsed,
       } as WeightCheckIn);
     });
 

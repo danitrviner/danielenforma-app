@@ -73,7 +73,12 @@ export default function ClientStatusCard({
   const recentChanges = useMemo(() => {
     const events: ChangeEvent[] = [];
     const lastCheckin = [...checkins].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-    if (lastCheckin) events.push({ date: new Date(lastCheckin.timestamp).toISOString(), icon: 'monitor_weight', text: `Check-in (${lastCheckin.weight} kg)` });
+    if (lastCheckin) {
+      // Legacy/cached checkins can carry an unparseable timestamp — toISOString()
+      // throws on an Invalid Date, so guard before calling it (crashed the whole card otherwise).
+      const ts = new Date(lastCheckin.timestamp);
+      if (!isNaN(ts.getTime())) events.push({ date: ts.toISOString(), icon: 'monitor_weight', text: `Check-in (${lastCheckin.weight} kg)` });
+    }
     const lastLog = [...athleteLogs].sort((a, b) => b.date.localeCompare(a.date))[0];
     if (lastLog) events.push({ date: lastLog.completedAt || lastLog.date, icon: 'fitness_center', text: 'Entrenamiento registrado' });
     const lastSent = coachReports.filter(r => r.status === 'sent' && r.sentAt).sort((a, b) => (b.sentAt!).localeCompare(a.sentAt!))[0];
