@@ -138,10 +138,14 @@ function AppContent() {
     setProfile(userProfile);
     setActiveTab(coachRole ? 'clients' : 'home');
     if (coachRole && !location.pathname.startsWith('/clients')) navigate('/clients');
-    await seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com');
-    // Coach reads all check-ins (no userId filter); athlete reads only their own
-    const checks = await getCheckIns(coachRole ? undefined : user.uid);
-    setCheckins(checks);
+    // Check-ins ya no bloquean el splash de carga — antes el coach esperaba
+    // la descarga completa del historial (sin límite) antes de ver ninguna
+    // pantalla. `checkins` arranca en [] y toda la UI que depende de él ya
+    // tolera la lista vacía, así que puede llegar en segundo plano.
+    seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com')
+      .then(() => getCheckIns(coachRole ? undefined : user.uid)) // coach: sin filtro; atleta: solo el suyo
+      .then(setCheckins)
+      .catch(err => console.error('Error cargando check-ins:', err));
   };
 
   // Subscribe once on mount — handles session restore when the page reloads with an

@@ -26,8 +26,18 @@ service cloud.firestore {
     // El alta propia exige invitación previa del coach (invites/{email}, ver
     // más abajo): antes cualquier persona autenticada podía crear su perfil y
     // leer biblioteca/rutinas/recetas del coach sin ser cliente.
+    // El `read` también deja consultar `where('email','==', <tu propio email>)`
+    // (no solo el get puntual por UID): Firestore permite probar esto porque
+    // el resultado de esa query solo puede contener documentos cuyo
+    // `resource.data.email` coincide con `request.auth.token.email` — no abre
+    // ninguna consulta más amplia. Sin esto, `getOrCreateUserProfile` no podía
+    // detectar un perfil ya existente bajo otro UID (típico al re-registrarse
+    // por Google tras haberlo hecho antes por email+contraseña): la query caía
+    // en `permission-denied`, el error se tragaba en silencio y se creaba un
+    // segundo perfil duplicado con el historial partido.
     match /user_profiles/{userId} {
-      allow read: if isOwnerUid(userId) || isCoach();
+      allow read: if isOwnerUid(userId) || isCoach()
+                  || (request.auth != null && resource.data.email == request.auth.token.email);
       allow create: if isCoach()
                     || (isOwnerUid(userId)
                         && request.resource.data.role == 'client'

@@ -1,7 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection,
   doc,
   getDoc,
@@ -46,7 +50,23 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870');
+const FIRESTORE_DB_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870';
+// Caché local persistente con soporte multi-pestaña: da lecturas instantáneas
+// desde caché y, sobre todo, encola las escrituras offline y las reenvía sola
+// al recuperar conexión — antes un error transitorio de Firestore hacía que
+// toda la sesión cayera a un fallback de localStorage sin resincronización
+// (lo que el atleta registrara offline no le llegaba nunca al coach). El
+// try/catch cubre el caso de HMR en dev, donde este módulo puede reevaluarse
+// dos veces para la misma app+base y `initializeFirestore` lanza si ya se
+// llamó antes — en ese caso basta con recuperar la instancia ya creada.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  }, FIRESTORE_DB_ID);
+} catch {
+  db = getFirestore(app, FIRESTORE_DB_ID);
+}
 const auth = getAuth(app);
 const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
@@ -65,6 +85,16 @@ if (RECAPTCHA_SITE_KEY) {
     provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
     isTokenAutoRefreshEnabled: true,
   });
+}
+
+// Analytics: hoy no está activado (measurementId vacío en
+// firebase-applet-config.json, Analytics nunca se habilitó para este
+// proyecto en la consola). En cuanto se active ahí y se rellene el
+// measurementId, esto empieza a mandar eventos solo; hasta entonces no hace
+// nada. `isSupported()` evita el intento en entornos sin IndexedDB/cookies
+// (por ejemplo, algunos navegadores en modo incógnito).
+if (firebaseConfig.measurementId) {
+  isAnalyticsSupported().then(supported => { if (supported) getAnalytics(app); }).catch(() => {});
 }
 
 export {

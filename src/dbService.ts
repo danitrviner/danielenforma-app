@@ -411,6 +411,15 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
   }
 }
 
+// El coach lee sin filtro por atleta (para el badge de revisiones pendientes y
+// las tarjetas de ClientsScreen/ClientHub) — sin límite esto crecía sin techo
+// con el historial completo de todos los atletas en cada login/refresh del
+// coach. 300 cubre de sobra el uso real (revisiones pendientes y último
+// check-in por atleta son siempre recientes); un atleta muy longevo puede
+// perder algún check-in muy antiguo del historial dentro de ClientHub — no
+// hay paginación por atleta todavía, es la solución completa pendiente.
+const COACH_CHECKINS_LIMIT = 300;
+
 // Fetch Checkins.
 // Pass userId for athlete reads (Firestore rules deny unfiltered list to athletes).
 // Omit userId for coach reads (coach can read all).
@@ -425,7 +434,7 @@ export async function getCheckIns(userId?: string): Promise<WeightCheckIn[]> {
     // where + orderBy on different fields requires a composite index, so we sort client-side
     const q = userId
       ? query(colRef, where('userId', '==', userId))
-      : query(colRef, orderBy('timestamp', 'desc'));
+      : query(colRef, orderBy('timestamp', 'desc'), limit(COACH_CHECKINS_LIMIT));
     const querySnap = await getDocs(q);
 
     const entries: WeightCheckIn[] = [];
