@@ -432,13 +432,13 @@ export default function ClientHub({
   const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCheckInId) { setFeedbackError('No hay ningún check-in seleccionado.'); return; }
-    if (!feedbackText.trim()) { setFeedbackError('Por favor ingresa una directriz.'); return; }
+    if (!feedbackText.trim()) { setFeedbackError('Por favor, escribe tu feedback.'); return; }
     setFeedbackError('');
     setFeedbackSuccess('');
     setIsSubmitting(true);
     try {
       await submitCoachFeedback(activeCheckInId, feedbackText);
-      setFeedbackSuccess('¡Directiva enviada con éxito!');
+      setFeedbackSuccess('¡Feedback enviado!');
       onRefreshCheckIns();
       setTimeout(() => setFeedbackSuccess(''), 4000);
     } catch (err) {
@@ -451,13 +451,13 @@ export default function ClientHub({
 
   const handleUnifiedSendFeedback = async (checkInId: string, e: React.FormEvent) => {
     e.preventDefault();
-    if (!unifiedFeedbackText.trim()) { setUnifiedFeedbackError('Por favor ingresa una directriz.'); return; }
+    if (!unifiedFeedbackText.trim()) { setUnifiedFeedbackError('Por favor, escribe tu feedback.'); return; }
     setUnifiedFeedbackError('');
     setUnifiedFeedbackSuccess('');
     setUnifiedSubmitting(true);
     try {
       await submitCoachFeedback(checkInId, unifiedFeedbackText);
-      setUnifiedFeedbackSuccess('¡Directiva enviada con éxito!');
+      setUnifiedFeedbackSuccess('¡Feedback enviado!');
       onRefreshCheckIns();
       setTimeout(() => setUnifiedFeedbackSuccess(''), 4000);
     } catch (err) {

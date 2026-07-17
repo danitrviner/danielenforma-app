@@ -227,7 +227,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
         </div>
-        <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Sincronizando portal deportista...</p>
+        <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
     );
   }
@@ -281,7 +281,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-[10px] bg-[#181816] border border-white/7 text-[#c6c9ab] px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
-            {profile.role.toUpperCase()} MODE
+            {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
         <div className="flex items-center gap-6">

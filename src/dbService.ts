@@ -27,6 +27,7 @@ import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote, CoachInstructions, WeeklyMenu, MenuCompletionLog } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
+import { compressImage } from './utils/compressImage';
 
 // Recursively remove keys whose value is undefined before sending to Firestore.
 // Firestore rejects documents containing undefined values.
@@ -2326,7 +2327,8 @@ export async function uploadProgressPhoto(
 ): Promise<ProgressPhoto> {
   const path = `progressPhotos/${athleteEmail}/${date}_${view}`;
   const sRef = storageRef(storage, path);
-  await uploadBytes(sRef, file);
+  const uploadData = await compressImage(file);
+  await uploadBytes(sRef, uploadData);
   const url = await getDownloadURL(sRef);
   const photo: ProgressPhoto = {
     id: `${athleteEmail}_${date}_${view}`,

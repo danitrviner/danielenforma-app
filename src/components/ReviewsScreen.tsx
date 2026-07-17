@@ -126,7 +126,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   const handleSendFeedback = async (checkInId: string, e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedbackText.trim()) { setErrorMsg('Ingresa una directriz para el atleta.'); return; }
+    if (!feedbackText.trim()) { setErrorMsg('Escribe tu feedback para el atleta.'); return; }
     setErrorMsg('');
     setSuccessMsg('');
     setIsSubmitting(true);
@@ -140,10 +140,10 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       const next = idx >= 0 ? pendingCheckinItems[idx + 1] : undefined;
       if (next) {
         openCheckinRow(next.data);
-        setSuccessMsg('¡Directiva enviada! Siguiente pendiente ↓');
+        setSuccessMsg('¡Feedback enviado! Siguiente pendiente ↓');
       } else {
         setExpandedId(null);
-        setSuccessMsg('¡Directiva enviada y check-in aprobado! Todo revisado 🎉');
+        setSuccessMsg('¡Feedback enviado y check-in aprobado! Todo revisado 🎉');
       }
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
@@ -321,7 +321,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <textarea
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
-                            placeholder="Escribe tu directriz para el atleta..."
+                            placeholder="Escribe tu feedback para el atleta..."
                             className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
