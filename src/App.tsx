@@ -9,6 +9,7 @@ import NotificationBell from './components/NotificationBell';
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
 import { ToastProvider } from './hooks/useToast';
+import { ScreenSkeleton } from './components/Skeleton';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -34,11 +35,7 @@ const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
 
 function ScreenFallback() {
-  return (
-    <div className="text-center py-12 text-[#c6c9ab] font-mono tracking-widest uppercase text-xs animate-pulse">
-      Cargando...
-    </div>
-  );
+  return <ScreenSkeleton />;
 }
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';

@@ -9,6 +9,7 @@ import AthleteReportsPanel from './AthleteReportsPanel';
 import ProgressRing from './ProgressRing';
 import StatTile from './StatTile';
 import PlanInPreparationCard from './PlanInPreparationCard';
+import Skeleton from './Skeleton';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -105,7 +106,10 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         </h2>
 
         {loadingTraining ? (
-          <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando...</p>
+          <div className="space-y-1.5">
+            <Skeleton className="h-11 w-full rounded-lg" />
+            <Skeleton className="h-11 w-full rounded-lg" />
+          </div>
         ) : thisWeekPending.length === 0 && overdue.length === 0 ? (
           <p className="text-xs text-[#555] font-mono py-2">Sin entrenamientos pendientes esta semana.</p>
         ) : (

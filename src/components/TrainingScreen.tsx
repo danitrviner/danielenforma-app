@@ -15,6 +15,7 @@ import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
+import Skeleton from './Skeleton';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -902,9 +903,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <span className="material-symbols-outlined animate-spin text-[#fbcb1a] mr-2">refresh</span>
-              <span className="font-mono text-xs uppercase tracking-widest text-[#c6c9ab]">Cargando programa...</span>
+            <div className="space-y-3">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
             </div>
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
