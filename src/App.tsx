@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding } from './dbService';
@@ -58,6 +58,12 @@ const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string
   { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
 ];
 
+// Segmentos de URL válidos por rol — cada pantalla tiene ahora su propia ruta
+// (antes solo /clients/* estaba enrutado; el resto vivía en un estado
+// `activeTab` que un refresh o el botón atrás de móvil no podían recuperar).
+const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'roadmap', 'profile'];
+const COACH_PATH_SEGMENTS = ['clients', 'reviews', 'training', 'nutrition', 'profile'];
+
 export default function App() {
   return (
     <ToastProvider>
@@ -70,7 +76,6 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
-  const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [loading, setLoading] = useState(true);
   // Gating del primer login del atleta: hasta completar el onboarding guiado no
   // se desbloquea la app. 'checking' mientras consultamos Firestore; el coach
@@ -79,33 +84,11 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // The "clients" tab is the only part of the app backed by real routes (see
-  // ClientsScreen/ClientHub) — keep the URL bar in sync whenever the coach
-  // switches tabs, and push a coach who just logged in onto /clients so a
-  // refresh there lands back on the exact athlete/hub-tab instead of the grid.
-  const goToTab = (tab: NavTab) => {
-    setActiveTab(tab);
-    if (tab === 'clients') {
-      if (!location.pathname.startsWith('/clients')) navigate('/clients');
-    } else if (location.pathname.startsWith('/clients')) {
-      navigate('/');
-    }
-  };
-
-  // One-directional: only follows the URL when something *outside* goToTab
-  // pushed us onto a /clients/* URL (e.g. a raw navigate() from ReviewsScreen).
-  // There used to be a symmetric branch that force-navigated back to /clients
-  // whenever activeTab === 'clients' but the URL wasn't — that fired on every
-  // goToTab() call made *from* the clients tab (its own navigate('/') hadn't
-  // landed in location yet on that render), snapping every tab back to Clientes.
-  // The two legitimate "land coach on /clients" cases it covered (initial login,
-  // NotificationBell's raw setActiveTab) are now handled explicitly instead.
-  useEffect(() => {
-    const onClientsUrl = location.pathname.startsWith('/clients');
-    if (onClientsUrl && activeTab !== 'clients') {
-      setActiveTab('clients');
-    }
-  }, [activeTab, location.pathname]);
+  // La pestaña activa se lee directo de la URL (primer segmento) en vez de
+  // guardarse en estado — así un refresh o el botón atrás de móvil recuperan
+  // la pantalla exacta en la que estaba el usuario, no solo /clients/* como
+  // antes. `goToTab` es ahora un simple `navigate`.
+  const goToTab = (tab: NavTab) => navigate(`/${tab}`);
 
   // Comprueba si el atleta ya hizo el onboarding guiado. El coach nunca se gatea.
   useEffect(() => {
@@ -126,8 +109,15 @@ function AppContent() {
     const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
     const coachRole = userProfile.role === 'coach' || isOwner;
     setProfile(userProfile);
-    setActiveTab(coachRole ? 'clients' : 'home');
-    if (coachRole && !location.pathname.startsWith('/clients')) navigate('/clients');
+    // Si ya hay una URL válida para este rol (ej. F5 en /training), se
+    // respeta — es lo que hace que el refresh recupere la pantalla exacta.
+    // Si no (login nuevo, o una URL de otro rol en un navegador compartido),
+    // aterriza en la pantalla por defecto del rol.
+    const seg = location.pathname.split('/')[1];
+    const validSegments = coachRole ? COACH_PATH_SEGMENTS : ATHLETE_PATH_SEGMENTS;
+    if (!validSegments.includes(seg)) {
+      navigate(coachRole ? '/clients' : '/home', { replace: true });
+    }
     // Check-ins ya no bloquean el splash de carga — antes el coach esperaba
     // la descarga completa del historial (sin límite) antes de ver ninguna
     // pantalla. `checkins` arranca en [] y toda la UI que depende de él ya
@@ -263,6 +253,10 @@ function AppContent() {
   const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
   const pendingCount = getPendingReviews(checkins).length;
 
+  // Pestaña activa para resaltar la nav — el primer segmento de la URL, ya
+  // no un estado aparte que podía desincronizarse de dónde estaba el usuario.
+  const pathTab = location.pathname.split('/')[1] as NavTab;
+
   // Cliente activo para el asistente IA: el :athleteId de /clients/* es el email
   // URL-encodeado (ver ClientsScreen), así el chat sabe a quién se refiere "este cliente".
   const clientRouteMatch = location.pathname.match(/^\/clients\/([^/]+)/);
@@ -318,11 +312,11 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${activeTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1e1e1b] hover:text-white'}`}
+              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1e1e1b] hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
-                style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
+                style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
               >
                 {tab.icon}
               </span>
@@ -336,7 +330,7 @@ function AppContent() {
         {isCoach && (
           <button
             onClick={() => goToTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-lg text-left ${activeTab === 'profile' ? 'text-[#fbcb1a]' : 'text-[#c6c9ab] hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-[#fbcb1a]' : 'text-[#c6c9ab] hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
             <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
@@ -346,52 +340,57 @@ function AppContent() {
 
       <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
       <Suspense fallback={<ScreenFallback />}>
+        <Routes>
+          <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
 
-        {/* ATHLETE */}
-        {!isCoach && activeTab === 'home'      && <HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />}
-        {!isCoach && activeTab === 'training'  && <TrainingScreen profile={profile} />}
-        {!isCoach && activeTab === 'nutrition' && <NutritionHubScreen profile={profile} />}
-        {!isCoach && activeTab === 'checkin'   && (
-          <CheckInScreen
-            profile={profile}
-            checkins={checkins}
+          {/* ATHLETE */}
+          {!isCoach && <Route path="/home" element={<HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />} />}
+          {!isCoach && <Route path="/training" element={<TrainingScreen profile={profile} />} />}
+          {!isCoach && <Route path="/nutrition" element={<NutritionHubScreen profile={profile} />} />}
+          {!isCoach && <Route path="/checkin" element={<CheckInScreen profile={profile} checkins={checkins} />} />}
+          {!isCoach && <Route path="/roadmap" element={<AthleteRoadmapScreen profile={profile} />} />}
+
+          {/* COACH */}
+          {isCoach && (() => {
+            const clientsScreen = (
+              <ClientsScreen
+                checkins={checkins}
+                onRefreshCheckIns={handleRefreshData}
+                coachId={profile.userId}
+                coachEmail={profile.email}
+                onOpenReviews={() => goToTab('reviews')}
+              />
+            );
+            return (
+              <>
+                <Route path="/clients" element={clientsScreen} />
+                <Route path="/clients/:athleteId" element={clientsScreen} />
+                <Route path="/clients/:athleteId/:hubTab" element={clientsScreen} />
+                <Route path="/clients/:athleteId/analisis/:subTab" element={clientsScreen} />
+                <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
+                <Route path="/training" element={<TrainingCoachScreen coachId={profile.userId} />} />
+                <Route path="/nutrition" element={<NutritionCoachScreen coachId={profile.userId} />} />
+              </>
+            );
+          })()}
+
+          {/* SHARED */}
+          <Route
+            path="/profile"
+            element={(
+              <ProfileScreen
+                profile={profile}
+                isCoach={isCoach}
+                onRefreshProfile={handleRefreshData}
+                onLogOut={() => setCurrentUser(null)}
+              />
+            )}
           />
-        )}
-        {!isCoach && activeTab === 'roadmap'   && <AthleteRoadmapScreen profile={profile} />}
 
-        {/* COACH */}
-        {isCoach && activeTab === 'clients' && (() => {
-          const clientsScreen = (
-            <ClientsScreen
-              checkins={checkins}
-              onRefreshCheckIns={handleRefreshData}
-              coachId={profile.userId}
-              coachEmail={profile.email}
-              onOpenReviews={() => goToTab('reviews')}
-            />
-          );
-          return (
-            <Routes>
-              <Route path="/clients" element={clientsScreen} />
-              <Route path="/clients/:athleteId" element={clientsScreen} />
-              <Route path="/clients/:athleteId/:hubTab" element={clientsScreen} />
-              <Route path="/clients/:athleteId/analisis/:subTab" element={clientsScreen} />
-            </Routes>
-          );
-        })()}
-        {isCoach && activeTab === 'reviews'   && <ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />}
-        {isCoach && activeTab === 'training'  && <TrainingCoachScreen coachId={profile.userId} />}
-        {isCoach && activeTab === 'nutrition' && <NutritionCoachScreen coachId={profile.userId} />}
-
-        {/* SHARED */}
-        {activeTab === 'profile' && (
-          <ProfileScreen
-            profile={profile}
-            isCoach={isCoach}
-            onRefreshProfile={handleRefreshData}
-            onLogOut={() => setCurrentUser(null)}
-          />
-        )}
+          {/* URL desconocida o inválida para este rol (ej. atleta en /clients
+              de una sesión anterior de coach en el mismo navegador) */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Suspense>
       </main>
 
@@ -401,11 +400,11 @@ function AppContent() {
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${activeTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-[#c6c9ab]'}`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-[#c6c9ab]'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"
-              style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
+              style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
             >
               {tab.icon}
             </span>
