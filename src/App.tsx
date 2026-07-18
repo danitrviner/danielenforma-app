@@ -29,6 +29,7 @@ const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScree
 // Coach screens
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
+const CommandPalette       = lazy(() => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
@@ -40,7 +41,7 @@ function ScreenFallback() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'profile';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'profile';
 
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
   { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
@@ -423,6 +424,13 @@ function AppContent() {
       {isCoach && (
         <Suspense fallback={null}>
           <AiChatPanel activeAthleteEmail={activeAthleteEmail} />
+        </Suspense>
+      )}
+
+      {/* Buscador global (Cmd+K) — solo coach */}
+      {isCoach && (
+        <Suspense fallback={null}>
+          <CommandPalette onNavigateTab={goToTab} />
         </Suspense>
       )}
 
