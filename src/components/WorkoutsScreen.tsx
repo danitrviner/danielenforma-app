@@ -43,6 +43,12 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const [editorExercises, setEditorExercises] = useState<WorkoutExercise[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Selección para edición en bloque — progresar varios ejercicios a la vez
+  // ("todos los básicos a RIR 1 esta semana") en vez de abrir cada uno.
+  const [selectedIdx, setSelectedIdx] = useState<Set<number>>(new Set());
+  const [bulkRir, setBulkRir] = useState('2');
+  const [bulkRest, setBulkRest] = useState('90');
+
   // Exercise picker state
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [showPicker, setShowPicker] = useState(false);
@@ -81,6 +87,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
   const openEditor = async (workout?: Workout) => {
     await ensureExercisesLoaded();
+    setSelectedIdx(new Set());
     if (workout) {
       setEditingId(workout.id);
       setEditorName(workout.name);
@@ -190,6 +197,9 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const TYPE_OPTIONS = Array.from(new Set<string>(allExercises.map(e => e.type))).sort();
 
   // ── Editor helpers ────────────────────────────────────────────────────────
+  // Ambas limpian la selección de edición en bloque: es por índice, y
+  // reordenar/quitar filas la desalinearía en silencio (seleccionar el
+  // ejercicio equivocado sin que se note).
   const moveWE = (idx: number, dir: -1 | 1) => {
     const next = idx + dir;
     if (next < 0 || next >= editorExercises.length) return;
@@ -198,16 +208,64 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       [arr[idx], arr[next]] = [arr[next], arr[idx]];
       return arr;
     });
+    setSelectedIdx(new Set());
   };
 
   const removeWE = (idx: number) => {
     setEditorExercises(prev => prev.filter((_, i) => i !== idx));
+    setSelectedIdx(new Set());
   };
 
   // Patch-style update used by the shared ExerciseConfigEditor (series/reps/rir or
   // setGroups, notes, video, technique, warm-up — one merge instead of one setter per field).
   const updateWEPatch = (idx: number, patch: Partial<WorkoutExercise>) => {
     setEditorExercises(prev => prev.map((we, i) => i === idx ? { ...we, ...patch } : we));
+  };
+
+  // ── Edición en bloque ─────────────────────────────────────────────────────
+  const toggleSelected = (idx: number) => {
+    setSelectedIdx(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
+  // El descanso no depende de setGroups (solo sets/reps/rir se agregan desde
+  // ahí — ver src/utils/setGroups.ts), así que siempre es seguro tocarlo en bloque.
+  const applyBulkRest = () => {
+    const seconds = parseInt(bulkRest);
+    if (!seconds || seconds <= 0) return;
+    setEditorExercises(prev => prev.map((we, i) => selectedIdx.has(i) ? { ...we, restSeconds: seconds } : we));
+    flash(`Descanso de ${seconds}s aplicado a ${selectedIdx.size} ejercicio${selectedIdx.size !== 1 ? 's' : ''}.`);
+  };
+
+  // El RIR sí se agrega desde setGroups cuando existen (el campo `rir` pasa a
+  // ser un resumen del primer bloque) — tocarlo directo desengancharía el
+  // resumen del dato real, así que esos ejercicios se saltan en bloque.
+  // `skipped` se calcula aparte de la función de actualización de estado
+  // (no dentro de ella con un contador mutable) porque React StrictMode
+  // invoca dos veces las funciones de actualización en desarrollo — un
+  // contador ahí dentro contaría doble en el mensaje, aunque el estado
+  // final seguiría siendo correcto.
+  const applyBulkRir = () => {
+    const rir = parseInt(bulkRir);
+    if (isNaN(rir) || rir < 0) return;
+    const skipped = editorExercises.filter((we, i) => selectedIdx.has(i) && we.setGroups && we.setGroups.length > 0).length;
+    setEditorExercises(prev => prev.map((we, i) =>
+      selectedIdx.has(i) && !(we.setGroups && we.setGroups.length > 0) ? { ...we, rir } : we
+    ));
+    const applied = selectedIdx.size - skipped;
+    flash(`RIR ${rir} aplicado a ${applied} ejercicio${applied !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} con bloques de series se saltaron (edítalos uno a uno).` : ''}`);
+  };
+
+  const adjustBulkSets = (delta: 1 | -1) => {
+    const skipped = editorExercises.filter((we, i) => selectedIdx.has(i) && we.setGroups && we.setGroups.length > 0).length;
+    setEditorExercises(prev => prev.map((we, i) =>
+      selectedIdx.has(i) && !(we.setGroups && we.setGroups.length > 0) ? { ...we, sets: Math.max(1, we.sets + delta) } : we
+    ));
+    const applied = selectedIdx.size - skipped;
+    flash(`${delta > 0 ? '+1 serie' : '-1 serie'} aplicado a ${applied} ejercicio${applied !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} con bloques de series se saltaron.` : ''}`);
   };
 
   const getExerciseInfo = (exerciseId: string) =>
@@ -423,12 +481,57 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Barra de edición en bloque — progresar varios ejercicios a la vez
+                ("todos los básicos a RIR 1 esta semana") en vez de abrir cada uno. */}
+            {editorExercises.length > 1 && (
+              <div className="flex items-center gap-2 flex-wrap bg-[#181816] border border-white/7 rounded-xl px-3 py-2">
+                <button
+                  onClick={() => setSelectedIdx(prev =>
+                    prev.size === editorExercises.length ? new Set() : new Set(editorExercises.map((_, i) => i))
+                  )}
+                  className="font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wide flex-shrink-0"
+                >
+                  {selectedIdx.size === editorExercises.length ? 'Ninguno' : 'Todos'}
+                </button>
+                {selectedIdx.size > 0 && (
+                  <>
+                    <span className="font-mono text-[10px] text-[#fbcb1a] flex-shrink-0">{selectedIdx.size} seleccionados</span>
+                    <span className="w-px h-4 bg-white/10 flex-shrink-0" />
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => adjustBulkSets(-1)} className="w-6 h-6 flex items-center justify-center rounded bg-[#1e1e1e] border border-white/7 text-[#c6c9ab] hover:text-white text-xs">−</button>
+                      <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">series</span>
+                      <button onClick={() => adjustBulkSets(1)} className="w-6 h-6 flex items-center justify-center rounded bg-[#1e1e1e] border border-white/7 text-[#c6c9ab] hover:text-white text-xs">+</button>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <input
+                        type="number" min={0} max={5} value={bulkRir} onChange={e => setBulkRir(e.target.value)}
+                        className="w-10 bg-[#1e1e1e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
+                      />
+                      <button onClick={applyBulkRir} className="font-mono text-[9px] text-[#c6c9ab] hover:text-[#fbcb1a] uppercase px-1.5 py-0.5 border border-white/7 rounded">RIR</button>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <input
+                        type="number" min={0} value={bulkRest} onChange={e => setBulkRest(e.target.value)}
+                        className="w-12 bg-[#1e1e1e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
+                      />
+                      <button onClick={applyBulkRest} className="font-mono text-[9px] text-[#c6c9ab] hover:text-[#fbcb1a] uppercase px-1.5 py-0.5 border border-white/7 rounded">Descanso (s)</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {editorExercises.map((we, idx) => {
               const ex = getExerciseInfo(we.exerciseId);
               return (
-                <div key={`${we.exerciseId}-${idx}`} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+                <div key={`${we.exerciseId}-${idx}`} className={`bg-[#181816] border rounded-2xl overflow-hidden ${selectedIdx.has(idx) ? 'border-[#fbcb1a]/50' : 'border-white/7'}`}>
                   {/* Exercise info bar */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-[#161616] border-b border-white/50">
+                    <input
+                      type="checkbox"
+                      checked={selectedIdx.has(idx)}
+                      onChange={() => toggleSelected(idx)}
+                      className="w-4 h-4 flex-shrink-0 accent-[#fbcb1a]"
+                    />
                     <span className="font-mono text-[10px] text-[#c6c9ab]/50 w-5 text-center flex-shrink-0 font-bold">{idx + 1}</span>
                     {ex?.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-md object-cover border border-white/7 flex-shrink-0" />
