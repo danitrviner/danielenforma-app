@@ -5,6 +5,7 @@ import StatTile from './StatTile';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
 import { useToast } from '../hooks/useToast';
+import Skeleton from './Skeleton';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -240,9 +241,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <span className="material-symbols-outlined text-2xl animate-spin text-[#fbcb1a] mr-3">refresh</span>
-            <span className="font-mono text-xs uppercase tracking-widest text-[#c6c9ab]">Cargando rutinas...</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
           </div>
         ) : workouts.length === 0 ? (
           <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-16 text-center">

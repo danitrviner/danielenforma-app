@@ -3,6 +3,7 @@ import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, UserProfile
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
+import Skeleton from './Skeleton';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -401,7 +402,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <p className="text-[#c6c9ab] text-sm">Selecciona un atleta para ver y crear sus dietas.</p>
           </div>
         ) : loadingDiets ? (
-          <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dietas...</div>
+          <div className="space-y-3">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
         ) : diets.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
             <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>

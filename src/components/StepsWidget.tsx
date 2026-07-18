@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
+import Skeleton from './Skeleton';
 
 interface Props {
   athleteEmail: string;
@@ -64,7 +65,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
   if (loading) {
     return (
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
-        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando pasos...</span>
+        <Skeleton className="h-16 w-full" />
       </div>
     );
   }

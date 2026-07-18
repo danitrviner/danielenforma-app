@@ -10,6 +10,7 @@ import {
 import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasInput } from '../utils/reportBuilder';
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
+import Skeleton from './Skeleton';
 
 interface Props {
   athleteEmail: string;
@@ -205,7 +206,10 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
       <div className="space-y-3">
         <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Historial</p>
         {loading ? (
-          <div className="text-center py-8 font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando…</div>
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
         ) : reports.length === 0 ? (
           <div className="py-10 text-center border border-dashed border-white/7 rounded-2xl">
             <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">description</span>

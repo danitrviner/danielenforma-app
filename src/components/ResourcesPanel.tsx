@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Resource, ResourceKind } from '../types';
 import { getAllResources, createResource, deleteResource } from '../dbService';
+import Skeleton from './Skeleton';
 
 interface Props {
   coachId?: string; // required only when isCoach (used to tag newly created resources)
@@ -108,7 +109,10 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       )}
 
       {loading ? (
-        <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando recursos...</p>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       ) : resources.length === 0 ? (
         <p className="text-xs text-[#555] font-mono py-2">
           {isCoach ? 'Todavía no compartiste ningún recurso.' : 'Tu entrenador no compartió recursos todavía.'}

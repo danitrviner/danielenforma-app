@@ -3,6 +3,7 @@ import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, Onboarding
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
 import { db, doc, writeBatch } from '../firebase';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
+import Skeleton from './Skeleton';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
@@ -128,7 +129,13 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
   };
 
   if (loading) {
-    return <p className="font-mono text-xs text-[#555] animate-pulse">Cargando plantilla…</p>;
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
   }
 
   return (
@@ -551,8 +558,10 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
 
       {settingsTab === 'roles' && (<>
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando usuarios…</span>
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
           </div>
         ) : sortedUsers.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">

@@ -8,6 +8,7 @@ import {
 } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
+import Skeleton from './Skeleton';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -698,8 +699,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       )}
 
       {loading && (
-        <div className="flex items-center justify-center py-10">
-          <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando…</span>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <Skeleton className="md:col-span-12 h-48 w-full rounded-2xl" />
         </div>
       )}
 
@@ -770,8 +771,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
         {/* Grid */}
         {indyaLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas…</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
           <div className="flex flex-col items-center gap-3 py-16">

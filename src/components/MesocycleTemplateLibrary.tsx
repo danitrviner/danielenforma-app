@@ -5,6 +5,7 @@ import {
   getMesocycleTemplates, createMesocycleTemplate,
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
+import Skeleton from './Skeleton';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -894,7 +895,11 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
 
       {/* Content */}
       {loading ? (
-        <div className="py-16 text-center font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando plantillas…</div>
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </div>
       ) : templates.length === 0 ? (
         <div className="py-16 text-center border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">library_books</span>

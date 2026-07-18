@@ -3,6 +3,7 @@ import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import Skeleton from './Skeleton';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -85,8 +86,10 @@ export default function PhotosScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando fotos…</span>
+      <div className="grid grid-cols-3 gap-2">
+        <Skeleton className="aspect-square w-full" />
+        <Skeleton className="aspect-square w-full" />
+        <Skeleton className="aspect-square w-full" />
       </div>
     );
   }

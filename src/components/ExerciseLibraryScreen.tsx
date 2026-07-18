@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
+import Skeleton from './Skeleton';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -308,11 +309,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
       {/* TABLE */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-[#c6c9ab]">
-            <span className="material-symbols-outlined text-2xl animate-spin text-[#fbcb1a]">refresh</span>
-            <span className="font-mono text-xs uppercase tracking-widest">Cargando ejercicios...</span>
-          </div>
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-16 text-center">

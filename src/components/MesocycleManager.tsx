@@ -16,6 +16,7 @@ import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { useToast } from '../hooks/useToast';
+import Skeleton from './Skeleton';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -336,9 +337,10 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
 }) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-outlined animate-spin text-[#fbcb1a] mr-2">refresh</span>
-        <span className="font-mono text-xs uppercase tracking-widest text-[#c6c9ab]">Cargando ejercicios programados...</span>
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-16 w-full rounded-xl" />
       </div>
     );
   }
@@ -1168,7 +1170,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               Usar plantilla
             </button>
 
-            {loadingMeso && <p className="text-center text-[#c6c9ab] font-mono text-xs animate-pulse py-6">Cargando…</p>}
+            {loadingMeso && (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </div>
+            )}
             {!loadingMeso && mesocycles.length === 0 && (
               <p className="text-center text-[#c6c9ab] font-mono text-xs py-6">Sin mesociclos todavía.</p>
             )}
@@ -1658,7 +1665,11 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               {loadingTemplates ? (
-                <p className="text-center py-10 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando plantillas…</p>
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                </div>
               ) : templates.length === 0 ? (
                 <div className="text-center py-10">
                   <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">library_books</span>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
+import Skeleton from './Skeleton';
 
 interface Props {
   athleteEmail: string;
@@ -105,7 +106,10 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
       )}
 
       {loading ? (
-        <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando tareas...</p>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       ) : tasks.length === 0 ? (
         <p className="text-xs text-[#555] font-mono py-2">Sin tareas asignadas.</p>
       ) : (

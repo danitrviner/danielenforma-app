@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Exercise, ExercisePersonalNote } from '../types';
 import { getExercises, getExerciseNotesForAthlete, saveExerciseNote } from '../dbService';
+import Skeleton from './Skeleton';
 
 interface Props {
   athleteEmail: string;
@@ -62,7 +63,10 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
       </h3>
 
       {loading ? (
-        <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando ejercicios...</p>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
       ) : (
         <div className="space-y-3">
           <select

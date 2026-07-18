@@ -7,6 +7,7 @@ import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import Skeleton from './Skeleton';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -874,7 +875,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
 
       {loading ? (
-        <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando dieta...</div>
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+        </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
         <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>

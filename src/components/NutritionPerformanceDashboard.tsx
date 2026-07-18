@@ -16,6 +16,7 @@ import {
   buildPhaseEnergyPlans, buildWeightProjection, computePeriodizationPerformance,
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
+import Skeleton from './Skeleton';
 
 const DEFAULT_STEP_GOAL = 8000;
 const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#a78bfa', '#ff8c69'];
@@ -217,7 +218,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
   }, [program]);
 
   if (loading) {
-    return <div className="text-center py-10 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando periodización…</div>;
+    return <Skeleton className="h-40 w-full rounded-2xl" />;
   }
 
   if (!program || program.phases.length === 0) {

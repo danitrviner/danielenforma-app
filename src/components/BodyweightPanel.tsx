@@ -6,6 +6,7 @@ import {
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { invalidateResource } from '../hooks/useResourceCache';
+import Skeleton from './Skeleton';
 
 interface Props {
   athleteEmail: string;
@@ -200,7 +201,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
       </div>
 
       {loading ? (
-        <p className="font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando…</p>
+        <Skeleton className="h-[180px] w-full" />
       ) : (
         <>
           {/* Chart */}

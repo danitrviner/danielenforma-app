@@ -15,6 +15,7 @@ import {
   computePhaseEnergyBalance,
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
+import Skeleton from './Skeleton';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -352,7 +353,7 @@ export default function NutritionPeriodizationPanel({
   if (loading) {
     return (
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <p className="text-[#c6c9ab] text-xs font-mono animate-pulse">Cargando periodización...</p>
+        <Skeleton className="h-32 w-full" />
       </div>
     );
   }

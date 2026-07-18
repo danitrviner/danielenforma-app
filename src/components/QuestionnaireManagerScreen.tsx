@@ -4,6 +4,7 @@ import {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
 } from '../dbService';
 import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from './QuestionnaireEditor';
+import Skeleton from './Skeleton';
 
 interface Props { coachId: string }
 
@@ -91,7 +92,11 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando…</div>
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
       ) : questionnaires.length === 0 ? (
         <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">quiz</span>

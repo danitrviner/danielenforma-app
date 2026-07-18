@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
 import { useToast } from '../hooks/useToast';
+import Skeleton from './Skeleton';
 
 interface Props {
   athletes: UserProfile[];
@@ -116,7 +117,10 @@ export default function CoachNotesPanel({ athletes }: Props) {
       )}
 
       {loading ? (
-        <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando notas...</p>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       ) : notes.length === 0 ? (
         <p className="text-xs text-[#555] font-mono py-2">Sin notas.</p>
       ) : (

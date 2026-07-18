@@ -12,6 +12,7 @@ import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
 import { useToast } from '../hooks/useToast';
+import Skeleton from './Skeleton';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
@@ -453,7 +454,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
 
         {loadingAthletes ? (
-          <div className="text-center py-12 text-[#c6c9ab] font-mono tracking-widest uppercase text-xs animate-pulse">Cargando atletas...</div>
+          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+          </div>
         ) : athletes.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center gap-3">
             <p className="text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</p>

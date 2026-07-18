@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
+import Skeleton from './Skeleton';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -264,8 +265,10 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas...</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
       </div>
     );
   }
@@ -416,8 +419,10 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </div>
 
         {indyaLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando recetas…</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
           </div>
         ) : filteredIndya.length === 0 ? (
           <div className="text-center py-16 text-[#c6c9ab] font-mono text-xs uppercase tracking-widest">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
+import Skeleton from './Skeleton';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -180,7 +181,13 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
       {/* Food list */}
       {loading ? (
-        <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando biblioteca...</div>
+        <div className="space-y-1.5">
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <Skeleton className="h-11 w-full rounded-lg" />
+        </div>
       ) : (
         <div className="space-y-1.5">
           {filtered.map(item => (

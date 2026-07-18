@@ -3,6 +3,7 @@ import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe }
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, computeDietPlaced } from '../utils/exchangeHelpers';
 import { useToast } from '../hooks/useToast';
+import Skeleton from './Skeleton';
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 
@@ -202,7 +203,12 @@ export default function MyDietsScreen({ profile }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <div className="text-center py-16 font-mono text-sm text-[#c6c9ab] animate-pulse">Cargando tus dietas...</div>;
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
+      </div>
+    );
   }
 
   if (view === 'editor') {

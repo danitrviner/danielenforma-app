@@ -3,6 +3,7 @@ import { CoachReport } from '../types';
 import { getSentReportsForAthlete } from '../dbService';
 import { fmtReportDate } from '../utils/reportBuilder';
 import ReportView from './ReportView';
+import Skeleton from './Skeleton';
 
 // Athlete-facing, self-loading card on the Home screen: shows the reports the
 // coach has sent (persistent history, newest first). Tapping one opens the same
@@ -30,7 +31,10 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
       </h2>
 
       {loading ? (
-        <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-2">Cargando…</p>
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
       ) : (
         <div className="space-y-2">
           {reports.map((r, i) => (

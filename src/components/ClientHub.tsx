@@ -13,6 +13,7 @@ import { isMenuStale } from '../utils/menuEngine';
 import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { invalidateResource } from '../hooks/useResourceCache';
+import Skeleton from './Skeleton';
 import { useToast } from '../hooks/useToast';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { scheduleLabel } from '../utils/scheduleEngine';
@@ -881,7 +882,11 @@ export default function ClientHub({
                 </div>
               </div>
               {loadingPhotos ? (
-                <div className="p-8 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando fotos…</div>
+                <div className="p-3 grid grid-cols-3 gap-2">
+                  <Skeleton className="aspect-square w-full" />
+                  <Skeleton className="aspect-square w-full" />
+                  <Skeleton className="aspect-square w-full" />
+                </div>
               ) : viewPhotos.length === 0 ? (
                 <div className="p-10 text-center">
                   <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">photo_camera</span>

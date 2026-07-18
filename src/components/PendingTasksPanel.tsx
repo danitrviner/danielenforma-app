@@ -3,6 +3,7 @@ import { UserProfile, WeightCheckIn, TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import Skeleton from './Skeleton';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -106,8 +107,9 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando tareas...</span>
+      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-2">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
       </div>
     );
   }

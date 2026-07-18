@@ -13,6 +13,7 @@ import {
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
 import ProgressRing from './ProgressRing';
+import Skeleton from './Skeleton';
 import { HubTab, AnalisisTab } from './ClientHub';
 
 interface Props {
@@ -168,7 +169,13 @@ export default function ClientSetupPanel({
   };
 
   if (loading) {
-    return <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-4">Cargando setup...</p>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </div>
+    );
   }
 
   return (
