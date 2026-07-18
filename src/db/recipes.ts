@@ -188,3 +188,40 @@ export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> 
   }
 }
 
+
+// Module-level cache: a weekly menu generation touches every used intakeType
+// once (≤5 queries) instead of once per meal slot across 7 days (≤35 queries).
+const indyaGeneratorCache = new Map<number, Recipe[]>();
+
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+export async function queryIndyaForGenerator(intakeType: number, maxResults = 300): Promise<Recipe[]> {
+  const cached = indyaGeneratorCache.get(intakeType);
+  if (cached) return cached;
+  try {
+    const q = query(
+      collection(db, 'recipes'),
+      where('ownerId', '==', 'indya'),
+      where('intakeTypes', 'array-contains', intakeType),
+      orderBy('name'),
+      limit(maxResults),
+    );
+    const snap = await getDocs(q);
+    // orderBy('name') biases toward the start of the alphabet; shuffle client-side
+    // so the generator/swap picker don't always surface the same few recipes.
+    const recipes = shuffle(snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
+    indyaGeneratorCache.set(intakeType, recipes);
+    return recipes;
+  } catch (err) {
+    console.warn(`queryIndyaForGenerator(intakeType=${intakeType}) failed:`, err);
+    return [];
+  }
+}
+
