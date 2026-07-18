@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { UserProfile, WeightCheckIn, Workout, WorkoutAssignment } from '../types';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { UserProfile, WeightCheckIn } from '../types';
 import { getWorkoutAssignmentsForAthlete, getWorkouts } from '../dbService';
 import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
 import PendingTasksPanel from './PendingTasksPanel';
@@ -20,19 +21,20 @@ interface HomeScreenProps {
 }
 
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
-  const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loadingTraining, setLoadingTraining] = useState(true);
-
-  useEffect(() => {
-    Promise.all([
-      getWorkoutAssignmentsForAthlete(profile.userId),
-      getWorkouts(),
-    ]).then(([asn, wos]) => {
-      setAssignments(asn);
-      setWorkouts(wos);
-    }).catch(console.error).finally(() => setLoadingTraining(false));
-  }, [profile.userId]);
+  // Pilot migration to TanStack Query (replaces the old useEffect+useState
+  // fetch): 'workouts' is shared/reusable across screens under one cache key,
+  // so TrainingScreen switching tabs won't re-fetch it if this query already
+  // populated the cache (and vice versa) — the win useResourceCache was going
+  // for, but app-wide instead of one-off per hook.
+  const { data: assignments = [], isPending: loadingAssignments } = useQuery({
+    queryKey: ['workoutAssignments', profile.userId],
+    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+  });
+  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: getWorkouts,
+  });
+  const loadingTraining = loadingAssignments || loadingWorkouts;
 
   const curWeekStart = getWeekRange().start;
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
 import Skeleton from './Skeleton';
@@ -11,43 +12,58 @@ const TYPE_LABEL: Record<Extract<TaskType, 'manual' | 'foto' | 'otro'>, string> 
   manual: 'Tarea', foto: 'Solicitud de fotos', otro: 'Otro',
 };
 
+function tasksQueryKey(athleteEmail: string) {
+  return ['tasks', athleteEmail] as const;
+}
+
 export default function TaskManagerPanel({ athleteEmail }: Props) {
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = tasksQueryKey(athleteEmail);
+  const { data: tasks = [], isPending: loading } = useQuery({
+    queryKey,
+    queryFn: () => getTasksForAthlete(athleteEmail),
+  });
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TaskType>('manual');
   const [dueDate, setDueDate] = useState('');
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    getTasksForAthlete(athleteEmail).then(setTasks).catch(console.error).finally(() => setLoading(false));
-  }, [athleteEmail]);
+  const createMutation = useMutation({
+    mutationFn: () => createTask({
+      athleteId: athleteEmail, type, title: title.trim(),
+      dueDate: dueDate || undefined, status: 'pending',
+      createdBy: 'coach', createdAt: new Date().toISOString(),
+    }),
+    onSuccess: task => {
+      queryClient.setQueryData<TaskItem[]>(queryKey, prev => [...(prev ?? []), task]);
+      setTitle(''); setDueDate(''); setType('manual'); setShowForm(false);
+    },
+    onError: err => console.error(err),
+  });
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const toggleMutation = useMutation({
+    mutationFn: (task: TaskItem) => {
+      const nextStatus = task.status === 'pending' ? 'done' : 'pending';
+      return updateTask(task.id, { status: nextStatus });
+    },
+    // Optimistic update, same as the previous setTasks-before-await — the
+    // toggle should feel instant, and there's nothing meaningful to roll
+    // back to on failure beyond what console.error already surfaces.
+    onMutate: async task => {
+      const nextStatus = task.status === 'pending' ? 'done' : 'pending';
+      queryClient.setQueryData<TaskItem[]>(queryKey, prev =>
+        prev?.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
+    },
+    onError: err => console.error(err),
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setSaving(true);
-    try {
-      const task = await createTask({
-        athleteId: athleteEmail, type, title: title.trim(),
-        dueDate: dueDate || undefined, status: 'pending',
-        createdBy: 'coach', createdAt: new Date().toISOString(),
-      });
-      setTasks(prev => [...prev, task]);
-      setTitle(''); setDueDate(''); setType('manual'); setShowForm(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    createMutation.mutate();
   };
 
-  const handleToggle = async (task: TaskItem) => {
-    const nextStatus = task.status === 'pending' ? 'done' : 'pending';
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
-    try { await updateTask(task.id, { status: nextStatus }); } catch (err) { console.error(err); }
-  };
+  const handleToggle = (task: TaskItem) => toggleMutation.mutate(task);
 
   const pending = tasks.filter(t => t.status === 'pending');
   const done = tasks.filter(t => t.status === 'done');
@@ -97,10 +113,10 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           </div>
           <button
             type="submit"
-            disabled={saving}
+            disabled={createMutation.isPending}
             className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
-            {saving ? 'Guardando...' : 'Crear tarea'}
+            {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
           </button>
         </form>
       )}
