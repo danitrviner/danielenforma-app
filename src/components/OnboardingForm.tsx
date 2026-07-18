@@ -503,12 +503,15 @@ function SupplementsTable({
   );
 }
 
-function Section({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+function Section({ icon, title, children, complete }: { icon: string; title: string; children: React.ReactNode; complete?: boolean }) {
   return (
-    <div className="space-y-4 bg-[#0e0e0e] border border-white/7 rounded-xl p-5">
+    <div className={`space-y-4 bg-[#0e0e0e] border rounded-xl p-5 transition-colors ${complete ? 'border-[#fbcb1a]/25' : 'border-white/7'}`}>
       <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#fbcb1a] flex items-center gap-2">
         <span className="material-symbols-outlined text-sm">{icon}</span>
         {title}
+        {complete && (
+          <span className="material-symbols-outlined text-emerald-400 text-sm ml-auto" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+        )}
       </h4>
       {children}
     </div>
@@ -609,6 +612,17 @@ export default function OnboardingForm({
   };
 
   const isFirstTime = !initialData && !onCancel;
+
+  // Progreso de la ficha: 9 campos "cabecera" (uno por bloque temático, los
+  // mismos que ya usa `autoCalc` más objetivo/dieta/experiencia) — no una
+  // validación exhaustiva de cada campo opcional, solo una señal honesta de
+  // avance para no sentirse "un formulario más" en vez de algo guiado.
+  const coreFieldsFilled = [
+    !!form.sex, !!form.birthDate, form.weightKg !== '', form.heightCm !== '',
+    !!form.activityLevel, !!form.goalBody, !!form.goalCapacity,
+    !!form.dietType, !!form.experienceLevel,
+  ].filter(Boolean).length;
+  const coreFieldsTotal = 9;
 
   // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -778,8 +792,24 @@ export default function OnboardingForm({
         </p>
       )}
 
+      {/* Progreso de la ficha — motiva sin bloquear: el resto de la app ya
+          trata este formulario como algo que se revisa/edita puntualmente,
+          no como un wizard de un solo paso, así que no fuerza secuencia. */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">
+          <span>Progreso de la ficha</span>
+          <span>{coreFieldsFilled}/{coreFieldsTotal}</span>
+        </div>
+        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500"
+            style={{ width: `${(coreFieldsFilled / coreFieldsTotal) * 100}%` }}
+          />
+        </div>
+      </div>
+
       {/* ── COMPOSICIÓN CORPORAL ─────────────────────────────────────── */}
-      <Section icon="monitor_weight" title="Composición corporal">
+      <Section icon="monitor_weight" title="Composición corporal" complete={!!form.sex && !!form.birthDate && form.weightKg !== '' && form.heightCm !== ''}>
         <PillSelect<'male' | 'female'>
           label="Sexo biológico" value={form.sex} onChange={v => set('sex', v)}
           options={[
@@ -847,7 +877,7 @@ export default function OnboardingForm({
       </Section>
 
       {/* ── NIVEL DE ACTIVIDAD ───────────────────────────────────────── */}
-      <Section icon="directions_run" title="Nivel de actividad">
+      <Section icon="directions_run" title="Nivel de actividad" complete={!!form.activityLevel}>
         <div className="space-y-2">
           {([
             { value: 'sedentario'  as ActivityLevel, label: 'Sedentario',  desc: 'Trabajo de oficina, poco o nada de ejercicio', factor: '×1.2'   },
@@ -872,7 +902,7 @@ export default function OnboardingForm({
       </Section>
 
       {/* ── OBJETIVO ─────────────────────────────────────────────────── */}
-      <Section icon="flag" title="Objetivo">
+      <Section icon="flag" title="Objetivo" complete={!!form.goalBody && !!form.goalCapacity}>
         <PillSelect<GoalBody>
           label="Composición corporal" value={form.goalBody} onChange={v => set('goalBody', v)}
           options={[
@@ -940,7 +970,7 @@ export default function OnboardingForm({
       </Section>
 
       {/* ── NUTRICIÓN + CÁLCULO AUTOMÁTICO ───────────────────────────── */}
-      <Section icon="nutrition" title="Nutrición">
+      <Section icon="nutrition" title="Nutrición" complete={!!form.dietType}>
         <PillSelect<DietType>
           label="Tipo de dieta" value={form.dietType} onChange={v => set('dietType', v)}
           options={[
@@ -1178,7 +1208,7 @@ export default function OnboardingForm({
       </Section>
 
       {/* ── ENTRENAMIENTO ────────────────────────────────────────────── */}
-      <Section icon="fitness_center" title="Entrenamiento">
+      <Section icon="fitness_center" title="Entrenamiento" complete={!!form.experienceLevel}>
         <PillSelect<ExperienceLevel>
           label="Nivel de experiencia" value={form.experienceLevel} onChange={v => set('experienceLevel', v)}
           options={[
