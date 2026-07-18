@@ -623,3 +623,44 @@ export async function deleteCheckIn(id: string): Promise<void> {
   }
 }
 
+
+// ─── USER PROFILE BY EMAIL ────────────────────────────────────────────────────
+
+export async function getUserProfileByEmail(email: string): Promise<UserProfile | null> {
+  const normalEmail = email.toLowerCase();
+
+  if (forceLocalOnly) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith('enforma_profile_')) continue;
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const p = JSON.parse(raw) as UserProfile;
+        if (p.email.toLowerCase() === normalEmail) return p;
+      }
+    } catch { }
+    return null;
+  }
+
+  try {
+    const q = query(collection(db, 'user_profiles'), where('email', '==', email));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const d = snap.docs[0];
+      return { id: d.id, ...d.data(), userId: d.id } as unknown as UserProfile;
+    }
+    // Try lowercase variant
+    const q2 = query(collection(db, 'user_profiles'), where('email', '==', normalEmail));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      const d = snap2.docs[0];
+      return { ...d.data(), userId: d.id } as unknown as UserProfile;
+    }
+    return null;
+  } catch (err) {
+    console.warn('getUserProfileByEmail failed:', err);
+    return null;
+  }
+}
+
