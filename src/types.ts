@@ -1050,3 +1050,11 @@ export interface CoachInstructions {
   text: string;
   updatedAt: string; // ISO
 }
+
+// Frases reutilizables para el feedback de revisiones (check-ins) — el coach
+// las guarda una vez y las inserta con un clic en vez de escribirlas cada
+// vez. Doc separado ('quickReplies') en la misma colección coachSettings.
+export interface CoachQuickReplies {
+  replies: string[];
+  updatedAt: string; // ISO
+}

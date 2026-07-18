@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds } from '../dbService';
+import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
 
 interface ReviewsScreenProps {
@@ -32,10 +32,44 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Plantillas de feedback rápido — se insertan con un clic en vez de
+  // escribir la misma directriz una y otra vez para cada atleta.
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [showQuickReplyManager, setShowQuickReplyManager] = useState(false);
+  const [quickReplyDraft, setQuickReplyDraft] = useState<string[]>([]);
+  const [savingQuickReplies, setSavingQuickReplies] = useState(false);
+
   // Load athletes
   useEffect(() => {
     getAllUserProfiles().then(setAthletes).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    getQuickReplies().then(setQuickReplies).catch(console.error);
+  }, []);
+
+  const openQuickReplyManager = () => {
+    setQuickReplyDraft(quickReplies.length > 0 ? [...quickReplies] : ['']);
+    setShowQuickReplyManager(true);
+  };
+
+  const saveQuickReplyManager = async () => {
+    const cleaned = quickReplyDraft.map(r => r.trim()).filter(Boolean);
+    setSavingQuickReplies(true);
+    try {
+      await saveQuickReplies(cleaned);
+      setQuickReplies(cleaned);
+      setShowQuickReplyManager(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingQuickReplies(false);
+    }
+  };
+
+  const insertQuickReply = (text: string) => {
+    setFeedbackText(prev => prev.trim().length > 0 ? `${prev.trim()}\n${text}` : text);
+  };
 
   // Load questionnaires + responses whenever coachId changes
   useEffect(() => {
@@ -317,6 +351,27 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
                           </p>
                         )}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {quickReplies.map((r, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => insertQuickReply(r)}
+                              title={r}
+                              className="max-w-[180px] truncate text-[10px] font-mono text-[#c6c9ab] hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
+                            >
+                              {r}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={openQuickReplyManager}
+                            title="Gestionar plantillas de feedback"
+                            className="text-[#c6c9ab]/60 hover:text-white p-1"
+                          >
+                            <span className="material-symbols-outlined text-sm">tune</span>
+                          </button>
+                        </div>
                         <form onSubmit={(e) => handleSendFeedback(c.id, e)} className="space-y-2">
                           <textarea
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
@@ -412,6 +467,51 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {showQuickReplyManager && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between">
+              <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
+              <button onClick={() => setShowQuickReplyManager(false)} className="text-[#c6c9ab] hover:text-white">
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            <div className="space-y-2 overflow-y-auto flex-1">
+              {quickReplyDraft.map((r, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={r}
+                    onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
+                    placeholder="ej. Buen trabajo esta semana, sigue así."
+                    className="flex-1 bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                  />
+                  <button
+                    onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
+                    className="text-[#c6c9ab] hover:text-red-300 p-1 flex-shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
+                className="flex items-center gap-1.5 text-xs font-mono text-[#fbcb1a] hover:text-white"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Añadir plantilla
+              </button>
+            </div>
+            <button
+              onClick={saveQuickReplyManager}
+              disabled={savingQuickReplies}
+              className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            >
+              {savingQuickReplies ? 'Guardando...' : 'Guardar'}
+            </button>
           </div>
         </div>
       )}

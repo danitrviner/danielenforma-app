@@ -24,7 +24,7 @@ import {
   writeBatch,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote, CoachInstructions, WeeklyMenu, MenuCompletionLog } from './types';
+import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote, CoachInstructions, CoachQuickReplies, WeeklyMenu, MenuCompletionLog } from './types';
 import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 import { compressImage } from './utils/compressImage';
@@ -4043,6 +4043,42 @@ export async function saveCoachInstructions(text: string): Promise<void> {
     await setDoc(doc(db, 'coachSettings', COACH_INSTRUCTIONS_DOC_ID), data);
   } catch (err) {
     console.warn('saveCoachInstructions Firestore failed, kept local:', err);
+    setLocalBypassMode(true);
+  }
+}
+
+// ─── PLANTILLAS DE FEEDBACK RÁPIDO (Revisiones) ─────────────────────────────────
+// Doc separado ('quickReplies') en la misma colección coachSettings — mismo
+// patrón simple que las instrucciones fijas del coach.
+
+const QUICK_REPLIES_LOCAL_KEY = 'enforma_quick_replies_v1';
+const QUICK_REPLIES_DOC_ID = 'quickReplies';
+
+export async function getQuickReplies(): Promise<string[]> {
+  const local = (): string[] => {
+    try { return JSON.parse(localStorage.getItem(QUICK_REPLIES_LOCAL_KEY) ?? '[]'); } catch { return []; }
+  };
+  if (forceLocalOnly) return local();
+  try {
+    const snap = await getDoc(doc(db, 'coachSettings', QUICK_REPLIES_DOC_ID));
+    const replies = snap.exists() ? ((snap.data() as CoachQuickReplies).replies ?? []) : [];
+    localStorage.setItem(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
+    return replies;
+  } catch (err) {
+    console.warn('getQuickReplies Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return local();
+  }
+}
+
+export async function saveQuickReplies(replies: string[]): Promise<void> {
+  localStorage.setItem(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
+  if (forceLocalOnly) return;
+  try {
+    const data: CoachQuickReplies = { replies, updatedAt: new Date().toISOString() };
+    await setDoc(doc(db, 'coachSettings', QUICK_REPLIES_DOC_ID), data);
+  } catch (err) {
+    console.warn('saveQuickReplies Firestore failed, kept local:', err);
     setLocalBypassMode(true);
   }
 }
