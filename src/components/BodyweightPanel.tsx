@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
-import { invalidateResource } from '../hooks/useResourceCache';
+import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import Skeleton from './Skeleton';
 
 interface Props {
@@ -61,8 +62,12 @@ function BwTooltip({ active, payload }: any) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function BodyweightPanel({ athleteEmail, readOnly = false }: Props) {
-  const [logs, setLogs] = useState<BodyweightLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = bodyweightForAthleteKey(athleteEmail);
+  const { data: logs = [], isPending: loading } = useQuery({
+    queryKey,
+    queryFn: () => getBodyweightForAthlete(athleteEmail),
+  });
   const [showAll, setShowAll] = useState(false);
 
   // Add form
@@ -76,14 +81,6 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
   const [editWeight, setEditWeight] = useState('');
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    getBodyweightForAthlete(athleteEmail)
-      .then(setLogs)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [athleteEmail]);
 
   // Sorted ascending for chart, descending for list
   const asc = useMemo(
@@ -129,10 +126,9 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         weight: w,
         createdAt: new Date().toISOString(),
       });
-      setLogs(prev => [...prev, entry]);
+      queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => [...(prev ?? []), entry]);
       setNewWeight('');
       setNewDate(todayStr());
-      invalidateResource(`weight:${athleteEmail}`);
     } catch (err) { console.error(err); }
     finally { setAdding(false); }
   };
@@ -152,9 +148,9 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     setSaving(true);
     try {
       await updateBodyweight(editId, { date: editDate, weight: w });
-      setLogs(prev => prev.map(b => b.id === editId ? { ...b, date: editDate, weight: w } : b));
+      queryClient.setQueryData<BodyweightLog[]>(queryKey, prev =>
+        prev?.map(b => b.id === editId ? { ...b, date: editDate, weight: w } : b));
       setEditId(null);
-      invalidateResource(`weight:${athleteEmail}`);
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
   };
@@ -163,8 +159,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     setDeletingId(id);
     try {
       await deleteBodyweight(id);
-      setLogs(prev => prev.filter(b => b.id !== id));
-      invalidateResource(`weight:${athleteEmail}`);
+      queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => prev?.filter(b => b.id !== id));
     } catch (err) { console.error(err); }
     finally { setDeletingId(null); }
   };
