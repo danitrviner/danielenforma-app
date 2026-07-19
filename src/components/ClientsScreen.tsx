@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog, Invite } from '../types';
+import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
 import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
 import ResourcesPanel from './ResourcesPanel';
@@ -27,13 +28,42 @@ interface ClientsScreenProps {
 
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
   const inviteInputRef = useRef<HTMLInputElement>(null);
-  const [athletes, setAthletes]           = useState<UserProfile[]>([]);
-  const [loadingAthletes, setLoadingAthletes] = useState(true);
-  const [allAssignments, setAllAssignments] = useState<Map<string, WorkoutAssignment[]>>(new Map());
-  const [allWorkoutLogs, setAllWorkoutLogs] = useState<Map<string, WorkoutLog[]>>(new Map());
+  // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
+  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+  });
+
+  // Per-athlete assignments/logs — same N-parallel-queries pattern as
+  // PendingTasksPanel's per-questionnaire lookups, sharing cache keys with
+  // ClientHub/CoachRoadmapView/HomeScreen/AthleteRoadmapScreen's own reads of
+  // the same athlete's assignments/logs. Keyed by userId, matching how
+  // createWorkoutAssignment actually writes athleteId (see
+  // ClientHub.handleCreateAssignment) — this used to be keyed by email here,
+  // which never matched, so every athlete's adherence score silently ignored
+  // their training data. allAssignments below is still keyed by .email for
+  // lookup convenience against the athlete list.
+  const assignmentsQueries = useQueries({
+    queries: athletes.map(a => ({
+      queryKey: ['workoutAssignments', a.userId],
+      queryFn: () => getWorkoutAssignments(a.userId),
+    })),
+  });
+  const allAssignments = new Map<string, WorkoutAssignment[]>();
+  athletes.forEach((a, i) => allAssignments.set(a.email, assignmentsQueries[i]?.data ?? []));
+
+  const workoutLogsQueries = useQueries({
+    queries: athletes.map(a => ({
+      queryKey: ['workoutLogs', a.email],
+      queryFn: () => getWorkoutLogs(a.email),
+    })),
+  });
+  const allWorkoutLogs = new Map<string, WorkoutLog[]>();
+  athletes.forEach((a, i) => allWorkoutLogs.set(a.email, workoutLogsQueries[i]?.data ?? []));
 
   // Search + grid density for the athlete list
   const [search, setSearch] = useState('');
@@ -52,17 +82,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   };
 
   // Invite a new client by email
-  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const pendingInvitesKey = ['pendingInvites'] as const;
+  const { data: pendingInvites = [] } = useQuery({
+    queryKey: pendingInvitesKey,
+    queryFn: getPendingInvites,
+  });
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
 
-  const loadInvites = () => {
-    getPendingInvites().then(setPendingInvites).catch(console.error);
-  };
-
-  useEffect(() => { loadInvites(); }, []);
+  const loadInvites = () => queryClient.invalidateQueries({ queryKey: pendingInvitesKey });
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,28 +239,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     () => enrichedAthletes.reduce((n, a) => n + a.pendingNotesCount, 0),
     [enrichedAthletes]
   );
-
-  useEffect(() => {
-    getAllUserProfiles()
-      .then(setAthletes)
-      .catch(console.error)
-      .finally(() => setLoadingAthletes(false));
-  }, []);
-
-  useEffect(() => {
-    if (athletes.length === 0) return;
-    // Keyed by userId, matching how createWorkoutAssignment actually writes
-    // athleteId (see ClientHub.handleCreateAssignment) — this used to be keyed
-    // by email here, which never matched, so every athlete's adherence score
-    // silently ignored their training data. allAssignments is still keyed by
-    // .email below for lookup convenience against the athlete list.
-    Promise.all(athletes.map(a => getWorkoutAssignments(a.userId).then(wa => [a.email, wa] as const)))
-      .then(pairs => setAllAssignments(new Map(pairs)))
-      .catch(console.error);
-    Promise.all(athletes.map(a => getWorkoutLogs(a.email).then(logs => [a.email, logs] as const)))
-      .then(pairs => setAllWorkoutLogs(new Map(pairs)))
-      .catch(console.error);
-  }, [athletes]);
 
   // Emit coach notifications for urgent clients (once per unique condition)
   useEffect(() => {

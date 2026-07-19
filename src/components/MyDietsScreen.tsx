@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, computeDietPlaced } from '../utils/exchangeHelpers';
@@ -21,12 +22,44 @@ interface Props { profile: UserProfile; }
 
 export default function MyDietsScreen({ profile }: Props) {
   const { showToast } = useToast();
-  const [diets, setDiets] = useState<Diet[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [foodItems, setFoodItems] = useState<MealItem[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const queryClient = useQueryClient();
+  const dietsKey = ['dietsForAthlete', profile.email] as const;
+  const { data: diets = [], isPending: loadingDiets } = useQuery({
+    queryKey: dietsKey,
+    queryFn: () => getDietsForAthlete(profile.email),
+  });
+  const { data: recipes = [], isPending: loadingRecipes } = useQuery({
+    queryKey: ['recipes'],
+    queryFn: () => getRecipes().catch(() => [] as Recipe[]),
+  });
+  const { data: nutConfig, isPending: loadingConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', profile.email],
+    queryFn: () => getAthleteNutritionConfig(profile.email).catch(() => null),
+  });
+  const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: async () => {
+      await seedFoodItemsIfEmpty().catch(() => {});
+      return getFoodItems();
+    },
+  });
+  const loading = loadingDiets || loadingRecipes || loadingConfig || loadingFoodItems;
+
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
+
+  // Igual que el Promise.all().then() original: enabledModes/activeDietMode
+  // se inicializan desde la config una sola vez por atleta, no en cada
+  // refetch de fondo — mismo patrón de guard con ref que StepsWidget.
+  const configInitFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (loadingConfig || configInitFor.current === profile.email) return;
+    configInitFor.current = profile.email;
+    if (nutConfig && nutConfig.enabledModes?.length > 0) {
+      setEnabledModes(nutConfig.enabledModes);
+      setActiveDietMode(nutConfig.enabledModes[0]);
+    }
+  }, [loadingConfig, nutConfig, profile.email]);
 
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,36 +70,6 @@ export default function MyDietsScreen({ profile }: Props) {
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [pickerTab, setPickerTab] = useState<'alimentos' | 'recetas'>('alimentos');
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const [allDiets, config, recs] = await Promise.all([
-          getDietsForAthlete(profile.email),
-          getAthleteNutritionConfig(profile.email).catch(() => null),
-          getRecipes().catch(() => [] as Recipe[]),
-        ]);
-        if (cancelled) return;
-        setDiets(allDiets);
-        setRecipes(recs);
-        if (config && config.enabledModes?.length > 0) {
-          setEnabledModes(config.enabledModes);
-          setActiveDietMode(config.enabledModes[0]);
-        }
-        await seedFoodItemsIfEmpty().catch(() => {});
-        if (cancelled) return;
-        const foods = await getFoodItems();
-        if (!cancelled) setFoodItems(foods);
-      } catch (err) {
-        if (!cancelled) console.error('MyDietsScreen load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [profile.email]);
 
   const placed = useMemo(() => computeDietPlaced(form.meals), [form.meals]);
 
@@ -87,8 +90,7 @@ export default function MyDietsScreen({ profile }: Props) {
   );
 
   const refresh = async () => {
-    const all = await getDietsForAthlete(profile.email);
-    setDiets(all);
+    await queryClient.invalidateQueries({ queryKey: dietsKey });
   };
 
   const openNew = () => {

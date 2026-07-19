@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, OnboardingSection, Recipe } from '../types';
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
 import { db, doc, writeBatch } from '../firebase';
@@ -71,19 +72,34 @@ const MINI = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs tex
 // ── Template editor component ─────────────────────────────────────────────────
 
 function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
+  const queryClient = useQueryClient();
+  const queryKey = ['onboardingTemplate', coachEmail] as const;
+  const { data: fetchedTemplate, isPending: loading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const tpl = await getOnboardingTemplate(coachEmail);
+        return tpl ?? makeDefaultTemplate(coachEmail);
+      } catch {
+        return makeDefaultTemplate(coachEmail);
+      }
+    },
+  });
   const [template, setTemplate] = useState<OnboardingTemplate | null>(null);
-  const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [optionInput, setOptionInput] = useState('');
   const [dirty, setDirty]       = useState(false);
 
+  // Seeds the local editing buffer once the fetch resolves. Guarded to only
+  // fire while `template` is still unset, so a background refetch (react-query
+  // may re-fetch on window refocus once the 60s staleTime elapses) can't
+  // silently clobber an in-progress edit — the old effect only ever ran once
+  // per mount anyway, since it had no refetch mechanism at all.
   useEffect(() => {
-    getOnboardingTemplate(coachEmail)
-      .then(tpl => setTemplate(tpl ?? makeDefaultTemplate(coachEmail)))
-      .catch(() => setTemplate(makeDefaultTemplate(coachEmail)))
-      .finally(() => setLoading(false));
-  }, [coachEmail]);
+    if (fetchedTemplate && template === null) setTemplate(fetchedTemplate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedTemplate]);
 
   const questions = template?.questions ?? [];
 
@@ -116,6 +132,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
     setSaving(true);
     try {
       await saveOnboardingTemplate(coachEmail, template);
+      queryClient.setQueryData(queryKey, template);
       setDirty(false);
     } catch (err) {
       console.error(err);
@@ -494,15 +511,15 @@ interface Props {
 }
 
 export default function CoachesScreen({ currentUserId, currentUserEmail }: Props) {
+  const queryClient = useQueryClient();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('roles');
   const isOwnerOrDev = currentUserEmail.toLowerCase() === OWNER_EMAIL || import.meta.env.DEV;
-  const [users, setUsers]     = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const usersQueryKey = ['allUsersAdmin'] as const;
+  const { data: users = [], isPending: loading } = useQuery({
+    queryKey: usersQueryKey,
+    queryFn: getAllUsersAdmin,
+  });
   const [updating, setUpdating] = useState<string | null>(null);
-
-  useEffect(() => {
-    getAllUsersAdmin().then(u => { setUsers(u); setLoading(false); });
-  }, []);
 
   const handleToggleRole = async (user: UserProfile) => {
     if (user.email.toLowerCase() === OWNER_EMAIL) return;
@@ -511,7 +528,8 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
     setUpdating(user.userId);
     try {
       await updateUserProfile(user.userId, { role: newRole });
-      setUsers(prev => prev.map(u => u.userId === user.userId ? { ...u, role: newRole } : u));
+      queryClient.setQueryData<UserProfile[]>(usersQueryKey, prev =>
+        prev?.map(u => u.userId === user.userId ? { ...u, role: newRole } : u));
     } catch (err) { console.error('Failed to update role:', err); }
     finally { setUpdating(null); }
   };

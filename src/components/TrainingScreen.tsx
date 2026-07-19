@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import StatTile from './StatTile';
@@ -75,15 +76,58 @@ const TYPE_CHIP: Record<string, string> = {
 
 export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [mainTab, setMainTab] = useState<MainTab>('programa');
-  const [loading, setLoading] = useState(true);
 
   // Data
-  const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [logs, setLogs] = useState<WorkoutLog[]>([]);
-  const [personalNotes, setPersonalNotes] = useState<ExercisePersonalNote[]>([]);
+  const assignmentsKey = ['workoutAssignmentsForAthlete', profile.userId] as const;
+  const { data: assignments = [], isPending: loadingAssignments } = useQuery({
+    queryKey: assignmentsKey,
+    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+  });
+  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: getWorkouts,
+  });
+  const { data: exercises = [], isPending: loadingExercises } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: async () => {
+      await seedExercisesIfEmpty();
+      return getExercises();
+    },
+  });
+  const logsKey = ['workoutLogs', profile.email] as const;
+  const { data: logs = [], isPending: loadingLogs } = useQuery({
+    queryKey: logsKey,
+    queryFn: () => getWorkoutLogs(profile.email),
+  });
+  const { data: personalNotes = [], isPending: loadingNotes } = useQuery({
+    queryKey: ['exerciseNotesForAthlete', profile.email],
+    queryFn: () => getExerciseNotesForAthlete(profile.email),
+  });
+  const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes;
+
+  // Pending assignments more than a week past their date are lost — the athlete missed
+  // the weekly block entirely. Persist so the coach sees it too (ClientHub). Runs once
+  // per athlete once assignments have loaded (guard pattern like StepsWidget) instead of
+  // being baked into the fetch, so this query's cache entry stays a plain, shareable read
+  // (also used as-is by AthleteRoadmapScreen).
+  const markLostInitFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (loadingAssignments || markLostInitFor.current === profile.userId) return;
+    markLostInitFor.current = profile.userId;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+    const toMarkLost = assignments.filter(a => a.status === 'pending' && a.date < cutoffStr);
+    if (toMarkLost.length === 0) return;
+    const lostIds = new Set(toMarkLost.map(a => a.id));
+    queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev =>
+      prev?.map(a => lostIds.has(a.id) ? { ...a, status: 'perdido' as const } : a));
+    Promise.all(toMarkLost.map(a => updateWorkoutAssignment(a.id, { status: 'perdido' })))
+      .catch(err => console.error('mark lost assignments failed:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingAssignments, profile.userId]);
 
   // List filter
   const [listFilter, setListFilter] = useState<WorkoutAssignment['status'] | 'all'>('pending');
@@ -101,45 +145,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // con el restSeconds prescrito del ejercicio — antes el atleta tenía que
   // llevar la cuenta él mismo en el momento de mayor intensidad de la sesión.
   const [restTimer, setRestTimer] = useState<{ totalSeconds: number; secondsLeft: number } | null>(null);
-
-  // ── Load data ──────────────────────────────────────────────────────────────
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [asn, wos, logs] = await Promise.all([
-        getWorkoutAssignmentsForAthlete(profile.userId),
-        getWorkouts(),
-        getWorkoutLogs(profile.email),
-      ]);
-
-      // Pending assignments more than a week past their date are lost — the athlete missed
-      // the weekly block entirely. Persist so the coach sees it too (ClientHub).
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 7);
-      const cutoffStr = cutoff.toISOString().split('T')[0];
-      const toMarkLost = asn.filter(a => a.status === 'pending' && a.date < cutoffStr);
-      if (toMarkLost.length > 0) {
-        await Promise.all(toMarkLost.map(a => updateWorkoutAssignment(a.id, { status: 'perdido' })));
-      }
-      const lostIds = new Set(toMarkLost.map(a => a.id));
-      const resolvedAssignments = asn.map(a => lostIds.has(a.id) ? { ...a, status: 'perdido' as const } : a);
-
-      setAssignments(resolvedAssignments);
-      setWorkouts(wos);
-      setLogs(logs);
-
-      // Exercises — seed if needed
-      await seedExercisesIfEmpty();
-      setExercises(await getExercises());
-      setPersonalNotes(await getExerciseNotesForAthlete(profile.email));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [profile.email]);
-
-  useEffect(() => { loadAll(); }, [loadAll]);
 
   // Cuenta atrás del descanso: se reprograma sola cada segundo vía el propio
   // cambio de estado; se detiene al llegar a 0 (el efecto de abajo la cierra).
@@ -296,10 +301,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
       await updateWorkoutAssignment(activeAssignment.id, { status: 'completed' });
 
-      setAssignments(prev => prev.map(a =>
+      queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a =>
         a.id === activeAssignment.id ? { ...a, status: 'completed' } : a
       ));
-      setLogs(prev => [...prev, newLog]);
+      queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
       setRestTimer(null);
       // El modal de celebración se muestra ANTES de cerrar el player — el
       // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
@@ -324,7 +329,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const handleSkip = async (assignment: WorkoutAssignment) => {
     try {
       await updateWorkoutAssignment(assignment.id, { status: 'skipped' });
-      setAssignments(prev => prev.map(a =>
+      queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a =>
         a.id === assignment.id ? { ...a, status: 'skipped' } : a
       ));
     } catch (err) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
@@ -83,10 +84,19 @@ const EMPTY_FORM: FormState = {
 
 interface Props { coachId: string; }
 
+const recipesQueryKey = ['recipes'] as const;
+
 export default function RecipeBuilderScreen({ coachId }: Props) {
-  const [recipes, setRecipes]               = useState<Recipe[]>([]);
-  const [foodItems, setFoodItems]           = useState<MealItem[]>([]);
-  const [loading, setLoading]               = useState(true);
+  const queryClient = useQueryClient();
+  const { data: recipes = [], isPending: loadingRecipes } = useQuery({
+    queryKey: recipesQueryKey,
+    queryFn: getRecipes,
+  });
+  const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: getFoodItems,
+  });
+  const loading = loadingRecipes || loadingFoodItems;
   const [showForm, setShowForm]             = useState(false);
   const [editingId, setEditingId]           = useState<string | null>(null);
   const [form, setForm]                     = useState<FormState>(EMPTY_FORM);
@@ -109,14 +119,6 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const [indyaHasMore, setIndyaHasMore]     = useState(false);
   const [indyaLoading, setIndyaLoading]     = useState(true);
   const [indyaLoadingMore, setIndyaLoadingMore] = useState(false);
-
-  useEffect(() => {
-    Promise.all([getRecipes(), getFoodItems()]).then(([recs, foods]) => {
-      setRecipes(recs);
-      setFoodItems(foods);
-      setLoading(false);
-    });
-  }, []);
 
   const loadIndya = useCallback(async (
     cat: string, intake: number | null, cursor: IndyaRecipeCursor | null, append: boolean,
@@ -241,10 +243,11 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     try {
       if (editingId) {
         await updateRecipe(editingId, data);
-        setRecipes(prev => prev.map(r => r.id === editingId ? { id: editingId, ...data } : r));
+        queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev =>
+          prev?.map(r => r.id === editingId ? { id: editingId, ...data } : r));
       } else {
         const created = await createRecipe(data);
-        setRecipes(prev => [...prev, created]);
+        queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev => [...(prev ?? []), created]);
       }
       setShowForm(false);
     } finally {
@@ -257,7 +260,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     setConfirmDelete(null);
     try {
       await deleteRecipe(id);
-      setRecipes(prev => prev.filter(r => r.id !== id));
+      queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev => prev?.filter(r => r.id !== id));
     } finally {
       setDeleting(null);
     }

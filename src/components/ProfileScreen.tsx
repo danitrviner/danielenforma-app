@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Questionnaire, QuestionnaireResponse, OnboardingData } from '../types';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { UserProfile, Questionnaire, OnboardingData } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -26,6 +27,7 @@ const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionn
 
 export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [showCoaches, setShowCoaches] = useState(false);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
@@ -34,11 +36,37 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
   const [success, setSuccess] = useState('');
 
   // Questionnaire data for charts
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
-  const [responses, setResponses]           = useState<QuestionnaireResponse[]>([]);
+  const { data: assignments = [] } = useQuery({
+    queryKey: ['assignmentsForAthlete', profile.email],
+    queryFn: () => getAssignmentsForAthlete(profile.email),
+  });
+  const { data: responses = [] } = useQuery({
+    queryKey: ['responsesForAthlete', profile.email],
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+  const activeQuestionnaireIds = useMemo(
+    () => [...new Set(assignments.filter(a => a.active).map(a => a.questionnaireId))],
+    [assignments]
+  );
+  // One cache entry per questionnaire id, same key PendingTasksPanel uses for
+  // the same lookup — reuses/gets reused by it instead of fetching twice.
+  const questionnaireQueries = useQueries({
+    queries: activeQuestionnaireIds.map(id => ({
+      queryKey: ['questionnaireById', id],
+      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(id),
+    })),
+  });
+  const questionnaires = useMemo(
+    () => questionnaireQueries.map(q => q.data).filter((q): q is Questionnaire => !!q),
+    [questionnaireQueries]
+  );
 
   // Food preferences + ficha editing
-  const [onboarding,    setOnboarding]    = useState<OnboardingData | null>(null);
+  const onboardingKey = ['onboarding', profile.email] as const;
+  const { data: onboarding = null } = useQuery({
+    queryKey: onboardingKey,
+    queryFn: () => getOnboarding(profile.email),
+  });
   const [editingFicha,  setEditingFicha]  = useState(false);
 
   // Block reordering
@@ -66,29 +94,6 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
     await updateUserProfile(profile.userId, { dashboardOrder: nextOrder }).catch(console.error);
     onRefreshProfile();
   };
-
-  useEffect(() => {
-    getOnboarding(profile.email).then(ob => { if (ob) setOnboarding(ob); }).catch(console.error);
-  }, [profile.email]);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      getAssignmentsForAthlete(profile.email),
-      getResponsesForAthlete(profile.email),
-    ]).then(async ([aList, rList]) => {
-      if (cancelled) return;
-      setResponses(rList);
-      const ids = [...new Set(aList.filter(a => a.active).map(a => a.questionnaireId))];
-      const qList: Questionnaire[] = [];
-      await Promise.all(ids.map(async id => {
-        const q = await getQuestionnaireById(id);
-        if (q) qList.push(q);
-      }));
-      if (!cancelled) setQuestionnaires(qList);
-    }).catch(console.error);
-    return () => { cancelled = true; };
-  }, [profile.email]);
 
   const handleSignOut = async () => {
     try {
@@ -218,7 +223,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <OnboardingForm
               athleteEmail={profile.email}
               initialData={onboarding}
-              onSaved={data => { setOnboarding(data); setEditingFicha(false); }}
+              onSaved={data => { queryClient.setQueryData(onboardingKey, data); setEditingFicha(false); }}
               onCancel={() => setEditingFicha(false)}
             />
           </div>
@@ -259,7 +264,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               initialDisliked={onboarding.dislikedFoods}
               allergies={onboarding.allergies}
               onSaved={(liked, disliked) =>
-                setOnboarding(prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : null)
+                queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : prev)
               }
             />
           </div>

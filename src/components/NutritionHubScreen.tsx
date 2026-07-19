@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, AthleteNutritionConfig, Recipe } from '../types';
 import { getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import VegetableSelector from './VegetableSelector';
@@ -23,18 +24,20 @@ const TABS: { id: NutritionTab; label: string; icon: string }[] = [
 ];
 
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
+  const queryClient = useQueryClient();
+  const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('intercambios');
-  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
+
+  const { data: nutritionConfig = null } = useQuery({
+    queryKey: nutritionConfigKey,
+    queryFn: () => getAthleteNutritionConfig(profile.email),
+  });
 
   const handleAddToIntercambios = (recipe: Recipe) => {
     setPendingRecipe(recipe);
     setActiveSubTab('intercambios');
   };
-
-  useEffect(() => {
-    getAthleteNutritionConfig(profile.email).then(setNutritionConfig).catch(() => {});
-  }, [profile.email]);
 
   return (
     <div className="space-y-6">
@@ -99,7 +102,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
                   ...nutritionConfig,
                   vegTypes: cur.includes(id) ? cur.filter(v => v !== id) : [...cur, id],
                 };
-                setNutritionConfig(next);
+                queryClient.setQueryData(nutritionConfigKey, next);
                 saveAthleteNutritionConfig(next).catch(() => {});
               }}
             />

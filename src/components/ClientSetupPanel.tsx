@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeightCheckIn, OnboardingData, Mesocycle, WorkoutAssignment,
   Diet, AthleteDietConfig, AthleteNutritionConfig, QuestionnaireAssignment,
-  PhotoAssignment, ProgressPhoto, WorkoutLog, Roadmap, NutritionProgram,
-  WeeklyChallenge, CoachClientTask,
+  PhotoAssignment, ProgressPhoto, WorkoutLog, CoachClientTask,
 } from '../types';
 import {
   getRoadmap, getNutritionProgram, getWeeklyChallenge,
@@ -55,35 +55,33 @@ export default function ClientSetupPanel({
   dietConfig, nutritionConfig, qAssignments, photoAssignments, photos,
   workoutLogs, onGoToTab, onGoToAnalisis,
 }: Props) {
-  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
-  const [nutritionProgram, setNutritionProgram] = useState<NutritionProgram | null>(null);
-  const [weeklyChallenge, setWeeklyChallenge] = useState<WeeklyChallenge | null>(null);
-  const [manualTasks, setManualTasks] = useState<CoachClientTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const weekKey = isoWeekKey(todayISO());
+  const coachClientTasksKey = ['coachClientTasks', athlete.email] as const;
+
+  const { data: roadmap = null, isPending: loadingRoadmap } = useQuery({
+    queryKey: ['roadmap', athlete.email],
+    queryFn: () => getRoadmap(athlete.email),
+  });
+  const { data: nutritionProgram = null, isPending: loadingNutritionProgram } = useQuery({
+    queryKey: ['nutritionProgram', athlete.email],
+    queryFn: () => getNutritionProgram(athlete.email),
+  });
+  const { data: weeklyChallenge = null, isPending: loadingWeeklyChallenge } = useQuery({
+    queryKey: ['weeklyChallenge', athlete.email, weekKey],
+    queryFn: () => getWeeklyChallenge(athlete.email, weekKey),
+  });
+  const { data: manualTasks = [], isPending: loadingManualTasks } = useQuery({
+    queryKey: coachClientTasksKey,
+    queryFn: () => getCoachClientTasks(athlete.email),
+  });
+  const loading = loadingRoadmap || loadingNutritionProgram || loadingWeeklyChallenge || loadingManualTasks;
+
   const [expandedPhase, setExpandedPhase] = useState<SetupPhaseId | null>(null);
 
   const [showExtraForm, setShowExtraForm] = useState(false);
   const [extraTitle, setExtraTitle] = useState('');
   const [savingExtra, setSavingExtra] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    const today = todayISO();
-    Promise.all([
-      getRoadmap(athlete.email),
-      getNutritionProgram(athlete.email),
-      getWeeklyChallenge(athlete.email, isoWeekKey(today)),
-      getCoachClientTasks(athlete.email),
-    ]).then(([r, np, wc, tasks]) => {
-      if (cancelled) return;
-      setRoadmap(r);
-      setNutritionProgram(np);
-      setWeeklyChallenge(wc);
-      setManualTasks(tasks);
-    }).catch(console.error).finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [athlete.email]);
 
   const result = computeSetupChecklist({
     profile: athlete, onboarding, checkins, mesocycles, workoutAssignments,
@@ -123,10 +121,11 @@ export default function ClientSetupPanel({
 
   const toggleManual = async (item: SetupItem) => {
     const nextDone = item.status !== 'done';
-    setManualTasks(prev => {
-      const existing = prev.find(t => t.itemId === item.id);
-      if (existing) return prev.map(t => t.itemId === item.id ? { ...t, done: nextDone } : t);
-      return [...prev, {
+    queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => {
+      const list = prev ?? [];
+      const existing = list.find(t => t.itemId === item.id);
+      if (existing) return list.map(t => t.itemId === item.id ? { ...t, done: nextDone } : t);
+      return [...list, {
         id: `${athlete.email}_${item.id}`, athleteId: athlete.email, itemId: item.id,
         title: item.title, phase: item.phase, done: nextDone, createdBy: 'seed', createdAt: new Date().toISOString(),
       }];
@@ -147,7 +146,7 @@ export default function ClientSetupPanel({
         athleteId: athlete.email, title: extraTitle.trim(), done: false,
         createdBy: 'coach', createdAt: new Date().toISOString(),
       });
-      setManualTasks(prev => [...prev, task]);
+      queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => [...(prev ?? []), task]);
       setExtraTitle('');
       setShowExtraForm(false);
     } catch (err) {
@@ -159,12 +158,13 @@ export default function ClientSetupPanel({
 
   const toggleExtra = async (task: CoachClientTask) => {
     const done = !task.done;
-    setManualTasks(prev => prev.map(t => t.id === task.id ? { ...t, done } : t));
+    queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev =>
+      prev?.map(t => t.id === task.id ? { ...t, done } : t));
     try { await updateCoachClientTask(task.id, { done, doneAt: done ? new Date().toISOString() : undefined }); } catch (err) { console.error(err); }
   };
 
   const removeExtra = async (task: CoachClientTask) => {
-    setManualTasks(prev => prev.filter(t => t.id !== task.id));
+    queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => prev?.filter(t => t.id !== task.id));
     try { await deleteCoachClientTask(task.id); } catch (err) { console.error(err); }
   };
 

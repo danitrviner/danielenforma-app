@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  UserProfile, WeeklyMenu, OnboardingData, AthleteNutritionConfig, RecipeFavorites,
+  UserProfile, WeeklyMenu, AthleteNutritionConfig, RecipeFavorites, MenuCompletionLog,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
 } from '../types';
 import {
@@ -42,14 +43,42 @@ interface Props {
 }
 
 export default function MyMenuScreen({ profile }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [menu, setMenu] = useState<WeeklyMenu | null>(null);
-  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
-  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
+  const queryClient = useQueryClient();
+  const menuKey = ['publishedMenu', profile.email] as const;
+  const { data: menu = null, isPending: loadingMenu } = useQuery({
+    queryKey: menuKey,
+    queryFn: () => getPublishedMenu(profile.email),
+  });
+  const { data: onboarding = null, isPending: loadingOnboarding } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email),
+  });
+  const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
+  const { data: nutritionConfig = null, isPending: loadingNutritionConfig } = useQuery({
+    queryKey: nutritionConfigKey,
+    queryFn: () => getAthleteNutritionConfig(profile.email),
+  });
   const [selectedDay, setSelectedDay] = useState<WeekDay>(todayWeekDay());
-  const [doneKeys, setDoneKeys] = useState<Set<string>>(new Set());
+  const completionLogKey = ['menuCompletionLog', profile.email, TODAY_DATE] as const;
+  const { data: completionLog, isPending: loadingCompletionLog } = useQuery({
+    queryKey: completionLogKey,
+    queryFn: () => getMenuCompletionLog(profile.email, TODAY_DATE),
+  });
+  const doneKeys = useMemo(() => new Set(completionLog?.doneMealKeys ?? []), [completionLog]);
 
-  const [favorites, setFavorites] = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [], dislikedIds: [] });
+  const favoritesKey = ['recipeFavorites', profile.email] as const;
+  const { data: favoritesData, isPending: loadingFavorites } = useQuery({
+    queryKey: favoritesKey,
+    queryFn: () => getRecipeFavorites(profile.email),
+  });
+  const favorites = useMemo<RecipeFavorites>(
+    () => favoritesData
+      ? { ...favoritesData, dislikedIds: favoritesData.dislikedIds ?? [] }
+      : { athleteId: profile.email, recipeIds: [], dislikedIds: [] },
+    [favoritesData, profile.email]
+  );
+
+  const loading = loadingMenu || loadingOnboarding || loadingNutritionConfig || loadingCompletionLog || loadingFavorites;
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRecipe, setDetailRecipe] = useState<Recipe | null>(null);
@@ -66,23 +95,6 @@ export default function MyMenuScreen({ profile }: Props) {
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
-
-  useEffect(() => {
-    Promise.all([
-      getPublishedMenu(profile.email),
-      getOnboarding(profile.email),
-      getAthleteNutritionConfig(profile.email),
-      getMenuCompletionLog(profile.email, TODAY_DATE),
-      getRecipeFavorites(profile.email),
-    ]).then(([m, ob, cfg, log, favs]) => {
-      setMenu(m);
-      setOnboarding(ob);
-      setNutritionConfig(cfg);
-      setDoneKeys(new Set(log?.doneMealKeys ?? []));
-      setFavorites({ ...favs, dislikedIds: favs.dislikedIds ?? [] });
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [profile.email]);
 
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
@@ -119,7 +131,7 @@ export default function MyMenuScreen({ profile }: Props) {
   async function handleBatchPrefChange(value: boolean) {
     setSavingBatchPref(true);
     const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), batchCookingPreferred: value };
-    setNutritionConfig(next);
+    queryClient.setQueryData(nutritionConfigKey, next);
     try { await saveAthleteNutritionConfig(next); } finally { setSavingBatchPref(false); }
   }
 
@@ -130,11 +142,16 @@ export default function MyMenuScreen({ profile }: Props) {
     const key = `${selectedDay}_${mealId}`;
     const next = new Set<string>(doneKeys);
     if (next.has(key)) next.delete(key); else next.add(key);
-    setDoneKeys(next);
+    const nextArr = Array.from(next);
+    // Doc id is deterministic (`${athleteId}_${date}`, see MenuCompletionLog) so the
+    // optimistic cache entry matches what a fresh getMenuCompletionLog would return.
+    queryClient.setQueryData<MenuCompletionLog | null>(completionLogKey, prev => prev
+      ? { ...prev, doneMealKeys: nextArr }
+      : { id: `${profile.email}_${TODAY_DATE}`, athleteId: profile.email, date: TODAY_DATE, menuId: menu.id, doneMealKeys: nextArr });
     await saveMenuCompletionLog({
       athleteId: profile.email, date: TODAY_DATE,
       menuId: menu.id,
-      doneMealKeys: Array.from(next),
+      doneMealKeys: nextArr,
     }).catch(() => {});
   }
 
@@ -159,7 +176,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
   // Persist the athlete's recipe favorites / dislikes (feeds the generator + swaps).
   async function saveFavs(next: RecipeFavorites) {
-    setFavorites(next);
+    queryClient.setQueryData(favoritesKey, next);
     await saveRecipeFavorites(next).catch(() => {});
   }
   function isFav(recipeId: string) { return favorites.recipeIds.includes(recipeId); }
@@ -198,7 +215,7 @@ export default function MyMenuScreen({ profile }: Props) {
       ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }),
       preferredDishTypes: Array.from(pref), excludedDishTypes: Array.from(excl),
     };
-    setNutritionConfig(next);
+    queryClient.setQueryData(nutritionConfigKey, next);
     await saveAthleteNutritionConfig(next).catch(() => {});
   }
   function dishState(id: string): 'pref' | 'excl' | 'neutral' {
@@ -222,7 +239,7 @@ export default function MyMenuScreen({ profile }: Props) {
         return { ...m, ingredientSwaps: to === from ? swaps : [...swaps, { from, to }] };
       }),
     }));
-    setMenu({ ...menu, days: nextDays });
+    queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays } : prev);
     setSubForIngredient(null);
     await updateWeeklyMenu(menu.id, { days: nextDays }).catch(() => {});
   }
@@ -256,7 +273,7 @@ export default function MyMenuScreen({ profile }: Props) {
       toRecipeId: candidate.recipe.id, toRecipeName: candidate.recipe.name, toScale: candidate.scale,
     };
     const nextMenu: WeeklyMenu = { ...menu, days: nextDays, swapHistory: [...menu.swapHistory, swapEntry] };
-    setMenu(nextMenu);
+    queryClient.setQueryData(menuKey, nextMenu);
     setSwapFor(null);
     setShoppingItems(null); // cached list is now stale
     await updateWeeklyMenu(menu.id, { days: nextDays, swapHistory: nextMenu.swapHistory }).catch(() => {});
@@ -265,7 +282,7 @@ export default function MyMenuScreen({ profile }: Props) {
   async function handleVarietyChange(v: number) {
     setSavingVariety(true);
     const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), menuVariety: v };
-    setNutritionConfig(next);
+    queryClient.setQueryData(nutritionConfigKey, next);
     try { await saveAthleteNutritionConfig(next); } finally { setSavingVariety(false); }
   }
 

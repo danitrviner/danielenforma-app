@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ReferenceArea, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
-import { Diet, NutritionProgram, OnboardingData, DietCompletionLog, StepLog, AthleteNutritionConfig } from '../types';
+import { NutritionProgram } from '../types';
 import {
   getNutritionProgram, getDietsForAthlete, getOnboarding,
   getDietCompletionLogsForAthlete, getStepsForAthlete, getAthleteNutritionConfig,
@@ -110,44 +111,55 @@ function ProjectionTooltip({ active, payload }: any) {
 }
 
 export default function NutritionPerformanceDashboard({ athleteEmail, athleteName, targetWeightKg, onEdit, refreshToken }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [program, setProgram] = useState<NutritionProgram | null>(null);
-  const [diets, setDiets] = useState<Diet[]>([]);
-  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
-  const [completionLogs, setCompletionLogs] = useState<DietCompletionLog[]>([]);
-  const [stepLogs, setStepLogs] = useState<StepLog[]>([]);
-  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
+  const queryClient = useQueryClient();
   const [curveMode, setCurveMode] = useState<CurveMode>('both');
   const { logs: bodyweightLogs } = useAthleteWeight(athleteEmail);
 
+  const { data: program = null, isPending: loadingProgram } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail),
+  });
+  const { data: dietsRaw, isPending: loadingDiets } = useQuery({
+    queryKey: ['dietsForAthlete', athleteEmail],
+    queryFn: () => getDietsForAthlete(athleteEmail),
+  });
+  const diets = useMemo(() => (dietsRaw ?? []).filter(d => !d.selfManaged), [dietsRaw]);
+  const { data: onboarding = null, isPending: loadingOnboarding } = useQuery({
+    queryKey: ['onboarding', athleteEmail],
+    queryFn: () => getOnboarding(athleteEmail).catch(() => null),
+  });
+  const { data: completionLogs = [], isPending: loadingCompletionLogs } = useQuery({
+    queryKey: ['dietCompletionLogsForAthlete', athleteEmail],
+    queryFn: () => getDietCompletionLogsForAthlete(athleteEmail),
+  });
+  const { data: stepLogs = [], isPending: loadingSteps } = useQuery({
+    queryKey: ['stepsForAthlete', athleteEmail],
+    queryFn: () => getStepsForAthlete(athleteEmail),
+  });
+  const { data: nutritionConfig = null, isPending: loadingNutConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', athleteEmail],
+    queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
+  });
+
+  const loading = loadingProgram || loadingDiets || loadingOnboarding
+    || loadingCompletionLogs || loadingSteps || loadingNutConfig;
+
+  // This component owns its own copy of program/diets/etc; a parent (e.g. after
+  // saving the periodization form) bumps refreshToken to force a genuine
+  // refetch of all of it, bypassing the query cache's staleTime — matching the
+  // old effect's [athleteEmail, refreshToken] dependency. Skipped on first
+  // mount since the queries above already fetch then.
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const [prog, allDiets, onb, completion, steps, nutConfig] = await Promise.all([
-          getNutritionProgram(athleteEmail),
-          getDietsForAthlete(athleteEmail),
-          getOnboarding(athleteEmail).catch(() => null),
-          getDietCompletionLogsForAthlete(athleteEmail),
-          getStepsForAthlete(athleteEmail),
-          getAthleteNutritionConfig(athleteEmail).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setProgram(prog);
-        setDiets(allDiets.filter(d => !d.selfManaged));
-        setOnboarding(onb);
-        setCompletionLogs(completion);
-        setStepLogs(steps);
-        setNutritionConfig(nutConfig);
-      } catch (err) {
-        console.error('NutritionPerformanceDashboard load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [athleteEmail, refreshToken]);
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    queryClient.invalidateQueries({ queryKey: ['nutritionProgram', athleteEmail] });
+    queryClient.invalidateQueries({ queryKey: ['dietsForAthlete', athleteEmail] });
+    queryClient.invalidateQueries({ queryKey: ['onboarding', athleteEmail] });
+    queryClient.invalidateQueries({ queryKey: ['dietCompletionLogsForAthlete', athleteEmail] });
+    queryClient.invalidateQueries({ queryKey: ['stepsForAthlete', athleteEmail] });
+    queryClient.invalidateQueries({ queryKey: ['athleteNutritionConfig', athleteEmail] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshToken]);
 
   const stepGoal = nutritionConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
@@ -27,21 +28,18 @@ interface Props {
 
 export default function PhotosScreen({ profile }: Props) {
   const { showToast } = useToast();
-  const [photos, setPhotos]           = useState<ProgressPhoto[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const queryClient = useQueryClient();
+  const photosKey = ['progressPhotos', profile.email] as const;
+  const { data: photos = [], isPending: loading } = useQuery({
+    queryKey: photosKey,
+    queryFn: () => getProgressPhotos(profile.email),
+  });
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
   const [uploadDate, setUploadDate]   = useState(todayStr());
   const [uploading, setUploading]     = useState(false);
   const [deleting, setDeleting]       = useState<string | null>(null);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    getProgressPhotos(profile.email).then(p => {
-      setPhotos(p);
-      setLoading(false);
-    });
-  }, [profile.email]);
 
   const visiblePhotos = photos
     .filter(p => p.view === selectedView)
@@ -54,9 +52,9 @@ export default function PhotosScreen({ profile }: Props) {
     setUploadError('');
     try {
       const photo = await uploadProgressPhoto(profile.email, uploadDate, selectedView, file);
-      setPhotos(prev => {
+      queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => {
         // Replace existing photo for same date+view, or prepend
-        const withoutOld = prev.filter(p => !(p.date === photo.date && p.view === photo.view));
+        const withoutOld = (prev ?? []).filter(p => !(p.date === photo.date && p.view === photo.view));
         return [...withoutOld, photo].sort((a, b) => a.date.localeCompare(b.date));
       });
     } catch (err) {
@@ -72,7 +70,7 @@ export default function PhotosScreen({ profile }: Props) {
     setDeleting(photo.id);
     try {
       await deleteProgressPhoto(photo);
-      setPhotos(prev => prev.filter(p => p.id !== photo.id));
+      queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => prev?.filter(p => p.id !== photo.id));
     } catch (err) {
       console.error('Delete failed:', err);
       showToast('No se pudo eliminar la foto.');

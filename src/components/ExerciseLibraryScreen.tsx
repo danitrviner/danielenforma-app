@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import Skeleton from './Skeleton';
@@ -82,9 +83,17 @@ const EMPTY_FORM: Omit<Exercise, 'id'> = {
   isCustom:     true,
 };
 
+const exercisesQueryKey = ['exercises'] as const;
+
 export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreenProps) {
-  const [exercises, setExercises]               = useState<Exercise[]>([]);
-  const [loading, setLoading]                   = useState(true);
+  const queryClient = useQueryClient();
+  const { data: exercises = [], isPending: loading } = useQuery({
+    queryKey: exercisesQueryKey,
+    queryFn: async () => {
+      await seedExercisesIfEmpty();
+      return getExercises();
+    },
+  });
   const [search, setSearch]                     = useState('');
   const [filterMuscleGroup, setFilterMuscleGroup] = useState<MuscleGroup | ''>('');
   const [filterType, setFilterType]             = useState('');
@@ -97,21 +106,6 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [isSaving, setIsSaving]                 = useState(false);
   const [deleteConfirm, setDeleteConfirm]       = useState<string | null>(null);
   const [successMsg, setSuccessMsg]             = useState('');
-
-  const loadExercises = useCallback(async () => {
-    setLoading(true);
-    try {
-      await seedExercisesIfEmpty();
-      const list = await getExercises();
-      setExercises(list);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadExercises(); }, [loadExercises]);
 
   const filtered = exercises.filter(ex => {
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -162,11 +156,12 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       };
       if (editingId) {
         await updateExercise(editingId, payload);
-        setExercises(prev => prev.map(ex => ex.id === editingId ? { ...ex, ...payload } : ex));
+        queryClient.setQueryData<Exercise[]>(exercisesQueryKey, prev =>
+          prev?.map(ex => ex.id === editingId ? { ...ex, ...payload } : ex));
         flash('Ejercicio actualizado.');
       } else {
         const newEx = await createExercise({ ...payload, ownerId: coachId, isCustom: true });
-        setExercises(prev => [...prev, newEx]);
+        queryClient.setQueryData<Exercise[]>(exercisesQueryKey, prev => [...(prev ?? []), newEx]);
         flash('Ejercicio creado.');
       }
       setShowForm(false);
@@ -180,7 +175,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const handleDelete = async (id: string) => {
     try {
       await deleteExercise(id);
-      setExercises(prev => prev.filter(ex => ex.id !== id));
+      queryClient.setQueryData<Exercise[]>(exercisesQueryKey, prev => prev?.filter(ex => ex.id !== id));
       setDeleteConfirm(null);
       flash('Ejercicio eliminado.');
     } catch (err) {

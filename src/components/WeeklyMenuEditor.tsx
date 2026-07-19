@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory,
@@ -69,13 +70,19 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
   // Athlete's recipe favorites/dislikes + dish-type preferences feed the generator
   // and swap picker. Dish prefs are prefilled from the athlete's config; the coach
   // can adjust them here for this generation without changing the athlete's choice.
-  const [favorites, setFavorites] = useState<RecipeFavorites>({ athleteId: athleteEmail, recipeIds: [], dislikedIds: [] });
+  // Shared 'recipeFavorites' cache key (same as MyMenuScreen/RecipesScreen).
+  const { data: favoritesData } = useQuery({
+    queryKey: ['recipeFavorites', athleteEmail],
+    queryFn: () => getRecipeFavorites(athleteEmail),
+  });
+  const favorites = useMemo<RecipeFavorites>(
+    () => favoritesData
+      ? { ...favoritesData, dislikedIds: favoritesData.dislikedIds ?? [] }
+      : { athleteId: athleteEmail, recipeIds: [], dislikedIds: [] },
+    [favoritesData, athleteEmail],
+  );
   const [preferredDish, setPreferredDish] = useState<string[]>(nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []);
   const [excludedDish, setExcludedDish] = useState<string[]>(nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []);
-
-  useEffect(() => {
-    getRecipeFavorites(athleteEmail).then(f => setFavorites({ ...f, dislikedIds: f.dislikedIds ?? [] })).catch(() => {});
-  }, [athleteEmail]);
 
   // Lazily-populated caches so editing an existing draft doesn't need a fresh
   // full generation, only the pools touched by "cambiar receta"/"regenerar".

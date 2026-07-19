@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
 import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
@@ -211,8 +213,17 @@ type BwMode = 'daily' | 'weekly_avg';
 const bwModeKey = (email: string) => `enforma_bw_mode_${email}`;
 
 export default function CheckInScreen({ profile, checkins }: CheckInScreenProps) {
+  const queryClient = useQueryClient();
+
   // ── Quick bodyweight widget ────────────────────────────────────────────────
-  const [bwToday, setBwToday]   = useState<BodyweightLog | null>(null);
+  // Shared cache key with BodyweightPanel (ProfileScreen) — writes here show up
+  // there and vice versa without either side knowing about the other.
+  const bwKey = bodyweightForAthleteKey(profile.email);
+  const { data: bwLogs = [], isPending: loadingBw } = useQuery({
+    queryKey: bwKey,
+    queryFn: () => getBodyweightForAthlete(profile.email),
+  });
+  const bwToday = useMemo(() => bwLogs.find(l => l.date === todayStr()) ?? null, [bwLogs]);
   const [bwInput, setBwInput]   = useState('');
   const [bwEditing, setBwEditing] = useState(false);
   const [bwSaving, setBwSaving] = useState(false);
@@ -222,15 +233,16 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   );
   const bwInputRef = useRef<HTMLInputElement>(null);
 
+  // Igual que el .then() original: abre el editor / adopta el kind de hoy una
+  // sola vez por atleta cuando el registro de peso ya cargó, no en cada
+  // refetch de fondo — mismo patrón de guard con ref que StepsWidget.
+  const bwInitFor = useRef<string | null>(null);
   useEffect(() => {
-    getBodyweightForAthlete(profile.email).then(logs => {
-      const today = todayStr();
-      const entry = logs.find(l => l.date === today) ?? null;
-      setBwToday(entry);
-      if (!entry) setBwEditing(true); // start in input mode if nothing logged yet
-      else if (entry.kind) setBwMode(entry.kind); // refleja cómo se registró hoy
-    }).catch(console.error);
-  }, [profile.email]);
+    if (loadingBw || bwInitFor.current === profile.email) return;
+    bwInitFor.current = profile.email;
+    if (!bwToday) setBwEditing(true); // start in input mode if nothing logged yet
+    else if (bwToday.kind) setBwMode(bwToday.kind); // refleja cómo se registró hoy
+  }, [loadingBw, profile.email, bwToday]);
 
   useEffect(() => {
     if (bwEditing) bwInputRef.current?.focus();
@@ -253,7 +265,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       const today = todayStr();
       if (bwToday) {
         await updateBodyweight(bwToday.id, { weight: val, kind: bwMode });
-        setBwToday(prev => prev ? { ...prev, weight: val, kind: bwMode } : prev);
+        const bwTodayId = bwToday.id;
+        queryClient.setQueryData<BodyweightLog[]>(bwKey, prev =>
+          prev?.map(b => b.id === bwTodayId ? { ...b, weight: val, kind: bwMode } : b));
       } else {
         const entry = await addBodyweight({
           athleteId: profile.email,
@@ -262,7 +276,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           kind: bwMode,
           createdAt: new Date().toISOString(),
         });
-        setBwToday(entry);
+        queryClient.setQueryData<BodyweightLog[]>(bwKey, prev => [...(prev ?? []), entry]);
       }
       setBwInput('');
       setBwEditing(false);
@@ -275,34 +289,40 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   };
 
   // Questionnaire state
-  const [assignments, setAssignments] = useState<QuestionnaireAssignment[]>([]);
-  const [responses, setResponses] = useState<QuestionnaireResponse[]>([]);
-  const [templates, setTemplates] = useState<Map<string, Questionnaire>>(new Map());
-  const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
-  const [loadingQ, setLoadingQ] = useState(true);
+  const responsesKey = ['responsesForAthlete', profile.email] as const;
+  const { data: rawAssignments = [], isPending: loadingAssignments } = useQuery({
+    queryKey: ['assignmentsForAthlete', profile.email],
+    queryFn: () => getAssignmentsForAthlete(profile.email),
+  });
+  const { data: responses = [], isPending: loadingResponses } = useQuery({
+    queryKey: responsesKey,
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+  const assignments = useMemo(() => rawAssignments.filter(a => a.active), [rawAssignments]);
+  const activeQuestionnaireIds = useMemo(
+    () => [...new Set(assignments.map(a => a.questionnaireId))],
+    [assignments]
+  );
+  // One cache entry per questionnaire id, same key PendingTasksPanel/ProfileScreen
+  // use for the same lookup — reuses/gets reused by them instead of refetching.
+  const questionnaireQueries = useQueries({
+    queries: activeQuestionnaireIds.map(id => ({
+      queryKey: ['questionnaireById', id],
+      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(id),
+    })),
+  });
+  const templates = useMemo(() => {
+    const tMap = new Map<string, Questionnaire>();
+    for (const q of questionnaireQueries) {
+      const t = q.data as Questionnaire | null | undefined;
+      if (t) tMap.set(t.id, t);
+    }
+    return tMap;
+  }, [questionnaireQueries]);
+  const loadingQ = loadingAssignments || loadingResponses
+    || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingQ(true);
-    Promise.all([
-      getAssignmentsForAthlete(profile.email),
-      getResponsesForAthlete(profile.email),
-    ]).then(async ([aList, rList]) => {
-      if (cancelled) return;
-      const active = aList.filter(a => a.active);
-      setAssignments(active);
-      setResponses(rList);
-      const tMap = new Map<string, Questionnaire>();
-      await Promise.all(
-        [...new Set(active.map(a => a.questionnaireId))].map(async qId => {
-          const q = await getQuestionnaireById(qId);
-          if (q) tMap.set(q.id, q);
-        })
-      );
-      if (!cancelled) setTemplates(tMap);
-    }).catch(console.error).finally(() => { if (!cancelled) setLoadingQ(false); });
-    return () => { cancelled = true; };
-  }, [profile.email]);
+  const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
 
   const pendingAssignments = assignments.filter(
     a => isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)
@@ -310,23 +330,17 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const upcomingAssignments = assignments.filter(a => isUpcoming(a));
 
   // Photo check-in state
-  const [photoAssignments, setPhotoAssignments] = useState<PhotoAssignment[]>([]);
-  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
-  const [loadingPhotoAssignments, setLoadingPhotoAssignments] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingPhotoAssignments(true);
-    Promise.all([
-      getPhotoAssignmentsForAthlete(profile.email),
-      getProgressPhotos(profile.email),
-    ]).then(([aList, photos]) => {
-      if (cancelled) return;
-      setPhotoAssignments(aList.filter(a => a.active));
-      setProgressPhotos(photos);
-    }).catch(console.error).finally(() => { if (!cancelled) setLoadingPhotoAssignments(false); });
-    return () => { cancelled = true; };
-  }, [profile.email]);
+  const { data: rawPhotoAssignments = [], isPending: loadingPhotoAssignmentsQ } = useQuery({
+    queryKey: ['photoAssignmentsForAthlete', profile.email],
+    queryFn: () => getPhotoAssignmentsForAthlete(profile.email),
+  });
+  // Same cache key PhotosScreen (rendered below) uses for the same athlete's photos.
+  const { data: progressPhotos = [], isPending: loadingProgressPhotos } = useQuery({
+    queryKey: ['progressPhotos', profile.email],
+    queryFn: () => getProgressPhotos(profile.email),
+  });
+  const photoAssignments = useMemo(() => rawPhotoAssignments.filter(a => a.active), [rawPhotoAssignments]);
+  const loadingPhotoAssignments = loadingPhotoAssignmentsQ || loadingProgressPhotos;
 
   const pendingPhotoAssignments = photoAssignments.filter(
     a => isDueToday(a) && !hasUploadedThisOccurrence(a, progressPhotos)
@@ -334,7 +348,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const upcomingPhotoAssignments = photoAssignments.filter(a => isUpcoming(a));
 
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
-    setResponses(prev => [...prev, r]);
+    queryClient.setQueryData<QuestionnaireResponse[]>(responsesKey, prev => [...(prev ?? []), r]);
     setActiveAssignment(null);
     createNotificationDeduped(`notif_qr_${r.id}`, {
       recipientEmail: COACH_EMAIL,

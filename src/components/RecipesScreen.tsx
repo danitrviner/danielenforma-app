@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode,
 } from '../types';
@@ -460,17 +461,38 @@ interface Props {
 }
 
 export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
-  // Coach/athlete recipes
-  const [recipes, setRecipes]           = useState<Recipe[]>([]);
-  const [favorites, setFavorites]       = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [] });
-  const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
-  const [loading, setLoading]           = useState(true);
+  const queryClient = useQueryClient();
+
+  // Coach/athlete recipes — shared cache keys with RecipeBuilderScreen/MyDietsScreen
+  // ('recipes'), WeeklyMenuEditor/MyMenuScreen ('recipeFavorites'), and
+  // StepsWidget/NutritionAnalysisPanel/NutritionHubScreen ('athleteNutritionConfig').
+  const { data: recipes = [], isPending: loadingRecipes } = useQuery({
+    queryKey: ['recipes'],
+    queryFn: getRecipes,
+  });
+  const favoritesKey = ['recipeFavorites', profile.email] as const;
+  const { data: favoritesData, isPending: loadingFavorites } = useQuery({
+    queryKey: favoritesKey,
+    queryFn: () => getRecipeFavorites(profile.email),
+  });
+  const favorites = favoritesData ?? { athleteId: profile.email, recipeIds: [] };
+  const { data: nutritionConfig, isPending: loadingNutConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', profile.email],
+    queryFn: () => getAthleteNutritionConfig(profile.email),
+  });
+  const enabledModes = nutritionConfig?.enabledModes ?? ['OMNIVORO'];
+  const { data: onboardingData, isPending: loadingOnboarding } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email),
+  });
+  const loading = loadingRecipes || loadingFavorites || loadingNutConfig || loadingOnboarding;
+  const prefs = useMemo(() => ({
+    liked:     onboardingData?.likedFoods     ?? [],
+    disliked:  onboardingData?.dislikedFoods  ?? [],
+    allergies: onboardingData?.allergies      ?? [],
+  }), [onboardingData]);
   const [selectedCat, setSelectedCat]   = useState<string>('all');
 
-  // Food preferences (from onboarding)
-  const [prefs, setPrefs] = useState<{ liked: string[]; disliked: string[]; allergies: string[] }>({
-    liked: [], disliked: [], allergies: [],
-  });
   const [showDislikedSection, setShowDislikedSection] = useState(false);
 
   // Indya browser
@@ -487,29 +509,6 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // Detail
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
   const [savingFav, setSavingFav]       = useState(false);
-
-  // ── Initial load ────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    Promise.all([
-      getRecipes(),
-      getRecipeFavorites(profile.email),
-      getAthleteNutritionConfig(profile.email),
-      getOnboarding(profile.email),
-    ]).then(([recs, favs, nutCfg, ob]) => {
-      setRecipes(recs);
-      setFavorites(favs);
-      setEnabledModes(nutCfg.enabledModes);
-      if (ob) {
-        setPrefs({
-          liked:     ob.likedFoods     ?? [],
-          disliked:  ob.dislikedFoods  ?? [],
-          allergies: ob.allergies      ?? [],
-        });
-      }
-      setLoading(false);
-    });
-  }, [profile.email]);
 
   // ── Indya paginated load ────────────────────────────────────────────────────
 
@@ -601,7 +600,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       recipeIds: isFav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
       dislikedIds: (favorites.dislikedIds ?? []).filter(id => id !== recipeId), // favorite & dislike are mutually exclusive
     };
-    setFavorites(nextFavs);
+    queryClient.setQueryData(favoritesKey, nextFavs);
     setSavingFav(true);
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
   };
@@ -615,7 +614,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         ? (favorites.dislikedIds ?? []).filter(id => id !== recipeId)
         : [...(favorites.dislikedIds ?? []), recipeId],
     };
-    setFavorites(nextFavs);
+    queryClient.setQueryData(favoritesKey, nextFavs);
     setSavingFav(true);
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
   };

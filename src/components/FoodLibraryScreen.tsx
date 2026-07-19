@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -38,9 +39,17 @@ const EMPTY_FORM: Omit<MealItem, 'id'> = { mode: 'OMNIVORO', category: 'HC', lab
 
 interface Props { coachId: string; }
 
+const foodItemsQueryKey = ['foodItems'] as const;
+
 export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
-  const [items, setItems] = useState<MealItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: items = [], isPending: loading } = useQuery({
+    queryKey: foodItemsQueryKey,
+    queryFn: async () => {
+      await seedFoodItemsIfEmpty();
+      return getFoodItems();
+    },
+  });
   const [filterMode, setFilterMode] = useState<DietMode>('OMNIVORO');
   const [filterCat, setFilterCat] = useState<FoodCategory | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -49,15 +58,6 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [form, setForm] = useState<Omit<MealItem, 'id'>>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await seedFoodItemsIfEmpty();
-      setItems(await getFoodItems());
-      setLoading(false);
-    })();
-  }, []);
 
   const isSystem = (item: MealItem) => SYSTEM_LABELS.has(item.label);
 
@@ -91,10 +91,11 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
     try {
       if (editingId) {
         await updateFoodItem(editingId, form);
-        setItems(prev => prev.map(f => f.id === editingId ? { ...f, ...form } : f));
+        queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev =>
+          prev?.map(f => f.id === editingId ? { ...f, ...form } : f));
       } else {
         const newItem = await createFoodItem(form);
-        setItems(prev => [...prev, newItem]);
+        queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev => [...(prev ?? []), newItem]);
       }
       setShowModal(false);
     } finally {
@@ -104,7 +105,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
   const handleDelete = async (id: string) => {
     await deleteFoodItem(id);
-    setItems(prev => prev.filter(f => f.id !== id));
+    queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev => prev?.filter(f => f.id !== id));
     setDeleteId(null);
   };
 

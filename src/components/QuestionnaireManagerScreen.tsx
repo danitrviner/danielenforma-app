@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Questionnaire } from '../types';
 import {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
@@ -9,20 +10,17 @@ import Skeleton from './Skeleton';
 interface Props { coachId: string }
 
 export default function QuestionnaireManagerScreen({ coachId }: Props) {
+  const queryClient = useQueryClient();
+  const queryKey = ['questionnairesByCoach', coachId] as const;
+  const { data: questionnaires = [], isPending: loading } = useQuery({
+    queryKey,
+    queryFn: () => getQuestionnairesByCoach(coachId),
+  });
   const [view, setView]                 = useState<'list' | 'editor'>('list');
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
-  const [loading, setLoading]           = useState(true);
   const [editingId, setEditingId]       = useState<string | null>(null);
   const [form, setForm]                 = useState<FormState>(blankForm());
   const [saving, setSaving]             = useState(false);
   const [deleting, setDeleting]         = useState<string | null>(null);
-
-  useEffect(() => {
-    getQuestionnairesByCoach(coachId)
-      .then(setQuestionnaires)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [coachId]);
 
   const openEditor = (q?: Questionnaire) => {
     setEditingId(q?.id ?? null);
@@ -44,10 +42,11 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       };
       if (editingId) {
         await updateQuestionnaire(editingId, data);
-        setQuestionnaires(prev => prev.map(q => q.id === editingId ? { id: editingId, ...data } : q));
+        queryClient.setQueryData<Questionnaire[]>(queryKey, prev =>
+          prev?.map(q => q.id === editingId ? { id: editingId, ...data } : q));
       } else {
         const created = await createQuestionnaire(data);
-        setQuestionnaires(prev => [...prev, created]);
+        queryClient.setQueryData<Questionnaire[]>(queryKey, prev => [...(prev ?? []), created]);
       }
       setView('list');
     } catch (err) { console.error(err); }
@@ -59,7 +58,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
     setDeleting(id);
     try {
       await deleteQuestionnaire(id);
-      setQuestionnaires(prev => prev.filter(q => q.id !== id));
+      queryClient.setQueryData<Questionnaire[]>(queryKey, prev => prev?.filter(q => q.id !== id));
     } catch (err) { console.error(err); }
     finally { setDeleting(null); }
   };

@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Mesocycle, NutritionProgram, Roadmap, StepLog, WorkoutLog, Exercise,
-  DietCompletionLog, Diet, WorkoutAssignment,
-} from '../types';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Roadmap } from '../types';
 import {
   getMesocycles, getNutritionProgram, getRoadmap, saveRoadmap, getUserProfileByEmail,
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
@@ -31,64 +29,63 @@ const SUB_TABS: { id: SubTab; label: string; icon: string }[] = [
 ];
 
 export default function CoachRoadmapView({ athleteEmail }: Props) {
+  const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<SubTab>('fases');
-  const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
-  const [nutritionProgram, setNutritionProgram] = useState<NutritionProgram | null>(null);
-  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
-  const [initialWeight, setInitialWeight] = useState<number | undefined>(undefined);
-  const [uid, setUid] = useState<string | undefined>(undefined);
-  const [stepLogs, setStepLogs] = useState<StepLog[]>([]);
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [dietCompletionLogs, setDietCompletionLogs] = useState<DietCompletionLog[]>([]);
-  const [diets, setDiets] = useState<Diet[]>([]);
-  const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
   const { logs: bodyweightLogs } = useAthleteWeight(athleteEmail);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const profile = await getUserProfileByEmail(athleteEmail);
-        const [
-          mesos, nutri, rm, steps, wLogs, exs, dcl, athleteDiets, athleteAssignments,
-        ] = await Promise.all([
-          getMesocycles(athleteEmail),
-          getNutritionProgram(athleteEmail),
-          getRoadmap(athleteEmail),
-          getStepsForAthlete(athleteEmail),
-          getWorkoutLogs(athleteEmail),
-          getExercises(),
-          getDietCompletionLogsForAthlete(athleteEmail),
-          getDietsForAthlete(athleteEmail),
-          profile?.userId ? getWorkoutAssignments(profile.userId) : Promise.resolve([]),
-        ]);
-        if (cancelled) return;
-        setMesocycles(mesos);
-        setNutritionProgram(nutri);
-        setRoadmap(rm);
-        setInitialWeight(profile?.actualWeight ?? profile?.initialWeight);
-        setUid(profile?.userId);
-        setStepLogs(steps);
-        setWorkoutLogs(wLogs);
-        setExercises(exs);
-        setDietCompletionLogs(dcl);
-        setDiets(athleteDiets);
-        setAssignments(athleteAssignments);
-      } catch (err) {
-        console.warn('CoachRoadmapView load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [athleteEmail]);
+  const roadmapKey = ['roadmap', athleteEmail] as const;
+
+  const { data: profile, isPending: loadingProfile } = useQuery({
+    queryKey: ['userProfileByEmail', athleteEmail],
+    queryFn: () => getUserProfileByEmail(athleteEmail),
+  });
+  const { data: mesocycles = [], isPending: loadingMesos } = useQuery({
+    queryKey: ['mesocycles', athleteEmail],
+    queryFn: () => getMesocycles(athleteEmail),
+  });
+  const { data: nutritionProgram = null, isPending: loadingNutri } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail),
+  });
+  const { data: roadmap, isPending: loadingRoadmap } = useQuery({
+    queryKey: roadmapKey,
+    queryFn: () => getRoadmap(athleteEmail),
+  });
+  const { data: stepLogs = [], isPending: loadingSteps } = useQuery({
+    queryKey: ['stepsForAthlete', athleteEmail],
+    queryFn: () => getStepsForAthlete(athleteEmail),
+  });
+  const { data: workoutLogs = [], isPending: loadingWorkoutLogs } = useQuery({
+    queryKey: ['workoutLogs', athleteEmail],
+    queryFn: () => getWorkoutLogs(athleteEmail),
+  });
+  const { data: exercises = [], isPending: loadingExercises } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: getExercises,
+  });
+  const { data: dietCompletionLogs = [], isPending: loadingDcl } = useQuery({
+    queryKey: ['dietCompletionLogsForAthlete', athleteEmail],
+    queryFn: () => getDietCompletionLogsForAthlete(athleteEmail),
+  });
+  const { data: diets = [], isPending: loadingDiets } = useQuery({
+    queryKey: ['dietsForAthlete', athleteEmail],
+    queryFn: () => getDietsForAthlete(athleteEmail),
+  });
+  const uid = profile?.userId;
+  const { data: assignments = [], isPending: loadingAssignments } = useQuery({
+    queryKey: ['workoutAssignments', uid],
+    queryFn: () => getWorkoutAssignments(uid!),
+    enabled: !!uid,
+  });
+
+  const initialWeight = profile?.actualWeight ?? profile?.initialWeight;
+  const loading = loadingProfile || loadingMesos || loadingNutri || loadingRoadmap
+    || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDcl || loadingDiets
+    || (!!uid && loadingAssignments);
 
   async function handleSave(updated: Roadmap) {
     await saveRoadmap(updated);
-    setRoadmap(updated);
+    queryClient.setQueryData(roadmapKey, updated);
   }
 
   if (loading) {
@@ -142,7 +139,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
           phaseData={phaseData}
           nutritionProgram={nutritionProgram}
           currentWeightKg={initialWeight}
-          onProgramSaved={setNutritionProgram}
+          onProgramSaved={program => queryClient.setQueryData(['nutritionProgram', athleteEmail], program)}
         />
       )}
       {subTab === 'retos' && (uid

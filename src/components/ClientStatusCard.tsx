@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, Mesocycle, WeightCheckIn, CoachReport,
-  WorkoutLog, BodyweightLog, PlanPhase, NutritionPhase, GoalBody,
+  WorkoutLog, BodyweightLog, GoalBody,
 } from '../types';
 import {
   getRoadmap, getNutritionProgram, computeActivePhase,
@@ -42,22 +43,34 @@ interface ChangeEvent { date: string; icon: string; text: string }
 export default function ClientStatusCard({
   athlete, onboardingData, mesocycles, checkins, coachReports, athleteLogs, bodyweightLogs,
 }: Props) {
-  const [planPhase, setPlanPhase] = useState<PlanPhase | null>(null);
-  const [nutriPhase, setNutriPhase] = useState<NutritionPhase | null>(null);
-  const [note, setNote] = useState('');
+  const queryClient = useQueryClient();
+  const statusNoteKey = ['athleteStatusNote', athlete.email] as const;
+
+  const { data: roadmap } = useQuery({
+    queryKey: ['roadmap', athlete.email],
+    queryFn: () => getRoadmap(athlete.email),
+  });
+  const { data: nutritionProgram } = useQuery({
+    queryKey: ['nutritionProgram', athlete.email],
+    queryFn: () => getNutritionProgram(athlete.email),
+  });
+  const { data: note = '' } = useQuery({
+    queryKey: statusNoteKey,
+    queryFn: () => getAthleteStatusNote(athlete.email),
+  });
+
+  const planPhase = useMemo(
+    () => roadmap?.planPhases?.find(p => p.status === 'actual') ?? null,
+    [roadmap]
+  );
+  const nutriPhase = useMemo(
+    () => nutritionProgram ? computeActivePhase(nutritionProgram, new Date().toISOString().slice(0, 10)) : null,
+    [nutritionProgram]
+  );
+
   const [editingNote, setEditingNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [savingNote, setSavingNote] = useState(false);
-
-  useEffect(() => {
-    getRoadmap(athlete.email)
-      .then(r => setPlanPhase(r.planPhases?.find(p => p.status === 'actual') ?? null))
-      .catch(() => {});
-    getNutritionProgram(athlete.email)
-      .then(p => setNutriPhase(p ? computeActivePhase(p, new Date().toISOString().slice(0, 10)) : null))
-      .catch(() => {});
-    getAthleteStatusNote(athlete.email).then(setNote).catch(() => {});
-  }, [athlete.email]);
 
   // Mesociclo en curso + semana actual dentro de él.
   const activeMeso = useMemo(() => {
@@ -99,7 +112,7 @@ export default function ClientStatusCard({
     setSavingNote(true);
     try {
       await saveAthleteStatusNote(athlete.email, noteDraft.trim());
-      setNote(noteDraft.trim());
+      queryClient.setQueryData(statusNoteKey, noteDraft.trim());
       setEditingNote(false);
     } finally {
       setSavingNote(false);

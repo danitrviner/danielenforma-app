@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
@@ -49,20 +50,37 @@ function newChat(athleteId?: string): AiChat {
 // Panel global del asistente IA del coach: FAB abajo-derecha + slide-over.
 // El bucle de agente vive en src/ai/aiClient.ts; aquí solo UI + persistencia
 // del chat en la colección aiChats.
+const aiChatsKey = ['aiChats'] as const;
+const coachInstructionsKey = ['coachInstructions'] as const;
+
 export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: Props) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [showList, setShowList] = useState(false);
-  const [chats, setChats] = useState<AiChat[]>([]);
+  const { data: chats = [] } = useQuery({
+    queryKey: aiChatsKey,
+    queryFn: getAiChats,
+    enabled: open,
+  });
   const [chat, setChat] = useState<AiChat>(() => newChat(activeAthleteEmail));
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [proposals, setProposals] = useState<AiProposal[]>([]);
+  const proposalsKey = ['aiProposalsForAthlete', activeAthleteEmail ?? ''] as const;
+  const { data: proposals = [] } = useQuery({
+    queryKey: proposalsKey,
+    queryFn: () => getAiProposalsForAthlete(activeAthleteEmail!).then(list => list.filter(p => p.status === 'proposed')),
+    enabled: open && !!activeAthleteEmail,
+  });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
-  const [coachInstructions, setCoachInstructions] = useState('');
+  const { data: coachInstructions = '' } = useQuery({
+    queryKey: coachInstructionsKey,
+    queryFn: getCoachInstructions,
+    enabled: open,
+  });
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [instructionsDraft, setInstructionsDraft] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
@@ -108,34 +126,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     }
   };
 
-  useEffect(() => {
-    if (open) getAiChats().then(setChats).catch(() => {});
-  }, [open]);
-
-  useEffect(() => {
-    if (open) getCoachInstructions().then(setCoachInstructions).catch(() => {});
-  }, [open]);
-
   const openInstructionsEditor = () => { setInstructionsDraft(coachInstructions); setEditingInstructions(true); };
   const saveInstructions = async () => {
     setSavingInstructions(true);
     try {
       await saveCoachInstructions(instructionsDraft.trim());
-      setCoachInstructions(instructionsDraft.trim());
+      queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
       setEditingInstructions(false);
     } finally {
       setSavingInstructions(false);
     }
   };
 
+  // Re-fetches proposals from the server (bypassing cache staleness) — used
+  // after send() since the agent's tool calls may have just created new ones
+  // server-side that a plain cache read wouldn't know about.
   const refreshProposals = () => {
-    if (!activeAthleteEmail) { setProposals([]); return; }
-    getAiProposalsForAthlete(activeAthleteEmail)
-      .then(list => setProposals(list.filter(p => p.status === 'proposed')))
-      .catch(() => {});
+    if (!activeAthleteEmail) return;
+    queryClient.invalidateQueries({ queryKey: proposalsKey });
   };
-
-  useEffect(() => { if (open) refreshProposals(); }, [open, activeAthleteEmail]);
 
   useEffect(() => {
     const onOpen = () => setOpen(true);
@@ -167,7 +176,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
       }
-      setProposals(prev => prev.filter(x => x.id !== p.id));
+      queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
     } catch {
       setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
     } finally {
@@ -179,7 +188,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     setReviewingId(p.id);
     try {
       await updateAiProposal(p.id, { status: 'rejected', reviewedAt: new Date().toISOString() });
-      setProposals(prev => prev.filter(x => x.id !== p.id));
+      queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
     } catch {
       setError('No se pudo rechazar la propuesta — inténtalo de nuevo.');
     } finally {
@@ -189,7 +198,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
   const persist = async (updated: AiChat) => {
     setChat(updated);
-    setChats(prev => [updated, ...prev.filter(c => c.id !== updated.id)]);
+    queryClient.setQueryData<AiChat[]>(aiChatsKey, prev => [updated, ...(prev ?? []).filter(c => c.id !== updated.id)]);
     await saveAiChat(updated);
   };
 
@@ -231,7 +240,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const openChat = (c: AiChat) => { setChat(c); setShowList(false); setError(null); };
   const startNew = () => { setChat(newChat(activeAthleteEmail)); setShowList(false); setError(null); };
   const removeChat = async (id: string) => {
-    setChats(prev => prev.filter(c => c.id !== id));
+    queryClient.setQueryData<AiChat[]>(aiChatsKey, prev => prev?.filter(c => c.id !== id));
     if (chat.id === id) startNew();
     await deleteAiChat(id);
   };

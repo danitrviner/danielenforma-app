@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
+import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
 
@@ -17,10 +18,34 @@ type UnifiedItem =
 
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
   const navigate = useNavigate();
-  const [athletes, setAthletes] = useState<UserProfile[]>([]);
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
-  const [allResponses, setAllResponses] = useState<QuestionnaireResponse[]>([]);
-  const [loadingResponses, setLoadingResponses] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Shared 'userProfiles' cache key (same as CommandPalette/MesocycleManager).
+  const { data: athletes = [] } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+  });
+
+  const quickRepliesKey = ['quickReplies'] as const;
+  const { data: quickReplies = [] } = useQuery({
+    queryKey: quickRepliesKey,
+    queryFn: getQuickReplies,
+  });
+
+  const { data: questionnaires = [], isPending: loadingQuestionnaires } = useQuery({
+    queryKey: ['questionnairesByCoach', coachId],
+    queryFn: () => getQuestionnairesByCoach(coachId),
+    enabled: !!coachId,
+  });
+  const questionnaireIds = useMemo(() => questionnaires.map(q => q.id), [questionnaires]);
+  const { data: allResponses = [], isPending: loadingResponsesQuery } = useQuery({
+    queryKey: ['responsesByQuestionnaireIds', questionnaireIds],
+    queryFn: () => getResponsesByQuestionnaireIds(questionnaireIds),
+    enabled: !!coachId && questionnaireIds.length > 0,
+  });
+  // Mirrors the old effect's loading flag: true while questionnaires load, and
+  // (only if there are any) while their responses load too.
+  const loadingResponses = loadingQuestionnaires || (questionnaireIds.length > 0 && loadingResponsesQuery);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -34,19 +59,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   // Plantillas de feedback rápido — se insertan con un clic en vez de
   // escribir la misma directriz una y otra vez para cada atleta.
-  const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [showQuickReplyManager, setShowQuickReplyManager] = useState(false);
   const [quickReplyDraft, setQuickReplyDraft] = useState<string[]>([]);
   const [savingQuickReplies, setSavingQuickReplies] = useState(false);
-
-  // Load athletes
-  useEffect(() => {
-    getAllUserProfiles().then(setAthletes).catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    getQuickReplies().then(setQuickReplies).catch(console.error);
-  }, []);
 
   const openQuickReplyManager = () => {
     setQuickReplyDraft(quickReplies.length > 0 ? [...quickReplies] : ['']);
@@ -58,7 +73,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     setSavingQuickReplies(true);
     try {
       await saveQuickReplies(cleaned);
-      setQuickReplies(cleaned);
+      queryClient.setQueryData(quickRepliesKey, cleaned);
       setShowQuickReplyManager(false);
     } catch (err) {
       console.error(err);
@@ -70,25 +85,6 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
   const insertQuickReply = (text: string) => {
     setFeedbackText(prev => prev.trim().length > 0 ? `${prev.trim()}\n${text}` : text);
   };
-
-  // Load questionnaires + responses whenever coachId changes
-  useEffect(() => {
-    if (!coachId) return;
-    setLoadingResponses(true);
-    getQuestionnairesByCoach(coachId)
-      .then(async (qs) => {
-        setQuestionnaires(qs);
-        if (qs.length > 0) {
-          const ids = qs.map(q => q.id);
-          const responses = await getResponsesByQuestionnaireIds(ids);
-          setAllResponses(responses);
-        } else {
-          setAllResponses([]);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoadingResponses(false));
-  }, [coachId]);
 
   const getAthleteProfile = (emailOrUserId: string) =>
     athletes.find(a => a.userId === emailOrUserId || a.email.toLowerCase() === emailOrUserId.toLowerCase());

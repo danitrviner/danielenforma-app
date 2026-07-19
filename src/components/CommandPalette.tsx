@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { getAllUserProfiles } from '../dbService';
@@ -21,11 +22,6 @@ const ACTIONS: QuickAction[] = [
   { id: 'nutrition', label: 'Ir a Nutrición',   icon: 'restaurant' },
 ];
 
-// Cache a nivel de módulo: ClientsScreen/ReviewsScreen ya piden esta misma
-// lista por su cuenta cada vez que se montan — aquí al menos no se repite
-// la lectura cada vez que el coach abre la paleta dentro de la misma sesión.
-let athletesCache: UserProfile[] | null = null;
-
 // Buscador global del coach (Cmd+K / Ctrl+K): saltar directo a la ficha de
 // un atleta o a una pestaña sin pasar por Clientes → buscar → abrir. Acotado
 // a atletas + navegación — buscar ejercicios/recetas necesitaría un índice
@@ -34,10 +30,17 @@ let athletesCache: UserProfile[] | null = null;
 export default function CommandPalette({ onNavigateTab }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [athletes, setAthletes] = useState<UserProfile[]>(athletesCache ?? []);
-  const [loadingAthletes, setLoadingAthletes] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  // Shared 'userProfiles' cache key (same as MesocycleManager) — this used to
+  // be a hand-rolled module-level cache; the query cache now does the same
+  // dedup app-wide, plus shares the fetch with ClientsScreen/ReviewsScreen.
+  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+    enabled: open,
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -56,15 +59,6 @@ export default function CommandPalette({ onNavigateTab }: Props) {
     if (!open) return;
     setQuery('');
     const focusTimer = setTimeout(() => inputRef.current?.focus(), 0);
-    if (athletesCache) {
-      setAthletes(athletesCache);
-    } else {
-      setLoadingAthletes(true);
-      getAllUserProfiles()
-        .then(list => { athletesCache = list; setAthletes(list); })
-        .catch(console.error)
-        .finally(() => setLoadingAthletes(false));
-    }
     return () => clearTimeout(focusTimer);
   }, [open]);
 

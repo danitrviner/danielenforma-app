@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CoachReport, WorkoutLog, Exercise, Mesocycle,
-  WorkoutAssignment, BodyweightLog, DietCompletionLog, Diet, WeeklyChallenge,
+  WorkoutAssignment, BodyweightLog,
 } from '../types';
 import {
   getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped,
@@ -31,12 +32,30 @@ const COMPARE_WEEK_OPTIONS = [1, 2, 4, 8];
 function today(): string { return new Date().toISOString().split('T')[0]; }
 
 export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs, exercises, assignments, bodyweightLogs, targetWeight }: Props) {
-  const [reports, setReports] = useState<CoachReport[]>([]);
-  const [mesocycles, setMesocycles] = useState<Mesocycle[]>([]);
-  const [dietLogs, setDietLogs] = useState<DietCompletionLog[]>([]);
-  const [diets, setDiets] = useState<Diet[]>([]);
-  const [challenges, setChallenges] = useState<WeeklyChallenge[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const reportsQueryKey = ['coachReportsForAthlete', athleteEmail] as const;
+  const { data: reports = [], isPending: loading } = useQuery({
+    queryKey: reportsQueryKey,
+    queryFn: () => getCoachReportsForAthlete(athleteEmail),
+  });
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocycles', athleteEmail],
+    queryFn: () => getMesocycles(athleteEmail),
+  });
+  // Datos para las secciones extra del reporte (nutrición y retos); si fallan,
+  // el reporte simplemente sale sin esas secciones.
+  const { data: dietLogs = [] } = useQuery({
+    queryKey: ['dietCompletionLogsForAthlete', athleteEmail],
+    queryFn: () => getDietCompletionLogsForAthlete(athleteEmail),
+  });
+  const { data: diets = [] } = useQuery({
+    queryKey: ['dietsForAthlete', athleteEmail],
+    queryFn: () => getDietsForAthlete(athleteEmail),
+  });
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['weeklyChallengesForAthlete', athleteEmail],
+    queryFn: () => getWeeklyChallengesForAthlete(athleteEmail),
+  });
   const [editing, setEditing] = useState<CoachReport | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -59,24 +78,10 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minCompareWeeks]);
 
-  const refresh = () => {
-    setLoading(true);
-    getCoachReportsForAthlete(athleteEmail)
-      .then(setReports)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    refresh();
-    getMesocycles(athleteEmail).then(setMesocycles).catch(() => {});
-    // Datos para las secciones extra del reporte (nutrición y retos); si fallan,
-    // el reporte simplemente sale sin esas secciones.
-    getDietCompletionLogsForAthlete(athleteEmail).then(setDietLogs).catch(() => {});
-    getDietsForAthlete(athleteEmail).then(setDiets).catch(() => {});
-    getWeeklyChallengesForAthlete(athleteEmail).then(setChallenges).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [athleteEmail]);
+  // Re-fetches the reports list from the server after a save/send/delete —
+  // matches the old refresh()'s behavior of always trusting the server copy
+  // rather than optimistically patching local state.
+  const refresh = () => queryClient.invalidateQueries({ queryKey: reportsQueryKey });
 
   // Current + previous mesocycle by startDate (most recent that has started; the one before it).
   const mesoPair = useMemo(() => {

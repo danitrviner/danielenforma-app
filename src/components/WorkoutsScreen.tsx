@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, Workout, WorkoutExercise, MUSCLE_LABELS } from '../types';
 import { getWorkouts, createWorkout, updateWorkout, deleteWorkout, getExercises, seedExercisesIfEmpty } from '../dbService';
 import StatTile from './StatTile';
@@ -28,11 +29,17 @@ const DEFAULT_WE: Omit<WorkoutExercise, 'exerciseId' | 'order'> = {
   notes: '',
 };
 
+const workoutsQueryKey = ['workouts'] as const;
+const exercisesQueryKey = ['exercises'] as const;
+
 export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<View>('list');
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: workouts = [], isPending: loading } = useQuery({
+    queryKey: workoutsQueryKey,
+    queryFn: getWorkouts,
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
@@ -49,44 +56,21 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const [bulkRir, setBulkRir] = useState('2');
   const [bulkRest, setBulkRest] = useState('90');
 
-  // Exercise picker state
-  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  // Exercise picker state — shared ['exercises'] cache key with
+  // ExerciseLibraryScreen/MesocycleTemplateLibrary, seeded the same way.
+  const { data: allExercises = [] } = useQuery({
+    queryKey: exercisesQueryKey,
+    queryFn: async () => {
+      await seedExercisesIfEmpty();
+      return getExercises();
+    },
+  });
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerFocus, setPickerFocus] = useState('');
   const [pickerType, setPickerType] = useState('');
 
-  const loadWorkouts = useCallback(async () => {
-    setLoading(true);
-    try {
-      setWorkouts(await getWorkouts());
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadWorkouts();
-    seedExercisesIfEmpty()
-      .then(() => getExercises())
-      .then(setAllExercises)
-      .catch(console.error);
-  }, [loadWorkouts]);
-
-  const ensureExercisesLoaded = async () => {
-    if (allExercises.length > 0) return;
-    try {
-      await seedExercisesIfEmpty();
-      setAllExercises(await getExercises());
-    } catch (err) {
-      console.error('Error cargando ejercicios:', err);
-    }
-  };
-
-  const openEditor = async (workout?: Workout) => {
-    await ensureExercisesLoaded();
+  const openEditor = (workout?: Workout) => {
     setSelectedIdx(new Set());
     if (workout) {
       setEditingId(workout.id);
@@ -111,11 +95,12 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       };
       if (editingId) {
         await updateWorkout(editingId, data);
-        setWorkouts(prev => prev.map(w => w.id === editingId ? { ...w, ...data } : w));
+        queryClient.setQueryData<Workout[]>(workoutsQueryKey, prev =>
+          prev?.map(w => w.id === editingId ? { ...w, ...data } : w));
         flash('Rutina actualizada.');
       } else {
         const newW = await createWorkout(data);
-        setWorkouts(prev => [...prev, newW]);
+        queryClient.setQueryData<Workout[]>(workoutsQueryKey, prev => [...(prev ?? []), newW]);
         flash('Rutina creada.');
       }
       setView('list');
@@ -138,7 +123,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         name: `${w.name} (copia)`,
         exercises: w.exercises,
       });
-      setWorkouts(prev => [...prev, copy]);
+      queryClient.setQueryData<Workout[]>(workoutsQueryKey, prev => [...(prev ?? []), copy]);
       flash('Rutina duplicada.');
     } catch (err) {
       console.error(err);
@@ -151,7 +136,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   const handleDelete = async (id: string) => {
     try {
       await deleteWorkout(id);
-      setWorkouts(prev => prev.filter(w => w.id !== id));
+      queryClient.setQueryData<Workout[]>(workoutsQueryKey, prev => prev?.filter(w => w.id !== id));
       setDeleteConfirm(null);
       flash('Rutina eliminada.');
     } catch (err) {
@@ -166,8 +151,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   }
 
   // ── Exercise picker ───────────────────────────────────────────────────────
-  const openPicker = async () => {
-    await ensureExercisesLoaded();
+  const openPicker = () => {
     setPickerSearch('');
     setPickerFocus('');
     setPickerType('');
