@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppNotification } from '../types';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../dbService';
 
@@ -29,20 +30,14 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate }: Props) {
-  const [notifs, setNotifs]   = useState<AppNotification[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = ['notifications', recipientEmail];
+  const { data: notifs = [], isPending: loading, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => (await getNotifications(recipientEmail)).slice(0, 40),
+  });
   const [open, setOpen]       = useState(false);
-  const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await getNotifications(recipientEmail);
-      setNotifs(data.slice(0, 40));
-    } catch { /* silent */ }
-    finally { setLoading(false); }
-  }, [recipientEmail]);
-
-  useEffect(() => { load(); }, [load]);
 
   // Close on outside click
   useEffect(() => {
@@ -58,7 +53,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
   const handleClickNotif = async (n: AppNotification) => {
     if (!n.read) {
-      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      queryClient.setQueryData<AppNotification[]>(queryKey, prev =>
+        prev?.map(x => x.id === n.id ? { ...x, read: true } : x));
       markNotificationRead(n.id, recipientEmail).catch(console.error);
     }
     if (n.link) {
@@ -68,7 +64,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
   };
 
   const handleMarkAll = async () => {
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+    queryClient.setQueryData<AppNotification[]>(queryKey, prev =>
+      prev?.map(n => ({ ...n, read: true })));
     markAllNotificationsRead(recipientEmail).catch(console.error);
   };
 
@@ -77,7 +74,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
       {/* Bell button */}
       <button
         type="button"
-        onClick={() => { setOpen(o => !o); if (!open) load(); }}
+        onClick={() => { setOpen(o => !o); if (!open) refetch(); }}
         className="relative p-1 text-[#fbcb1a] hover:opacity-80 transition-opacity"
         title="Notificaciones"
       >
@@ -110,7 +107,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   Leer todas
                 </button>
               )}
-              <button type="button" onClick={() => { load(); }}
+              <button type="button" onClick={() => { refetch(); }}
                 className="p-1 text-[#555] hover:text-[#c6c9ab] transition-colors">
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
               </button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
@@ -131,17 +132,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   const [showMedian, setShowMedian]       = useState(false);
 
   // Progresión de 1RM por ejercicio (semanas o días seleccionados + relleno de huecos)
-  const [mesocycles, setMesocycles]       = useState<Mesocycle[]>([]);
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocycles', athleteId ?? ''],
+    queryFn: () => getMesocycles(athleteId!),
+    enabled: !!athleteId,
+  });
   const [mesocycleFilter, setMesocycleFilter] = useState<string>(''); // '' = todo el historial
   const [granularity, setGranularity]     = useState<Granularity>('week');
   const [excludedBuckets, setExcludedBuckets] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!athleteId) return;
-    let cancelled = false;
-    getMesocycles(athleteId).then(ms => { if (!cancelled) setMesocycles(ms); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [athleteId]);
 
   // Exercise IDs that appear in logs — no dependency on exercises prop for visibility
   const loggedExerciseIds = useMemo<string[]>(() => {

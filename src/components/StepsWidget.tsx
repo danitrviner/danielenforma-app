@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { StepLog } from '../types';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
@@ -10,52 +12,79 @@ interface Props {
 
 const DEFAULT_STEP_GOAL = 8000;
 
+function stepsForAthleteKey(athleteEmail: string) {
+  return ['stepsForAthlete', athleteEmail] as const;
+}
+
 export default function StepsWidget({ athleteEmail }: Props) {
-  const [goal, setGoal] = useState(DEFAULT_STEP_GOAL);
-  const [kcalPerStep, setKcalPerStep] = useState(DEFAULT_KCAL_PER_STEP);
-  const [todayId, setTodayId] = useState<string | null>(null);
-  const [steps, setSteps] = useState(0);
+  const queryClient = useQueryClient();
+  const stepsKey = stepsForAthleteKey(athleteEmail);
+  const { data: config, isPending: loadingConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', athleteEmail],
+    queryFn: () => getAthleteNutritionConfig(athleteEmail),
+  });
+  const { data: logs = [], isPending: loadingSteps } = useQuery({
+    queryKey: stepsKey,
+    queryFn: () => getStepsForAthlete(athleteEmail),
+  });
+  const loading = loadingConfig || loadingSteps;
+
+  const goal = config?.stepGoal || DEFAULT_STEP_GOAL;
+  const kcalPerStep = config?.kcalPerStep || DEFAULT_KCAL_PER_STEP;
+  const todayLog = logs.find(l => l.date === todayStr());
+  const todayId = todayLog?.id ?? null;
+  const steps = todayLog?.steps ?? 0;
+
   const [input, setInput] = useState('');
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
 
+  // Same intent as the old "no entry for today yet" branch of the initial
+  // Promise.all().then() — open the editor by default the first time we
+  // learn there's no log for today, but only once per athlete (not on every
+  // background refetch).
+  const editingInitFor = useRef<string | null>(null);
   useEffect(() => {
-    Promise.all([
-      getAthleteNutritionConfig(athleteEmail),
-      getStepsForAthlete(athleteEmail),
-    ]).then(([cfg, logs]) => {
-      if (cfg.stepGoal) setGoal(cfg.stepGoal);
-      if (cfg.kcalPerStep) setKcalPerStep(cfg.kcalPerStep);
-      const today = logs.find(l => l.date === todayStr());
-      if (today) { setTodayId(today.id); setSteps(today.steps); }
-      else setEditing(true);
-    }).catch(console.error).finally(() => setLoading(false));
-  }, [athleteEmail]);
+    if (!loadingSteps && editingInitFor.current !== athleteEmail) {
+      editingInitFor.current = athleteEmail;
+      if (!todayLog) setEditing(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingSteps, athleteEmail]);
 
-  const handleSave = async () => {
-    const val = parseInt(input, 10);
-    if (!input || isNaN(val) || val < 0 || val > 100000) return;
-    setSaving(true);
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (val: number) => {
       if (todayId) {
         await updateSteps(todayId, { steps: val });
-        setSteps(val);
-      } else {
-        const entry = await addSteps({
-          athleteId: athleteEmail, date: todayStr(), steps: val,
-          source: 'manual', createdAt: new Date().toISOString(),
-        });
-        setTodayId(entry.id);
-        setSteps(val);
+        return { id: todayId, steps: val };
       }
+      const entry = await addSteps({
+        athleteId: athleteEmail, date: todayStr(), steps: val,
+        source: 'manual', createdAt: new Date().toISOString(),
+      });
+      return entry;
+    },
+    onSuccess: result => {
+      queryClient.setQueryData<StepLog[]>(stepsKey, prev => {
+        const list = prev ?? [];
+        const idx = list.findIndex(l => l.id === result.id);
+        if (idx >= 0) {
+          const copy = [...list];
+          copy[idx] = { ...copy[idx], steps: result.steps };
+          return copy;
+        }
+        return [...list, result as StepLog];
+      });
       setInput('');
       setEditing(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    },
+    onError: err => console.error(err),
+  });
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
+    const val = parseInt(input, 10);
+    if (!input || isNaN(val) || val < 0 || val > 100000) return;
+    saveMutation.mutate(val);
   };
 
   const remaining = Math.max(0, goal - steps);

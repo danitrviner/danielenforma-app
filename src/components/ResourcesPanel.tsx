@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Resource, ResourceKind } from '../types';
 import { getAllResources, createResource, deleteResource } from '../dbService';
 import Skeleton from './Skeleton';
@@ -16,18 +17,19 @@ const KIND_ICON: Record<ResourceKind, string> = {
   pdf: 'picture_as_pdf', video: 'play_circle', image: 'image', doc: 'description', link: 'link', guide: 'menu_book',
 };
 
+const resourcesQueryKey = ['resources'];
+
 export default function ResourcesPanel({ coachId, isCoach }: Props) {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: resources = [], isPending: loading } = useQuery({
+    queryKey: resourcesQueryKey,
+    queryFn: getAllResources,
+  });
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<ResourceKind>('link');
   const [url, setUrl] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    getAllResources().then(setResources).catch(console.error).finally(() => setLoading(false));
-  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       const resource = await createResource({
         coachId, title: title.trim(), kind, url: url.trim(), createdAt: new Date().toISOString(),
       });
-      setResources(prev => [...prev, resource]);
+      queryClient.setQueryData<Resource[]>(resourcesQueryKey, prev => [...(prev ?? []), resource]);
       setTitle(''); setUrl(''); setKind('link'); setShowForm(false);
     } catch (err) {
       console.error(err);
@@ -47,7 +49,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    setResources(prev => prev.filter(r => r.id !== id));
+    queryClient.setQueryData<Resource[]>(resourcesQueryKey, prev => prev?.filter(r => r.id !== id));
     try { await deleteResource(id); } catch (err) { console.error(err); }
   };
 

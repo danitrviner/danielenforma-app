@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { UserProfile, WeightCheckIn, TaskItem, TaskType } from '../types';
+import React, { useMemo } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { UserProfile, WeightCheckIn, TaskType, Questionnaire } from '../types';
 import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
@@ -30,39 +31,56 @@ const TYPE_COLOR: Record<TaskType, string> = {
 };
 
 export default function PendingTasksPanel({ profile, checkins, onNavigate }: Props) {
-  const [manualTasks, setManualTasks] = useState<TaskItem[]>([]);
-  const [pendingQuestionnaires, setPendingQuestionnaires] = useState<{ id: string; title: string }[]>([]);
-  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; viewsLabel: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: tasks = [], isPending: loadingTasks } = useQuery({
+    queryKey: ['tasksForAthlete', profile.email],
+    queryFn: () => getTasksForAthlete(profile.email),
+  });
+  const { data: assignments = [], isPending: loadingAssignments } = useQuery({
+    queryKey: ['assignmentsForAthlete', profile.email],
+    queryFn: () => getAssignmentsForAthlete(profile.email),
+  });
+  const { data: responses = [], isPending: loadingResponses } = useQuery({
+    queryKey: ['responsesForAthlete', profile.email],
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+  const { data: photoAssignments = [], isPending: loadingPhotoAssignments } = useQuery({
+    queryKey: ['photoAssignmentsForAthlete', profile.email],
+    queryFn: () => getPhotoAssignmentsForAthlete(profile.email),
+  });
+  const { data: photos = [], isPending: loadingPhotos } = useQuery({
+    queryKey: ['progressPhotos', profile.email],
+    queryFn: () => getProgressPhotos(profile.email),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([
-      getTasksForAthlete(profile.email),
-      getAssignmentsForAthlete(profile.email),
-      getResponsesForAthlete(profile.email),
-      getPhotoAssignmentsForAthlete(profile.email),
-      getProgressPhotos(profile.email),
-    ]).then(async ([tasks, assignments, responses, photoAssignments, photos]) => {
-      if (cancelled) return;
-      setManualTasks(tasks.filter(t => t.status === 'pending'));
+  const manualTasks = tasks.filter(t => t.status === 'pending');
 
-      const due = assignments.filter(a => a.active && isDueToday(a) && !hasAnsweredThisOccurrence(a, responses));
-      const withTitles = await Promise.all(due.map(async a => {
-        const q = await getQuestionnaireById(a.questionnaireId);
-        return { id: a.id, title: q?.title ?? 'Cuestionario' };
-      }));
-      if (!cancelled) setPendingQuestionnaires(withTitles);
+  const due = useMemo(
+    () => assignments.filter(a => a.active && isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)),
+    [assignments, responses]
+  );
 
-      const duePhotos = photoAssignments.filter(a => a.active && isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
-      if (!cancelled) setPendingPhotos(duePhotos.map(a => ({
-        id: a.id,
-        viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),
-      })));
-    }).catch(console.error).finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [profile.email]);
+  // One cache entry per questionnaire id (['questionnaireById', id]) so this
+  // reuses/gets reused by CheckInScreen and ProfileScreen's own lookups of
+  // the same questionnaire instead of each fetching it independently.
+  const questionnaireQueries = useQueries({
+    queries: due.map(a => ({
+      queryKey: ['questionnaireById', a.questionnaireId],
+      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(a.questionnaireId),
+    })),
+  });
+  const pendingQuestionnaires = due.map((a, i) => ({
+    id: a.id,
+    title: (questionnaireQueries[i]?.data as Questionnaire | null | undefined)?.title ?? 'Cuestionario',
+  }));
+
+  const duePhotos = photoAssignments.filter(a => a.active && isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
+  const pendingPhotos = duePhotos.map(a => ({
+    id: a.id,
+    viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),
+  }));
+
+  const loading = loadingTasks || loadingAssignments || loadingResponses || loadingPhotoAssignments || loadingPhotos
+    || (due.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   // "Revisión próxima": último check-in pendiente de feedback, o sin check-in en 7+ días.
   const lastCheckinMs = checkins.reduce<number | null>((best, c) => {

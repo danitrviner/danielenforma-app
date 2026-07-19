@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { CoachReport } from '../types';
 import { getSentReportsForAthlete } from '../dbService';
 import { fmtReportDate } from '../utils/reportBuilder';
@@ -9,16 +10,11 @@ import Skeleton from './Skeleton';
 // coach has sent (persistent history, newest first). Tapping one opens the same
 // read-only ReportView the coach previewed.
 export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: string }) {
-  const [reports, setReports] = useState<CoachReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: reports = [], isPending: loading } = useQuery({
+    queryKey: ['sentReportsForAthlete', athleteEmail],
+    queryFn: () => getSentReportsForAthlete(athleteEmail),
+  });
   const [open, setOpen] = useState<CoachReport | null>(null);
-
-  useEffect(() => {
-    getSentReportsForAthlete(athleteEmail)
-      .then(setReports)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [athleteEmail]);
 
   // Hide the card entirely until there is at least one report (avoids empty noise on Home).
   if (!loading && reports.length === 0) return null;

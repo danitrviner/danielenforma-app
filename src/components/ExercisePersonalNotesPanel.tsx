@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Exercise, ExercisePersonalNote } from '../types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ExercisePersonalNote } from '../types';
 import { getExercises, getExerciseNotesForAthlete, saveExerciseNote } from '../dbService';
 import Skeleton from './Skeleton';
 
@@ -12,19 +13,20 @@ interface Props {
 }
 
 export default function ExercisePersonalNotesPanel({ athleteEmail, programExerciseIds }: Props) {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [notes, setNotes] = useState<ExercisePersonalNote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const notesQueryKey = ['exerciseNotesForAthlete', athleteEmail] as const;
+  const { data: exercises = [], isPending: loadingExercises } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: getExercises,
+  });
+  const { data: notes = [], isPending: loadingNotes } = useQuery({
+    queryKey: notesQueryKey,
+    queryFn: () => getExerciseNotesForAthlete(athleteEmail),
+  });
+  const loading = loadingExercises || loadingNotes;
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    Promise.all([getExercises(), getExerciseNotesForAthlete(athleteEmail)])
-      .then(([exs, ns]) => { setExercises(exs); setNotes(ns); })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [athleteEmail]);
 
   useEffect(() => {
     const existing = notes.find(n => n.exerciseId === selectedExerciseId);
@@ -39,7 +41,8 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
         exerciseId: selectedExerciseId, athleteId: athleteEmail,
         observation: text.trim(), updatedAt: new Date().toISOString(),
       });
-      setNotes(prev => [...prev.filter(n => n.exerciseId !== selectedExerciseId), note]);
+      queryClient.setQueryData<ExercisePersonalNote[]>(notesQueryKey, prev =>
+        [...(prev ?? []).filter(n => n.exerciseId !== selectedExerciseId), note]);
     } catch (err) {
       console.error(err);
     } finally {

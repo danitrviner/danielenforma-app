@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { AthleteNutritionConfig, Diet, OnboardingData } from '../types';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AthleteNutritionConfig } from '../types';
 import {
   getDietsForAthlete, getAthleteDietConfig, getDietCompletionLogsForAthlete,
   getStepsForAthlete, getBodyweightForAthlete, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
 } from '../dbService';
+import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
 import VegetableSelector from './VegetableSelector';
@@ -28,56 +30,74 @@ interface Props {
 // the athlete's diet/adherence/steps/weight data, runs the deterministic report
 // engine plus the micronutrient estimate. Coach shares a snapshot with the athlete.
 export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targetWeight }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [report, setReport] = useState<NutritionReport | null>(null);
-  const [nutritionConfig, setNutritionConfig] = useState<AthleteNutritionConfig | null>(null);
-  const [activeDiet, setActiveDiet] = useState<Diet | null>(null);
-  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
+  const queryClient = useQueryClient();
+  const nutritionConfigKey = ['athleteNutritionConfig', athleteEmail] as const;
+
+  const { data: diets, isPending: loadingDiets } = useQuery({
+    queryKey: ['dietsForAthlete', athleteEmail],
+    queryFn: () => getDietsForAthlete(athleteEmail),
+  });
+  const { data: dietConfig, isPending: loadingDietConfig } = useQuery({
+    queryKey: ['athleteDietConfig', athleteEmail],
+    queryFn: () => getAthleteDietConfig(athleteEmail).catch(() => null),
+  });
+  const { data: completionLogs, isPending: loadingCompletionLogs } = useQuery({
+    queryKey: ['dietCompletionLogsForAthlete', athleteEmail],
+    queryFn: () => getDietCompletionLogsForAthlete(athleteEmail),
+  });
+  const { data: stepLogs, isPending: loadingSteps } = useQuery({
+    queryKey: ['stepsForAthlete', athleteEmail],
+    queryFn: () => getStepsForAthlete(athleteEmail),
+  });
+  const { data: bodyweightLogs, isPending: loadingBodyweight } = useQuery({
+    queryKey: bodyweightForAthleteKey(athleteEmail),
+    queryFn: () => getBodyweightForAthlete(athleteEmail),
+  });
+  const { data: onboarding, isPending: loadingOnboarding } = useQuery({
+    queryKey: ['onboarding', athleteEmail],
+    queryFn: () => getOnboarding(athleteEmail).catch(() => null),
+  });
+  const { data: nutritionConfigData, isPending: loadingNutConfig } = useQuery({
+    queryKey: nutritionConfigKey,
+    queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
+  });
+
+  const loading = loadingDiets || loadingDietConfig || loadingCompletionLogs
+    || loadingSteps || loadingBodyweight || loadingOnboarding || loadingNutConfig;
+
+  const nutritionConfig: AthleteNutritionConfig = nutritionConfigData
+    ?? { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
+
+  const coachDiets = useMemo(() => (diets ?? []).filter(d => !d.selfManaged), [diets]);
+  const activeDiet = useMemo(() => {
+    const activeId = dietConfig?.activeDietIds?.[0] ?? null;
+    return activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
+  }, [coachDiets, dietConfig]);
+  const stepGoal = nutritionConfigData?.stepGoal ?? DEFAULT_STEP_GOAL;
+
+  const report = useMemo<NutritionReport | null>(() => {
+    if (loading) return null;
+    try {
+      return buildNutritionReport({
+        completionLogs: completionLogs ?? [],
+        diets: coachDiets,
+        activeDiet,
+        stepLogs: stepLogs ?? [],
+        stepGoal,
+        bodyweightLogs: bodyweightLogs ?? [],
+        targetWeight,
+        onboarding: onboarding ?? null,
+      });
+    } catch (err) {
+      console.error('NutritionAnalysisPanel report build error:', err);
+      return null;
+    }
+  }, [loading, completionLogs, coachDiets, activeDiet, stepLogs, stepGoal, bodyweightLogs, targetWeight, onboarding]);
+
   const [sharing, setSharing] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const [diets, dietConfig, completionLogs, stepLogs, bodyweightLogs, onb, nutConfig] = await Promise.all([
-          getDietsForAthlete(athleteEmail),
-          getAthleteDietConfig(athleteEmail).catch(() => null),
-          getDietCompletionLogsForAthlete(athleteEmail),
-          getStepsForAthlete(athleteEmail),
-          getBodyweightForAthlete(athleteEmail),
-          getOnboarding(athleteEmail).catch(() => null),
-          getAthleteNutritionConfig(athleteEmail).catch(() => null),
-        ]);
-        if (cancelled) return;
-
-        const coachDiets = diets.filter(d => !d.selfManaged);
-        const activeId = dietConfig?.activeDietIds?.[0] ?? null;
-        const active = activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
-        const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
-
-        const r = buildNutritionReport({
-          completionLogs, diets: coachDiets, activeDiet: active,
-          stepLogs, stepGoal, bodyweightLogs, targetWeight, onboarding: onb,
-        });
-
-        if (!cancelled) {
-          setReport(r);
-          setActiveDiet(active);
-          setOnboarding(onb);
-          setNutritionConfig(nutConfig ?? { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] });
-        }
-      } catch (err) {
-        console.error('NutritionAnalysisPanel load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [athleteEmail, targetWeight]);
-
-  const vegServings = nutritionConfig?.vegServingsPerDay ?? DEFAULT_VEG_SERVINGS;
-  const vegTypes = nutritionConfig?.vegTypes ?? [];
+  const vegServings = nutritionConfig.vegServingsPerDay ?? DEFAULT_VEG_SERVINGS;
+  const vegTypes = nutritionConfig.vegTypes ?? [];
 
   const micros = useMemo(
     () => buildMicronutrientEstimate(activeDiet, { sex: onboarding?.sex, vegServingsPerDay: vegServings, vegTypes }),
@@ -85,24 +105,23 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   );
 
   const setVegServings = async (n: number) => {
-    if (!nutritionConfig || n < 0 || n > 8) return;
+    if (n < 0 || n > 8) return;
     const next: AthleteNutritionConfig = { ...nutritionConfig, vegServingsPerDay: n };
-    setNutritionConfig(next);
+    queryClient.setQueryData(nutritionConfigKey, next);
     saveAthleteNutritionConfig(next).catch(console.error);
   };
 
   const toggleVegType = (id: string) => {
-    if (!nutritionConfig) return;
     const next: AthleteNutritionConfig = {
       ...nutritionConfig,
       vegTypes: vegTypes.includes(id) ? vegTypes.filter(v => v !== id) : [...vegTypes, id],
     };
-    setNutritionConfig(next);
+    queryClient.setQueryData(nutritionConfigKey, next);
     saveAthleteNutritionConfig(next).catch(console.error);
   };
 
   const handleShare = async () => {
-    if (!report || !nutritionConfig) return;
+    if (!report) return;
     setSharing(true);
     try {
       const next: AthleteNutritionConfig = {
@@ -110,17 +129,16 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         sharedReportSnapshot: { generatedAt: report.generatedAt, summary: report.summary, flags: report.flags },
       };
       await saveAthleteNutritionConfig(next);
-      setNutritionConfig(next);
+      queryClient.setQueryData(nutritionConfigKey, next);
     } catch (err) { console.error(err); } finally { setSharing(false); }
   };
 
   const handleUnshare = async () => {
-    if (!nutritionConfig) return;
     setSharing(true);
     try {
       const next: AthleteNutritionConfig = { ...nutritionConfig, sharedReportSnapshot: undefined };
       await saveAthleteNutritionConfig(next);
-      setNutritionConfig(next);
+      queryClient.setQueryData(nutritionConfigKey, next);
     } catch (err) { console.error(err); } finally { setSharing(false); }
   };
 

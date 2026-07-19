@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Mesocycle, MuscleGroup, WorkoutAssignment } from '../types';
+import { Mesocycle, MuscleGroup } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -79,25 +80,17 @@ interface Props {
 }
 
 export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) {
-  const [assignments, setAssignments] = useState<WorkoutAssignment[]>([]);
-  const [loadState, setLoadState] = useState<'loading' | 'done'>('loading');
+  const mesoIds = useMemo(() => mesocycles.map(m => m.id), [mesocycles]);
+  // query by mesocycleId — avoids UID vs email mismatch
+  const { data: assignments = [], isPending: loading } = useQuery({
+    queryKey: ['workoutAssignmentsByMesocycleIds', mesoIds],
+    queryFn: () => getWorkoutAssignmentsByMesocycleIds(mesoIds),
+    enabled: !!athleteEmail && mesoIds.length > 0,
+  });
+  const loadState: 'loading' | 'done' = loading ? 'loading' : 'done';
 
   // Group-filter state for Chart 2
   const [hiddenGroups, setHiddenGroups] = useState<Set<MuscleGroup>>(new Set());
-
-  useEffect(() => {
-    if (!athleteEmail || mesocycles.length === 0) return;
-    setLoadState('loading');
-    const mesoIds = mesocycles.map(m => m.id);
-    getWorkoutAssignmentsByMesocycleIds(mesoIds) // query by mesocycleId — avoids UID vs email mismatch
-      .then(a => {
-        setAssignments(a);
-        setLoadState('done');
-      }).catch(err => {
-        console.error(err);
-        setLoadState('done');
-      });
-  }, [athleteEmail, mesocycles]);
 
   // ── Sorted mesocycles ──────────────────────────────────────────────────────
   const sorted = useMemo(

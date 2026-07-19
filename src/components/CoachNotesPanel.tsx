@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
 import { useToast } from '../hooks/useToast';
@@ -14,16 +15,16 @@ interface Props {
 // Nothing here is ever visible to athletes.
 export default function CoachNotesPanel({ athletes }: Props) {
   const { showToast } = useToast();
-  const [notes, setNotes] = useState<CoachNote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = ['coachNotes'] as const;
+  const { data: notes = [], isPending: loading } = useQuery({
+    queryKey,
+    queryFn: getCoachNotes,
+  });
   const [showForm, setShowForm] = useState(false);
   const [text, setText] = useState('');
   const [relatedEmail, setRelatedEmail] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    getCoachNotes().then(setNotes).catch(console.error).finally(() => setLoading(false));
-  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
         done: false,
         createdAt: new Date().toISOString(),
       });
-      setNotes(prev => [...prev, note]);
+      queryClient.setQueryData<CoachNote[]>(queryKey, prev => [...(prev ?? []), note]);
       setText('');
       setRelatedEmail('');
       setShowForm(false);
@@ -51,12 +52,13 @@ export default function CoachNotesPanel({ athletes }: Props) {
   };
 
   const handleToggle = async (note: CoachNote) => {
-    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, done: !n.done } : n));
+    queryClient.setQueryData<CoachNote[]>(queryKey, prev =>
+      prev?.map(n => n.id === note.id ? { ...n, done: !n.done } : n));
     try { await updateCoachNote(note.id, { done: !note.done }); } catch (err) { console.error(err); showToast('No se pudo actualizar la nota.'); }
   };
 
   const handleDelete = async (id: string) => {
-    setNotes(prev => prev.filter(n => n.id !== id));
+    queryClient.setQueryData<CoachNote[]>(queryKey, prev => prev?.filter(n => n.id !== id));
     try { await deleteCoachNote(id); } catch (err) { console.error(err); showToast('No se pudo eliminar la nota.'); }
   };
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, NutritionPhase, NutritionProgram, OnboardingData } from '../types';
 import {
   getNutritionProgram,
@@ -196,10 +197,14 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
 export default function NutritionPeriodizationPanel({
   athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
 }: Props) {
-  const [program, setProgram] = useState<NutritionProgram | null>(null);
+  const queryClient = useQueryClient();
+  const programQueryKey = ['nutritionProgram', athleteEmail] as const;
+  const { data: program = null, isPending: loading } = useQuery({
+    queryKey: programQueryKey,
+    queryFn: () => getNutritionProgram(athleteEmail),
+  });
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [adjustingDietFor, setAdjustingDietFor] = useState<string | null>(null);
   // Bumped after any save/delete/diet-adjust so <NutritionPerformanceDashboard>
   // (below) remounts and refetches — it owns its own copy of program/diets and
@@ -209,15 +214,6 @@ export default function NutritionPeriodizationPanel({
   const today = new Date().toISOString().split('T')[0];
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, currentWeightKg ?? onboarding.weightKg) : null;
   const stepsKcal = Math.round(stepGoal * kcalPerStep);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    getNutritionProgram(athleteEmail)
-      .then(prog => { if (!cancelled) { setProgram(prog); setLoading(false); } })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [athleteEmail]);
 
   const handleCreate = () => {
     setForm({ startDate: today, phases: [] });
@@ -235,7 +231,7 @@ export default function NutritionPeriodizationPanel({
     setSaving(true);
     try {
       await deleteNutritionProgram(athleteEmail);
-      setProgram(null);
+      queryClient.setQueryData(programQueryKey, null);
       setForm(null);
       setRefreshKey(k => k + 1);
     } catch (err) {
@@ -256,7 +252,7 @@ export default function NutritionPeriodizationPanel({
         lastSeenPhaseId: program?.lastSeenPhaseId,
       };
       await saveNutritionProgram(newProgram);
-      setProgram(newProgram);
+      queryClient.setQueryData(programQueryKey, newProgram);
       setForm(null);
       // NutritionPerformanceDashboard fetches program/diets on its own mount-only
       // effect (see its `[athleteEmail]` dep) — it has no way to know this save

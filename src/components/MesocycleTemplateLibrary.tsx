@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise } from '../types';
 import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
@@ -6,6 +7,10 @@ import {
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
 import Skeleton from './Skeleton';
+
+function mesocycleTemplatesKey(coachId: string) {
+  return ['mesocycleTemplates', coachId] as const;
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -570,11 +575,10 @@ function TemplateEditor({
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [nameError, setNameError] = useState('');
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-
-  useEffect(() => {
-    getExercises().then(setExercises).catch(console.error);
-  }, []);
+  const { data: exercises = [] } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: getExercises,
+  });
 
   const addStage = () => {
     setForm(f => ({ ...f, stages: [...f.stages, emptyStage(f.stages.length + 1)] }));
@@ -796,23 +800,22 @@ function TemplateCard({
 interface Props { coachId: string }
 
 export default function MesocycleTemplateLibrary({ coachId }: Props) {
-  const [templates, setTemplates]     = useState<MesocycleTemplate[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = mesocycleTemplatesKey(coachId);
+  const { data: templatesRaw = [], isPending: loading } = useQuery({
+    queryKey,
+    queryFn: () => getMesocycleTemplates(coachId),
+  });
+  const templates = useMemo(
+    () => [...templatesRaw].sort((a, b) => a.name.localeCompare(b.name)),
+    [templatesRaw]
+  );
   const [editingId, setEditingId]     = useState<string | null>(null);
   const [showEditor, setShowEditor]   = useState(false);
-  const [saving, setSaving]           = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    getMesocycleTemplates(coachId)
-      .then(list => setTemplates(list.sort((a, b) => a.name.localeCompare(b.name))))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [coachId]);
-
-  const handleSave = async (form: FormState) => {
-    setSaving(true);
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (form: FormState) => {
       const data: Omit<MesocycleTemplate, 'id'> = {
         ownerId: coachId,
         name: form.name,
@@ -829,33 +832,37 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
 
       if (editingId === null) {
         const created = await createMesocycleTemplate(data);
-        setTemplates(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        return { type: 'create' as const, created };
       } else {
         await updateMesocycleTemplate(editingId, data);
-        setTemplates(prev =>
-          prev.map(t => t.id === editingId ? { ...t, ...data } : t)
-              .sort((a, b) => a.name.localeCompare(b.name))
-        );
+        return { type: 'update' as const, id: editingId, data };
+      }
+    },
+    onSuccess: result => {
+      if (result.type === 'create') {
+        queryClient.setQueryData<MesocycleTemplate[]>(queryKey, prev => [...(prev ?? []), result.created]);
+      } else {
+        queryClient.setQueryData<MesocycleTemplate[]>(queryKey, prev =>
+          prev?.map(t => t.id === result.id ? { ...t, ...result.data } : t));
       }
       setShowEditor(false);
       setEditingId(null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    onError: err => console.error(err),
+  });
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteMesocycleTemplate(id);
-      setTemplates(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setConfirmDeleteId(null);
-    }
-  };
+  const handleSave = (form: FormState) => saveMutation.mutate(form);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteMesocycleTemplate(id),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<MesocycleTemplate[]>(queryKey, prev => prev?.filter(t => t.id !== id));
+    },
+    onError: err => console.error(err),
+    onSettled: () => setConfirmDeleteId(null),
+  });
+
+  const handleDelete = (id: string) => deleteMutation.mutate(id);
 
   const openCreate = () => { setEditingId(null); setShowEditor(true); };
   const openEdit   = (id: string) => { setEditingId(id); setShowEditor(true); };
@@ -867,7 +874,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
     return (
       <TemplateEditor
         initial={editingTemplate ? formFromTemplate(editingTemplate) : emptyForm()}
-        saving={saving}
+        saving={saveMutation.isPending}
         onSave={handleSave}
         onCancel={closeEditor}
       />

@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getProgressPhotos, getBodyweightForAthlete } from '../dbService';
+import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 
 // Marca de "ya visitó el Road map" — mismo patrón que enforma_tour_pending_
 // (App.tsx/AppTour.tsx): una bandera en localStorage, sin colección nueva ni
@@ -26,23 +28,19 @@ interface Props {
 // asignado (HomeScreen ya filtra por eso) — así el coste de las dos lecturas
 // nuevas (fotos, peso) solo lo paga quien de verdad está en ese hueco.
 export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
-  const [hasPhoto, setHasPhoto] = useState(false);
-  const [hasWeight, setHasWeight] = useState(false);
   const [roadmapVisited, setRoadmapVisited] = useState(() => isRoadmapVisited(profile.email));
-  const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      getProgressPhotos(profile.email),
-      getBodyweightForAthlete(profile.email),
-    ])
-      .then(([photos, weights]) => {
-        setHasPhoto(photos.length > 0);
-        setHasWeight(weights.length > 0);
-      })
-      .catch(console.error)
-      .finally(() => setLoaded(true));
-  }, [profile.email]);
+  const { data: photos = [], isPending: loadingPhotos } = useQuery({
+    queryKey: ['progressPhotos', profile.email],
+    queryFn: () => getProgressPhotos(profile.email),
+  });
+  const { data: weights = [], isPending: loadingWeights } = useQuery({
+    queryKey: bodyweightForAthleteKey(profile.email),
+    queryFn: () => getBodyweightForAthlete(profile.email),
+  });
+  const hasPhoto = photos.length > 0;
+  const hasWeight = weights.length > 0;
+  const loaded = !loadingPhotos && !loadingWeights;
 
   const items = [
     {

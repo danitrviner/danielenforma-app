@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
@@ -603,10 +604,8 @@ interface MesocycleManagerProps {
 
 export default function MesocycleManager({ coachId, athleteEmail, athleteEquipment = [] }: MesocycleManagerProps) {
   const { showToast } = useToast();
-  const [athletes, setAthletes]           = useState<UserProfile[]>([]);
+  const queryClient = useQueryClient();
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
-  const [mesocycles, setMesocycles]       = useState<Mesocycle[]>([]);
-  const [loadingMeso, setLoadingMeso]     = useState(false);
   const [creating, setCreating]           = useState(false);
 
   const [editing, setEditing]             = useState<Mesocycle | null>(null);
@@ -623,58 +622,61 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   // Generator state
   const [genPhase, setGenPhase]           = useState<GeneratorPhase>('idle');
   const [previewDays, setPreviewDays]     = useState<PreviewDay[]>([]);
-  const [allExercises, setAllExercises]   = useState<Exercise[]>([]);
   const [athleteUid, setAthleteUid]       = useState<string | null>(null);
   const [assignProgress, setAssignProgress] = useState({ done: 0, total: 0 });
   const [genError, setGenError]           = useState('');
 
-  // Workouts actually generated for the mesocycle currently being edited — the "Ejercicios
-  // programados" tab reads from here so the meso block and the exercise config it produced
-  // aren't two disconnected screens.
-  const [mesoWorkouts, setMesoWorkouts]           = useState<Workout[]>([]);
-  const [loadingMesoWorkouts, setLoadingMesoWorkouts] = useState(false);
+  // Only load the full athlete list in standalone mode (no athleteEmail prop)
+  const { data: athletes = [] } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+    enabled: !athleteEmail,
+  });
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const reloadMesoWorkouts = useCallback(async (mesocycleId: string) => {
-    setLoadingMesoWorkouts(true);
-    try {
-      const all = await getWorkouts();
-      setMesoWorkouts(all.filter(w => w.mesocycleId === mesocycleId));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMesoWorkouts(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!editing?.id) { setMesoWorkouts([]); return; }
-    reloadMesoWorkouts(editing.id);
-  }, [editing?.id, reloadMesoWorkouts]);
+  const mesocyclesQueryKey = ['mesocycles', selectedEmail] as const;
+  const { data: mesocyclesRaw, isPending: mesoQueryPending } = useQuery({
+    queryKey: mesocyclesQueryKey,
+    queryFn: () => getMesocycles(selectedEmail),
+    enabled: !!selectedEmail,
+  });
+  const mesocycles = useMemo(
+    () => [...(mesocyclesRaw ?? [])].sort((a, b) => a.number - b.number),
+    [mesocyclesRaw]
+  );
+  const loadingMeso = !!selectedEmail && mesoQueryPending;
 
   // Exercise names for "Ejercicios programados" are needed as soon as that tab is opened,
   // independent of the generator flow (which only loads them once it actually runs).
-  useEffect(() => {
-    if (allExercises.length === 0) getExercises().then(setAllExercises).catch(console.error);
-  }, [allExercises.length]);
+  const { data: allExercises = [] } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: getExercises,
+  });
 
-  // Only load the full athlete list in standalone mode (no athleteEmail prop)
-  useEffect(() => { if (!athleteEmail) getAllUserProfiles().then(setAthletes); }, [athleteEmail]);
+  // Workouts actually generated for the mesocycle currently being edited — the "Ejercicios
+  // programados" tab reads from here so the meso block and the exercise config it produced
+  // aren't two disconnected screens. Shared ['workouts'] cache key with the rest of the app
+  // (e.g. HomeScreen) — filtered client-side by mesocycleId, same as the original fetch.
+  const { data: allWorkouts = [], isPending: loadingMesoWorkouts } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: getWorkouts,
+  });
+  const mesoWorkouts = useMemo(
+    () => editing?.id ? allWorkouts.filter(w => w.mesocycleId === editing.id) : [],
+    [allWorkouts, editing?.id]
+  );
+
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep in sync when parent changes the bound email
   useEffect(() => {
     if (athleteEmail) setSelectedEmail(athleteEmail);
   }, [athleteEmail]);
 
+  // Selecting a different athlete resets the editor — the mesocycle list itself now
+  // comes from the ['mesocycles', selectedEmail] query above.
   useEffect(() => {
-    if (!selectedEmail) { setMesocycles([]); return; }
-    setLoadingMeso(true);
     setEditing(null);
     setGenPhase('idle');
-    getMesocycles(selectedEmail)
-      .then(list => setMesocycles([...list].sort((a, b) => a.number - b.number)))
-      .finally(() => setLoadingMeso(false));
   }, [selectedEmail]);
 
   const scheduleAutoSave = useCallback((updated: Mesocycle) => {
@@ -685,14 +687,15 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       try {
         const { id, ...rest } = updated;
         await updateMesocycle(id, rest);
-        setMesocycles(prev => prev.map(m => m.id === id ? updated : m));
+        queryClient.setQueryData<Mesocycle[]>(['mesocycles', selectedEmail], prev =>
+          prev?.map(m => m.id === id ? updated : m));
         setSaveState('saved');
         setTimeout(() => setSaveState('idle'), 2000);
       } catch {
         setSaveState('error');
       }
     }, 800);
-  }, []);
+  }, [queryClient, selectedEmail]);
 
   const updateField = <K extends keyof Omit<Mesocycle, 'id' | 'groups' | 'distribution'>>(
     field: K, value: Mesocycle[K]
@@ -802,7 +805,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       // 2. Load exercises + run migration
       await migratePrimaryFocusToMuscleGroup();
       const exercises = await getExercises();
-      setAllExercises(exercises);
+      queryClient.setQueryData(['exercises'], exercises);
 
       // If mesocycle has predefined days from template, use them as base
       if (hasDays) {
@@ -946,7 +949,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
         }
       }
 
-      await reloadMesoWorkouts(editing.id);
+      await queryClient.invalidateQueries({ queryKey: ['workouts'] });
       setGenPhase('done');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1005,7 +1008,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>,
   ) {
     const updatedExercises = group.exercises.map((e, i) => i === exIdx ? { ...e, ...patch } : e);
-    setMesoWorkouts(prev => prev.map(w =>
+    queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
     await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
@@ -1056,7 +1059,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
         startDate = d.toISOString().split('T')[0];
       }
 
-      setMesocycles(prev => [...prev, ...created]);
+      queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), ...created]);
       setEditing(created[0]);
       setEditorTab('volume');
       setConfirmDelete(false);
@@ -1085,7 +1088,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
         daysPerWeek: 4,
         groups:      DEFAULT_GROUPS(),
       });
-      setMesocycles(prev => [...prev, created]);
+      queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), created]);
       setEditing(created);
       setEditorTab('volume');
       setConfirmDelete(false);
@@ -1099,7 +1102,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     if (!editing) return;
     try {
       await deleteMesocycle(editing.id);
-      setMesocycles(prev => prev.filter(m => m.id !== editing.id));
+      queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => prev?.filter(m => m.id !== editing.id));
       setEditing(null);
       setConfirmDelete(false);
     } catch (err) {
