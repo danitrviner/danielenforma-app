@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, NutritionProgram } from '../types';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
@@ -58,10 +59,69 @@ interface Props {
 
 export default function NutritionScreen({ profile, pendingRecipe, onConsumedPendingRecipe }: Props) {
   const { showToast } = useToast();
-  // Diets
+  const queryClient = useQueryClient();
+
+  // ── Queries: Phase 1 (diet/config) ──────────────────────────────────────────
+  const dietsKey = ['dietsForAthlete', profile.email] as const;
+  const { data: allDietsList = [], isPending: loadingDiets } = useQuery({
+    queryKey: dietsKey,
+    queryFn: () => getDietsForAthlete(profile.email),
+  });
+  const setAllDietsList = (updater: React.SetStateAction<Diet[]>) =>
+    queryClient.setQueryData<Diet[]>(dietsKey, prev =>
+      typeof updater === 'function' ? (updater as (p: Diet[]) => Diet[])(prev ?? []) : updater);
+
+  const athleteDietConfigKey = ['athleteDietConfig', profile.email] as const;
+  const { data: dietConfigRaw = null, isPending: loadingDietConfig } = useQuery({
+    queryKey: athleteDietConfigKey,
+    queryFn: () => getAthleteDietConfig(profile.email).catch(() => null),
+  });
+
+  const { data: nutConfig = null, isPending: loadingNutConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', profile.email],
+    queryFn: () => getAthleteNutritionConfig(profile.email).catch(() => null),
+  });
+
+  const { data: program = null, isPending: loadingProgram } = useQuery({
+    queryKey: ['nutritionProgram', profile.email],
+    queryFn: () => getNutritionProgram(profile.email).catch(() => null),
+  });
+
+  const loadingPhase1 = loadingDiets || loadingDietConfig || loadingNutConfig || loadingProgram;
+
+  // ── Queries: Phase 2 (food library + recipes) ───────────────────────────────
+  // Deliberately gated on Phase 1 (enabled: !loadingPhase1) — same reason the
+  // original sequential load kept them apart: seedFoodItemsIfEmpty() flips a
+  // global "local bypass" flag on Firestore failure, which would poison ANY
+  // dbService call still in flight. Phase 1's diet/config reads must be fully
+  // secured first.
+  const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: () => seedFoodItemsIfEmpty().catch(() => {}).then(getFoodItems),
+    enabled: !loadingPhase1,
+  });
+  const { data: recipes = [], isPending: loadingRecipesQ } = useQuery({
+    queryKey: ['recipes'],
+    queryFn: () => getRecipes().catch(() => [] as Recipe[]),
+    enabled: !loadingPhase1,
+  });
+  const setRecipes = (updater: React.SetStateAction<Recipe[]>) =>
+    queryClient.setQueryData<Recipe[]>(['recipes'], prev =>
+      typeof updater === 'function' ? (updater as (p: Recipe[]) => Recipe[])(prev ?? []) : updater);
+
+  const { data: recipeFavorites = { athleteId: profile.email, recipeIds: [] }, isPending: loadingFavs } = useQuery({
+    queryKey: ['recipeFavorites', profile.email],
+    queryFn: () => getRecipeFavorites(profile.email).catch(() => ({ athleteId: profile.email, recipeIds: [] } as RecipeFavorites)),
+    enabled: !loadingPhase1,
+  });
+
+  const loading = loadingPhase1 || loadingFoodItems || loadingRecipesQ || loadingFavs;
+
+  // ── Local editor/draft state — seeded once from the queries above, then
+  // mutated locally as the athlete edits (this is a live editor, not a
+  // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [flashMsg, setFlashMsg] = useState('');
@@ -69,8 +129,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
 
-  // Food library + modes
-  const [foodItems, setFoodItems] = useState<MealItem[]>([]);
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
 
@@ -80,8 +138,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [searchTerm, setSearchTerm] = useState('');
 
   // Recipe picker
-  const [recipes, setRecipes]                       = useState<Recipe[]>([]);
-  const [recipeFavorites, setRecipeFavorites]       = useState<RecipeFavorites>({ athleteId: profile.email, recipeIds: [] });
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
   const [recipeSearch, setRecipeSearch]             = useState('');
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
@@ -103,135 +159,100 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
 
   // Weekly schedule
-  const [allDietsList, setAllDietsList]     = useState<Diet[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Partial<Record<WeekDay, string | null>>>({});
   const [viewDay, setViewDay]               = useState<WeekDay>(TODAY_WD);
 
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
-  const [nutritionProgram, setNutritionProgram] = useState<NutritionProgram | null>(null);
 
   function flash(msg: string) {
     setFlashMsg(msg);
     setTimeout(() => setFlashMsg(''), 3000);
   }
 
-  // ── Load on mount ────────────────────────────────────────────────────────────
-  // Phase 1: diets + config BEFORE seedFoodItemsIfEmpty, which on Firestore failure
-  // calls setLocalBypassMode(true) internally — poisoning subsequent queries.
-  // Phase 2: food library seeding runs independently, after diet data is secured.
-
+  // ── One-time init once Phase 1 has loaded ───────────────────────────────────
+  // Applies the active nutrition-program phase (writes + notifications), then
+  // picks the diet to show by default and seeds the local editor state from
+  // it. Runs once per athlete when Phase 1 settles, not on every background
+  // refetch — same ref-guard pattern as StepsWidget/AthleteRoadmapScreen.
+  const initFor = useRef<string | null>(null);
   useEffect(() => {
-    let cancelled = false;
+    if (loadingPhase1 || initFor.current === profile.email) return;
+    initFor.current = profile.email;
 
-    const load = async () => {
-      setLoading(true);
-      try {
-        // Phase 1 — diet/config always queries Firestore with a clean bypass flag
-        const [config, allDiets, dietConfigRaw, program] = await Promise.all([
-          getAthleteNutritionConfig(profile.email).catch(() => null),
-          getDietsForAthlete(profile.email),
-          getAthleteDietConfig(profile.email).catch(() => null),
-          getNutritionProgram(profile.email).catch(() => null),
-        ]);
+    (async () => {
+      if (nutConfig && nutConfig.enabledModes?.length > 0) {
+        setEnabledModes(nutConfig.enabledModes);
+        setActiveDietMode(nutConfig.enabledModes[0]);
+      }
 
-        if (cancelled) return;
-
-        if (config && config.enabledModes?.length > 0) {
-          setEnabledModes(config.enabledModes);
-          setActiveDietMode(config.enabledModes[0]);
-        }
-
-        // Apply nutrition program phase if active
-        let dietConfig = dietConfigRaw;
-        if (program && program.phases.length > 0) {
-          setNutritionProgram(program);
-          const todayStr = new Date().toISOString().split('T')[0];
-          const activePhase = computeActivePhase(program, todayStr);
-          if (activePhase && activePhase.dietId) {
-            const currentActive = new Set(dietConfig?.activeDietIds ?? []);
-            if (!currentActive.has(activePhase.dietId) || currentActive.size !== 1) {
-              const newConfig = {
-                ...(dietConfig ?? { athleteId: profile.email }),
-                activeDietIds: [activePhase.dietId],
-              };
-              await saveAthleteDietConfig(newConfig).catch(() => {});
-              dietConfig = newConfig;
-            }
-            if (program.lastSeenPhaseId !== activePhase.id) {
-              setPhaseBanner(`Tu plan de nutrición cambió a: ${activePhase.name}`);
-              // Merge parcial: reescribir el programa entero desde este snapshot
-              // podía pisar ediciones concurrentes del coach en la periodización.
-              await markNutritionPhaseSeen(profile.email, activePhase.id).catch(() => {});
-              const phaseKey = `notif_np_${profile.email}_${activePhase.id}`;
-              const phaseBody = `Plan de nutrición cambió a: ${activePhase.name}`;
-              createNotificationDeduped(`${phaseKey}_athlete`, {
-                recipientEmail: profile.email,
-                type: 'nutrition_phase_change',
-                title: 'Plan de nutrición actualizado',
-                body: phaseBody,
-                link: 'nutrition',
-                createdAt: new Date().toISOString(),
-                read: false,
-              }).catch(console.error);
-              createNotificationDeduped(`${phaseKey}_coach`, {
-                recipientEmail: COACH_EMAIL,
-                type: 'nutrition_phase_change',
-                title: `Fase de nutrición cambiada (${profile.displayName})`,
-                body: `${profile.displayName}: ${phaseBody}`,
-                link: 'clients',
-                createdAt: new Date().toISOString(),
-                read: false,
-              }).catch(console.error);
-            }
+      // Apply nutrition program phase if active
+      let dietConfig = dietConfigRaw;
+      if (program && program.phases.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const activePhase = computeActivePhase(program, todayStr);
+        if (activePhase && activePhase.dietId) {
+          const currentActive = new Set(dietConfig?.activeDietIds ?? []);
+          if (!currentActive.has(activePhase.dietId) || currentActive.size !== 1) {
+            const newConfig = {
+              ...(dietConfig ?? { athleteId: profile.email }),
+              activeDietIds: [activePhase.dietId],
+            };
+            await saveAthleteDietConfig(newConfig).catch(() => {});
+            dietConfig = newConfig;
+            queryClient.setQueryData(athleteDietConfigKey, newConfig);
+          }
+          if (program.lastSeenPhaseId !== activePhase.id) {
+            setPhaseBanner(`Tu plan de nutrición cambió a: ${activePhase.name}`);
+            // Merge parcial: reescribir el programa entero desde este snapshot
+            // podía pisar ediciones concurrentes del coach en la periodización.
+            await markNutritionPhaseSeen(profile.email, activePhase.id).catch(() => {});
+            const phaseKey = `notif_np_${profile.email}_${activePhase.id}`;
+            const phaseBody = `Plan de nutrición cambió a: ${activePhase.name}`;
+            createNotificationDeduped(`${phaseKey}_athlete`, {
+              recipientEmail: profile.email,
+              type: 'nutrition_phase_change',
+              title: 'Plan de nutrición actualizado',
+              body: phaseBody,
+              link: 'nutrition',
+              createdAt: new Date().toISOString(),
+              read: false,
+            }).catch(console.error);
+            createNotificationDeduped(`${phaseKey}_coach`, {
+              recipientEmail: COACH_EMAIL,
+              type: 'nutrition_phase_change',
+              title: `Fase de nutrición cambiada (${profile.displayName})`,
+              body: `${profile.displayName}: ${phaseBody}`,
+              link: 'clients',
+              createdAt: new Date().toISOString(),
+              read: false,
+            }).catch(console.error);
           }
         }
-
-        const activeIds = new Set(dietConfig?.activeDietIds ?? []);
-        const active = allDiets.filter(d => activeIds.has(d.id));
-        const schedule = dietConfig?.weeklySchedule ?? {};
-        setAllDietsList(allDiets);
-        setWeeklySchedule(schedule);
-
-        const rememberedId = localStorage.getItem(`enforma_intercambios_diet_${profile.email}`);
-        const todayId = schedule[TODAY_WD] ?? null;
-        const initDiet: Diet | null =
-          (todayId && allDiets.find(d => d.id === todayId)) ||
-          (rememberedId && allDiets.find(d => d.id === rememberedId)) ||
-          (active.length >= 1 ? active[0] : null) ||
-          (allDiets.length >= 1 ? allDiets[0] : null);
-        if (initDiet) {
-          setSelectedDiet(initDiet);
-          setSavedDietSnapshot(dietSnapshot(initDiet));
-          const counts: Record<string, number> = {};
-          initDiet.meals.forEach(m => { counts[m.id] = m.items.length; });
-          setOrigItemCounts(counts);
-        }
-
-        // Phase 2 — food library + recipes; seed failure must not affect diet data already set
-        await seedFoodItemsIfEmpty().catch(() => {});
-        if (cancelled) return;
-
-        const [foods, recs, favs] = await Promise.all([
-          getFoodItems(),
-          getRecipes().catch(() => [] as Recipe[]),
-          getRecipeFavorites(profile.email).catch(() => ({ athleteId: profile.email, recipeIds: [] } as RecipeFavorites)),
-        ]);
-        if (!cancelled) {
-          setFoodItems(foods);
-          setRecipes(recs);
-          setRecipeFavorites(favs);
-        }
-      } catch (err) {
-        if (!cancelled) console.error('NutritionScreen load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
-    };
 
-    load();
-    return () => { cancelled = true; };
-  }, [profile.email]);
+      const activeIds = new Set(dietConfig?.activeDietIds ?? []);
+      const active = allDietsList.filter(d => activeIds.has(d.id));
+      const schedule = dietConfig?.weeklySchedule ?? {};
+      setWeeklySchedule(schedule);
+
+      const rememberedId = localStorage.getItem(`enforma_intercambios_diet_${profile.email}`);
+      const todayId = schedule[TODAY_WD] ?? null;
+      const initDiet: Diet | null =
+        (todayId && allDietsList.find(d => d.id === todayId)) ||
+        (rememberedId && allDietsList.find(d => d.id === rememberedId)) ||
+        (active.length >= 1 ? active[0] : null) ||
+        (allDietsList.length >= 1 ? allDietsList[0] : null);
+      if (initDiet) {
+        setSelectedDiet(initDiet);
+        setSavedDietSnapshot(dietSnapshot(initDiet));
+        const counts: Record<string, number> = {};
+        initDiet.meals.forEach(m => { counts[m.id] = m.items.length; });
+        setOrigItemCounts(counts);
+      }
+    })().catch(err => console.error('NutritionScreen init error:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingPhase1, profile.email]);
 
   // ── Init item states when diet changes ──────────────────────────────────────
   // Rebuilds the (done:false) shape synchronously, then merges in today's

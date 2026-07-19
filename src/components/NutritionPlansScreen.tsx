@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
@@ -100,14 +101,32 @@ interface Props {
 
 export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, embeddedDiet, onSaved, onCancelled, onboardingData }: Props) {
   const isEmbedded = athleteEmail !== undefined;
+  const queryClient = useQueryClient();
 
   // Athlete selector
-  const [athletes, setAthletes] = useState<UserProfile[]>([]);
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
+  // Unfiltered — same ['userProfiles'] key as ClientsScreen/CommandPalette/
+  // MesocycleManager/ReviewsScreen, filtered locally so the shared cache entry
+  // stays the raw list every one of those expects.
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+    enabled: !isEmbedded,
+  });
+  const athletes = useMemo(() => allProfiles.filter(p => p.role === 'client'), [allProfiles]);
 
-  // Diet list
-  const [diets, setDiets] = useState<Diet[]>([]);
-  const [loadingDiets, setLoadingDiets] = useState(false);
+  // Diet list — deliberately the same ['dietsForAthlete', email, 'coachOnly']
+  // key ClientHub uses for the coach-only (non-self-managed) filtered view of
+  // an athlete's diets, so both editors of this data share one cache entry.
+  const dietsKey = ['dietsForAthlete', selectedEmail, 'coachOnly'] as const;
+  const { data: diets = [], isPending: loadingDiets } = useQuery({
+    queryKey: dietsKey,
+    queryFn: () => getDietsForAthlete(selectedEmail).then(list => list.filter(d => !d.selfManaged)),
+    enabled: !!selectedEmail,
+  });
+  const setDiets = (updater: React.SetStateAction<Diet[]>) =>
+    queryClient.setQueryData<Diet[]>(dietsKey, prev =>
+      typeof updater === 'function' ? (updater as (p: Diet[]) => Diet[])(prev ?? []) : updater);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Editor — start in editor mode when embedded
@@ -119,8 +138,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   // Preview view mode (shared localStorage key with athlete)
   const [showPreview, setShowPreview] = useState(false);
 
-  // Food picker
-  const [foodItems, setFoodItems] = useState<MealItem[]>([]);
+  // Food picker — foodItems is a global library (shared ['foodItems'] key with
+  // the rest of the app), independent of which athlete is selected.
+  const { data: foodItems = [] } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: () => seedFoodItemsIfEmpty().then(getFoodItems),
+  });
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
@@ -146,41 +169,34 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount
 
-  // Load athletes on mount (standalone only)
+  // Switching athletes (standalone only) always drops back to the list view —
+  // pure navigation, independent of whether that athlete's data has loaded yet.
   useEffect(() => {
-    if (isEmbedded) return;
-    getAllUserProfiles()
-      .then(list => setAthletes(list.filter(p => p.role === 'client')))
-      .catch(console.error);
-  }, [isEmbedded]);
-
-  // Load diets + food config when athlete selected
-  useEffect(() => {
-    if (!selectedEmail) return;
-    setLoadingDiets(true);
-    if (!isEmbedded) setDiets([]);
     if (!isEmbedded) setView('list');
-    Promise.all([
-      getDietsForAthlete(selectedEmail),
-      (async () => {
-        await seedFoodItemsIfEmpty();
-        return getFoodItems();
-      })(),
-      getAthleteNutritionConfig(selectedEmail).catch(() => null),
-    ]).then(([fetchedDiets, foods, config]) => {
-      // Self-managed diets ("Mis Dietas") are private to the athlete — the coach's
-      // editor only lists/assigns diets the coach itself authored.
-      setDiets(fetchedDiets.filter(d => !d.selfManaged));
-      setFoodItems(foods);
-      if (config && config.enabledModes.length > 0) {
-        setEnabledModes(config.enabledModes);
-        setActiveDietMode(config.enabledModes[0]);
-      } else {
-        setEnabledModes(['OMNIVORO']);
-        setActiveDietMode('OMNIVORO');
-      }
-    }).catch(console.error).finally(() => setLoadingDiets(false));
   }, [selectedEmail, isEmbedded]);
+
+  // athleteNutritionConfig seeds enabledModes/activeDietMode once per athlete
+  // (activeDietMode is also user-clickable afterward, so it has to stay local
+  // state, not the query data directly) — same ref-guard-by-key pattern as
+  // StepsWidget/AthleteRoadmapScreen, just guarded by selectedEmail instead of
+  // profile.email so switching athletes re-seeds it.
+  const { data: nutConfig, isPending: loadingNutConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', selectedEmail],
+    queryFn: () => getAthleteNutritionConfig(selectedEmail).catch(() => null),
+    enabled: !!selectedEmail,
+  });
+  const modesInitFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedEmail || loadingNutConfig || modesInitFor.current === selectedEmail) return;
+    modesInitFor.current = selectedEmail;
+    if (nutConfig && nutConfig.enabledModes.length > 0) {
+      setEnabledModes(nutConfig.enabledModes);
+      setActiveDietMode(nutConfig.enabledModes[0]);
+    } else {
+      setEnabledModes(['OMNIVORO']);
+      setActiveDietMode('OMNIVORO');
+    }
+  }, [selectedEmail, nutConfig]);
 
   // ── Live dashboard ───────────────────────────────────────────────────────────
   const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
