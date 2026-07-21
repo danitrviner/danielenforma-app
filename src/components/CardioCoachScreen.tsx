@@ -7,6 +7,7 @@ import {
 } from '../dbService';
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
+import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import Skeleton from './Skeleton';
 
 const XP_PER_APPROVED_TEST = 30;
@@ -160,6 +161,8 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
         athleteId: t.athleteId, restingHR, maxHR, lthr: t.result.lthr, method: 'lthr',
         zones: zonesFromLthr(t.result.lthr), updatedAt: new Date().toISOString(), updatedBy: coachEmail,
       });
+      addRoadmapMilestone(t.athleteId, `milestone_lthr_${t.id}`, `Test de umbral de FC aprobado (LTHR ${t.result.lthr} bpm)`)
+        .catch(err => console.warn('addRoadmapMilestone (lthr) failed:', err));
     } else if (restingHR && maxHR) {
       await saveCardioProfile({
         athleteId: t.athleteId, restingHR, maxHR, method: 'hrr',

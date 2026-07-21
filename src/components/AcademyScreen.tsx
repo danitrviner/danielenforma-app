@@ -4,6 +4,7 @@ import { UserProfile, AcademyCourse, AcademyLesson, AcademyCategory } from '../t
 import { getAllCourses, getAllLessons, getAcademyProgress, markLessonComplete, getAcademyAccess } from '../dbService';
 import { evaluateUnlockRule } from '../utils/academyUnlock';
 import { grantXp } from '../utils/xp';
+import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import Skeleton from './Skeleton';
 
 interface Props {
@@ -87,6 +88,11 @@ export default function AcademyScreen({ profile }: Props) {
     if (!alreadyDone) {
       await grantXp(profile, XP_PER_LESSON);
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+    }
+    const justCompletedCourse = updated.courseProgress[openCourse.id] === 100 && progressSafe.courseProgress[openCourse.id] !== 100;
+    if (justCompletedCourse) {
+      addRoadmapMilestone(profile.email, `milestone_course_${openCourse.id}`, `Completaste el curso "${openCourse.title}"`)
+        .catch(err => console.warn('addRoadmapMilestone (course) failed:', err));
     }
   };
 
