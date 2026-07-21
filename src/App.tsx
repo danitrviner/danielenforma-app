@@ -22,6 +22,8 @@ const HomeScreen           = lazy(() => import('./components/HomeScreen'));
 const TrainingScreen       = lazy(() => import('./components/TrainingScreen'));
 const NutritionHubScreen   = lazy(() => import('./components/NutritionHubScreen'));
 const CheckInScreen        = lazy(() => import('./components/CheckInScreen'));
+const AcademyScreen        = lazy(() => import('./components/AcademyScreen'));
+const CardioScreen         = lazy(() => import('./components/CardioScreen'));
 
 // Shared screens
 const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScreen'));
@@ -34,6 +36,8 @@ const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardin
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
+const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
+const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
 
 function ScreenFallback() {
   return <ScreenSkeleton />;
@@ -41,7 +45,7 @@ function ScreenFallback() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'clients' | 'reviews' | 'profile';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'profile';
 
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
   { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
@@ -49,6 +53,8 @@ const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: strin
   { id: 'nutrition', label: 'Nutrición',     shortLabel: 'Nutri.',   icon: 'restaurant' },
   { id: 'checkin',   label: 'Check-in',      shortLabel: 'Check-in', icon: 'edit_note' },
   { id: 'roadmap',   label: 'Road map',      shortLabel: 'Mapa',     icon: 'map' },
+  { id: 'academy',   label: 'Academia',      shortLabel: 'Academia', icon: 'school' },
+  { id: 'cardio',    label: 'Cardio',        shortLabel: 'Cardio',   icon: 'favorite' },
 ];
 
 const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
@@ -56,13 +62,15 @@ const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string
   { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
   { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
   { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
+  { id: 'academy',   label: 'Academia',   shortLabel: 'Academia',  icon: 'school'          },
+  { id: 'cardio',    label: 'Cardio',     shortLabel: 'Cardio',    icon: 'favorite'        },
 ];
 
 // Segmentos de URL válidos por rol — cada pantalla tiene ahora su propia ruta
 // (antes solo /clients/* estaba enrutado; el resto vivía en un estado
 // `activeTab` que un refresh o el botón atrás de móvil no podían recuperar).
-const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'roadmap', 'profile'];
-const COACH_PATH_SEGMENTS = ['clients', 'reviews', 'training', 'nutrition', 'profile'];
+const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'roadmap', 'academy', 'cardio', 'profile'];
+const COACH_PATH_SEGMENTS = ['clients', 'reviews', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
 
 export default function App() {
   return (
@@ -349,6 +357,8 @@ function AppContent() {
           {!isCoach && <Route path="/nutrition" element={<NutritionHubScreen profile={profile} />} />}
           {!isCoach && <Route path="/checkin" element={<CheckInScreen profile={profile} checkins={checkins} />} />}
           {!isCoach && <Route path="/roadmap" element={<AthleteRoadmapScreen profile={profile} />} />}
+          {!isCoach && <Route path="/academy" element={<AcademyScreen profile={profile} />} />}
+          {!isCoach && <Route path="/cardio" element={<CardioScreen profile={profile} />} />}
 
           {/* COACH */}
           {isCoach && (() => {
@@ -370,6 +380,8 @@ function AppContent() {
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
                 <Route path="/training" element={<TrainingCoachScreen coachId={profile.userId} />} />
                 <Route path="/nutrition" element={<NutritionCoachScreen coachId={profile.userId} />} />
+                <Route path="/academy" element={<AcademyCoachScreen coachId={profile.userId} coachEmail={profile.email} />} />
+                <Route path="/cardio" element={<CardioCoachScreen coachEmail={profile.email} />} />
               </>
             );
           })()}

@@ -17,6 +17,7 @@ import Coachmark from './Coachmark';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import Skeleton from './Skeleton';
+import { startRestTimer, stopRestTimer } from '../services/restTimer';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -161,6 +162,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   useEffect(() => {
     if (restTimer?.secondsLeft !== 0) return;
     navigator.vibrate?.([150, 80, 150]);
+    stopRestTimer().catch(() => {}); // ya lo vimos en primer plano, evita el duplicado/la notificación colgada en background
     const id = setTimeout(() => setRestTimer(null), 3000);
     return () => clearTimeout(id);
   }, [restTimer?.secondsLeft]);
@@ -697,6 +699,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                                 updateSet(exIdx, sIdx, 'done', markingDone);
                                 if (markingDone && we.restSeconds) {
                                   setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
+                                  startRestTimer(ex?.name || 'tu ejercicio', we.restSeconds).catch(() => {});
+                                } else if (!markingDone) {
+                                  stopRestTimer().catch(() => {});
                                 }
                               }}
                               className={`w-11 h-11 rounded-lg border flex items-center justify-center mx-auto transition-all ${

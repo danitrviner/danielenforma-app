@@ -10,7 +10,11 @@ export type NotificationType =
   | 'weekly_challenge_new'
   | 'weekly_challenge_won'
   | 'plan_phase_change'
-  | 'level_up';
+  | 'level_up'
+  | 'hrtest_pending'
+  | 'hrtest_approved'
+  | 'academy_access_granted'
+  | 'lesson_completed';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -79,6 +83,10 @@ export interface UserProfile {
   // Cached result of computeSetupChecklist, refreshed whenever the coach opens
   // the Setup tab — lets the clients grid show a % without recomputing per card.
   setupSummary?: { pct: number; attention: number; updatedAt: string };
+  // ISO timestamp of first profile creation. Missing on profiles created before
+  // this field existed — treat as undefined (no daysSinceJoin drip gating) rather
+  // than backfilling, since the real join date is unrecoverable for those.
+  createdAt?: string;
 }
 
 export interface WeightCheckIn {
@@ -975,6 +983,138 @@ export interface Resource {
   kind: ResourceKind;
   url: string;
   createdAt: string; // ISO timestamp
+}
+
+// ─── TRAININGLAB (academia de vídeo: cursos > lecciones, drip) ─────────────────
+
+export type AcademyCategory = 'entrenamiento' | 'nutricion' | 'fisiologia' | 'biomecanica' | 'mentalidad' | 'recuperacion';
+
+export type UnlockRule =
+  | { type: 'immediate' }
+  | { type: 'daysSinceJoin'; value: number }
+  | { type: 'level'; value: number }
+  | { type: 'prerequisite'; value: string }; // courseId
+
+export interface AcademyCourse {
+  id: string;
+  title: string;
+  description: string;
+  category: AcademyCategory;
+  coverImageUrl?: string;
+  order: number;
+  published: boolean;
+  unlockRule: UnlockRule;
+  lessonCount: number; // denormalized, kept in sync on lesson create/delete
+}
+
+export interface AcademyLessonResource {
+  kind: 'pdf' | 'link';
+  title: string;
+  url: string;
+}
+
+export interface AcademyLesson {
+  id: string;
+  courseId: string;
+  title: string;
+  description?: string;
+  order: number;
+  videoProvider: 'youtube' | 'vimeo';
+  videoId: string;
+  durationSec?: number;
+  resources?: AcademyLessonResource[];
+  unlockRule?: UnlockRule; // overrides course-level rule when present
+}
+
+export interface AcademyProgress {
+  athleteId: string; // email, doc id
+  completed: { [lessonId: string]: string };   // ISO date completada
+  courseProgress: { [courseId: string]: number }; // 0..100
+  lastLessonId?: string;
+  lastCourseId?: string;
+}
+
+// Capa 1 — entitlement: quién ve la pestaña Academia. Sin doc (o enabled=false)
+// el atleta ni la ve. grantedCourses opcional para acceso granular por curso.
+export interface AcademyAccess {
+  athleteId: string; // email, doc id
+  enabled: boolean;
+  grantedCourses?: string[];
+  grantedBy: string;
+  grantedAt: string; // ISO
+}
+
+// ─── CARDIO (zonas de FC, BLE en vivo, tests de campo) ─────────────────────────
+
+export type CardioZoneMethod = 'hrr' | 'hrmax' | 'lthr';
+
+export interface CardioZoneBand { min: number; max: number } // BPM
+
+export interface CardioZones { z1: CardioZoneBand; z2: CardioZoneBand; z3: CardioZoneBand; z4: CardioZoneBand; z5: CardioZoneBand }
+
+export interface AthleteCardioProfile {
+  athleteId: string; // email, doc id
+  restingHR?: number;
+  maxHR?: number;
+  lthr?: number;
+  method: CardioZoneMethod;
+  zones: CardioZones;
+  updatedAt: string; // ISO
+  updatedBy: string; // coach email, o 'auto' si vino de un test aprobado
+}
+
+export type CardioSessionType = 'libre' | 'zona2' | 'intervalos';
+
+export interface CardioIntervalBlock { label: string; durationSec: number; targetZone: keyof CardioZones }
+
+export interface CardioAssignment {
+  id: string;
+  athleteId: string;
+  type: CardioSessionType;
+  targetDurationSec?: number;      // 'libre' / 'zona2'
+  targetZone?: keyof CardioZones;  // 'zona2' (normalmente z2)
+  intervals?: CardioIntervalBlock[]; // 'intervalos'
+  timesPerWeek?: number;
+  date?: string; // YYYY-MM-DD si es puntual; si no, recurrente por timesPerWeek
+  active: boolean;
+  createdAt: string; // ISO
+}
+
+export interface CardioSession {
+  id: string;
+  athleteId: string;
+  assignmentId?: string;
+  type: CardioSessionType;
+  date: string;       // YYYY-MM-DD
+  startedAt: string;  // ISO
+  durationSec: number;
+  avgHR?: number;
+  maxHR?: number;
+  timeInZoneSec: { z1: number; z2: number; z3: number; z4: number; z5: number };
+  samples: number[];  // FC submuestreada 1/3-5s — nunca cruda por segundo (§7.4 del plan)
+  sampleIntervalSec: number;
+}
+
+export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';
+
+export interface HrTestResult {
+  restingHR?: number;
+  maxHR?: number;
+  lthr?: number;
+  z2Ceiling?: number;
+  decouplingPct?: number;
+}
+
+export interface HrTest {
+  id: string;
+  athleteId: string;
+  type: HrTestType;
+  date: string;       // YYYY-MM-DD
+  durationSec: number;
+  result: HrTestResult;
+  samples: number[];  // FC submuestreada
+  approvedByCoach: boolean;
+  notes?: string;
 }
 
 // ─── AI ASSISTANT (coach-only) ─────────────────────────────────────────────────

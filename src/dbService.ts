@@ -178,3 +178,19 @@ export {
   getAthleteStatusNote, saveAthleteStatusNote,
   getQuickReplies, saveQuickReplies,
 } from './db/coachSettings';
+
+// ─── TRAININGLAB (academia: cursos, lecciones, progreso, acceso) ──────────────
+export {
+  getAllCourses, createCourse, updateCourse, deleteCourse,
+  getAllLessons, createLesson, updateLesson, deleteLesson,
+  getAcademyProgress, markLessonComplete,
+  getAllAcademyAccess, getAcademyAccess, setAcademyAccess,
+} from './db/academy';
+
+// ─── CARDIO (zonas, BLE en vivo, tests de FC) ─────────────────────────────────
+export {
+  getCardioProfile, saveCardioProfile, defaultZonesFromAge,
+  getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
+  getCardioSessionsForAthlete, createCardioSession,
+  getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
+} from './db/cardio';

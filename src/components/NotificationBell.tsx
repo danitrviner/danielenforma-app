@@ -27,6 +27,10 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   weekly_challenge_won:    'emoji_events',
   plan_phase_change:       'route',
   level_up:                'military_tech',
+  hrtest_pending:          'monitor_heart',
+  hrtest_approved:         'favorite',
+  academy_access_granted:  'school',
+  lesson_completed:        'play_lesson',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate }: Props) {

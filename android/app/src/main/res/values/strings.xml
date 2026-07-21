@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">En Forma</string>
+    <string name="title_activity_main">En Forma</string>
+    <string name="package_name">com.danielenforma.app</string>
+    <string name="custom_url_scheme">com.danielenforma.app</string>
+</resources>

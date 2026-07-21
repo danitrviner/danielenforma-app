@@ -51,7 +51,8 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
     maxStreak: 0,
     initialWeight: 0,
     targetWeight: 0,
-    actualWeight: 0
+    actualWeight: 0,
+    createdAt: new Date().toISOString(),
   };
   saveLocalUserProfile(userId, defaultProfile);
   return defaultProfile;
@@ -166,7 +167,8 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
       maxStreak: 0,
       initialWeight: 0,
       targetWeight: 0,
-      actualWeight: 0
+      actualWeight: 0,
+      createdAt: new Date().toISOString(),
     };
 
     await setDoc(docRef, stripUndefined(defaultProfile));
