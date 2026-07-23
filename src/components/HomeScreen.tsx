@@ -12,7 +12,7 @@ import StatTile from './StatTile';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import Skeleton from './Skeleton';
 
-type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
+type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio';
 
 interface HomeScreenProps {
   profile: UserProfile;
@@ -150,6 +150,27 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         )}
       </section>
       )}
+
+      {/* ── Accesos a Academia y Cardio: viven aquí en vez de en la barra de
+          navegación para no saturarla con más pestañas. ────────────────── */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => onNavigate('academy')}
+          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+        >
+          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">school</span>
+          <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Academia</span>
+          <span className="text-[10px] text-[#c6c9ab] font-mono">Cursos y formación</span>
+        </button>
+        <button
+          onClick={() => onNavigate('cardio')}
+          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+        >
+          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">favorite</span>
+          <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Cardio</span>
+          <span className="text-[10px] text-[#c6c9ab] font-mono">Zonas y FC en directo</span>
+        </button>
+      </div>
 
       <ResourcesPanel isCoach={false} />
     </div>

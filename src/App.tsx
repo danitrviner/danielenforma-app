@@ -47,14 +47,15 @@ const OWNER_EMAIL = 'danitrviner@gmail.com';
 
 export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'profile';
 
+// Academia y Cardio no tienen pestaña propia — se accede desde tarjetas en
+// Inicio (HomeScreen) para no saturar la barra de navegación. Siguen siendo
+// rutas válidas (ver ATHLETE_PATH_SEGMENTS) para que el refresh/atrás funcione.
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
   { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
   { id: 'training',  label: 'Entrenamiento', shortLabel: 'Entreno',  icon: 'fitness_center' },
   { id: 'nutrition', label: 'Nutrición',     shortLabel: 'Nutri.',   icon: 'restaurant' },
   { id: 'checkin',   label: 'Check-in',      shortLabel: 'Check-in', icon: 'edit_note' },
   { id: 'roadmap',   label: 'Road map',      shortLabel: 'Mapa',     icon: 'map' },
-  { id: 'academy',   label: 'Academia',      shortLabel: 'Academia', icon: 'school' },
-  { id: 'cardio',    label: 'Cardio',        shortLabel: 'Cardio',   icon: 'favorite' },
 ];
 
 const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
