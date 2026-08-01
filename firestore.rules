@@ -3,13 +3,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Coach permanente — danitrviner@gmail.com
+    // email_verified evita que una cuenta email/password sin verificar (creable
+    // por cualquiera vía createUserWithEmailAndPassword) se autoproclame coach u
+    // owner con solo coincidir el string de email (auditoría seguridad 2026-07-23).
     function isCoach() {
-      return request.auth != null && request.auth.token.email == 'danitrviner@gmail.com';
+      return request.auth != null
+          && request.auth.token.email == 'danitrviner@gmail.com'
+          && request.auth.token.email_verified == true;
     }
 
     // El propio atleta leyendo/escribiendo su documento (doc ID = email)
     function isOwnerEmail(email) {
-      return request.auth != null && request.auth.token.email == email;
+      return request.auth != null
+          && request.auth.token.email == email
+          && request.auth.token.email_verified == true;
     }
 
     // El propio usuario leyendo/escribiendo por UID
@@ -37,16 +44,26 @@ service cloud.firestore {
     // segundo perfil duplicado con el historial partido.
     match /user_profiles/{userId} {
       allow read: if isOwnerUid(userId) || isCoach()
-                  || (request.auth != null && resource.data.email == request.auth.token.email);
+                  || (request.auth != null && resource.data.email == request.auth.token.email
+                      && request.auth.token.email_verified == true);
+      // `estadoCrm` se añade a la lista bloqueada (CRM, 2026-08-01): es una
+      // decisión comercial del coach (activo/pausado/baja), no un dato del
+      // atleta. Sin esto un cliente dado de baja se reactivaba solo desde la
+      // consola del navegador. `dni`, `direccion` y `telefono` SÍ los puede
+      // editar: son datos suyos.
       allow create: if isCoach()
                     || (isOwnerUid(userId)
                         && request.resource.data.role == 'client'
+                        && request.auth.token.email_verified == true
+                        && !request.resource.data.keys()
+                            .hasAny(['planStartDate', 'planDurationMonths', 'setupSummary',
+                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak']));
+                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm']));
       allow delete: if isCoach();
     }
 
@@ -57,9 +74,15 @@ service cloud.firestore {
     match /checkins/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.uid == resource.data.userId);
+      // Antes: el create aceptaba userId==uid *o* email==token.email como ramas
+      // independientes del OR, así que un atleta podía escribir userId=<UID de
+      // otra persona> siempre que su propio email pasara la segunda mitad —
+      // plantando check-ins falsos en la cuenta de otro (auditoría 2026-07-23).
+      // Ahora userId==uid es obligatorio; el email, si viene, debe coincidir.
       allow create: if isCoach()
                     || (request.auth != null
-                        && (request.resource.data.userId == request.auth.uid
+                        && request.resource.data.userId == request.auth.uid
+                        && (!('email' in request.resource.data)
                             || request.resource.data.email == request.auth.token.email));
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.uid == resource.data.userId);
@@ -74,7 +97,7 @@ service cloud.firestore {
     // ── exerciseNotes (docId = `${exerciseId}_${athleteId}`; athleteId = EMAIL) ─
     match /exerciseNotes/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow write: if isCoach();
     }
 
@@ -94,12 +117,13 @@ service cloud.firestore {
     // ── workoutLogs (athleteId = EMAIL) ──────────────────────────────────────
     match /workoutLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if isCoach()
                     || (request.auth != null
-                        && request.resource.data.athleteId == request.auth.token.email);
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.auth.token.email_verified == true);
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── foodItems (sin propietario, compartidos) ─────────────────────────────
@@ -111,17 +135,19 @@ service cloud.firestore {
     // ── diets (athleteId = EMAIL) ────────────────────────────────────────────
     match /diets/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       // Self-managed diets ("Mis Dietas") are the athlete's own — they may create
       // their own, and update/delete only ones already flagged selfManaged.
       // Coach-assigned diets (selfManaged absent/false) remain read-only for athletes.
       allow create: if isCoach()
                     || (request.auth != null
                         && request.auth.token.email == request.resource.data.athleteId
+                        && request.auth.token.email_verified == true
                         && request.resource.data.selfManaged == true);
       allow update, delete: if isCoach()
                             || (request.auth != null
                                 && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true
                                 && resource.data.selfManaged == true);
     }
 
@@ -133,11 +159,13 @@ service cloud.firestore {
       allow read: if isCoach()
                   || (request.auth != null
                       && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true
                       && resource.data.status == 'published');
       allow create, delete: if isCoach();
       allow update: if isCoach()
                     || (request.auth != null
                         && request.auth.token.email == resource.data.athleteId
+                        && request.auth.token.email_verified == true
                         && resource.data.status == 'published'
                         && request.resource.data.diff(resource.data).affectedKeys()
                             .hasOnly(['days', 'swapHistory']));
@@ -156,7 +184,7 @@ service cloud.firestore {
     // ── mesocycles (athleteId = EMAIL) ───────────────────────────────────────
     match /mesocycles/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow write: if isCoach();
     }
 
@@ -185,31 +213,34 @@ service cloud.firestore {
     // ── progressPhotos (athleteId = EMAIL) ───────────────────────────────────
     match /progressPhotos/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if request.auth != null
-                    && request.resource.data.athleteId == request.auth.token.email;
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── bodyweightLogs (athleteId = EMAIL) ───────────────────────────────────
     match /bodyweightLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if request.auth != null
-                    && request.resource.data.athleteId == request.auth.token.email;
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── stepLogs (athleteId = EMAIL) ─────────────────────────────────────────
     match /stepLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if request.auth != null
-                    && request.resource.data.athleteId == request.auth.token.email;
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── dietCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
@@ -220,11 +251,13 @@ service cloud.firestore {
     // absent doc leaks nothing.
     match /dietCompletionLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && (resource == null || request.auth.token.email == resource.data.athleteId));
+                  || (request.auth != null && (resource == null
+                      || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
       allow create: if request.auth != null
-                    && request.resource.data.athleteId == request.auth.token.email;
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── menuCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
@@ -232,11 +265,13 @@ service cloud.firestore {
     // same non-existent-doc handling as dietCompletionLogs.
     match /menuCompletionLogs/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && (resource == null || request.auth.token.email == resource.data.athleteId));
+                  || (request.auth != null && (resource == null
+                      || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
       allow create: if request.auth != null
-                    && request.resource.data.athleteId == request.auth.token.email;
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── questionnaires (ownerId = UID del coach) ─────────────────────────────
@@ -248,26 +283,27 @@ service cloud.firestore {
     // ── questionnaireAssignments (athleteId = EMAIL) ─────────────────────────
     match /questionnaireAssignments/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow write: if isCoach();
     }
 
     // ── photoAssignments (athleteId = EMAIL) ─────────────────────────────────
     match /photoAssignments/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow write: if isCoach();
     }
 
     // ── questionnaireResponses (athleteId = EMAIL) ───────────────────────────
     match /questionnaireResponses/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if isCoach()
                     || (request.auth != null
-                        && request.resource.data.athleteId == request.auth.token.email);
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.auth.token.email_verified == true);
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── onboarding (docId = email) ───────────────────────────────────────────
@@ -294,12 +330,14 @@ service cloud.firestore {
     match /weeklyChallenges/{docId} {
       allow read: if isCoach()
                   || (request.auth != null
-                      && (resource == null || request.auth.token.email == resource.data.athleteId));
+                      && (resource == null
+                          || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
       allow create: if isCoach()
                     || (request.auth != null
-                        && request.resource.data.athleteId == request.auth.token.email);
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.auth.token.email_verified == true);
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── challengeTemplates (biblioteca de retos; ownerId = UID del coach) ────
@@ -326,22 +364,25 @@ service cloud.firestore {
     // address notifications to themselves or to the coach.
     match /notifications/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.recipientEmail);
+                  || (request.auth != null && request.auth.token.email == resource.data.recipientEmail
+                      && request.auth.token.email_verified == true);
       allow create: if isCoach()
                     || (request.auth != null
+                        && request.auth.token.email_verified == true
                         && (request.resource.data.recipientEmail == request.auth.token.email
                             || request.resource.data.recipientEmail == 'danitrviner@gmail.com'));
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.recipientEmail);
+                            || (request.auth != null && request.auth.token.email == resource.data.recipientEmail
+                                && request.auth.token.email_verified == true);
     }
 
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
     match /tasks/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
       allow create: if isCoach();
       allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
     // ── resources (coachId = UID del coach; lectura para cualquier atleta autenticado) ──
@@ -414,8 +455,115 @@ service cloud.firestore {
       allow read: if isCoach()
                   || (request.auth != null
                       && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true
                       && resource.data.status == 'sent');
       allow write: if isCoach();
+    }
+
+    // ── academyCourses / academyLessons (biblioteca del coach) ───────────────
+    // Huérfanas hasta ahora (sin match, denegadas por defecto): la Academia
+    // nunca llegaba a sincronizar con Firestore y vivía solo en localStorage
+    // (auditoría 2026-07-23). Puramente aditivo — antes 100% denegado.
+    match /academyCourses/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+    match /academyLessons/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+
+    // ── academyAccess (docId = email; capa 1 de visibilidad de la pestaña) ───
+    match /academyAccess/{email} {
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isCoach();
+    }
+
+    // ── academyProgress (docId = email; el atleta marca sus lecciones) ───────
+    match /academyProgress/{email} {
+      allow read, write: if isCoach() || isOwnerEmail(email);
+    }
+
+    // ── athleteCardioProfile (docId = email; zonas fijadas por el coach) ─────
+    match /athleteCardioProfile/{email} {
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isCoach();
+    }
+
+    // ── cardioAssignments (athleteId = EMAIL; prescripción del coach) ────────
+    match /cardioAssignments/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow write: if isCoach();
+    }
+
+    // ── cardioSessions (athleteId = EMAIL; registrado por el propio atleta) ──
+    match /cardioSessions/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+    }
+
+    // ── hrTests (athleteId = EMAIL; el atleta hace el test, el coach aprueba) ─
+    match /hrTests/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true
+                    && request.resource.data.approvedByCoach == false;
+      allow update, delete: if isCoach();
+    }
+
+    // ── CRM (2026-08-01) ────────────────────────────────────────────────────
+    // Todo el módulo es SOLO-COACH, sin una sola excepción. El atleta nunca lee
+    // su ficha comercial: ni lo que paga, ni su estado, ni sus reuniones. Eso
+    // elimina de raíz una clase entera de fugas de datos de negocio, y hace
+    // innecesario razonar sobre qué campo puede ver cada quién.
+    //
+    // Van como colecciones planas y no bajo `coaches/{uid}/...` a propósito:
+    // `isCoach()` valida por email verificado, que sobrevive a un cambio de UID.
+    // Este mismo codebase documenta que la misma persona acaba con dos UID
+    // distintos al registrarse por Google tras haberlo hecho por contraseña
+    // (de ahí `deduplicateByEmail` en src/db/profiles.ts) — anclar el CRM al UID
+    // dejaría toda la facturación inaccesible si eso ocurre.
+
+    // Contactos: clientes SIN cuenta en la app (leads, cartera importada).
+    // Quien sí tiene cuenta vive en user_profiles con los campos CRM añadidos.
+    match /crmContactos/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    match /crmServicios/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // Un pago se puede borrar SOLO mientras sigue pendiente (p.ej. si se creó
+    // por error). Uno ya `pagado` nunca se borra — representa dinero real ya
+    // cobrado; un error ahí se corrige editándolo, no desapareciéndolo, para
+    // no descuadrar meses ya cerrados ni perder el rastro de qué pasó.
+    // (Cambiado 2026-08-01: antes `allow delete: if false` categórico.)
+    match /crmPagos/{docId} {
+      allow read, create, update: if isCoach();
+      allow delete: if isCoach() && resource.data.estado == 'pendiente';
+    }
+
+    // Reservadas para las fases siguientes (suscripciones y reuniones). Se
+    // declaran ya para que las reglas y los índices viajen en el mismo cambio.
+    match /crmSuscripciones/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    match /crmReuniones/{docId} {
+      allow read, write: if isCoach();
     }
 
   }

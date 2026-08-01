@@ -20,6 +20,8 @@ import {
   limit,
   startAfter,
   writeBatch,
+  runTransaction,
+  waitForPendingWrites,
   onSnapshot
 } from 'firebase/firestore';
 import {
@@ -132,6 +134,8 @@ export {
   limit,
   startAfter,
   writeBatch,
+  runTransaction,
+  waitForPendingWrites,
   onSnapshot
 };
 export default app;

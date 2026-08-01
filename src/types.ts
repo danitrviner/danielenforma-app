@@ -87,7 +87,26 @@ export interface UserProfile {
   // this field existed — treat as undefined (no daysSinceJoin drip gating) rather
   // than backfilling, since the real join date is unrecoverable for those.
   createdAt?: string;
+
+  // ── Campos CRM (2026-08-01) ───────────────────────────────────────────────
+  // Todos opcionales: un perfil sin ellos es exactamente lo que era antes, y
+  // ninguna pantalla existente los lee. El CRM extiende este documento en vez
+  // de crear una colección `clientes` paralela.
+  //
+  // OJO con las reglas: `dni`, `direccion` y `telefono` son datos del propio
+  // atleta y puede editarlos; `estadoCrm` NO — está en la lista de campos
+  // bloqueados del `allow update` de user_profiles, junto a planStartDate/role/xp,
+  // porque es una decisión comercial del coach. Sin eso, un cliente se
+  // reactivaría solo desde la consola del navegador.
+  dni?: string;                                  // normalizado: mayúsculas, sin guiones ni espacios
+  direccion?: string;
+  telefono?: { prefijo: string; numero: string }; // prefijo con '+' («+34»)
+  estadoCrm?: EstadoCrm;                          // ausente ⇒ se trata como 'activo'
 }
+
+// Estado comercial del cliente. Deliberadamente separado de `role`, que es un
+// permiso de la app ('client' | 'coach'), no una situación de negocio.
+export type EstadoCrm = 'activo' | 'pausado' | 'baja';
 
 export interface WeightCheckIn {
   id: string;
@@ -1093,6 +1112,20 @@ export interface CardioSession {
   timeInZoneSec: { z1: number; z2: number; z3: number; z4: number; z5: number };
   samples: number[];  // FC submuestreada 1/3-5s — nunca cruda por segundo (§7.4 del plan)
   sampleIntervalSec: number;
+
+  // ── Motor de cálculo — F4 del plan de réplica FITIV (docs/FITIV-analisis-y-plan.md §5) ──
+  // Todos opcionales: requieren datos de la anamnesis (peso/edad/sexo) que un
+  // atleta puede no tener rellenos, o (TSS) el LTHR del perfil cardio.
+  caloriesKcal?: number;       // Keytel corregida (§5.3) — la fórmula publicada de FITIV está mal transcrita
+  caloriesActiveKcal?: number; // caloriesKcal menos el BMR (Mifflin-St Jeor) del tramo — solo si hay altura en la anamnesis
+  mets?: number;
+  fitivPoints?: number;     // METs × min, solo si METs > 3.0 (§5.5)
+  trimp?: number;           // Banister, ponderación exponencial por sexo (§5.4)
+  hrTss?: number;           // TSS de FC vía IF = FC media / LTHR (§5.4)
+  perceivedEffort?: number; // 1–10, autoestimado por zona dominante y ajustable por el atleta
+  effortMinutes?: number;   // PE × duración en minutos (§5.4)
+  hrr1Min?: number;         // Heart Rate Recovery a 1 min (§5.6) — requiere 2 min de vuelta a la calma
+  hrr2Min?: number;         // Heart Rate Recovery a 2 min
 }
 
 export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';
@@ -1115,6 +1148,21 @@ export interface HrTest {
   samples: number[];  // FC submuestreada
   approvedByCoach: boolean;
   notes?: string;
+}
+
+// ─── HRV MATINAL (F8 — docs/FITIV-analisis-y-plan.md §7/§8) ────────────────
+// Medición puntual diaria (3 min tumbado, no continua) — a diferencia de
+// HrTest no es una calibración que el coach aprueba: es un hábito del atleta,
+// una lectura por día, mismo patrón que BodyweightLog/StepLog.
+export interface HrvReading {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  rmssd: number;
+  restingHR?: number;
+  readinessScore?: number; // 0–100, solo si ya hay línea base (≥3 lecturas previas)
+  rrIntervals: number[];   // ms — la materia prima del RMSSD, para poder recalcular si cambia el método
+  createdAt: string;  // ISO timestamp
 }
 
 // ─── AI ASSISTANT (coach-only) ─────────────────────────────────────────────────

@@ -187,10 +187,25 @@ export {
   getAllAcademyAccess, getAcademyAccess, setAcademyAccess,
 } from './db/academy';
 
+// ─── CRM (contactos, servicios, pagos, suscripciones) ─────────────────────────
+// OJO: src/db/crm.ts NO implementa el fallback a localStorage del resto de
+// dominios — las escrituras que fallan lanzan. Está explicado en ese fichero.
+export {
+  getCrmContactos, createCrmContacto, updateCrmContacto, deleteCrmContacto,
+  updateClienteCrmFields, importarCrmContactosBatch,
+  getCrmServicios, getCrmServiciosByCliente, createCrmServicioConPago,
+  updateCrmServicio, archivarCrmServicio, desarchivarCrmServicio,
+  getCrmPagos, getCrmPagosByCliente, createCrmPago, updateCrmPago, deleteCrmPago,
+  getCrmSuscripciones, getCrmSuscripcionesByCliente, createCrmSuscripcion,
+  updateCrmSuscripcion, registrarCobroSuscripcion,
+  EscrituraEncolada, CobroYaRegistrado,
+} from './db/crm';
+
 // ─── CARDIO (zonas, BLE en vivo, tests de FC) ─────────────────────────────────
 export {
   getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
   getCardioSessionsForAthlete, createCardioSession,
   getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
+  getHrvReadingsForAthlete, createHrvReading,
 } from './db/cardio';
