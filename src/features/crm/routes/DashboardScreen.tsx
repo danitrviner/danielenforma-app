@@ -47,6 +47,16 @@ export default function DashboardScreen() {
     ? Math.round((graduacionesConResultado.filter(r => r.resultadoGraduacion === 'continua').length / graduacionesConResultado.length) * 100)
     : null;
 
+  // Churn: misma fórmula que la celda "% Renovación" (=Renovaciones/Clientes
+  // a renovar) del Cuadro de Mandos General de Dani, en su forma complementaria
+  // — Bajas / Clientes a renovar. Aquí "a renovar" es la graduación con
+  // decisión ya tomada (graduacionesConResultado) y "baja" es resultadoGraduacion
+  // === 'no_continua'. Ojo: NO es bajas / clientes activos totales — ese
+  // denominador daría un número distinto del que Dani lee en su Excel.
+  const churn = graduacionesConResultado.length > 0
+    ? Math.round((graduacionesConResultado.filter(r => r.resultadoGraduacion === 'no_continua').length / graduacionesConResultado.length) * 100)
+    : null;
+
   // Bajas de los últimos 30 días — el churn mensual del cuadro de mando
   // (kpis-mensuales.md, objetivo <10%) necesita ESTE número, no solo el total
   // histórico de `contadores.baja`.
@@ -84,11 +94,17 @@ export default function DashboardScreen() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <MetricCard
           icon="trending_up" label="Conversión continuidad"
           value={reunionesSinDato ? '—' : conversionContinuidad !== null ? `${conversionContinuidad}%` : '—'}
           sub={conversionContinuidad === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
+        />
+        <MetricCard
+          icon="trending_down" label="Churn"
+          value={reunionesSinDato ? '—' : churn !== null ? `${churn}%` : '—'}
+          accent={churn !== null && churn > 0 ? '#fca5a5' : undefined}
+          sub={churn === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
         />
         <MetricCard
           icon="person_remove" label="Bajas (30 días)"
