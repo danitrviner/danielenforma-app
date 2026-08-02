@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType } from '../types';
+import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock } from '../types';
 import {
   getAllUserProfiles, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getAllPendingHrTests, updateHrTest, createCardioAssignment, createNotificationDeduped,
@@ -211,6 +211,8 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 
 // ─── PRESCRIPCIÓN ────────────────────────────────────────────────────────────
 
+const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', durationSec: 30, targetZone: 'z5' });
+
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
   const athletes = profiles.filter(p => p.role === 'client');
@@ -218,11 +220,15 @@ function PrescriptionTab() {
   const [type, setType] = useState<CardioSessionType>('zona2');
   const [durationMin, setDurationMin] = useState('45');
   const [timesPerWeek, setTimesPerWeek] = useState('3');
+  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', durationSec: 30, targetZone: 'z1' }]);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
+  const validBlocks = blocks.filter(b => b.label.trim() && b.durationSec > 0);
+
   const handleCreate = async () => {
     if (!athleteEmail) return;
+    if (type === 'intervalos' && validBlocks.length === 0) return;
     setSaving(true);
     try {
       await createCardioAssignmentSafe();
@@ -232,11 +238,19 @@ function PrescriptionTab() {
   };
 
   const createCardioAssignmentSafe = async () => {
+    const intervalsDurationSec = validBlocks.reduce((sum, b) => sum + b.durationSec, 0);
     await createCardioAssignment({
-      athleteId: athleteEmail, type, targetDurationSec: Number(durationMin) * 60,
-      targetZone: type === 'zona2' ? 'z2' : undefined, timesPerWeek: Number(timesPerWeek),
+      athleteId: athleteEmail, type,
+      targetDurationSec: type === 'intervalos' ? intervalsDurationSec : Number(durationMin) * 60,
+      targetZone: type === 'zona2' ? 'z2' : undefined,
+      intervals: type === 'intervalos' ? validBlocks : undefined,
+      timesPerWeek: Number(timesPerWeek),
       active: true, createdAt: new Date().toISOString(),
     });
+  };
+
+  const updateBlock = (i: number, patch: Partial<CardioIntervalBlock>) => {
+    setBlocks(blocks.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   };
 
   if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
@@ -254,11 +268,44 @@ function PrescriptionTab() {
           className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
+          <option value="intervalos">Intervalos</option>
         </select>
-        <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+        {type !== 'intervalos' && (
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+        )}
         <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
       </div>
-      <button onClick={handleCreate} disabled={saving || !athleteEmail} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
+
+      {type === 'intervalos' && (
+        <div className="space-y-2 bg-[#0e0e0e] border border-white/7 rounded-xl p-3">
+          <p className="text-[9px] font-mono uppercase text-[#c6c9ab]">Bloques (se repiten en orden, uno tras otro)</p>
+          {blocks.map((b, i) => (
+            <div key={i} className="flex gap-1.5 items-center">
+              <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
+                className="flex-1 min-w-0 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
+              <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
+                className="w-14 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
+              <span className="text-[9px] text-[#c6c9ab] font-mono">s</span>
+              <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
+                className="bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]">
+                {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+              </select>
+              <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-[#c6c9ab] hover:text-red-400 transition-colors">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+          ))}
+          <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-[10px] font-mono uppercase text-[#fbcb1a] hover:text-white transition-colors flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">add</span> Añadir bloque
+          </button>
+          {validBlocks.length > 0 && (
+            <p className="text-[9px] font-mono text-[#c6c9ab]">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
+          )}
+        </div>
+      )}
+
+      <button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)}
+        className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
         {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
       </button>
     </section>

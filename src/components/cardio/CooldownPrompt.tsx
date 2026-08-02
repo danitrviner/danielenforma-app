@@ -1,0 +1,45 @@
+import React, { useEffect, useState } from 'react';
+
+// Vuelta a la calma de 2 min tras terminar el entreno (§5.6 del análisis) —
+// con banda BLE no hay otra forma de medir el Heart Rate Recovery, porque la
+// sesión en sí termina justo donde el atleta la para. Saltable en cualquier
+// momento: lo que ya se haya grabado se usa igual (min 1 sin min 2, por ej.).
+
+const COOLDOWN_SEC = 120;
+
+interface Props {
+  bpm: number | null;
+  onDone: () => void;
+}
+
+export default function CooldownPrompt({ bpm, onDone }: Props) {
+  const [remaining, setRemaining] = useState(COOLDOWN_SEC);
+
+  useEffect(() => {
+    if (remaining <= 0) { onDone(); return; }
+    const t = window.setTimeout(() => setRemaining(r => r - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [remaining, onDone]);
+
+  return (
+    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
+      <div className="w-full max-w-sm space-y-6 text-center">
+        <div>
+          <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">Vuelta a la calma</p>
+          <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
+          <p className="text-xs font-mono text-[#c6c9ab] mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
+        </div>
+
+        <div className="flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[#ff4d4d] text-lg">favorite</span>
+          <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
+        </div>
+
+        <button onClick={onDone}
+          className="w-full py-3 border border-white/15 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all">
+          Saltar y guardar ya
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1093,6 +1093,26 @@ export interface CardioSession {
   timeInZoneSec: { z1: number; z2: number; z3: number; z4: number; z5: number };
   samples: number[];  // FC submuestreada 1/3-5s — nunca cruda por segundo (§7.4 del plan)
   sampleIntervalSec: number;
+
+  // ── Motor de cálculo — F4 del plan de réplica FITIV (docs/FITIV-analisis-y-plan.md §5) ──
+  // Todos opcionales: requieren datos de la anamnesis (peso/edad/sexo) que un
+  // atleta puede no tener rellenos, o (TSS) el LTHR del perfil cardio.
+  caloriesKcal?: number;       // Keytel corregida (§5.3) — la fórmula publicada de FITIV está mal transcrita
+  caloriesActiveKcal?: number; // caloriesKcal menos el BMR (Mifflin-St Jeor) del tramo — solo si hay altura en la anamnesis
+  mets?: number;
+  fitivPoints?: number;     // METs × min, solo si METs > 3.0 (§5.5)
+  trimp?: number;           // Banister, ponderación exponencial por sexo (§5.4)
+  hrTss?: number;           // TSS de FC vía IF = FC media / LTHR (§5.4)
+  perceivedEffort?: number; // 1–10, autoestimado por zona dominante y ajustable por el atleta
+  effortMinutes?: number;   // PE × duración en minutos (§5.4)
+  hrr1Min?: number;         // Heart Rate Recovery a 1 min (§5.6) — requiere 2 min de vuelta a la calma
+  hrr2Min?: number;         // Heart Rate Recovery a 2 min
+
+  // ── Anotación e historial — F5 del plan de réplica FITIV (§6) ──────────────
+  title?: string;         // editable por el atleta; el tipo (`type`) no se puede cambiar, como en FITIV
+  notes?: string;
+  tags?: string[];
+  manual?: boolean;       // añadida a mano, sin banda real — no otorga XP ni Puntos (regla de FITIV, §6)
 }
 
 export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';
@@ -1115,6 +1135,21 @@ export interface HrTest {
   samples: number[];  // FC submuestreada
   approvedByCoach: boolean;
   notes?: string;
+}
+
+// ─── HRV MATINAL (F8 — docs/FITIV-analisis-y-plan.md §7/§8) ────────────────
+// Medición puntual diaria (3 min tumbado, no continua) — a diferencia de
+// HrTest no es una calibración que el coach aprueba: es un hábito del atleta,
+// una lectura por día, mismo patrón que BodyweightLog/StepLog.
+export interface HrvReading {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  rmssd: number;
+  restingHR?: number;
+  readinessScore?: number; // 0–100, solo si ya hay línea base (≥3 lecturas previas)
+  rrIntervals: number[];   // ms — la materia prima del RMSSD, para poder recalcular si cambia el método
+  createdAt: string;  // ISO timestamp
 }
 
 // ─── AI ASSISTANT (coach-only) ─────────────────────────────────────────────────

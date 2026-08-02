@@ -418,5 +418,58 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+
+    // ── athleteCardioProfile (docId = email; zonas fijadas por el coach) ─────
+    match /athleteCardioProfile/{email} {
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isCoach();
+    }
+
+    // ── cardioAssignments (athleteId = EMAIL; prescripción del coach) ────────
+    match /cardioAssignments/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow write: if isCoach();
+    }
+
+    // ── cardioSessions (athleteId = EMAIL; registrado por el propio atleta) ──
+    match /cardioSessions/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+    }
+
+    // ── hrTests (athleteId = EMAIL; el atleta hace el test, el coach aprueba) ─
+    match /hrTests/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true
+                    && request.resource.data.approvedByCoach == false;
+      allow update, delete: if isCoach();
+    }
+
+    // ── hrvReadings (athleteId = EMAIL; lectura diaria del atleta, sin aprobación del coach) ──
+    match /hrvReadings/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+    }
+
   }
 }

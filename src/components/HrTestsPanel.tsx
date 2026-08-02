@@ -112,8 +112,13 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (!isBleAvailable()) { setError('Conectar la banda BLE requiere la app nativa (iOS/Android).'); return; }
     try {
       const monitor = new HeartRateMonitor();
-      await monitor.requestAndConnect(() => setError('La banda se desconectó.'));
-      await monitor.startListening((v) => { setBpm(v); bpmBufferRef.current.push(v); });
+      // Solo se avisa cuando se agotan los reintentos de reconexión — una
+      // desconexión momentánea durante un test largo (p.ej. el TT de 30 min)
+      // ya no corta la grabación por sí sola (mismo comportamiento que Cardio).
+      await monitor.requestAndConnect((status) => {
+        if (status === 'disconnected') setError('La banda se desconectó y no se pudo reconectar.');
+      });
+      await monitor.startListening((sample) => { setBpm(sample.bpm); bpmBufferRef.current.push(sample.bpm); });
       monitorRef.current = monitor;
       tickRef.current = window.setInterval(() => {
         setElapsedSec(s => {
