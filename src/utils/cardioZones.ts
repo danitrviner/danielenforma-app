@@ -10,6 +10,12 @@ export const ZONE_COLOR: Record<keyof CardioZones, string> = {
   z1: '#4a90d9', z2: '#00eefc', z3: '#fbcb1a', z4: '#ff8c42', z5: '#ff4d4d',
 };
 
+// "No en zona" (§4bis.4 del análisis FITIV) — por debajo del suelo de Z1.
+// No es un error: es calentamiento/vuelta a la calma, pero hay que mostrarlo
+// explícito en vez de dejar el badge de zona en blanco.
+export const BELOW_ZONE_LABEL = 'Fuera de zona';
+export const BELOW_ZONE_COLOR = '#6b7280';
+
 export function getZoneForBpm(bpm: number, zones: CardioZones): keyof CardioZones | null {
   for (const z of ZONE_ORDER) {
     if (bpm >= zones[z].min && bpm <= zones[z].max) return z;
@@ -17,6 +23,30 @@ export function getZoneForBpm(bpm: number, zones: CardioZones): keyof CardioZone
   if (bpm > zones.z5.max) return 'z5';
   if (bpm < zones.z1.min) return null; // por debajo de Z1: en calentamiento/reposo
   return null;
+}
+
+/**
+ * % de la FCmax del atleta — el eje derecho de la gráfica en vivo (§4bis.1).
+ * FITIV trunca en vez de redondear (131/190 → 68%, no 69%, verificado contra
+ * el informe real de la captura del §4bis.4); se replica igual a propósito.
+ */
+export function pctOfMaxHR(bpm: number, maxHR: number | undefined): number | null {
+  if (!maxHR || maxHR <= 0) return null;
+  return Math.floor((bpm / maxHR) * 100);
+}
+
+export type ZoneAlertDirection = 'high' | 'low' | 'in';
+
+/**
+ * Compara el BPM actual contra la banda de la zona objetivo de una sesión
+ * guiada (p.ej. Zona 2 prescrita por el coach) — es lo que dispara el aviso
+ * háptico/por voz que hace utilizable entrenar por zonas sin mirar la
+ * pantalla todo el rato (§F3 del plan de réplica FITIV).
+ */
+export function getZoneAlertDirection(bpm: number, targetBand: { min: number; max: number }): ZoneAlertDirection {
+  if (bpm > targetBand.max) return 'high';
+  if (bpm < targetBand.min) return 'low';
+  return 'in';
 }
 
 // Friel por LTHR (referencia running, §5.6 del plan) — usado cuando el

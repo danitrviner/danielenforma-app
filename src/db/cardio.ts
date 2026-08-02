@@ -1,5 +1,5 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
-import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, CardioZones } from '../types';
+import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
 
 // ─── PERFIL CARDIO (zonas, doc id = athleteId) ─────────────────────────────
@@ -170,6 +170,22 @@ export async function createCardioSession(data: Omit<CardioSession, 'id'>): Prom
   }
 }
 
+// Edición post-entreno (§6 del análisis): título, notas, etiquetas, y los
+// campos manuales de una sesión "alta a mano". El `type` NUNCA se edita aquí
+// — como en FITIV, el tipo de sesión es fijo desde que se crea.
+export async function updateCardioSession(id: string, updates: Partial<Omit<CardioSession, 'id' | 'athleteId' | 'type'>>): Promise<void> {
+  const updated = getLocalSessions().map(s => s.id === id ? { ...s, ...updates } : s);
+  if (forceLocalOnly) { saveLocalSessions(updated); return; }
+  try {
+    await updateDoc(doc(db, 'cardioSessions', id), stripUndefined(updates) as Record<string, unknown>);
+    saveLocalSessions(updated);
+  } catch (err) {
+    console.warn('updateCardioSession Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalSessions(updated);
+  }
+}
+
 // ─── HR TESTS (batería de tests de campo) ──────────────────────────────────
 
 const HRTESTS_LOCAL_KEY = 'enforma_hr_tests_v1';
@@ -238,5 +254,51 @@ export async function updateHrTest(id: string, updates: Partial<HrTest>): Promis
     console.warn('updateHrTest Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     saveLocalHrTests(updated);
+  }
+}
+
+// ─── HRV MATINAL (F8 — lectura diaria, no requiere aprobación del coach) ───
+
+const HRV_LOCAL_KEY = 'enforma_hrv_readings_v1';
+
+function getLocalHrvReadings(): HrvReading[] {
+  try { return JSON.parse(localStorage.getItem(HRV_LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function saveLocalHrvReadings(list: HrvReading[]): void {
+  localStorage.setItem(HRV_LOCAL_KEY, JSON.stringify(list));
+}
+
+export async function getHrvReadingsForAthlete(athleteId: string): Promise<HrvReading[]> {
+  if (forceLocalOnly) return getLocalHrvReadings().filter(r => r.athleteId === athleteId);
+  try {
+    const snap = await getDocs(query(collection(db, 'hrvReadings'), where('athleteId', '==', athleteId)));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as HrvReading));
+    const merged = [...getLocalHrvReadings().filter(r => r.athleteId !== athleteId), ...list];
+    saveLocalHrvReadings(merged);
+    return list;
+  } catch (err) {
+    console.warn('getHrvReadingsForAthlete Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalHrvReadings().filter(r => r.athleteId === athleteId);
+  }
+}
+
+export async function createHrvReading(data: Omit<HrvReading, 'id'>): Promise<HrvReading> {
+  if (forceLocalOnly) {
+    const r: HrvReading = { ...data, id: `local_hrv_${Date.now()}` };
+    saveLocalHrvReadings([...getLocalHrvReadings(), r]);
+    return r;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'hrvReadings'), stripUndefined(data));
+    const r: HrvReading = { ...data, id: ref.id };
+    saveLocalHrvReadings([...getLocalHrvReadings(), r]);
+    return r;
+  } catch (err) {
+    console.warn('createHrvReading Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    const r: HrvReading = { ...data, id: `local_hrv_${Date.now()}` };
+    saveLocalHrvReadings([...getLocalHrvReadings(), r]);
+    return r;
   }
 }
