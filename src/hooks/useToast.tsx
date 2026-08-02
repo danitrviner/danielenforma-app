@@ -1,6 +1,10 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
-type ToastKind = 'error' | 'success';
+// 'info' se añadió para el CRM (2026-08-01): una escritura encolada sin
+// conexión no es un error (el dato está en IndexedDB y sube solo) ni un éxito
+// (todavía no está en el servidor). Pintarla de rojo hace que el coach
+// reintente y duplique; de verde, que se confíe.
+type ToastKind = 'error' | 'success' | 'info';
 
 interface Toast {
   id: number;
@@ -17,6 +21,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const KIND_STYLE: Record<ToastKind, { icon: string; classes: string }> = {
   error:   { icon: 'error',        classes: 'bg-red-600 text-white' },
   success: { icon: 'check_circle', classes: 'bg-emerald-600 text-white' },
+  info:    { icon: 'cloud_sync',   classes: 'bg-[#1e1e1b] text-[#f5f5f0] border border-white/12' },
 };
 
 let nextId = 0;

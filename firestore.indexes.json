@@ -52,7 +52,46 @@
         { "fieldPath": "status",    "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
-    }
+    },
+
+    { "collectionGroup": "crmServicios", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId",    "order": "ASCENDING" },
+        { "fieldPath": "fechaInicio", "order": "DESCENDING" }
+      ] },
+
+    { "collectionGroup": "crmPagos", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId",     "order": "ASCENDING" },
+        { "fieldPath": "fechaEmision", "order": "DESCENDING" }
+      ] },
+    { "collectionGroup": "crmPagos", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado",       "order": "ASCENDING" },
+        { "fieldPath": "fechaEmision", "order": "DESCENDING" }
+      ] },
+
+    { "collectionGroup": "crmSuscripciones", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado",       "order": "ASCENDING" },
+        { "fieldPath": "proximoCobro", "order": "ASCENDING" }
+      ] },
+    { "collectionGroup": "crmSuscripciones", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId",     "order": "ASCENDING" },
+        { "fieldPath": "proximoCobro", "order": "ASCENDING" }
+      ] },
+
+    { "collectionGroup": "crmReuniones", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "realizada", "order": "ASCENDING" },
+        { "fieldPath": "fecha",     "order": "ASCENDING" }
+      ] },
+    { "collectionGroup": "crmReuniones", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "fecha",    "order": "ASCENDING" }
+      ] }
   ],
   "fieldOverrides": []
 }

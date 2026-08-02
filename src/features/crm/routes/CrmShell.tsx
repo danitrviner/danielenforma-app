@@ -1,0 +1,62 @@
+import React from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import ClientesList from './ClientesList';
+import ClienteDetail from './ClienteDetail';
+import PagosScreen from './PagosScreen';
+import ReunionesScreen from './ReunionesScreen';
+import DashboardScreen from './DashboardScreen';
+
+// Contenedor del módulo CRM. Monta sus propias rutas anidadas para que App.tsx
+// solo necesite una línea (`/crm/*`) y el módulo siga siendo autocontenido.
+
+const SECCIONES = [
+  { path: '/crm', label: 'Resumen', icon: 'dashboard', exacta: true },
+  { path: '/crm/clientes', label: 'Clientes', icon: 'group' },
+  { path: '/crm/pagos', label: 'Pagos', icon: 'euro' },
+  { path: '/crm/reuniones', label: 'Reuniones', icon: 'event' },
+];
+
+export default function CrmShell({ coachEmail }: { coachEmail: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
+    <div className="space-y-3">
+      {SECCIONES.length > 1 && (
+        <nav className="flex items-center gap-1">
+          {SECCIONES.map(s => {
+            // "Resumen" (path exacto '/crm') necesita coincidencia exacta —
+            // si no, `startsWith('/crm')` también sería verdad en
+            // `/crm/clientes`, `/crm/pagos`... y las cuatro pestañas se
+            // resaltarían a la vez.
+            const activo = s.exacta ? location.pathname === s.path : location.pathname.startsWith(s.path);
+            return (
+              <button
+                key={s.path}
+                type="button"
+                onClick={() => navigate(s.path)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                  activo
+                    ? 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30'
+                    : 'bg-[#141413] text-[#a8a89e] border border-white/7 hover:border-white/12'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">{s.icon}</span>
+                {s.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      <Routes>
+        <Route index element={<DashboardScreen />} />
+        <Route path="clientes" element={<ClientesList />} />
+        <Route path="clientes/:id" element={<ClienteDetail coachEmail={coachEmail} />} />
+        <Route path="pagos" element={<PagosScreen coachEmail={coachEmail} />} />
+        <Route path="reuniones" element={<ReunionesScreen coachEmail={coachEmail} />} />
+        <Route path="*" element={<Navigate to="/crm" replace />} />
+      </Routes>
+    </div>
+  );
+}

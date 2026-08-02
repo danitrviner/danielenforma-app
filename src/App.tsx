@@ -38,6 +38,7 @@ const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
 const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
 const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
+const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
 
 function ScreenFallback() {
   return <ScreenSkeleton />;
@@ -45,7 +46,7 @@ function ScreenFallback() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'profile';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'profile';
 
 // Academia y Cardio no tienen pestaña propia — se accede desde tarjetas en
 // Inicio (HomeScreen) para no saturar la barra de navegación. Siguen siendo
@@ -60,6 +61,7 @@ const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: strin
 
 const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
   { id: 'clients',   label: 'Clientes',   icon: 'group'           },
+  { id: 'crm',       label: 'CRM',        icon: 'contacts'        },
   { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
   { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
   { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
@@ -71,7 +73,7 @@ const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string
 // (antes solo /clients/* estaba enrutado; el resto vivía en un estado
 // `activeTab` que un refresh o el botón atrás de móvil no podían recuperar).
 const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'roadmap', 'academy', 'cardio', 'profile'];
-const COACH_PATH_SEGMENTS = ['clients', 'reviews', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
+const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
 
 export default function App() {
   return (
@@ -378,6 +380,8 @@ function AppContent() {
                 <Route path="/clients/:athleteId" element={clientsScreen} />
                 <Route path="/clients/:athleteId/:hubTab" element={clientsScreen} />
                 <Route path="/clients/:athleteId/analisis/:subTab" element={clientsScreen} />
+                {/* El CRM monta sus propias rutas anidadas (ver CrmShell) */}
+                <Route path="/crm/*" element={<CrmShell coachEmail={profile.email} />} />
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
                 <Route path="/training" element={<TrainingCoachScreen coachId={profile.userId} />} />
                 <Route path="/nutrition" element={<NutritionCoachScreen coachId={profile.userId} />} />
