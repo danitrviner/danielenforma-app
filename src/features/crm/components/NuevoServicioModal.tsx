@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import { useCrearServicio } from '../hooks/useServicios';
-import { parseEurosACents, formatEuros } from '../lib/dinero';
+import { parseEurosACents, formatEuros, repartirEnCuotas } from '../lib/dinero';
 import { hoyISO, sumarMeses, mesesDePeriodicidad, formatDia } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
@@ -28,6 +28,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   const [fechaFin, setFechaFin] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [generarPago, setGenerarPago] = useState(true);
+  const [cuotas, setCuotas] = useState(1);
 
   const importeCents = parseEurosACents(importe);
   const importeInvalido = importe.trim().length > 0 && importeCents === null;
@@ -59,11 +60,14 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           fechaFin: fechaFin || undefined,
           descripcion: descripcion.trim() || undefined,
           generarPago,
+          cuotas,
         },
       });
       showToast(
         generarPago && (importeCents ?? 0) > 0
-          ? 'Servicio creado y cobro pendiente generado'
+          ? cuotas > 1
+            ? `Servicio creado y ${cuotas} cobros pendientes generados`
+            : 'Servicio creado y cobro pendiente generado'
           : 'Servicio creado',
         'success'
       );
@@ -152,11 +156,36 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <span className="font-sans text-[10px] text-[#f5f5f0] leading-relaxed">
             Generar el cobro pendiente al crear el servicio
             <span className="block text-[#a8a89e]">
-              Se escriben los dos documentos en la misma transacción: o entran ambos, o ninguno.
+              Se escriben todos los documentos en la misma transacción: o entran todos, o ninguno.
               {(importeCents ?? 0) <= 0 && ' Con importe 0 no se genera nada.'}
             </span>
           </span>
         </label>
+
+        {generarPago && (
+          <Campo
+            label="Fraccionar en"
+            hint={
+              cuotas > 1 && importeCents
+                ? `${formatEuros(repartirEnCuotas(importeCents, cuotas)[0])} × ${cuotas - 1} + ${formatEuros(repartirEnCuotas(importeCents, cuotas)[cuotas - 1])}, uno al mes`
+                : 'Pago único por el importe completo'
+            }
+          >
+            <div className="flex items-center gap-2">
+              <input
+                className={`${inputClass} w-20`}
+                type="number"
+                min={1}
+                max={12}
+                value={cuotas}
+                onChange={e => setCuotas(Math.min(12, Math.max(1, Number(e.target.value) || 1)))}
+              />
+              <span className="font-sans text-[10px] text-[#a8a89e]">
+                {cuotas === 1 ? 'cuota' : 'cuotas mensuales'}
+              </span>
+            </div>
+          </Campo>
+        )}
       </div>
     </Modal>
   );

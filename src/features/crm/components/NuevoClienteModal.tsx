@@ -6,10 +6,22 @@ import { useClientes } from '../hooks/useClientes';
 import { esDniValido, normalizarDni, PREFIJOS_FRECUENTES } from '../lib/identidad';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
+import type { EstadoCrm } from '../types';
 
 // Alta manual. Crea un `crmContacto` — una persona sin cuenta en la app. Los
 // clientes que YA usan En Forma no se crean aquí: llegan por invitación desde
 // la pantalla de Clientes existente y aparecen solos en esta lista.
+//
+// Cubre TODO el embudo de preventa, no solo altas ya-activas: un lead que
+// acaba de escribir por Instagram se da de alta aquí igual que un cliente que
+// ya ha pagado — el estado inicial es lo que los distingue.
+
+const ESTADOS_INICIALES: { id: EstadoCrm; label: string }[] = [
+  { id: 'lead',             label: 'Lead' },
+  { id: 'llamada_agendada', label: 'Llamada agendada' },
+  { id: 'activo',           label: 'Activo' },
+];
+const ORIGENES_SUGERIDOS = ['instagram', 'referido', 'ads', 'importación', 'web', 'otro'];
 
 export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }) {
   const navigate = useNavigate();
@@ -23,6 +35,8 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
   const [prefijo, setPrefijo] = useState('+34');
   const [numero, setNumero] = useState('');
   const [direccion, setDireccion] = useState('');
+  const [estadoCrm, setEstadoCrm] = useState<EstadoCrm>('activo');
+  const [origen, setOrigen] = useState('');
 
   const dniNorm = normalizarDni(dni);
   const dniMalFormado = dniNorm.length > 0 && !esDniValido(dniNorm);
@@ -38,8 +52,8 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
         dni,
         direccion,
         telefono: { prefijo, numero },
-        estadoCrm: 'activo',
-        origenCaptacion: 'alta manual',
+        estadoCrm,
+        origen: origen || 'alta manual',
       });
       showToast('Cliente creado', 'success');
       onCerrar();
@@ -71,12 +85,32 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
       }
     >
       <div className="space-y-3">
-        <Campo label="Nombre *">
-          <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre y apellidos" />
-        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Nombre *">
+            <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre y apellidos" />
+          </Campo>
+          <Campo label="Estado inicial">
+            <select className={inputClass} value={estadoCrm} onChange={e => setEstadoCrm(e.target.value as EstadoCrm)}>
+              {ESTADOS_INICIALES.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
+            </select>
+          </Campo>
+        </div>
 
         <Campo label="Email">
           <input className={inputClass} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="cliente@email.com" />
+        </Campo>
+
+        <Campo label="Origen" hint="Canal de captación.">
+          <input
+            className={inputClass}
+            list="origenes-sugeridos-nuevo-cliente"
+            value={origen}
+            onChange={e => setOrigen(e.target.value)}
+            placeholder="instagram, referido, ads..."
+          />
+          <datalist id="origenes-sugeridos-nuevo-cliente">
+            {ORIGENES_SUGERIDOS.map(o => <option key={o} value={o} />)}
+          </datalist>
         </Campo>
 
         <Campo

@@ -102,11 +102,41 @@ export interface UserProfile {
   direccion?: string;
   telefono?: { prefijo: string; numero: string }; // prefijo con '+' («+34»)
   estadoCrm?: EstadoCrm;                          // ausente ⇒ se trata como 'activo'
+
+  // ── Churn + atribución (2026-08-02) ────────────────────────────────────────
+  // Sin fechaBaja/motivoBaja, marcar a alguien de baja pierde para siempre
+  // CUÁNDO y POR QUÉ — y el churn (KPI real del negocio, objetivo <10%) queda
+  // incalculable hacia atrás. Se capturan juntos, en el mismo momento en que
+  // se cambia estadoCrm a 'baja' — nunca por separado, para que no pueda haber
+  // una baja sin motivo registrado.
+  fechaBaja?: string;               // ISO 'YYYY-MM-DD', el día en que estadoCrm pasó a 'baja'
+  motivoBaja?: MotivoBaja;
+  motivoBajaDetalle?: string;       // texto libre — obligatorio en la UI si motivoBaja === 'otro'
+  // Canal de captación. Ya existía en CrmContacto (gente sin cuenta); aquí se
+  // espeja para que TODOS los clientes tengan atribución, no solo los
+  // importados — sin esto, el CAC por canal es incalculable para cualquiera
+  // que ya tenga cuenta en la app.
+  origen?: string;                  // 'instagram' | 'referido' | 'ads' | ... (mismo campo libre que CrmContacto.origen)
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un
 // permiso de la app ('client' | 'coach'), no una situación de negocio.
-export type EstadoCrm = 'activo' | 'pausado' | 'baja';
+//
+// 'lead' y 'llamada_agendada' son las dos etapas previas a ser cliente —
+// preventa. En la práctica solo se usan en `CrmContacto` (gente sin cuenta
+// todavía): un `UserProfile` ya implica que la persona se registró en la app,
+// así que nunca debería tener estos dos valores, pero el tipo es el mismo en
+// ambos sitios para no duplicarlo — la UI es quien restringe qué opciones
+// ofrece según de dónde viene el cliente.
+export type EstadoCrm = 'lead' | 'llamada_agendada' | 'activo' | 'pausado' | 'baja';
+
+export type MotivoBaja =
+  | 'precio'
+  | 'resultados'
+  | 'tiempo_disponibilidad'
+  | 'insatisfaccion'
+  | 'lesion_salud'
+  | 'otro';
 
 export interface WeightCheckIn {
   id: string;
@@ -1126,6 +1156,12 @@ export interface CardioSession {
   effortMinutes?: number;   // PE × duración en minutos (§5.4)
   hrr1Min?: number;         // Heart Rate Recovery a 1 min (§5.6) — requiere 2 min de vuelta a la calma
   hrr2Min?: number;         // Heart Rate Recovery a 2 min
+
+  // ── Anotación e historial — F5 del plan de réplica FITIV (§6) ──────────────
+  title?: string;         // editable por el atleta; el tipo (`type`) no se puede cambiar, como en FITIV
+  notes?: string;
+  tags?: string[];
+  manual?: boolean;       // añadida a mano, sin banda real — no otorga XP ni Puntos (regla de FITIV, §6)
 }
 
 export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';

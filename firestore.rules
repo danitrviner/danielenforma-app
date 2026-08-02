@@ -51,19 +51,24 @@ service cloud.firestore {
       // atleta. Sin esto un cliente dado de baja se reactivaba solo desde la
       // consola del navegador. `dni`, `direccion` y `telefono` SÍ los puede
       // editar: son datos suyos.
+      // fechaBaja/motivoBaja/motivoBajaDetalle/origen se añaden 2026-08-02 con
+      // el mismo razonamiento: son hechos de negocio (por qué se fue, por qué
+      // canal llegó) que el atleta no debe poder reescribir.
       allow create: if isCoach()
                     || (isOwnerUid(userId)
                         && request.resource.data.role == 'client'
                         && request.auth.token.email_verified == true
                         && !request.resource.data.keys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm'])
+                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
+                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm']));
+                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
+                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen']));
       allow delete: if isCoach();
     }
 

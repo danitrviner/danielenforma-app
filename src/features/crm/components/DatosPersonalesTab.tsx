@@ -2,15 +2,38 @@ import React, { useEffect, useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import { useGuardarCliente } from '../hooks/useClienteMutations';
 import { esDniValido, normalizarDni, PREFIJOS_FRECUENTES } from '../lib/identidad';
+import { hoyISO } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import { Campo, inputClass, BotonPrimario } from './Modal';
-import type { Cliente, EstadoCrm } from '../types';
+import type { Cliente, EstadoCrm, MotivoBaja } from '../types';
 
-const ESTADOS: { id: EstadoCrm; label: string }[] = [
+// Estados de preventa ('lead', 'llamada_agendada') solo tienen sentido para
+// contactos sin cuenta — un `fuente === 'perfil'` ya se registró en la app,
+// así que retroceder a "lead" no representa nada real. Se filtran aquí, no en
+// el tipo (EstadoCrm es el mismo en los dos sitios a propósito, ver types.ts).
+const ESTADOS_CONTACTO: { id: EstadoCrm; label: string }[] = [
+  { id: 'lead',             label: 'Lead' },
+  { id: 'llamada_agendada', label: 'Llamada agendada' },
+  { id: 'activo',           label: 'Activo' },
+  { id: 'pausado',          label: 'Pausado' },
+  { id: 'baja',             label: 'Baja' },
+];
+const ESTADOS_PERFIL: { id: EstadoCrm; label: string }[] = [
   { id: 'activo',  label: 'Activo' },
   { id: 'pausado', label: 'Pausado' },
   { id: 'baja',    label: 'Baja' },
 ];
+
+const MOTIVOS_BAJA: { id: MotivoBaja; label: string }[] = [
+  { id: 'precio',                label: 'Precio' },
+  { id: 'resultados',            label: 'No veía resultados' },
+  { id: 'tiempo_disponibilidad', label: 'Falta de tiempo / disponibilidad' },
+  { id: 'insatisfaccion',        label: 'Insatisfacción con el servicio' },
+  { id: 'lesion_salud',          label: 'Lesión o motivo de salud' },
+  { id: 'otro',                  label: 'Otro' },
+];
+
+const ORIGENES_SUGERIDOS = ['instagram', 'referido', 'ads', 'importación', 'web', 'otro'];
 
 export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
   const { showToast } = useToast();
@@ -22,6 +45,10 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
   const [numero, setNumero] = useState(cliente.telefono?.numero ?? '');
   const [direccion, setDireccion] = useState(cliente.direccion ?? '');
   const [estadoCrm, setEstadoCrm] = useState<EstadoCrm>(cliente.estadoCrm);
+  const [origen, setOrigen] = useState(cliente.origen ?? '');
+  const [fechaBaja, setFechaBaja] = useState(cliente.fechaBaja ?? '');
+  const [motivoBaja, setMotivoBaja] = useState<MotivoBaja | ''>(cliente.motivoBaja ?? '');
+  const [motivoBajaDetalle, setMotivoBajaDetalle] = useState(cliente.motivoBajaDetalle ?? '');
 
   // Si la query se refresca en segundo plano (otra pestaña, invalidación), el
   // formulario tiene que seguir al dato — pero solo cuando cambia de cliente,
@@ -33,10 +60,26 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
     setNumero(cliente.telefono?.numero ?? '');
     setDireccion(cliente.direccion ?? '');
     setEstadoCrm(cliente.estadoCrm);
+    setOrigen(cliente.origen ?? '');
+    setFechaBaja(cliente.fechaBaja ?? '');
+    setMotivoBaja(cliente.motivoBaja ?? '');
+    setMotivoBajaDetalle(cliente.motivoBajaDetalle ?? '');
   }, [cliente.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dniNorm = normalizarDni(dni);
   const dniMalFormado = dniNorm.length > 0 && !esDniValido(dniNorm);
+
+  // Pasar A 'baja' (no ya estarlo) exige motivo — sin esto el churn vuelve a
+  // ser incalculable, que es exactamente lo que se rompió antes. La fecha NO
+  // bloquea: el campo vacío ya cae a hoyISO() en onGuardar, así que exigirla
+  // aquí bloquearía "Guardar" aunque el input ya muestre "hoy" por defecto
+  // (el value visual del <input> no es lo mismo que el estado de React hasta
+  // que el usuario lo toca) — encontrado probando el flujo en vivo.
+  const pasandoABaja = estadoCrm === 'baja' && cliente.estadoCrm !== 'baja';
+  const yaEraBaja = estadoCrm === 'baja' && cliente.estadoCrm === 'baja';
+  const mostrarCamposBaja = estadoCrm === 'baja';
+  const faltaMotivoDetalle = motivoBaja === 'otro' && !motivoBajaDetalle.trim();
+  const bajaIncompleta = estadoCrm === 'baja' && (!motivoBaja || faltaMotivoDetalle) && !yaEraBaja;
 
   const sucio =
     nombre !== cliente.nombre ||
@@ -44,13 +87,25 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
     numero !== (cliente.telefono?.numero ?? '') ||
     prefijo !== (cliente.telefono?.prefijo ?? '+34') ||
     direccion !== (cliente.direccion ?? '') ||
-    estadoCrm !== cliente.estadoCrm;
+    estadoCrm !== cliente.estadoCrm ||
+    origen !== (cliente.origen ?? '') ||
+    (pasandoABaja && (fechaBaja !== (cliente.fechaBaja ?? '') || motivoBaja !== (cliente.motivoBaja ?? '') || motivoBajaDetalle !== (cliente.motivoBajaDetalle ?? '')));
 
   const onGuardar = async () => {
     try {
       await guardar.mutateAsync({
         cliente,
-        datos: { nombre, dni, direccion, telefono: { prefijo, numero }, estadoCrm },
+        datos: {
+          nombre, dni, direccion, telefono: { prefijo, numero }, estadoCrm,
+          origen: origen || undefined,
+          // Solo se envían al pasar a baja de verdad — revertir una baja no
+          // borra el motivo anterior (queda como histórico de la última vez).
+          ...(pasandoABaja ? {
+            fechaBaja: fechaBaja || hoyISO(),
+            motivoBaja: motivoBaja || undefined,
+            motivoBajaDetalle: motivoBajaDetalle || undefined,
+          } : {}),
+        },
       });
       showToast('Datos guardados', 'success');
     } catch (err) {
@@ -61,6 +116,8 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       showToast(err instanceof Error ? err.message : 'No se han podido guardar los datos', 'error');
     }
   };
+
+  const estados = cliente.fuente === 'perfil' ? ESTADOS_PERFIL : ESTADOS_CONTACTO;
 
   return (
     <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 space-y-3">
@@ -75,7 +132,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
             value={estadoCrm}
             onChange={e => setEstadoCrm(e.target.value as EstadoCrm)}
           >
-            {ESTADOS.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
+            {estados.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
           </select>
         </Campo>
 
@@ -105,20 +162,66 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
             <input className={inputClass} value={direccion} onChange={e => setDireccion(e.target.value)} />
           </Campo>
         </div>
+
+        <div className="sm:col-span-2">
+          <Campo label="Origen" hint="Canal de captación — de dónde vino este cliente.">
+            <input
+              className={inputClass}
+              list="origenes-sugeridos"
+              value={origen}
+              onChange={e => setOrigen(e.target.value)}
+              placeholder="instagram, referido, ads..."
+            />
+            <datalist id="origenes-sugeridos">
+              {ORIGENES_SUGERIDOS.map(o => <option key={o} value={o} />)}
+            </datalist>
+          </Campo>
+        </div>
       </div>
+
+      {mostrarCamposBaja && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[#fca5a5]/8 border border-[#fca5a5]/20">
+          <div className="sm:col-span-2 flex items-start gap-1.5">
+            <span className="material-symbols-outlined text-[13px] text-[#fca5a5] shrink-0 mt-0.5">warning</span>
+            <p className="font-sans text-[10px] text-[#fca5a5] leading-relaxed">
+              Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
+              queda incalculable para siempre.
+            </p>
+          </div>
+          <Campo label="Fecha de baja">
+            <input className={inputClass} type="date" value={fechaBaja || hoyISO()} onChange={e => setFechaBaja(e.target.value)} />
+          </Campo>
+          <Campo label="Motivo">
+            <select className={inputClass} value={motivoBaja} onChange={e => setMotivoBaja(e.target.value as MotivoBaja)}>
+              <option value="">Selecciona…</option>
+              {MOTIVOS_BAJA.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </select>
+          </Campo>
+          {(motivoBaja === 'otro' || yaEraBaja) && (
+            <div className="sm:col-span-2">
+              <Campo
+                label="Detalle"
+                error={faltaMotivoDetalle ? 'Obligatorio cuando el motivo es «Otro».' : undefined}
+              >
+                <input className={inputClass} value={motivoBajaDetalle} onChange={e => setMotivoBajaDetalle(e.target.value)} />
+              </Campo>
+            </div>
+          )}
+        </div>
+      )}
 
       {cliente.email && (
         <p className="font-mono text-[9px] text-[#555550]">
           Email: {cliente.email}
-          {cliente.origen === 'perfil' && ' · lo gestiona el propio cliente desde su cuenta'}
+          {cliente.fuente === 'perfil' && ' · lo gestiona el propio cliente desde su cuenta'}
         </p>
       )}
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        {sucio && (
+        {sucio && !bajaIncompleta && (
           <span className="font-mono text-[9px] uppercase tracking-widest text-[#fdba74]">Sin guardar</span>
         )}
-        <BotonPrimario onClick={onGuardar} disabled={!sucio || guardar.isPending}>
+        <BotonPrimario onClick={onGuardar} disabled={!sucio || bajaIncompleta || guardar.isPending}>
           {guardar.isPending ? 'Guardando…' : 'Guardar cambios'}
         </BotonPrimario>
       </div>

@@ -11,9 +11,9 @@
 // pagos de plan) ya guarda strings ISO, y mezclar los dos formatos obliga a
 // convertir en cada lectura. Ordenar strings ISO en Firestore funciona igual.
 
-import type { EstadoCrm } from '../../types';
+import type { EstadoCrm, MotivoBaja } from '../../types';
 
-export type { EstadoCrm };
+export type { EstadoCrm, MotivoBaja };
 
 export type Periodicidad = 'mensual' | 'trimestral' | 'semestral' | 'anual' | 'unico';
 
@@ -46,6 +46,11 @@ export interface CrmContacto {
   userId?: string;          // UID de user_profiles cuando el contacto ya se registró
   origen?: string;          // 'instagram' | 'referido' | 'ads' | 'importacion' | ...
   notas?: string;
+  // Mismo par que UserProfile — ver la nota ahí. Se capturan juntos al marcar
+  // estadoCrm = 'baja', nunca por separado.
+  fechaBaja?: string;
+  motivoBaja?: MotivoBaja;
+  motivoBajaDetalle?: string;
   createdAt: string;        // ISO
   updatedAt: string;        // ISO
 }
@@ -57,7 +62,7 @@ export interface CrmContacto {
 // «Abrir en ClientHub», que solo tiene sentido si `userId` existe.
 export interface Cliente {
   id: string;                        // userId si tiene cuenta, id del contacto si no
-  origen: 'perfil' | 'contacto';     // de qué colección salió (para saber dónde escribir)
+  fuente: 'perfil' | 'contacto';     // de qué colección salió (para saber dónde escribir)
   userId?: string;                   // presente ⇒ es usuario de la app
   contactoId?: string;               // presente ⇒ tiene doc en crmContactos
   nombre: string;
@@ -66,6 +71,10 @@ export interface Cliente {
   direccion?: string;
   telefono?: { prefijo: string; numero: string };
   estadoCrm: EstadoCrm;
+  origen?: string;                   // canal de captación: 'instagram' | 'referido' | 'ads' | ...
+  fechaBaja?: string;
+  motivoBaja?: MotivoBaja;
+  motivoBajaDetalle?: string;
   avatarUrl?: string;
   createdAt?: string;
 }
@@ -103,6 +112,12 @@ export interface CrmPago {
   estado: EstadoPago;
   fechaEmision: string;       // ISO 'YYYY-MM-DD'
   fechaCobro?: string;        // ISO 'YYYY-MM-DD'; presente solo si estado === 'pagado'
+  // Presentes solo si el pago viene de fraccionar un servicio en N cuotas
+  // (p.ej. el 3× 329€ de la oferta de 12 semanas) — un mismo `servicioId`
+  // puede tener varios `CrmPago`, cada uno con su cuota/total y su propia
+  // fechaEmision escalonada un mes.
+  numeroCuota?: number;       // 1-indexado
+  totalCuotas?: number;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -123,6 +138,8 @@ export interface CrmSuscripcion {
   createdBy: string;
 }
 
+export type ResultadoGraduacion = 'continua' | 'no_continua';
+
 export interface CrmReunion {
   id: string;
   clientId: string;
@@ -130,6 +147,13 @@ export interface CrmReunion {
   tipo: TipoReunion;
   fecha: string;              // ISO 'YYYY-MM-DD'
   realizada: boolean;
+  // Solo tiene sentido cuando tipo === 'graduacion'. Es la medición directa de
+  // "conversión a continuidad" — la palanca de negocio más grande según
+  // objetivo-100k-desglose.md (40% de continuidad baja las ventas nuevas
+  // necesarias de ~10/mes a ~6-7/mes). Se pregunta al marcar la graduación
+  // como realizada; queda undefined si aún no se ha realizado o si es de tipo
+  // 'optimizacion' (donde no aplica).
+  resultadoGraduacion?: ResultadoGraduacion;
   createdAt: string;
   updatedAt: string;
   createdBy: string;

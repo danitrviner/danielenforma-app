@@ -27,7 +27,8 @@ import type {
 } from '../features/crm/types';
 import type { UserProfile } from '../types';
 import { stripUndefined, authReady } from './core';
-import { avanzarPeriodo } from '../features/crm/lib/fechas';
+import { avanzarPeriodo, sumarMeses } from '../features/crm/lib/fechas';
+import { repartirEnCuotas } from '../features/crm/lib/dinero';
 
 const COL_CONTACTOS = 'crmContactos';
 const COL_SERVICIOS = 'crmServicios';
@@ -158,7 +159,10 @@ export async function importarCrmContactosBatch(
  */
 export async function updateClienteCrmFields(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'displayName' | 'dni' | 'direccion' | 'telefono' | 'estadoCrm'>>
+  updates: Partial<Pick<UserProfile,
+    'displayName' | 'dni' | 'direccion' | 'telefono' | 'estadoCrm' |
+    'fechaBaja' | 'motivoBaja' | 'motivoBajaDetalle' | 'origen'
+  >>
 ): Promise<void> {
   await authReady;
   const payload = stripUndefined(updates) as Record<string, unknown>;
@@ -181,49 +185,61 @@ export async function getCrmServiciosByCliente(clientId: string): Promise<CrmSer
 }
 
 /**
- * Crea un servicio y, si `importeCents > 0`, su pago pendiente asociado — los
- * DOS documentos o NINGUNO. Sin la transacción, un fallo entre las dos
- * escrituras deja un servicio contratado sin cobro que reclamar, y eso no se
- * nota hasta que cuadras las cuentas a fin de mes.
+ * Crea un servicio y, si `importeCents > 0`, su(s) pago(s) pendiente(s)
+ * asociado(s) — el servicio y TODAS sus cuotas, o ninguno. Sin la
+ * transacción, un fallo a medias deja un servicio contratado con cobros
+ * incompletos, y eso no se nota hasta que cuadras las cuentas a fin de mes.
+ *
+ * `cuotas` fracciona el importe en pagos mensuales sucesivos (el 3× 329 €/mes
+ * de la oferta de 12 semanas) — 1 o ausente es el caso de siempre, un pago
+ * único por el importe completo.
  */
 export async function createCrmServicioConPago(
   data: Omit<CrmServicio, 'id' | 'createdAt' | 'updatedAt'>,
-  opciones: { generarPago: boolean }
-): Promise<{ servicio: CrmServicio; pago: CrmPago | null }> {
+  opciones: { generarPago: boolean; cuotas?: number }
+): Promise<{ servicio: CrmServicio; pagos: CrmPago[] }> {
   await authReady;
   const ts = ahora();
   const servicioRef = doc(collection(db, COL_SERVICIOS));
-  const pagoRef = doc(collection(db, COL_PAGOS));
 
   const servicio: CrmServicio = { ...data, id: servicioRef.id, createdAt: ts, updatedAt: ts };
   const debeGenerarPago = opciones.generarPago && data.importeCents > 0;
+  const numCuotas = Math.max(1, opciones.cuotas ?? 1);
 
-  const pago: CrmPago | null = debeGenerarPago
-    ? {
+  const pagos: CrmPago[] = [];
+  if (debeGenerarPago) {
+    const importes = repartirEnCuotas(data.importeCents, numCuotas);
+    let fechaCuota = data.fechaContratacion;
+    for (let i = 0; i < numCuotas; i++) {
+      const pagoRef = doc(collection(db, COL_PAGOS));
+      pagos.push({
         id: pagoRef.id,
         clientId: data.clientId,
         clientNombre: data.clientNombre,
         servicioId: servicioRef.id,
-        concepto: data.nombre,
-        importeCents: data.importeCents,
+        concepto: numCuotas > 1 ? `${data.nombre} (${i + 1}/${numCuotas})` : data.nombre,
+        importeCents: importes[i],
         estado: 'pendiente',
-        fechaEmision: data.fechaContratacion,
+        fechaEmision: fechaCuota,
+        ...(numCuotas > 1 ? { numeroCuota: i + 1, totalCuotas: numCuotas } : {}),
         createdAt: ts,
         updatedAt: ts,
         createdBy: data.createdBy,
-      }
-    : null;
+      });
+      fechaCuota = sumarMeses(fechaCuota, 1);
+    }
+  }
 
   await conTimeout('Crear servicio', runTransaction(db, async tx => {
     const { id: _sid, ...servicioDoc } = servicio;
     tx.set(servicioRef, stripUndefined(servicioDoc));
-    if (pago) {
-      const { id: _pid, ...pagoDoc } = pago;
-      tx.set(pagoRef, stripUndefined(pagoDoc));
+    for (const pago of pagos) {
+      const { id: pagoId, ...pagoDoc } = pago;
+      tx.set(doc(db, COL_PAGOS, pagoId), stripUndefined(pagoDoc));
     }
   }));
 
-  return { servicio, pago };
+  return { servicio, pagos };
 }
 
 export async function updateCrmServicio(id: string, updates: Partial<CrmServicio>): Promise<void> {

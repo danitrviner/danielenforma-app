@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEurosACents, centsAInputEuros, formatEuros, sumaCents } from './dinero';
+import { parseEurosACents, centsAInputEuros, formatEuros, sumaCents, repartirEnCuotas } from './dinero';
 
 describe('parseEurosACents', () => {
   it('acepta coma y punto decimal', () => {
@@ -46,5 +46,31 @@ describe('sumaCents', () => {
   it('suma sin error de precisión', () => {
     const pagos = Array.from({ length: 30 }, () => ({ importeCents: 4990 }));
     expect(sumaCents(pagos)).toBe(149700);
+  });
+});
+
+describe('repartirEnCuotas', () => {
+  it('reparte exacto cuando la división es entera', () => {
+    expect(repartirEnCuotas(98700, 3)).toEqual([32900, 32900, 32900]);
+  });
+
+  it('nunca pierde ni gana un céntimo — la última cuota absorbe el resto', () => {
+    // 100 entre 3 = 33,33... — sin esto se perdería 1 céntimo o se inventaría uno.
+    const cuotas = repartirEnCuotas(100, 3);
+    expect(cuotas).toEqual([33, 33, 34]);
+    expect(cuotas.reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
+  it('un caso real: 987€ en 3 cuotas', () => {
+    const cuotas = repartirEnCuotas(98700, 3);
+    expect(cuotas.reduce((a, b) => a + b, 0)).toBe(98700);
+  });
+
+  it('1 cuota devuelve el importe completo', () => {
+    expect(repartirEnCuotas(4990, 1)).toEqual([4990]);
+  });
+
+  it('cuotas <= 0 se trata como 1', () => {
+    expect(repartirEnCuotas(4990, 0)).toEqual([4990]);
   });
 });

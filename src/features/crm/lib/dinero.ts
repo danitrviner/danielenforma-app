@@ -62,3 +62,16 @@ export function centsAInputEuros(cents: number): string {
 export function sumaCents(items: { importeCents: number }[]): number {
   return items.reduce((acc, i) => acc + (i.importeCents ?? 0), 0);
 }
+
+/**
+ * Reparte un importe en N cuotas enteras en céntimos, sin perder ni un
+ * céntimo por redondeo: todas iguales salvo la última, que absorbe el resto
+ * de la división. `Math.round(98700 / 3)` tres veces sumaría de más o de
+ * menos según el importe — esto no, la suma siempre cuadra exacta.
+ */
+export function repartirEnCuotas(importeCents: number, cuotas: number): number[] {
+  const n = Math.max(1, Math.floor(cuotas));
+  const base = Math.floor(importeCents / n);
+  const resto = importeCents - base * (n - 1);
+  return Array.from({ length: n }, (_, i) => (i === n - 1 ? resto : base));
+}

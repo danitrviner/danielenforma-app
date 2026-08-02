@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateClienteCrmFields, updateCrmContacto, createCrmContacto } from '../../../dbService';
 import { normalizarDni, normalizarPrefijo, normalizarNumero } from '../lib/identidad';
 import { crmKeys } from '../lib/crmQueries';
-import type { Cliente, CrmContacto, EstadoCrm } from '../types';
+import type { Cliente, CrmContacto, EstadoCrm, MotivoBaja } from '../types';
 
 export interface DatosPersonales {
   nombre?: string;
@@ -22,6 +22,10 @@ export interface DatosPersonales {
   direccion?: string;
   telefono?: { prefijo: string; numero: string };
   estadoCrm?: EstadoCrm;
+  origen?: string;
+  fechaBaja?: string;
+  motivoBaja?: MotivoBaja;
+  motivoBajaDetalle?: string;
 }
 
 // Normaliza antes de escribir para que el mismo DNI escrito de tres formas
@@ -39,6 +43,8 @@ function normalizar(d: DatosPersonales): DatosPersonales {
       ? { prefijo: normalizarPrefijo(d.telefono.prefijo) || '+34', numero }
       : undefined;
   }
+  if (d.origen !== undefined) out.origen = d.origen.trim() || undefined;
+  if (d.motivoBajaDetalle !== undefined) out.motivoBajaDetalle = d.motivoBajaDetalle.trim() || undefined;
   return out;
 }
 
@@ -49,13 +55,17 @@ export function useGuardarCliente() {
     mutationFn: async ({ cliente, datos }: { cliente: Cliente; datos: DatosPersonales }) => {
       const d = normalizar(datos);
 
-      if (cliente.origen === 'perfil' && cliente.userId) {
+      if (cliente.fuente === 'perfil' && cliente.userId) {
         await updateClienteCrmFields(cliente.userId, {
           ...(d.nombre !== undefined ? { displayName: d.nombre } : {}),
           ...(d.dni !== undefined ? { dni: d.dni } : {}),
           ...(d.direccion !== undefined ? { direccion: d.direccion } : {}),
           ...(d.telefono !== undefined ? { telefono: d.telefono } : {}),
           ...(d.estadoCrm !== undefined ? { estadoCrm: d.estadoCrm } : {}),
+          ...(d.origen !== undefined ? { origen: d.origen } : {}),
+          ...(d.fechaBaja !== undefined ? { fechaBaja: d.fechaBaja } : {}),
+          ...(d.motivoBaja !== undefined ? { motivoBaja: d.motivoBaja } : {}),
+          ...(d.motivoBajaDetalle !== undefined ? { motivoBajaDetalle: d.motivoBajaDetalle } : {}),
         });
         return;
       }
@@ -68,6 +78,10 @@ export function useGuardarCliente() {
           ...(d.direccion !== undefined ? { direccion: d.direccion } : {}),
           ...(d.telefono !== undefined ? { telefono: d.telefono } : {}),
           ...(d.estadoCrm !== undefined ? { estadoCrm: d.estadoCrm } : {}),
+          ...(d.origen !== undefined ? { origen: d.origen } : {}),
+          ...(d.fechaBaja !== undefined ? { fechaBaja: d.fechaBaja } : {}),
+          ...(d.motivoBaja !== undefined ? { motivoBaja: d.motivoBaja } : {}),
+          ...(d.motivoBajaDetalle !== undefined ? { motivoBajaDetalle: d.motivoBajaDetalle } : {}),
         });
         return;
       }
@@ -85,7 +99,7 @@ export function useCrearContacto() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (datos: DatosPersonales & { origenCaptacion?: string; notas?: string }) => {
+    mutationFn: async (datos: DatosPersonales & { notas?: string }) => {
       const d = normalizar(datos);
       if (!d.nombre) throw new Error('El nombre es obligatorio.');
 
@@ -96,7 +110,7 @@ export function useCrearContacto() {
         direccion: d.direccion,
         telefono: d.telefono,
         estadoCrm: d.estadoCrm ?? 'activo',
-        origen: datos.origenCaptacion,
+        origen: d.origen ?? 'alta manual',
         notas: datos.notas,
       };
       return createCrmContacto(payload);

@@ -15,8 +15,10 @@ export interface NuevoServicio {
   fechaInicio: string;
   fechaFin?: string;
   descripcion?: string;
-  /** Genera el pago pendiente en la misma transacción. Por defecto sí. */
+  /** Genera el/los pago(s) pendiente(s) en la misma transacción. Por defecto sí. */
   generarPago: boolean;
+  /** 1 (o ausente) = un pago único. >1 = fraccionado en N cuotas mensuales. */
+  cuotas?: number;
 }
 
 export function useServicios() {
@@ -66,7 +68,7 @@ export function useCrearServicio() {
     mutationFn: async ({ cliente, datos, coachEmail }: {
       cliente: Cliente; datos: NuevoServicio; coachEmail: string;
     }) => {
-      const { generarPago, ...resto } = datos;
+      const { generarPago, cuotas, ...resto } = datos;
       return createCrmServicioConPago(
         {
           ...resto,
@@ -74,7 +76,7 @@ export function useCrearServicio() {
           clientNombre: cliente.nombre,
           createdBy: coachEmail,
         },
-        { generarPago }
+        { generarPago, cuotas }
       );
     },
     onSuccess: (_res, vars) => {

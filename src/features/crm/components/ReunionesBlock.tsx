@@ -7,6 +7,7 @@ import { enlaceWhatsApp } from '../lib/identidad';
 import DataTable, { Columna } from './DataTable';
 import EmptyState from './EmptyState';
 import ReunionModal from './ReunionModal';
+import ResultadoGraduacionModal from './ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
 
 interface Props {
@@ -33,6 +34,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
   const { clientes } = useClientes();
   const actualizar = useActualizarReunion();
   const [editando, setEditando] = useState<CrmReunion | null>(null);
+  const [preguntandoGraduacion, setPreguntandoGraduacion] = useState<CrmReunion | null>(null);
 
   const telefonoPorClientId = useMemo(() => {
     const m = new Map<string, { prefijo: string; numero: string } | undefined>();
@@ -41,6 +43,13 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
   }, [clientes]);
 
   const marcarRealizada = async (r: CrmReunion) => {
+    // Marcar una GRADUACIÓN como realizada por primera vez pregunta antes si
+    // el cliente pasa a continuidad — ver ResultadoGraduacionModal. Revertir
+    // (quitar "realizada") y las de optimización siguen siendo un toggle directo.
+    if (!r.realizada && r.tipo === 'graduacion') {
+      setPreguntandoGraduacion(r);
+      return;
+    }
     try {
       await actualizar.mutateAsync({ id: r.id, clientId: r.clientId, updates: { realizada: !r.realizada } });
       showToast(r.realizada ? 'Reunión marcada como pendiente' : 'Reunión marcada como realizada', 'success');
@@ -143,6 +152,9 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
 
       {editando && (
         <ReunionModal reunion={editando} coachEmail={coachEmail} onCerrar={() => setEditando(null)} />
+      )}
+      {preguntandoGraduacion && (
+        <ResultadoGraduacionModal reunion={preguntandoGraduacion} onCerrar={() => setPreguntandoGraduacion(null)} />
       )}
     </>
   );

@@ -38,6 +38,15 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
 
     const timeline = [...servicios].sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio));
 
+    // Conversión a continuidad: solo cuenta entre las graduaciones que YA
+    // tienen resultado registrado. Sin graduaciones resueltas, no se puede
+    // calcular — mejor 'null' que un falso 0%.
+    const graduacionesConResultado = reuniones.filter(r => r.tipo === 'graduacion' && r.resultadoGraduacion);
+    const graduacionesQueContinuan = graduacionesConResultado.filter(r => r.resultadoGraduacion === 'continua');
+    const conversionContinuidad = graduacionesConResultado.length > 0
+      ? Math.round((graduacionesQueContinuan.length / graduacionesConResultado.length) * 100)
+      : null;
+
     return {
       numProgramas: servicios.length,
       totalPagado: sumaCents(pagosPagados),
@@ -47,6 +56,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       ultimoFin,
       pendienteCobro: sumaCents(pagosPendientes),
       timeline,
+      conversionContinuidad,
     };
   }, [servicios, pagos, reuniones]);
 
@@ -71,7 +81,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="#fdba74" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Primer programa</p>
           <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">
@@ -84,6 +94,12 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
             {resumen.ultimoFin ? formatDia(resumen.ultimoFin) : '—'}
           </p>
         </div>
+        {resumen.conversionContinuidad !== null && (
+          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Conversión continuidad</p>
+            <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">{resumen.conversionContinuidad}%</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

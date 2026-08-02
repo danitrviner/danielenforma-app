@@ -25,10 +25,12 @@ const ImportarClientes = lazy(() => import('../components/ImportarClientes'));
 // /clients/:athleteId/:hubTab en App.tsx.
 
 const FILTROS: { id: EstadoCrm | 'todos'; label: string }[] = [
-  { id: 'todos',   label: 'Todos' },
-  { id: 'activo',  label: 'Activos' },
-  { id: 'pausado', label: 'Pausados' },
-  { id: 'baja',    label: 'Bajas' },
+  { id: 'todos',            label: 'Todos' },
+  { id: 'lead',             label: 'Leads' },
+  { id: 'llamada_agendada', label: 'Llamadas' },
+  { id: 'activo',           label: 'Activos' },
+  { id: 'pausado',          label: 'Pausados' },
+  { id: 'baja',             label: 'Bajas' },
 ];
 
 export default function ClientesList() {
@@ -140,7 +142,7 @@ export default function ClientesList() {
         <div>
           <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Clientes</h1>
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550] tabular-nums">
-            {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
+            {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
           </p>
         </div>
         <div className="flex items-center gap-2">

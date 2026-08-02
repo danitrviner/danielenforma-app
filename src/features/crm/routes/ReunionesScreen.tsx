@@ -8,6 +8,7 @@ import { enlaceWhatsApp } from '../lib/identidad';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import ReunionModal from '../components/ReunionModal';
+import ResultadoGraduacionModal from '../components/ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
 
 const TIPO_LABEL: Record<CrmReunion['tipo'], string> = {
@@ -37,6 +38,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
   const actualizar = useActualizarReunion();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState<CrmReunion | null>(null);
+  const [preguntandoGraduacion, setPreguntandoGraduacion] = useState<CrmReunion | null>(null);
 
   const cargando = cargandoReuniones || cargandoServicios;
   const error = errorReuniones || errorServicios;
@@ -74,6 +76,12 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
   }, [reuniones, servicios, hoy]);
 
   const marcarRealizada = async (r: CrmReunion) => {
+    // Ver ResultadoGraduacionModal: una graduación pregunta si el cliente pasa
+    // a continuidad antes de marcarse como realizada.
+    if (r.tipo === 'graduacion') {
+      setPreguntandoGraduacion(r);
+      return;
+    }
     try {
       await actualizar.mutateAsync({ id: r.id, clientId: r.clientId, updates: { realizada: true } });
       showToast('Reunión marcada como realizada', 'success');
@@ -174,6 +182,9 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
       )}
       {editando && (
         <ReunionModal reunion={editando} coachEmail={coachEmail} onCerrar={() => setEditando(null)} />
+      )}
+      {preguntandoGraduacion && (
+        <ResultadoGraduacionModal reunion={preguntandoGraduacion} onCerrar={() => setPreguntandoGraduacion(null)} />
       )}
     </div>
   );

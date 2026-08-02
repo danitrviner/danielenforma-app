@@ -20,7 +20,7 @@ import type { Cliente, CrmContacto, EstadoCrm } from '../types';
 function perfilACliente(p: UserProfile): Cliente {
   return {
     id: p.userId,
-    origen: 'perfil',
+    fuente: 'perfil',
     userId: p.userId,
     nombre: p.displayName || p.email,
     email: p.email,
@@ -30,6 +30,10 @@ function perfilACliente(p: UserProfile): Cliente {
     // Un perfil sin `estadoCrm` es un cliente que ya existía antes del CRM:
     // se trata como activo en vez de forzar un backfill.
     estadoCrm: p.estadoCrm ?? 'activo',
+    origen: p.origen,
+    fechaBaja: p.fechaBaja,
+    motivoBaja: p.motivoBaja,
+    motivoBajaDetalle: p.motivoBajaDetalle,
     avatarUrl: p.avatarUrl,
     createdAt: p.createdAt,
   };
@@ -38,7 +42,7 @@ function perfilACliente(p: UserProfile): Cliente {
 function contactoACliente(c: CrmContacto): Cliente {
   return {
     id: c.id,
-    origen: 'contacto',
+    fuente: 'contacto',
     contactoId: c.id,
     userId: c.userId,
     nombre: c.nombre,
@@ -47,6 +51,10 @@ function contactoACliente(c: CrmContacto): Cliente {
     direccion: c.direccion,
     telefono: c.telefono,
     estadoCrm: c.estadoCrm,
+    origen: c.origen,
+    fechaBaja: c.fechaBaja,
+    motivoBaja: c.motivoBaja,
+    motivoBajaDetalle: c.motivoBajaDetalle,
     createdAt: c.createdAt,
   };
 }
@@ -86,6 +94,10 @@ export function useClientes(): UseClientesResult {
           dni: enlazado.dni ?? c.dni,
           direccion: enlazado.direccion ?? c.direccion,
           telefono: enlazado.telefono ?? c.telefono,
+          // El origen (canal de captación) casi siempre lo tiene el contacto
+          // importado, no el perfil que se creó después al registrarse — el
+          // perfil manda solo si de verdad ya tiene uno.
+          origen: enlazado.origen ?? c.origen,
         });
       } else {
         sueltos.push(contactoACliente(c));
@@ -97,7 +109,7 @@ export function useClientes(): UseClientesResult {
   }, [perfilesQ.data, contactosQ.data]);
 
   const contadores = useMemo(() => {
-    const acc: Record<EstadoCrm, number> = { activo: 0, pausado: 0, baja: 0 };
+    const acc: Record<EstadoCrm, number> = { lead: 0, llamada_agendada: 0, activo: 0, pausado: 0, baja: 0 };
     for (const c of clientes) acc[c.estadoCrm] += 1;
     return acc;
   }, [clientes]);

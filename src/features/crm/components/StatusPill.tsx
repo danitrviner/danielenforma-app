@@ -16,9 +16,11 @@ const TONO_CLASS: Record<Tono, string> = {
 };
 
 const ESTADO_CLIENTE: Record<EstadoCrm, { label: string; tono: Tono }> = {
-  activo:  { label: 'Activo',  tono: 'ok' },
-  pausado: { label: 'Pausado', tono: 'aviso' },
-  baja:    { label: 'Baja',    tono: 'apagado' },
+  lead:             { label: 'Lead',        tono: 'apagado' },
+  llamada_agendada: { label: 'Llamada',     tono: 'aviso' },
+  activo:           { label: 'Activo',      tono: 'ok' },
+  pausado:          { label: 'Pausado',     tono: 'aviso' },
+  baja:             { label: 'Baja',        tono: 'apagado' },
 };
 
 const ESTADO_PAGO: Record<EstadoPago, { label: string; tono: Tono }> = {
