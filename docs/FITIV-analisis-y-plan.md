@@ -577,6 +577,11 @@ Verificado leyendo `src/components/CardioScreen.tsx`, `src/services/bleHeartRate
 
 Cada fase entrega valor sola y es reversible.
 
+> **Estado (2026-08-02):** F1–F6 y F8 construidas, verificadas (`tsc` + tests + build de
+> producción en commit aislado) y **desplegadas** — código en `main`/Vercel, reglas de Firestore
+> en producción. **F7 (GPS) queda aparcada a propósito**, sin fecha — ver la nota en su sección
+> más abajo. Nada de lo demás depende de F7.
+
 ### F1 · Reparación *(bloqueante — sin features nuevas)*
 Los 4 defectos del §8. Refs para el intervalo de muestreo, estado vivo en refs o `useReducer`, y
 que una desconexión **guarde lo grabado** e intente reconectar.
@@ -614,10 +619,12 @@ días; ajuste de zonas por sesión concreta sin tocar las futuras (§6).
 Los 6 tipos de objetivo del §4.3 + rest timers, editables por el coach. Carrusel de páginas en la
 pantalla en vivo y layouts Básico/Estándar/Avanzado con cambio de métrica en caliente (§4bis.2).
 
-### F7 · GPS
+### F7 · GPS — ⏸ APLAZADO (decisión de Dani, 2026-08-02)
 `@capacitor/geolocation` + Leaflet/OSM: ruta, distancia, ritmo, splits y traza coloreada por zona.
 **La queja nº1 de los usuarios de FITIV es que su GPS no pinta la ruta en iPhone** — hacerlo bien
-es ventaja directa. Solo si entrenáis en exterior (§11).
+sería ventaja directa, pero **no se construye por ahora**. Queda documentado aquí para retomarlo
+cuando haga falta (entreno en exterior real); no bloquea nada de lo demás — F1-F6 y F8 son
+independientes y ya están en producción sin GPS.
 
 ### F8 · Recuperación viable
 HRV matinal (RR de Polar H10) + readiness que ajusta el objetivo del día y avisa al coach.
@@ -643,12 +650,12 @@ el diferencial. Y hay dos sitios donde puedes ser **mejor que ellos** sin esfuer
 
 ---
 
-## 11. Decisiones que necesito de ti
+## 11. Decisiones — estado
 
-1. **Modelo de zonas.** Tú usas 5 zonas / %HRR; FITIV usa 6 / %FCmax. ¿Mantengo el tuyo (más
-   correcto), o añado el selector de método (%FCmax / %HRR / %LTHR) como ellos y que el coach elija?
-2. **¿Qué banda tienes?** Si es Polar H10 → F6 (HRV) es viable. Si no expone intervalos RR, F6 se cae.
-3. **¿GPS entra?** Solo si entrenáis en exterior. Si todo es cinta y bici estática, F5 se recorta.
+1. ✅ **Modelo de zonas.** Resuelto: se mantiene el tuyo (5 zonas / %HRR, Karvonen) — más correcto
+   que el de FITIV, individualiza por FC de reposo. Sin selector de método adicional.
+2. ✅ **Banda.** Resuelta: expone intervalos RR → F8 (HRV matinal) construido y en producción.
+3. ⏸ **GPS.** Aplazado — ver F7 (§9). Se retoma más adelante, no hay fecha.
 
 ---
 
