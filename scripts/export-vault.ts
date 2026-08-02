@@ -5,9 +5,16 @@
 // Firestore, solo lee de ahí y escribe archivos locales.
 //
 // Uso:  npm run export:vault
-// Necesita FIREBASE_SERVICE_ACCOUNT en el entorno (mismo patrón que
-// api/ai-chat.ts: JSON de una cuenta de servicio con acceso de lectura a
-// Firestore). Sin ella, el script se detiene con un mensaje claro en vez de
+// Necesita credenciales de Google Cloud para leer Firestore. Dos vías, en este
+// orden de preferencia:
+//   1. FIREBASE_SERVICE_ACCOUNT en el entorno (mismo patrón que api/ai-chat.ts)
+//      — para CI/Vercel, donde no hay sesión interactiva.
+//   2. Application Default Credentials (ADC) de `gcloud auth application-default
+//      login` — para uso local. La organización de este proyecto (gestionado
+//      por Google AI Studio) bloquea la creación de claves JSON descargables
+//      de cuenta de servicio (`iam.disableServiceAccountKeyCreation`), así que
+//      ADC es la vía real para desarrollo local, no un atajo.
+// Sin ninguna de las dos, el script se detiene con un mensaje claro en vez de
 // fallar a medias.
 //
 // Qué genera:
@@ -24,7 +31,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { formatEuros, sumaCents } from '../src/features/crm/lib/dinero';
 import { formatDia, hoyISO, mesesDePeriodicidad } from '../src/features/crm/lib/fechas';
@@ -86,42 +93,79 @@ function extraerSeccionNotas(contenido: string): string {
  * Reemplaza (o inserta, si no existe) una sección "## Título" dentro de un .md,
  * sin tocar el resto del documento. Si la sección no existe, se inserta justo
  * antes de "## Notas" (o al final si tampoco hay Notas).
+ *
+ * Localiza el final de la sección buscando la SIGUIENTE cabecera "## " en el
+ * resto del texto, en vez de un único regex con lookahead `(?=\n## |$)`: con
+ * el flag `m`, `$` coincide al final de CUALQUIER línea, no solo al final del
+ * documento — si la sección empezaba con una línea en blanco (como
+ * "## Último export\n\n_Sin ejecutar._"), el lookahead se satisfacía ahí
+ * mismo y el `[\s\S]*?` lazy paraba en 0 caracteres, dejando el contenido
+ * viejo huérfano justo debajo del título nuevo. Encontrado ejecutando el
+ * script de verdad por primera vez, 2026-08-02.
  */
 function actualizarSeccion(contenido: string, titulo: string, cuerpo: string): string {
-  const bloqueNuevo = `## ${titulo}\n${cuerpo}`;
-  const regexExistente = new RegExp(`^## ${titulo}\\n[\\s\\S]*?(?=\\n## |$)`, 'm');
-  if (regexExistente.test(contenido)) {
-    return contenido.replace(regexExistente, bloqueNuevo);
+  const bloqueNuevo = `## ${titulo}\n${cuerpo.replace(/\n*$/, '')}\n\n`;
+  const inicioRegex = new RegExp(`^## ${titulo}\\n`, 'm');
+  const inicioMatch = inicioRegex.exec(contenido);
+
+  if (inicioMatch) {
+    const inicio = inicioMatch.index;
+    const resto = contenido.slice(inicio + inicioMatch[0].length);
+    const siguienteHeader = /^## /m.exec(resto);
+    const finRelativo = siguienteHeader ? siguienteHeader.index : resto.length;
+    const fin = inicio + inicioMatch[0].length + finRelativo;
+    return contenido.slice(0, inicio) + bloqueNuevo + contenido.slice(fin);
   }
   const idxNotas = contenido.search(/^## Notas/m);
-  if (idxNotas === -1) return `${contenido.trimEnd()}\n\n${bloqueNuevo}\n`;
-  return contenido.slice(0, idxNotas) + bloqueNuevo + '\n\n' + contenido.slice(idxNotas);
+  if (idxNotas === -1) return `${contenido.trimEnd()}\n\n${bloqueNuevo}`;
+  return contenido.slice(0, idxNotas) + bloqueNuevo + contenido.slice(idxNotas);
 }
+
+const MENSAJE_SIN_CREDENCIALES =
+  'No hay credenciales disponibles para leer Firestore.\n\n' +
+  'Este proyecto bloquea la descarga de claves JSON de cuenta de servicio\n' +
+  '(política de organización de Google AI Studio), así que la vía local es ADC:\n\n' +
+  '  gcloud auth application-default login\n\n' +
+  '(instala el SDK antes si hace falta: brew install --cask google-cloud-sdk)\n\n' +
+  'En CI/Vercel, en cambio, usa FIREBASE_SERVICE_ACCOUNT con el JSON de una\n' +
+  'cuenta de servicio (mismo patrón que api/ai-chat.ts) — ahí sí se puede.';
 
 async function main() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) {
-    console.error(
-      'Falta FIREBASE_SERVICE_ACCOUNT en el entorno.\n' +
-      'Este script necesita una cuenta de servicio con acceso de lectura a Firestore\n' +
-      '(mismo patrón que api/ai-chat.ts). Sin ella no puede leer datos — se detiene\n' +
-      'aquí en vez de fallar a medias con un export incompleto.'
-    );
+  const credential = raw ? cert(JSON.parse(raw)) : applicationDefault();
+
+  // `applicationDefault()` no falla de forma síncrona aunque no exista ninguna
+  // credencial guardada — solo construye el objeto Credential. El fallo real
+  // ("Could not load the default credentials") solo aparece en la PRIMERA
+  // llamada async que de verdad pide un token, así que es ahí donde hay que
+  // traducirlo a un mensaje útil, no antes.
+  if (!raw && !existsSync(join(process.env.HOME ?? '', '.config/gcloud/application_default_credentials.json'))) {
+    console.error(MENSAJE_SIN_CREDENCIALES);
     process.exit(1);
   }
 
-  const app = initializeApp({ credential: cert(JSON.parse(raw)), projectId: PROJECT_ID });
+  const app = initializeApp({ credential, projectId: PROJECT_ID });
   const db = getFirestore(app, DATABASE_ID);
 
   console.log('Leyendo Firestore…');
-  const [perfilesSnap, contactosSnap, serviciosSnap, pagosSnap, suscripcionesSnap, reunionesSnap] = await Promise.all([
-    db.collection('user_profiles').get(),
-    db.collection('crmContactos').get(),
-    db.collection('crmServicios').get(),
-    db.collection('crmPagos').get(),
-    db.collection('crmSuscripciones').get(),
-    db.collection('crmReuniones').get(),
-  ]);
+  let perfilesSnap, contactosSnap, serviciosSnap, pagosSnap, suscripcionesSnap, reunionesSnap;
+  try {
+    [perfilesSnap, contactosSnap, serviciosSnap, pagosSnap, suscripcionesSnap, reunionesSnap] = await Promise.all([
+      db.collection('user_profiles').get(),
+      db.collection('crmContactos').get(),
+      db.collection('crmServicios').get(),
+      db.collection('crmPagos').get(),
+      db.collection('crmSuscripciones').get(),
+      db.collection('crmReuniones').get(),
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!raw && /credential|UNAUTHENTICATED|PERMISSION_DENIED/i.test(msg)) {
+      console.error(`${MENSAJE_SIN_CREDENCIALES}\n\nError original: ${msg}`);
+      process.exit(1);
+    }
+    throw err;
+  }
 
   // ── Unificar clientes (perfiles con cuenta + contactos sin cuenta) ─────────
   const clientes: ClienteExport[] = [];
