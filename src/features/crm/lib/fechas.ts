@@ -41,6 +41,16 @@ export function diasHasta(iso: string, desde: Date = new Date()): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
 
+/**
+ * Días de retraso de una fecha ya pasada respecto a hoy. 0 si todavía no ha
+ * llegado o es hoy mismo — nunca negativo, así se puede usar directamente
+ * como "¿lleva más de N días?" sin comprobar el signo primero.
+ */
+export function diasDeRetraso(iso: string, desde: Date = new Date()): number {
+  const d = diasHasta(iso, desde);
+  return d < 0 ? -d : 0;
+}
+
 /** «hoy», «mañana», «en 3 días», «hace 12 días»… */
 export function tiempoRelativo(iso?: string, desde: Date = new Date()): string {
   if (!iso) return '';

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import { useActualizarPago, useEliminarPago } from '../hooks/usePagos';
 import { formatEuros } from '../lib/dinero';
-import { formatDia, hoyISO } from '../lib/fechas';
+import { formatDia, hoyISO, diasDeRetraso } from '../lib/fechas';
 import DataTable, { Columna } from './DataTable';
 import { EstadoPagoPill } from './StatusPill';
 import EmptyState from './EmptyState';
@@ -17,6 +17,13 @@ interface Props {
   coachEmail: string;
   onNuevoPago?: () => void;
 }
+
+// Un pago pendiente con más de esto de retraso desde su fechaEmision se
+// resalta en la tabla. Decidido con Dani el 2026-08-02 — no es una nueva
+// colección ni un cambio de estado en Firestore, solo derivado en el
+// render: `diasDeRetraso` es pura, se recalcula cada vez, nada que
+// desincronizar.
+const UMBRAL_DIAS_AVISO = 7;
 
 // Tabla de pagos compartida entre PagosScreen (global) y PagosTab (por
 // cliente). "Borrar" solo se pinta para pagos pendientes — un pago ya cobrado
@@ -81,9 +88,23 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
       id: 'fecha',
       header: 'Fecha',
       width: '110px',
-      render: p => (
-        <span className="tabular-nums">{formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}</span>
-      ),
+      render: p => {
+        const retraso = p.estado === 'pendiente' ? diasDeRetraso(p.fechaEmision) : 0;
+        const atrasado = retraso > UMBRAL_DIAS_AVISO;
+        return (
+          <div>
+            <span className={`tabular-nums ${atrasado ? 'text-[#fca5a5] font-bold' : ''}`}>
+              {formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}
+            </span>
+            {atrasado && (
+              <p className="flex items-center gap-0.5 font-mono text-[9px] text-[#fca5a5]">
+                <span className="material-symbols-outlined text-[11px]">warning</span>
+                {retraso} días de retraso
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: 'acciones',

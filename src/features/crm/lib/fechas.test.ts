@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseDia, aDiaISO, formatDia, diasHasta, tiempoRelativo,
-  avanzarPeriodo, sumarMeses, parseFechaFlexible,
+  avanzarPeriodo, sumarMeses, parseFechaFlexible, diasDeRetraso,
 } from './fechas';
 
 describe('parseDia / aDiaISO', () => {
@@ -113,5 +113,20 @@ describe('parseFechaFlexible', () => {
   it('devuelve null con basura', () => {
     expect(parseFechaFlexible('')).toBeNull();
     expect(parseFechaFlexible('ayer')).toBeNull();
+  });
+});
+
+describe('diasDeRetraso', () => {
+  const hoy = new Date(2026, 7, 15); // 15 ago 2026
+
+  it('cuenta días de retraso de una fecha pasada', () => {
+    expect(diasDeRetraso('2026-08-08', hoy)).toBe(7);
+    expect(diasDeRetraso('2026-07-16', hoy)).toBe(30);
+  });
+
+  it('nunca negativo — hoy y el futuro dan 0', () => {
+    expect(diasDeRetraso('2026-08-15', hoy)).toBe(0);
+    expect(diasDeRetraso('2026-08-20', hoy)).toBe(0);
+    expect(diasDeRetraso('2026-09-01', hoy)).toBe(0);
   });
 });
