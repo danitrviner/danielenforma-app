@@ -23,7 +23,7 @@ import {
   query, where, runTransaction, writeBatch,
 } from '../firebase';
 import type {
-  CrmContacto, CrmServicio, CrmPago, CrmSuscripcion,
+  CrmContacto, CrmServicio, CrmPago, CrmSuscripcion, CrmReunion,
 } from '../features/crm/types';
 import type { UserProfile } from '../types';
 import { stripUndefined, authReady } from './core';
@@ -33,6 +33,7 @@ const COL_CONTACTOS = 'crmContactos';
 const COL_SERVICIOS = 'crmServicios';
 const COL_PAGOS = 'crmPagos';
 const COL_SUSCRIPCIONES = 'crmSuscripciones';
+const COL_REUNIONES = 'crmReuniones';
 
 // ── Escrituras con timeout ───────────────────────────────────────────────────
 
@@ -380,4 +381,33 @@ export async function registrarCobroSuscripcion(
     }));
     return { ...pagoDoc, id: pagoRef.id };
   }));
+}
+
+// ── Reuniones ────────────────────────────────────────────────────────────────
+
+export async function getCrmReuniones(): Promise<CrmReunion[]> {
+  await authReady;
+  const snap = await getDocs(collection(db, COL_REUNIONES));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmReunion));
+}
+
+export async function getCrmReunionesByCliente(clientId: string): Promise<CrmReunion[]> {
+  await authReady;
+  const snap = await getDocs(query(collection(db, COL_REUNIONES), where('clientId', '==', clientId)));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmReunion));
+}
+
+export async function createCrmReunion(
+  data: Omit<CrmReunion, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<CrmReunion> {
+  await authReady;
+  const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
+  const ref = await conTimeout('Crear reunión', addDoc(collection(db, COL_REUNIONES), stripUndefined(payload)));
+  return { ...payload, id: ref.id };
+}
+
+export async function updateCrmReunion(id: string, updates: Partial<CrmReunion>): Promise<void> {
+  await authReady;
+  const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
+  await conTimeout('Guardar reunión', updateDoc(doc(db, COL_REUNIONES, id), payload));
 }

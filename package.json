@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "lint:eslint": "eslint src",
+    "export:vault": "tsx scripts/export-vault.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -3,16 +3,17 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import ClientesList from './ClientesList';
 import ClienteDetail from './ClienteDetail';
 import PagosScreen from './PagosScreen';
+import ReunionesScreen from './ReunionesScreen';
+import DashboardScreen from './DashboardScreen';
 
 // Contenedor del módulo CRM. Monta sus propias rutas anidadas para que App.tsx
 // solo necesite una línea (`/crm/*`) y el módulo siga siendo autocontenido.
-//
-// Las secciones de Reuniones y Dashboard aún no existen — sus entradas de
-// navegación no se pintan todavía en vez de llevar a una pantalla vacía.
 
 const SECCIONES = [
+  { path: '/crm', label: 'Resumen', icon: 'dashboard', exacta: true },
   { path: '/crm/clientes', label: 'Clientes', icon: 'group' },
   { path: '/crm/pagos', label: 'Pagos', icon: 'euro' },
+  { path: '/crm/reuniones', label: 'Reuniones', icon: 'event' },
 ];
 
 export default function CrmShell({ coachEmail }: { coachEmail: string }) {
@@ -24,7 +25,11 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
       {SECCIONES.length > 1 && (
         <nav className="flex items-center gap-1">
           {SECCIONES.map(s => {
-            const activo = location.pathname.startsWith(s.path);
+            // "Resumen" (path exacto '/crm') necesita coincidencia exacta —
+            // si no, `startsWith('/crm')` también sería verdad en
+            // `/crm/clientes`, `/crm/pagos`... y las cuatro pestañas se
+            // resaltarían a la vez.
+            const activo = s.exacta ? location.pathname === s.path : location.pathname.startsWith(s.path);
             return (
               <button
                 key={s.path}
@@ -45,11 +50,12 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
       )}
 
       <Routes>
-        <Route index element={<Navigate to="/crm/clientes" replace />} />
+        <Route index element={<DashboardScreen />} />
         <Route path="clientes" element={<ClientesList />} />
         <Route path="clientes/:id" element={<ClienteDetail coachEmail={coachEmail} />} />
         <Route path="pagos" element={<PagosScreen coachEmail={coachEmail} />} />
-        <Route path="*" element={<Navigate to="/crm/clientes" replace />} />
+        <Route path="reuniones" element={<ReunionesScreen coachEmail={coachEmail} />} />
+        <Route path="*" element={<Navigate to="/crm" replace />} />
       </Routes>
     </div>
   );

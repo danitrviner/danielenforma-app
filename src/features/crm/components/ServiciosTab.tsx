@@ -11,7 +11,7 @@ import type { Cliente, CrmServicio } from '../types';
 
 export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { showToast } = useToast();
-  const { data: servicios = [], isPending } = useServiciosDe(cliente.id);
+  const { data: servicios = [], isPending, isError } = useServiciosDe(cliente.id);
   const archivar = useArchivarServicio(cliente.id);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [verArchivados, setVerArchivados] = useState(false);
@@ -132,6 +132,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           filas={visibles}
           keyOf={s => s.id}
           cargando={isPending}
+          error={isError}
           vacio={
             <EmptyState
               icon="sell"

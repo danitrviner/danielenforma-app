@@ -1,4 +1,5 @@
 import React from 'react';
+import ErrorState from './ErrorState';
 
 export interface Columna<T> {
   id: string;
@@ -16,6 +17,14 @@ interface Props<T> {
   onRowClick?: (fila: T) => void;
   vacio?: React.ReactNode;
   cargando?: boolean;
+  /**
+   * true si la query que alimenta `filas` falló. SIN esto, una query fallida
+   * (cuota de Firestore agotada, sin red...) deja `cargando` en su último
+   * valor y la tabla se queda en el skeleton para siempre — TanStack Query no
+   * sale de `isPending` sola, hay que leer `isError` en algún sitio.
+   * Encontrado en vivo el 2026-08-02 con la cuota diaria de lecturas agotada.
+   */
+  error?: boolean;
 }
 
 // Tabla densa. Dos decisiones que no son cosméticas:
@@ -26,8 +35,10 @@ interface Props<T> {
 // 2. La tabla va dentro de un contenedor con overflow-x propio: en móvil la
 //    tabla scrollea, la página no.
 export default function DataTable<T>({
-  columnas, filas, keyOf, onRowClick, vacio, cargando,
+  columnas, filas, keyOf, onRowClick, vacio, cargando, error,
 }: Props<T>) {
+  if (error) return <ErrorState />;
+
   if (cargando) {
     return (
       <div className="space-y-1.5 p-3">

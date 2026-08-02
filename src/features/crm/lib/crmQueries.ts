@@ -19,4 +19,6 @@ export const crmKeys = {
   pagosDe: (clientId: string) => ['crmPagos', clientId] as const,
   suscripciones: ['crmSuscripciones'] as const,
   suscripcionesDe: (clientId: string) => ['crmSuscripciones', clientId] as const,
+  reuniones: ['crmReuniones'] as const,
+  reunionesDe: (clientId: string) => ['crmReuniones', clientId] as const,
 };

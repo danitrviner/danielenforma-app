@@ -19,7 +19,7 @@ function mensualizado(s: CrmSuscripcion): number {
 }
 
 export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
-  const { data: suscripciones = [], isPending } = useSuscripcionesDe(cliente.id);
+  const { data: suscripciones = [], isPending, isError } = useSuscripcionesDe(cliente.id);
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const activas = suscripciones.filter(s => s.estado === 'activa');
@@ -46,6 +46,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
       <SuscripcionesBlock
         suscripciones={suscripciones}
         cargando={isPending}
+        error={isError}
         mostrarCliente={false}
         coachEmail={coachEmail}
         onNuevaSuscripcion={() => setModalAbierto(true)}

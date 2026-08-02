@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  getCrmServiciosByCliente, createCrmServicioConPago,
+  getCrmServicios, getCrmServiciosByCliente, createCrmServicioConPago,
   updateCrmServicio, archivarCrmServicio, desarchivarCrmServicio,
 } from '../../../dbService';
 import { crmKeys } from '../lib/crmQueries';
@@ -17,6 +17,13 @@ export interface NuevoServicio {
   descripcion?: string;
   /** Genera el pago pendiente en la misma transacción. Por defecto sí. */
   generarPago: boolean;
+}
+
+export function useServicios() {
+  return useQuery({
+    queryKey: crmKeys.servicios,
+    queryFn: getCrmServicios,
+  });
 }
 
 export function useServiciosDe(clientId?: string) {
@@ -38,6 +45,18 @@ export function servicioActual(servicios: CrmServicio[], hoy: string = hoyISO())
     .filter(s => !s.fechaFin || s.fechaFin >= hoy)
     .sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio));
   return vigentes[0] ?? null;
+}
+
+/**
+ * Fecha de fin de programa del cliente: la `fechaFin` más lejana entre todos
+ * sus servicios (no solo el vigente — un servicio ya archivado puede tener el
+ * fin "oficial" del programa si es el que se contrató por más tiempo). null si
+ * ningún servicio tiene fecha de fin.
+ */
+export function fechaFinPrograma(servicios: CrmServicio[]): string | null {
+  const fines = servicios.map(s => s.fechaFin).filter((f): f is string => Boolean(f));
+  if (fines.length === 0) return null;
+  return fines.reduce((max, f) => (f > max ? f : max));
 }
 
 export function useCrearServicio() {

@@ -523,6 +523,19 @@ service cloud.firestore {
       allow update, delete: if isCoach();
     }
 
+    // ── hrvReadings (athleteId = EMAIL; lectura diaria del atleta, sin aprobación del coach) ──
+    match /hrvReadings/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+    }
+
     // ── CRM (2026-08-01) ────────────────────────────────────────────────────
     // Todo el módulo es SOLO-COACH, sin una sola excepción. El atleta nunca lee
     // su ficha comercial: ni lo que paga, ni su estado, ni sus reuniones. Eso

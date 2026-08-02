@@ -28,8 +28,8 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
     setParams(next, { replace: true });
   };
 
-  const { data: pagos = [], isPending: cargandoPagos } = usePagos();
-  const { data: suscripciones = [], isPending: cargandoSuscripciones } = useSuscripciones();
+  const { data: pagos = [], isPending: cargandoPagos, isError: errorPagos } = usePagos();
+  const { data: suscripciones = [], isPending: cargandoSuscripciones, isError: errorSuscripciones } = useSuscripciones();
 
   const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
   const pendienteDeCobro = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
@@ -71,6 +71,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
         <SuscripcionesBlock
           suscripciones={suscripciones}
           cargando={cargandoSuscripciones}
+          error={errorSuscripciones}
           mostrarCliente
           coachEmail={coachEmail}
           onNuevaSuscripcion={() => setModalSuscripcion(true)}
@@ -126,6 +127,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
         <PagosTable
           pagos={pagosFiltrados}
           cargando={cargandoPagos}
+          error={errorPagos}
           mostrarCliente
           coachEmail={coachEmail}
           onNuevoPago={() => setModalPago(true)}

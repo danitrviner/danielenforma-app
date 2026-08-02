@@ -46,7 +46,7 @@ export default function ClientesList() {
     setParams(next, { replace: true });
   };
 
-  const { clientes, isPending, contadores } = useClientes();
+  const { clientes, isPending, error, contadores } = useClientes();
 
   const { data: servicios = [] } = useQuery({
     queryKey: crmKeys.servicios,
@@ -202,6 +202,7 @@ export default function ClientesList() {
           filas={filas}
           keyOf={c => c.id}
           cargando={isPending}
+          error={Boolean(error)}
           onRowClick={c => navigate(`/crm/clientes/${c.id}`)}
           vacio={
             clientes.length === 0 ? (

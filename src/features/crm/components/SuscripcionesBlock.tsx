@@ -12,6 +12,7 @@ import type { CrmSuscripcion } from '../types';
 interface Props {
   suscripciones: CrmSuscripcion[];
   cargando?: boolean;
+  error?: boolean;
   mostrarCliente: boolean;
   coachEmail: string;
   onNuevaSuscripcion?: () => void;
@@ -24,7 +25,7 @@ interface Props {
 // concreta mientras esa mutación está en vuelo (un doble clic humano ni
 // siquiera llega a disparar la segunda llamada; la protección real contra
 // dos pestañas / reintentos de red vive en el backend).
-export default function SuscripcionesBlock({ suscripciones, cargando, mostrarCliente, coachEmail, onNuevaSuscripcion }: Props) {
+export default function SuscripcionesBlock({ suscripciones, cargando, error, mostrarCliente, coachEmail, onNuevaSuscripcion }: Props) {
   const { showToast } = useToast();
   const actualizar = useActualizarSuscripcion();
   const registrar = useRegistrarCobro();
@@ -139,6 +140,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, mostrarCli
           filas={suscripciones}
           keyOf={s => s.id}
           cargando={cargando}
+          error={error}
           vacio={
             <EmptyState
               icon="autorenew"

@@ -12,6 +12,7 @@ import type { CrmPago } from '../types';
 interface Props {
   pagos: CrmPago[];
   cargando?: boolean;
+  error?: boolean;
   mostrarCliente: boolean;
   coachEmail: string;
   onNuevoPago?: () => void;
@@ -23,7 +24,7 @@ interface Props {
 // ofrecer un botón que va a fallar siempre. Confirmación con window.confirm,
 // el único patrón de confirmación que usa el resto del repo (no hay modal de
 // confirmación custom en ningún sitio, ver ServiciosTab.tsx).
-export default function PagosTable({ pagos, cargando, mostrarCliente, coachEmail, onNuevoPago }: Props) {
+export default function PagosTable({ pagos, cargando, error, mostrarCliente, coachEmail, onNuevoPago }: Props) {
   const { showToast } = useToast();
   const actualizar = useActualizarPago();
   const eliminar = useEliminarPago();
@@ -135,6 +136,7 @@ export default function PagosTable({ pagos, cargando, mostrarCliente, coachEmail
           filas={pagos}
           keyOf={p => p.id}
           cargando={cargando}
+          error={error}
           vacio={
             <EmptyState
               icon="euro"

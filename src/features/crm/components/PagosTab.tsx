@@ -7,7 +7,7 @@ import PagoModal from './PagoModal';
 import type { Cliente } from '../types';
 
 export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
-  const { data: pagos = [], isPending } = usePagosDe(cliente.id);
+  const { data: pagos = [], isPending, isError } = usePagosDe(cliente.id);
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const cobrado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
@@ -34,6 +34,7 @@ export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; co
       <PagosTable
         pagos={pagos}
         cargando={isPending}
+        error={isError}
         mostrarCliente={false}
         coachEmail={coachEmail}
         onNuevoPago={() => setModalAbierto(true)}
