@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Icon, Input, Select,
-  type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize, type SelectOption,
+  Badge, Button, Card, Icon, Input, Select, Tabs,
+  type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
+  type SelectOption, type TabItem,
 } from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -80,6 +81,21 @@ const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
   { size: 'l', pie: 'l · 48' },
 ];
 
+const PESTANAS_POCAS: TabItem[] = [
+  { id: 'resumen', label: 'Resumen', icon: 'dashboard' },
+  { id: 'dietas', label: 'Dietas', icon: 'restaurant' },
+  { id: 'revisiones', label: 'Revisiones', icon: 'fact_check', count: 3 },
+];
+
+const PESTANAS_MUCHAS: TabItem[] = [
+  { id: 'revisiones', label: 'Revisiones' },
+  { id: 'entrenamientos', label: 'Entrenamientos' },
+  { id: 'dietas', label: 'Dietas' },
+  { id: 'macrociclos', label: 'Macrociclos' },
+  { id: 'roadmap', label: 'Road map' },
+  { id: 'analisis', label: 'Análisis' },
+];
+
 const TONOS_BADGE: { tone: BadgeTone; texto: string; icon: string }[] = [
   { tone: 'neutral', texto: 'Borrador', icon: 'edit_note' },
   { tone: 'success', texto: 'Completado', icon: 'check' },
@@ -110,6 +126,8 @@ export default function Showcase() {
   const [peso, setPeso] = React.useState('');
   const [objetivo, setObjetivo] = React.useState('');
   const [pulsaciones, setPulsaciones] = React.useState(0);
+  const [pestana, setPestana] = React.useState('resumen');
+  const [pestanaLarga, setPestanaLarga] = React.useState('revisiones');
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -337,6 +355,33 @@ export default function Showcase() {
           No hay tono dorado a propósito. El oro significa «lo siguiente que tienes que hacer», y un
           estado no es una acción: marcar Pendiente en oro es lo que hace que el oro deje de
           significar algo.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Tabs"
+        resumen="La píldora segmentada que la app repite en el hub de cliente, Nutrición, Entrenamiento, Academia, Cardio y el CRM. Escrita a mano cada vez, y por eso F2 tuvo que arreglar cuatro que desbordaban."
+      >
+        <Tabs items={PESTANAS_POCAS} value={pestana} onChange={setPestana} label="Ejemplo corto" />
+
+        <Card padding="s">
+          <p className="font-sans text-body-s text-ink-2">
+            Sección activa: <span className="font-bold text-ink">{pestana}</span>. La primitiva no
+            guarda el estado ni pinta el contenido: avisa y ya.
+          </p>
+        </Card>
+
+        <Tabs
+          items={PESTANAS_MUCHAS}
+          value={pestanaLarga}
+          onChange={setPestanaLarga}
+          label="Ejemplo largo"
+        />
+
+        <p className="font-sans text-body-s text-ink-3">
+          Seis pestañas no caben en 375 px, y no hay reparto de anchos que lo arregle: se desliza.
+          Con el tabulador se entra en el grupo y con las flechas se cambia de pestaña — Inicio y
+          Fin van a los extremos.
         </p>
       </Seccion>
     </div>
