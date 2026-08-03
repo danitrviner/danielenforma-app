@@ -84,7 +84,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
         <button
           onClick={() => openEditor()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>Nuevo
         </button>

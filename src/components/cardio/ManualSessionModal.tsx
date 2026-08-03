@@ -72,7 +72,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving || !durationMin}
-            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>

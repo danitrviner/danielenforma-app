@@ -22,7 +22,7 @@ export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
         <button
           type="button"
           onClick={cta.onClick}
-          className="mt-2 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+          className="mt-2 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
         >
           {cta.label}
         </button>

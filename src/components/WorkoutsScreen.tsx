@@ -268,7 +268,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
           <button
             onClick={() => openEditor()}
-            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
+            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Nueva rutina
@@ -601,7 +601,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         <button
           onClick={handleSave}
           disabled={isSaving || !editorName.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-accent/10"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-accent/10"
         >
           {isSaving ? (
             <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>

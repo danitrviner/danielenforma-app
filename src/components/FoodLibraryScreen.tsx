@@ -168,7 +168,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all whitespace-nowrap shadow-md"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir
@@ -272,7 +272,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               <button
                 onClick={handleSave}
                 disabled={saving || !form.label.trim()}
-                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {saving ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</> : <><span className="material-symbols-outlined text-sm">save</span>Guardar</>}
               </button>

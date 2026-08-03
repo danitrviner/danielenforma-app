@@ -110,7 +110,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>

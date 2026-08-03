@@ -218,7 +218,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -578,7 +578,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo

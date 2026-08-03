@@ -89,7 +89,7 @@ export function BotonPrimario({ children, disabled, onClick, type = 'button' }: 
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>

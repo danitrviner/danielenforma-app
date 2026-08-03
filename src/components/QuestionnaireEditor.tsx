@@ -330,7 +330,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         <button
           onClick={onSave}
           disabled={saving || !form.title.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? 'Guardando…' : isNew ? 'Crear cuestionario' : 'Guardar cambios'}
         </button>

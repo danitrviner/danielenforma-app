@@ -908,7 +908,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <p className="text-ink-2 text-xs font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
           <button
             onClick={handleStartBlank}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Crear mi primer menú
@@ -1308,7 +1308,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   onClick={handleSaveDiet}
                   disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
                 >
                   <span className="material-symbols-outlined text-sm">save</span>
                   {saving ? 'Guardando...' : 'Guardar'}

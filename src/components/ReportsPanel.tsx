@@ -199,7 +199,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           )}
           <button
             onClick={handleGenerate}
-            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar

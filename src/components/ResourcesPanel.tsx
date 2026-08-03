@@ -63,7 +63,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
         {isCoach && (
           <button
             onClick={() => setShowForm(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800] transition-colors"
+            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
             {showForm ? 'Cancelar' : 'Nuevo'}
@@ -103,7 +103,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Compartir recurso'}
           </button>

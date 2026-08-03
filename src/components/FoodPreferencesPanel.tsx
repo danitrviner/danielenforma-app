@@ -86,7 +86,7 @@ export default function FoodPreferencesPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -173,7 +173,7 @@ export default function FoodPreferencesPanel({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
           {saving ? '…' : saved ? 'OK' : 'Guardar'}

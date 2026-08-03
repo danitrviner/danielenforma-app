@@ -174,7 +174,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           </ul>
           <div className="flex gap-2">
             <button onClick={() => setActiveTest(null)} className="flex-1 py-2.5 bg-white/7 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg">Cancelar</button>
-            <button onClick={() => setParqPassed(true)} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Ninguna aplica, continuar</button>
+            <button onClick={() => setParqPassed(true)} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press">Ninguna aplica, continuar</button>
           </div>
         </section>
       );
@@ -186,7 +186,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <span className="material-symbols-outlined text-4xl text-data">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-xs text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
-          <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Volver</button>
+          <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press">Volver</button>
         </section>
       );
     }
@@ -201,14 +201,14 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         </div>
         {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
         {!monitorRef.current ? (
-          <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Conectar banda y empezar</button>
+          <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press">Conectar banda y empezar</button>
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-[10px] font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-xs font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
-              <button onClick={finishTest} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Terminar y calcular</button>
+              <button onClick={finishTest} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press">Terminar y calcular</button>
             )}
           </div>
         )}

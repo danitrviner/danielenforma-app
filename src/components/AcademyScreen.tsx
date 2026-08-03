@@ -130,7 +130,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button
           onClick={() => handleCompleteLesson(openLesson)}
           disabled={done}
-          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-[#d4a800] active:scale-95'}`}
+          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
         >
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
         </button>

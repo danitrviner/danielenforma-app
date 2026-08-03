@@ -472,7 +472,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <p className="text-ink-2 font-mono text-xs">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">person_add</span>
               Invitar a tu primer atleta
@@ -613,7 +613,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             type="submit"
             disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-sm">mail</span>
             {inviting ? 'Enviando...' : 'Invitar'}

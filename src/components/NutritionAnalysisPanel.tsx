@@ -268,7 +268,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
-            className="px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press transition-all disabled:opacity-50"
           >Compartir resumen</button>
         )}
       </div>

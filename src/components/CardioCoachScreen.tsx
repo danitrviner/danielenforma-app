@@ -134,7 +134,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           </div>
         ))}
       </div>
-      <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
+      <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press disabled:opacity-50">
         {saving ? 'Guardando...' : 'Guardar zonas'}
       </button>
     </section>
@@ -201,7 +201,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
               {t.result.z2Ceiling && `Techo Z2: ${t.result.z2Ceiling} `}
               {t.result.decouplingPct !== undefined && `Desacople: ${t.result.decouplingPct}% `}
             </p>
-            <button onClick={() => approve(t)} className="w-full py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded hover:bg-[#d4a800]">Aprobar y aplicar a zonas</button>
+            <button onClick={() => approve(t)} className="w-full py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded hover:bg-accent-press">Aprobar y aplicar a zonas</button>
           </div>
         );
       })}
@@ -305,7 +305,7 @@ function PrescriptionTab() {
       )}
 
       <button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)}
-        className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
+        className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press disabled:opacity-50">
         {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
       </button>
     </section>

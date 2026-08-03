@@ -117,7 +117,7 @@ function CoursesTab() {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800]">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
@@ -146,7 +146,7 @@ function CoursesTab() {
                 className="flex-1 min-w-[100px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
             )}
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear curso'}
           </button>
         </form>
@@ -223,7 +223,7 @@ function LessonsTab() {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800]">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
@@ -247,7 +247,7 @@ function LessonsTab() {
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
               className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear lección'}
           </button>
         </form>
@@ -322,7 +322,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Acceso por atleta</h2>
         {selected.size > 0 && (
-          <button onClick={grantSelected} className="text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800]">
+          <button onClick={grantSelected} className="text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
             Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
           </button>
         )}

@@ -284,7 +284,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </p>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva receta
@@ -672,7 +672,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-accent text-black font-sans text-xs uppercase tracking-wider font-bold hover:bg-[#d4a800] disabled:opacity-40 transition-all active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-accent text-black font-sans text-xs uppercase tracking-wider font-bold hover:bg-accent-press disabled:opacity-40 transition-all active:scale-95"
               >
                 {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
               </button>

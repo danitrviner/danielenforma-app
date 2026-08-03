@@ -421,7 +421,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <button
             onClick={handleGenerate}
             disabled={pctSum !== 100 || scheduledCount === 0}
-            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar menú
@@ -633,7 +633,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handlePublish}
           disabled={saving}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">publish</span>
           {saving ? 'Guardando…' : 'Publicar menú'}

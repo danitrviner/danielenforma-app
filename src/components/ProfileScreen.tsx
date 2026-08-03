@@ -242,7 +242,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}

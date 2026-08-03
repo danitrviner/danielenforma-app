@@ -320,7 +320,7 @@ export default function ClientWorkoutsPanel({
               <button
                 onClick={handleCreateAssignment}
                 disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isAssigning ? (
                   <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>

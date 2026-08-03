@@ -138,7 +138,7 @@ export default function PhotosScreen({ profile }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
             ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
@@ -166,7 +166,7 @@ export default function PhotosScreen({ profile }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">upload</span>
             Subir foto

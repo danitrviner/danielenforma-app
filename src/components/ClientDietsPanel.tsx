@@ -114,7 +114,7 @@ export default function ClientDietsPanel({
           <div className="flex gap-2">
             <button
               onClick={() => setDietEditorDiet(null)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Nueva dieta
@@ -247,7 +247,7 @@ export default function ClientDietsPanel({
           </h3>
           <button
             onClick={() => setMenuEditor('new')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
             Generar menú

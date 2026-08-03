@@ -191,7 +191,7 @@ export default function ClientSetupPanel({
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-[#d4a800] transition-all"
+                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-accent-press transition-all"
                 >
                   Ir ahora
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -316,7 +316,7 @@ export default function ClientSetupPanel({
             <button
               type="submit"
               disabled={savingExtra}
-              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {savingExtra ? '...' : 'Crear'}
             </button>

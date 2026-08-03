@@ -271,7 +271,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               <button
                 onClick={handleAdd}
                 disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
               >
                 {adding ? '…' : 'Añadir'}
               </button>

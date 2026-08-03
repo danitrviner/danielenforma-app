@@ -171,7 +171,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-accent text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-accent text-black font-bold rounded-lg hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -256,7 +256,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded hover:bg-[#d4a800]">
+                          className="px-2.5 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
@@ -304,7 +304,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-sans text-xs uppercase bg-accent text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-xs uppercase bg-accent text-black font-bold rounded-lg hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>

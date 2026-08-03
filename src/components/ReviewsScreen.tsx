@@ -202,7 +202,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               </span>
               <button
                 onClick={startReviewing}
-                className="flex items-center gap-1.5 text-xs bg-accent text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-[#d4a800] active:scale-95 transition-all"
+                className="flex items-center gap-1.5 text-xs bg-accent text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-base">rate_review</span>
                 Empezar a revisar
@@ -378,7 +378,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-sm">{hasNextPending ? 'skip_next' : 'send'}</span>
@@ -504,7 +504,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               onClick={saveQuickReplyManager}
               disabled={savingQuickReplies}
-              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {savingQuickReplies ? 'Guardando...' : 'Guardar'}
             </button>

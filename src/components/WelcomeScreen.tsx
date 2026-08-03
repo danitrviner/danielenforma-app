@@ -179,7 +179,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <button
               type="submit"
               disabled={completingInvite}
-              className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
+              className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-md hover:bg-accent-press active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
             >
               {completingInvite ? 'Verificando...' : 'Continuar'}
             </button>
@@ -255,7 +255,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-md hover:bg-[#d4a800] active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
+            className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-md hover:bg-accent-press active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
           >
             {loading ? 'Procesando...' : 'Ingresar al Portal'}
             <span className="material-symbols-outlined text-sm">login</span>

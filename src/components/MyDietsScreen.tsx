@@ -324,7 +324,7 @@ export default function MyDietsScreen({ profile }: Props) {
         <button
           onClick={handleSave}
           disabled={!form.name.trim()}
-          className="w-full py-3 rounded-xl bg-accent text-black font-sans font-bold text-sm disabled:opacity-40 hover:bg-[#d4a800] transition-all"
+          className="w-full py-3 rounded-xl bg-accent text-black font-sans font-bold text-sm disabled:opacity-40 hover:bg-accent-press transition-all"
         >Guardar dieta</button>
 
         {/* Food picker sheet */}
@@ -430,7 +430,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva

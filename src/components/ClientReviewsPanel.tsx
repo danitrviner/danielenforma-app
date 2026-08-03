@@ -439,7 +439,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignPhotoCheckIn}
                     disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningPhoto ? '…' : 'Asignar'}
                   </button>
@@ -854,7 +854,7 @@ export default function ClientReviewsPanel({
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm">add</span>Crear ficha
               </button>
@@ -1064,7 +1064,7 @@ export default function ClientReviewsPanel({
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
                                     <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                   </button>
                                   <button onClick={() => { setEditingReviewKey(null); setCheckinEditForm(null); }}
@@ -1112,7 +1112,7 @@ export default function ClientReviewsPanel({
                               <button
                                 type="submit"
                                 disabled={unifiedSubmitting}
-                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                                 <span className="material-symbols-outlined text-sm">send</span>
@@ -1213,7 +1213,7 @@ export default function ClientReviewsPanel({
                               })}
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleSaveResponseEdit(r.id)} disabled={savingEdit}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
                                   <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingReviewKey(null); setResponseEditAnswers([]); }}
@@ -1318,7 +1318,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>

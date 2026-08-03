@@ -1160,7 +1160,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           <div className="xl:w-64 flex-shrink-0 space-y-3">
             <button
               onClick={handleNew} disabled={creating}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               {creating ? 'Creando…' : 'Nuevo mesociclo'}
@@ -1323,7 +1323,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={handleGenerateDistribution}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+                          className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent-press active:scale-95 transition-all"
                         >
                           <span className="material-symbols-outlined text-sm">shuffle</span>
                           Distribución Automática
@@ -1453,7 +1453,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           </button>
                           <button
                             onClick={handleAssign}
-                            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
+                            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
                           >
                             <span className="material-symbols-outlined text-sm">assignment_turned_in</span>
                             Asignar al atleta

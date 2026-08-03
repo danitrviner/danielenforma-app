@@ -680,7 +680,7 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
@@ -893,7 +893,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -914,7 +914,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
+            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-accent-press transition-all"
           >
             Crear plantilla
           </button>

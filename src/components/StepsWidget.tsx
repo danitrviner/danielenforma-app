@@ -133,7 +133,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-black transition-all hover:bg-[#d4a800] active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-black transition-all hover:bg-accent-press active:scale-95 disabled:opacity-50"
           >
             {saving
               ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>

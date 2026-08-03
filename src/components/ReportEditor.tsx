@@ -137,7 +137,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('send', () => onSend(draft))}
               disabled={busy !== null}
-              className="px-5 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">send</span>
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}

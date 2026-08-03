@@ -404,7 +404,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Crear dieta
@@ -859,7 +859,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
         >
           {saving
             ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
