@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:49:28.523Z",
-  "commit": "a97b731",
+  "generado": "2026-08-03T22:52:11.525Z",
+  "commit": "fcba04c",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39522
+    "lineasTsx": 39496
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5044,
+    "clasesTokenEnUso": 5036,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 996,
-    "fontSans": 1001,
+    "fontSans": 996,
     "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 313,
+    "transitionAll": 309,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -123,7 +123,7 @@
       },
       {
         "archivo": "src/components/RoadmapTimeline.tsx",
-        "lineas": 792
+        "lineas": 766
       },
       {
         "archivo": "src/components/WorkoutsScreen.tsx",
@@ -615,11 +615,11 @@
       "roundedFull": 2
     },
     "src/components/RoadmapTimeline.tsx": {
-      "clasesTokenEnUso": 83,
+      "clasesTokenEnUso": 75,
       "fontMono": 22,
-      "fontSans": 14,
+      "fontSans": 9,
       "modalesArtesanales": 1,
-      "transitionAll": 7,
+      "transitionAll": 3,
       "animatePulse": 1,
       "roundedFull": 2
     },

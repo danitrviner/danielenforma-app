@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog } from '../types';
+import { Icon, Button, EmptyState } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             {isNew ? 'Nuevo item' : 'Editar item'}
           </h2>
           <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" size="m" />
           </button>
         </div>
 
@@ -202,30 +203,12 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
         {/* Buttons */}
         <div className="flex gap-3 pt-1">
           {!isNew && onDelete && (
-            <button
-              onClick={onDelete}
-              className="px-4 py-3 border border-red-800/40 text-red-400 hover:text-red-300 font-sans text-label uppercase rounded-control transition-all"
-            >
-              Eliminar
-            </button>
+            <Button variant="danger" onClick={onDelete}>Eliminar</Button>
           )}
-          <button
-            onClick={onCancel}
-            className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-label uppercase rounded-control transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={saving || !item.title.trim()}
-            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
-          >
-            {saving ? (
-              <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</>
-            ) : (
-              isNew ? 'Añadir' : 'Guardar'
-            )}
-          </button>
+          <Button variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
+          <Button onClick={onConfirm} disabled={saving || !item.title.trim()} loading={saving} className="flex-1">
+            {saving ? 'Guardando...' : isNew ? 'Añadir' : 'Guardar'}
+          </Button>
         </div>
       </div>
     </div>
@@ -576,13 +559,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           <p className="font-mono text-caption text-ink-2 uppercase tracking-widest">
             Timeline de planificación
           </p>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-body-s">add</span>
-            Añadir objetivo
-          </button>
+          <Button size="s" onClick={openNew} icon="add">Añadir objetivo</Button>
         </div>
       )}
 
@@ -731,10 +708,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Empty state */}
       {roadmap.items.length === 0 && mesocycles.length === 0 && !nutritionProgram && (
-        <div className="text-center py-10">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-2">map</span>
-          <p className="text-ink-2 text-label font-sans">No hay datos de planificación todavía.</p>
-        </div>
+        <EmptyState icon="map" title="No hay datos de planificación todavía." />
       )}
 
       {/* Legend */}
