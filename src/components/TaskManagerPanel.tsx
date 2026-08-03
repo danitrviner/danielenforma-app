@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
 import Skeleton from './Skeleton';
+import { ListRow } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -131,21 +132,20 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(t => (
-            <button
+            <ListRow
               key={t.id}
               onClick={() => handleToggle(t)}
-              className={`w-full flex items-center gap-3 border rounded-control p-3 text-left transition-all ${
-                t.status === 'done' ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline hover:border-accent/40'
+              className={`border rounded-control ${
+                t.status === 'done' ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
               }`}
-            >
-              <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>
-                {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className={`font-sans text-body-s truncate ${t.status === 'done' ? 'line-through text-ink-2' : 'text-white'}`}>{t.title}</p>
-                {t.dueDate && <p className="font-mono text-caption text-ink-2 ">Vence: {t.dueDate}</p>}
-              </div>
-            </button>
+              leading={
+                <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>
+                  {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
+              }
+              title={t.title}
+              subtitle={t.dueDate ? `Vence: ${t.dueDate}` : undefined}
+            />
           ))}
         </div>
       )}
