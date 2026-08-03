@@ -21,7 +21,7 @@ export default function VegetableSelector({ selected, onToggle }: Props) {
             onClick={() => onToggle(v.id)}
             className={`px-2.5 py-1.5 rounded-full text-[10px] font-mono font-bold border transition-all ${
               on
-                ? 'bg-[#fbcb1a]/15 border-[#fbcb1a]/50 text-[#fbcb1a]'
+                ? 'bg-accent/15 border-accent/50 text-accent'
                 : 'bg-[#1e1e1b] border-white/7 text-ink-2 hover:text-white hover:border-white/20'
             }`}
           >

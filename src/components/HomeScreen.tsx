@@ -101,7 +101,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           Entrenamiento
           <button
             onClick={() => onNavigate('training')}
-            className="ml-auto text-[10px] font-mono font-bold uppercase text-ink-2 hover:text-[#fbcb1a] transition-colors"
+            className="ml-auto text-[10px] font-mono font-bold uppercase text-ink-2 hover:text-accent transition-colors"
           >
             Ver todo
           </button>
@@ -118,12 +118,12 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
               <div className="space-y-1.5">
-                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-[#fbcb1a]">Esta semana</span>
+                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">Esta semana</span>
                 {thisWeekPending.map(a => (
                   <button
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all"
+                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all"
                   >
                     <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
                     <span className="font-mono text-[10px] text-ink-2 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
@@ -156,17 +156,17 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onNavigate('academy')}
-          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          className="bg-[#181816] border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">school</span>
+          <span className="material-symbols-outlined text-accent text-2xl">school</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Academia</span>
           <span className="text-[10px] text-ink-2 font-mono">Cursos y formación</span>
         </button>
         <button
           onClick={() => onNavigate('cardio')}
-          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          className="bg-[#181816] border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">favorite</span>
+          <span className="material-symbols-outlined text-accent text-2xl">favorite</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Cardio</span>
           <span className="text-[10px] text-ink-2 font-mono">Zonas y FC en directo</span>
         </button>

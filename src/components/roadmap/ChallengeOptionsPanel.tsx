@@ -93,7 +93,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]"
+          className="bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -120,7 +120,7 @@ export default function ChallengeOptionsPanel({
                 <p className="font-sans font-bold text-white text-sm">{opt.title}</p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {opt.isMilestone && (
-                    <span className="font-mono text-[8px] uppercase px-1.5 py-0.5 rounded-full bg-[#fbcb1a]/15 text-[#fbcb1a]">HITO</span>
+                    <span className="font-mono text-[8px] uppercase px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
                   )}
                   <span className="font-mono text-[9px] text-ink-2">{opt.score}</span>
                 </div>
@@ -130,7 +130,7 @@ export default function ChallengeOptionsPanel({
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
-                className="w-full py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                className="w-full py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
               >
                 {assigning === opt.kind ? 'Enviando...' : 'Enviar'}
               </button>

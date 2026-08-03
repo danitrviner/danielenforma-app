@@ -79,7 +79,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
       <button
         type="button"
         onClick={() => { setOpen(o => !o); if (!open) refetch(); }}
-        className="relative p-1 text-[#fbcb1a] hover:opacity-80 transition-opacity"
+        className="relative p-1 text-accent hover:opacity-80 transition-opacity"
         title="Notificaciones"
       >
         <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>notifications</span>
@@ -96,7 +96,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/7">
             <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">notifications</span>
+              <span className="material-symbols-outlined text-accent text-base">notifications</span>
               Notificaciones
               {unread > 0 && (
                 <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
@@ -107,7 +107,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-[9px] font-mono text-ink-2 hover:text-[#fbcb1a] transition-colors uppercase">
+                  className="text-[9px] font-mono text-ink-2 hover:text-accent transition-colors uppercase">
                   Leer todas
                 </button>
               )}
@@ -140,7 +140,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   {/* Icon */}
                   <span
                     className={`material-symbols-outlined text-base mt-0.5 flex-shrink-0 ${
-                      !n.read ? 'text-[#fbcb1a]' : 'text-[#555]'
+                      !n.read ? 'text-accent' : 'text-[#555]'
                     }`}
                     style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}
                   >
@@ -158,7 +158,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
                   {/* Unread dot */}
                   {!n.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#fbcb1a] flex-shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-1.5" />
                   )}
                 </button>
               ))

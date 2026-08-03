@@ -387,7 +387,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <select
               value={selectedEmail}
               onChange={e => setSelectedEmail(e.target.value)}
-              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="">— Seleccionar atleta —</option>
               {athletes.map(a => (
@@ -404,7 +404,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Crear dieta
@@ -498,7 +498,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       <div className="flex items-center gap-3">
         <button
           onClick={handleBack}
-          className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#fbcb1a] border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+          className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-accent border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
         </button>
@@ -525,7 +525,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             const isOver = b > 0 && p > b;
             const isOk = b > 0 && round2(p) === round2(b);
             const pct = b > 0 ? Math.min(100, (p / b) * 100) : (p > 0 ? 100 : 0);
-            const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#fbcb1a]';
+            const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-accent';
             return (
               <div key={cat}>
                 <div className="flex items-center justify-between mb-1">
@@ -567,7 +567,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             placeholder="Ej: Día Alto, Día Bajo, Día Libre"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div>
@@ -579,16 +579,16 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
 
       {/* Onboarding reference panel */}
       {onboardingData && (
-        <div className="bg-[#0e0e0e] border border-[#fbcb1a]/15 rounded-xl p-4 space-y-3">
+        <div className="bg-[#0e0e0e] border border-accent/15 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider flex items-center gap-1.5">
+            <p className="font-mono text-[10px] text-accent uppercase tracking-wider flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">person_check</span>
               Referencia del atleta
             </p>
@@ -644,7 +644,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
                 setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[10px] uppercase tracking-wide rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-[10px] uppercase tracking-wide rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-sm">auto_fix_high</span>
               Prefijar desde macros
@@ -691,7 +691,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             )}
             <button
               onClick={addMeal}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-accent hover:border-accent/40 font-mono text-[10px] uppercase rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>Añadir comida
             </button>
@@ -702,7 +702,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-[#1c1b1b]/60 border-b border-white/7">
-              <span className="w-6 h-6 rounded-full bg-[#fbcb1a] text-black font-sans text-xs font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-accent text-black font-sans text-xs font-bold flex items-center justify-center flex-shrink-0">
                 {mi + 1}
               </span>
               <input
@@ -798,7 +798,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               {/* Add food button */}
               <button
                 onClick={() => openPicker(meal.id)}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-white/7 hover:border-[#fbcb1a]/40 py-2.5 rounded-lg text-[10px] font-mono text-ink-2 hover:text-[#fbcb1a] transition-colors"
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-white/7 hover:border-accent/40 py-2.5 rounded-lg text-[10px] font-mono text-ink-2 hover:text-accent transition-colors"
               >
                 <span className="material-symbols-outlined text-sm">add_circle</span>
                 Añadir alimento
@@ -859,7 +859,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
         >
           {saving
             ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -886,7 +886,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
                   <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-ink-2 border border-white/7'}`}
+                    className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-[#201f1f] text-ink-2 border border-white/7'}`}
                   >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
@@ -895,7 +895,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-ink-2 border border-transparent hover:border-white/7'}`}
+                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black shadow-md' : 'bg-[#201f1f] text-ink-2 border border-transparent hover:border-white/7'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>
@@ -913,10 +913,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
                 >
-                  <span className="block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                  <span className="block font-sans text-xs text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
                 </button>
               ))}
             </div>

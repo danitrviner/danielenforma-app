@@ -72,12 +72,12 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">checklist</span>
+          <span className="material-symbols-outlined text-accent text-base">checklist</span>
           Tareas del atleta
         </h3>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva tarea'}
@@ -91,14 +91,14 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -108,13 +108,13 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             />
           </div>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
           </button>
@@ -135,7 +135,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               key={t.id}
               onClick={() => handleToggle(t)}
               className={`w-full flex items-center gap-3 border rounded-lg p-3 text-left transition-all ${
-                t.status === 'done' ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
+                t.status === 'done' ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
               }`}
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>

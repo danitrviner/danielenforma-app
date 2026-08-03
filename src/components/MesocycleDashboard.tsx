@@ -64,7 +64,7 @@ function ChartCard({ title, icon, children }: { title: string; icon: string; chi
   return (
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
       <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontSize: '16px' }}>{icon}</span>
+        <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>{icon}</span>
         {title}
       </p>
       {children}
@@ -158,7 +158,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]">dashboard</span>
+          <span className="material-symbols-outlined text-accent">dashboard</span>
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (

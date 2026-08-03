@@ -222,9 +222,9 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
-        <div className="flex items-center gap-2 text-[#fbcb1a] animate-pulse">
+        <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
-          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
+          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
@@ -252,9 +252,9 @@ function AppContent() {
     // 'checking' — misma splash que la carga de sesión
     return (
       <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
-        <div className="flex items-center gap-2 text-[#fbcb1a] animate-pulse">
+        <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
-          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
+          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
@@ -280,7 +280,7 @@ function AppContent() {
 
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#111110] fixed top-0 left-0 border-b border-white/7 z-40">
-        <div className="flex items-center gap-2 text-[#fbcb1a]">
+        <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-[10px] bg-[#181816] border border-white/7 text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
@@ -292,7 +292,7 @@ function AppContent() {
             <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
             <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
-              <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-[#fbcb1a]/40" />
+              <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
               <span className="text-xs font-mono font-medium text-white">{profile.displayName}</span>
             </div>
           </div>
@@ -301,7 +301,7 @@ function AppContent() {
 
       {/* MOBILE HEADER */}
       <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#111110] border-b border-white/7 sticky top-0 z-40">
-        <div className="flex items-center gap-2 text-[#fbcb1a]">
+        <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
           <span className="text-[8px] bg-white/7 text-ink-2 px-1.5 py-0.5 rounded font-bold uppercase select-none">
@@ -310,7 +310,7 @@ function AppContent() {
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#fbcb1a]/40" onClick={() => goToTab('profile')}>
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -323,7 +323,7 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-ink-2 hover:bg-[#1e1e1b] hover:text-white'}`}
+              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-[#1e1e1b] hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
@@ -341,7 +341,7 @@ function AppContent() {
         {isCoach && (
           <button
             onClick={() => goToTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-[#fbcb1a]' : 'text-ink-2 hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
             <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
@@ -417,7 +417,7 @@ function AppContent() {
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-ink-2'}`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"

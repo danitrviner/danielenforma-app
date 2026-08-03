@@ -100,8 +100,8 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       </div>
 
       {successMsg && (
-        <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-white p-4 rounded-lg text-sm flex items-center gap-3 animate-bounce">
-          <span className="material-symbols-outlined text-[#fbcb1a]">energy_savings_leaf</span>
+        <div className="bg-accent/10 border border-accent/30 text-white p-4 rounded-lg text-sm flex items-center gap-3 animate-bounce">
+          <span className="material-symbols-outlined text-accent">energy_savings_leaf</span>
           <div>
             <p className="font-bold">{successMsg}</p>
           </div>
@@ -229,7 +229,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
+              <span className="material-symbols-outlined text-accent">edit_note</span>
               Nuevo Check-in
             </h2>
             
@@ -244,7 +244,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="0.0"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors"
+                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
                   required
                 />
               </div>
@@ -257,7 +257,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={emoji}
                       type="button"
                       onClick={() => setMood(emoji)}
-                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-[#201f1f] ring-1 ring-[#fbcb1a] scale-110' : 'opacity-55'}`}
+                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-[#201f1f] ring-1 ring-accent scale-110' : 'opacity-55'}`}
                     >
                       {emoji}
                     </button>
@@ -273,7 +273,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-[#fbcb1a] text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
+                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
                     >
                       {opt}
                     </button>
@@ -288,14 +288,14 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={2000}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[75px]"
+                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
                 ></textarea>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
+                className="w-full h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
               >
                 {isSubmitting ? 'Enviando...' : 'Enviar al Entrenador'}
                 <span className="material-symbols-outlined text-sm">send</span>
@@ -311,17 +311,17 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
         <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 blur-3xl rounded-full pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-16 h-16 rounded-full bg-[#1e1e1e] border-2 border-[#fbcb1a] overflow-hidden relative shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-[#1e1e1e] border-2 border-accent overflow-hidden relative shadow-lg">
                 <img 
                   alt="Athlete avatar" 
                   className="w-full h-full object-cover" 
                   src={profile.avatarUrl}
                 />
-                <div className="absolute bottom-0 right-0 bg-[#fbcb1a] text-black text-[10px] font-bold px-1 rounded-sm">L{profile.level}</div>
+                <div className="absolute bottom-0 right-0 bg-accent text-black text-[10px] font-bold px-1 rounded-sm">L{profile.level}</div>
               </div>
               
               <div className="flex-1">
@@ -352,7 +352,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   return (
                     <div 
                       key={idx} 
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-[#fbcb1a] border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
                       title={isActive ? "Entrenamiento registrado" : "Próximo entreno"}
                     />
                   );
@@ -369,7 +369,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                 <span>🏅</span> Primera semana
               </span>
               <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
-                <span className="text-[#fbcb1a]">⚡</span> 10 días de racha
+                <span className="text-accent">⚡</span> 10 días de racha
               </span>
               <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
@@ -399,7 +399,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-base">{item.mood}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#fbcb1a]/10 text-[#fbcb1a]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
                         {item.adherence}
                       </span>
                     </div>
@@ -413,13 +413,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
                   {/* Coach feedback loop displayed directly in notes checks! */}
                   {item.coachFeedback ? (
-                    <div className="text-xs border-l-2 border-[#fbcb1a] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
-                      <span className="font-mono font-semibold text-[#fbcb1a] block mb-1">Nota del Entrenador:</span>
+                    <div className="text-xs border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
+                      <span className="font-mono font-semibold text-accent block mb-1">Nota del Entrenador:</span>
                       <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                     </div>
                   ) : (
                     <div className="text-[11px] text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
+                      <span className="material-symbols-outlined text-xs animate-spin text-accent">sync</span>
                       Pendiente de revisión del Entrenador
                     </div>
                   )}

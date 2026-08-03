@@ -278,7 +278,7 @@ export default function CorrelationPanel({
     <div className="space-y-6">
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
         <p className="font-mono text-xs text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
@@ -294,7 +294,7 @@ export default function CorrelationPanel({
           <span className="font-mono text-xs text-ink-2 uppercase tracking-wider">
             Series disponibles
             {selectedIds.length > 0 && (
-              <span className="ml-2 text-[#fbcb1a] font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
+              <span className="ml-2 text-accent font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
             )}
           </span>
           <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
@@ -405,13 +405,13 @@ export default function CorrelationPanel({
               correlationResult.r === null
                 ? 'border-white/7'
                 : Math.abs(correlationResult.r) > 0.7
-                  ? 'border-[#fbcb1a]/30'
+                  ? 'border-accent/30'
                   : Math.abs(correlationResult.r) >= 0.4
                     ? 'border-[#fb923c]/30'
                     : 'border-white/7'
             }`}>
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">functions</span>
+                <span className="material-symbols-outlined text-accent text-sm">functions</span>
                 <p className="font-sans font-bold text-sm text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (

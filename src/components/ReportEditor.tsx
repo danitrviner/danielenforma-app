@@ -62,7 +62,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a]/50"
+                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -73,7 +73,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a]/50 resize-y placeholder-[#555]"
+                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-[#555]"
                 />
               </div>
 
@@ -85,7 +85,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-2.5 text-left"
                     >
-                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-[#fbcb1a]' : 'text-[#555]'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
+                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-accent' : 'text-[#555]'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
                         {s.included ? 'check_box' : 'check_box_outline_blank'}
                       </span>
                       <span className={`text-sm font-sans font-bold ${s.included ? 'text-white' : 'text-[#555]'}`}>{s.title}</span>
@@ -95,7 +95,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
+                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-[#555]"
                       />
                     )}
                   </div>
@@ -130,14 +130,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('save', () => onSaveDraft(draft))}
               disabled={busy !== null}
-              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#fbcb1a]/50 transition-all disabled:opacity-40"
+              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-accent/50 transition-all disabled:opacity-40"
             >
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
             </button>
             <button
               onClick={() => run('send', () => onSend(draft))}
               disabled={busy !== null}
-              className="px-5 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">send</span>
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}

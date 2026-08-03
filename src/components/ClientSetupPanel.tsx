@@ -191,7 +191,7 @@ export default function ClientSetupPanel({
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-[#fbcb1a] px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-[#d4a800] transition-all"
+                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-[#d4a800] transition-all"
                 >
                   Ir ahora
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -246,7 +246,7 @@ export default function ClientSetupPanel({
                   </div>
                   <div className="w-full h-1.5 bg-[#0e0e0e] rounded-full mt-2 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-emerald-400' : 'bg-[#fbcb1a]'}`}
+                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-emerald-400' : 'bg-accent'}`}
                       style={{ width: `${phase.donePct}%` }}
                     />
                   </div>
@@ -291,12 +291,12 @@ export default function ClientSetupPanel({
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">playlist_add_check</span>
+            <span className="material-symbols-outlined text-accent text-base">playlist_add_check</span>
             Tareas extra
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
           >
             <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
@@ -310,13 +310,13 @@ export default function ClientSetupPanel({
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
             <button
               type="submit"
               disabled={savingExtra}
-              className="px-3 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
             >
               {savingExtra ? '...' : 'Crear'}
             </button>

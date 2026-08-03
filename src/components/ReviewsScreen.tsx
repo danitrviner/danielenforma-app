@@ -202,7 +202,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               </span>
               <button
                 onClick={startReviewing}
-                className="flex items-center gap-1.5 text-xs bg-[#fbcb1a] text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-[#d4a800] active:scale-95 transition-all"
+                className="flex items-center gap-1.5 text-xs bg-accent text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-[#d4a800] active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-base">rate_review</span>
                 Empezar a revisar
@@ -216,8 +216,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       </header>
 
       {successMsg && (
-        <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]">check_circle</span>
+        <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-xl text-sm flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent">check_circle</span>
           <p>{successMsg}</p>
         </div>
       )}
@@ -227,14 +227,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {unifiedItems.length === 0 && !loadingResponses ? (
         <div className="bg-[#111110] border border-dashed border-white/7 rounded-xl p-16 text-center text-ink-2">
-          <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 block">verified_user</span>
+          <span className="material-symbols-outlined text-4xl text-accent mb-2 block">verified_user</span>
           <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
         <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
+            <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
@@ -303,7 +303,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                          className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-[#1c1b1b] transition-colors"
                         >
                           <span className="material-symbols-outlined text-base">account_circle</span>
                         </button>
@@ -318,7 +318,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <div className="grid grid-cols-3 gap-2 font-mono text-xs">
                           {[
                             { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
-                            { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
+                            { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
                             <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
@@ -334,8 +334,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           </div>
                         )}
                         {successMsg && expandedId === key && (
-                          <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">check_circle</span>
+                          <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
+                            <span className="material-symbols-outlined text-accent text-sm">check_circle</span>
                             {successMsg}
                           </div>
                         )}
@@ -354,7 +354,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
+                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
                             >
                               {r}
                             </button>
@@ -373,12 +373,12 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-sm">{hasNextPending ? 'skip_next' : 'send'}</span>
@@ -433,7 +433,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-[#1c1b1b] transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">account_circle</span>
                       </button>
@@ -483,7 +483,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     value={r}
                     onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                     placeholder="ej. Buen trabajo esta semana, sigue así."
-                    className="flex-1 bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="flex-1 bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
@@ -495,7 +495,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               ))}
               <button
                 onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
-                className="flex items-center gap-1.5 text-xs font-mono text-[#fbcb1a] hover:text-white"
+                className="flex items-center gap-1.5 text-xs font-mono text-accent hover:text-white"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 Añadir plantilla
@@ -504,7 +504,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               onClick={saveQuickReplyManager}
               disabled={savingQuickReplies}
-              className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
             >
               {savingQuickReplies ? 'Guardando...' : 'Guardar'}
             </button>

@@ -540,7 +540,7 @@ export default function CardioScreen({ profile }: Props) {
           </div>
 
           {state === 'idle' && (
-            <button onClick={handleConnect} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all">
+            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all">
               Conectar banda
             </button>
           )}
@@ -564,14 +564,14 @@ export default function CardioScreen({ profile }: Props) {
               )}
               <div className="flex items-center gap-2">
                 <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-[#0e0e0e] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+                  className="bg-[#0e0e0e] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent">
                   <option value="libre">Libre</option>
                   <option value="zona2">Sesión Zona 2</option>
                   <option value="intervalos" disabled={!intervalAssignment}>
                     {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
                   </option>
                 </select>
-                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all">
+                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all">
                   Empezar entrenamiento
                 </button>
               </div>
@@ -606,7 +606,7 @@ export default function CardioScreen({ profile }: Props) {
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
                 <button key={r} onClick={() => setHistoryRange(r)}
-                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono uppercase border transition-all ${historyRange === r ? 'bg-[#fbcb1a] text-black border-[#fbcb1a]' : 'text-ink-2 border-white/10 hover:text-white'}`}>
+                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-white/10 hover:text-white'}`}>
                   {{ all: 'Todo', week: 'Semana', month: 'Mes', year: 'Año' }[r]}
                 </button>
               ))}
@@ -639,7 +639,7 @@ export default function CardioScreen({ profile }: Props) {
                   </p>
                   <p className="text-[10px] text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
                   {(s.caloriesActiveKcal || s.caloriesKcal || s.fitivPoints || s.trimp) && (
-                    <p className="text-[10px] text-[#fbcb1a] font-mono mt-0.5">
+                    <p className="text-[10px] text-accent font-mono mt-0.5">
                       {(s.caloriesActiveKcal ?? s.caloriesKcal) !== undefined && `${Math.round(s.caloriesActiveKcal ?? s.caloriesKcal!)} kcal · `}
                       {s.fitivPoints !== undefined && `${s.fitivPoints} pts · `}
                       {s.trimp !== undefined && `TRIMP ${Math.round(s.trimp)}`}

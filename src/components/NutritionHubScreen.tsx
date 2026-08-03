@@ -44,7 +44,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">insights</span>
+            <span className="material-symbols-outlined text-accent text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
           </div>
           <p className="text-xs text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
@@ -65,7 +65,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             onClick={() => setActiveSubTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
-                ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
+                ? 'bg-accent text-black shadow-lg shadow-accent/10'
                 : 'text-ink-2 hover:text-white'
             }`}
           >
@@ -86,7 +86,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
           <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
             <div>
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-base">eco</span>
+                <span className="material-symbols-outlined text-accent text-base">eco</span>
                 Tus verduras habituales
               </h3>
               <p className="font-mono text-[10px] text-ink-2 mt-1">

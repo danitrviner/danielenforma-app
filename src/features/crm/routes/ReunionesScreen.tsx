@@ -102,7 +102,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva reunión
@@ -130,7 +130,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
             return (
               <div key={ev.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-[#fdba74]' : 'bg-[#fbcb1a]'}`} />
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-[#fdba74]' : 'bg-accent'}`} />
                   <div className="min-w-0">
                     <p className="font-sans text-[11px] text-[#f5f5f0] truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
@@ -164,7 +164,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => marcarRealizada(ev.reunion!)}
                         disabled={actualizar.isPending && actualizar.variables?.id === ev.reunion!.id}
-                        className="px-2 py-1 rounded-lg bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 font-mono text-[9px] uppercase tracking-widest hover:bg-[#fbcb1a]/25 disabled:opacity-40 transition-colors"
+                        className="px-2 py-1 rounded-lg bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
                       >
                         Realizada
                       </button>

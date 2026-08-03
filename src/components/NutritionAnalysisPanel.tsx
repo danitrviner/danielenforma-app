@@ -153,7 +153,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
     <div className="space-y-5">
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
           Análisis nutricional
         </h2>
         <p className="font-mono text-xs text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
@@ -268,7 +268,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
-            className="px-3.5 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
           >Compartir resumen</button>
         )}
       </div>

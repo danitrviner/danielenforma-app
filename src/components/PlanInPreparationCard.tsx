@@ -68,10 +68,10 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
   const doneCount = items.filter(i => i.done).length;
 
   return (
-    <section className="bg-[#181816] border border-[#fbcb1a]/25 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
+    <section className="bg-[#181816] border border-accent/25 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+        <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-2xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
         </div>
         <div>
           <h2 className="font-sans font-black uppercase tracking-tight text-base text-white">Tu coach está preparando tu plan</h2>
@@ -93,7 +93,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all border ${
               item.done
                 ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
+                : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
             } disabled:opacity-60`}
           >
             <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-ink-2'}`}>

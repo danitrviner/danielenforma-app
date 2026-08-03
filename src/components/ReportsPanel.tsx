@@ -156,7 +156,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
     <div className="space-y-6">
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
           Reportes
         </h2>
         <p className="font-mono text-xs text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
@@ -171,7 +171,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             <select
               value={periodMode}
               onChange={e => setPeriodMode(e.target.value as PeriodMode)}
-              className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-[#fbcb1a]/50 cursor-pointer"
+              className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
             >
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
@@ -184,7 +184,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <select
                 value={compareWeeks}
                 onChange={e => setCompareWeeks(Number(e.target.value))}
-                className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-[#fbcb1a]/50 cursor-pointer"
+                className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
               >
                 {compareWeekOptions.map(w => (
                   <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>
@@ -199,7 +199,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           )}
           <button
             onClick={handleGenerate}
-            className="px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar
@@ -224,7 +224,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           reports.map(r => (
             <div
               key={r.id}
-              className="w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-[#fbcb1a]/40 transition-all"
+              className="w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-accent/40 transition-all"
             >
               <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
                 <div className="min-w-0">
@@ -249,7 +249,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <button
                 onClick={() => handleSend(r)}
                 title={r.status === 'sent' ? 'Reenviar al atleta' : 'Enviar al atleta'}
-                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-[#fbcb1a] transition-colors"
+                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-accent transition-colors"
               >
                 <span className="material-symbols-outlined text-base">send</span>
               </button>

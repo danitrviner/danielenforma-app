@@ -305,7 +305,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Header */}
       <header className="pb-4 border-b border-white/60">
         <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
@@ -323,11 +323,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
         <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-[#121212] border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-xl">group</span>
+                <span className="material-symbols-outlined text-accent text-xl">group</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
               <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
@@ -375,14 +375,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   {pendingCheckins.length} por evaluar
                 </span>
               ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {pendingCheckins.length === 0 ? (
               <p className="text-xs font-bold text-white">¡Sin revisiones pendientes!</p>
             ) : (
               <p className="text-sm text-ink-2 font-mono">
-                Ve a <strong className="text-[#fbcb1a]">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
+                Ve a <strong className="text-accent">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
               </p>
             )}
           </button>
@@ -399,7 +399,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   {totalPendingNotes} por leer
                 </span>
               ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {totalPendingNotes === 0 ? (
@@ -437,7 +437,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-[#111110] border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-[#fbcb1a] transition-colors"
+              className="w-full bg-[#111110] border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -448,7 +448,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   onClick={() => changeGridCols(n)}
                   title={`${n} columnas`}
                   className={`w-7 h-7 rounded-md font-sans text-xs font-bold transition-all ${
-                    gridCols === n ? 'bg-[#fbcb1a] text-black' : 'text-ink-2 hover:text-white'
+                    gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
                   }`}
                 >
                   {n}
@@ -472,7 +472,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <p className="text-ink-2 font-mono text-xs">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">person_add</span>
               Invitar a tu primer atleta
@@ -492,11 +492,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-[#111110] border rounded-2xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  className={`bg-[#111110] border rounded-2xl p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-white/7'
                   }`}
                 >
-                  <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
+                  <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
                   <button
                     onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
                     title={`Setup ${setupPct}%`}
@@ -506,11 +506,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   </button>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-[#fbcb1a]/60 transition-all flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-accent/60 transition-all flex-shrink-0">
                         <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-[#fbcb1a] transition-colors">{athlete.displayName}</h3>
+                        <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-accent transition-colors">{athlete.displayName}</h3>
                         <p className="font-mono text-[10px] text-ink-2 truncate">{athlete.email}</p>
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 mt-0.5">
@@ -542,8 +542,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
                       </div>
                       <div>
-                        <span className="block text-[8px] text-[#fbcb1a] uppercase font-bold">ACTUAL</span>
-                        <span className="block text-xs font-bold text-[#fbcb1a]">{athlete.actualWeight || athlete.initialWeight} kg</span>
+                        <span className="block text-[8px] text-accent uppercase font-bold">ACTUAL</span>
+                        <span className="block text-xs font-bold text-accent">{athlete.actualWeight || athlete.initialWeight} kg</span>
                       </div>
                       <div>
                         <span className="block text-[8px] text-[#00eefc] uppercase">META</span>
@@ -582,7 +582,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         </span>
                       )}
                     </div>
-                    <span className="text-[#fbcb1a] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span className="text-accent flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                       <span>Abrir Hub</span>
                       <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
                     </span>
@@ -598,7 +598,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Invite a new client by email */}
       <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
         <div className="flex items-center gap-2 mb-3">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-xl">person_add</span>
+          <span className="material-symbols-outlined text-accent text-xl">person_add</span>
           <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
         </div>
         <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
@@ -608,19 +608,19 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-[#111110] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
+            className="flex-1 bg-[#111110] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"
             disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-sm">mail</span>
             {inviting ? 'Enviando...' : 'Invitar'}
           </button>
         </form>
         {inviteError && <p className="font-mono text-[10px] text-red-400 mt-1.5">{inviteError}</p>}
-        {inviteSuccess && <p className="font-mono text-[10px] text-[#fbcb1a] mt-1.5">{inviteSuccess}</p>}
+        {inviteSuccess && <p className="font-mono text-[10px] text-accent mt-1.5">{inviteSuccess}</p>}
 
         {pendingInvites.length > 0 && (
           <div className="mt-4 pt-4 border-t border-white/60">

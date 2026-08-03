@@ -330,7 +330,7 @@ export default function ClientReviewsPanel({
             <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
+                  <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
                   Historial Fotográfico
                   {athletePhotos.length > 0 && (
                     <span className="font-mono text-[9px] text-ink-2">({athletePhotos.length} fotos)</span>
@@ -345,7 +345,7 @@ export default function ClientReviewsPanel({
                     <button
                       key={v.id}
                       onClick={() => setSelectedView(v.id)}
-                      className={`px-3 py-1 rounded font-sans text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-[#fbcb1a] text-black shadow-md' : 'text-ink-2 hover:text-white'}`}
+                      className={`px-3 py-1 rounded font-sans text-[9px] font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-black shadow-md' : 'text-ink-2 hover:text-white'}`}
                     >{v.label}</button>
                   ))}
                 </div>
@@ -364,8 +364,8 @@ export default function ClientReviewsPanel({
               ) : (
                 <div className="p-3 bg-[#111110]/90">
                   {viewPhotos.length === 1 ? (
-                    <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
+                    <div className="relative rounded-lg overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
+                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -378,8 +378,8 @@ export default function ClientReviewsPanel({
                         </div>
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
-                      <div className="relative rounded-lg overflow-hidden border border-[#fbcb1a]/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-[#fbcb1a] text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
+                      <div className="relative rounded-lg overflow-hidden border border-accent/20 group">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded font-sans text-[10px] font-black shadow-md">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -397,7 +397,7 @@ export default function ClientReviewsPanel({
               {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
               <div className="p-4 border-t border-white/7 space-y-4">
                 <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">edit_calendar</span>
+                  <span className="material-symbols-outlined text-accent text-sm">edit_calendar</span>
                   Asignar fotos de check-in
                 </h4>
 
@@ -415,7 +415,7 @@ export default function ClientReviewsPanel({
                           onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
                           className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
                             active
-                              ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                              ? 'bg-accent border-accent text-black'
                               : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-[#3a3a3a]'
                           }`}
                         >{v.label}</button>
@@ -439,7 +439,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignPhotoCheckIn}
                     disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningPhoto ? '…' : 'Asignar'}
                   </button>
@@ -453,7 +453,7 @@ export default function ClientReviewsPanel({
                       const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
                       return (
                         <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm">photo_camera</span>
+                          <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
                             <p className="font-mono text-[9px] text-ink-2">{schedLabel} · desde {a.startDate}</p>
@@ -490,7 +490,7 @@ export default function ClientReviewsPanel({
                 className="w-full flex items-center justify-between gap-3 text-left"
               >
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-base flex-shrink-0">person_check</span>
+                  <span className="material-symbols-outlined text-accent text-base flex-shrink-0">person_check</span>
                   <span className="truncate">Ficha de iniciación</span>
                   <span className="font-mono text-[10px] text-[#555] font-normal normal-case truncate">
                     {[
@@ -508,7 +508,7 @@ export default function ClientReviewsPanel({
                 <div className="flex justify-end -mt-2">
                   <button
                     onClick={() => setEditingOnboarding(true)}
-                    className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+                    className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
                   >
                     <span className="material-symbols-outlined text-sm">edit</span>Editar
                   </button>
@@ -553,7 +553,7 @@ export default function ClientReviewsPanel({
                       <span className="text-ink-2">Actividad: <span className="text-white font-bold">{ACTIVITY_LABELS[onboardingData.activityLevel]}</span></span>
                     )}
                     {onboardingData.goalBody && (
-                      <span className="text-ink-2">Objetivo: <span className="text-[#fbcb1a] font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody]}</span></span>
+                      <span className="text-ink-2">Objetivo: <span className="text-accent font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody]}</span></span>
                     )}
                     {onboardingData.goalCapacity && (
                       <span className="text-ink-2">Capacidad: <span className="text-white font-bold">{GOAL_CAP_LABELS[onboardingData.goalCapacity]}</span></span>
@@ -567,7 +567,7 @@ export default function ClientReviewsPanel({
                 <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Nutrición</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
                   <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span></span>
-                  <span className="text-ink-2">Calorías: <span className="text-[#fbcb1a] font-bold">{onboardingData.targetCalories} kcal/día</span></span>
+                  <span className="text-ink-2">Calorías: <span className="text-accent font-bold">{onboardingData.targetCalories} kcal/día</span></span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {([
@@ -854,7 +854,7 @@ export default function ClientReviewsPanel({
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm">add</span>Crear ficha
               </button>
@@ -866,7 +866,7 @@ export default function ClientReviewsPanel({
         {onboardingData && (
           <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant</span>
+              <span className="material-symbols-outlined text-accent text-base">restaurant</span>
               Preferencias alimentarias
             </h3>
             <FoodPreferencesPanel
@@ -889,7 +889,7 @@ export default function ClientReviewsPanel({
               { label: 'Racha',      value: `${athlete.currentStreak || 0} Semanas`,              color: 'text-orange-400'},
               { label: 'Nivel',      value: `Nivel ${athlete.level || 1}`,                        color: 'text-[#00eefc]' },
               { label: 'XP',         value: `${athlete.xp || 0} / 400`,                          color: 'text-slate-300' },
-              { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-[#fbcb1a]' },
+              { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-accent' },
               { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-[#86efac]' },
             ].map(row => (
               <div key={row.label} className="flex justify-between items-baseline text-xs font-mono">
@@ -952,7 +952,7 @@ export default function ClientReviewsPanel({
           return (
             <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
+                <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
                 <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-[9px] text-ink-2 ml-1">({items.length} entradas)</span>
               </div>
@@ -1064,7 +1064,7 @@ export default function ClientReviewsPanel({
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
                                     <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                   </button>
                                   <button onClick={() => { setEditingReviewKey(null); setCheckinEditForm(null); }}
@@ -1078,7 +1078,7 @@ export default function ClientReviewsPanel({
                             <div className="grid grid-cols-3 gap-3 font-mono text-xs">
                               {[
                                 { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
-                                { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
+                                { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                                 { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                               ].map(cell => (
                                 <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
@@ -1094,8 +1094,8 @@ export default function ClientReviewsPanel({
                               </div>
                             )}
                             {unifiedFeedbackSuccess && expandedReviewId === key && (
-                              <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">check_circle</span>
+                              <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
+                                <span className="material-symbols-outlined text-accent text-sm">check_circle</span>
                                 {unifiedFeedbackSuccess}
                               </div>
                             )}
@@ -1107,12 +1107,12 @@ export default function ClientReviewsPanel({
                                 value={expandedReviewId === key ? unifiedFeedbackText : (c.coachFeedback || '')}
                                 onChange={e => setUnifiedFeedbackText(e.target.value)}
                                 placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                                className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:outline-none min-h-[80px] resize-none font-sans"
+                                className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                               />
                               <button
                                 type="submit"
                                 disabled={unifiedSubmitting}
-                                className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                                 <span className="material-symbols-outlined text-sm">send</span>
@@ -1213,7 +1213,7 @@ export default function ClientReviewsPanel({
                               })}
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleSaveResponseEdit(r.id)} disabled={savingEdit}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 disabled:opacity-50 transition-all">
                                   <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingReviewKey(null); setResponseEditAnswers([]); }}
@@ -1249,12 +1249,12 @@ export default function ClientReviewsPanel({
             <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-sm">quiz</span>
+                  <span className="material-symbols-outlined text-accent text-sm">quiz</span>
                   Asignar cuestionario
                 </h3>
                 <button
                   onClick={() => { setNewQForm(blankQForm()); setShowNewQEditor(true); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-[#fbcb1a]/40 text-[#fbcb1a] font-mono text-[10px] uppercase rounded-lg hover:border-[#fbcb1a]/70 transition-all flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>Crear cuestionario nuevo
                 </button>
@@ -1294,7 +1294,7 @@ export default function ClientReviewsPanel({
                   <select
                     value={assignQId}
                     onChange={e => setAssignQId(e.target.value)}
-                    className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
                     {coachQuestionnaires.map(q => (
@@ -1318,7 +1318,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>
@@ -1334,7 +1334,7 @@ export default function ClientReviewsPanel({
                     const schedLabel = scheduleLabel(a.schedule);
                     return (
                       <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                        <span className="material-symbols-outlined text-[#fbcb1a] text-sm">quiz</span>
+                        <span className="material-symbols-outlined text-accent text-sm">quiz</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-bold text-white text-xs truncate">{tmpl?.title ?? a.questionnaireId}</p>
                           <p className="font-mono text-[9px] text-ink-2">{schedLabel} · desde {a.startDate}</p>

@@ -108,13 +108,13 @@ export default function ClientDietsPanel({
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">nutrition</span>
+            <span className="material-symbols-outlined text-accent text-sm">nutrition</span>
             Dietas disponibles
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setDietEditorDiet(null)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Nueva dieta
@@ -134,7 +134,7 @@ export default function ClientDietsPanel({
               return (
                 <div
                   key={dt.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-[#1a1c12] border-[#fbcb1a]/40' : 'bg-[#181816] border-white/7'}`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-[#1a1c12] border-accent/40' : 'bg-[#181816] border-white/7'}`}
                 >
                   {/* Toggle checkbox */}
                   <button
@@ -142,7 +142,7 @@ export default function ClientDietsPanel({
                     className="flex-shrink-0"
                     title={active ? 'Desactivar dieta' : 'Activar dieta'}
                   >
-                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a] hover:border-ink-2'}`}>
+                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-[#3a3a3a] hover:border-ink-2'}`}>
                       {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
                     </span>
                   </button>
@@ -163,7 +163,7 @@ export default function ClientDietsPanel({
                   </div>
 
                   {active && (
-                    <span className="text-[9px] font-sans font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 px-2 py-0.5 rounded-lg border border-[#fbcb1a]/20 flex-shrink-0">
+                    <span className="text-[9px] font-sans font-bold uppercase text-accent bg-accent/10 px-2 py-0.5 rounded-lg border border-accent/20 flex-shrink-0">
                       Activa
                     </span>
                   )}
@@ -188,7 +188,7 @@ export default function ClientDietsPanel({
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_month</span>
+            <span className="material-symbols-outlined text-accent text-sm">calendar_month</span>
             Programación semanal
           </h3>
           {pendingScheduledDiets.length > 0 && (
@@ -217,7 +217,7 @@ export default function ClientDietsPanel({
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-[#1c1b1b] border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-[#fbcb1a]/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
+                  className="w-full bg-[#1c1b1b] border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -226,7 +226,7 @@ export default function ClientDietsPanel({
                   ))}
                 </select>
                 {totalExch !== null && (
-                  <span className="text-[8px] font-mono text-[#fbcb1a] text-center">
+                  <span className="text-[8px] font-mono text-accent text-center">
                     {totalExch} int.
                   </span>
                 )}
@@ -242,12 +242,12 @@ export default function ClientDietsPanel({
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">restaurant_menu</span>
+            <span className="material-symbols-outlined text-accent text-sm">restaurant_menu</span>
             Menú semanal
           </h3>
           <button
             onClick={() => setMenuEditor('new')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
             Generar menú
@@ -282,7 +282,7 @@ export default function ClientDietsPanel({
                       {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                     </span>
                     {m.batchCooking && (
-                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[8px] font-mono font-bold uppercase text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 px-1.5 py-0.5 rounded">
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[8px] font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>inventory_2</span>batch
                       </span>
                     )}
@@ -329,7 +329,7 @@ export default function ClientDietsPanel({
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
                     <div key={i} className="font-mono text-[10px] text-ink-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
-                      <span className="text-[#555]">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-[#fbcb1a]">{s.toRecipeName}</span>
+                      <span className="text-[#555]">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-accent">{s.toRecipeName}</span>
                     </div>
                   ))}
               </div>
@@ -374,9 +374,9 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]' : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
                 >
-                  <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
+                  <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
                     {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
                   </span>
                   {DIET_MODE_LABELS[mode]}
@@ -406,7 +406,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -420,7 +420,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

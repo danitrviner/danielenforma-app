@@ -20,14 +20,14 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
           <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Esfuerzo percibido</p>
-          <p className="font-sans font-black text-6xl text-[#fbcb1a] tabular-nums mt-2">{pe}</p>
+          <p className="font-sans font-black text-6xl text-accent tabular-nums mt-2">{pe}</p>
           <p className="text-sm font-sans font-semibold text-white mt-1">{peLabel(pe)}</p>
         </div>
 
         <input
           type="range" min={1} max={10} step={1} value={pe}
           onChange={e => setPe(Number(e.target.value))}
-          className="w-full accent-[#fbcb1a]"
+          className="w-full accent-accent"
         />
         <div className="flex justify-between text-[9px] font-mono text-ink-2 px-1">
           <span>{PE_LABELS[0]}</span>
@@ -35,7 +35,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
         </div>
 
         <button onClick={() => onConfirm(pe)} disabled={saving}
-          className="w-full py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar sesión'}
         </button>
       </div>

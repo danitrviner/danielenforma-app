@@ -50,7 +50,7 @@ export default function WeeklyAnalysisButton() {
       <button
         onClick={run}
         disabled={busy}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60 text-[#fbcb1a] font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
         <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         Análisis semanal IA
@@ -60,8 +60,8 @@ export default function WeeklyAnalysisButton() {
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
           <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-              <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Análisis semanal</span>
+              <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+              <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
                 className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
                 <span className="material-symbols-outlined text-[20px]">close</span>

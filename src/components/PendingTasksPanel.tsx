@@ -24,7 +24,7 @@ const TYPE_ICON: Record<TaskType, string> = {
 
 const TYPE_COLOR: Record<TaskType, string> = {
   revision: 'text-[#00eefc]',
-  cuestionario: 'text-[#fbcb1a]',
+  cuestionario: 'text-accent',
   foto: 'text-violet-300',
   manual: 'text-amber-300',
   otro: 'text-ink-2',
@@ -135,10 +135,10 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   return (
     <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
       <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#fbcb1a]">checklist</span>
+        <span className="material-symbols-outlined text-accent">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (
-          <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{rows.length}</span>
+          <span className="ml-auto bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{rows.length}</span>
         )}
       </h2>
 
@@ -150,16 +150,16 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
             <button
               key={row.key}
               onClick={row.onOpen}
-              className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all group"
+              className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all group"
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate">{row.title}</p>
+                <p className="font-sans font-semibold text-sm text-white group-hover:text-accent transition-colors truncate">{row.title}</p>
                 {row.dueDate && (
                   <p className="font-mono text-[10px] text-ink-2 mt-0.5">Vence: {row.dueDate}</p>
                 )}
               </div>
-              <span className="material-symbols-outlined text-ink-2 group-hover:text-[#fbcb1a] transition-colors flex-shrink-0">chevron_right</span>
+              <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0">chevron_right</span>
             </button>
           ))}
         </div>

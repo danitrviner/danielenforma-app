@@ -215,7 +215,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-outlined text-3xl text-[#fbcb1a] animate-spin">refresh</span>
+        <span className="material-symbols-outlined text-3xl text-accent animate-spin">refresh</span>
       </div>
     );
   }

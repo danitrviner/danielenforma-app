@@ -69,15 +69,15 @@ export default function CoachNotesPanel({ athletes }: Props) {
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
+          <span className="material-symbols-outlined text-accent text-base">edit_note</span>
           Mis notas
           {pending.length > 0 && (
-            <span className="bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
+            <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
           )}
         </h3>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva nota'}
@@ -94,14 +94,14 @@ export default function CoachNotesPanel({ athletes }: Props) {
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Escribe la nota..."
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
             autoFocus
           />
           <select
             value={relatedEmail}
             onChange={e => setRelatedEmail(e.target.value)}
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
           >
             <option value="">— Sin cliente asociado —</option>
             {athletes.map(a => (
@@ -111,7 +111,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Guardar nota'}
           </button>
@@ -136,7 +136,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
             >
               <button
                 onClick={() => handleToggle(n)}
-                className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}
+                className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}
               >
                 {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
               </button>

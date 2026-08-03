@@ -252,7 +252,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA"
-        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-3.5 rounded-full bg-[#fbcb1a] text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
+        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-3.5 rounded-full bg-accent text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
       >
         <span className="material-symbols-outlined block" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
       </button>
@@ -263,8 +263,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-[#111110] border-l border-white/10 flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-        <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-        <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Asistente IA</span>
+        <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
           className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">tune</span>
@@ -303,7 +303,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           )}
           {chats.map(c => (
             <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-[#fbcb1a]/40 bg-[#fbcb1a]/5' : 'border-white/7 bg-[#161616] hover:border-white/20'}`}
+              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-[#161616] hover:border-white/20'}`}
               onClick={() => openChat(c)}
             >
               <div className="flex-1 min-w-0">
@@ -332,7 +332,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-ink-2 hover:text-white bg-[#161616] border border-white/7 hover:border-[#fbcb1a]/40 rounded-xl px-3 py-2 transition-colors">
+                      className="text-left text-xs text-ink-2 hover:text-white bg-[#161616] border border-white/7 hover:border-accent/40 rounded-xl px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -345,7 +345,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 const text = messageText(msg);
                 if (!text) return null; // mensajes de tool_results — no se pintan
                 return (
-                  <div key={i} className="self-end max-w-[85%] bg-[#fbcb1a]/12 border border-[#fbcb1a]/25 text-[#e5e2e1] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-[#e5e2e1] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                     {text}
                   </div>
                 );
@@ -465,7 +465,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div className="p-3 border-t border-white/7">
             {chatFull ? (
               <button onClick={startNew}
-                className="w-full py-2.5 rounded-xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] text-xs font-bold uppercase tracking-wider">
+                className="w-full py-2.5 rounded-xl bg-accent/10 border border-accent/30 text-accent text-xs font-bold uppercase tracking-wider">
                 Chat largo — empezar chat nuevo
               </button>
             ) : (
@@ -479,7 +479,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
@@ -488,7 +488,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   </button>
                 )}
                 <button onClick={send} disabled={busy || !input.trim()} title="Enviar"
-                  className="p-2.5 rounded-xl bg-[#fbcb1a] text-black disabled:opacity-30 transition-opacity">
+                  className="p-2.5 rounded-xl bg-accent text-black disabled:opacity-30 transition-opacity">
                   <span className="material-symbols-outlined block text-[20px]">send</span>
                 </button>
               </div>
@@ -501,8 +501,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
           <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-              <span className="material-symbols-outlined text-[#fbcb1a]">tune</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Instrucciones fijas</span>
+              <span className="material-symbols-outlined text-accent">tune</span>
+              <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
               <p className="text-xs text-ink-2">
@@ -513,7 +513,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">
@@ -522,7 +522,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 Cancelar
               </button>
               <button onClick={saveInstructions} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                className="flex-1 py-2.5 rounded-xl bg-accent text-black text-xs font-bold uppercase tracking-wide disabled:opacity-40">
                 {savingInstructions ? 'Guardando…' : 'Guardar'}
               </button>
             </div>

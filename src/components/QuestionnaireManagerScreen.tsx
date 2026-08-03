@@ -84,7 +84,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
         <button
           onClick={() => openEditor()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>Nuevo
         </button>
@@ -106,14 +106,14 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <div className="space-y-3">
           {questionnaires.map(q => (
             <div key={q.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex items-center gap-4">
-              <div className="w-9 h-9 bg-[#fbcb1a]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-base">quiz</span>
+              <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-accent text-base">quiz</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-sans font-bold text-white text-sm truncate">{q.title}</p>
                   {q.questions.some(qq => qq.graphable) && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-mono text-[#fbcb1a] bg-[#fbcb1a]/10 px-1.5 py-0.5 rounded border border-[#fbcb1a]/20">
+                    <span className="flex items-center gap-0.5 text-[9px] font-mono text-accent bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20">
                       <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
                       Graficable
                     </span>

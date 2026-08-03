@@ -398,12 +398,12 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#fbcb1a] border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-accent border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Clientes
           </button>
-          <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-[#fbcb1a]/30 object-cover" />
+          <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-sans font-bold text-white text-xl leading-tight">{athlete.displayName}</h1>
@@ -425,12 +425,12 @@ export default function ClientHub({
             type="date"
             value={planStart}
             onChange={e => setPlanStart(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[36px]"
+            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[36px]"
+            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -439,7 +439,7 @@ export default function ClientHub({
           <button
             onClick={handleSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-[10px] font-bold uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -478,7 +478,7 @@ export default function ClientHub({
               key={zone}
               onClick={() => goToZone(zone)}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl font-sans text-xs font-bold uppercase tracking-wide transition-all ${
-                activeZone === zone ? 'bg-[#fbcb1a] text-black' : 'text-ink-2 hover:text-white'
+                activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-base">{ZONE_META[zone].icon}</span>
@@ -497,7 +497,7 @@ export default function ClientHub({
                   onClick={() => guardedTabChange(tab)}
                   className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
                     activeTab === tab
-                      ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
+                      ? 'bg-accent/10 border-accent/40 text-accent'
                       : 'border-transparent text-ink-2 hover:text-white'
                   }`}
                 >

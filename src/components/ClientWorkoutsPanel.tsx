@@ -87,7 +87,7 @@ export default function ClientWorkoutsPanel({
       {/* Periodización de entrenamiento — visión analítica */}
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Periodización de entrenamiento
         </h2>
         <p className="font-mono text-xs text-ink-2 mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
@@ -97,8 +97,8 @@ export default function ClientWorkoutsPanel({
 
       {/* Onboarding exercise reference */}
       {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
-        <div className="bg-[#0e0e0e] border border-[#fbcb1a]/15 rounded-xl p-4 space-y-3">
-          <p className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider flex items-center gap-1.5">
+        <div className="bg-[#0e0e0e] border border-accent/15 rounded-xl p-4 space-y-3">
+          <p className="font-mono text-[10px] text-accent uppercase tracking-wider flex items-center gap-1.5">
             <span className="material-symbols-outlined text-sm">person_check</span>
             Preferencias de ejercicio
           </p>
@@ -107,7 +107,7 @@ export default function ClientWorkoutsPanel({
               <p className="font-mono text-[9px] text-ink-2 uppercase">Favoritos</p>
               <div className="flex flex-wrap gap-1.5">
                 {onboardingData.favoriteExercises.map(e => (
-                  <span key={e} className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-[#fbcb1a] px-2.5 py-1 rounded-full text-[10px] font-mono font-bold">
+                  <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-2.5 py-1 rounded-full text-[10px] font-mono font-bold">
                     {e}
                   </span>
                 ))}
@@ -187,7 +187,7 @@ export default function ClientWorkoutsPanel({
                   )}
                   {log.entries.filter(e => e.note).map(e => (
                     <p key={e.exerciseId} className="text-xs text-ink-2">
-                      <span className="font-mono text-[10px] text-[#fbcb1a]">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
+                      <span className="font-mono text-[10px] text-accent">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
                     </p>
                   ))}
                 </div>
@@ -205,8 +205,8 @@ export default function ClientWorkoutsPanel({
             onClick={() => setAssignmentsExpanded(e => !e)}
             className="flex items-center gap-2 text-left group"
           >
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">fitness_center</span>
-            <h3 className="font-sans font-bold text-base text-white group-hover:text-[#fbcb1a] transition-colors">
+            <span className="material-symbols-outlined text-accent text-sm">fitness_center</span>
+            <h3 className="font-sans font-bold text-base text-white group-hover:text-accent transition-colors">
               Entrenamientos asignados
             </h3>
             {assignments.length > 0 && (
@@ -223,7 +223,7 @@ export default function ClientWorkoutsPanel({
           </button>
           <button
             onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Asignar
@@ -246,7 +246,7 @@ export default function ClientWorkoutsPanel({
                       <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
                         {wo?.name || <span className="italic text-ink-2">Rutina eliminada</span>}
                         {wo?.exercises.some(e => e.recordVideoSet) && (
-                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
+                          <span className="material-symbols-outlined text-accent text-sm flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
                         )}
                       </p>
                       <p className="font-mono text-[10px] text-ink-2">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
@@ -285,7 +285,7 @@ export default function ClientWorkoutsPanel({
               </button>
             </div>
             <p className="text-xs text-ink-2 font-mono flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">person</span>
+              <span className="material-symbols-outlined text-sm text-accent">person</span>
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
             <div>
@@ -296,7 +296,7 @@ export default function ClientWorkoutsPanel({
                 <select
                   value={assignWorkoutId}
                   onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   {workouts.map(w => (
                     <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
@@ -310,7 +310,7 @@ export default function ClientWorkoutsPanel({
                 type="date"
                 value={assignDate}
                 onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div className="flex gap-3 pt-1">
@@ -320,7 +320,7 @@ export default function ClientWorkoutsPanel({
               <button
                 onClick={handleCreateAssignment}
                 disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isAssigning ? (
                   <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>

@@ -102,7 +102,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
     >
       {paso === 'elegir' && (
         <div className="space-y-3">
-          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl border-2 border-dashed border-white/12 hover:border-[#fbcb1a]/40 cursor-pointer transition-colors">
+          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl border-2 border-dashed border-white/12 hover:border-accent/40 cursor-pointer transition-colors">
             <span className="material-symbols-outlined text-2xl text-[#555550]">upload_file</span>
             <span className="font-sans text-[11px] text-[#a8a89e]">Arrastra o elige un .xlsx o .csv</span>
             <input
@@ -127,7 +127,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a] animate-spin">progress_activity</span>
+          <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
           <p className="font-sans text-[11px] text-[#a8a89e]">Leyendo {nombreArchivo}…</p>
         </div>
       )}
@@ -144,7 +144,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a] animate-spin">progress_activity</span>
+          <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
           <p className="font-sans text-[11px] text-[#a8a89e]">Importando {aImportar.length} clientes…</p>
         </div>
       )}
@@ -229,7 +229,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           type="checkbox"
           checked={!excluida}
           onChange={onToggle}
-          className="mt-0.5 accent-[#fbcb1a]"
+          className="mt-0.5 accent-accent"
           aria-label={`Incluir a ${fila.nombre}`}
         />
       )}

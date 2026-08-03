@@ -95,14 +95,14 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
         <div className="flex-1 min-w-[200px]">
           <p className="text-ink-2 text-xs font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
           <p className="font-mono text-[10px] text-ink-2 mt-1">
-            Nivel actual del atleta: <span className="text-[#fbcb1a] font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
+            Nivel actual del atleta: <span className="text-accent font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-[#0e0e0e] border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-[#fbcb1a]"
+            className="bg-[#0e0e0e] border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -110,7 +110,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -126,7 +126,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                 value={level.name}
                 onChange={e => updateLevel(level.id, { name: e.target.value })}
                 placeholder="Nombre del nivel"
-                className="flex-1 min-w-[140px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-[#fbcb1a]"
+                className="flex-1 min-w-[140px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
                 <span className="font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
       >
         + Añadir nivel
       </button>

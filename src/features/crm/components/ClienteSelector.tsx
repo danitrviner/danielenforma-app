@@ -40,7 +40,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange(null as unknown as Cliente)}
-          className="font-mono text-[9px] uppercase tracking-widest text-[#fbcb1a] hover:underline shrink-0"
+          className="font-mono text-[9px] uppercase tracking-widest text-accent hover:underline shrink-0"
         >
           Cambiar
         </button>

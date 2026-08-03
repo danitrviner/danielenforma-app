@@ -96,7 +96,7 @@ function ProjectionTooltip({ active, payload }: any) {
       )}
       {row.real != null && (
         <p className="flex items-center justify-between gap-3">
-          <span className="text-[#fbcb1a]">Real</span>
+          <span className="text-accent">Real</span>
           <span className="text-white font-bold">{fmtKg(row.real)} kg</span>
         </p>
       )}
@@ -248,9 +248,9 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {onEdit && (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#fbcb1a]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
           >
-            <span className="material-symbols-outlined text-sm text-[#fbcb1a]">add</span>
+            <span className="material-symbols-outlined text-sm text-accent">add</span>
             Crear periodización
           </button>
         )}
@@ -313,14 +313,14 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         <div className="flex items-center justify-end">
           <button
             onClick={onEdit}
-            className="text-[10px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider"
+            className="text-[10px] font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
           >Editar periodización</button>
         </div>
       )}
 
       <div>
         <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>
         <p className="font-mono text-xs text-ink-2 mt-1">
@@ -451,7 +451,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             Balance energético · tramo activo «{activePhase.name}»
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs">
-            <span className="text-ink-2">Objetivo: <b className="text-[#fbcb1a]">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
+            <span className="text-ink-2">Objetivo: <b className="text-accent">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
             <span className="text-ink-2">Mantenimiento: <b className="text-[#00eefc]">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
             <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
             <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>

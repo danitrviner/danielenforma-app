@@ -118,7 +118,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             value={item.title}
             onChange={e => onChange({ ...item, title: e.target.value })}
             placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -130,7 +130,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -141,7 +141,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="objetivo">Objetivo</option>
               <option value="hito">Hito</option>
@@ -153,7 +153,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="entreno">Entreno</option>
               <option value="nutricion">Nutrición</option>
@@ -171,7 +171,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.startDate ?? ''}
               onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div>
@@ -180,7 +180,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.targetDate ?? ''}
               onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
@@ -191,7 +191,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="pendiente">Pendiente</option>
             <option value="en_progreso">En progreso</option>
@@ -218,7 +218,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -559,7 +559,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             ))}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height, zIndex: 10 }}
-              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
+              className={readonly ? 'bg-accent shadow-[0_0_10px_#fbcb1a]' : 'bg-accent/40'}
             />
             {children}
           </div>
@@ -578,7 +578,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo
@@ -670,19 +670,19 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             {/* HOY vertical line — para el atleta, badge celebratorio "estás aquí" */}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 30 }}
-              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
+              className={readonly ? 'bg-accent shadow-[0_0_10px_#fbcb1a]' : 'bg-accent/40'}
             >
               {readonly ? (
                 <span
                   style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
-                  className="bg-[#fbcb1a] text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-[#141414] whitespace-nowrap uppercase animate-pulse"
+                  className="bg-accent text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-[#141414] whitespace-nowrap uppercase animate-pulse"
                 >
                   Estás aquí
                 </span>
               ) : (
                 <span
                   style={{ position: 'absolute', top: 2, left: 4 }}
-                  className="font-mono text-[8px] text-[#fbcb1a] uppercase whitespace-nowrap"
+                  className="font-mono text-[8px] text-accent uppercase whitespace-nowrap"
                 >
                   Hoy
                 </span>
@@ -715,7 +715,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/7 text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-[#fbcb1a]/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/7 text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >

@@ -124,10 +124,10 @@ export default function ClientStatusCard({
     : athlete.actualWeight || null;
 
   return (
-    <div className="bg-gradient-to-br from-[#16150f] to-[#121212] border border-[#fbcb1a]/20 rounded-2xl p-5 space-y-4">
+    <div className="bg-gradient-to-br from-[#16150f] to-[#121212] border border-accent/20 rounded-2xl p-5 space-y-4">
       {/* Nota del coach — editable, lo más visible del panel */}
       <div className="flex items-start gap-3">
-        <span className="material-symbols-outlined text-[#fbcb1a] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
+        <span className="material-symbols-outlined text-accent mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
         {editingNote ? (
           <div className="flex-1 space-y-2">
             <textarea
@@ -136,11 +136,11 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3 py-2 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3 py-2 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
-                className="px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black text-[10px] font-bold uppercase tracking-wide disabled:opacity-40">
+                className="px-3 py-1.5 rounded-lg bg-accent text-black text-[10px] font-bold uppercase tracking-wide disabled:opacity-40">
                 {savingNote ? 'Guardando…' : 'Guardar'}
               </button>
               <button onClick={() => setEditingNote(false)} disabled={savingNote}
@@ -156,7 +156,7 @@ export default function ClientStatusCard({
             ) : (
               <p className="text-sm text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
             )}
-            <span className="text-[9px] font-mono uppercase text-ink-2/50 group-hover:text-[#fbcb1a] transition-colors">Editar</span>
+            <span className="text-[9px] font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
           </button>
         )}
       </div>
@@ -165,7 +165,7 @@ export default function ClientStatusCard({
         {/* Fase */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-[#fbcb1a]">flag</span> Fase
+            <span className="material-symbols-outlined text-xs text-accent">flag</span> Fase
           </p>
           {planPhase ? (
             <p className="text-sm font-bold text-white flex items-center gap-1.5">
@@ -191,7 +191,7 @@ export default function ClientStatusCard({
         {/* Objetivo */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-[#fbcb1a]">target</span> Objetivo
+            <span className="material-symbols-outlined text-xs text-accent">target</span> Objetivo
           </p>
           {onboardingData?.goalBody ? (
             <p className="text-sm font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
@@ -203,7 +203,7 @@ export default function ClientStatusCard({
           )}
           {latestWeight != null && athlete.targetWeight ? (
             <p className="font-mono text-[10px] text-ink-2">
-              {latestWeight} kg → <span className="text-[#fbcb1a] font-bold">{athlete.targetWeight} kg</span>
+              {latestWeight} kg → <span className="text-accent font-bold">{athlete.targetWeight} kg</span>
               {' '}({Math.round(Math.abs(latestWeight - athlete.targetWeight) * 10) / 10} kg restantes)
             </p>
           ) : null}
@@ -212,7 +212,7 @@ export default function ClientStatusCard({
         {/* Últimos cambios */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-[#fbcb1a]">history</span> Últimos cambios
+            <span className="material-symbols-outlined text-xs text-accent">history</span> Últimos cambios
           </p>
           {recentChanges.length === 0 ? (
             <p className="text-xs text-ink-2/60 italic">Sin actividad registrada aún</p>

@@ -22,7 +22,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
@@ -42,7 +42,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
               onClick={() => setActiveTab(tab.id)}
               className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
+                  ? 'bg-accent text-black shadow-lg shadow-accent/10'
                   : 'text-ink-2 hover:text-white'
               }`}
             >

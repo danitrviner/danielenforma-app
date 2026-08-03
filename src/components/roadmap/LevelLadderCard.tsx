@@ -24,7 +24,7 @@ export default function LevelLadderCard({ status }: Props) {
       <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#fbcb1a]/10 text-[#fbcb1a]">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
           <span className="material-symbols-outlined text-2xl">{currentLevel?.icon || 'military_tech'}</span>
         </div>
         <div>
@@ -69,7 +69,7 @@ export default function LevelLadderCard({ status }: Props) {
       )}
 
       {!nextLevel && currentLevel && (
-        <p className="text-xs font-mono text-[#fbcb1a] pt-2 border-t border-white/7">
+        <p className="text-xs font-mono text-accent pt-2 border-t border-white/7">
           Has llegado al nivel más alto de la escalera. 💪
         </p>
       )}

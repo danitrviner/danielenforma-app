@@ -376,9 +376,9 @@ export default function NutritionPeriodizationPanel({
             <p className="text-ink-2 text-xs font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#fbcb1a]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
             >
-              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">add</span>
+              <span className="material-symbols-outlined text-sm text-accent">add</span>
               Crear periodización
             </button>
           </div>
@@ -429,7 +429,7 @@ export default function NutritionPeriodizationPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black text-[10px] font-sans font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
+            className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black text-[10px] font-sans font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
           >
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
@@ -567,7 +567,7 @@ export default function NutritionPeriodizationPanel({
                     onClick={() => handleAdjustDietToPhase(idx)}
                     disabled={adjustingDietFor === phase.id}
                     title="Escala los intercambios de la dieta vinculada a este objetivo"
-                    className="text-[9px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60 disabled:opacity-40"
+                    className="text-[9px] font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-accent/30 hover:border-accent/60 disabled:opacity-40"
                   >{adjustingDietFor === phase.id ? 'Ajustando…' : 'Ajustar dieta al tramo'}</button>
                 )}
               </div>

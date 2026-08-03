@@ -130,7 +130,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button
           onClick={() => handleCompleteLesson(openLesson)}
           disabled={done}
-          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-[#fbcb1a] text-black hover:bg-[#d4a800] active:scale-95'}`}
+          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-[#d4a800] active:scale-95'}`}
         >
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
         </button>
@@ -160,9 +160,9 @@ export default function AcademyScreen({ profile }: Props) {
                 key={l.id}
                 onClick={() => unlocked && setOpenLessonId(l.id)}
                 disabled={!unlocked}
-                className={`w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-[#fbcb1a]/40' : 'opacity-50'}`}
+                className={`w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
               >
-                <span className={`material-symbols-outlined ${done ? 'text-[#fbcb1a]' : 'text-ink-2'}`}>
+                <span className={`material-symbols-outlined ${done ? 'text-accent' : 'text-ink-2'}`}>
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -206,7 +206,7 @@ export default function AcademyScreen({ profile }: Props) {
                   key={c.id}
                   onClick={() => unlocked && setOpenCourseId(c.id)}
                   disabled={!unlocked}
-                  className={`text-left bg-[#181816] border border-white/7 rounded-2xl p-4 transition-all ${unlocked ? 'hover:border-[#fbcb1a]/40' : 'opacity-50'}`}
+                  className={`text-left bg-[#181816] border border-white/7 rounded-2xl p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>
@@ -215,7 +215,7 @@ export default function AcademyScreen({ profile }: Props) {
                   <p className="text-xs text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
                     <div className="mt-3 h-1.5 bg-white/7 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#fbcb1a]" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
                     </div>
                   ) : (
                     <p className="text-[10px] text-[#888] font-mono mt-3">{reason}</p>

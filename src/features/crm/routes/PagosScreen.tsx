@@ -84,7 +84,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setModalPago(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Registrar pago
@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-[#fbcb1a]/40"
+              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -114,7 +114,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={filtro === f}
                 className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   filtro === f
-                    ? 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30'
+                    ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-[#141413] text-[#a8a89e] border border-white/7 hover:border-white/12'
                 }`}
               >

@@ -74,7 +74,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
       <p className="text-ink-2 mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
-      <p className="text-[#fbcb1a] font-bold text-sm">
+      <p className="text-accent font-bold text-sm">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
@@ -111,7 +111,7 @@ function QuestionChart({
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-[9px] text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+          <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
@@ -193,7 +193,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">show_chart</span>
+          <span className="material-symbols-outlined text-accent text-base">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
         <div className="flex bg-[#181816] border border-white/7 rounded-lg p-0.5 gap-0.5">
@@ -203,7 +203,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
               onClick={() => setWeekly(i === 1)}
               className={`px-3 min-h-[44px] rounded-md font-mono text-[10px] uppercase font-bold transition-all ${
                 weekly === (i === 1)
-                  ? 'bg-[#fbcb1a] text-black shadow'
+                  ? 'bg-accent text-black shadow'
                   : 'text-ink-2 hover:text-white'
               }`}
             >{label}</button>

@@ -79,7 +79,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <button
             type="button"
             onClick={hasGroups ? disableGroups : enableGroups}
-            className="font-mono text-[9px] text-[#fbcb1a] hover:text-white transition-colors"
+            className="font-mono text-[9px] text-accent hover:text-white transition-colors"
           >
             {hasGroups ? '← Volver a series uniformes' : 'Dividir en bloques (top set / back-off)'}
           </button>
@@ -93,7 +93,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={1} max={20}
                 value={we.sets}
                 onChange={e => onChange({ sets: parseInt(e.target.value) || 1 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -103,7 +103,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 value={we.reps}
                 onChange={e => onChange({ reps: e.target.value })}
                 placeholder="8-10"
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -112,7 +112,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0} max={5}
                 value={we.rir}
                 onChange={e => onChange({ rir: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     value={g.label || ''}
                     onChange={e => updateGroup(gIdx, 'label', e.target.value)}
                     placeholder="Top set, Back-off..."
-                    className="w-full bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-full bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -145,7 +145,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={1} max={20}
                     value={g.sets}
                     onChange={e => updateGroup(gIdx, 'sets', parseInt(e.target.value) || 1)}
-                    className="w-16 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-16 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -154,7 +154,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="text"
                     value={g.reps}
                     onChange={e => updateGroup(gIdx, 'reps', e.target.value)}
-                    className="w-20 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-20 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -163,7 +163,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={0} max={5}
                     value={g.rir}
                     onChange={e => updateGroup(gIdx, 'rir', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-14 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <button
@@ -178,7 +178,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             <div className="flex items-center justify-between">
               <button
                 onClick={addGroup}
-                className="flex items-center gap-1 text-[10px] font-mono text-[#fbcb1a] hover:text-white transition-colors"
+                className="flex items-center gap-1 text-[10px] font-mono text-accent hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 Añadir bloque
@@ -193,7 +193,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-24 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-24 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         value={we.notes || ''}
         onChange={e => onChange({ notes: e.target.value })}
         placeholder="Notas opcionales (técnica, variante, carga...)"
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-3 py-1.5 text-xs text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-3 py-1.5 text-xs text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent transition-all"
       />
 
       {/* Grabar con el móvil */}
@@ -216,7 +216,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           onClick={toggleRecordVideo}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
             we.recordVideoSet
-              ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
+              ? 'bg-accent/10 border-accent/40 text-accent'
               : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
           }`}
         >
@@ -227,7 +227,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <select
             value={we.recordVideoSet}
             onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-            className="bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas las series</option>
             {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
@@ -301,7 +301,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   value={s.weight}
                   onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                   placeholder="kg"
-                  className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                  className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <span className="text-ink-2 text-xs">×</span>
                 <input
@@ -309,7 +309,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   value={s.reps}
                   onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                   placeholder="reps"
-                  className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                  className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
                   onClick={() => removeManualWarmupSet(wIdx)}

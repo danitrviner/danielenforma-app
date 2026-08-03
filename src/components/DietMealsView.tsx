@@ -72,7 +72,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e1e1e]">
               <span className="font-sans font-bold text-white text-sm">{labelForMeal(meal.name, mi + 1)}</span>
-              <span className="font-mono text-[#fbcb1a] font-bold text-sm">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
+              <span className="font-mono text-accent font-bold text-sm">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
             </div>
             {/* Category grid */}
             <div className="grid grid-cols-3 divide-x divide-[#1e1e1e]">
@@ -99,11 +99,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       })}
 
       {/* Day totals */}
-      <div className="bg-[#0e0e0e] border border-[#fbcb1a]/20 rounded-xl overflow-hidden">
+      <div className="bg-[#0e0e0e] border border-accent/20 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e]">
-          <span className="font-mono text-[10px] text-[#fbcb1a] uppercase font-bold tracking-wide">Total del día</span>
+          <span className="font-mono text-[10px] text-accent uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
-            <span className="font-mono font-bold text-[#fbcb1a]">{totalKcal} kcal</span>
+            <span className="font-mono font-bold text-accent">{totalKcal} kcal</span>
             {budgetKcal > 0 && (
               <span className={`block font-mono text-[9px] ${kcalDelta > 0 ? 'text-red-400' : kcalDelta < 0 ? 'text-[#555]' : 'text-green-400'}`}>
                 {kcalDelta === 0 ? '✓ en presupuesto' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${budgetKcal}`}

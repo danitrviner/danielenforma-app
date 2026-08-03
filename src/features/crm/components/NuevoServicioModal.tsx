@@ -136,7 +136,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <button
             type="button"
             onClick={sugerirFin}
-            className="font-mono text-[9px] uppercase tracking-widest text-[#fbcb1a] hover:underline"
+            className="font-mono text-[9px] uppercase tracking-widest text-accent hover:underline"
           >
             Calcular fin desde la periodicidad
           </button>
@@ -146,12 +146,12 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <input className={inputClass} value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Opcional" />
         </Campo>
 
-        <label className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-[#fbcb1a]/8 border border-[#fbcb1a]/20 cursor-pointer">
+        <label className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-accent/8 border border-accent/20 cursor-pointer">
           <input
             type="checkbox"
             checked={generarPago}
             onChange={e => setGenerarPago(e.target.checked)}
-            className="mt-0.5 accent-[#fbcb1a]"
+            className="mt-0.5 accent-accent"
           />
           <span className="font-sans text-[10px] text-[#f5f5f0] leading-relaxed">
             Generar el cobro pendiente al crear el servicio

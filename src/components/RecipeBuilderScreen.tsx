@@ -284,7 +284,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </p>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva receta
@@ -316,7 +316,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     </div>
                   )}
                   {exchStr !== '—' && (
-                    <p className="font-mono text-[10px] text-[#fbcb1a] font-bold">{exchStr}</p>
+                    <p className="font-mono text-[10px] text-accent font-bold">{exchStr}</p>
                   )}
                   <p className="font-mono text-[10px] text-ink-2">
                     {recipe.ingredients.length} ingredientes · {recipe.steps.length} pasos
@@ -393,7 +393,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             onClick={() => setIndyaIntake(null)}
             className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
               indyaIntake === null
-                ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
+                ? 'bg-[#2a2a2a] text-accent border border-accent/40'
                 : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
             }`}
           >Todos los momentos</button>
@@ -403,7 +403,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               onClick={() => setIndyaIntake(Number(k))}
               className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
-                  ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
+                  ? 'bg-[#2a2a2a] text-accent border border-accent/40'
                   : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
               }`}
             >{label}</button>
@@ -482,7 +482,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Ej. Bowl de pollo y quinoa"
-                className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-[#fbcb1a]/50 focus:outline-none"
+                className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
               />
             </div>
 
@@ -494,7 +494,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.photoUrl}
                 onChange={e => setForm(f => ({ ...f, photoUrl: e.target.value }))}
                 placeholder="https://..."
-                className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:border-[#fbcb1a]/50 focus:outline-none font-mono"
+                className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
               />
               {form.photoUrl && (
                 <img
@@ -517,7 +517,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     onClick={() => toggleCategory(cat)}
                     className={`px-3 py-1 rounded-full font-mono text-xs uppercase tracking-wider font-bold transition-all ${
                       form.categories.includes(cat)
-                        ? 'bg-[#fbcb1a] text-black'
+                        ? 'bg-accent text-black'
                         : 'bg-[#2a2a2a] text-ink-2 hover:text-white'
                     }`}
                   >
@@ -529,7 +529,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Live exchanges */}
             {form.ingredients.length > 0 && (
-              <div className="bg-[#1e1e1b] border border-[#fbcb1a]/20 rounded-xl p-3">
+              <div className="bg-[#1e1e1b] border border-accent/20 rounded-xl p-3">
                 <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Intercambios totales</p>
                 <div className="flex flex-wrap gap-2">
                   {(Object.entries(liveExchanges) as [FoodCategory, number][])
@@ -556,7 +556,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     value={ingredientSearch}
                     onChange={e => setIngSearch(e.target.value)}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-[#fbcb1a]/50 focus:outline-none"
+                    className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-[#1c1b1b] border border-white/7 rounded-xl overflow-hidden z-10 shadow-2xl">
@@ -578,9 +578,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 </div>
                 {/* Qty stepper */}
                 <div className="flex items-center gap-1 shrink-0 bg-[#1c1b1b] border border-white/7 rounded-lg px-1">
-                  <button type="button" onClick={() => setIngQty(q => Math.max(0.25, Math.round((q - 0.25) * 4) / 4))} className="w-7 h-9 text-white hover:text-[#fbcb1a] transition-colors font-bold">-</button>
+                  <button type="button" onClick={() => setIngQty(q => Math.max(0.25, Math.round((q - 0.25) * 4) / 4))} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">-</button>
                   <span className="w-8 text-center font-mono text-sm text-white select-none">{ingredientQty}</span>
-                  <button type="button" onClick={() => setIngQty(q => Math.round((q + 0.25) * 4) / 4)} className="w-7 h-9 text-white hover:text-[#fbcb1a] transition-colors font-bold">+</button>
+                  <button type="button" onClick={() => setIngQty(q => Math.round((q + 0.25) * 4) / 4)} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">+</button>
                 </div>
               </div>
 
@@ -614,7 +614,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewExtra(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra(); } }}
                   placeholder="Ej. Sal al gusto"
-                  className="flex-1 bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-[#fbcb1a]/50 focus:outline-none"
+                  className="flex-1 bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                 />
                 <button type="button" onClick={addExtra} className="px-4 py-2 bg-[#2a2a2a] rounded-lg text-ink-2 hover:text-white transition-colors font-mono text-xs uppercase">Añadir</button>
               </div>
@@ -641,7 +641,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewStep(e.target.value)}
                   placeholder="Describe el paso..."
                   rows={2}
-                  className="flex-1 bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-[#fbcb1a]/50 focus:outline-none resize-none"
+                  className="flex-1 bg-[#1c1b1b] border border-white/7 rounded-lg px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
                 />
                 <button type="button" onClick={addStep} className="px-4 py-2 bg-[#2a2a2a] rounded-lg text-ink-2 hover:text-white transition-colors font-mono text-xs uppercase self-end mb-0">Añadir</button>
               </div>
@@ -672,7 +672,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-xs uppercase tracking-wider font-bold hover:bg-[#d4a800] disabled:opacity-40 transition-all active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-accent text-black font-sans text-xs uppercase tracking-wider font-bold hover:bg-[#d4a800] disabled:opacity-40 transition-all active:scale-95"
               >
                 {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
               </button>

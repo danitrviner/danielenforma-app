@@ -114,7 +114,7 @@ export default function PhotosScreen({ profile }: Props) {
             onClick={() => setSelectedView(v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               selectedView === v
-                ? 'bg-[#fbcb1a] text-black shadow-md'
+                ? 'bg-accent text-black shadow-md'
                 : 'text-ink-2 hover:text-white'
             }`}
           >
@@ -138,7 +138,7 @@ export default function PhotosScreen({ profile }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
             ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
@@ -166,7 +166,7 @@ export default function PhotosScreen({ profile }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">upload</span>
             Subir foto
@@ -187,7 +187,7 @@ export default function PhotosScreen({ profile }: Props) {
               </div>
               {/* Latest badge */}
               {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-[#fbcb1a] px-2 py-0.5 rounded font-mono text-[9px] font-black text-black">
+                <div className="absolute top-2 right-2 bg-accent px-2 py-0.5 rounded font-mono text-[9px] font-black text-black">
                   ACTUAL
                 </div>
               )}

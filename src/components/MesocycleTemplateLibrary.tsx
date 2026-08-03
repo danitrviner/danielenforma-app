@@ -100,7 +100,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`px-2 py-0.5 rounded text-xs font-mono transition-all ${
-            value === o.v ? 'bg-[#fbcb1a] text-black font-bold' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
+            value === o.v ? 'bg-accent text-black font-bold' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
           }`}
         >{o.icon}</button>
       ))}
@@ -133,7 +133,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
@@ -142,7 +142,7 @@ const ExerciseRow: React.FC<{
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
@@ -152,7 +152,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
@@ -161,7 +161,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
@@ -288,7 +288,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -418,7 +418,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
-                  tab === t ? 'text-[#fbcb1a] border-b-2 border-[#fbcb1a]' : 'text-[#555] hover:text-ink-2'
+                  tab === t ? 'text-accent border-b-2 border-accent' : 'text-[#555] hover:text-ink-2'
                 }`}
               >
                 {t === 'volume' ? 'Volumen' : 'Entrenamiento'}
@@ -431,7 +431,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
-                <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalSeries} series/sem</span>
+                <span className="font-mono text-[10px] text-accent font-bold">{totalSeries} series/sem</span>
               </div>
               <div className="border border-white/7 rounded-xl overflow-hidden">
                 <table className="w-full">
@@ -488,7 +488,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Añadir día
@@ -609,7 +609,7 @@ function TemplateEditor({
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/7">
         <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
+          <span className="material-symbols-outlined text-accent text-base">edit_note</span>
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
@@ -627,7 +627,7 @@ function TemplateEditor({
               value={form.name}
               onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
               placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
+              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-[#555]"
             />
             {nameError && <p className="text-red-400 font-mono text-[10px] mt-1">{nameError}</p>}
           </div>
@@ -638,7 +638,7 @@ function TemplateEditor({
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Breve descripción de la plantilla"
-              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
+              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-[#555]"
             />
           </div>
         </div>
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-xl hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-xl hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir mesociclo
@@ -680,7 +680,7 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
@@ -733,7 +733,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 hover:border-[#fbcb1a]/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
+    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
@@ -742,7 +742,7 @@ function TemplateCard({
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="font-mono text-[10px] text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
-            <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalWeeks} semanas</span>
+            <span className="font-mono text-[10px] text-accent font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
               <span className="font-mono text-[10px] text-[#00eefc]">{totalExercises} ejercicios</span>
             )}
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-[#fbcb1a] uppercase font-bold"
+              className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -893,7 +893,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -914,7 +914,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
+            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
           >
             Crear plantilla
           </button>

@@ -119,7 +119,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               className={`px-2 py-1 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${
                 r.realizada
                   ? 'bg-white/6 text-[#a8a89e] hover:bg-white/10'
-                  : 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 hover:bg-[#fbcb1a]/25'
+                  : 'bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25'
               }`}
             >
               {r.realizada ? 'Realizada' : 'Marcar realizada'}

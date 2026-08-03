@@ -336,7 +336,7 @@ function PillSelect<T extends string>({
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
             className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
               value === o.value
-                ? 'bg-[#fbcb1a] text-black border-transparent'
+                ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
             }`}>
             {o.label}
@@ -356,7 +356,7 @@ function YesNo({ label, value, onChange }: { label: string; value: boolean; onCh
           <button key={String(o.v)} type="button" onClick={() => onChange(o.v)}
             className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${
               value === o.v
-                ? 'bg-[#fbcb1a] text-black border-transparent'
+                ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
             }`}>
             {o.l}
@@ -382,7 +382,7 @@ function CheckboxGroup({
           <button key={opt} type="button" onClick={() => toggle(opt)}
             className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
               values.includes(opt)
-                ? 'bg-[#fbcb1a] text-black border-transparent'
+                ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
             }`}>
             {opt}
@@ -403,7 +403,7 @@ function TextField({
       <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wide">{label}</p>
       <input type="text" value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] w-full placeholder:text-[#444]" />
+        className="bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent w-full placeholder:text-[#444]" />
     </div>
   );
 }
@@ -419,7 +419,7 @@ function NumberField({
       <div className="flex items-center gap-2">
         <input type="number" min={min} max={max} value={value}
           onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-          className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+          className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
         {unit && <span className="font-mono text-[10px] text-[#555] flex-shrink-0">{unit}</span>}
       </div>
     </div>
@@ -442,7 +442,7 @@ function TagInput({
     <div className="space-y-1.5">
       <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wide">{label}</p>
       {helpText && <p className="font-mono text-[9px] text-[#555]">{helpText}</p>}
-      <div className="flex flex-wrap gap-1.5 p-2.5 bg-[#0e0e0e] border border-white/7 rounded-lg min-h-[44px] focus-within:ring-1 focus-within:ring-[#fbcb1a]/50 transition-all">
+      <div className="flex flex-wrap gap-1.5 p-2.5 bg-[#0e0e0e] border border-white/7 rounded-lg min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
           <span key={t} className="flex items-center gap-1 bg-[#2a2a2a] border border-[#3a3a3a] text-white px-2 py-0.5 rounded-full text-xs font-mono">
             {t}
@@ -482,11 +482,11 @@ function SupplementsTable({
           {rows.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <input type="text" value={r.name} onChange={e => update(i, { name: e.target.value })}
-                placeholder="Suplemento" className="flex-1 min-w-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
+                placeholder="Suplemento" className="flex-1 min-w-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-[#444]" />
               <input type="text" value={r.dose} onChange={e => update(i, { dose: e.target.value })}
-                placeholder="Dosis" className="w-20 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
+                placeholder="Dosis" className="w-20 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-[#444]" />
               <input type="text" value={r.frequency} onChange={e => update(i, { frequency: e.target.value })}
-                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
+                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-[#444]" />
               <button type="button" onClick={() => remove(i)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
@@ -495,7 +495,7 @@ function SupplementsTable({
         </div>
       )}
       <button type="button" onClick={add}
-        className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-dashed border-white/7 hover:border-[#fbcb1a]/40 px-2.5 py-1.5 rounded-lg">
+        className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-dashed border-white/7 hover:border-accent/40 px-2.5 py-1.5 rounded-lg">
         <span className="material-symbols-outlined text-sm">add</span>
         Añadir suplemento
       </button>
@@ -505,8 +505,8 @@ function SupplementsTable({
 
 function Section({ icon, title, children, complete }: { icon: string; title: string; children: React.ReactNode; complete?: boolean }) {
   return (
-    <div className={`space-y-4 bg-[#0e0e0e] border rounded-xl p-5 transition-colors ${complete ? 'border-[#fbcb1a]/25' : 'border-white/7'}`}>
-      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#fbcb1a] flex items-center gap-2">
+    <div className={`space-y-4 bg-[#0e0e0e] border rounded-xl p-5 transition-colors ${complete ? 'border-accent/25' : 'border-white/7'}`}>
+      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
         <span className="material-symbols-outlined text-sm">{icon}</span>
         {title}
         {complete && (
@@ -533,7 +533,7 @@ function SliderField({
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-[#fbcb1a] cursor-pointer" />
+        className="w-full accent-accent cursor-pointer" />
       {(minLabel || maxLabel) && (
         <div className="flex justify-between font-mono text-[8px] text-[#555]">
           <span>{minLabel}</span>
@@ -555,7 +555,7 @@ interface Props {
   onCancel?:    () => void;
 }
 
-const FIELD = 'bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] w-full';
+const FIELD = 'bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent w-full';
 
 export default function OnboardingForm({
   athleteEmail, initialData, isCoach = false, template = [], onSaved, onCancel,
@@ -730,7 +730,7 @@ export default function OnboardingForm({
         <div className="flex items-center gap-2">
           <input type="number" value={val ?? ''}
             onChange={e => setAnswer(q.id, e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-24 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+            className="w-24 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
           {q.unit && <span className="text-[10px] text-ink-2 font-mono">{q.unit}</span>}
         </div>
       );
@@ -744,7 +744,7 @@ export default function OnboardingForm({
           <span className="font-mono text-[9px] text-[#555] w-3">{min}</span>
           <input type="range" min={min} max={max} value={num || min}
             onChange={e => setAnswer(q.id, Number(e.target.value))}
-            className="flex-1 accent-[#fbcb1a]" />
+            className="flex-1 accent-accent" />
           <span className="font-mono text-[9px] text-[#555] w-3">{max}</span>
           <span className="font-mono text-sm font-bold text-white w-6 text-right">{num || '—'}</span>
         </div>
@@ -753,7 +753,7 @@ export default function OnboardingForm({
     if (q.type === 'choice') {
       return (
         <select value={String(val ?? '')} onChange={e => setAnswer(q.id, e.target.value)}
-          className="bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]">
+          className="bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent">
           <option value="">— elegir —</option>
           {(q.options ?? []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -762,7 +762,7 @@ export default function OnboardingForm({
     return (
       <textarea value={String(val ?? '')} rows={2}
         onChange={e => setAnswer(q.id, e.target.value)}
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none" />
+        className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent resize-none" />
     );
   };
 
@@ -772,7 +772,7 @@ export default function OnboardingForm({
       <div className={isFirstTime ? 'text-center space-y-2 py-4' : 'space-y-1'}>
         {isFirstTime ? (
           <>
-            <span className="material-symbols-outlined text-5xl text-[#fbcb1a]">waving_hand</span>
+            <span className="material-symbols-outlined text-5xl text-accent">waving_hand</span>
             <h2 className="font-sans font-extrabold text-2xl text-white">¡Bienvenido/a!</h2>
             <p className="text-ink-2 text-sm font-sans max-w-md mx-auto">
               Rellena los datos básicos. Tu entrenador usará esta información para personalizar tu plan.
@@ -780,7 +780,7 @@ export default function OnboardingForm({
           </>
         ) : (
           <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
+            <span className="material-symbols-outlined text-accent">edit_note</span>
             Editar ficha de iniciación
           </h3>
         )}
@@ -802,7 +802,7 @@ export default function OnboardingForm({
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500"
+            className="h-full bg-accent rounded-full transition-all duration-500"
             style={{ width: `${(coreFieldsFilled / coreFieldsTotal) * 100}%` }}
           />
         </div>
@@ -837,7 +837,7 @@ export default function OnboardingForm({
               <input type="number" min={30} max={250} step={0.1} value={form.weightKg}
                 onChange={e => set('weightKg', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="70"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
               <span className="font-mono text-[10px] text-[#555] flex-shrink-0">kg</span>
             </div>
           </div>
@@ -847,7 +847,7 @@ export default function OnboardingForm({
               <input type="number" min={100} max={250} step={1} value={form.heightCm}
                 onChange={e => set('heightCm', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="170"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
               <span className="font-mono text-[10px] text-[#555] flex-shrink-0">cm</span>
             </div>
           </div>
@@ -859,7 +859,7 @@ export default function OnboardingForm({
               <input type="number" min={3} max={60} step={0.1} value={form.bodyFatPct}
                 onChange={e => set('bodyFatPct', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="—"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
               <span className="font-mono text-[10px] text-[#555] flex-shrink-0">%</span>
             </div>
           </div>
@@ -869,7 +869,7 @@ export default function OnboardingForm({
               <input type="number" min={10} max={70} step={0.1} value={form.musclePct}
                 onChange={e => set('musclePct', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="—"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
               <span className="font-mono text-[10px] text-[#555] flex-shrink-0">%</span>
             </div>
           </div>
@@ -888,14 +888,14 @@ export default function OnboardingForm({
             <button key={o.value} type="button" onClick={() => set('activityLevel', o.value)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                 form.activityLevel === o.value
-                  ? 'bg-[#1a1c12] border-[#fbcb1a]/40'
+                  ? 'bg-[#1a1c12] border-accent/40'
                   : 'bg-[#0a0a0a] border-white/7 hover:border-[#3a3a3a]'
               }`}>
               <div className="flex-1 min-w-0">
-                <p className={`font-mono text-xs font-bold ${form.activityLevel === o.value ? 'text-[#fbcb1a]' : 'text-white'}`}>{o.label}</p>
+                <p className={`font-mono text-xs font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
                 <p className="font-mono text-[9px] text-[#555] mt-0.5">{o.desc}</p>
               </div>
-              <span className={`font-mono text-[10px] font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-[#fbcb1a]' : 'text-[#3a3a3a]'}`}>{o.factor}</span>
+              <span className={`font-mono text-[10px] font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-accent' : 'text-[#3a3a3a]'}`}>{o.factor}</span>
             </button>
           ))}
         </div>
@@ -998,7 +998,7 @@ export default function OnboardingForm({
               </p>
               <p>
                 Objetivo ({form.goalBody ? GOAL_ADJ_LABEL[form.goalBody] : ''}):
-                {' '}<span className="text-[#fbcb1a] font-bold">{autoCalc.kcal.toLocaleString()} kcal</span>
+                {' '}<span className="text-accent font-bold">{autoCalc.kcal.toLocaleString()} kcal</span>
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#00eefc]/10">
@@ -1033,7 +1033,7 @@ export default function OnboardingForm({
           <div className="flex items-center gap-2">
             <input type="number" min={800} max={8000} step={50} value={form.targetCalories}
               onChange={e => set('targetCalories', e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-28 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
+              className="w-28 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
             <span className="font-mono text-xs text-ink-2">kcal/día</span>
           </div>
         </div>
@@ -1051,7 +1051,7 @@ export default function OnboardingForm({
                 <span className="font-mono text-xs font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
                 <input type="number" min={0} max={100} value={form[m.key]}
                   onChange={e => set(m.key, e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center shrink-0" />
+                  className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center shrink-0" />
                 <span className="font-mono text-[10px] text-[#555] shrink-0">%</span>
                 {cal > 0 ? (
                   <>
@@ -1105,7 +1105,7 @@ export default function OnboardingForm({
               <button key={n} type="button" onClick={() => changeMealCount(n)}
                 className={`flex-1 py-2 rounded-lg font-mono text-sm font-bold border transition-all ${
                   form.mealCount === n
-                    ? 'bg-[#fbcb1a] text-black border-transparent'
+                    ? 'bg-accent text-black border-transparent'
                     : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
                 }`}>
                 {n}
@@ -1179,14 +1179,14 @@ export default function OnboardingForm({
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
           <p className="font-mono text-[9px] text-[#7d7f68] mb-2">
-            Toca: neutral → <span className="text-[#fbcb1a]">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
+            Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
           </p>
           <div className="flex flex-wrap gap-1.5">
             {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
               const pref = form.preferredDishTypes.includes(dt.id);
               const excl = form.excludedDishTypes.includes(dt.id);
               const cls = pref
-                ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                ? 'bg-accent border-accent text-black'
                 : excl
                   ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
                   : 'bg-[#181818] border-white/10 text-ink-2 hover:text-white';
@@ -1319,7 +1319,7 @@ export default function OnboardingForm({
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex gap-3">
         <button type="button" onClick={handleSave} disabled={saving}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando…' : isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
         </button>
         {onCancel && (

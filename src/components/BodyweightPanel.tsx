@@ -50,7 +50,7 @@ function BwTooltip({ active, payload }: any) {
     <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
-        <p className="text-[#fbcb1a] font-bold text-sm">{rawEntry.value} kg</p>
+        <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
         <p className="text-[#00eefc] text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
@@ -166,14 +166,14 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[44px]';
+  const INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">monitor_weight</span>
+          <span className="material-symbols-outlined text-accent text-base">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
             <span className="font-mono text-[10px] text-ink-2 font-normal">
@@ -184,7 +184,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
-              <span className="inline-block w-4 h-px bg-[#fbcb1a]" />
+              <span className="inline-block w-4 h-px bg-accent" />
               Diario
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
@@ -271,7 +271,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               <button
                 onClick={handleAdd}
                 disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
               >
                 {adding ? '…' : 'Añadir'}
               </button>
@@ -322,7 +322,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
-                            className="px-2 py-1 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
+                            className="px-2 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
                           >
                             {saving ? '…' : 'OK'}
                           </button>

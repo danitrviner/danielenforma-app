@@ -70,7 +70,7 @@ const TYPE_CHIP: Record<string, string> = {
   fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
   cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
   estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  pliometría:   'bg-[#fbcb1a]/10 text-[#fbcb1a] border border-[#fbcb1a]/20',
+  pliometría:   'bg-accent/10 text-accent border border-accent/20',
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -353,7 +353,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         key={a.id}
         className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
-            ? 'rounded-3xl bg-[#1a1c12] border-[#fbcb1a]/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
+            ? 'rounded-3xl bg-[#1a1c12] border-accent/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
             : 'rounded-2xl bg-[#181816] border-white/7'
         }`}
       >
@@ -362,7 +362,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400'
             : a.status === 'skipped'  ? 'bg-[#1c1b1b] text-ink-2'
             : a.status === 'perdido'  ? 'bg-red-500/10 text-red-300'
-            : isNext ? 'bg-[#fbcb1a]/15 text-[#fbcb1a]'
+            : isNext ? 'bg-accent/15 text-accent'
             : 'bg-[#1e1e1b] text-ink-2'
           }`}>
             <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -376,7 +376,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-sans font-bold text-white text-base">{wo?.name || 'Rutina'}</p>
               {isNext && a.status === 'pending' && (
-                <span className="text-[9px] font-mono bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 px-2 py-0.5 rounded uppercase font-bold">Siguiente</span>
+                <span className="text-[9px] font-mono bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded uppercase font-bold">Siguiente</span>
               )}
               {!isNext && isPast && a.status === 'pending' && (
                 <span className="text-[9px] font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 py-0.5 rounded uppercase font-bold">Atrasado</span>
@@ -403,7 +403,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {wo && (
                 <button
                   onClick={() => openPlayer(a)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-sm"
                 >
                   <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
@@ -441,16 +441,16 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <p className="font-mono text-[10px] text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
           </div>
           <div className="flex-shrink-0 text-right">
-            <span className="font-mono text-xs text-[#fbcb1a] font-bold">{doneSetsTotal}/{totalSets}</span>
+            <span className="font-mono text-xs text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
             <span className="block font-mono text-[9px] text-ink-2 uppercase">series hechas</span>
           </div>
         </header>
 
         {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-[#181816] border border-[#fbcb1a]/40 rounded-2xl pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
+          <div className="fixed top-20 right-4 z-40 bg-[#181816] border border-accent/40 rounded-2xl pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
             <span
-              className={`material-symbols-outlined text-[#fbcb1a] text-lg ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
+              className={`material-symbols-outlined text-accent text-lg ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
             <div className="leading-none">
               <p className="font-mono text-lg font-black text-white tabular-nums">
@@ -473,7 +473,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {/* Progress bar */}
         <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#fbcb1a] rounded-full transition-all duration-300"
+            className="h-full bg-accent rounded-full transition-all duration-300"
             style={{
               width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%',
               filter: 'drop-shadow(0 0 5px rgba(251,203,26,0.6))',
@@ -517,7 +517,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <div
               key={`${we.exerciseId}-${exIdx}`}
               className={`bg-[#181816] border rounded-2xl overflow-hidden ${
-                we.recordVideoSet ? 'border-[#fbcb1a]/50 shadow-[0_0_0_1px_rgba(251,203,26,0.15)]' : 'border-white/7'
+                we.recordVideoSet ? 'border-accent/50 shadow-[0_0_0_1px_rgba(251,203,26,0.15)]' : 'border-white/7'
               }`}
             >
               {/* Exercise header */}
@@ -576,9 +576,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
 
               {we.recordVideoSet && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a]/10 border-b border-[#fbcb1a]/20">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">videocam</span>
-                  <p className="font-sans text-xs font-bold text-[#fbcb1a]">
+                <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20">
+                  <span className="material-symbols-outlined text-accent text-base">videocam</span>
+                  <p className="font-sans text-xs font-bold text-accent">
                     {we.recordVideoSet === 'all'
                       ? 'Tu entrenador quiere que grabes todas las series con el móvil'
                       : `Tu entrenador quiere que grabes la serie ${we.recordVideoSet} con el móvil`}
@@ -635,18 +635,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         <tr
                           key={sIdx}
                           className={`border-b border-white/20 transition-colors ${
-                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-[#fbcb1a]/5' : 'hover:bg-[#1e1e1b]'
+                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-[#1e1e1b]'
                           }`}
                         >
                           <td className="px-4 py-2.5">
                             <span className="font-mono text-xs font-bold text-ink-2 flex items-center gap-1">
                               S{sIdx + 1}
                               {shouldRecord && (
-                                <span className="material-symbols-outlined text-[#fbcb1a] text-sm" title="Grabar con el móvil">videocam</span>
+                                <span className="material-symbols-outlined text-accent text-sm" title="Grabar con el móvil">videocam</span>
                               )}
                             </span>
                             {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                              <span className="block font-mono text-[8px] text-[#fbcb1a]/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
+                              <span className="block font-mono text-[8px] text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -658,7 +658,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -669,7 +669,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -680,7 +680,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className="w-14 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-14 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -707,7 +707,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               className={`w-11 h-11 rounded-lg border flex items-center justify-center mx-auto transition-all ${
                                 setInput.done
                                   ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                  : 'border-white/7 text-[#2a2a2a] hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a]/50'
+                                  : 'border-white/7 text-[#2a2a2a] hover:border-accent/50 hover:text-accent/50'
                               }`}
                             >
                               <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -730,7 +730,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
                   placeholder="ej. Molestia leve en el hombro derecho..."
                   rows={2}
-                  className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-2.5 text-xs text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+                  className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-2.5 text-xs text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
 
@@ -748,9 +748,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               )}
 
               {getPersonalNote(we.exerciseId) && (
-                <div className="px-4 py-2 bg-[#1a1710] border-t border-[#fbcb1a]/15">
-                  <p className="font-mono text-[9px] text-[#fbcb1a]/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
-                  <p className="text-xs text-[#fbcb1a]">{getPersonalNote(we.exerciseId)}</p>
+                <div className="px-4 py-2 bg-[#1a1710] border-t border-accent/15">
+                  <p className="font-mono text-[9px] text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
+                  <p className="text-xs text-accent">{getPersonalNote(we.exerciseId)}</p>
                 </div>
               )}
             </div>
@@ -765,7 +765,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             onChange={e => setWorkoutNoteInput(e.target.value)}
             placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
             rows={2}
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -789,7 +789,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <button
             onClick={handleFinish}
             disabled={!canFinish || isFinishing || !!celebration}
-            className="flex items-center gap-2 px-8 py-4 bg-[#fbcb1a] text-black font-sans font-black text-sm uppercase rounded-2xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-[#fbcb1a]/20 disabled:shadow-none"
+            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-black text-sm uppercase rounded-2xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-accent/20 disabled:shadow-none"
           >
             {isFinishing ? (
               <><span className="material-symbols-outlined animate-spin">refresh</span>Guardando...</>
@@ -803,9 +803,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
         {celebration && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-[#181816] border border-[#fbcb1a]/30 rounded-3xl w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 flex items-center justify-center">
-                <span className="material-symbols-outlined text-4xl text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <div className="bg-[#181816] border border-accent/30 rounded-3xl w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center">
+                <span className="material-symbols-outlined text-4xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {celebration.isFirstEver ? 'celebration' : 'bolt'}
                 </span>
               </div>
@@ -828,9 +828,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               </div>
               {celebration.prs.length > 0 && (
-                <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 rounded-xl p-3 space-y-1.5 text-left">
+                <div className="bg-accent/10 border border-accent/30 rounded-xl p-3 space-y-1.5 text-left">
                   {celebration.prs.map(pr => (
-                    <p key={pr.exerciseId} className="text-xs text-[#fbcb1a] flex items-center gap-2">
+                    <p key={pr.exerciseId} className="text-xs text-accent flex items-center gap-2">
                       <span className="material-symbols-outlined text-sm">military_tech</span>
                       Récord en {pr.name} — {pr.newBest} kg est.
                     </p>
@@ -839,7 +839,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               )}
               <button
                 onClick={dismissCelebration}
-                className="w-full py-3 rounded-xl bg-[#fbcb1a] text-black font-sans font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
+                className="w-full py-3 rounded-xl bg-accent text-black font-sans font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
               >
                 Genial
               </button>
@@ -865,7 +865,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         </div>
         {/* Week summary chip */}
         <div className="flex items-center gap-2 bg-[#181816] border border-white/7 px-4 py-2 rounded-2xl">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-sm">calendar_today</span>
+          <span className="material-symbols-outlined text-accent text-sm">calendar_today</span>
           <span className="font-mono text-xs text-ink-2">Esta semana:</span>
           <span className="font-mono text-sm font-black text-white">{weekCompleted}/{weekAssignments.length}</span>
           <span className="font-mono text-xs text-ink-2">completados</span>
@@ -876,14 +876,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-full sm:w-fit">
         <button
           onClick={() => setMainTab('programa')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-base">event</span>
           Programa
         </button>
         <button
           onClick={() => setMainTab('progresion')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-base">trending_up</span>
           Progresión
@@ -901,7 +901,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 onClick={() => setListFilter(f)}
                 className={`px-4 py-2 rounded-full font-mono text-[10px] uppercase font-bold border transition-all min-h-[36px] ${
                   listFilter === f
-                    ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                    ? 'bg-accent border-accent text-black'
                     : 'border-white/7 text-ink-2 hover:border-[#3a3a3a] hover:text-white'
                 }`}
               >
@@ -921,7 +921,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
               <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
-                <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/30 block mb-3">fitness_center</span>
+                <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
                 <p className="text-white font-bold text-sm">Sin entrenamientos pendientes</p>
                 <p className="text-ink-2 text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>
               </div>
@@ -931,7 +931,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 {thisWeekBlock.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-[#fbcb1a]">
+                      <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
                         {formatWeekLabel(curWeekStart, true)}
                       </span>
                       <div className="flex-1 h-px bg-[#2a2a2a]" />
@@ -958,7 +958,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             )
           ) : filteredAssignments.length === 0 ? (
             <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
-              <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/30 block mb-3">fitness_center</span>
+              <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
               <p className="text-white font-bold text-sm">Sin entrenamientos {listFilter === 'completed' ? 'completados' : ''}</p>
               <p className="text-ink-2 text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>
             </div>
@@ -981,7 +981,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <div key={weekStart} className="space-y-3">
                         {/* Week header */}
                         <div className="flex items-center gap-3">
-                          <span className={`font-mono text-[10px] uppercase font-bold tracking-widest ${isCurWeek ? 'text-[#fbcb1a]' : 'text-ink-2'}`}>
+                          <span className={`font-mono text-[10px] uppercase font-bold tracking-widest ${isCurWeek ? 'text-accent' : 'text-ink-2'}`}>
                             {formatWeekLabel(weekStart, isCurWeek)}
                           </span>
                           <div className="flex-1 h-px bg-[#2a2a2a]" />

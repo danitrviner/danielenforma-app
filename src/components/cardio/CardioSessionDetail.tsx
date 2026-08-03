@@ -134,13 +134,13 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-[10px] font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-[#181816] border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none"
+            className="w-full bg-[#181816] border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>
 
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>

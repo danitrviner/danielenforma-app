@@ -174,7 +174,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           </ul>
           <div className="flex gap-2">
             <button onClick={() => setActiveTest(null)} className="flex-1 py-2.5 bg-white/7 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg">Cancelar</button>
-            <button onClick={() => setParqPassed(true)} className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Ninguna aplica, continuar</button>
+            <button onClick={() => setParqPassed(true)} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Ninguna aplica, continuar</button>
           </div>
         </section>
       );
@@ -186,7 +186,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <span className="material-symbols-outlined text-4xl text-[#00eefc]">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-xs text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
-          <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Volver</button>
+          <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Volver</button>
         </section>
       );
     }
@@ -201,14 +201,14 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         </div>
         {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
         {!monitorRef.current ? (
-          <button onClick={startRecording} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Conectar banda y empezar</button>
+          <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Conectar banda y empezar</button>
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-[10px] font-mono uppercase text-[#00eefc]">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-xs font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
-              <button onClick={finishTest} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Terminar y calcular</button>
+              <button onClick={finishTest} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Terminar y calcular</button>
             )}
           </div>
         )}
@@ -223,7 +223,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         {TESTS.map(t => {
           const lastResult = [...tests].filter(x => x.type === t.type).sort((a, b) => b.date.localeCompare(a.date))[0];
           return (
-            <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-[#181816] border border-white/7 rounded-xl p-3 hover:border-[#fbcb1a]/40 transition-colors">
+            <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-[#181816] border border-white/7 rounded-xl p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-semibold text-sm text-white">{t.title}</p>
                 {t.highEffort && <span className="text-[9px] font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}

@@ -67,7 +67,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       onClick={onClick}
       className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
         selected
-          ? 'bg-[#fbcb1a]/15 border-[#fbcb1a] text-white shadow-lg shadow-[#fbcb1a]/10'
+          ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
           : 'bg-[#181816] border-white/10 text-ink-2 hover:border-white/30'
       }`}
     >
@@ -88,7 +88,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-accent/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -186,18 +186,18 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   return (
     <div className="min-h-screen bg-[#0e0e0e] flex flex-col relative overflow-hidden">
       <style>{`@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }`}</style>
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full pointer-events-none"></div>
 
       {/* Progreso */}
       <div className="w-full max-w-lg mx-auto px-6 pt-8">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-md" />
-          <span className="font-sans font-black text-lg tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
+          <span className="font-sans font-black text-lg tracking-tighter uppercase text-accent">EN FORMA</span>
           <span className="ml-auto font-mono text-[10px] text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
@@ -214,7 +214,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
               ].map(i => (
                 <p key={i.icon} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
-                  <span className="material-symbols-outlined text-[#fbcb1a]">{i.icon}</span>
+                  <span className="material-symbols-outlined text-accent">{i.icon}</span>
                   {i.text}
                 </p>
               ))}
@@ -253,7 +253,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
-                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-[#fbcb1a]' : 'text-ink-2'}`}>{g.icon}</span>
+                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-accent' : 'text-ink-2'}`}>{g.icon}</span>
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
                       <span className="block text-xs text-ink-2">{g.desc}</span>
@@ -379,7 +379,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 6 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
-            <div className="bg-[#181816] border border-[#fbcb1a]/25 rounded-2xl p-5 space-y-2.5">
+            <div className="bg-[#181816] border border-accent/25 rounded-2xl p-5 space-y-2.5">
               {[
                 goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },
@@ -389,7 +389,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 const item = i as { icon: string; text: string };
                 return (
                   <p key={idx} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
-                    <span className="material-symbols-outlined text-[#fbcb1a] text-base">{item.icon}</span>
+                    <span className="material-symbols-outlined text-accent text-base">{item.icon}</span>
                     {item.text}
                   </p>
                 );
@@ -416,7 +416,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-xl bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
           >
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </button>
@@ -424,7 +424,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={finish}
             disabled={saving}
-            className="flex-1 py-3.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-xl bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
           >
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
           </button>

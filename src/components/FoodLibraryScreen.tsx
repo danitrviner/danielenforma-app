@@ -30,7 +30,7 @@ const CAT_COLOR: Record<FoodCategory, string> = {
 };
 
 const MODE_COLOR: Record<DietMode, string> = {
-  OMNIVORO:  'bg-[#fbcb1a]/10 text-[#fbcb1a] border border-[#fbcb1a]/20',
+  OMNIVORO:  'bg-accent/10 text-accent border border-accent/20',
   VEGANO:    'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
   SIN_PESAR: 'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
 };
@@ -119,8 +119,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             onClick={() => setFilterMode(m.id)}
             className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               filterMode === m.id
-                ? 'bg-[#fbcb1a] text-black shadow-md'
-                : 'bg-[#1c1b1b] text-ink-2 border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
+                ? 'bg-accent text-black shadow-md'
+                : 'bg-[#1c1b1b] text-ink-2 border border-white/7 hover:border-accent/40 hover:text-white'
             }`}
           >
             {m.label}
@@ -168,7 +168,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all whitespace-nowrap shadow-md"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all whitespace-nowrap shadow-md"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir
@@ -238,7 +238,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
-                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
@@ -248,7 +248,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
@@ -261,7 +261,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               <button
                 onClick={handleSave}
                 disabled={saving || !form.label.trim()}
-                className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {saving ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</> : <><span className="material-symbols-outlined text-sm">save</span>Guardar</>}
               </button>

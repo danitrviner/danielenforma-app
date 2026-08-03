@@ -101,7 +101,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
               type="button"
               onClick={() => registrar.mutate({ suscripcion: s, coachEmail })}
               disabled={filaMutandoRegistro(s.id)}
-              className="px-2 py-1 rounded-lg bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 font-mono text-[9px] uppercase tracking-widest hover:bg-[#fbcb1a]/25 disabled:opacity-40 transition-colors"
+              className="px-2 py-1 rounded-lg bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
             >
               {filaMutandoRegistro(s.id) ? 'Registrando…' : 'Registrar cobro'}
             </button>

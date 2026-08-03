@@ -22,7 +22,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
   return (
     <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
       <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+        <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
         Reportes de tu entrenador
       </h2>
 
@@ -38,13 +38,13 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               key={r.id}
               onClick={() => setOpen(r)}
               className={`w-full flex items-center justify-between gap-3 rounded-lg p-3 text-left transition-all border ${
-                i === 0 ? 'bg-[#1e1e1b] border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60' : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
+                i === 0 ? 'bg-[#1e1e1b] border-accent/30 hover:border-accent/60' : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
               }`}
             >
               <div className="min-w-0">
                 <p className="font-sans text-sm text-white truncate flex items-center gap-2">
                   {r.title}
-                  {i === 0 && <span className="font-sans text-[8px] font-bold uppercase bg-[#fbcb1a] text-black px-1.5 py-0.5 rounded flex-shrink-0">Nuevo</span>}
+                  {i === 0 && <span className="font-sans text-[8px] font-bold uppercase bg-accent text-black px-1.5 py-0.5 rounded flex-shrink-0">Nuevo</span>}
                 </p>
                 <p className="font-mono text-[10px] text-ink-2 mt-0.5">
                   {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)}

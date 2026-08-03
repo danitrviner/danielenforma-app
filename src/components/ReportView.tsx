@@ -26,8 +26,8 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
       <p className="font-sans font-bold text-sm text-white">{section.title}</p>
       {children}
       {section.coachNote && (
-        <div className="bg-[#1e1e1b] border-l-2 border-[#fbcb1a] rounded-r-lg px-3 py-2">
-          <p className="font-mono text-[9px] text-[#fbcb1a] uppercase tracking-wider mb-0.5">Nota del entrenador</p>
+        <div className="bg-[#1e1e1b] border-l-2 border-accent rounded-r-lg px-3 py-2">
+          <p className="font-mono text-[9px] text-accent uppercase tracking-wider mb-0.5">Nota del entrenador</p>
           <p className="text-xs text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
       )}
@@ -43,7 +43,7 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
       <ul className="space-y-1.5">
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+            <span className="material-symbols-outlined text-accent text-base flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
             <span className="text-xs text-white font-sans leading-snug">{it}</span>
           </li>
         ))}
@@ -88,12 +88,12 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2">
                   <span className="text-xs text-white font-sans flex items-center gap-1.5">
                     {r.name}
-                    {r.isPR && <span className="font-mono text-[8px] font-bold uppercase bg-[#fbcb1a] text-black px-1 py-0.5 rounded">PR</span>}
+                    {r.isPR && <span className="font-mono text-[8px] font-bold uppercase bg-accent text-black px-1 py-0.5 rounded">PR</span>}
                   </span>
                 </td>
                 <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.sets}</td>
                 <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.reps}</td>
-                <td className="py-2 px-2 font-mono text-xs text-[#fbcb1a]">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2 whitespace-nowrap">
                   <span className="font-mono text-xs text-[#00eefc]">{r.bestOrm} kg</span>
                   {r.deltaOrmPct != null && <span className="ml-1.5"><DeltaBadge pct={r.deltaOrmPct} /></span>}
@@ -125,7 +125,7 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
             {d.rows.map(r => (
               <tr key={r.group} className="border-b border-white/7 last:border-0">
                 <td className="py-2 px-2 text-xs text-white font-sans whitespace-nowrap">{r.label}</td>
-                <td className="py-2 px-2 font-mono text-xs text-[#fbcb1a]">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.tonnageDeltaPct} /></td>
                 <td className="py-2 px-2 font-mono text-xs text-[#00eefc]">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.ormDeltaPct} /></td>
@@ -177,7 +177,7 @@ function AdherenceSection({ section }: { section: CoachReportSection }) {
         <span className="font-mono font-black text-3xl text-white">{d.completed}<span className="text-base text-ink-2 font-bold">/{d.planned}</span></span>
         <div className="flex-1">
           <div className="h-2 bg-[#1e1e1b] rounded-full overflow-hidden">
-            <div className={`h-full rounded-full ${pct >= 100 ? 'bg-green-400' : pct >= 60 ? 'bg-[#fbcb1a]' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+            <div className={`h-full rounded-full ${pct >= 100 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-[10px] text-ink-2 mt-1">
             {pct}% de sesiones programadas completadas{d.prevPct != null ? ` · periodo anterior: ${d.prevPct}%` : ''}
@@ -198,7 +198,7 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
         <span className="font-mono font-black text-3xl text-white">{pct}<span className="text-base text-ink-2 font-bold">%</span></span>
         <div className="flex-1">
           <div className="h-2 bg-[#1e1e1b] rounded-full overflow-hidden">
-            <div className={`h-full rounded-full ${pct >= 85 ? 'bg-green-400' : pct >= 60 ? 'bg-[#fbcb1a]' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+            <div className={`h-full rounded-full ${pct >= 85 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-[10px] text-ink-2 mt-1">
             Cumplimiento medio de la dieta · {d.daysLogged} de {d.periodDays} días registrados

@@ -211,7 +211,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -267,11 +267,11 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     value={phase.name}
                     onChange={e => updatePhase(phase.id, { name: e.target.value })}
                     placeholder="Nombre de la fase"
-                    className="flex-1 min-w-[140px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-[#fbcb1a]"
+                    className="flex-1 min-w-[140px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
                   />
                   <span
                     className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 ${
-                      phase.status === 'actual' ? 'bg-[#fbcb1a]/15 text-[#fbcb1a]' : phase.status === 'completada' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-ink-2'
+                      phase.status === 'actual' ? 'bg-accent/15 text-accent' : phase.status === 'completada' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-ink-2'
                     }`}
                   >
                     {phase.status}
@@ -287,7 +287,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   value={phase.motto ?? ''}
                   onChange={e => updatePhase(phase.id, { motto: e.target.value })}
                   placeholder="Frase motivadora (opcional)"
-                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
                 />
 
                 <textarea
@@ -295,7 +295,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { description: e.target.value })}
                   placeholder="Descripción de la fase"
                   rows={2}
-                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none"
+                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex flex-wrap gap-2 items-start">
@@ -320,7 +320,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={1}
                       value={phase.suggestedWeeks ?? ''}
                       onChange={e => updatePhase(phase.id, { suggestedWeeks: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]"
+                      className="w-24 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                   <label className="flex flex-col gap-0.5">
@@ -328,7 +328,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
                       onChange={e => updatePhase(phase.id, { weightDirection: e.target.value as WeightDirection })}
-                      className="bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]"
+                      className="bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     >
                       {(Object.keys(WEIGHT_DIRECTION_LABEL) as WeightDirection[]).map(d => (
                         <option key={d} value={d}>{WEIGHT_DIRECTION_LABEL[d]}</option>
@@ -343,7 +343,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={0}
                       value={phase.weightRateKgWeek ?? ''}
                       onChange={e => updatePhase(phase.id, { weightRateKgWeek: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]"
+                      className="w-24 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                 </div>
@@ -401,12 +401,12 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { exitCriteria: e.target.value })}
                   placeholder="Criterios para pasar a la siguiente fase"
                   rows={2}
-                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none"
+                  className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex items-center gap-2 pt-1">
                   {phase.status === 'futura' && (
-                    <button onClick={() => activate(phase.id)} className="font-mono text-[10px] text-[#fbcb1a] hover:underline">
+                    <button onClick={() => activate(phase.id)} className="font-mono text-[10px] text-accent hover:underline">
                       Activar esta fase ahora
                     </button>
                   )}
@@ -427,7 +427,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       <button
         onClick={addPhase}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
       >
         + Añadir fase
       </button>

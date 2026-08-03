@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-[#fbcb1a]/40';
+  'w-full px-2.5 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
@@ -89,7 +89,7 @@ export function BotonPrimario({ children, disabled, onClick, type = 'button' }: 
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>

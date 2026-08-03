@@ -72,7 +72,7 @@ const PAGE_SIZE = 24;
 
 function RecipePlaceholder() {
   return (
-    <div className="w-full h-full bg-gradient-to-br from-[#fbcb1a]/10 to-transparent flex items-center justify-center">
+    <div className="w-full h-full bg-gradient-to-br from-accent/10 to-transparent flex items-center justify-center">
       <span className="material-symbols-outlined text-4xl text-ink-2/30">skillet</span>
     </div>
   );
@@ -98,7 +98,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-[#1c1b1b] border border-white/7 ${minH} flex flex-col justify-end cursor-pointer hover:border-[#fbcb1a]/40 transition-all shadow-md`}
+      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-[#1c1b1b] border border-white/7 ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
@@ -124,11 +124,11 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-black text-white group-hover:text-[#fbcb1a] transition-colors leading-tight ${large ? 'text-2xl' : 'text-base'}`}>
+        <h3 className={`font-sans font-black text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-2xl' : 'text-base'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
-          <p className="font-mono text-[10px] text-[#fbcb1a]/80 font-bold">{exchStr}</p>
+          <p className="font-mono text-[10px] text-accent/80 font-bold">{exchStr}</p>
         )}
       </div>
     </article>
@@ -146,7 +146,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
       className={`group relative rounded-xl overflow-hidden bg-[#1c1b1b] border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
         isFeatured
           ? 'border-amber-400/40 hover:border-amber-400/70'
-          : 'border-white/7 hover:border-[#fbcb1a]/40'
+          : 'border-white/7 hover:border-accent/40'
       }`}
     >
       {photo
@@ -181,7 +181,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
       <div className="relative z-10 p-3 space-y-1">
         <p className="font-sans font-bold text-white text-xs leading-tight line-clamp-2">{recipe.name}</p>
         {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
-          <p className="font-mono text-[9px] text-[#fbcb1a]/75">
+          <p className="font-mono text-[9px] text-accent/75">
             {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
               .filter(Boolean).join(' · ')}
           </p>
@@ -232,7 +232,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       <div className="flex items-center justify-between bg-[#1c1b1b] px-4 py-3 rounded-xl border border-white/7">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-ink-2 hover:text-[#fbcb1a] transition-colors font-mono text-xs uppercase tracking-wider"
+          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-xs uppercase tracking-wider"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Recetas
@@ -291,7 +291,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           <div className="flex flex-wrap gap-3 text-ink-2 font-mono text-[10px]">
             {recipe.kcal != null && (
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontSize: '12px' }}>local_fire_department</span>
+                <span className="material-symbols-outlined text-accent" style={{ fontSize: '12px' }}>local_fire_department</span>
                 {recipe.kcal} kcal
               </span>
             )}
@@ -374,7 +374,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {/* Ingredients */}
         <section className="bg-[#1c1b1b] border border-white/7 rounded-xl p-5 space-y-3">
           <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">recipe</span>
+            <span className="material-symbols-outlined text-accent text-base">recipe</span>
             Ingredientes
           </h2>
 
@@ -419,7 +419,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           (!isIndya && recipe.steps.length > 0)) && (
           <section className="bg-[#1c1b1b] border border-white/7 rounded-xl p-5 space-y-4">
             <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">format_list_numbered</span>
+              <span className="material-symbols-outlined text-accent text-base">format_list_numbered</span>
               Preparación
             </h2>
             <div className="space-y-4">
@@ -435,7 +435,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
                     className="flex gap-3 group cursor-pointer"
                   >
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-all ${done ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black' : 'border-white/7 text-ink-2 group-hover:border-[#fbcb1a]/50'}`}>
+                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-all ${done ? 'bg-accent border-accent text-black' : 'border-white/7 text-ink-2 group-hover:border-accent/50'}`}>
                         {done ? <span className="material-symbols-outlined text-xs font-bold">check</span> : idx + 1}
                       </div>
                     </div>
@@ -655,7 +655,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {!loading && recipes.length > 0 && (
         <section className="space-y-4">
           <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">restaurant_menu</span>
+            <span className="material-symbols-outlined text-accent text-base">restaurant_menu</span>
             Recetas del programa
           </h2>
 
@@ -672,7 +672,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   onClick={() => setSelectedCat(cat.id)}
                   className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                     selectedCat === cat.id
-                      ? 'bg-[#fbcb1a] text-black shadow-md'
+                      ? 'bg-accent text-black shadow-md'
                       : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
                   }`}
                 >{cat.name}</button>
@@ -734,7 +734,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             onClick={() => setIndyaIntake(null)}
             className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
               indyaIntake === null
-                ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
+                ? 'bg-[#2a2a2a] text-accent border border-accent/40'
                 : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
             }`}
           >Todos los momentos</button>
@@ -744,7 +744,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               onClick={() => setIndyaIntake(Number(k))}
               className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
-                  ? 'bg-[#2a2a2a] text-[#fbcb1a] border border-[#fbcb1a]/40'
+                  ? 'bg-[#2a2a2a] text-accent border border-accent/40'
                   : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
               }`}
             >{label}</button>

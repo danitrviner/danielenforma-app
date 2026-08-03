@@ -63,7 +63,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
         {isCoach && (
           <button
             onClick={() => setShowForm(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800] transition-colors"
+            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800] transition-colors"
           >
             <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
             {showForm ? 'Cancelar' : 'Nuevo'}
@@ -78,14 +78,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -96,14 +96,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Compartir recurso'}
           </button>
@@ -125,7 +125,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
               <span className="material-symbols-outlined text-[#00eefc] flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white hover:text-[#fbcb1a] transition-colors truncate">{r.title}</p>
+                <p className="font-sans font-semibold text-sm text-white hover:text-accent transition-colors truncate">{r.title}</p>
                 <p className="font-mono text-[10px] text-ink-2">{KIND_LABEL[r.kind]}</p>
               </a>
               {isCoach && (
