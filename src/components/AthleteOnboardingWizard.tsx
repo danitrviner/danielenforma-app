@@ -230,16 +230,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 <Chip selected={sex === 'female'} onClick={() => setSex('female')}>Mujer</Chip>
               </div>
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
                 <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Peso (kg)</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Peso (kg)</label>
                   <input type="number" min={30} max={250} step={0.1} value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" className={inputCls} />
                 </div>
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Altura (cm)</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Altura (cm)</label>
                   <input type="number" min={100} max={250} value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Cuéntalo con tus palabras (opcional)</label>
               <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={2}
                 placeholder="Ej: quiero verme bien en verano y sentirme con energía" className={`${inputCls} resize-none`} />
             </div>
@@ -354,11 +354,11 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Alergias o intolerancias (separa por comas, o deja vacío)</label>
               <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej: lactosa, frutos secos" className={inputCls} />
             </div>
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Alimentos que NO quieres ver en tu dieta</label>
               <input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="Ej: pescado azul, coliflor" className={inputCls} />
             </div>
           </StepShell>

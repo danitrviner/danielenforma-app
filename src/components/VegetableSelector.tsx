@@ -12,14 +12,14 @@ interface Props {
 // real de verduras en los dos lados.
 export default function VegetableSelector({ selected, onToggle }: Props) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-2">
       {VEGETABLES.map(v => {
         const on = selected.includes(v.id);
         return (
           <button
             key={v.id}
             onClick={() => onToggle(v.id)}
-            className={`px-3 py-1.5 rounded-full text-caption font-mono font-bold border transition-all ${
+            className={`px-3 py-2 rounded-full text-caption font-mono font-bold border transition-all ${
               on
                 ? 'bg-accent/15 border-accent/50 text-accent'
                 : 'bg-raised border-hairline text-ink-2 hover:text-white hover:border-strong'

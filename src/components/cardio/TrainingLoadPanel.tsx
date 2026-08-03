@@ -42,7 +42,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
       <h3 className="text-caption font-mono uppercase text-data tracking-wider">Carga de entrenamiento</h3>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center justify-between mb-2">
           <p className="text-caption font-mono text-ink-2">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
           <p className="text-label font-sans font-bold" style={{ color: TLR_STATE_COLOR[tlrState] }}>{TLR_LABEL[tlrState]} · TLR {today.tlr.toFixed(2)}</p>
         </div>
@@ -60,7 +60,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
       </div>
 
       {(focus.lowAerobicPct + focus.highAerobicPct + focus.anaerobicPct) > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="text-caption font-sans uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
           <div className="flex h-2 rounded-full overflow-hidden bg-bg">
             <div className="h-full bg-data" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />

@@ -54,7 +54,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
 
       {weightStatus && (
         <div className="pt-2 border-t border-hairline">
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center justify-between mb-2">
             <span className="font-sans text-caption uppercase tracking-widest text-ink-2">Peso en esta fase</span>
             {weightStatus.targetKg != null && (
               <span className="font-mono text-caption text-ink-2">objetivo {weightStatus.targetKg} kg</span>

@@ -311,7 +311,7 @@ export default function CorrelationPanel({
               <button
                 key={s.id}
                 onClick={() => toggleSeries(s.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
                   active
                     ? 'text-black'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-white'

@@ -98,14 +98,14 @@ export default function ClientWorkoutsPanel({
       {/* Onboarding exercise reference */}
       {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
         <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
-          <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-1.5">
+          <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-body-s">person_check</span>
             Preferencias de ejercicio
           </p>
           {onboardingData.favoriteExercises.length > 0 && (
             <div className="space-y-1">
               <p className="font-mono text-caption text-ink-2 uppercase">Favoritos</p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.favoriteExercises.map(e => (
                   <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-3 py-1 rounded-full text-caption font-mono font-bold">
                     {e}
@@ -117,7 +117,7 @@ export default function ClientWorkoutsPanel({
           {onboardingData.hatedExercises.length > 0 && (
             <div className="space-y-1">
               <p className="font-mono text-caption text-ink-2 uppercase">Evitar</p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.hatedExercises.map(e => (
                   <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
@@ -129,7 +129,7 @@ export default function ClientWorkoutsPanel({
           {onboardingData.equipment.length > 0 && (
             <div className="space-y-1">
               <p className="font-mono text-caption text-ink-2 uppercase">Material disponible</p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.equipment.map(e => (
                   <span key={e} className="bg-raised border border-hairline text-ink-2 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
@@ -223,7 +223,7 @@ export default function ClientWorkoutsPanel({
           </button>
           <button
             onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Asignar
@@ -243,7 +243,7 @@ export default function ClientWorkoutsPanel({
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="material-symbols-outlined text-title-s text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">
-                      <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-1.5">
+                      <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
                         {wo?.name || <span className="italic text-ink-2">Rutina eliminada</span>}
                         {wo?.exercises.some(e => e.recordVideoSet) && (
                           <span className="material-symbols-outlined text-accent text-body-s flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
@@ -284,12 +284,12 @@ export default function ClientWorkoutsPanel({
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <p className="text-label text-ink-2 font-mono flex items-center gap-1.5">
+            <p className="text-label text-ink-2 font-mono flex items-center gap-2">
               <span className="material-symbols-outlined text-body-s text-accent">person</span>
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Rutina *</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
               {workouts.length === 0 ? (
                 <p className="text-label text-ink-2 font-sans italic">No hay rutinas disponibles.</p>
               ) : (
@@ -305,7 +305,7 @@ export default function ClientWorkoutsPanel({
               )}
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Fecha *</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha *</label>
               <input
                 type="date"
                 value={assignDate}

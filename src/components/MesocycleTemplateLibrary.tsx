@@ -124,7 +124,7 @@ const ExerciseRow: React.FC<{
   onChange, onDelete, onMoveUp, onMoveDown,
 }) => {
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-hairline last:border-0 group">
+    <div className="flex items-center gap-2 py-2 border-b border-hairline last:border-0 group">
       {/* Name */}
       <span className="font-sans text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
@@ -288,7 +288,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-sans text-label focus:outline-none focus:border-accent/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-2 text-white font-sans text-label focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              className="px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -621,7 +621,7 @@ function TemplateEditor({
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
+            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la plantilla</label>
             <input
               type="text"
               value={form.name}
@@ -632,7 +632,7 @@ function TemplateEditor({
             {nameError && <p className="text-red-400 font-sans text-caption mt-1">{nameError}</p>}
           </div>
           <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
+            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Descripción (opcional)</label>
             <input
               type="text"
               value={form.description}
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir mesociclo
@@ -748,17 +748,17 @@ function TemplateCard({
             )}
           </div>
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
             <span className="material-symbols-outlined text-body-s">edit</span>
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
             <span className="material-symbols-outlined text-body-s">delete</span>
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-sans text-caption px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-sans text-caption px-2 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -893,7 +893,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+          className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Nueva

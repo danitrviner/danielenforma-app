@@ -99,7 +99,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
               <span className="material-symbols-outlined text-accent text-title-s">notifications</span>
               Notificaciones
               {unread > 0 && (
-                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-control font-mono font-bold">
+                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-control font-mono font-bold">
                   {unread} nueva{unread !== 1 ? 's' : ''}
                 </span>
               )}
@@ -158,7 +158,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
                   {/* Unread dot */}
                   {!n.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-2" />
                   )}
                 </button>
               ))

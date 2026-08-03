@@ -98,7 +98,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             placeholder="Buscar atleta o acción..."
             className="flex-1 bg-transparent text-white text-body-s focus:outline-none placeholder-ink-2/50"
           />
-          <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-1.5 py-0.5 flex-shrink-0">ESC</span>
+          <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-2 py-0.5 flex-shrink-0">ESC</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">

@@ -242,14 +242,14 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <button
                 onClick={() => handleCopy(r)}
                 title="Copiar texto del reporte"
-                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-data transition-colors"
+                className="flex-shrink-0 p-2 text-ink-2 hover:text-data transition-colors"
               >
                 <span className="material-symbols-outlined text-title-s">{copiedId === r.id ? 'check' : 'content_copy'}</span>
               </button>
               <button
                 onClick={() => handleSend(r)}
                 title={r.status === 'sent' ? 'Reenviar al atleta' : 'Enviar al atleta'}
-                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-accent transition-colors"
+                className="flex-shrink-0 p-2 text-ink-2 hover:text-accent transition-colors"
               >
                 <span className="material-symbols-outlined text-title-s">send</span>
               </button>

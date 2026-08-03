@@ -118,7 +118,7 @@ export default function AcademyScreen({ profile }: Props) {
           {openLesson.description && <p className="text-label text-ink-2 font-sans mt-1">{openLesson.description}</p>}
         </div>
         {openLesson.resources && openLesson.resources.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {openLesson.resources.map((r, i) => (
               <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-label font-mono text-data hover:underline">
                 <span className="material-symbols-outlined text-body-s">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>

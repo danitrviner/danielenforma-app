@@ -191,7 +191,7 @@ export default function ClientSetupPanel({
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-caption text-black bg-accent px-3 py-1.5 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
+                  className="flex items-center gap-1 font-mono text-caption text-black bg-accent px-3 py-2 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
                 >
                   Ir ahora
                   <span className="material-symbols-outlined text-body-s">arrow_forward</span>
@@ -296,7 +296,7 @@ export default function ClientSetupPanel({
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-1.5 rounded-control"
+            className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
           >
             <span className="material-symbols-outlined text-body-s">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}

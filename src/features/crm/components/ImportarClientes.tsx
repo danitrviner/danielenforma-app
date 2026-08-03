@@ -113,7 +113,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-3 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
+            <p className="flex items-start gap-2 px-3 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
               <span className="material-symbols-outlined text-body-s shrink-0">error</span>
               {errorGeneral}
             </p>

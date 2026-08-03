@@ -603,7 +603,7 @@ export default function CardioScreen({ profile }: Props) {
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
                 <button key={r} onClick={() => setHistoryRange(r)}
                   className={`px-3 py-1 rounded-full text-caption font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
@@ -635,7 +635,7 @@ export default function CardioScreen({ profile }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-bold text-body-s text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
-                    {s.manual && <span className="ml-1.5 text-caption font-mono text-ink-2 uppercase">manual</span>}
+                    {s.manual && <span className="ml-2 text-caption font-mono text-ink-2 uppercase">manual</span>}
                   </p>
                   <p className="text-caption text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
                   {(s.caloriesActiveKcal || s.caloriesKcal || s.fitivPoints || s.trimp) && (

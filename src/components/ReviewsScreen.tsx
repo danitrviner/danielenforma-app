@@ -196,13 +196,13 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
             <>
-              <span className="flex items-center gap-1.5 text-caption bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-surface font-sans font-bold uppercase">
+              <span className="flex items-center gap-2 text-caption bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-2 rounded-surface font-sans font-bold uppercase">
                 <span className="material-symbols-outlined text-body-s">pending_actions</span>
                 {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
               </span>
               <button
                 onClick={startReviewing}
-                className="flex items-center gap-1.5 text-label bg-accent text-black px-4 py-2 rounded-control font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
+                className="flex items-center gap-2 text-label bg-accent text-black px-4 py-2 rounded-control font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-title-s">rate_review</span>
                 Empezar a revisar
@@ -289,7 +289,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-sans font-bold text-white text-label">{athleteName}</span>
                           <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
-                          <span className={`text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control flex-shrink-0 ${
+                          <span className={`text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control flex-shrink-0 ${
                             c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                           }`}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
@@ -303,7 +303,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                          className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                         >
                           <span className="material-symbols-outlined text-title-s">account_circle</span>
                         </button>
@@ -347,7 +347,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
                           </p>
                         )}
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {quickReplies.map((r, i) => (
                             <button
                               key={i}
@@ -378,7 +378,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-body-s">{hasNextPending ? 'skip_next' : 'send'}</span>
@@ -433,7 +433,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                        className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                       >
                         <span className="material-symbols-outlined text-title-s">account_circle</span>
                       </button>
@@ -495,7 +495,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               ))}
               <button
                 onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
-                className="flex items-center gap-1.5 text-label font-mono text-accent hover:text-white"
+                className="flex items-center gap-2 text-label font-mono text-accent hover:text-white"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>
                 Añadir plantilla

@@ -202,7 +202,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       <div>
         <button
           onClick={() => setShowAssign(v => !v)}
-          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-1.5 rounded-control"
+          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
         >
           <span className="material-symbols-outlined text-body-s">{showAssign ? 'close' : 'add'}</span>
           {showAssign ? 'Cancelar' : 'Asignar reto'}
@@ -336,7 +336,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
         {templates.length === 0 ? (
           <p className="text-label text-ink-3 font-sans">Sin plantillas todavía.</p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {templates.map(t => (
               <div key={t.id} className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-3">
                 <div>
@@ -356,7 +356,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       {history.length > 0 && (
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-2">Historial</p>
-          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {history.slice(0, 20).map(h => (
               <div key={h.id} className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-3">
                 <div className="min-w-0">

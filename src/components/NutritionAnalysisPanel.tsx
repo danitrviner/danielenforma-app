@@ -208,7 +208,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
@@ -219,8 +219,8 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
               <div className="flex items-center justify-between mb-1">
                 <span className="font-sans text-caption text-ink-2">
                   {m.label}
-                  {m.status === 'low' && <span className="ml-1.5 text-red-400">déficit</span>}
-                  {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
+                  {m.status === 'low' && <span className="ml-2 text-red-400">déficit</span>}
+                  {m.status === 'high' && <span className="ml-2 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
                 </span>
                 <span className="font-mono text-caption font-bold text-white">
                   {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
@@ -242,7 +242,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
       {/* Flags */}
       {report.flags.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface p-5 space-y-1.5">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface p-5 space-y-2">
           <p className="font-mono text-caption text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
           {report.flags.map((f, i) => (
             <p key={i} className="text-label text-amber-200 font-sans">{f}</p>

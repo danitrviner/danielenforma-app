@@ -169,7 +169,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
             <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
           </h2>
           <p className="text-label text-ink-2 font-sans">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
-          <ul className="text-label text-ink-2 font-mono space-y-1.5 list-disc pl-4">
+          <ul className="text-label text-ink-2 font-mono space-y-2 list-disc pl-4">
             {PARQ_QUESTIONS.map((q, i) => <li key={i}>{q}</li>)}
           </ul>
           <div className="flex gap-2">
@@ -230,7 +230,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
               </div>
               <p className="text-caption text-ink-2 font-mono mt-1">{t.desc}</p>
               {lastResult && (
-                <p className="text-caption font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? 'var(--color-data)' : 'var(--color-ink-3)' }}>
+                <p className="text-caption font-mono mt-2" style={{ color: lastResult.approvedByCoach ? 'var(--color-data)' : 'var(--color-ink-3)' }}>
                   Último: {lastResult.date} {lastResult.approvedByCoach ? '· aprobado' : '· pendiente de revisión'}
                 </p>
               )}

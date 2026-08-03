@@ -114,7 +114,7 @@ export default function ClientDietsPanel({
           <div className="flex gap-2">
             <button
               onClick={() => setDietEditorDiet(null)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Nueva dieta
@@ -152,7 +152,7 @@ export default function ClientDietsPanel({
                     <div className="flex items-center gap-2 min-w-0">
                       <p className={`font-sans font-bold text-body-s truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
                       {dt.isDraft === true && (
-                        <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-control border border-amber-400/20">
+                        <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-control border border-amber-400/20">
                           BORRADOR
                         </span>
                       )}
@@ -202,7 +202,7 @@ export default function ClientDietsPanel({
           Asigna una dieta a cada día. El atleta la verá cargada automáticamente.
         </p>
         <div className="overflow-x-auto">
-        <div className="grid grid-cols-7 gap-1.5 min-w-[360px]">
+        <div className="grid grid-cols-7 gap-2 min-w-[360px]">
           {WEEK_DAYS.map(day => {
             const scheduledId = athleteDietConfig?.weeklySchedule?.[day] ?? null;
             const scheduledDiet = scheduledId ? athleteDiets.find(d => d.id === scheduledId) ?? null : null;
@@ -217,7 +217,7 @@ export default function ClientDietsPanel({
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-raised border border-hairline text-ink-2 text-caption font-mono rounded-control px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-hairline transition-colors cursor-pointer"
+                  className="w-full bg-raised border border-hairline text-ink-2 text-caption font-mono rounded-control px-2 py-2 focus:outline-none focus:border-accent/40 hover:border-hairline transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -247,7 +247,7 @@ export default function ClientDietsPanel({
           </h3>
           <button
             onClick={() => setMenuEditor('new')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">auto_awesome</span>
             Generar menú
@@ -278,16 +278,16 @@ export default function ClientDietsPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
                     <p className="font-sans font-bold text-body-s text-white truncate">{m.name}</p>
-                    <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
+                    <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
                       {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                     </span>
                     {m.batchCooking && (
-                      <span className="flex-shrink-0 flex items-center gap-0.5 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-control">
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 py-0.5 rounded-control">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>inventory_2</span>batch
                       </span>
                     )}
                     {isMenuStale(m, athleteDietConfig?.weeklySchedule ?? {}, athleteDiets) && (
-                      <span className="flex-shrink-0 flex items-center gap-0.5 text-caption font-mono font-bold uppercase text-orange-400 bg-orange-400/10 border border-orange-400/25 px-1.5 py-0.5 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-caption font-mono font-bold uppercase text-orange-400 bg-orange-400/10 border border-orange-400/25 px-2 py-0.5 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>sync_problem</span>desactualizado
                       </span>
                     )}
@@ -319,13 +319,13 @@ export default function ClientDietsPanel({
           <div>
             <button
               onClick={() => setShowSwapHistory(v => !v)}
-              className="flex items-center gap-1.5 text-caption font-mono text-ink-2 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-caption font-mono text-ink-2 hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-body-s">{showSwapHistory ? 'expand_less' : 'history'}</span>
               Historial de cambios del atleta
             </button>
             {showSwapHistory && (
-              <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
+              <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
                     <div key={i} className="font-mono text-caption text-ink-2 bg-bg border border-hairline rounded-surface px-3 py-2">
@@ -406,7 +406,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -420,7 +420,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

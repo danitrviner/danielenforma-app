@@ -307,7 +307,7 @@ export default function MyMenuScreen({ profile }: Props) {
   return (
     <div className="space-y-5">
       {/* Week strip */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {
           const active = d === selectedDay;
           const isToday = d === todayWeekDay();
@@ -337,7 +337,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <p className="font-sans text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
             </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {batchPlan.map(e => (
               <div key={e.recipeId} className="flex items-center gap-3 bg-bg border border-hairline rounded-surface px-3 py-2">
                 <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
@@ -421,15 +421,15 @@ export default function MyMenuScreen({ profile }: Props) {
                   <p className={`font-sans font-bold text-body-s leading-tight ${done ? 'text-ink-2 line-through' : 'text-white'}`}>{meal.recipeName}</p>
                   <p className="font-mono text-caption text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                   {meal.complements.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
+                    <div className="flex flex-wrap gap-1 mt-2">
                       {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
+                        <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
                           +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                         </span>
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-3 mt-2">
                     <button
                       onClick={() => openSwap(meal)}
                       className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
@@ -479,7 +479,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <p className="font-sans text-caption text-ink-3">
               Toca una vez para que salga <span className="text-accent">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
                 const st = dishState(dt.id);
                 const cls = st === 'pref'
@@ -491,7 +491,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   <button
                     key={dt.id}
                     onClick={() => cycleDishType(dt.id)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                     {dt.label}
@@ -533,7 +533,7 @@ export default function MyMenuScreen({ profile }: Props) {
             {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">
-            <span className="flex items-center gap-1.5 font-sans font-bold text-label text-white">
+            <span className="flex items-center gap-2 font-sans font-bold text-label text-white">
               <span className="material-symbols-outlined text-body-s text-accent">inventory_2</span>
               Prefiero batch cooking
             </span>
@@ -605,7 +605,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 )}
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>
-                    <p className="font-mono text-caption text-ink-3 uppercase mb-1.5">Ingredientes</p>
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
                     <ul className="space-y-0.5">
                       {(detailRecipe.ingredientsText?.length
                         ? detailRecipe.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
@@ -639,7 +639,7 @@ export default function MyMenuScreen({ profile }: Props) {
                               )}
                             </div>
                             {open && subs.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5 pb-1">
+                              <div className="flex flex-wrap gap-1 mt-2 pb-1">
                                 {swappedTo && (
                                   <button
                                     onClick={() => applySubstitution(ing.label, ing.label)}
@@ -660,14 +660,14 @@ export default function MyMenuScreen({ profile }: Props) {
                       })}
                     </ul>
                     {detailMealId && (
-                      <p className="font-sans text-caption text-ink-3 mt-1.5">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
+                      <p className="font-sans text-caption text-ink-3 mt-2">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
                     )}
                   </div>
                 ) : null}
                 {(detailRecipe.stepsText?.length || detailRecipe.steps?.length) ? (
                   <div>
-                    <p className="font-mono text-caption text-ink-3 uppercase mb-1.5">Preparación</p>
-                    <ol className="space-y-1.5 list-decimal list-inside">
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Preparación</p>
+                    <ol className="space-y-2 list-decimal list-inside">
                       {(detailRecipe.stepsText?.length
                         ? detailRecipe.stepsText.map(s => s.description)
                         : detailRecipe.steps ?? []

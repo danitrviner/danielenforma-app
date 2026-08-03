@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-3 py-1.5 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-3 py-2 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
@@ -89,7 +89,7 @@ export function BotonPrimario({ children, disabled, onClick, type = 'button' }: 
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>
@@ -101,7 +101,7 @@ export function BotonSecundario({ children, onClick }: { children: React.ReactNo
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+      className="px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
     >
       {children}
     </button>

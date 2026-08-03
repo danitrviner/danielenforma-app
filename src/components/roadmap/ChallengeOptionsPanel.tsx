@@ -93,7 +93,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent"
+          className="bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -113,14 +113,14 @@ export default function ChallengeOptionsPanel({
           {options.map(opt => (
             <div
               key={opt.kind}
-              className="bg-surface border rounded-surface p-3 space-y-1.5"
+              className="bg-surface border rounded-surface p-3 space-y-2"
               style={{ borderColor: opt.isMilestone ? '#fbcb1a55' : 'rgba(255,255,255,0.07)' }}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-bold text-white text-body-s">{opt.title}</p>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {opt.isMilestone && (
-                    <span className="font-mono text-caption uppercase px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
+                    <span className="font-mono text-caption uppercase px-2 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
                   )}
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-1.5 px-3 bg-surface border border-hairline text-ink-2 font-mono text-caption rounded-control hover:text-white disabled:opacity-50"
+              className="py-2 px-3 bg-surface border border-hairline text-ink-2 font-mono text-caption rounded-control hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

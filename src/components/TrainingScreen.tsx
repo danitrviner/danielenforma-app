@@ -395,7 +395,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <>
               <button
                 onClick={() => handleSkip(a)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono text-caption uppercase font-bold rounded-control active:scale-95 transition-all"
+                className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono text-caption uppercase font-bold rounded-control active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-body-s">skip_next</span>
                 Saltar
@@ -403,7 +403,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {wo && (
                 <button
                   onClick={() => openPlayer(a)}
-                  className="flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                  className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
                 >
                   <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
@@ -431,7 +431,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg z-[var(--z-sticky)] pt-2">
           <button
             onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
-            className="flex items-center gap-1.5 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all flex-shrink-0"
+            className="flex items-center gap-2 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all flex-shrink-0"
           >
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Volver
@@ -531,10 +531,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-1.5">
+                  <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
                     {ex?.name || we.exerciseId}
                     {we.technique && (
-                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
+                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
                         {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
                       </span>
                     )}
@@ -546,12 +546,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
                     {ex?.type && (
-                      <span className={`text-caption font-sans px-1.5 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                      <span className={`text-caption font-sans px-2 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
                     {warmup.readiness && (
                       <span
                         title={warmup.readiness.message}
-                        className={`text-caption font-mono px-1.5 py-0.5 rounded-control border ${
+                        className={`text-caption font-mono px-2 py-0.5 rounded-control border ${
                           warmup.readiness.score >= 75 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
                           : warmup.readiness.score >= 45 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
                           : 'text-red-300 border-red-500/30 bg-red-500/10'
@@ -658,7 +658,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className="w-20 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -669,7 +669,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className="w-16 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-16 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -680,7 +680,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className="w-14 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-14 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -724,7 +724,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {/* Athlete's note for this exercise */}
               <div className="px-4 py-3 bg-bg border-t border-hairline">
-                <label className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
+                <label className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
                 <textarea
                   value={exerciseNoteInputs[exIdx] || ''}
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
@@ -828,7 +828,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               </div>
               {celebration.prs.length > 0 && (
-                <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-1.5 text-left">
+                <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">
                   {celebration.prs.map(pr => (
                     <p key={pr.exerciseId} className="text-label text-accent flex items-center gap-2">
                       <span className="material-symbols-outlined text-body-s">military_tech</span>

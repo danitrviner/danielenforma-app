@@ -411,7 +411,7 @@ export default function ClientHub({
             </div>
             <p className="font-mono text-caption text-ink-2">{athlete.email}</p>
             {/* Adherence score badge */}
-            <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
+            <div className={`inline-flex items-center gap-2 mt-2 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
               <span className={`text-caption font-bold uppercase ${adh.text}`}>{adh.label}</span>
               <span className={`text-body-s font-bold ${adh.text}`}>{adherence.score}</span>
@@ -471,13 +471,13 @@ export default function ClientHub({
       />
 
       {/* Nav de zonas (nivel 1) */}
-      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-1.5 pb-0.5">
+      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 pb-0.5">
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1">
           {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button
               key={zone}
               onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
                 activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -495,7 +495,7 @@ export default function ClientHub({
                 <button
                   key={tab}
                   onClick={() => guardedTabChange(tab)}
-                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-control font-mono text-caption font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
+                  className={`snap-start flex items-center gap-2 px-3 py-2 min-h-[36px] rounded-control font-mono text-caption font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
                     activeTab === tab
                       ? 'bg-accent/10 border-accent/40 text-accent'
                       : 'border-transparent text-ink-2 hover:text-white'

@@ -108,7 +108,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         </h2>
 
         {loadingTraining ? (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Skeleton className="h-11 w-full rounded-surface" />
             <Skeleton className="h-11 w-full rounded-surface" />
           </div>
@@ -117,7 +117,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         ) : (
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">Esta semana</span>
                 {thisWeekPending.map(a => (
                   <button
@@ -132,7 +132,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
               </div>
             )}
             {overdue.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <span className="font-mono text-caption uppercase font-bold tracking-widest text-red-300">Atrasados</span>
                 {overdue.map(a => (
                   <button

@@ -127,10 +127,10 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <div key={z} className="flex items-center gap-2">
             <span className="text-label font-sans text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-label text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-label text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
@@ -280,14 +280,14 @@ function PrescriptionTab() {
         <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
           <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
-            <div key={i} className="flex gap-1.5 items-center">
+            <div key={i} className="flex gap-2 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent" />
               <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent" />
+                className="w-14 bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent" />
               <span className="text-caption text-ink-2 font-mono">s</span>
               <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent">
+                className="bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent">
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">

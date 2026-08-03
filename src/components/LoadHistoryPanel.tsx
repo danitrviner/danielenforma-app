@@ -109,7 +109,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   if (!point) return null;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 shadow-xl">
-      <p className="font-sans text-caption text-ink-2 mb-1.5">{point.label}</p>
+      <p className="font-sans text-caption text-ink-2 mb-2">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
@@ -415,7 +415,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-3 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -461,7 +461,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           </div>
 
           {/* Bucket checkboxes */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {progressBuckets.map(b => {
               const included = !excludedBuckets.has(b.id);
               return (
@@ -577,7 +577,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       )}
 
       {/* ── Session table (desktop) / cards (mobile) ── */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Sesiones</p>
 
         {/* Mobile cards */}

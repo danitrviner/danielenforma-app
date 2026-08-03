@@ -49,7 +49,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>
-            <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
+            <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
               <span className="material-symbols-outlined text-title-s">close</span>
             </button>
           </div>
@@ -58,7 +58,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             {/* ── Left: editing controls ── */}
             <div className="space-y-4">
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Título</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Título</label>
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
@@ -67,7 +67,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Mensaje para el atleta</label>
                 <textarea
                   value={draft.intro}
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}

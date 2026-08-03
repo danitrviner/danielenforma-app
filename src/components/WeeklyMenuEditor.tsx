@@ -297,7 +297,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         ) : (
           <div className="bg-surface border border-hairline rounded-surface p-4">
             <p className="font-sans text-caption text-ink-3 uppercase mb-3">Programación semanal (fuente de los puntos)</p>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-2">
               {WEEK_DAYS.map(day => {
                 const dietId = schedule[day];
                 const diet = dietId ? diets.find(d => d.id === dietId) : null;
@@ -388,11 +388,11 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
 
         {/* Dish-type filter — prefilled from the athlete's preference */}
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Tipos de plato</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Tipos de plato</label>
           <p className="font-sans text-caption text-ink-3 mb-2">
             Prellenado con lo que eligió el atleta. Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">excluir</span>.
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
               const st = dishState(dt.id);
               const cls = st === 'pref'
@@ -404,7 +404,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <button
                   key={dt.id}
                   onClick={() => cycleDishType(dt.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                   {dt.label}
@@ -460,7 +460,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <h2 className="font-sans font-bold text-title-l text-white truncate flex items-center gap-2">
             {menu.name}
             {menu.batchCooking && (
-              <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-control">
+              <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 py-0.5 rounded-control">
                 <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>inventory_2</span>batch
               </span>
             )}
@@ -488,7 +488,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             {menu.batchCooking && batchPlan.length > 0 && (
               <div>
                 <p className="font-sans text-caption text-ink-3 uppercase mb-2">Cocina de una vez</p>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {batchPlan.map(e => (
                     <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
                       <span className="font-sans text-label text-white truncate">{e.recipeName}</span>
@@ -544,7 +544,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                       <div className="flex justify-end">
                         <button
                           onClick={() => handleRegenerateDay(day.day)}
-                          className="flex items-center gap-1.5 text-caption font-mono text-data hover:text-white transition-colors"
+                          className="flex items-center gap-2 text-caption font-mono text-data hover:text-white transition-colors"
                         >
                           <span className="material-symbols-outlined text-body-s">refresh</span>
                           Regenerar día completo
@@ -566,9 +566,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                               <p className="font-sans font-bold text-body-s text-white leading-tight truncate">{meal.recipeName}</p>
                               <p className="font-mono text-caption text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                               {meal.complements.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                <div className="flex flex-wrap gap-1 mt-2">
                                   {meal.complements.map((c, ci) => (
-                                    <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
+                                    <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
                                       +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                                     </span>
                                   ))}
@@ -604,7 +604,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                   <button
                                     key={ci}
                                     onClick={() => pickCandidate(day.day, mealIdx, c)}
-                                    className="w-full flex items-center gap-3 px-2 py-1.5 text-left hover:bg-raised rounded-control transition-colors"
+                                    className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-raised rounded-control transition-colors"
                                   >
                                     <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
                                       {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}

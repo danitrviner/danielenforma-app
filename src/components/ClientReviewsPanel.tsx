@@ -402,7 +402,7 @@ export default function ClientReviewsPanel({
                 </h4>
 
                 <div className="space-y-3">
-                  <div className="flex gap-1.5 flex-wrap">
+                  <div className="flex gap-2 flex-wrap">
                     {([
                       { id: 'front', label: 'Frente' },
                       { id: 'side',  label: 'Lateral' },
@@ -413,7 +413,7 @@ export default function ClientReviewsPanel({
                         <button
                           key={v.id}
                           onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
-                          className={`px-3 py-1.5 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
+                          className={`px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
                             active
                               ? 'bg-accent border-accent text-black'
                               : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
@@ -508,7 +508,7 @@ export default function ClientReviewsPanel({
                 <div className="flex justify-end -mt-2">
                   <button
                     onClick={() => setEditingOnboarding(true)}
-                    className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-1.5 rounded-control"
+                    className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
                   >
                     <span className="material-symbols-outlined text-body-s">edit</span>Editar
                   </button>
@@ -575,7 +575,7 @@ export default function ClientReviewsPanel({
                     { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  ef: 25, color: 'var(--color-data)' },
                     { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: 'var(--color-danger)' },
                   ]).map(m => (
-                    <div key={m.label} className="bg-raised border border-hairline rounded-surface px-3 py-1.5 text-center">
+                    <div key={m.label} className="bg-raised border border-hairline rounded-surface px-3 py-2 text-center">
                       <p className="font-sans text-caption uppercase" style={{ color: m.color }}>{m.label}</p>
                       <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
                       <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
@@ -599,12 +599,12 @@ export default function ClientReviewsPanel({
               {onboardingData.meals && onboardingData.meals.length > 0 && (
                 <div className="space-y-2">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Comidas ({onboardingData.mealCount ?? onboardingData.meals.length} ingestas)</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {onboardingData.meals.map(m => (
-                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-raised border border-hairline rounded-surface px-3 py-1.5">
+                      <div key={m.intakeType} className="flex items-center gap-2 bg-raised border border-hairline rounded-surface px-3 py-2">
                         <span className="font-sans text-caption text-ink-2">{m.name}</span>
                         {m.needsTupper && (
-                          <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-1.5 py-0.5">tupper</span>
+                          <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-2 py-0.5">tupper</span>
                         )}
                       </div>
                     ))}
@@ -854,7 +854,7 @@ export default function ClientReviewsPanel({
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
               </button>
@@ -989,7 +989,7 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-sans font-bold text-white text-label">Check-in</span>
                               <span className="font-mono text-caption text-ink-2">{c.dateStr}</span>
-                              <span className={`text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-surface flex-shrink-0 ${
+                              <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-surface flex-shrink-0 ${
                                 c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                               }`}>
                                 {c.approved ? 'Revisado' : 'Pendiente'}
@@ -1008,14 +1008,14 @@ export default function ClientReviewsPanel({
                               <div className="flex items-center gap-2 pb-1">
                                 <button
                                   onClick={() => handleStartEditCheckin(c, key)}
-                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                                 >
                                   <span className="material-symbols-outlined text-label">edit</span>Editar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCheckin(c.id, key)}
                                   disabled={deletingReviewKey === key}
-                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
+                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-2 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                                 >
                                   <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                                 </button>
@@ -1029,13 +1029,13 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
                                     <input type="number" step="0.1" value={checkinEditForm.weight}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                   <div>
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
                                     <input type="text" value={checkinEditForm.dateStr}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1043,7 +1043,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
                                     <select value={checkinEditForm.adherence}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1051,7 +1051,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
                                     <select value={checkinEditForm.mood}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1060,15 +1060,15 @@ export default function ClientReviewsPanel({
                                   <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
                                   <textarea value={checkinEditForm.notes}
                                     onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
+                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
+                                    className="flex items-center gap-1 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
                                     <span className="material-symbols-outlined text-label">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                   </button>
                                   <button onClick={() => { setEditingReviewKey(null); setCheckinEditForm(null); }}
-                                    className="px-3 py-1.5 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
+                                    className="px-3 py-2 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
                                     Cancelar
                                   </button>
                                 </div>
@@ -1112,7 +1112,7 @@ export default function ClientReviewsPanel({
                               <button
                                 type="submit"
                                 disabled={unifiedSubmitting}
-                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                                 <span className="material-symbols-outlined text-body-s">send</span>
@@ -1163,14 +1163,14 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 pb-1">
                               <button
                                 onClick={() => handleStartEditResponse(r, key)}
-                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                               >
                                 <span className="material-symbols-outlined text-label">edit</span>Editar
                               </button>
                               <button
                                 onClick={() => handleDeleteResponse(r.id, key)}
                                 disabled={deletingReviewKey === key}
-                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
+                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-2 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                               >
                                 <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                               </button>
@@ -1213,11 +1213,11 @@ export default function ClientReviewsPanel({
                               })}
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleSaveResponseEdit(r.id)} disabled={savingEdit}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
+                                  className="flex items-center gap-1 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
                                   <span className="material-symbols-outlined text-label">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingReviewKey(null); setResponseEditAnswers([]); }}
-                                  className="px-3 py-1.5 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
+                                  className="px-3 py-2 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
                                   Cancelar
                                 </button>
                               </div>
@@ -1254,7 +1254,7 @@ export default function ClientReviewsPanel({
                 </h3>
                 <button
                   onClick={() => { setNewQForm(blankQForm()); setShowNewQEditor(true); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-caption uppercase rounded-control hover:border-accent/70 transition-all flex-shrink-0"
+                  className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent font-mono text-caption uppercase rounded-control hover:border-accent/70 transition-all flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-body-s">add</span>Crear cuestionario nuevo
                 </button>
@@ -1266,7 +1266,7 @@ export default function ClientReviewsPanel({
                   <div className="relative w-full sm:max-w-2xl bg-bg border border-hairline rounded-t-surface sm:rounded-surface p-6 shadow-2xl max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
                     <button
                       onClick={() => setShowNewQEditor(false)}
-                      className="absolute top-4 right-4 p-1.5 text-ink-2 hover:text-white transition-colors"
+                      className="absolute top-4 right-4 p-2 text-ink-2 hover:text-white transition-colors"
                       aria-label="Cerrar"
                     >
                       <span className="material-symbols-outlined text-title-m">close</span>

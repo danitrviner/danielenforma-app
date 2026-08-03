@@ -153,12 +153,12 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden shadow-lg">
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>
                 <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex items-center gap-2 mt-2">
                   <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
                     <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
                   </div>
@@ -196,13 +196,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <div>
               <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
                   <span>🏅</span> Primera semana
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
                   <span className="text-accent">⚡</span> 10 días de racha
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
                   <span className="text-data">⭐</span> Nivel {profile.level}
                 </span>
               </div>
@@ -242,7 +242,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-body-s">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
@@ -321,7 +321,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       <div className="flex items-center justify-end">
         <button
           onClick={() => setReorderMode(v => !v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
             reorderMode
               ? 'bg-accent/10 border-accent/40 text-accent'
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -336,11 +336,11 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {visibleBlocks.map((id, idx) => (
         <div key={id}>
           {reorderMode && (
-            <div className="flex items-center justify-end gap-1 mb-1.5">
+            <div className="flex items-center justify-end gap-1 mb-2">
               <button
                 onClick={() => moveBlock(visibleBlocks, id, -1)}
                 disabled={idx === 0}
-                className="p-1.5 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                className="p-2 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Subir"
               >
                 <span className="material-symbols-outlined text-body-s">arrow_upward</span>
@@ -348,7 +348,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               <button
                 onClick={() => moveBlock(visibleBlocks, id, 1)}
                 disabled={idx === visibleBlocks.length - 1}
-                className="p-1.5 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                className="p-2 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Bajar"
               >
                 <span className="material-symbols-outlined text-body-s">arrow_downward</span>

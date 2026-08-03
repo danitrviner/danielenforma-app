@@ -115,7 +115,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
         <div className="space-y-2">
           <p className="text-caption font-mono uppercase text-ink-2">Etiquetas</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {tags.map(t => (
               <span key={t} className="flex items-center gap-1 bg-surface border border-hairline rounded-full px-3 py-1 text-caption font-mono text-white">
                 {t}

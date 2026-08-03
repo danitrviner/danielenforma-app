@@ -124,7 +124,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             }`}
           >
             {m.label}
-            <span className="ml-1.5 opacity-60 font-normal">
+            <span className="ml-2 opacity-60 font-normal">
               {items.filter(f => f.mode === m.id).length}
             </span>
           </button>
@@ -133,7 +133,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
       {/* Category + search + add button */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setFilterCat('all')}
             className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
@@ -182,7 +182,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
       {/* Food list */}
       {loading ? (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Skeleton className="h-11 w-full rounded-surface" />
           <Skeleton className="h-11 w-full rounded-surface" />
           <Skeleton className="h-11 w-full rounded-surface" />
@@ -190,7 +190,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <Skeleton className="h-11 w-full rounded-surface" />
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {filtered.map(item => (
             <div key={item.id} className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between gap-3 hover:border-hairline transition-colors group">
               <div className="flex items-center gap-3 min-w-0">
@@ -201,10 +201,10 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               </div>
               {!isSystem(item) && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button onClick={() => openEdit(item)} className="p-1.5 rounded-control hover:bg-data/10 text-ink-2 hover:text-data transition-colors">
+                  <button onClick={() => openEdit(item)} className="p-2 rounded-control hover:bg-data/10 text-ink-2 hover:text-data transition-colors">
                     <span className="material-symbols-outlined text-body-s">edit</span>
                   </button>
-                  <button onClick={() => setDeleteId(item.id)} className="p-1.5 rounded-control hover:bg-red-500/10 text-ink-2 hover:text-red-400 transition-colors">
+                  <button onClick={() => setDeleteId(item.id)} className="p-2 rounded-control hover:bg-red-500/10 text-ink-2 hover:text-red-400 transition-colors">
                     <span className="material-symbols-outlined text-body-s">delete</span>
                   </button>
                 </div>
@@ -234,7 +234,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Modo *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Modo *</label>
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
@@ -244,7 +244,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Categoría *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Categoría *</label>
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
@@ -255,7 +255,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 </div>
               </div>
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase mb-1.5">Descripción (1 intercambio = ...) *</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Descripción (1 intercambio = ...) *</label>
                 <textarea
                   value={form.label}
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}

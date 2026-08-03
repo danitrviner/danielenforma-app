@@ -261,12 +261,12 @@ const DayCard: React.FC<{
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Día {dayNumber}</span>
         {over && <span className="material-symbols-outlined text-body-s text-orange-400" title=">12 series">warning</span>}
       </div>
-      <div className="space-y-1.5 min-h-[60px]">
+      <div className="space-y-2 min-h-[60px]">
         {day.assignments.length === 0 ? (
           <p className="text-caption text-ink-3 font-mono italic">Descanso</p>
         ) : (
           day.assignments.map((a, i) => (
-            <div key={i} className="flex items-center gap-1.5">
+            <div key={i} className="flex items-center gap-2">
               <span className="text-label text-white truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
               <input
                 type="number" min={0} max={25}
@@ -353,7 +353,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
         <p className="text-ink-2 text-body-s">Aún no se han generado rutinas para este mesociclo.</p>
         <button
           onClick={onGoToDistribution}
-          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-sans text-label uppercase rounded-control hover:bg-accent/20 transition-all"
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-sans text-label uppercase rounded-control hover:bg-accent/20 transition-all"
         >
           <span className="material-symbols-outlined text-body-s">grid_view</span>
           Ir a Distribución para generarlas
@@ -386,7 +386,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                     <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-3 space-y-2">
                       <p className="text-label font-sans font-bold text-white truncate">
                         {ex?.name || we.exerciseId}
-                        {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                        {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
                       </p>
                       <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
                     </div>
@@ -476,7 +476,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                       <td key={m.id} className="px-3 py-2 border-r border-hairline last:border-r-0 bg-accent/5"
                         style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
                       >
-                        <div className="flex flex-col items-center gap-1.5">
+                        <div className="flex flex-col items-center gap-2">
                           <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
                           <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
                           {!zeroToZero && <Delta delta={delta} showEqual />}
@@ -1231,7 +1231,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1239,7 +1239,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1247,7 +1247,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="date"
                       value={editing.startDate}
                       onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1286,7 +1286,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <button
                       key={tab.id}
                       onClick={() => { setEditorTab(tab.id); if (tab.id !== 'distribution') setGenPhase('idle'); }}
-                      className={`flex items-center gap-1.5 px-3 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-3 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
                         editorTab === tab.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
                       }`}
                     >
@@ -1329,7 +1329,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           Distribución Automática
                         </button>
                         {editing.distribution && isStale(editing, editing.distribution) && (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-surface">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-surface">
                             <span className="material-symbols-outlined text-body-s text-orange-400">warning</span>
                             <span className="font-sans text-label text-orange-300">
                               El volumen o los días cambiaron — recalcula para actualizar
@@ -1487,11 +1487,11 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             {/* Exercise rows */}
                             <div className="space-y-2">
                               {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-raised rounded-surface p-3 space-y-1.5">
+                                <div key={peIdx} className="bg-raised rounded-surface p-3 space-y-2">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>
-                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <p className="text-caption font-sans text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
                                         {pe.equipmentMismatch && (
                                           <span className="inline-flex items-center gap-0.5 text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded-control" title="Material no disponible según onboarding">
@@ -1618,10 +1618,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   <div className="flex items-center gap-3">
                     <span className="font-sans text-label text-red-400">¿Eliminar este mesociclo?</span>
                     <button onClick={handleDelete}
-                      className="px-3 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 font-sans text-label rounded-control hover:bg-red-500/30 transition-all"
+                      className="px-3 py-2 bg-red-500/20 border border-red-500/40 text-red-400 font-sans text-label rounded-control hover:bg-red-500/30 transition-all"
                     >Confirmar</button>
                     <button onClick={() => setConfirmDelete(false)}
-                      className="px-3 py-1.5 bg-raised text-ink-2 font-mono text-label rounded-control hover:bg-raised transition-all"
+                      className="px-3 py-2 bg-raised text-ink-2 font-mono text-label rounded-control hover:bg-raised transition-all"
                     >Cancelar</button>
                   </div>
                 )}

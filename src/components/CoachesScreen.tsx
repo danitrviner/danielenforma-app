@@ -67,7 +67,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
+const MINI = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -167,11 +167,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-sans text-caption uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -202,7 +202,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       <input value={q.label} placeholder="Etiqueta de la pregunta"
                         onChange={e => updateQ(q.id, { label: e.target.value })}
                         className={MINI} />
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="flex gap-2 flex-wrap">
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
@@ -229,7 +229,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         </div>
                       )}
                       {q.type === 'choice' && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
                               <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 py-0.5 rounded-full text-caption font-mono">
@@ -254,7 +254,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                             className={MINI} />
                         </div>
                       )}
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-2">
                         <button type="button" onClick={() => setEditingId(null)}
                           className="px-3 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
@@ -268,7 +268,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-caption font-sans uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
+                      <span className={`text-caption font-sans uppercase px-2 py-0.5 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
@@ -293,7 +293,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
+              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir pregunta
             </button>
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-sans text-caption uppercase rounded-control transition-all"
+            className="px-3 py-2 border border-hairline text-ink-2 hover:text-white font-sans text-caption uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -493,7 +493,7 @@ function IndyaImportPanel() {
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-all"
+            className="px-3 py-2 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-all"
           >
             Reintentar
           </button>
@@ -601,8 +601,8 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-bold text-white text-body-s truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
+                      {isOwner && <span className="text-caption font-mono px-2 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      {isSelf && !isOwner && <span className="text-caption font-mono px-2 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-label text-ink-2 truncate block">{user.email}</span>
                   </div>
@@ -612,7 +612,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
-                        className={`px-3 py-1.5 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
+                        className={`px-3 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
                           isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId

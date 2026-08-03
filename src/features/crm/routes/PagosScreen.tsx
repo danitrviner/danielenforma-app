@@ -62,7 +62,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Nueva suscripción
@@ -84,7 +84,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setModalPago(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Registrar pago
@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+              className="w-full pl-7 pr-2 py-2 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -112,7 +112,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="button"
                 onClick={() => setParam('estado', f === 'todos' ? '' : f)}
                 aria-pressed={filtro === f}
-                className={`px-3 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
+                className={`px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'

@@ -23,11 +23,11 @@ export default function ZoneBars({ timeInZone, belowZoneSec, elapsedSec }: Props
   ];
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {rows.map(row => {
         const pct = Math.round((row.sec / total) * 100);
         return (
-          <div key={row.key} className="flex items-center gap-2 rounded-full px-3 py-1.5"
+          <div key={row.key} className="flex items-center gap-2 rounded-full px-3 py-2"
             style={{ backgroundColor: `${row.color}1a`, border: `1px solid ${row.color}40` }}>
             <p className="flex-1 min-w-0 text-caption font-sans uppercase truncate" style={{ color: row.color }}>{row.label}</p>
             <p className="text-caption font-mono text-white tabular-nums">{fmt(row.sec)}</p>

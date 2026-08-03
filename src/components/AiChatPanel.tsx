@@ -266,25 +266,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
-          className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
+          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">tune</span>
         </button>
         <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
-          className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
+          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">menu_book</span>
         </button>
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
         <button onClick={() => setShowList(s => !s)} title="Historial de chats"
-          className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
+          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">history</span>
         </button>
         <button onClick={startNew} title="Chat nuevo"
-          className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
+          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">add_comment</span>
         </button>
         <button onClick={() => setOpen(false)} title="Cerrar"
-          className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
+          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">close</span>
         </button>
       </div>
@@ -351,7 +351,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 );
               }
               return (
-                <div key={i} className="self-start max-w-[92%] flex flex-col gap-1.5">
+                <div key={i} className="self-start max-w-[92%] flex flex-col gap-2">
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
@@ -362,7 +362,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     }
                     if (block.type === 'tool_use') {
                       return (
-                        <div key={j} className="flex items-center gap-1.5 text-caption font-mono text-data/80 px-1">
+                        <div key={j} className="flex items-center gap-2 text-caption font-mono text-data/80 px-1">
                           <span className="material-symbols-outlined text-body-s">manufacturing</span>
                           {block.name}
                         </div>
@@ -404,7 +404,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
-                    <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-3">
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
                       <div className="flex gap-2 flex-wrap text-caption font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
@@ -423,10 +423,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     </div>
                   )}
                   {diet && (
-                    <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-3">
-                      <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
+                      <div className="flex gap-2 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-1.5 py-0.5 text-ink">
+                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-2 py-0.5 text-ink">
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
@@ -443,14 +443,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <button
                       onClick={() => approveProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-control bg-success/15 border border-success/40 text-success text-caption font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-2 rounded-control bg-success/15 border border-success/40 text-success text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Aprobar
                     </button>
                     <button
                       onClick={() => rejectProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-control bg-danger/10 border border-danger/30 text-danger text-caption font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-2 rounded-control bg-danger/10 border border-danger/30 text-danger text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Rechazar
                     </button>

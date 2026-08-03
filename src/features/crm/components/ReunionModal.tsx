@@ -77,14 +77,14 @@ export default function ReunionModal({ cliente, reunion, coachEmail, onCerrar }:
         )}
 
         <Campo label="Tipo">
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             {TIPOS.map(t => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTipo(t.id)}
                 aria-pressed={tipo === t.id}
-                className={`flex-1 px-3 py-1.5 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
                   tipo === t.id
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'

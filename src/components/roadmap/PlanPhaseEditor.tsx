@@ -320,7 +320,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={1}
                       value={phase.suggestedWeeks ?? ''}
                       onChange={e => updatePhase(phase.id, { suggestedWeeks: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                   <label className="flex flex-col gap-0.5">
@@ -328,7 +328,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
                       onChange={e => updatePhase(phase.id, { weightDirection: e.target.value as WeightDirection })}
-                      className="bg-bg border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent"
+                      className="bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
                     >
                       {(Object.keys(WEIGHT_DIRECTION_LABEL) as WeightDirection[]).map(d => (
                         <option key={d} value={d}>{WEIGHT_DIRECTION_LABEL[d]}</option>
@@ -343,19 +343,19 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={0}
                       value={phase.weightRateKgWeek ?? ''}
                       onChange={e => updatePhase(phase.id, { weightRateKgWeek: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                 </div>
 
                 {/* Métricas objetivo */}
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-2 pt-1">
                   {phase.metrics.map(m => (
-                    <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-hairline rounded-surface p-2">
+                    <div key={m.id} className="flex flex-wrap items-center gap-2 bg-bg border border-hairline rounded-surface p-2">
                       <select
                         value={m.kind}
                         onChange={e => updateMetric(phase.id, m.id, { kind: e.target.value as PhaseMetricKind })}
-                        className="bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
+                        className="bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
                       >
                         {(Object.keys(METRIC_KIND_LABEL) as PhaseMetricKind[]).map(k => (
                           <option key={k} value={k}>{METRIC_KIND_LABEL[k]}</option>
@@ -365,7 +365,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         value={m.label}
                         onChange={e => updateMetric(phase.id, m.id, { label: e.target.value })}
                         placeholder="Etiqueta (ej. Bajar a 82 kg)"
-                        className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
+                        className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
                       />
                       {m.kind !== 'manual' && (
                         <input
@@ -373,7 +373,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                           value={m.targetValue ?? ''}
                           onChange={e => updateMetric(phase.id, m.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                           placeholder="Objetivo"
-                          className="w-20 bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
+                          className="w-20 bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
                         />
                       )}
                       {m.kind === 'manual' && (

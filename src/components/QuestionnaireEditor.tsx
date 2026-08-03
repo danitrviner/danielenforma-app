@@ -47,7 +47,7 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
 };
 
 const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent';
-const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-2 text-label font-sans text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
+          className="flex items-center gap-2 px-3 py-2 text-label font-sans text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
         </button>
@@ -108,7 +108,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       {/* Title + description */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Título *</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Título *</label>
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -117,7 +117,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           />
         </div>
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Descripción (opcional)</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Descripción (opcional)</label>
           <input
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -135,7 +135,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>Añadir pregunta
           </button>
@@ -173,11 +173,11 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 ))}
               </select>
               {(q.type === 'numeric' || q.type === 'scale') && (
-                <span title="Graficable" className="flex-shrink-0 mt-1.5">
+                <span title="Graficable" className="flex-shrink-0 mt-2">
                   <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>show_chart</span>
                 </span>
               )}
-              <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-1.5" title="Obligatoria">
+              <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-2" title="Obligatoria">
                 <span
                   className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                   onClick={() => setQ(idx, { required: !q.required })}
@@ -187,11 +187,11 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
               <button onClick={() => duplicateQ(idx)}
-                className="flex-shrink-0 mt-0.5 p-1.5 text-ink-2 hover:text-data transition-colors" title="Duplicar">
+                className="flex-shrink-0 mt-0.5 p-2 text-ink-2 hover:text-data transition-colors" title="Duplicar">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
               </button>
               <button onClick={() => removeQ(idx)} disabled={form.questions.length === 1}
-                className="flex-shrink-0 mt-0.5 p-1.5 text-ink-2 hover:text-red-400 disabled:opacity-20 transition-colors" title="Eliminar">
+                className="flex-shrink-0 mt-0.5 p-2 text-ink-2 hover:text-red-400 disabled:opacity-20 transition-colors" title="Eliminar">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
               </button>
             </div>
@@ -279,7 +279,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
                   <div>
-                    <label className="block font-sans text-caption text-ink-2 uppercase mb-1.5">Opciones (una por línea)</label>
+                    <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Opciones (una por línea)</label>
                     <textarea
                       value={(q.options ?? []).join('\n')}
                       onChange={e => setQ(idx, { options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}

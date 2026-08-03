@@ -363,7 +363,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         <div className="space-y-0.5">
                           {ex.muscleGroup ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-1.5 py-0.5 rounded-control">
+                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-2 py-0.5 rounded-control">
                               <span className="material-symbols-outlined text-caption">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
@@ -377,7 +377,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           {(ex.equipment ?? []).length === 0 ? (
                             <span className="font-mono text-caption text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 py-0.5 rounded-control capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
@@ -403,14 +403,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-ink-2 hover:text-accent p-1.5 rounded-control hover:bg-accent/10 transition-all"
+                              className="text-ink-2 hover:text-accent p-2 rounded-control hover:bg-accent/10 transition-all"
                               title="Editar"
                             >
                               <span className="material-symbols-outlined text-body-s">edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(ex.id)}
-                              className="text-ink-2 hover:text-red-400 p-1.5 rounded-control hover:bg-red-500/10 transition-all"
+                              className="text-ink-2 hover:text-red-400 p-2 rounded-control hover:bg-red-500/10 transition-all"
                               title="Eliminar"
                             >
                               <span className="material-symbols-outlined text-body-s">delete</span>
@@ -453,10 +453,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </div>
                   {canEdit(ex) && (
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => openEdit(ex)} className="text-ink-2 hover:text-accent p-1.5 rounded-control transition-all">
+                      <button onClick={() => openEdit(ex)} className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
                         <span className="material-symbols-outlined text-body-s">edit</span>
                       </button>
-                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-ink-2 hover:text-red-400 p-1.5 rounded-control transition-all">
+                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-ink-2 hover:text-red-400 p-2 rounded-control transition-all">
                         <span className="material-symbols-outlined text-body-s">delete</span>
                       </button>
                     </div>
@@ -468,7 +468,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <span className={`px-2 py-0.5 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 py-0.5 rounded-control capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 flex items-center gap-0.5">
@@ -526,7 +526,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <form onSubmit={handleSave} className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre *</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre *</label>
                 <input
                   type="text"
                   required
@@ -539,7 +539,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Grupo muscular — the 14 typed keys */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Grupo muscular
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(vincula con el plan de volumen)</span>
                 </label>
@@ -561,7 +561,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Tipo *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Tipo *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
@@ -571,7 +571,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Perfil de resistencia</label>
                   <select
                     value={form.enduranceProfile ?? ''}
                     onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
@@ -585,7 +585,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Material necesario
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(sin tag = siempre disponible)</span>
                 </label>
@@ -617,7 +617,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">URL de imagen (opcional)</label>
                 <input
                   type="url"
                   value={form.imageUrl}
@@ -629,7 +629,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Video URL */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">URL de vídeo YouTube (opcional)</label>
                 <input
                   type="url"
                   value={form.videoUrl}
@@ -641,7 +641,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Descripción global
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(visible para cualquier atleta)</span>
                 </label>

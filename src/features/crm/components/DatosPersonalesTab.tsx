@@ -144,7 +144,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
         </Campo>
 
         <Campo label="Teléfono">
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <select
               className={`${inputClass} w-[104px] shrink-0`}
               value={prefijo}
@@ -181,7 +181,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
 
       {mostrarCamposBaja && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
-          <div className="sm:col-span-2 flex items-start gap-1.5">
+          <div className="sm:col-span-2 flex items-start gap-2">
             <span className="material-symbols-outlined text-body-s text-danger shrink-0 mt-0.5">warning</span>
             <p className="font-sans text-caption text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente

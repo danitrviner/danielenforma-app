@@ -140,11 +140,11 @@ export default function ClientStatusCard({
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
-                className="px-3 py-1.5 rounded-control bg-accent text-black text-caption font-bold uppercase tracking-wide disabled:opacity-40">
+                className="px-3 py-2 rounded-control bg-accent text-black text-caption font-bold uppercase tracking-wide disabled:opacity-40">
                 {savingNote ? 'Guardando…' : 'Guardar'}
               </button>
               <button onClick={() => setEditingNote(false)} disabled={savingNote}
-                className="px-3 py-1.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-caption font-bold uppercase tracking-wide">
+                className="px-3 py-2 rounded-control bg-white/5 border border-hairline text-ink-2 text-caption font-bold uppercase tracking-wide">
                 Cancelar
               </button>
             </div>
@@ -163,12 +163,12 @@ export default function ClientStatusCard({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-hairline">
         {/* Fase */}
-        <div className="space-y-1.5 pt-3">
+        <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-label text-accent">flag</span> Fase
           </p>
           {planPhase ? (
-            <p className="text-body-s font-bold text-white flex items-center gap-1.5">
+            <p className="text-body-s font-bold text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-title-s" style={{ color: planPhase.color }}>{planPhase.icon}</span>
               {planPhase.name}
             </p>
@@ -189,7 +189,7 @@ export default function ClientStatusCard({
         </div>
 
         {/* Objetivo */}
-        <div className="space-y-1.5 pt-3">
+        <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-label text-accent">target</span> Objetivo
           </p>
@@ -210,7 +210,7 @@ export default function ClientStatusCard({
         </div>
 
         {/* Últimos cambios */}
-        <div className="space-y-1.5 pt-3">
+        <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-label text-accent">history</span> Últimos cambios
           </p>
@@ -219,7 +219,7 @@ export default function ClientStatusCard({
           ) : (
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-caption text-ink">
+                <li key={i} className="flex items-center gap-2 text-caption text-ink">
                   <span className="material-symbols-outlined text-label text-ink-2">{e.icon}</span>
                   <span className="flex-1 truncate">{e.text}</span>
                   <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>

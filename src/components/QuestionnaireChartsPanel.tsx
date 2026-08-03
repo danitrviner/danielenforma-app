@@ -107,11 +107,11 @@ function QuestionChart({
         <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
-            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
+            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-control flex items-center gap-0.5">
+          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-control flex items-center gap-0.5">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
@@ -215,7 +215,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {graphable.map(({ question, qTitle }) => (
           <div key={question.id}>
-            <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-1.5 px-1">
+            <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-2 px-1">
               {qTitle}
             </p>
             <QuestionChart question={question} responses={responses} weekly={weekly} />

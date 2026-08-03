@@ -24,7 +24,7 @@ export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; co
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Registrar pago

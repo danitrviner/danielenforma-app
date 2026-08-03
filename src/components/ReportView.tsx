@@ -40,7 +40,7 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
   if (!d.items?.length) return null;
   return (
     <SectionShell section={section}>
-      <ul className="space-y-1.5">
+      <ul className="space-y-2">
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
             <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
@@ -78,7 +78,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
           <thead>
             <tr className="border-b border-hairline">
               {['Ejercicio', 'Series', 'Reps', 'Tonelaje', '1RM est.'].map(h => (
-                <th key={h} className="font-mono text-caption text-ink-2 uppercase tracking-wider py-1.5 px-2 whitespace-nowrap">{h}</th>
+                <th key={h} className="font-mono text-caption text-ink-2 uppercase tracking-wider py-2 px-2 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
@@ -86,7 +86,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
             {d.rows.map(r => (
               <tr key={r.exerciseId} className="border-b border-hairline last:border-0">
                 <td className="py-2 px-2">
-                  <span className="text-label text-white font-sans flex items-center gap-1.5">
+                  <span className="text-label text-white font-sans flex items-center gap-2">
                     {r.name}
                     {r.isPR && <span className="font-mono text-caption font-bold uppercase bg-accent text-black px-1 py-0.5 rounded-control">PR</span>}
                   </span>
@@ -96,7 +96,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2 font-mono text-label text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2 whitespace-nowrap">
                   <span className="font-mono text-label text-data">{r.bestOrm} kg</span>
-                  {r.deltaOrmPct != null && <span className="ml-1.5"><DeltaBadge pct={r.deltaOrmPct} /></span>}
+                  {r.deltaOrmPct != null && <span className="ml-2"><DeltaBadge pct={r.deltaOrmPct} /></span>}
                 </td>
               </tr>
             ))}
@@ -117,7 +117,7 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
           <thead>
             <tr className="border-b border-hairline">
               {['Grupo', 'Tonelaje', 'Δ vol.', '1RM medio', 'Δ fuerza'].map(h => (
-                <th key={h} className="font-mono text-caption text-ink-2 uppercase tracking-wider py-1.5 px-2 whitespace-nowrap">{h}</th>
+                <th key={h} className="font-mono text-caption text-ink-2 uppercase tracking-wider py-2 px-2 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
@@ -148,7 +148,7 @@ function BodyweightSection({ section }: { section: CoachReportSection }) {
       <div className="flex items-end gap-3 flex-wrap">
         <span className="font-mono font-extrabold text-display text-white">{d.endWeight.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
         {d.deltaKg != null && (
-          <span className={`font-mono text-caption font-bold pb-1.5 flex items-center gap-1 ${
+          <span className={`font-mono text-caption font-bold pb-2 flex items-center gap-1 ${
             good === true ? 'text-green-400' : good === false ? 'text-amber-300' : 'text-ink-2'
           }`}>
             <span className="material-symbols-outlined text-body-s">{dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'}</span>

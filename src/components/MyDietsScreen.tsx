@@ -220,7 +220,7 @@ export default function MyDietsScreen({ profile }: Props) {
           <div className="flex items-center gap-2">
             <h2 className="font-sans font-bold text-title-m text-white">{editingId ? 'Editar dieta' : 'Nueva dieta'}</h2>
             {editingId && !form.selfManaged && (
-              <span className="text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
+              <span className="text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                 De tu entrenador
               </span>
             )}
@@ -254,10 +254,10 @@ export default function MyDietsScreen({ profile }: Props) {
                     step={0.25}
                     value={form.budget[cat]}
                     onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                    className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-white text-label focus:outline-none focus:border-accent/50"
+                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-label focus:outline-none focus:border-accent/50"
                   />
                 ) : (
-                  <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-1.5 text-white text-label">
+                  <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
                     {fmtQty(form.budget[cat])}
                   </div>
                 )}
@@ -289,7 +289,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <p className="text-center py-2 font-sans text-caption text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3 p-3 rounded-surface bg-surface border border-hairline">
-                    <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
+                    <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                       {item.category.replace('_', ' ')}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -298,12 +298,12 @@ export default function MyDietsScreen({ profile }: Props) {
                         ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
                       </span>
                     </div>
-                    <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5">
+                    <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5">
                       <span className="material-symbols-outlined text-body-s select-none">close</span>
                     </button>
                   </div>
                 ))}
-                <div className="flex gap-1.5 flex-wrap pt-1">
+                <div className="flex gap-2 flex-wrap pt-1">
                   {CATS.map(cat => (
                     <button
                       key={cat}
@@ -340,7 +340,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     </span>
                   )}
                 </div>
-                <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+                <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-body-s select-none">close</span>
                 </button>
               </div>
@@ -384,7 +384,7 @@ export default function MyDietsScreen({ profile }: Props) {
                       className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
-                        <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
+                        <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
                           {food.category.replace('_', ' ')}
                         </span>
                       )}
@@ -430,7 +430,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Nueva
@@ -453,12 +453,12 @@ export default function MyDietsScreen({ profile }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="block font-sans font-bold text-body-s text-white truncate">{dt.name}</span>
                     {!dt.selfManaged && (
-                      <span className="flex-shrink-0 text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
+                      <span className="flex-shrink-0 text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                         De tu entrenador
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                  <div className="flex gap-2 mt-2 flex-wrap">
                     {BUDGET_CATS.map(cat => dt.budget[cat] > 0 && (
                       <span key={cat} className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border ${CAT_BG[cat]}`}>
                         {cat}: {fmtQty(dPlaced[cat])}/{fmtQty(dt.budget[cat])}

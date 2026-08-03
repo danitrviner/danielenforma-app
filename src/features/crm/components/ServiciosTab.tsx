@@ -107,7 +107,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-widest text-ink-2 cursor-pointer">
+        <label className="flex items-center gap-2 font-mono text-caption uppercase tracking-widest text-ink-2 cursor-pointer">
           <input
             type="checkbox"
             checked={verArchivados}
@@ -119,7 +119,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Nuevo servicio

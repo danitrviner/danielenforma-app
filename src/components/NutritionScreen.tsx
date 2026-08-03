@@ -870,7 +870,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {/* Week schedule navigation */}
       {!loading && WD_ORDER.some(d => typeof weeklySchedule[d] === 'string') && (
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {WD_ORDER.map(day => {
             const isToday = day === TODAY_WD;
             const isViewing = day === viewDay;
@@ -959,7 +959,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="flex gap-2 flex-wrap items-center">
               {allDietsList.map(dt => (
                 <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`flex items-center gap-1.5 px-4 py-3 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
                     selectedDiet?.id === dt.id
                       ? 'bg-accent text-black shadow-md'
                       : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
@@ -1000,7 +1000,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
                 )}
-                <span className="block font-mono text-caption text-ink-2 mt-1.5">
+                <span className="block font-mono text-caption text-ink-2 mt-2">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>
               </div>
@@ -1022,10 +1022,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           step={0.25}
                           value={selectedDiet.budget[cat]}
                           onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-white text-label focus:outline-none focus:border-accent/50"
+                          className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-label focus:outline-none focus:border-accent/50"
                         />
                       ) : (
-                        <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-1.5 text-white text-label">
+                        <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
                           {fmtQty(selectedDiet.budget[cat])}
                         </div>
                       )}
@@ -1155,12 +1155,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-1.5 text-label text-white font-mono focus:outline-none focus:border-data/50"
+                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-1.5 bg-data text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
+                            className="px-3 py-2 bg-data text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>
@@ -1178,7 +1178,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
-                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline flex flex-wrap gap-x-3 gap-y-2 items-center">
                             {targetCats.map(cat => {
                               const tgt = meal.target![cat]!;
                               const d = mDone[cat] ?? 0;
@@ -1212,7 +1212,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <p className="font-sans text-caption text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>
                             <button
                               onClick={() => handleOpenAddPicker(meal.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
+                              className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
                               <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
@@ -1234,7 +1234,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               </button>
 
                               {/* Category badge */}
-                              <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
+                              <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
                                 {item.category.replace('_', ' ')}
                               </span>
 
@@ -1253,7 +1253,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 <button
                                   onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
                                   title="Cambiar comida"
-                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">skillet</span>
                                 </button>
@@ -1262,7 +1262,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               <button
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
                                 title="Cambiar alimento"
-                                className="text-ink-2 hover:text-data transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                className="text-ink-2 hover:text-data transition-colors flex-shrink-0 p-2 -m-1.5"
                               >
                                 <span className="material-symbols-outlined text-body-s select-none">swap_horiz</span>
                               </button>
@@ -1271,7 +1271,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 <button
                                   onClick={() => handleRemoveItem(meal.id, idx)}
                                   title="Quitar"
-                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">close</span>
                                 </button>
@@ -1282,7 +1282,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {meal.items.length > 0 && (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}
-                            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                           >
                             <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
                             <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
@@ -1308,7 +1308,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   onClick={handleSaveDiet}
                   disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+                  className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
                 >
                   <span className="material-symbols-outlined text-body-s">save</span>
                   {saving ? 'Guardando...' : 'Guardar'}
@@ -1340,7 +1340,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </div>
                 <button
                   onClick={() => setRecipePickerMealId(null)}
-                  className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+                  className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
                 >
                   <span className="material-symbols-outlined text-body-s select-none">close</span>
                 </button>
@@ -1360,12 +1360,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
               {/* Category filter */}
               {availableRecipeCats.length > 0 && (
-                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-1.5 overflow-x-auto">
+                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
                   {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setRecipeCatFilter(cat.id)}
-                      className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                      className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                         recipeCatFilter === cat.id
                           ? 'bg-accent text-black shadow-md'
                           : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
@@ -1408,7 +1408,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5">
                           {isFav && (
                             <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
@@ -1417,7 +1417,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
                             {recipe.categories.slice(0, 3).map(c => (
-                              <span key={c} className="px-1.5 py-0.5 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
+                              <span key={c} className="px-2 py-0.5 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
                             ))}
                           </div>
                         )}
@@ -1451,7 +1451,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </div>
               <button
                 onClick={() => setSwapContext(null)}
-                className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+                className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
               >
                 <span className="material-symbols-outlined text-body-s select-none">close</span>
               </button>
@@ -1497,7 +1497,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                 </span>
               </div>
-              <button onClick={() => setPickerItem(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+              <button onClick={() => setPickerItem(null)} className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                 <span className="material-symbols-outlined text-body-s select-none">close</span>
               </button>
             </div>
@@ -1512,10 +1512,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </div>
             )}
 
-            <div className={`p-3 bg-surface border-b border-hairline flex gap-1.5 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
+            <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (
                 <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
-                  className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-black shadow-md' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
+                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-black shadow-md' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>
@@ -1536,7 +1536,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   {isSearchingFoods && (
-                    <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                    <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
                       {food.category.replace('_', ' ')}
                     </span>
                   )}

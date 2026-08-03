@@ -149,7 +149,7 @@ export default function ClientesList() {
           <button
             type="button"
             onClick={() => setImportarAbierto(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-body-s">upload_file</span>
             Importar
@@ -157,7 +157,7 @@ export default function ClientesList() {
           <button
             type="button"
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Nuevo cliente
@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-2 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -186,7 +186,7 @@ export default function ClientesList() {
               type="button"
               onClick={() => setParam('estado', f.id === 'todos' ? '' : f.id)}
               aria-pressed={filtro === f.id}
-              className={`px-3 py-1.5 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
+              className={`px-3 py-2 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
                 filtro === f.id
                   ? 'bg-accent/15 text-accent border border-accent/30'
                   : 'bg-field text-ink-2 border border-hairline hover:border-strong'

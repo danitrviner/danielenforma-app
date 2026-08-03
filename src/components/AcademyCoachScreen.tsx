@@ -337,7 +337,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
               <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
-                className={`text-caption font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
+                className={`text-caption font-mono font-bold uppercase px-3 py-2 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
               >
                 {enabled ? 'Acceso activo' : 'Sin acceso'}
               </button>

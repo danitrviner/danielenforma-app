@@ -81,7 +81,7 @@ function ProjectionTooltip({ active, payload }: any) {
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-3 text-label font-mono shadow-xl min-w-[170px]">
-      <p className="text-ink-2 mb-1.5 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
+      <p className="text-ink-2 mb-2 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-data">Esperado 100%</span>
@@ -248,7 +248,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {onEdit && (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-body-s text-accent">add</span>
             Crear periodización
@@ -277,13 +277,13 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-3 py-1.5 rounded-control"
+                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-3 py-2 rounded-control"
               >Editar</button>
             )}
           </div>
 
           {(activeResolved?.kcal != null || activeBalance?.dailyDeficit != null) && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-4 font-mono text-label">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 font-mono text-label">
               {activeResolved?.kcal != null && (
                 <span className="text-ink-2">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
               )}
@@ -342,7 +342,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 key={opt.id}
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
-                className={`font-sans text-caption px-3 py-1.5 rounded-control transition-colors ${
+                className={`font-sans text-caption px-3 py-2 rounded-control transition-colors ${
                   curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>

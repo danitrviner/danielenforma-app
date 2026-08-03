@@ -114,7 +114,7 @@ function QuestionnaireForm({
 
             {q.type === 'scale' && (
               <div className="space-y-2">
-                <div className="flex gap-1.5 flex-wrap">
+                <div className="flex gap-2 flex-wrap">
                   {Array.from({ length: (q.scaleMax ?? 10) - (q.scaleMin ?? 1) + 1 }, (_, i) => (q.scaleMin ?? 1) + i).map(v => (
                     <button
                       key={v}
@@ -155,7 +155,7 @@ function QuestionnaireForm({
             )}
 
             {q.type === 'choice' && q.options && (
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {q.options.map(opt => {
                   const curSelected: string[] = q.multiSelect
                     ? ((answers[q.id] as string | undefined) ?? '').split(',').filter(Boolean)
@@ -371,7 +371,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3 space-y-3">
         {/* Modo: día a día vs. media semanal ya calculada por el atleta */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-hairline rounded-control px-3 py-1.5 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+                className="w-24 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
               <span className="font-mono text-label text-ink-3">kg</span>
             </div>

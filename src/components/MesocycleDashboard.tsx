@@ -149,7 +149,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}
-        <p className="text-ink-3 text-label font-sans mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
+        <p className="text-ink-3 text-label font-sans mt-2">Créalo más abajo, en la sección de macrociclos.</p>
       </div>
     );
   }
@@ -214,7 +214,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         ) : (
           <div className="space-y-3">
             {/* Group toggle pills */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {activeGroups.map(g => {
                 const hidden = hiddenGroups.has(g);
                 return (

@@ -168,12 +168,12 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
 
       {/* kcal or featured badge */}
       {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-1.5 py-0.5 font-mono text-caption text-black font-bold z-10 flex items-center gap-0.5">
+        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-2 py-0.5 font-mono text-caption text-black font-bold z-10 flex items-center gap-0.5">
           <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
           Para ti
         </div>
       ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-1.5 py-0.5 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 py-0.5 font-mono text-caption text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -241,7 +241,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {onAddToIntercambios && (
             <button
               onClick={() => onAddToIntercambios(recipe)}
-              className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
+              className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
             >
               <span className="material-symbols-outlined text-title-m">playlist_add</span>
               Añadir a Intercambios
@@ -250,7 +250,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           <button
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
-            className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
             style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
           >
             <span
@@ -263,7 +263,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             onClick={() => onToggleDislike(recipe.id)}
             disabled={savingFav}
             title={isDisliked ? 'Quitar el "no me gusta"' : 'No me gusta — que no salga en mis menús'}
-            className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
             style={{ color: isDisliked ? 'var(--color-danger)' : 'var(--color-ink-2)' }}
           >
             <span
@@ -324,7 +324,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
         {/* Category tags */}
         {(recipe.categoria || recipe.categories.length > 0) && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
               <span key={c} className="px-3 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
             ))}
@@ -379,18 +379,18 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           </h2>
 
           {isIndya && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {recipe.ingredientsText.map((ing, idx) => (
-                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
+                <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                   <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
                 </li>
               ))}
             </ul>
           ) : !isIndya && visibleIngredients.length > 0 ? (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {visibleIngredients.map((ing, idx) => (
-                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
+                <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                   <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
                   <span className={`font-mono text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>
                     ×{ing.quantity}
@@ -404,8 +404,8 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
           {!isIndya && recipe.extras.length > 0 && (
             <div className="pt-2 border-t border-hairline">
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Extras</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Extras</p>
+              <div className="flex flex-wrap gap-2">
                 {recipe.extras.map((ex, idx) => (
                   <span key={idx} className="px-3 py-1 rounded-full bg-raised text-ink-2 font-mono text-caption">{ex}</span>
                 ))}
@@ -732,7 +732,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setIndyaIntake(null)}
-            className={`px-3 py-1.5 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
+            className={`px-3 py-2 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
               indyaIntake === null
                 ? 'bg-raised text-accent border border-accent/40'
                 : 'bg-raised border border-hairline text-ink-2 hover:text-white'
@@ -742,7 +742,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               key={k}
               onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-1.5 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
+              className={`px-3 py-2 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
                   ? 'bg-raised text-accent border border-accent/40'
                   : 'bg-raised border border-hairline text-ink-2 hover:text-white'

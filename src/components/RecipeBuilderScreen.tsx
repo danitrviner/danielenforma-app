@@ -33,7 +33,7 @@ function IndyaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
       }
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
       {recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-1.5 py-0.5 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 py-0.5 font-mono text-caption text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -327,14 +327,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <>
                       <button
                         onClick={() => setConfirmDelete(null)}
-                        className="flex-1 py-1.5 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-all"
+                        className="flex-1 py-2 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-all"
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={() => handleDelete(recipe.id)}
                         disabled={deleting === recipe.id}
-                        className="flex-1 py-1.5 rounded-control bg-red-600 text-white font-mono text-label uppercase tracking-wider font-bold hover:bg-red-700 transition-all disabled:opacity-40"
+                        className="flex-1 py-2 rounded-control bg-red-600 text-white font-mono text-label uppercase tracking-wider font-bold hover:bg-red-700 transition-all disabled:opacity-40"
                       >
                         {deleting === recipe.id ? '...' : '¿Eliminar?'}
                       </button>
@@ -343,14 +343,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <>
                       <button
                         onClick={() => openEdit(recipe)}
-                        className="flex-1 py-1.5 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white hover:bg-raised transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white hover:bg-raised transition-all flex items-center justify-center gap-1"
                       >
                         <span className="material-symbols-outlined text-label">edit</span>
                         Editar
                       </button>
                       <button
                         onClick={() => setConfirmDelete(recipe.id)}
-                        className="flex-1 py-1.5 rounded-control bg-red-900/20 text-red-400 font-mono text-label uppercase tracking-wider hover:bg-red-900/40 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-control bg-red-900/20 text-red-400 font-mono text-label uppercase tracking-wider hover:bg-red-900/40 transition-all flex items-center justify-center gap-1"
                       >
                         <span className="material-symbols-outlined text-label">delete</span>
                         Eliminar
@@ -391,7 +391,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setIndyaIntake(null)}
-            className={`px-3 py-1.5 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
+            className={`px-3 py-2 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
               indyaIntake === null
                 ? 'bg-raised text-accent border border-accent/40'
                 : 'bg-raised border border-hairline text-ink-2 hover:text-white'
@@ -401,7 +401,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             <button
               key={k}
               onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-1.5 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
+              className={`px-3 py-2 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
                   ? 'bg-raised text-accent border border-accent/40'
                   : 'bg-raised border border-hairline text-ink-2 hover:text-white'
@@ -475,7 +475,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             </div>
 
             {/* Name */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nombre *</label>
               <input
                 type="text"
@@ -487,7 +487,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             </div>
 
             {/* Photo URL */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">URL de foto (opcional)</label>
               <input
                 type="url"
@@ -585,7 +585,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               </div>
 
               {form.ingredients.length > 0 && (
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {form.ingredients.map((ing, idx) => (
                     <li key={idx} className="flex items-center gap-2 px-3 py-2 bg-raised rounded-surface border border-hairline">
                       <span className="text-label text-white font-sans flex-1 truncate">{ing.foodLabel}</span>

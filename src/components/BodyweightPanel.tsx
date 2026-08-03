@@ -183,11 +183,11 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         </h3>
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-mono text-caption text-ink-2">
+            <span className="flex items-center gap-2 font-mono text-caption text-ink-2">
               <span className="inline-block w-4 h-px bg-accent" />
               Diario
             </span>
-            <span className="flex items-center gap-1.5 font-mono text-caption text-ink-2">
+            <span className="flex items-center gap-2 font-mono text-caption text-ink-2">
               <span className="inline-block w-4 border-t border-dashed border-data" />
               Media 7d
             </span>

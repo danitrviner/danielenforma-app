@@ -41,7 +41,7 @@ export default function DataTable<T>({
 
   if (cargando) {
     return (
-      <div className="space-y-1.5 p-3">
+      <div className="space-y-2 p-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-11 rounded-surface bg-white/4 animate-pulse" />
         ))}

@@ -42,7 +42,7 @@ export default function ScheduleFields({
       {schedType === 'weekdays' && (
         <div className="space-y-1">
           <p className="font-mono text-caption text-ink-2 uppercase">Días activos</p>
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {(['L', 'M', 'X', 'J', 'V', 'S', 'D'] as const).map((label, i) => {
               const dayNum = i === 6 ? 0 : i + 1; // Mon=1..Sat=6, Sun=0
               const active = weekdays.includes(dayNum);
@@ -70,7 +70,7 @@ export default function ScheduleFields({
             value={intervalDays}
             min={1}
             onChange={e => onIntervalDaysChange(Math.max(1, Number(e.target.value)))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1.5 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="font-mono text-label text-ink-2">días</span>
         </div>
@@ -84,7 +84,7 @@ export default function ScheduleFields({
             value={dayOfMonth}
             min={1} max={28}
             onChange={e => onDayOfMonthChange(Math.min(28, Math.max(1, Number(e.target.value))))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1.5 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="font-mono text-label text-ink-2">de cada mes</span>
         </div>
@@ -96,7 +96,7 @@ export default function ScheduleFields({
           type="date"
           value={startDate}
           onChange={e => onStartDateChange(e.target.value)}
-          className="bg-bg border border-hairline rounded-control px-2 py-1.5 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
+          className="bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
         />
       </div>
     </div>

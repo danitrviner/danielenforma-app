@@ -441,7 +441,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                       <p className="text-caption text-data italic font-sans mb-2">{dt.coachNote}</p>
                     )}
                     {/* Budget summary */}
-                    <div className="flex flex-wrap gap-1.5 mb-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
                       {CATS.filter(c => dt.budget[c] > 0).map(c => (
                         <span key={c} className={`text-caption font-mono px-2 py-0.5 rounded-control border ${CAT_BG[c]}`}>
                           {c.replace('_', ' ')} {fmtQty(dtPlaced[c])}/{fmtQty(dt.budget[c])}
@@ -457,13 +457,13 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   <div className="flex gap-2 pt-3 border-t border-hairline">
                     <button
                       onClick={() => openEdit(dt)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
                     >
                       <span className="material-symbols-outlined text-body-s">edit</span>Editar
                     </button>
                     <button
                       onClick={() => setDeleteId(dt.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 font-mono text-caption uppercase rounded-control transition-all"
                     >
                       <span className="material-symbols-outlined text-body-s">delete</span>Eliminar
                     </button>
@@ -562,7 +562,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">Datos generales</h3>
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Nombre *</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Nombre *</label>
           <input
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -571,7 +571,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           />
         </div>
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">
             Nota del coach
           </label>
           <textarea
@@ -588,7 +588,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {onboardingData && (
         <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-1.5">
+            <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-body-s">person_check</span>
               Referencia del atleta
             </p>
@@ -607,7 +607,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  color: 'text-blue-300',   bg: 'bg-blue-500/10 border-blue-500/20' },
               { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
             ]).map(m => (
-              <div key={m.label} className={`border rounded-surface px-3 py-1.5 text-center ${m.bg}`}>
+              <div key={m.label} className={`border rounded-surface px-3 py-2 text-center ${m.bg}`}>
                 <p className={`font-sans text-caption uppercase font-bold ${m.color}`}>{m.label}</p>
                 <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
                 <p className="font-mono text-caption text-ink-3">{m.pct}%</p>
@@ -644,7 +644,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
                 setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
             >
               <span className="material-symbols-outlined text-body-s">auto_fix_high</span>
               Prefijar desde macros
@@ -654,7 +654,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {BUDGET_CATS.map(cat => (
             <div key={cat}>
-              <label className={`block font-mono text-caption uppercase mb-1.5 ${CAT_COLOR[cat]}`}>
+              <label className={`block font-mono text-caption uppercase mb-2 ${CAT_COLOR[cat]}`}>
                 {cat}
               </label>
               <div className="flex items-center bg-bg border border-hairline rounded-surface overflow-hidden">
@@ -683,7 +683,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {CATS.some(c => form.budget[c] > 0) && form.meals.length > 1 && (
               <button
                 onClick={autoDistribute}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-data/40 text-data hover:border-data/70 font-sans text-caption uppercase rounded-control transition-all"
+                className="flex items-center gap-2 px-3 py-2 bg-raised border border-data/40 text-data hover:border-data/70 font-sans text-caption uppercase rounded-control transition-all"
               >
                 <span className="material-symbols-outlined text-body-s">auto_fix_high</span>
                 Repartir
@@ -691,7 +691,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             )}
             <button
               onClick={addMeal}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-hairline text-accent hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>Añadir comida
             </button>
@@ -765,7 +765,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               {meal.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
                   {/* Category */}
-                  <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
+                  <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                     {item.category.replace('_', ' ')}
                   </span>
                   {/* Label */}
@@ -825,14 +825,14 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <div className="space-y-2">
               {form.meals.map((meal, mi) => (
                 <div key={meal.id} className="bg-surface border border-hairline rounded-surface px-4 py-3">
-                  <p className="font-sans font-bold text-white text-body-s mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
+                  <p className="font-sans font-bold text-white text-body-s mb-2">{meal.name || `Comida ${mi + 1}`}</p>
                   {meal.items.length === 0 ? (
                     <p className="font-mono text-caption text-ink-3 italic">Sin alimentos</p>
                   ) : (
                     <div className="space-y-1">
                       {meal.items.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2 font-mono text-caption text-ink-2">
-                          <span className={`text-caption font-bold px-1.5 py-0.5 rounded-control border ${
+                          <span className={`text-caption font-bold px-2 py-0.5 rounded-control border ${
                             it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
                             it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
                             'bg-orange-500/10 border-orange-500/20 text-orange-300'
@@ -877,7 +877,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <h3 className="font-sans font-bold text-title-m text-white">Añadir alimento</h3>
                 <span className="font-sans text-caption text-ink-2 uppercase">{CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}</span>
               </div>
-              <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+              <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                 <span className="material-symbols-outlined text-body-s select-none">close</span>
               </button>
             </div>
@@ -892,10 +892,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               </div>
             )}
 
-            <div className="p-3 bg-surface border-b border-hairline flex gap-1.5 flex-wrap">
+            <div className="p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black shadow-md' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
+                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black shadow-md' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>

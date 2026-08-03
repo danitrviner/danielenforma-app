@@ -63,7 +63,7 @@ export default function WeeklyAnalysisButton() {
               <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
               <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
-                className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
+                className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
                 <span className="material-symbols-outlined text-title-m">close</span>
               </button>
             </div>

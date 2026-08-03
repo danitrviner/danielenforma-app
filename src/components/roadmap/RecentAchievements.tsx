@@ -31,7 +31,7 @@ export default function RecentAchievements({ achievements }: Props) {
         {sorted.map(a => (
           <div
             key={a.id}
-            className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[84px] rounded-surface border p-3 text-center"
+            className="flex-shrink-0 flex flex-col items-center gap-2 w-[84px] rounded-surface border p-3 text-center"
             style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
           >
             <span

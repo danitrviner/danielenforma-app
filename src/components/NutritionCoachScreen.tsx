@@ -25,7 +25,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
           <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
-          <span className="inline-flex items-center gap-1.5 text-label font-mono text-data">
+          <span className="inline-flex items-center gap-2 text-label font-mono text-data">
             <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
             Sincronizado
           </span>

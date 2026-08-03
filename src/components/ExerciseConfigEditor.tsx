@@ -93,7 +93,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={1} max={20}
                 value={we.sets}
                 onChange={e => onChange({ sets: parseInt(e.target.value) || 1 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -103,7 +103,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 value={we.reps}
                 onChange={e => onChange({ reps: e.target.value })}
                 placeholder="8-10"
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -112,7 +112,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0} max={5}
                 value={we.rir}
                 onChange={e => onChange({ rir: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     value={g.label || ''}
                     onChange={e => updateGroup(gIdx, 'label', e.target.value)}
                     placeholder="Top set, Back-off..."
-                    className="w-full bg-surface border border-hairline rounded-control px-2 py-1.5 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -145,7 +145,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={1} max={20}
                     value={g.sets}
                     onChange={e => updateGroup(gIdx, 'sets', parseInt(e.target.value) || 1)}
-                    className="w-16 bg-surface border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-16 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -154,7 +154,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="text"
                     value={g.reps}
                     onChange={e => updateGroup(gIdx, 'reps', e.target.value)}
-                    className="w-20 bg-surface border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-20 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -163,12 +163,12 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={0} max={5}
                     value={g.rir}
                     onChange={e => updateGroup(gIdx, 'rir', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-surface border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-14 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <button
                   onClick={() => removeGroup(gIdx)}
-                  className="p-1.5 text-ink-2 hover:text-red-400 transition-colors"
+                  className="p-2 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar bloque"
                 >
                   <span className="material-symbols-outlined text-body-s">delete</span>
@@ -193,7 +193,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-24 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-24 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         value={we.notes || ''}
         onChange={e => onChange({ notes: e.target.value })}
         placeholder="Notas opcionales (técnica, variante, carga...)"
-        className="w-full bg-bg border border-hairline rounded-control px-3 py-1.5 text-label text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+        className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-label text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent transition-all"
       />
 
       {/* Grabar con el móvil */}
@@ -214,7 +214,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         <button
           type="button"
           onClick={toggleRecordVideo}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
             we.recordVideoSet
               ? 'bg-accent/10 border-accent/40 text-accent'
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -227,7 +227,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <select
             value={we.recordVideoSet}
             onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-            className="bg-bg border border-hairline rounded-control px-2 py-1.5 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas las series</option>
             {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
@@ -238,9 +238,9 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       </div>
 
       {/* Técnica de alta intensidad */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <label className="block font-sans text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setTechnique(undefined)}
@@ -272,7 +272,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       {/* Warm-up (series de aproximación) */}
       <div className="space-y-2 border-t border-hairline pt-3">
         <label className="block font-sans text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
             <button
               key={mode}
@@ -292,7 +292,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           </p>
         )}
         {we.warmupMode === 'manual' && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2 pt-1">
             {(we.manualWarmupSets || []).map((s, wIdx) => (
               <div key={wIdx} className="flex items-center gap-2">
                 <span className="font-mono text-caption text-orange-300 w-8">W{wIdx + 1}</span>
