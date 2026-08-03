@@ -7,6 +7,7 @@ import {
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import Skeleton from './Skeleton';
+import { Card } from './ui';
 
 interface Props {
   coachId: string;
@@ -114,14 +115,15 @@ function CoursesTab() {
   };
 
   return (
-    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-title-s text-white">Cursos</h2>
+    <Card
+      title="Cursos"
+      action={
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
-      </div>
+      }
+    >
 
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
@@ -174,7 +176,7 @@ function CoursesTab() {
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -220,14 +222,15 @@ function LessonsTab() {
   };
 
   return (
-    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-title-s text-white">Lecciones</h2>
+    <Card
+      title="Lecciones"
+      action={
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
-      </div>
+      }
+    >
 
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
@@ -273,7 +276,7 @@ function LessonsTab() {
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -318,15 +321,14 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   }
 
   return (
-    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-title-s text-white">Acceso por atleta</h2>
-        {selected.size > 0 && (
-          <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent hover:text-accent-press">
-            Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
-          </button>
-        )}
-      </div>
+    <Card
+      title="Acceso por atleta"
+      action={selected.size > 0 && (
+        <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent hover:text-accent-press">
+          Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
+        </button>
+      )}
+    >
       <div className="space-y-2">
         {athletes.map(a => {
           const enabled = accessByEmail.get(a.email)?.enabled ?? false;
@@ -345,6 +347,6 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }
