@@ -7,6 +7,7 @@ import {
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState } from './ui';
 
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
@@ -168,15 +169,15 @@ const ExerciseRow: React.FC<{
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-body-s">arrow_upward</span>
+          <Icon name="arrow_upward" size="s" />
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-body-s">arrow_downward</span>
+          <Icon name="arrow_downward" size="s" />
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400">
-          <span className="material-symbols-outlined text-body-s">close</span>
+          <Icon name="close" size="s" />
         </button>
       </div>
     </div>
@@ -237,9 +238,7 @@ const DayBlock: React.FC<{
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-body-s text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
-          chevron_right
-        </span>
+        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
         <input
           type="text"
           value={day.name}
@@ -254,7 +253,7 @@ const DayBlock: React.FC<{
           className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
           title="Eliminar día"
         >
-          <span className="material-symbols-outlined text-body-s">delete</span>
+          <Icon name="delete" size="s" />
         </button>
       </div>
 
@@ -375,9 +374,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Stage header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-body-s text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
-          chevron_right
-        </span>
+        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
         <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
         <input
           type="text"
@@ -402,7 +399,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-colors"
               title="Eliminar mesociclo"
             >
-              <span className="material-symbols-outlined text-body-s">delete</span>
+              <Icon name="delete" size="s" />
             </button>
           )}
         </div>
@@ -490,7 +487,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                   disabled={stage.days.length >= stage.daysPerWeek}
                   className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
-                  <span className="material-symbols-outlined text-body-s">add</span>
+                  <Icon name="add" size="s" />
                   Añadir día
                 </button>
               </div>
@@ -609,11 +606,11 @@ function TemplateEditor({
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
         <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
+          <Icon name="edit_note" size="m" className="text-accent" />
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-title-s">close</span>
+          <Icon name="close" size="m" />
         </button>
       </div>
 
@@ -656,7 +653,7 @@ function TemplateEditor({
               onClick={addStage}
               className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
-              <span className="material-symbols-outlined text-body-s">add</span>
+              <Icon name="add" size="s" />
               Añadir mesociclo
             </button>
           </div>
@@ -677,19 +674,12 @@ function TemplateEditor({
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex-1 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
-            {saving ? 'Guardando…' : 'Guardar plantilla'}
-          </button>
-          <button
-            onClick={onCancel}
-            className="px-4 py-3 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
-          >
+          <Button onClick={handleSubmit} loading={saving} variant="primary" fullWidth>
+            Guardar plantilla
+          </Button>
+          <Button onClick={onCancel} variant="secondary">
             Cancelar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -754,14 +744,14 @@ function TemplateCard({
             className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
-            <span className="material-symbols-outlined text-body-s">edit</span>
+            <Icon name="edit" size="s" />
           </button>
           <button
             onClick={onDelete}
             className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
-            <span className="material-symbols-outlined text-body-s">delete</span>
+            <Icon name="delete" size="s" />
           </button>
         </div>
       </div>
@@ -891,13 +881,9 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">add</span>
+        <Button onClick={openCreate} variant="primary" size="s" icon="add">
           Nueva
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
@@ -908,16 +894,14 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <Skeleton className="h-20 w-full rounded-surface" />
         </div>
       ) : templates.length === 0 ? (
-        <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">library_books</span>
-          <p className="font-sans font-bold text-white text-body-s mb-1">Sin plantillas todavía</p>
-          <p className="text-ink-2 text-label font-sans">Crea tu primera plantilla de mesociclo reutilizable.</p>
-          <button
-            onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all"
-          >
-            Crear plantilla
-          </button>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="library_books"
+            title="Sin plantillas todavía"
+            description="Crea tu primera plantilla de mesociclo reutilizable."
+            actionLabel="Crear plantilla"
+            onAction={openCreate}
+          />
         </div>
       ) : (
         <div className="space-y-3">
@@ -944,18 +928,12 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
               </p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 py-2 bg-red-500 text-white font-mono text-label font-bold uppercase rounded-control hover:bg-red-600 transition-all"
-                >
+                <Button onClick={() => handleDelete(confirmDeleteId)} variant="danger" fullWidth>
                   Eliminar
-                </button>
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-label font-bold uppercase rounded-control hover:text-white transition-all"
-                >
+                </Button>
+                <Button onClick={() => setConfirmDeleteId(null)} variant="secondary" fullWidth>
                   Cancelar
-                </button>
+                </Button>
               </div>
             </div>
           </div>

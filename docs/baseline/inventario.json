@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T23:13:10.213Z",
-  "commit": "e483676",
+  "generado": "2026-08-03T23:17:37.304Z",
+  "commit": "46e27e1",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39435
+    "lineasTsx": 39413
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4981,
+    "clasesTokenEnUso": 4968,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 992,
-    "fontSans": 968,
+    "fontMono": 990,
+    "fontSans": 962,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 301,
+    "transitionAll": 295,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -111,7 +111,7 @@
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
-        "lineas": 966
+        "lineas": 944
       },
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
@@ -416,11 +416,11 @@
       "roundedFull": 3
     },
     "src/components/MesocycleTemplateLibrary.tsx": {
-      "clasesTokenEnUso": 136,
-      "fontMono": 30,
-      "fontSans": 26,
+      "clasesTokenEnUso": 123,
+      "fontMono": 28,
+      "fontSans": 20,
       "modalesArtesanales": 1,
-      "transitionAll": 14,
+      "transitionAll": 8,
       "roundedFull": 1
     },
     "src/components/MyDietsScreen.tsx": {
