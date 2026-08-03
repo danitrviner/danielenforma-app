@@ -10,6 +10,7 @@ import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
 import StatTile from './StatTile';
+import { Icon, Button, PageHeader, ListRow } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -231,7 +232,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
             <div>
               <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-title-s">assignment_ind</span>
+                <Icon name="assignment_ind" size="m" className="text-accent" />
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
               <p className="font-mono text-caption text-ink-3 mt-1">
@@ -240,13 +241,9 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                   : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
               </p>
             </div>
-            <button
-              onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s">edit_note</span>
+            <Button onClick={() => setEditingFicha(true)} icon="edit_note" className="shrink-0">
               {onboarding ? 'Editar' : 'Completar'}
-            </button>
+            </Button>
           </div>
         );
 
@@ -255,7 +252,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         return (
           <div className="bg-surface border border-hairline p-5 rounded-surface">
             <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
+              <Icon name="restaurant" size="m" className="text-accent" />
               Preferencias alimentarias
             </h3>
             <FoodPreferencesPanel
@@ -274,10 +271,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Mi Perfil</h1>
-        <p className="text-ink-2 text-body-s mt-1">Tu gamificación, evolución de peso, gráficas y configuración de ficha.</p>
-      </div>
+      <PageHeader title="Mi Perfil" subtitle="Tu gamificación, evolución de peso, gráficas y configuración de ficha." />
 
       {success && (
         <div className="bg-accent/10 border border-accent/30 text-white p-4 rounded-surface text-label font-bold text-center">
@@ -291,29 +285,21 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           <div className="bg-surface border border-hairline p-5 rounded-surface">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-title-s">groups</span>
+                <Icon name="groups" size="m" className="text-accent" />
                 Entrenadores
               </h3>
-              <button
-                onClick={() => setShowCoaches(false)}
-                className="text-ink-2 hover:text-white transition-colors"
-              >
-                <span className="material-symbols-outlined text-title-s">close</span>
-              </button>
+              <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
             </div>
             <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
           </div>
         ) : (
-          <button
+          <ListRow
             onClick={() => setShowCoaches(true)}
-            className="w-full bg-surface border border-hairline p-4 rounded-control flex items-center justify-between gap-4 hover:border-hairline transition-colors text-left"
-          >
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-title-s">groups</span>
-              <span className="font-sans font-bold text-body-s text-white">Entrenadores</span>
-            </div>
-            <span className="material-symbols-outlined text-ink-2 text-body-s">chevron_right</span>
-          </button>
+            className="rounded-control border bg-surface border-hairline"
+            leading={<Icon name="groups" size="m" className="text-accent" />}
+            title="Entrenadores"
+            chevron
+          />
         )
       )}
 
@@ -327,7 +313,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
-          <span className="material-symbols-outlined text-body-s">{reorderMode ? 'check' : 'reorder'}</span>
+          <Icon name={reorderMode ? 'check' : 'reorder'} size="s" />
           {reorderMode ? 'Listo' : 'Reordenar bloques'}
         </button>
       </div>
@@ -337,22 +323,20 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         <div key={id}>
           {reorderMode && (
             <div className="flex items-center justify-end gap-1 mb-2">
-              <button
+              <Button
+                variant="secondary" size="s"
                 onClick={() => moveBlock(visibleBlocks, id, -1)}
                 disabled={idx === 0}
-                className="p-2 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                title="Subir"
-              >
-                <span className="material-symbols-outlined text-body-s">arrow_upward</span>
-              </button>
-              <button
+                icon="arrow_upward"
+                label="Subir"
+              />
+              <Button
+                variant="secondary" size="s"
                 onClick={() => moveBlock(visibleBlocks, id, 1)}
                 disabled={idx === visibleBlocks.length - 1}
-                className="p-2 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                title="Bajar"
-              >
-                <span className="material-symbols-outlined text-body-s">arrow_downward</span>
-              </button>
+                icon="arrow_downward"
+                label="Bajar"
+              />
             </div>
           )}
           {renderBlock(id)}
@@ -406,13 +390,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       {/* ── Sign out ──────────────────────────────────────────────────────────── */}
       <div className="pt-2">
-        <button
-          onClick={handleSignOut}
-          className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-label font-sans font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">logout</span>
-          Cerrar Sesión Activa
-        </button>
+        <Button variant="danger" onClick={handleSignOut} icon="logout" fullWidth>Cerrar Sesión Activa</Button>
       </div>
     </div>
   );
