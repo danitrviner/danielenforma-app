@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-03T22:26:12.432Z",
-  "commit": "307ad64",
+  "generado": "2026-08-03T22:28:11.821Z",
+  "commit": "a99df3a",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39600
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5097,
+    "clasesTokenEnUso": 5093,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 998,
-    "fontSans": 1017,
+    "fontSans": 1012,
     "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -222,9 +222,8 @@
       "roundedFull": 1
     },
     "src/components/AthleteRoadmapScreen.tsx": {
-      "clasesTokenEnUso": 6,
-      "fontMono": 1,
-      "fontSans": 5
+      "clasesTokenEnUso": 2,
+      "fontMono": 1
     },
     "src/components/BodyweightPanel.tsx": {
       "clasesTokenEnUso": 28,

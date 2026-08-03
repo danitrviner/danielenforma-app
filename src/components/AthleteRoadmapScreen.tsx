@@ -25,6 +25,7 @@ import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
 import { markRoadmapVisited } from './PlanInPreparationCard';
+import { Icon, PageHeader, EmptyState } from './ui';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
@@ -215,18 +216,20 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <span className="material-symbols-outlined text-display text-accent animate-spin">refresh</span>
+        <Icon name="refresh" size="xl" className="text-accent animate-spin" />
       </div>
     );
   }
 
   if (!roadmap) {
     return (
-      <div className="text-center py-10">
-        <span className="material-symbols-outlined text-display text-ink-3 block mb-3">map</span>
-        <p className="font-sans font-bold text-white text-body-s mb-1">Road map</p>
-        <p className="text-ink-2 text-label font-sans">No hay planificación disponible todavía.</p>
-        <p className="text-ink-3 text-label font-sans mt-1">Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure.</p>
+      <div className="space-y-6">
+        <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
+        <EmptyState
+          icon="map"
+          title="No hay planificación disponible todavía."
+          description="Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure."
+        />
       </div>
     );
   }
@@ -235,10 +238,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-bold text-title-l text-white uppercase tracking-tight">Road map</h1>
-        <p className="text-ink-2 text-label font-sans mt-1">Tu progreso y lo que te queda por delante</p>
-      </div>
+      <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
 
       {activePhase && phaseProgress && (
         <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
