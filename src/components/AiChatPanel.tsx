@@ -9,6 +9,7 @@ import {
 import { runAgentTurn, messageText } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
+import { Icon, Button, ListRow, Badge } from './ui';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -254,7 +255,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         title="Asistente IA"
         className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
       >
-        <span className="material-symbols-outlined block" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <Icon name="smart_toy" size="l" filled className="block" />
       </button>
     );
   }
@@ -263,30 +264,15 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-e2">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
-        <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <Icon name="smart_toy" size="m" filled className="text-accent" />
         <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
-        <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
-          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-title-m">tune</span>
-        </button>
-        <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
-          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-title-m">menu_book</span>
-        </button>
+        <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
+        <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
-        <button onClick={() => setShowList(s => !s)} title="Historial de chats"
-          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-title-m">history</span>
-        </button>
-        <button onClick={startNew} title="Chat nuevo"
-          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-title-m">add_comment</span>
-        </button>
-        <button onClick={() => setOpen(false)} title="Cerrar"
-          className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-title-m">close</span>
-        </button>
+        <Button variant="ghost" size="s" onClick={() => setShowList(s => !s)} icon="history" label="Historial de chats" />
+        <Button variant="ghost" size="s" onClick={startNew} icon="add_comment" label="Chat nuevo" />
+        <Button variant="ghost" size="s" onClick={() => setOpen(false)} icon="close" label="Cerrar" />
       </div>
 
       {syncMsg && (
@@ -302,21 +288,18 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             <p className="text-ink-2 font-sans text-label text-center py-8">Sin chats guardados todavía.</p>
           )}
           {chats.map(c => (
-            <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-surface border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface hover:border-strong'}`}
+            <ListRow
+              key={c.id}
               onClick={() => openChat(c)}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-label text-white truncate">{c.title || 'Chat sin título'}</p>
-                <p className="text-caption font-mono text-ink-2">
-                  {c.updatedAt.slice(0, 10)}{c.athleteId ? ` · ${c.athleteId}` : ''}
-                </p>
-              </div>
-              <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat"
-                className="p-1 text-ink-2 hover:text-danger">
-                <span className="material-symbols-outlined text-title-m">delete</span>
-              </button>
-            </div>
+              className={`rounded-surface border ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface'}`}
+              title={c.title || 'Chat sin título'}
+              subtitle={`${c.updatedAt.slice(0, 10)}${c.athleteId ? ` · ${c.athleteId}` : ''}`}
+              trailing={
+                <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat" className="p-1 text-ink-2 hover:text-danger">
+                  <Icon name="delete" size="m" />
+                </button>
+              }
+            />
           ))}
         </div>
       ) : (
@@ -363,7 +346,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     if (block.type === 'tool_use') {
                       return (
                         <div key={j} className="flex items-center gap-2 text-caption font-mono text-data/80 px-1">
-                          <span className="material-symbols-outlined text-body-s">manufacturing</span>
+                          <Icon name="manufacturing" size="s" />
                           {block.name}
                         </div>
                       );
@@ -376,7 +359,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
             {busy && (
               <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse px-1">
-                <span className="material-symbols-outlined text-title-s animate-spin">progress_activity</span>
+                <Icon name="progress_activity" size="m" className="animate-spin" />
                 {toolStatus ?? 'Pensando…'}
               </div>
             )}
@@ -426,9 +409,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
                       <div className="flex gap-2 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-2 text-ink">
-                            {cat} {diet.budget[cat]}
-                          </span>
+                          <Badge key={cat} tone="neutral">{cat} {diet.budget[cat]}</Badge>
                         ))}
                         <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
                       </div>
@@ -482,15 +463,16 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
-                  <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`p-3 rounded-control border transition-colors disabled:opacity-30 ${listening ? 'bg-danger/15 border-danger/40 text-danger animate-pulse' : 'bg-white/5 border-hairline text-ink-2 hover:text-white'}`}>
-                    <span className="material-symbols-outlined block text-title-m">{listening ? 'stop_circle' : 'mic'}</span>
-                  </button>
+                  <Button
+                    variant={listening ? 'danger' : 'ghost'}
+                    onClick={toggleDictation}
+                    disabled={busy}
+                    icon={listening ? 'stop_circle' : 'mic'}
+                    label={listening ? 'Detener dictado' : 'Dictar por voz'}
+                    className={listening ? 'animate-pulse' : ''}
+                  />
                 )}
-                <button onClick={send} disabled={busy || !input.trim()} title="Enviar"
-                  className="p-3 rounded-control bg-accent text-black disabled:opacity-30 transition-opacity">
-                  <span className="material-symbols-outlined block text-title-m">send</span>
-                </button>
+                <Button onClick={send} disabled={busy || !input.trim()} icon="send" label="Enviar" />
               </div>
             )}
           </div>
@@ -501,7 +483,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
           <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-e2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
-              <span className="material-symbols-outlined text-accent">tune</span>
+              <Icon name="tune" size="m" className="text-accent" />
               <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
@@ -517,14 +499,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">
-              <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
-                className="flex-1 py-3 rounded-control bg-white/5 border border-hairline text-ink-2 text-label font-bold uppercase tracking-wide disabled:opacity-40">
+              <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
                 Cancelar
-              </button>
-              <button onClick={saveInstructions} disabled={savingInstructions}
-                className="flex-1 py-3 rounded-control bg-accent text-black text-label font-bold uppercase tracking-wide disabled:opacity-40">
+              </Button>
+              <Button onClick={saveInstructions} disabled={savingInstructions} className="flex-1">
                 {savingInstructions ? 'Guardando…' : 'Guardar'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
