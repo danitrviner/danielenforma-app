@@ -58,7 +58,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Suscripciones</h2>
+          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Suscripciones</h2>
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
@@ -80,7 +80,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Pagos</h2>
+          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Pagos</h2>
           <button
             type="button"
             onClick={() => setModalPago(true)}
@@ -115,7 +115,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
-                    : 'bg-field text-[#a8a89e] border border-white/7 hover:border-white/12'
+                    : 'bg-field text-ink-2 border border-white/7 hover:border-white/12'
                 }`}
               >
                 {f === 'todos' ? 'Todos' : f === 'pendiente' ? 'Pendientes' : 'Pagados'}

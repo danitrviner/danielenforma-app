@@ -97,7 +97,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
                 rel="noopener noreferrer"
                 aria-label="Abrir WhatsApp"
                 title="WhatsApp"
-                className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                 onClick={e => e.stopPropagation()}
               >
                 <span className="material-symbols-outlined text-base">chat</span>
@@ -108,7 +108,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               onClick={() => setEditando(r)}
               aria-label="Editar"
               title="Editar"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
             >
               <span className="material-symbols-outlined text-base">edit</span>
             </button>
@@ -118,7 +118,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               disabled={actualizar.isPending && actualizar.variables?.id === r.id}
               className={`px-2 py-1 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${
                 r.realizada
-                  ? 'bg-white/6 text-[#a8a89e] hover:bg-white/10'
+                  ? 'bg-white/6 text-ink-2 hover:bg-white/10'
                   : 'bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25'
               }`}
             >

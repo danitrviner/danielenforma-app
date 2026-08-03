@@ -67,7 +67,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       <button
         type="button"
         onClick={() => navigate('/crm/clientes')}
-        className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-[#a8a89e] hover:text-ink transition-colors"
+        className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-ink-2 hover:text-ink transition-colors"
       >
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         Clientes
@@ -123,7 +123,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
               tab === t.id
                 ? 'bg-accent/15 text-accent border border-accent/30'
-                : 'bg-field text-[#a8a89e] border border-white/7 hover:border-white/12'
+                : 'bg-field text-ink-2 border border-white/7 hover:border-white/12'
             }`}
           >
             <span className="material-symbols-outlined text-sm">{t.icon}</span>

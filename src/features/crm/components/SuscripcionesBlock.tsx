@@ -112,7 +112,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             disabled={filaMutandoPausa(s.id)}
             aria-label={s.estado === 'activa' ? 'Pausar' : 'Reanudar'}
             title={s.estado === 'activa' ? 'Pausar' : 'Reanudar'}
-            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 disabled:opacity-40 transition-colors"
+            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 disabled:opacity-40 transition-colors"
           >
             <span className="material-symbols-outlined text-base">
               {s.estado === 'activa' ? 'pause' : 'play_arrow'}
@@ -123,7 +123,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             onClick={() => setEditando(s)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <span className="material-symbols-outlined text-base">edit</span>
           </button>

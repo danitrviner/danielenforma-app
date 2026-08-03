@@ -104,7 +104,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
         <div className="space-y-3">
           <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl border-2 border-dashed border-white/12 hover:border-accent/40 cursor-pointer transition-colors">
             <span className="material-symbols-outlined text-2xl text-ink-3">upload_file</span>
-            <span className="font-sans text-[11px] text-[#a8a89e]">Arrastra o elige un .xlsx o .csv</span>
+            <span className="font-sans text-[11px] text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input
               type="file"
               accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -128,7 +128,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
           <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Leyendo {nombreArchivo}…</p>
+          <p className="font-sans text-[11px] text-ink-2">Leyendo {nombreArchivo}…</p>
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
           <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Importando {aImportar.length} clientes…</p>
+          <p className="font-sans text-[11px] text-ink-2">Importando {aImportar.length} clientes…</p>
         </div>
       )}
 
@@ -155,7 +155,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
           <p className="font-sans font-bold text-sm text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Ya aparecen en la lista de clientes.</p>
+          <p className="font-sans text-[11px] text-ink-2">Ya aparecen en la lista de clientes.</p>
         </div>
       )}
     </Modal>

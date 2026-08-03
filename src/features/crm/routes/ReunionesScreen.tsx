@@ -145,7 +145,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                     <a
                       href={whatsapp} target="_blank" rel="noopener noreferrer"
                       aria-label="Abrir WhatsApp" title="WhatsApp"
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                     >
                       <span className="material-symbols-outlined text-base">chat</span>
                     </a>
@@ -156,7 +156,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => setEditando(ev.reunion!)}
                         aria-label="Editar" title="Editar"
-                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">edit</span>
                       </button>

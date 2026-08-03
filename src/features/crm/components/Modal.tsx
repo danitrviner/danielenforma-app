@@ -44,7 +44,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <span className="material-symbols-outlined text-base">close</span>
           </button>
@@ -69,7 +69,7 @@ export function Campo({ label, children, hint, error }: {
 }) {
   return (
     <label className="block space-y-1">
-      <span className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">{label}</span>
+      <span className="font-mono text-[9px] uppercase tracking-widest text-ink-2">{label}</span>
       {children}
       {error
         ? <span className="block font-sans text-[10px] text-danger">{error}</span>

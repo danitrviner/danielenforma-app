@@ -88,7 +88,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => onArchivar(s)}
           aria-label={s.archivado ? 'Recuperar servicio' : 'Archivar servicio'}
           title={s.archivado ? 'Recuperar' : 'Archivar'}
-          className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+          className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
         >
           <span className="material-symbols-outlined text-base">
             {s.archivado ? 'unarchive' : 'archive'}
@@ -107,7 +107,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[#a8a89e] cursor-pointer">
+        <label className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-ink-2 cursor-pointer">
           <input
             type="checkbox"
             checked={verArchivados}

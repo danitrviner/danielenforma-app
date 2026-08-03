@@ -129,7 +129,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             onClick={() => setEditando(p)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <span className="material-symbols-outlined text-base">edit</span>
           </button>

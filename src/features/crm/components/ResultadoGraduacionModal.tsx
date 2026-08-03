@@ -36,7 +36,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
       footer={<BotonSecundario onClick={onCerrar}>Cancelar</BotonSecundario>}
     >
       <div className="space-y-3">
-        <p className="font-sans text-[11px] text-[#a8a89e]">¿Qué pasó en la graduación?</p>
+        <p className="font-sans text-[11px] text-ink-2">¿Qué pasó en la graduación?</p>
         <div className="grid grid-cols-1 gap-2">
           <button
             type="button"
@@ -56,7 +56,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             disabled={actualizar.isPending}
             className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-[#a8a89e]">flag</span>
+            <span className="material-symbols-outlined text-lg text-ink-2">flag</span>
             <div>
               <p className="font-sans font-bold text-[12px] text-ink">No continúa</p>
               <p className="font-mono text-[9px] text-ink-3">Termina el programa aquí</p>

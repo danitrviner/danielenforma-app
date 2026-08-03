@@ -103,7 +103,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Línea de tiempo</h2>
+        <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Línea de tiempo</h2>
         {resumen.timeline.length === 0 ? (
           <EmptyState icon="history" titulo="Sin programas todavía" descripcion="La línea de tiempo aparecerá cuando el cliente tenga al menos un servicio." />
         ) : (
@@ -121,7 +121,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
                   <span className={`shrink-0 px-2 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-widest border ${
                     enCurso
                       ? 'bg-success/12 text-success border-success/25'
-                      : 'bg-white/5 text-[#a8a89e] border-white/10'
+                      : 'bg-white/5 text-ink-2 border-white/10'
                   }`}>
                     {enCurso ? 'En curso' : 'Finalizado'}
                   </span>

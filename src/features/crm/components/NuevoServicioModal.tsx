@@ -155,7 +155,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           />
           <span className="font-sans text-[10px] text-ink leading-relaxed">
             Generar el cobro pendiente al crear el servicio
-            <span className="block text-[#a8a89e]">
+            <span className="block text-ink-2">
               Se escriben todos los documentos en la misma transacción: o entran todos, o ninguno.
               {(importeCents ?? 0) <= 0 && ' Con importe 0 no se genera nada.'}
             </span>
@@ -180,7 +180,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
                 value={cuotas}
                 onChange={e => setCuotas(Math.min(12, Math.max(1, Number(e.target.value) || 1)))}
               />
-              <span className="font-sans text-[10px] text-[#a8a89e]">
+              <span className="font-sans text-[10px] text-ink-2">
                 {cuotas === 1 ? 'cuota' : 'cuotas mensuales'}
               </span>
             </div>
