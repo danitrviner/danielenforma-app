@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Icon, Input, ListRow, Select, Tabs,
+  Badge, Button, Card, Chip, Icon, Input, ListRow, PageHeader, Select, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -133,6 +133,7 @@ export default function Showcase() {
   const [categorias, setCategorias] = React.useState<string[]>(['Pecho']);
   const [tags, setTags] = React.useState(['Sin gluten', 'Vegetariano', 'Rápido']);
   const [filaPulsada, setFilaPulsada] = React.useState('');
+  const [vecesAtras, setVecesAtras] = React.useState(0);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -465,6 +466,37 @@ export default function Showcase() {
           {filaPulsada ? `Última fila pulsada: ${filaPulsada}.` : 'Ninguna fila pulsada todavía.'}
           {' '}Con onClick renderiza un button que ocupa el ancho completo; sin él, un contenedor
           simple.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="PageHeader"
+        resumen="Título grande, ceja opcional, acción a la derecha. TrainingCoachScreen, ClientsScreen y ReviewsScreen la reescriben cada una a mano — es la fuente del bug de 2026-07-03 donde una pantalla se olvidó del patrón entero."
+      >
+        <Card padding="none">
+          <div className="p-4">
+            <PageHeader
+              eyebrow="Consola de Entrenador"
+              title="Entrenamiento"
+              action={<Button size="s" icon="add" label="Añadir" />}
+            />
+          </div>
+        </Card>
+
+        <Card padding="none">
+          <div className="p-4">
+            <PageHeader
+              title="Marcos García"
+              subtitle="Cliente desde marzo de 2026"
+              onBack={() => setVecesAtras((n) => n + 1)}
+            />
+          </div>
+        </Card>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Veces que se pulsó volver: {vecesAtras}. La ceja usa borde de acento translúcido, no oro
+          sólido: es contexto, no la acción de la pantalla — el oro se reserva para el botón que sí
+          hace algo.
         </p>
       </Seccion>
     </div>
