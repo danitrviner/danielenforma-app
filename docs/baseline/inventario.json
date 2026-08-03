@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:07:26.356Z",
-  "commit": "1079194",
+  "generado": "2026-08-03T22:11:35.733Z",
+  "commit": "4c6deef",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39657
+    "lineasTsx": 39622
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5136,
+    "clasesTokenEnUso": 5118,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1006,
-    "fontSans": 1031,
-    "pesosProhibidos": 27,
+    "fontMono": 1003,
+    "fontSans": 1022,
+    "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 327,
+    "transitionAll": 323,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -193,11 +193,10 @@
       "roundedFull": 2
     },
     "src/components/AcademyScreen.tsx": {
-      "clasesTokenEnUso": 27,
-      "fontMono": 5,
-      "fontSans": 15,
-      "pesosProhibidos": 1,
-      "transitionAll": 2,
+      "clasesTokenEnUso": 17,
+      "fontMono": 2,
+      "fontSans": 9,
+      "transitionAll": 1,
       "roundedFull": 1
     },
     "src/components/AiChatPanel.tsx": {
@@ -584,11 +583,11 @@
       "roundedFull": 7
     },
     "src/components/ReportEditor.tsx": {
-      "clasesTokenEnUso": 40,
+      "clasesTokenEnUso": 32,
       "fontMono": 3,
-      "fontSans": 8,
+      "fontSans": 5,
       "modalesArtesanales": 1,
-      "transitionAll": 4,
+      "transitionAll": 1,
       "roundedFull": 1
     },
     "src/components/ReportView.tsx": {

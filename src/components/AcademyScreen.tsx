@@ -6,6 +6,7 @@ import { evaluateUnlockRule } from '../utils/academyUnlock';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState, PageHeader, ListRow } from './ui';
 
 interface Props {
   profile: UserProfile;
@@ -59,13 +60,7 @@ export default function AcademyScreen({ profile }: Props) {
   }
 
   if (!access?.enabled) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center gap-3 py-10">
-        <span className="material-symbols-outlined text-display text-ink-3">lock</span>
-        <p className="font-sans font-bold text-white">Academia aún no disponible</p>
-        <p className="text-label text-ink-2 font-sans max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
-      </div>
-    );
+    return <EmptyState icon="lock" title="Academia aún no disponible" description="Tu entrenador todavía no te ha dado acceso a TrainingLab." />;
   }
 
   const visibleCourses = access.grantedCourses?.length
@@ -101,9 +96,7 @@ export default function AcademyScreen({ profile }: Props) {
     const done = !!progressSafe.completed[openLesson.id];
     return (
       <div className="space-y-6">
-        <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-title-s">arrow_back</span> {openCourse.title}
-        </button>
+        <Button variant="ghost" size="s" onClick={() => setOpenLessonId(null)} icon="arrow_back">{openCourse.title}</Button>
         <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
           <iframe
             src={embedUrl(openLesson)}
@@ -121,19 +114,15 @@ export default function AcademyScreen({ profile }: Props) {
           <div className="space-y-2">
             {openLesson.resources.map((r, i) => (
               <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-label font-mono text-data hover:underline">
-                <span className="material-symbols-outlined text-body-s">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>
+                <Icon name={r.kind === 'pdf' ? 'picture_as_pdf' : 'link'} size="s" />
                 {r.title}
               </a>
             ))}
           </div>
         )}
-        <button
-          onClick={() => handleCompleteLesson(openLesson)}
-          disabled={done}
-          className={`w-full py-3 rounded-control font-sans font-bold text-label uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
-        >
+        <Button onClick={() => handleCompleteLesson(openLesson)} disabled={done} fullWidth>
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -142,9 +131,7 @@ export default function AcademyScreen({ profile }: Props) {
   if (openCourse) {
     return (
       <div className="space-y-6">
-        <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-title-s">arrow_back</span> Academia
-        </button>
+        <Button variant="ghost" size="s" onClick={() => setOpenCourseId(null)} icon="arrow_back">Academia</Button>
         <div>
           <span className="text-caption font-sans uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-bold text-title-l text-white">{openCourse.title}</h2>
@@ -156,20 +143,15 @@ export default function AcademyScreen({ profile }: Props) {
             const rule = l.unlockRule ?? openCourse.unlockRule;
             const { unlocked, reason } = evaluateUnlockRule(rule, { profile, progress: progressSafe }, courseTitleById);
             return (
-              <button
+              <ListRow
                 key={l.id}
                 onClick={() => unlocked && setOpenLessonId(l.id)}
                 disabled={!unlocked}
-                className={`w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
-              >
-                <span className={`material-symbols-outlined ${done ? 'text-accent' : 'text-ink-2'}`}>
-                  {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-body-s text-white truncate">{i + 1}. {l.title}</p>
-                  {!unlocked && reason && <p className="text-caption text-ink-3 font-mono">{reason}</p>}
-                </div>
-              </button>
+                className="rounded-control border bg-surface border-hairline"
+                leading={<Icon name={!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'} size="l" className={done ? 'text-accent' : 'text-ink-2'} />}
+                title={`${i + 1}. ${l.title}`}
+                subtitle={!unlocked ? reason : undefined}
+              />
             );
           })}
         </div>
@@ -185,10 +167,7 @@ export default function AcademyScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">TrainingLab</h1>
-        <p className="text-label text-ink-2 font-sans mt-1">Academia de formación — entrenamiento, nutrición y más</p>
-      </header>
+      <PageHeader title="TrainingLab" subtitle="Academia de formación — entrenamiento, nutrición y más" />
 
       {publishedCourses.length === 0 && (
         <p className="text-label text-ink-3 font-sans py-6 text-center">Todavía no hay cursos publicados.</p>
@@ -210,7 +189,7 @@ export default function AcademyScreen({ profile }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-body-s text-white">{c.title}</p>
-                    {!unlocked && <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">lock</span>}
+                    {!unlocked && <Icon name="lock" size="m" className="text-ink-3 flex-shrink-0" />}
                   </div>
                   <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (

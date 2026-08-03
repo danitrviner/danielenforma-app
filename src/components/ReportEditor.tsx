@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CoachReport } from '../types';
 import ReportView from './ReportView';
 import { buildReportText } from '../utils/reportBuilder';
+import { Icon, Button } from './ui';
 
 interface Props {
   initial: CoachReport;
@@ -50,7 +51,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </p>
             </div>
             <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
-              <span className="material-symbols-outlined text-title-s">close</span>
+              <Icon name="close" size="m" />
             </button>
           </div>
 
@@ -85,9 +86,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-3 text-left"
                     >
-                      <span className={`material-symbols-outlined text-title-m flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
-                        {s.included ? 'check_box' : 'check_box_outline_blank'}
-                      </span>
+                      <Icon name={s.included ? 'check_box' : 'check_box_outline_blank'} size="l" filled={s.included} className={`flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} />
                       <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
@@ -120,28 +119,15 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>
             <div className="flex-1" />
-            <button
-              onClick={handleCopy}
-              className="px-4 py-3 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-data/50 transition-all flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-title-s">{copied ? 'check' : 'content_copy'}</span>
+            <Button variant="secondary" onClick={handleCopy} icon={copied ? 'check' : 'content_copy'}>
               {copied ? '¡Copiado!' : 'Copiar texto'}
-            </button>
-            <button
-              onClick={() => run('save', () => onSaveDraft(draft))}
-              disabled={busy !== null}
-              className="px-4 py-3 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-accent/50 transition-all disabled:opacity-40"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => run('save', () => onSaveDraft(draft))} disabled={busy !== null}>
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
-            </button>
-            <button
-              onClick={() => run('send', () => onSend(draft))}
-              disabled={busy !== null}
-              className="px-5 py-3 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-title-s">send</span>
+            </Button>
+            <Button onClick={() => run('send', () => onSend(draft))} disabled={busy !== null} icon="send">
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
