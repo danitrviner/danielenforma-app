@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:59:26.427Z",
-  "commit": "0b0060b",
+  "generado": "2026-08-03T22:03:23.183Z",
+  "commit": "0fbf798",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39718
+    "lineasTsx": 39688
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5163,
+    "clasesTokenEnUso": 5151,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1008,
-    "fontSans": 1039,
-    "pesosProhibidos": 29,
+    "fontMono": 1007,
+    "fontSans": 1036,
+    "pesosProhibidos": 28,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 334,
+    "transitionAll": 330,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 166,
+    "roundedFull": 165,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 21,
@@ -387,11 +387,10 @@
       "transitionAll": 5
     },
     "src/components/HomeScreen.tsx": {
-      "clasesTokenEnUso": 27,
+      "clasesTokenEnUso": 25,
       "fontMono": 7,
-      "fontSans": 9,
-      "pesosProhibidos": 1,
-      "transitionAll": 4
+      "fontSans": 6,
+      "transitionAll": 2
     },
     "src/components/HrTestsPanel.tsx": {
       "clasesTokenEnUso": 17,
@@ -644,10 +643,10 @@
       "roundedFull": 1
     },
     "src/components/StepsWidget.tsx": {
-      "clasesTokenEnUso": 19,
+      "clasesTokenEnUso": 16,
       "fontMono": 2,
       "fontSans": 2,
-      "transitionAll": 2,
+      "transitionAll": 1,
       "roundedFull": 2
     },
     "src/components/TaskManagerPanel.tsx": {
@@ -672,12 +671,6 @@
       "animatePulse": 1,
       "ariaLabel": 1,
       "roundedFull": 6
-    },
-    "src/components/VegetableSelector.tsx": {
-      "clasesTokenEnUso": 7,
-      "fontMono": 1,
-      "transitionAll": 1,
-      "roundedFull": 1
     },
     "src/components/WeeklyAnalysisButton.tsx": {
       "clasesTokenEnUso": 16,

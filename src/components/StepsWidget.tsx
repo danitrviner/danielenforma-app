@@ -5,6 +5,7 @@ import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } 
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import Skeleton from './Skeleton';
+import { Icon, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -103,17 +104,11 @@ export default function StepsWidget({ athleteEmail }: Props) {
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">directions_walk</span>
+          <Icon name="directions_walk" size="m" className="text-accent" />
           Pasos de hoy
         </h2>
         {!editing && (
-          <button
-            onClick={() => { setInput(String(steps)); setEditing(true); }}
-            className="text-ink-2 hover:text-white transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-title-s">edit</span>
-          </button>
+          <Button variant="ghost" size="s" onClick={() => { setInput(String(steps)); setEditing(true); }} icon="edit" label="Editar" />
         )}
       </div>
 
@@ -130,16 +125,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             autoFocus
             className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-shrink-0 w-9 h-9 rounded-control bg-accent flex items-center justify-center text-black transition-all hover:bg-accent-press active:scale-95 disabled:opacity-50"
-          >
-            {saving
-              ? <span className="material-symbols-outlined text-body-s animate-spin">refresh</span>
-              : <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-            }
-          </button>
+          <Button size="s" onClick={handleSave} loading={saving} icon="check" label="Guardar" />
         </div>
       ) : (
         <>

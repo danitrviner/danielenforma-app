@@ -11,6 +11,7 @@ import ProgressRing from './ProgressRing';
 import StatTile from './StatTile';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import Skeleton from './Skeleton';
+import { Icon, PageHeader, ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio';
 
@@ -48,10 +49,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Inicio</h1>
-        <p className="text-ink-2 text-body-s mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
-      </div>
+      <PageHeader title="Inicio" subtitle="Tus tareas, entrenamientos pendientes y recursos." />
 
       {/* ── Sin ningún entrenamiento asignado todavía: recién llegado, el coach
           aún no le ha montado el plan. Antes esto caía directo en "sin
@@ -97,7 +95,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
         <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
-          <span className="material-symbols-outlined text-data">fitness_center</span>
+          <Icon name="fitness_center" size="l" className="text-data" />
           Entrenamiento
           <button
             onClick={() => onNavigate('training')}
@@ -120,14 +118,13 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
               <div className="space-y-2">
                 <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">Esta semana</span>
                 {thisWeekPending.map(a => (
-                  <button
+                  <ListRow
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-3 text-left transition-all"
-                  >
-                    <span className="font-sans text-body-s text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
-                    <span className="font-mono text-caption text-ink-2 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
-                  </button>
+                    className="rounded-control border bg-raised border-hairline"
+                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
+                    trailing={<span className="font-mono text-caption text-ink-2 flex-shrink-0">{formatDate(a.date)}</span>}
+                  />
                 ))}
               </div>
             )}
@@ -135,14 +132,13 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
               <div className="space-y-2">
                 <span className="font-mono text-caption uppercase font-bold tracking-widest text-red-300">Atrasados</span>
                 {overdue.map(a => (
-                  <button
+                  <ListRow
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-raised border border-red-500/20 hover:border-red-500/40 rounded-control p-3 text-left transition-all"
-                  >
-                    <span className="font-sans text-body-s text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
-                    <span className="font-mono text-caption text-red-300 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
-                  </button>
+                    className="rounded-control border bg-raised border-red-500/20"
+                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
+                    trailing={<span className="font-mono text-caption text-red-300 flex-shrink-0">{formatDate(a.date)}</span>}
+                  />
                 ))}
               </div>
             )}
@@ -158,7 +154,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           onClick={() => onNavigate('academy')}
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-accent text-title-l">school</span>
+          <Icon name="school" size="l" className="text-accent" />
           <span className="font-sans font-bold text-body-s text-white uppercase tracking-tight">Academia</span>
           <span className="text-caption text-ink-2 font-mono">Cursos y formación</span>
         </button>
@@ -166,7 +162,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           onClick={() => onNavigate('cardio')}
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-accent text-title-l">favorite</span>
+          <Icon name="favorite" size="l" className="text-accent" />
           <span className="font-sans font-bold text-body-s text-white uppercase tracking-tight">Cardio</span>
           <span className="text-caption text-ink-2 font-sans">Zonas y FC en directo</span>
         </button>
