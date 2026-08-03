@@ -3,8 +3,8 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprints 1-4 completados** ·
-> rama `ds/f0-linea-base` · 85 commits sin pushear
+> **Última actualización:** 3 de agosto de 2026 · **Sprints 1-4 completados, Sprint 5 (F8) en curso** ·
+> rama `ds/f0-linea-base` · commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
 refleja el presente. [`docs/DS-migracion.md`](docs/DS-migracion.md) es la *bitácora*: histórico por
@@ -20,13 +20,13 @@ Sprint 1  ████████████████████  F0 F1   
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ████████████████████  F6 F7        COMPLETADO
-Sprint 5  ░░░░░░░░░░░░░░░░░░░░  F8 F9 F10    pendiente
+Sprint 5  ██████░░░░░░░░░░░░░░  F8 F9 F10    F8 en curso
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**8 de 16 fases completadas.**
+**8 de 16 fases completadas, F8 en curso.**
 
 ## Fases
 
@@ -40,7 +40,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 3 | **F5** | Mono → Sans | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F7** | Primitivas en `src/components/ui/` | ✅ Completada | 2026-08-03 | Bajo |
-| 5 | **F8** | Adopción de bajo riesgo | ⬜ Pendiente | — | Bajo |
+| 5 | **F8** | Adopción de bajo riesgo | 🟡 En curso | — | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ⬜ Pendiente | — | **Alto** |
 | 5 | **F10** | Chart unificado | ⬜ Pendiente | — | Bajo |
 | 6 | **F11** | Migración de pantallas | ⬜ Pendiente | — | Medio |
@@ -188,6 +188,60 @@ inequívoca, 902 se quedan en mono porque el DS las quiere ahí (etiquetas en ve
 
 **Limpieza aprobada:** 12 tokens muertos del `@theme` y `.cyan-glow`, con 0 referencias verificadas
 sobre 297 archivos.
+
+### Sprint 5 — Adopción (F8, en curso) · 2026-08-03
+
+**F8 · Adopción de bajo riesgo.** 50 commits hasta ahora, 9 de las 13 primitivas adoptadas
+(`EmptyState`, `Badge`, `Chip`, `ListRow`, `Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) en unos
+25 archivos de `src/components/*.tsx`. **No está cerrada** — sigue en curso, y no era el objetivo
+agotar los 79 archivos en una sola sesión (la propia fase lo declara explícitamente). `Select` y
+`Sheet`/`Dialog` no se tocan: son F11 y F9.
+
+**Cada primitiva mueve el inventario igual, y es un falso positivo ya visto antes.** `Tokens del DS
+en uso` y `font-sans` bajan por archivo cada vez que una pantalla adopta una primitiva, porque las
+clases literales se centralizan en `ui/*.tsx` (que ya las contaba desde F7) en vez de repetirse por
+pantalla. Mismo patrón que el falso positivo de F1 con `hex en tokens`. La línea base se reescribe
+a propósito después de cada lote, con el archivo culpable siempre explicado por la migración.
+
+**El repo no tiene `@types/react`.** Sin él, TypeScript no sabe excluir `key` de las props de un
+componente propio — cualquier primitiva usada dentro de un `.map()` necesita declarar
+`key?: React.Key` a mano. El workaround ya existía en el propio repo (`CardProps` de
+`RecipesScreen.tsx`, anterior a F8); se replicó en `Badge`, `Chip`, `ListRow` y `Card`.
+
+**Decisión de Dani, 3 ago:** el primitivo `Tabs` marca la pestaña activa con `bg-raised` + negrita,
+nunca con oro — decisión ya tomada en F7 («el oro es la siguiente acción, no un indicador de
+sección»), pero ninguno de los interruptores reales de la app la seguía: todos usaban
+`bg-accent text-black`. Adoptar `Tabs` le quita el dorado a la navegación por pestañas de
+`TrainingLab`, `Entrenamiento`, `Nutrición` (coach y atleta), `Ajustes de Entrenadores` y el hub de
+cliente (zonas + sub-pestañas) a la vez. Confirmado explícitamente antes de aplicarlo — no se
+adivinó. El mismo criterio (primitiva ya aprobada en F7, F8 es adopción no rediseño) se aplicó sin
+volver a preguntar a `PageHeader`, cuyo título son 24px/bold en vez de los 32px/extrabold que
+usaban `TrainingLab` y `Revisiones`.
+
+**Casos que no encajaron limpiamente, dejados tal cual a propósito** (no son omisiones, son
+decisiones): filtros con color por categoría que la primitiva no reproduce (`CAT_COLOR`,
+`METRIC_COLOR`, el filtro `indyaCat` de Recetas en `bg-data`); toggles con `min-h-[44px]` explícito
+donde `Chip` sería más bajo (regresión de objetivo táctil); tarjetas con título+icono combinado
+(`Card.title` es solo texto); filas con un enlace real dentro del título o con tres líneas de texto
+(`ListRow` no lo soporta); cabeceras con un indicador "Sincronizado" en vivo junto a la ceja
+(`PageHeader.eyebrow` es solo texto) — `TrainingCoachScreen`, `NutritionCoachScreen` y
+`ClientsScreen` se quedan con su cabecera actual por esto. El header de `ClientHub` (avatar +
+badge de plan + tarjeta de adherencia) tampoco encaja: es una composición propia, no un título de
+pantalla.
+
+**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios después de cada lote;
+`ds:inventario` sin regresiones reales (solo el falso positivo ya descrito, corregido con
+`--write` cada vez). Verificación visual en `/ui` (recarga completa, 375 px) para cada primitiva
+adoptada. **Sin verificación visual en pantallas reales**: el login de coach usa Google OAuth real
+y no hay sandbox de coach; el login de atleta (`atleta@enforma.com`) existe pero esta sesión no
+tenía la contraseña. Pendiente que Dani o el asistente de QA de navegador lo revisen en las
+pantallas reales, sobre todo la nav principal (`App.tsx`) y el cambio de color de `Tabs`, que son
+los de mayor impacto visual.
+
+**Qué queda para continuar F8:** Button y PageHeader solo se tocaron en un puñado de pantallas;
+Icon standalone solo en la nav — quedan ~580 usos repartidos por el resto de la app. `cardio/` y
+`roadmap/` siguen diferidos (ver alcance de la fase). Se recomienda retomar por pantalla, con el
+mismo ritmo de verificación.
 
 ## Excepciones explícitas al Design System
 

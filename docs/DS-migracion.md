@@ -583,3 +583,91 @@ sí —cada uno escucha Tab por su cuenta—. Es el mismo caso que R3 deja abier
 | `<select>` nativo junto a campos personalizados (primitiva lista, adopción pendiente) | F11 |
 | 39 overlays artesanales sin foco atrapado ni Escape (plantilla lista en `Sheet`/`Dialog`) | F9 |
 | `setEditorTab('volume')`, valor fuera de la unión `EditorTab` en `MesocycleManager.tsx` — invisible para `tsc` porque el repo no tiene `@types/react` | Ajena al DS |
+
+---
+
+## Sprint 5 · Adopción (en curso)
+
+### F8 · Adopción de bajo riesgo
+
+**Fecha:** 3 de agosto de 2026 (sesión en curso) · **Commits:** 50 hasta ahora · **Estado: no
+cerrada**
+
+**Alcance de esta sesión:** 9 de las 13 primitivas (`EmptyState`, `Badge`, `Chip`, `ListRow`,
+`Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) adoptadas en ~25 archivos. `Select`, `Sheet` y
+`Dialog` no se tocan — son F11 y F9 respectivamente. `src/components/cardio/`, `src/components/
+roadmap/` y `src/features/crm/**` quedan fuera del alcance de F8 por decisión previa (ver
+`DESIGN_SYSTEM_STATUS.md`).
+
+**Orden de adopción, y por qué.** `EmptyState` primero, como piloto, para validar el flujo de
+verificación antes de escalar. Luego `Badge`, `Chip`, `ListRow`, `Card` — cada una reduce parte de
+la superficie de iconos sueltos que `Icon` (el paso más delicado) tendría que tocar directamente,
+porque sus iconos internos ya quedan bien dimensionados por composición. `Tabs` y `PageHeader`
+después, por ser los cambios visuales más notorios (ver más abajo). `Button` intercalado. `Icon`
+standalone al final, y solo en la navegación principal (`App.tsx`) en esta sesión — el resto de los
+~580 usos sueltos quedan para continuar la fase.
+
+**El mismo falso positivo del inventario, seis veces.** Cada primitiva adoptada baja `Tokens del DS
+en uso` y `font-sans` **por archivo** sin que sea una regresión real: las clases se centralizan en
+`ui/*.tsx` (que F7 ya las contaba) en vez de repetirse en cada pantalla. Mismo mecanismo que el
+falso positivo de `hex en tokens` en F1. Se verificó en cada lote que el archivo señalado era
+exactamente el que se acababa de migrar, y se reescribió la línea base a propósito
+(`--write`) — nunca a ciegas.
+
+**`key` sin `@types/react`.** F7 ya había anotado esto como deuda ajena al DS
+(`setEditorTab('volume')`). En F8 se volvió bloqueante de verdad: cualquier primitiva usada dentro
+de un `.map()` necesita `key` en sus props, y sin `@types/react` TypeScript no lo excluye solo. El
+propio repo ya tenía el workaround, sin documentar, en `CardProps` de `RecipesScreen.tsx`
+(anterior a F8). Se replicó el mismo patrón (`key?: React.Key` explícito) en `Badge`, `Chip`,
+`ListRow` y `Card` — un comentario en cada una remite a esta nota.
+
+**Decisión de Dani, consultada antes de aplicarla.** El primitivo `Tabs` (F7) marca la pestaña
+activa con `bg-raised` + negrita, nunca con oro — «el oro es la siguiente acción, no un indicador
+de sección», ya escrito en el propio `Tabs.tsx`. Pero los seis interruptores reales de la app
+(`TrainingLab`, `Entrenamiento`, `Nutrición` coach y atleta, `Ajustes de Entrenadores`, el hub de
+cliente con sus dos niveles) usaban todos `bg-accent text-black`. Adoptar `Tabs` tal cual le quita
+el dorado a la navegación por pestañas de casi toda la consola de coach en una sola sesión — se
+detuvo el trabajo y se preguntó explícitamente antes de aplicarlo. Respuesta: adoptar tal cual, es
+una decisión de F7 ya aprobada, F8 es adopción no rediseño. El mismo criterio se aplicó sin volver
+a preguntar a `PageHeader` (título 24px/bold en vez de los 32px/extrabold de `TrainingLab` y
+`Revisiones`), por ser la misma categoría de decisión.
+
+**El bug de accesibilidad de la barra inferior, cerrado en parte.** F7 había dejado documentado
+que los 7 iconos del dock no tienen `aria-hidden`, así que su ligadura de texto se cuela en el
+nombre accesible del botón junto a la etiqueta visible. Al adoptar `Icon` en `App.tsx` (sidebar de
+escritorio + barra inferior), el arreglo llega gratis: `Icon` sin prop `label` es decorativo por
+defecto (`aria-hidden`), que es lo correcto porque ya hay texto visible al lado en los dos casos.
+
+**Casos que no encajaron limpiamente — dejados tal cual a propósito:**
+
+| Qué | Por qué |
+|---|---|
+| Filtros con color por categoría (`CAT_COLOR` en `FoodLibraryScreen`, `METRIC_COLOR` en `LoadHistoryPanel`, `indyaCat` en `RecipesScreen` con `bg-data`) | `Chip.selected` es un único color fijo; forzarlo aplanaría un sistema de color con significado real |
+| Toggles con `min-h-[44px]` explícito (mismos archivos) | `Chip` no garantiza 44px; adoptarlo sería una regresión de objetivo táctil, no solo visual |
+| Tarjetas con icono dentro del título (`ClientDietsPanel`, `ClientReviewsPanel`, `CoachNotesPanel`, decenas más) | `Card.title` es texto plano, sin slot para icono |
+| Filas con un `<a>` real envolviendo título+subtítulo (`ResourcesPanel`), o con 3 líneas de texto (`NotificationBell`) | `ListRow.title`/`subtitle` son un string cada uno, no nodos |
+| Cabeceras con indicador "Sincronizado" en vivo junto a la ceja (`TrainingCoachScreen`, `NutritionCoachScreen`, `ClientsScreen`) | `PageHeader.eyebrow` es solo texto, sin slot para un segundo indicador |
+| Header de `ClientHub` (avatar + badge de plan + tarjeta de adherencia inline) | Composición propia, no el título simple que `PageHeader` resuelve |
+| Contenido dentro de los 39 overlays artesanales (`WorkoutsScreen` picker, `MyDietsScreen` picker, `MyMenuScreen` modal de swap, `CommandPalette`) | F9 los reescribe enteros; tocar su contenido ahora es trabajo que esa fase podría deshacer |
+| Botones de texto en oro sin fondo ni borde (`AcademyCoachScreen` acciones de cabecera, `ResourcesPanel` "Nuevo") | Ninguna de las 4 variantes de `Button` reproduce ese tratamiento |
+
+**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios tras cada lote. `ds:inventario`
+sin regresiones reales (solo el falso positivo ya descrito). Verificación visual en `/ui` a 375 px
+tras recarga completa para cada primitiva, incluida una prueba de teclado real en `Chip` (Tab +
+click) confirmando el foco visible y el toggle de selección.
+
+**Sin verificar, y por qué.** Ninguna pantalla de producción se vio renderizada con una sesión real:
+el login de coach usa Google OAuth y no existe sandbox de coach (limitación ya documentada en el
+proyecto); el login de atleta (`atleta@enforma.com`) existe pero esta sesión no tenía la
+contraseña. Es la comprobación pendiente de mayor prioridad antes de dar F8 por buena, sobre todo
+en `App.tsx` (nav principal, se ve en cada sesión de cada usuario) y en las seis pantallas donde
+`Tabs` cambió de color.
+
+**Deuda anotada para continuar F8:**
+
+| Hallazgo | Medida |
+|---|--:|
+| Usos de `Icon` standalone pendientes de migrar (solo se tocó `App.tsx`) | ~580 |
+| Pantallas con `Button` sin adoptar | la mayoría de los ~110 usos originales |
+| Cabeceras con `PageHeader` sin adoptar por el indicador "Sincronizado" | 3 (`TrainingCoachScreen`, `NutritionCoachScreen`, `ClientsScreen`) |
+| Verificación visual con sesión real (atleta y coach) | Pendiente — bloqueada por credenciales |
