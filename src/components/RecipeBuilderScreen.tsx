@@ -4,7 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge } from './ui';
+import { EmptyState, Badge, Chip } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -388,24 +388,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setIndyaIntake(null)}
-            className={`px-3 py-2 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
-              indyaIntake === null
-                ? 'bg-raised text-accent border border-accent/40'
-                : 'bg-raised border border-hairline text-ink-2 hover:text-white'
-            }`}
-          >Todos los momentos</button>
+          <Chip selected={indyaIntake === null} onClick={() => setIndyaIntake(null)}>Todos los momentos</Chip>
           {Object.entries(INTAKE_LABELS).map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-2 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
-                indyaIntake === Number(k)
-                  ? 'bg-raised text-accent border border-accent/40'
-                  : 'bg-raised border border-hairline text-ink-2 hover:text-white'
-              }`}
-            >{label}</button>
+            <Chip key={k} selected={indyaIntake === Number(k)} onClick={() => setIndyaIntake(Number(k))}>{label}</Chip>
           ))}
         </div>
 
