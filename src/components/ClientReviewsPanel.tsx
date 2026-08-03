@@ -446,7 +446,7 @@ export default function ClientReviewsPanel({
                 </div>
 
                 {athletePhotoAssignments.filter(a => a.active).length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-white/60">
+                  <div className="space-y-2 pt-2 border-t border-hairline">
                     <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Asignados activos</p>
                     {athletePhotoAssignments.filter(a => a.active).map(a => {
                       const schedLabel = scheduleLabel(a.schedule);
@@ -666,7 +666,7 @@ export default function ClientReviewsPanel({
 
               {/* Datos personales adicionales */}
               {(onboardingData.occupation || onboardingData.referralSource || onboardingData.goalFreeText) && (
-                <div className="space-y-1 pt-3 border-t border-white/40">
+                <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Datos personales</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
                     {onboardingData.occupation && (
@@ -685,7 +685,7 @@ export default function ClientReviewsPanel({
               {/* Salud */}
               {(onboardingData.hasCurrentInjury || onboardingData.hadPastInjuries || onboardingData.takesMedication ||
                 onboardingData.recentSurgery || onboardingData.smokesAlcoholSubstances || onboardingData.sunExposureWeekly) && (
-                <div className="space-y-1 pt-3 border-t border-white/40">
+                <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Salud</p>
                   <div className="space-y-1">
                     {onboardingData.hasCurrentInjury && (
@@ -728,7 +728,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.appetitePeakTime || onboardingData.hadOverweightHistory || !onboardingData.foodRelationshipGood ||
                 onboardingData.eatsTooFast || (onboardingData.supplements?.length ?? 0) > 0 || onboardingData.weightTendency ||
                 onboardingData.neckCm || onboardingData.waistCm || onboardingData.hipCm) && (
-                <div className="space-y-1 pt-3 border-t border-white/40">
+                <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Nutrición — detalle</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
                     {onboardingData.appetitePeakTime && (
@@ -763,7 +763,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.oneRepMaxTotal || onboardingData.progressFrequency || onboardingData.techniqueLevel ||
                 onboardingData.currentMotivation || onboardingData.muscleGroupsToImprove || onboardingData.restDayActive ||
                 onboardingData.sittingHoursPerDay || onboardingData.stressReason) && (
-                <div className="space-y-1 pt-3 border-t border-white/40">
+                <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Entrenamiento — detalle</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
                     {onboardingData.oneRepMaxTotal && (
@@ -794,7 +794,7 @@ export default function ClientReviewsPanel({
 
               {/* Descanso — detalle adicional */}
               {((onboardingData.sleepDeficitCauses?.length ?? 0) > 0 || onboardingData.sleepRoutineOrScreen || onboardingData.sleepMedication) && (
-                <div className="space-y-1 pt-3 border-t border-white/40">
+                <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Descanso — detalle</p>
                   {(onboardingData.sleepDeficitCauses?.length ?? 0) > 0 && (
                     <p className="font-mono text-[10px] text-ink-2"><span className="text-ink-3 mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
@@ -812,7 +812,7 @@ export default function ClientReviewsPanel({
 
               {/* Extra answers from template */}
               {onboardingTemplate.length > 0 && onboardingData.extraAnswers && Object.keys(onboardingData.extraAnswers).length > 0 && (
-                <div className="space-y-3 pt-3 border-t border-white/40">
+                <div className="space-y-3 pt-3 border-t border-hairline">
                   {(['entrenamiento', 'nutricion', 'descanso'] as const).map(section => {
                     const sqs = onboardingTemplate.filter(q => q.section === section);
                     const answered = sqs.filter(q => {
@@ -1002,7 +1002,7 @@ export default function ClientReviewsPanel({
                           <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                         </div>
                         {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 bg-bg space-y-3 border-t border-white/40">
+                          <div className="px-4 pb-4 pt-2 bg-bg space-y-3 border-t border-hairline">
                             {/* R7 action bar */}
                             {editingReviewKey !== key && (
                               <div className="flex items-center gap-2 pb-1">
@@ -1081,14 +1081,14 @@ export default function ClientReviewsPanel({
                                 { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                                 { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                               ].map(cell => (
-                                <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-white/40">
+                                <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-hairline">
                                   <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
                                   <strong className={`${cell.color}`}>{cell.value}</strong>
                                 </div>
                               ))}
                             </div>
                             {c.notes && (
-                              <div className="bg-surface p-3 rounded-lg border border-white/30">
+                              <div className="bg-surface p-3 rounded-lg border border-hairline">
                                 <span className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas del atleta</span>
                                 <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                               </div>
@@ -1107,7 +1107,7 @@ export default function ClientReviewsPanel({
                                 value={expandedReviewId === key ? unifiedFeedbackText : (c.coachFeedback || '')}
                                 onChange={e => setUnifiedFeedbackText(e.target.value)}
                                 placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                                className="w-full bg-raised border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                                className="w-full bg-raised border border-hairline rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                               />
                               <button
                                 type="submit"
@@ -1157,7 +1157,7 @@ export default function ClientReviewsPanel({
                         <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </div>
                       {isExpanded && (
-                        <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-2">
+                        <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-2">
                           {/* R7 action bar */}
                           {editingReviewKey !== key && (
                             <div className="flex items-center gap-2 pb-1">
@@ -1327,7 +1327,7 @@ export default function ClientReviewsPanel({
 
               {/* Active assignments list */}
               {athleteQAssignments.filter(a => a.active).length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-white/60">
+                <div className="space-y-2 pt-2 border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Asignados activos</p>
                   {athleteQAssignments.filter(a => a.active).map(a => {
                     const tmpl = coachQuestionnaires.find(q => q.id === a.questionnaireId);
@@ -1390,7 +1390,7 @@ export default function ClientReviewsPanel({
                               </p>
                             </div>
                           </summary>
-                          <div className="px-4 pb-3 pt-1 space-y-2 border-t border-white/50">
+                          <div className="px-4 pb-3 pt-1 space-y-2 border-t border-hairline">
                             {r.answers.map(ans => {
                               const q = tmpl?.questions.find(q => q.id === ans.questionId);
                               return (

@@ -68,7 +68,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
-          : 'bg-surface border-white/10 text-ink-2 hover:border-white/30'
+          : 'bg-surface border-white/10 text-ink-2 hover:border-strong'
       }`}
     >
       {children}

@@ -259,7 +259,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   if (view === 'list') {
     return (
       <div className="space-y-6">
-        <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
           <div>
             <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Rutinas</h1>
             <p className="text-ink-2 text-sm mt-1">
@@ -347,7 +347,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 pt-3 border-t border-white/60">
+                <div className="flex items-center gap-2 pt-3 border-t border-hairline">
                   <button
                     onClick={() => openEditor(w)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-raised hover:bg-accent/10 border border-white/7 hover:border-accent/30 text-ink-2 hover:text-accent rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
@@ -407,7 +407,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   return (
     <div className="space-y-6">
       {/* Editor header */}
-      <header className="flex items-center gap-4 pb-4 border-b border-white/60">
+      <header className="flex items-center gap-4 pb-4 border-b border-hairline">
         <button
           onClick={() => setView('list')}
           className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-hairline px-3 py-2 rounded-lg transition-all"
@@ -509,7 +509,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               return (
                 <div key={`${we.exerciseId}-${idx}`} className={`bg-surface border rounded-2xl overflow-hidden ${selectedIdx.has(idx) ? 'border-accent/50' : 'border-white/7'}`}>
                   {/* Exercise info bar */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface border-b border-white/50">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface border-b border-hairline">
                     <input
                       type="checkbox"
                       checked={selectedIdx.has(idx)}
@@ -591,7 +591,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       </div>
 
       {/* Save / Cancel */}
-      <div className="flex gap-3 pt-2 border-t border-white/60">
+      <div className="flex gap-3 pt-2 border-t border-hairline">
         <button
           onClick={() => setView('list')}
           className="flex-1 md:flex-none md:px-8 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"

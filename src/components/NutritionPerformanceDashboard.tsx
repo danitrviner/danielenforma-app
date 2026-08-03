@@ -277,7 +277,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-white/7 hover:border-white/20 px-2.5 py-1.5 rounded-lg"
+                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-white/7 hover:border-strong px-2.5 py-1.5 rounded-lg"
               >Editar</button>
             )}
           </div>

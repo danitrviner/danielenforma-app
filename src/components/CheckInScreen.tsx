@@ -513,7 +513,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               const q = templates.get(a.questionnaireId);
               if (!q) return null;
               return (
-                <div key={a.id} className="flex items-center justify-between bg-raised border border-white/60 rounded-lg p-3">
+                <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-lg p-3">
                   <p className="font-sans text-xs text-ink-2">{q.title}</p>
                   <span className="font-mono text-[9px] text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
@@ -559,7 +559,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-raised border border-white/60 rounded-lg p-3">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-lg p-3">
                 <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
                 <span className="font-mono text-[9px] text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}

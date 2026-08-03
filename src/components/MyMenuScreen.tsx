@@ -317,7 +317,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-white/7 text-ink-2 hover:border-white/20'}`}
+              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-white/7 text-ink-2 hover:border-strong'}`}
             >
               <span className="font-mono text-[10px] font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
               {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-accent'}`} />}

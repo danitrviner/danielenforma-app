@@ -303,7 +303,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="pb-4 border-b border-white/60">
+      <header className="pb-4 border-b border-hairline">
         <div className="flex items-center gap-3 mb-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
@@ -337,7 +337,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               <span className="text-xs text-ink-2 font-sans pb-1">deportistas registrados</span>
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-white/60">
+          <div className="mt-6 pt-4 border-t border-hairline">
             <span className="block text-[8px] text-ink-2 uppercase font-mono mb-2">Próximos a finalizar planificación</span>
             {athletesFinishingSoon.length === 0 ? (
               <p className="text-xs text-ink-3 font-mono">Ninguno por ahora.</p>
@@ -347,7 +347,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-hairline text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
@@ -410,7 +410,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-hairline text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
@@ -536,7 +536,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-lg border border-hairline text-center font-mono">
                       <div>
                         <span className="block text-[8px] text-ink-2 uppercase">INICIAL</span>
                         <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
@@ -573,7 +573,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                     </div>
                   </div>
-                  <div className="mt-5 pt-3.5 border-t border-white/60 flex items-center justify-between text-xs font-mono">
+                  <div className="mt-5 pt-3.5 border-t border-hairline flex items-center justify-between text-xs font-mono">
                     <div className="flex items-center gap-2">
                       <span className="text-ink-2">{totalCheckCount} Reportes</span>
                       {pendingCount > 0 && (
@@ -623,7 +623,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         {inviteSuccess && <p className="font-mono text-[10px] text-accent mt-1.5">{inviteSuccess}</p>}
 
         {pendingInvites.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/60">
+          <div className="mt-4 pt-4 border-t border-hairline">
             <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2.5">
               Invitaciones pendientes ({pendingInvites.length})
             </p>

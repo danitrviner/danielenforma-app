@@ -301,7 +301,7 @@ const DayCard: React.FC<{
       <select
         value=""
         onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-        className="mt-2 w-full bg-bg border border-dashed border-white/20 rounded-lg px-2 py-1 text-[10px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-lg px-2 py-1 text-[10px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
       >
         <option value="">+ Añadir grupo…</option>
         {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (

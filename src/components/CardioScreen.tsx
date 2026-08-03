@@ -630,7 +630,7 @@ export default function CardioScreen({ profile }: Props) {
 
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}
-                className="w-full flex items-center gap-3 bg-surface border border-white/7 rounded-xl p-3 text-left hover:border-white/20 transition-colors">
+                className="w-full flex items-center gap-3 bg-surface border border-white/7 rounded-xl p-3 text-left hover:border-strong transition-colors">
                 <span className="material-symbols-outlined text-data">favorite</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white">

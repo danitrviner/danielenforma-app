@@ -324,7 +324,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
             reorderMode
               ? 'bg-accent/10 border-accent/40 text-accent'
-              : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
+              : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
           <span className="material-symbols-outlined text-sm">{reorderMode ? 'check' : 'reorder'}</span>

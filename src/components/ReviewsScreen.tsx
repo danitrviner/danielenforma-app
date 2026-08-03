@@ -186,7 +186,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
           <p className="text-ink-2 text-sm mt-1">
@@ -314,21 +314,21 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       >expand_more</span>
                     </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-3">
+                      <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-3">
                         <div className="grid grid-cols-3 gap-2 font-mono text-xs">
                           {[
                             { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
                             { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-white/40">
+                            <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-hairline">
                               <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
                         </div>
                         {c.notes && (
-                          <div className="bg-surface p-3 rounded-lg border border-white/30">
+                          <div className="bg-surface p-3 rounded-lg border border-hairline">
                             <span className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas del atleta</span>
                             <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                           </div>
@@ -373,7 +373,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-raised border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-hairline rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
@@ -444,7 +444,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     >expand_more</span>
                   </div>
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-2">
+                    <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-2">
                       {r.answers.map(ans => {
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (

@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-bg border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
+            className="bg-bg border border-hairline rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
       >
         + Añadir nivel
       </button>

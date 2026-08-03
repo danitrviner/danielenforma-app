@@ -197,7 +197,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
           <button
             onClick={useStandardPreset}
-            className="py-2 px-3 border border-white/15 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all"
+            className="py-2 px-3 border border-hairline text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-strong transition-all"
           >
             Usar plan estándar (6 fases)
           </button>
@@ -220,7 +220,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       {showNutritionModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
-          <div className="bg-surface border border-white/15 rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface border border-hairline rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
             <p className="font-sans font-bold text-white text-sm">Ya existe una periodización nutricional</p>
             <p className="text-xs text-ink-2 font-mono leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
@@ -427,7 +427,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       <button
         onClick={addPhase}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
       >
         + Añadir fase
       </button>

@@ -200,7 +200,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
           <p className="text-ink-2 text-sm mt-1">
@@ -339,7 +339,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
+                    <tr key={ex.id} className={`border-b border-hairline hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (

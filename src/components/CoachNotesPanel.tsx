@@ -131,7 +131,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
             <div
               key={n.id}
               className={`flex items-center gap-3 border rounded-lg p-3 transition-all ${
-                n.done ? 'bg-surface border-white/50 opacity-60' : 'bg-raised border-white/7'
+                n.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-white/7'
               }`}
             >
               <button

@@ -68,7 +68,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
           className="w-full bg-bg border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent resize-none" />
 
         <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-white/15 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white transition-all">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-hairline text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white transition-all">
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving || !durationMin}

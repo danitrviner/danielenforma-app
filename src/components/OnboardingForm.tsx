@@ -1303,7 +1303,7 @@ export default function OnboardingForm({
                 <Section icon={meta.icon} title={meta.label}>
                   <div className="space-y-4">
                     {questions.map(q => (
-                      <div key={q.id} className="space-y-1.5 border-b border-white/40 pb-3 last:border-0 last:pb-0">
+                      <div key={q.id} className="space-y-1.5 border-b border-hairline pb-3 last:border-0 last:pb-0">
                         <p className="font-mono text-[10px] text-ink-2 uppercase">{q.label}</p>
                         {renderAnswer(q)}
                       </div>

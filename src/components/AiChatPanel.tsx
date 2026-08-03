@@ -303,7 +303,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           )}
           {chats.map(c => (
             <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-surface hover:border-white/20'}`}
+              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-surface hover:border-strong'}`}
               onClick={() => openChat(c)}
             >
               <div className="flex-1 min-w-0">

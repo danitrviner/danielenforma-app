@@ -239,7 +239,7 @@ export default function ClientWorkoutsPanel({
             {[...assignments].sort((a, b) => a.date.localeCompare(b.date)).map(a => {
               const wo = workouts.find(w => w.id === a.workoutId);
               return (
-                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-white/50 rounded-lg">
+                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-hairline rounded-lg">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="material-symbols-outlined text-base text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">

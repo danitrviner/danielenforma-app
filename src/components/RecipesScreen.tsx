@@ -381,7 +381,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {isIndya && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
             <ul className="space-y-1.5">
               {recipe.ingredientsText.map((ing, idx) => (
-                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-white/50 last:border-0">
+                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
                   <span className="text-xs text-white font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   <span className="font-mono text-[10px] text-ink-2 shrink-0">{ing.quantity}g</span>
                 </li>
@@ -390,7 +390,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           ) : !isIndya && visibleIngredients.length > 0 ? (
             <ul className="space-y-1.5">
               {visibleIngredients.map((ing, idx) => (
-                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-white/50 last:border-0">
+                <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
                   <span className="text-xs text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
                   <span className={`font-mono text-[10px] font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>
                     ×{ing.quantity}
@@ -403,7 +403,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           )}
 
           {!isIndya && recipe.extras.length > 0 && (
-            <div className="pt-2 border-t border-white/60">
+            <div className="pt-2 border-t border-hairline">
               <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-1.5">Extras</p>
               <div className="flex flex-wrap gap-1.5">
                 {recipe.extras.map((ex, idx) => (

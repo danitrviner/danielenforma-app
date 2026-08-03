@@ -217,7 +217,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
             we.recordVideoSet
               ? 'bg-accent/10 border-accent/40 text-accent'
-              : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
+              : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
           <span className="material-symbols-outlined text-sm">videocam</span>
@@ -246,8 +246,8 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             onClick={() => setTechnique(undefined)}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
               !we.technique
-                ? 'bg-white/10 border-white/20 text-white'
-                : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
+                ? 'bg-white/10 border-hairline text-white'
+                : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
             }`}
           >Normal</button>
           {TECHNIQUES.map(t => (
@@ -259,7 +259,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
                 we.technique === t
                   ? TECHNIQUE_COLOR[t]
-                  : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
+                  : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
               }`}
             >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
           ))}
@@ -270,7 +270,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       </div>
 
       {/* Warm-up (series de aproximación) */}
-      <div className="space-y-2 border-t border-white/50 pt-3">
+      <div className="space-y-2 border-t border-hairline pt-3">
         <label className="block font-mono text-[9px] text-ink-2 uppercase">Series de aproximación (warm-up)</label>
         <div className="flex items-center gap-1.5 flex-wrap">
           {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
@@ -281,7 +281,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
                 (we.warmupMode || 'none') === mode
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                  : 'border-white/7 text-ink-2 hover:text-white hover:border-white/20'
+                  : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
               }`}
             >{label}</button>
           ))}

@@ -20,7 +20,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
+      <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador

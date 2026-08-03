@@ -428,7 +428,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div className="space-y-5 pb-24">
         {/* Player header */}
-        <header className="flex items-center gap-3 pb-4 border-b border-white/60 sticky top-[65px] bg-bg z-30 pt-2">
+        <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[65px] bg-bg z-30 pt-2">
           <button
             onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
             className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-hairline px-3 py-2 rounded-lg transition-all flex-shrink-0"
@@ -521,7 +521,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               }`}
             >
               {/* Exercise header */}
-              <div className="flex items-center gap-3 p-4 bg-surface border-b border-white/50">
+              <div className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
                 <span className="font-mono text-[10px] text-ink-2/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-white/7 flex-shrink-0" />
@@ -600,7 +600,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[480px]">
                   <thead>
-                    <tr className="bg-bg border-b border-white/40">
+                    <tr className="bg-bg border-b border-hairline">
                       <th className="px-4 py-2 font-mono text-[9px] text-ink-2 uppercase w-12">Serie</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Peso (kg)</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Reps</th>
@@ -611,7 +611,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </thead>
                   <tbody>
                     {warmup.sets.map((w, wIdx) => (
-                      <tr key={`warmup-${wIdx}`} className="border-b border-white/20 bg-orange-500/5">
+                      <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-orange-500/5">
                         <td className="px-4 py-2.5">
                           <span className="font-mono text-xs font-bold text-orange-300 flex items-center gap-1">
                             🔥 W{wIdx + 1}
@@ -634,7 +634,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       return (
                         <tr
                           key={sIdx}
-                          className={`border-b border-white/20 transition-colors ${
+                          className={`border-b border-hairline transition-colors ${
                             setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-raised'
                           }`}
                         >
@@ -723,7 +723,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
 
               {/* Athlete's note for this exercise */}
-              <div className="px-4 py-3 bg-bg border-t border-white/30">
+              <div className="px-4 py-3 bg-bg border-t border-hairline">
                 <label className="font-mono text-[9px] text-ink-2 uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
                 <textarea
                   value={exerciseNoteInputs[exIdx] || ''}
@@ -735,13 +735,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
 
               {we.notes && (
-                <div className="px-4 py-2 bg-bg border-t border-white/30">
+                <div className="px-4 py-2 bg-bg border-t border-hairline">
                   <p className="font-mono text-[10px] text-ink-2 italic">📌 {we.notes}</p>
                 </div>
               )}
 
               {ex?.instructions && (
-                <div className="px-4 py-2 bg-bg border-t border-white/30">
+                <div className="px-4 py-2 bg-bg border-t border-hairline">
                   <p className="font-mono text-[9px] text-ink-3 uppercase mb-0.5">Descripción</p>
                   <p className="text-xs text-ink-2">{ex.instructions}</p>
                 </div>
@@ -854,7 +854,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-3">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-3">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Entrenamiento</h1>
           <p className="text-ink-2 text-sm mt-1">

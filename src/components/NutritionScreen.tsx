@@ -1148,7 +1148,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       </div>
 
                       {savingMealAsRecipeId === meal.id && (
-                        <div className="px-4 py-2.5 bg-bg/60 border-b border-white/60 flex items-center gap-2">
+                        <div className="px-4 py-2.5 bg-bg/60 border-b border-hairline flex items-center gap-2">
                           <input
                             type="text"
                             autoFocus
@@ -1178,7 +1178,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
-                          <div className="px-4 py-2 bg-bg/60 border-b border-white/60 flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline flex flex-wrap gap-x-3 gap-y-1.5 items-center">
                             {targetCats.map(cat => {
                               const tgt = meal.target![cat]!;
                               const d = mDone[cat] ?? 0;
@@ -1206,7 +1206,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       })()}
 
                       {/* Item list */}
-                      <div className="p-3 border-t border-white/60 bg-bg/40 space-y-2">
+                      <div className="p-3 border-t border-hairline bg-bg/40 space-y-2">
                         {meal.items.length === 0 ? (
                           <div className="text-center py-4">
                             <p className="font-mono text-[10px] text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>

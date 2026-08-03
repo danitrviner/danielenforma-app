@@ -284,7 +284,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   </button>
                 )}
               </div>
-              <div className="p-3 space-y-2 border-t border-white/60">
+              <div className="p-3 space-y-2 border-t border-hairline">
                 {meal.items.length === 0 ? (
                   <p className="text-center py-2 font-mono text-[10px] text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (

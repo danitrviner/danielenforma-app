@@ -124,7 +124,7 @@ const ExerciseRow: React.FC<{
   onChange, onDelete, onMoveUp, onMoveDown,
 }) => {
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-white/40 last:border-0 group">
+    <div className="flex items-center gap-2 py-1.5 border-b border-hairline last:border-0 group">
       {/* Name */}
       <span className="font-mono text-[10px] text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
@@ -448,7 +448,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                       return (
                         <tr
                           key={g}
-                          className="border-b border-white/30 last:border-0 transition-colors"
+                          className="border-b border-hairline last:border-0 transition-colors"
                           style={{ backgroundColor: heatmapBg(cfg.series) }}
                         >
                           <td className="px-3 py-2.5">
