@@ -52,7 +52,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
-                tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
+                tab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-title-s">{t.icon}</span>

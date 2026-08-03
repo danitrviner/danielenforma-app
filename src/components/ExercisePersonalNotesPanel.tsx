@@ -98,7 +98,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
               >
                 {saving ? 'Guardando...' : 'Guardar observación'}
               </button>

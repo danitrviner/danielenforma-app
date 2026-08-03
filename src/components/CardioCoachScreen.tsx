@@ -39,7 +39,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'}`}>
+              className={`flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}>
               <span className="material-symbols-outlined text-title-s">{t.icon}</span>
               {t.label}
             </button>

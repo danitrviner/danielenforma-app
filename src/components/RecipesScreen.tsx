@@ -98,7 +98,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
+      className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all`}
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
@@ -672,7 +672,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   onClick={() => setSelectedCat(cat.id)}
                   className={`px-4 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                     selectedCat === cat.id
-                      ? 'bg-accent text-black shadow-md'
+                      ? 'bg-accent text-black'
                       : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
                   }`}
                 >{cat.name}</button>
@@ -720,7 +720,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 onClick={() => setIndyaCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
                   indyaCat === cat
-                    ? 'bg-data text-black shadow-md'
+                    ? 'bg-data text-black'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
               >{cat}</button>

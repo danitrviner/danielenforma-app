@@ -80,7 +80,7 @@ function ProjectionTooltip({ active, payload }: any) {
   if (!row) return null;
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-3 text-label font-mono shadow-xl min-w-[170px]">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-3 text-label font-mono shadow-e1 min-w-[170px]">
       <p className="text-ink-2 mb-2 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
@@ -343,7 +343,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
                 className={`font-sans text-caption px-3 py-2 rounded-control transition-colors ${
-                  curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
+                  curveMode === opt.id ? 'bg-raised text-white' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>
             ))}

@@ -100,7 +100,7 @@ interface EditorProps {
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 max-w-md w-full shadow-e2 space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
@@ -541,7 +541,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-surface border border-hairline bg-field overflow-hidden shadow-xl">
+      <div className="rounded-surface border border-hairline bg-field overflow-hidden">
         <div className="px-3 py-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-sans text-caption uppercase text-ink-2 tracking-widest">{label}</span>
@@ -605,7 +605,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-hairline rounded-surface bg-field overflow-hidden shadow-2xl">
+      <div className="hidden sm:flex border border-hairline rounded-surface bg-field overflow-hidden">
 
         {/* Sidebar — never scrolls */}
         <div

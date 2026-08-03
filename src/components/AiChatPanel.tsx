@@ -252,7 +252,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA"
-        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
+        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
       >
         <span className="material-symbols-outlined block" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
       </button>
@@ -260,7 +260,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-e2">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
@@ -499,7 +499,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
       {editingInstructions && (
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
-          <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-e2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent">tune</span>
               <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>

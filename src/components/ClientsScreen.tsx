@@ -322,7 +322,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between shadow-lg">
+        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -363,7 +363,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             onClick={onOpenReviews}
             disabled={!onOpenReviews}
-            className="bg-surface border border-hairline p-5 rounded-control flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
+            className="bg-surface border border-hairline p-5 rounded-control flex flex-col justify-between text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </button>
 
           {/* Pending notes */}
-          <div className="bg-surface border border-hairline p-5 rounded-surface shadow-lg">
+          <div className="bg-surface border border-hairline p-5 rounded-surface">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-300 text-title-m">sticky_note_2</span>

@@ -13,6 +13,7 @@
      · Tipografía        familias (F1) · escala de tamaños (F4)
      · Color             superficies, texto, líneas, marca, dato, estado (F1)
      · Radios            (F3)
+     · Elevación         (F6)
      · Motion            (F13)
    `static` es obligatorio: sin él Tailwind solo emite las variables que alguna
    clase de utilidad usa, y un `var(--color-x)` escrito en un estilo en línea o
@@ -147,6 +148,24 @@
   --radius-control: 10px;
   --radius-surface: 16px;
   --radius-canvas:  24px;
+
+  /* ── Elevación · 3 + ninguna ────────────────────────────────────────────────
+     Sobre un fondo casi negro la sombra apenas se percibe: la elevación se
+     comunica CAMBIANDO DE SUPERFICIE, no proyectando sombra. Por eso el nivel
+     por defecto es «ninguna» y no existe token para él — una tarjeta sin
+     sombra no lleva clase, la lleva la excepción.
+
+       e0     por defecto: tarjetas, paneles, filas, botones. El borde
+              `hairline` hace todo el trabajo. Se expresa NO poniendo sombra.
+       e1     solo lo que flota sobre contenido que se desplaza: barra de
+              navegación, barras sticky, FAB, toast, tooltip de gráfica.
+       e2     solo overlays: modal, bottom sheet, popover, menú desplegable.
+       glow   uno por pantalla como máximo, y solo señalando la acción
+              siguiente. Es información, no decoración: cuando el brillo está
+              en todas partes deja de indicar «esto es lo importante».        */
+  --shadow-e1:   0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-e2:   0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 24px -6px rgba(251, 203, 26, 0.35);
 
 }
 

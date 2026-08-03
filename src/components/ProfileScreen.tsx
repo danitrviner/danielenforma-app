@@ -150,7 +150,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             {/* Avatar + XP */}
             <div className="flex items-center gap-4">
               <div className="relative inline-block flex-shrink-0">
-                <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden shadow-lg">
+                <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
@@ -242,7 +242,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}

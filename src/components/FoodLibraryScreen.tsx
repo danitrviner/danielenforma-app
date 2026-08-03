@@ -119,7 +119,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             onClick={() => setFilterMode(m.id)}
             className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               filterMode === m.id
-                ? 'bg-accent text-black shadow-md'
+                ? 'bg-accent text-black'
                 : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
             }`}
           >
@@ -147,7 +147,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               key={cat.id}
               onClick={() => setFilterCat(cat.id)}
               className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
-                filterCat === cat.id ? CAT_COLOR[cat.id] + ' shadow-sm' : 'text-ink-2 hover:text-white'
+                filterCat === cat.id ? CAT_COLOR[cat.id] + '' : 'text-ink-2 hover:text-white'
               }`}
             >
               {cat.label}
@@ -168,7 +168,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
+            className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Añadir
@@ -222,7 +222,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       {/* Create / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-md w-full shadow-2xl space-y-5">
+          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-md w-full shadow-e2 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar alimento' : 'Nuevo alimento'}
@@ -284,7 +284,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       {/* Delete confirm */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
+          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-e2 space-y-4">
             <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar alimento?</h3>
             <div className="flex gap-3">
               <button onClick={() => setDeleteId(null)} className="flex-1 py-3 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>

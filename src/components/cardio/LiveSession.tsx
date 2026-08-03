@@ -69,7 +69,7 @@ export default function LiveSession({
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <div className="text-center pt-2">
-          <p className="font-sans font-bold text-7xl text-white tabular-nums leading-none drop-shadow-sm">{bpm ?? '--'}</p>
+          <p className="font-sans font-bold text-7xl text-white tabular-nums leading-none drop-">{bpm ?? '--'}</p>
           <p className="text-label font-sans uppercase text-white/90 mt-2 tracking-wider">{zoneLabel}</p>
         </div>
 

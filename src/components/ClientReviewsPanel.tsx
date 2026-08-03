@@ -345,7 +345,7 @@ export default function ClientReviewsPanel({
                     <button
                       key={v.id}
                       onClick={() => setSelectedView(v.id)}
-                      className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-black shadow-md' : 'text-ink-2 hover:text-white'}`}
+                      className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
                     >{v.label}</button>
                   ))}
                 </div>
@@ -365,7 +365,7 @@ export default function ClientReviewsPanel({
                 <div className="p-3 bg-bg/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -379,7 +379,7 @@ export default function ClientReviewsPanel({
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
                       <div className="relative rounded-surface overflow-hidden border border-accent/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold shadow-md">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -439,7 +439,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignPhotoCheckIn}
                     disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
                   >
                     {assigningPhoto ? '…' : 'Asignar'}
                   </button>
@@ -854,7 +854,7 @@ export default function ClientReviewsPanel({
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
               </button>
@@ -1263,7 +1263,7 @@ export default function ClientReviewsPanel({
               {/* Inline new-questionnaire editor modal — bottom-sheet on mobile, centered dialog on desktop */}
               {showNewQEditor && (
                 <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center sm:p-4">
-                  <div className="relative w-full sm:max-w-2xl bg-bg border border-hairline rounded-t-surface sm:rounded-surface p-6 shadow-2xl max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+                  <div className="relative w-full sm:max-w-2xl bg-bg border border-hairline rounded-t-surface sm:rounded-surface p-6 shadow-e2 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
                     <button
                       onClick={() => setShowNewQEditor(false)}
                       className="absolute top-4 right-4 p-2 text-ink-2 hover:text-white transition-colors"
@@ -1318,7 +1318,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>

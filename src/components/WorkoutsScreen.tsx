@@ -268,7 +268,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
           <button
             onClick={() => openEditor()}
-            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
+            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all self-start md:self-auto"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Nueva rutina
@@ -382,7 +382,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         {/* Delete confirm */}
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-e2">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
                 <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar rutina?</h3>
@@ -601,7 +601,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         <button
           onClick={handleSave}
           disabled={isSaving || !editorName.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-accent/10"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {isSaving ? (
             <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</>
@@ -614,7 +614,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       {/* Exercise picker modal */}
       {showPicker && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="bg-raised border border-hairline rounded-t-surface md:rounded-surface w-full md:max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="bg-raised border border-hairline rounded-t-surface md:rounded-surface w-full md:max-w-2xl shadow-e2 flex flex-col max-h-[85vh]">
             {/* Picker header */}
             <div className="flex items-center justify-between p-5 border-b border-hairline flex-shrink-0">
               <h3 className="font-sans font-bold text-white text-title-m">Seleccionar ejercicio</h3>

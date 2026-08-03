@@ -277,7 +277,7 @@ export default function ClientWorkoutsPanel({
       {/* ── Assign modal ──────────────────────────────────────────────────── */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center sm:p-4">
-          <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 w-full sm:max-w-md shadow-2xl space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+          <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 w-full sm:max-w-md shadow-e2 space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">Asignar entrenamiento</h2>
               <button onClick={() => setShowAssignModal(false)} className="text-ink-2 hover:text-white transition-colors">

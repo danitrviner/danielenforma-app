@@ -404,7 +404,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Crear dieta
@@ -476,7 +476,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {deleteId && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-e2 space-y-4">
               <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar dieta?</h3>
               <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
@@ -895,7 +895,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <div className="p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black shadow-md' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
+                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>

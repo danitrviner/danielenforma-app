@@ -114,7 +114,7 @@ export default function PhotosScreen({ profile }: Props) {
             onClick={() => setSelectedView(v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               selectedView === v
-                ? 'bg-accent text-black shadow-md'
+                ? 'bg-accent text-black'
                 : 'text-ink-2 hover:text-white'
             }`}
           >

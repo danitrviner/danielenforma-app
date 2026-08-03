@@ -323,7 +323,7 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-4 p-4 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
+              className={`flex items-center gap-4 p-4 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
@@ -412,7 +412,7 @@ function AppContent() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
+      <nav className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-e1" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}

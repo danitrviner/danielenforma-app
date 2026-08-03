@@ -40,7 +40,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
               activeTab === tab.id
-                ? 'bg-accent text-black shadow-lg shadow-accent/10'
+                ? 'bg-accent text-black'
                 : 'text-ink-2 hover:text-white'
             }`}
           >

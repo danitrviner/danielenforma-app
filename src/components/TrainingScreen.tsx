@@ -403,7 +403,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {wo && (
                 <button
                   onClick={() => openPlayer(a)}
-                  className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                  className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
@@ -448,7 +448,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-3">
+          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-e1 flex items-center gap-3">
             <span
               className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
@@ -706,7 +706,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               }}
                               className={`w-11 h-11 rounded-control border flex items-center justify-center mx-auto transition-all ${
                                 setInput.done
-                                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                                  ? 'bg-emerald-500 border-emerald-500 text-white'
                                   : 'border-hairline text-ink-3 hover:border-accent/50 hover:text-accent/50'
                               }`}
                             >
@@ -789,7 +789,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <button
             onClick={handleFinish}
             disabled={!canFinish || isFinishing || !!celebration}
-            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-accent/20 disabled:shadow-none"
+            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             {isFinishing ? (
               <><span className="material-symbols-outlined animate-spin">refresh</span>Guardando...</>
@@ -803,7 +803,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
         {celebration && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-8 space-y-5 shadow-2xl text-center">
+            <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-8 space-y-5 shadow-e2 text-center">
               <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
                 <span className="material-symbols-outlined text-display text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {celebration.isFirstEver ? 'celebration' : 'bolt'}
@@ -876,14 +876,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-full sm:w-fit">
         <button
           onClick={() => setMainTab('programa')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-title-s">event</span>
           Programa
         </button>
         <button
           onClick={() => setMainTab('progresion')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-title-s">trending_up</span>
           Progresión

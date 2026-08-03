@@ -147,7 +147,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
-        <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-surface shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
+        <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-surface shadow-e2 z-10">
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 text-accent mb-2">
               <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
@@ -195,7 +195,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
-      <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-surface shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
+      <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-surface shadow-e2 z-10 transition-all">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 text-accent mb-2 animate-pulse">

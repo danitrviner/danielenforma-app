@@ -47,7 +47,7 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-xl">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-e1">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-accent font-bold text-body-s">{rawEntry.value} kg</p>

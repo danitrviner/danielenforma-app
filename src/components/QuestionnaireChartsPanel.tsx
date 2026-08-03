@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-xl">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-e1">
       <p className="text-ink-2 ">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>

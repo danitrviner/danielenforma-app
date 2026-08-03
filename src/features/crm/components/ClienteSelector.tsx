@@ -61,7 +61,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
         className={inputClass}
       />
       {abierto && (
-        <div className="absolute z-10 mt-1 w-full max-h-[200px] overflow-y-auto custom-scrollbar rounded-surface bg-raised border border-strong shadow-xl">
+        <div className="absolute z-10 mt-1 w-full max-h-[200px] overflow-y-auto custom-scrollbar rounded-surface bg-raised border border-strong shadow-e2">
           {isPending && (
             <p className="px-3 py-2 font-sans text-caption text-ink-3">Cargando…</p>
           )}

@@ -380,7 +380,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 onClick={() => setIndyaCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
                   indyaCat === cat
-                    ? 'bg-data text-black shadow-md'
+                    ? 'bg-data text-black'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
               >{cat}</button>
@@ -559,7 +559,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-2xl">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-e2">
                       {filteredFoods.map(item => (
                         <button
                           key={item.id}

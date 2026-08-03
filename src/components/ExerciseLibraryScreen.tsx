@@ -212,7 +212,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
+          className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all self-start md:self-auto"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Añadir ejercicio
@@ -323,7 +323,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-surface border border-hairline rounded-surface overflow-hidden shadow-md">
+          <div className="hidden md:block bg-surface border border-hairline rounded-surface overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
@@ -486,7 +486,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* DELETE CONFIRM MODAL */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
+          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-e2">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
               <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar ejercicio?</h3>
@@ -513,7 +513,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* CREATE / EDIT FORM MODAL */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-lg w-full shadow-e2 max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}

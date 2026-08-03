@@ -114,7 +114,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
           </button>

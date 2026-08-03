@@ -554,7 +554,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
           <button key={t.id} onClick={() => setSettingsTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
-              settingsTab === t.id ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'
+              settingsTab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
             }`}>
             <span className="material-symbols-outlined text-title-s">{t.icon}</span>
             {t.label}

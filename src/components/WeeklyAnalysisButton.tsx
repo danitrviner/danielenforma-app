@@ -58,7 +58,7 @@ export default function WeeklyAnalysisButton() {
 
       {open && (
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
-          <div className="bg-bg border border-hairline rounded-surface w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg border border-hairline rounded-surface w-full max-w-2xl max-h-[80vh] flex flex-col shadow-e2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
               <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Análisis semanal</span>

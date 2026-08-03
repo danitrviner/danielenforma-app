@@ -65,7 +65,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             onClick={() => setActiveSubTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
-                ? 'bg-accent text-black shadow-lg shadow-accent/10'
+                ? 'bg-accent text-black'
                 : 'text-ink-2 hover:text-white'
             }`}
           >
