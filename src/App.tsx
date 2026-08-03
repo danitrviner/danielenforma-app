@@ -226,7 +226,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
         </div>
-        <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
+        <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
     );
   }
@@ -256,7 +256,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
         </div>
-        <p className="font-mono text-xs text-[#c6c9ab] uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
+        <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
     );
   }
@@ -283,7 +283,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-[#fbcb1a]">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-[#181816] border border-white/7 text-[#c6c9ab] px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
+          <span className="text-[10px] bg-[#181816] border border-white/7 text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
@@ -304,7 +304,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-[#fbcb1a]">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-[8px] bg-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded font-bold uppercase select-none">
+          <span className="text-[8px] bg-white/7 text-ink-2 px-1.5 py-0.5 rounded font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
@@ -323,7 +323,7 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-[#c6c9ab] hover:bg-[#1e1e1b] hover:text-white'}`}
+              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-[#fbcb1a] text-black font-bold shadow-md' : 'text-ink-2 hover:bg-[#1e1e1b] hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
@@ -341,7 +341,7 @@ function AppContent() {
         {isCoach && (
           <button
             onClick={() => goToTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-[#fbcb1a]' : 'text-[#c6c9ab] hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-[#fbcb1a]' : 'text-ink-2 hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
             <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
@@ -417,7 +417,7 @@ function AppContent() {
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-[#c6c9ab]'}`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/30 text-[#fbcb1a]' : 'border-transparent text-ink-2'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"

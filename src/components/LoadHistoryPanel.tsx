@@ -109,7 +109,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   if (!point) return null;
   return (
     <div className="bg-[#1c1b1b] border border-white/7 rounded-lg px-3 py-2 shadow-xl">
-      <p className="font-mono text-[10px] text-[#c6c9ab] mb-1.5">{point.label}</p>
+      <p className="font-mono text-[10px] text-ink-2 mb-1.5">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
@@ -355,7 +355,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         </h3>
         <div className="py-8 text-center border border-dashed border-white/7 rounded-xl">
           <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitoring</span>
-          <p className="text-xs text-[#c6c9ab] font-mono">Sin registros de carga aún.</p>
+          <p className="text-xs text-ink-2 font-mono">Sin registros de carga aún.</p>
         </div>
       </div>
     );
@@ -379,7 +379,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 className={`px-3 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
-                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#555]'
+                    : 'bg-transparent text-ink-2 border-white/7 hover:border-[#555]'
                 }`}
                 style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
               >
@@ -395,7 +395,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={s}
                   onClick={toggle}
                   className={`px-2.5 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
-                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-[#c6c9ab]'
+                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-ink-2'
                   }`}
                 >
                   {s === 'mean' ? 'Media' : 'Mediana'}
@@ -438,7 +438,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                     key={g}
                     onClick={() => setGranularity(g)}
                     className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-all ${
-                      granularity === g ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'text-[#555] hover:text-[#c6c9ab]'
+                      granularity === g ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'text-[#555] hover:text-ink-2'
                     }`}
                   >
                     {g === 'week' ? 'Semana' : 'Día'}
@@ -485,9 +485,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           {/* Progression summary */}
           {progression ? (
             <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-              <span className="text-[#c6c9ab]">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
+              <span className="text-ink-2">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
               <span className="text-[#555]">→</span>
-              <span className="text-[#c6c9ab]">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
+              <span className="text-ink-2">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
               <span className={`font-bold ${progression.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 ({progression.delta >= 0 ? '+' : ''}{progression.delta}kg · {progression.pct >= 0 ? '+' : ''}{progression.pct}%)
               </span>
@@ -578,16 +578,16 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Session table (desktop) / cards (mobile) ── */}
       <div className="space-y-1.5">
-        <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Sesiones</p>
+        <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Sesiones</p>
 
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
             <div key={row.date} className="bg-[#111] border border-white/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
-              <span className="font-mono text-[11px] text-[#c6c9ab] flex-shrink-0">{row.label}</span>
+              <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-[11px]">
-                <span className="text-[#c6c9ab]"><span className="text-white font-bold">{row.sets}</span>s</span>
-                <span className="text-[#c6c9ab]"><span className="text-white">{row.reps}</span>r</span>
+                <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
+                <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
                 {ormActive && (
                   <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : '#555' }}>
@@ -605,7 +605,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             <thead>
               <tr className="bg-[#111] border-b border-white/40">
                 {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
-                  <th key={h} className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -615,7 +615,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-[#1e1e1b] transition-colors`}
                 >
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#c6c9ab]">{row.label}</td>
+                  <td className="px-3 py-2.5 font-mono text-[11px] text-ink-2">{row.label}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-white">{row.reps}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: METRIC_COLOR.tonnage }}>

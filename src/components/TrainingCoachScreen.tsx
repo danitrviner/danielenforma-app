@@ -43,7 +43,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
               className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
-                  : 'text-[#c6c9ab] hover:text-white'
+                  : 'text-ink-2 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-base">{tab.icon}</span>

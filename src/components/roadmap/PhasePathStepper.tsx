@@ -14,7 +14,7 @@ export default function PhasePathStepper({ phases }: Props) {
 
   return (
     <div className="rounded-3xl border border-white/7 bg-[#121212] p-5">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-4">
+      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-4">
         Tu camino · lo que te queda por delante
       </p>
       <div className="flex flex-col gap-3">
@@ -58,7 +58,7 @@ export default function PhasePathStepper({ phases }: Props) {
                   )}
                 </p>
                 {(phase.motto || phase.description) && (
-                  <p className="text-[#c6c9ab] text-xs font-mono mt-0.5 leading-relaxed">
+                  <p className="text-ink-2 text-xs font-mono mt-0.5 leading-relaxed">
                     {phase.motto || phase.description}
                   </p>
                 )}

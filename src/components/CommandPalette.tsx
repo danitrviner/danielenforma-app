@@ -90,25 +90,25 @@ export default function CommandPalette({ onNavigateTab }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-          <span className="material-symbols-outlined text-[#c6c9ab]">search</span>
+          <span className="material-symbols-outlined text-ink-2">search</span>
           <input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar atleta o acción..."
-            className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-[#c6c9ab]/50"
+            className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-ink-2/50"
           />
-          <span className="font-mono text-[9px] text-[#c6c9ab]/50 border border-white/10 rounded px-1.5 py-0.5 flex-shrink-0">ESC</span>
+          <span className="font-mono text-[9px] text-ink-2/50 border border-white/10 rounded px-1.5 py-0.5 flex-shrink-0">ESC</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {loadingAthletes && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando atletas...</p>
+            <p className="px-4 py-6 text-center font-mono text-xs text-ink-2 animate-pulse">Cargando atletas...</p>
           )}
 
           {!loadingAthletes && matchedAthletes.length > 0 && (
             <div className="py-2">
-              <p className="px-4 py-1 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Atletas</p>
+              <p className="px-4 py-1 font-mono text-[9px] text-ink-2 uppercase tracking-wider">Atletas</p>
               {matchedAthletes.map(a => (
                 <button
                   key={a.userId}
@@ -118,7 +118,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                   <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{a.displayName}</p>
-                    <p className="text-[10px] text-[#c6c9ab] truncate">{a.email}</p>
+                    <p className="text-[10px] text-ink-2 truncate">{a.email}</p>
                   </div>
                 </button>
               ))}
@@ -127,14 +127,14 @@ export default function CommandPalette({ onNavigateTab }: Props) {
 
           {matchedActions.length > 0 && (
             <div className="py-2 border-t border-white/10">
-              <p className="px-4 py-1 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Acciones</p>
+              <p className="px-4 py-1 font-mono text-[9px] text-ink-2 uppercase tracking-wider">Acciones</p>
               {matchedActions.map(a => (
                 <button
                   key={a.id}
                   onClick={() => runAction(a.id)}
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-base">{a.icon}</span>
+                  <span className="material-symbols-outlined text-ink-2 text-base">{a.icon}</span>
                   <span className="text-sm text-white">{a.label}</span>
                 </button>
               ))}

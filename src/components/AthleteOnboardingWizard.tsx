@@ -68,7 +68,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
         selected
           ? 'bg-[#fbcb1a]/15 border-[#fbcb1a] text-white shadow-lg shadow-[#fbcb1a]/10'
-          : 'bg-[#181816] border-white/10 text-[#c6c9ab] hover:border-white/30'
+          : 'bg-[#181816] border-white/10 text-ink-2 hover:border-white/30'
       }`}
     >
       {children}
@@ -81,14 +81,14 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
         <h2 className="font-sans font-black text-2xl text-white tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-[#c6c9ab] mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
     </div>
   );
 }
 
-const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 outline-none transition-colors';
+const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -194,7 +194,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-md" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
-          <span className="ml-auto font-mono text-[10px] text-[#c6c9ab]">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
+          <span className="ml-auto font-mono text-[10px] text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
           <div className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
@@ -230,16 +230,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 <Chip selected={sex === 'female'} onClick={() => setSex('female')}>Mujer</Chip>
               </div>
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
                 <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Peso (kg)</label>
+                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Peso (kg)</label>
                   <input type="number" min={30} max={250} step={0.1} value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" className={inputCls} />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Altura (cm)</label>
+                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Altura (cm)</label>
                   <input type="number" min={100} max={250} value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
                 </div>
               </div>
@@ -253,17 +253,17 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
-                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-[#fbcb1a]' : 'text-[#c6c9ab]'}`}>{g.icon}</span>
+                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-[#fbcb1a]' : 'text-ink-2'}`}>{g.icon}</span>
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
-                      <span className="block text-xs text-[#c6c9ab]">{g.desc}</span>
+                      <span className="block text-xs text-ink-2">{g.desc}</span>
                     </span>
                   </span>
                 </Chip>
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
               <div className="flex flex-wrap gap-2">
                 {CAPACITIES.map(c => (
                   <Chip key={c.id} selected={goalCapacity === c.id} onClick={() => setGoalCapacity(c.id)}>{c.label}</Chip>
@@ -271,7 +271,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
+              <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
               <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={2}
                 placeholder="Ej: quiero verme bien en verano y sentirme con energía" className={`${inputCls} resize-none`} />
             </div>
@@ -284,12 +284,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {EXPERIENCE.map(x => (
                 <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
                   <span className="block font-bold text-white">{x.label}</span>
-                  <span className="block text-xs text-[#c6c9ab]">{x.desc}</span>
+                  <span className="block text-xs text-ink-2">{x.desc}</span>
                 </Chip>
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
               <div className="flex flex-wrap gap-2">
                 {EQUIPMENT_OPTIONS.map(eq => (
                   <Chip key={eq} selected={equipment.includes(eq)}
@@ -300,7 +300,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
               <div className="space-y-2">
                 <Chip selected={noInjuries} onClick={() => { setNoInjuries(v => !v); if (!noInjuries) setInjuries(''); }}>
                   No tengo lesiones
@@ -327,7 +327,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
               <div className="flex gap-2">
                 {[3, 4, 5].map(n => (
                   <Chip key={n} selected={mealCount === n} onClick={() => setMealCount(n)}>{n} comidas</Chip>
@@ -335,7 +335,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(n => (
                   <Chip key={n} selected={menuVariety === n} onClick={() => setMenuVariety(n)}>{n}</Chip>
@@ -347,18 +347,18 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
               <div className="flex gap-2">
                 <Chip selected={batchCookingPreferred} onClick={() => setBatchCookingPreferred(true)}>Sí, cocino de golpe</Chip>
                 <Chip selected={!batchCookingPreferred} onClick={() => setBatchCookingPreferred(false)}>No, cocino cada día</Chip>
               </div>
             </div>
             <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
+              <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
               <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej: lactosa, frutos secos" className={inputCls} />
             </div>
             <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
+              <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
               <input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="Ej: pescado azul, coliflor" className={inputCls} />
             </div>
           </StepShell>
@@ -370,7 +370,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {ACTIVITY.map(a => (
                 <Chip key={a.id} big selected={activityLevel === a.id} onClick={() => setActivityLevel(a.id)}>
                   <span className="block font-bold text-white">{a.label}</span>
-                  <span className="block text-xs text-[#c6c9ab]">{a.desc}</span>
+                  <span className="block text-xs text-ink-2">{a.desc}</span>
                 </Chip>
               ))}
             </div>
@@ -407,7 +407,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-[#c6c9ab] font-sans text-sm font-bold uppercase tracking-wide"
+            className="px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
           >
             Atrás
           </button>

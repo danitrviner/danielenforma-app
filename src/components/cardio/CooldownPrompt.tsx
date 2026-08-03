@@ -25,9 +25,9 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">Vuelta a la calma</p>
+          <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Vuelta a la calma</p>
           <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
-          <p className="text-xs font-mono text-[#c6c9ab] mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
+          <p className="text-xs font-mono text-ink-2 mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
         </div>
 
         <div className="flex items-center justify-center gap-2">
@@ -36,7 +36,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
         </div>
 
         <button onClick={onDone}
-          className="w-full py-3 border border-white/15 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all">
+          className="w-full py-3 border border-white/15 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all">
           Saltar y guardar ya
         </button>
       </div>

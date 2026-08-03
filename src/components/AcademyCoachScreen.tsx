@@ -52,7 +52,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
-                tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
+                tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-ink-2 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-base">{t.icon}</span>
@@ -162,12 +162,12 @@ function CoursesTab() {
             <div key={c.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
-                <p className="text-[10px] text-[#c6c9ab] font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
+                <p className="text-[10px] text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
               <button onClick={() => togglePublished(c)} className={`text-[10px] font-mono font-bold uppercase px-2 py-1 rounded ${c.published ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-white/7 text-[#888]'}`}>
                 {c.published ? 'Publicado' : 'Borrador'}
               </button>
-              <button onClick={() => handleDelete(c.id)} className="text-[#c6c9ab] hover:text-red-400 flex-shrink-0">
+              <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
                 <span className="material-symbols-outlined text-base">delete</span>
               </button>
             </div>
@@ -264,9 +264,9 @@ function LessonsTab() {
               <span className="material-symbols-outlined text-[#00eefc]">play_circle</span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
-                <p className="text-[10px] text-[#c6c9ab] font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
+                <p className="text-[10px] text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
-              <button onClick={() => handleDelete(l)} className="text-[#c6c9ab] hover:text-red-400 flex-shrink-0">
+              <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
                 <span className="material-symbols-outlined text-base">delete</span>
               </button>
             </div>

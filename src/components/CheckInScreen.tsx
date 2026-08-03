@@ -69,13 +69,13 @@ function QuestionnaireForm({
           <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
           {questionnaire.title}
         </h2>
-        <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors p-1">
+        <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors p-1">
           <span className="material-symbols-outlined text-base">close</span>
         </button>
       </div>
 
       {questionnaire.description && (
-        <p className="text-xs text-[#c6c9ab] mb-4 font-sans">{questionnaire.description}</p>
+        <p className="text-xs text-ink-2 mb-4 font-sans">{questionnaire.description}</p>
       )}
 
       {err && (
@@ -85,10 +85,10 @@ function QuestionnaireForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         {questionnaire.questions.map((q: QuestionnaireQuestion) => (
           <div key={q.id}>
-            <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">
+            <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">
               {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
             </label>
-            {q.helpText && <p className="text-[11px] text-[#c6c9ab]/70 mb-2">{q.helpText}</p>}
+            {q.helpText && <p className="text-[11px] text-ink-2/70 mb-2">{q.helpText}</p>}
 
             {q.type === 'text' && (
               <textarea
@@ -123,13 +123,13 @@ function QuestionnaireForm({
                       className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
                         answers[q.id] === v
                           ? 'bg-[#fbcb1a] text-black'
-                          : 'bg-[#1e1e1e] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/50'
+                          : 'bg-[#1e1e1e] text-ink-2 border border-white/7 hover:border-[#fbcb1a]/50'
                       }`}
                     >{v}</button>
                   ))}
                 </div>
                 {(q.scaleMinLabel || q.scaleMaxLabel) && (
-                  <div className="flex justify-between text-[10px] font-mono text-[#c6c9ab]">
+                  <div className="flex justify-between text-[10px] font-mono text-ink-2">
                     <span>{q.scaleMin ?? 1} – {q.scaleMinLabel}</span>
                     <span>{q.scaleMaxLabel} – {q.scaleMax ?? 10}</span>
                   </div>
@@ -365,7 +365,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Check-in Semanal</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
+        <p className="text-ink-2 text-sm mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
@@ -376,7 +376,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             type="button"
             onClick={() => changeBwMode('daily')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'daily' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+              bwMode === 'daily' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-ink-2'
             }`}
           >
             Me peso cada día
@@ -385,7 +385,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'weekly_avg' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+              bwMode === 'weekly_avg' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-ink-2'
             }`}
           >
             Llevo yo la media semanal
@@ -398,12 +398,12 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+          <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
             {bwMode === 'weekly_avg' ? 'Media semanal' : 'Peso de hoy'}
           </p>
           {!bwEditing && bwToday ? (
             <p className="font-mono text-lg font-bold text-white leading-tight">
-              {bwToday.weight} <span className="text-xs text-[#c6c9ab] font-normal">kg</span>
+              {bwToday.weight} <span className="text-xs text-ink-2 font-normal">kg</span>
             </p>
           ) : (
             <div className="flex items-center gap-2 mt-1">
@@ -428,7 +428,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         {!bwEditing && bwToday ? (
           <button
             onClick={() => { setBwInput(String(bwToday.weight)); setBwEditing(true); }}
-            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] transition-all"
+            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-ink-2 hover:text-white hover:border-[#3a3a3a] transition-all"
             title="Editar"
           >
             <span className="material-symbols-outlined text-sm">edit</span>
@@ -449,7 +449,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         {bwMode === 'weekly_avg' && (
-          <p className="font-mono text-[10px] text-[#c6c9ab]/70 -mt-1">
+          <p className="font-mono text-[10px] text-ink-2/70 -mt-1">
             Pon un único valor con la media que ya llevas calculada de la semana — no hace falta que te peses aquí a diario.
           </p>
         )}
@@ -486,10 +486,10 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 >
                   <div>
                     <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors">{q.title}</p>
-                    {q.description && <p className="text-[11px] text-[#c6c9ab] mt-0.5 font-sans">{q.description}</p>}
-                    <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
+                    {q.description && <p className="text-[11px] text-ink-2 mt-0.5 font-sans">{q.description}</p>}
+                    <p className="font-mono text-[10px] text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0 ml-3">chevron_right</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-[#fbcb1a] transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
               );
             })}
@@ -502,11 +502,11 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <details className="group bg-[#181816] border border-white/7 rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+              <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Cuestionarios futuros
-              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingAssignments.length})</span>
+              <span className="font-mono text-[10px] text-ink-2">({upcomingAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingAssignments.map(a => {
@@ -514,7 +514,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               if (!q) return null;
               return (
                 <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
-                  <p className="font-sans text-xs text-[#c6c9ab]">{q.title}</p>
+                  <p className="font-sans text-xs text-ink-2">{q.title}</p>
                   <span className="font-mono text-[9px] text-[#555] uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                   </span>
@@ -539,7 +539,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <p className="font-sans font-semibold text-sm text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
-                <p className="font-mono text-[10px] text-[#c6c9ab]">Sube las fotos abajo</p>
+                <p className="font-mono text-[10px] text-ink-2">Sube las fotos abajo</p>
               </div>
             ))}
           </div>
@@ -551,16 +551,16 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <details className="group bg-[#181816] border border-white/7 rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+              <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Fotos futuras
-              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingPhotoAssignments.length})</span>
+              <span className="font-mono text-[10px] text-ink-2">({upcomingPhotoAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
-                <p className="font-sans text-xs text-[#c6c9ab]">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
+                <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
                 <span className="font-mono text-[9px] text-[#555] uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
@@ -593,7 +593,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#c6c9ab]">{item.dateStr}</span>
+                  <span className="font-mono text-xs text-ink-2">{item.dateStr}</span>
                   <span className="font-mono font-bold text-white text-sm">{item.weight} kg</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -604,7 +604,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
               </div>
               {item.notes && (
-                <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
+                <p className="text-xs text-ink-2 font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
               )}
               {item.coachFeedback ? (
                 <div className="text-xs border-l-2 border-[#fbcb1a] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
@@ -612,7 +612,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#c6c9ab]/60 font-mono italic pl-1 flex items-center gap-1">
+                <div className="text-[11px] text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
                   <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
                   Pendiente de revisión del Entrenador
                 </div>
@@ -620,7 +620,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             </div>
           ))}
           {checkins.length === 0 && (
-            <div className="text-[#c6c9ab] text-center italic py-12 text-sm">
+            <div className="text-ink-2 text-center italic py-12 text-sm">
               Aún no tienes registros de peso. Envía tu primer check-in.
             </div>
           )}

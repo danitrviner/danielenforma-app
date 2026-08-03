@@ -105,14 +105,14 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
           </h2>
-          <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors">
+          <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         {/* Title */}
         <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Título *</label>
+          <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Título *</label>
           <input
             type="text"
             value={item.title}
@@ -124,7 +124,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
 
         {/* Description */}
         <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Descripción</label>
+          <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Descripción</label>
           <textarea
             value={item.description ?? ''}
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
@@ -137,7 +137,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
         {/* Type + Lane */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Tipo</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Tipo</label>
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
@@ -149,7 +149,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             </select>
           </div>
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Lane</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Lane</label>
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
@@ -166,7 +166,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
         {/* Start / Target dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Inicio</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Inicio</label>
             <input
               type="date"
               value={item.startDate ?? ''}
@@ -175,7 +175,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             />
           </div>
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Objetivo</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Objetivo</label>
             <input
               type="date"
               value={item.targetDate ?? ''}
@@ -187,7 +187,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
 
         {/* Status */}
         <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Estado</label>
+          <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1">Estado</label>
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
@@ -211,7 +211,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+            className="flex-1 py-2.5 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
           >
             Cancelar
           </button>
@@ -543,8 +543,8 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
     return (
       <div className="rounded-2xl border border-white/5 bg-[#141414] overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[#c6c9ab]" style={{ fontSize: 13 }}>{icon}</span>
-          <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+          <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
+          <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
         </div>
         <div className="overflow-x-auto">
           <div style={{ position: 'relative', width: containerWidth, height }}>
@@ -554,7 +554,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: MOBILE_HEADER_H }}
                 className="flex items-end pb-1 pl-1"
               >
-                <span className="font-mono text-[8px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-mono text-[8px] uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
             <div
@@ -573,7 +573,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {/* Toolbar */}
       {!readonly && (
         <div className="flex items-center justify-between">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
+          <p className="font-mono text-[10px] text-ink-2 uppercase tracking-widest">
             Timeline de planificación
           </p>
           <button
@@ -619,7 +619,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               style={{ height: LANE_H }}
               className="flex items-center justify-end pr-3 border-b border-[#1e1e1e]"
             >
-              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+              <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
             </div>
           ))}
           {showWeightChart && (
@@ -627,9 +627,9 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               style={{ height: WEIGHT_LANE_H }}
               className="flex flex-col justify-between pr-2 py-1.5 border-b border-[#1e1e1e]"
             >
-              <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMax.toFixed(1)}</span>
-              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest text-right block">Peso</span>
-              <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMin.toFixed(1)}</span>
+              <span className="font-mono text-[7px] text-ink-2 text-right block">{wDomainMax.toFixed(1)}</span>
+              <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest text-right block">Peso</span>
+              <span className="font-mono text-[7px] text-ink-2 text-right block">{wDomainMin.toFixed(1)}</span>
             </div>
           )}
         </div>
@@ -645,7 +645,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: HEADER_H }}
                 className="flex items-end pb-1.5 pl-1.5"
               >
-                <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
 
@@ -708,7 +708,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
         <div className="border border-white/7 rounded-xl p-4 space-y-2">
-          <p className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest mb-2">Sin fecha asignada</p>
+          <p className="font-mono text-[10px] uppercase text-ink-2 tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
               <button
@@ -733,7 +733,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {roadmap.items.length === 0 && mesocycles.length === 0 && !nutritionProgram && (
         <div className="text-center py-12">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">map</span>
-          <p className="text-[#c6c9ab] text-xs font-mono">No hay datos de planificación todavía.</p>
+          <p className="text-ink-2 text-xs font-mono">No hay datos de planificación todavía.</p>
         </div>
       )}
 
@@ -741,23 +741,23 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-white/5">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: MESO_COLORS[0] }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Mesociclo</span>
+          <span className="font-mono text-[9px] text-ink-2 uppercase">Mesociclo</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: NUTRI_COLORS[0] }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Nutrición</span>
+          <span className="font-mono text-[9px] text-ink-2 uppercase">Nutrición</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: '#ff8c69' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Pendiente</span>
+          <span className="font-mono text-[9px] text-ink-2 uppercase">Pendiente</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: '#fbcb1a' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">En progreso</span>
+          <span className="font-mono text-[9px] text-ink-2 uppercase">En progreso</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: '#86efac' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Logrado</span>
+          <span className="font-mono text-[9px] text-ink-2 uppercase">Logrado</span>
         </div>
         {showWeightChart && (
           <>
@@ -765,11 +765,11 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <svg width="20" height="10">
                 <line x1="0" y1="5" x2="20" y2="5" stroke="#a78bfa" strokeWidth="2" strokeDasharray="5 2" />
               </svg>
-              <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Plan peso</span>
+              <span className="font-mono text-[9px] text-ink-2 uppercase">Plan peso</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ background: '#fbcb1a' }} />
-              <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Peso real</span>
+              <span className="font-mono text-[9px] text-ink-2 uppercase">Peso real</span>
             </div>
           </>
         )}

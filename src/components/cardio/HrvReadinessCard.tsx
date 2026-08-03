@@ -29,8 +29,8 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
       {latest ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-mono text-[#c6c9ab]">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
-            <p className="font-sans font-black text-3xl text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-xs font-mono text-[#c6c9ab]">ms</span></p>
+            <p className="text-[10px] font-mono text-ink-2">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
+            <p className="font-sans font-black text-3xl text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-xs font-mono text-ink-2">ms</span></p>
           </div>
           {band && (
             <div className="text-center px-3 py-2 rounded-xl" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
@@ -40,7 +40,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
           )}
         </div>
       ) : (
-        <p className="text-xs text-[#c6c9ab] font-mono">Mide 3 min al despertar para ver tu preparación diaria.</p>
+        <p className="text-xs text-ink-2 font-mono">Mide 3 min al despertar para ver tu preparación diaria.</p>
       )}
 
       <button onClick={onMeasure} className="w-full py-2.5 bg-[#0e0e0e] border border-[#00eefc]/30 text-[#00eefc] font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#00eefc]/10 active:scale-95 transition-all">

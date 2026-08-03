@@ -27,7 +27,7 @@ const TYPE_COLOR: Record<TaskType, string> = {
   cuestionario: 'text-[#fbcb1a]',
   foto: 'text-violet-300',
   manual: 'text-amber-300',
-  otro: 'text-[#c6c9ab]',
+  otro: 'text-ink-2',
 };
 
 export default function PendingTasksPanel({ profile, checkins, onNavigate }: Props) {
@@ -156,10 +156,10 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate">{row.title}</p>
                 {row.dueDate && (
-                  <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">Vence: {row.dueDate}</p>
+                  <p className="font-mono text-[10px] text-ink-2 mt-0.5">Vence: {row.dueDate}</p>
                 )}
               </div>
-              <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0">chevron_right</span>
+              <span className="material-symbols-outlined text-ink-2 group-hover:text-[#fbcb1a] transition-colors flex-shrink-0">chevron_right</span>
             </button>
           ))}
         </div>

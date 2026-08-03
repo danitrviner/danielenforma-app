@@ -27,7 +27,7 @@ export default function DeviceChip({ status, deviceName, bpm }: Props) {
       <span className="material-symbols-outlined text-lg" style={{ color: cfg.color }}>{cfg.icon}</span>
       <p className="flex-1 min-w-0 text-xs font-mono truncate">
         <span className="text-white">{deviceName ?? 'Banda BLE'}</span>
-        <span className="text-[#c6c9ab]"> · {cfg.text}</span>
+        <span className="text-ink-2"> · {cfg.text}</span>
       </p>
       {status === 'ready' && (
         <p className="flex items-center gap-1 text-sm font-sans font-bold text-white tabular-nums">

@@ -38,26 +38,26 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
           <span className="material-symbols-outlined text-lg" style={{ color: accent }}>
             {achieved ? 'emoji_events' : 'flag'}
           </span>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">
             Reto de la semana · de tu entrenador
           </p>
         </div>
         {!achieved && (
-          <span className="font-mono text-[9px] text-[#c6c9ab]">
+          <span className="font-mono text-[9px] text-ink-2">
             {remaining === 0 ? 'último día' : `${remaining}d restantes`}
           </span>
         )}
       </div>
 
       <h3 className="font-sans font-black text-lg text-white leading-tight">{challenge.title}</h3>
-      <p className="text-[#c6c9ab] text-xs font-mono leading-relaxed">{challenge.description}</p>
+      <p className="text-ink-2 text-xs font-mono leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
         <div className="flex items-center justify-between mb-1.5">
           <span className="font-mono text-[10px] text-white font-bold">
             {fmtMetric(progress.progressValue, challenge.metric.unit)}
           </span>
-          <span className="font-mono text-[10px] text-[#c6c9ab]">
+          <span className="font-mono text-[10px] text-ink-2">
             objetivo {fmtMetric(challenge.metric.target, challenge.metric.unit)}
           </span>
         </div>
@@ -91,10 +91,10 @@ export function ChallengePendingCard() {
         <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: '#fbcb1a' }}>
           hourglass_top
         </span>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Reto de la semana</p>
+        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
       <h3 className="font-sans font-black text-lg text-white leading-tight">Tu entrenador está preparando tu reto</h3>
-      <p className="text-[#c6c9ab] text-xs font-mono leading-relaxed">
+      <p className="text-ink-2 text-xs font-mono leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>
     </div>

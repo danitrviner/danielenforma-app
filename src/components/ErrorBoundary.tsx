@@ -34,7 +34,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
               <span className="material-symbols-outlined text-red-400">error</span>
               Se ha producido un error
             </h1>
-            <p className="font-mono text-xs text-[#c6c9ab] break-words">{this.state.error.message}</p>
+            <p className="font-mono text-xs text-ink-2 break-words">{this.state.error.message}</p>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] transition-all"

@@ -48,7 +48,7 @@ function BwTooltip({ active, payload }: any) {
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
     <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
-      <p className="text-[#c6c9ab] mb-1">{fmtDate(date)}</p>
+      <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-[#fbcb1a] font-bold text-sm">{rawEntry.value} kg</p>
       )}
@@ -176,18 +176,18 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
-            <span className="font-mono text-[10px] text-[#c6c9ab] font-normal">
+            <span className="font-mono text-[10px] text-ink-2 font-normal">
               {asc.at(-1)?.weight} kg · {fmtDate(asc.at(-1)!.date)}
             </span>
           )}
         </h3>
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
+            <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
               <span className="inline-block w-4 h-px bg-[#fbcb1a]" />
               Diario
             </span>
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
+            <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
               <span className="inline-block w-4 border-t border-dashed border-[#00eefc]" />
               Media 7d
             </span>
@@ -266,7 +266,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                   max="300"
                   className={`flex-1 sm:w-24 sm:flex-none ${INPUT_CLS}`}
                 />
-                <span className="font-mono text-[10px] text-[#c6c9ab]">kg</span>
+                <span className="font-mono text-[10px] text-ink-2">kg</span>
               </div>
               <button
                 onClick={handleAdd}
@@ -282,7 +282,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {logs.length === 0 && (
             <div className="text-center py-8 border border-dashed border-white/7 rounded-xl">
               <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitor_weight</span>
-              <p className="font-mono text-xs text-[#c6c9ab]">
+              <p className="font-mono text-xs text-ink-2">
                 {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
               </p>
             </div>
@@ -291,7 +291,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {/* List */}
           {logs.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+              <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
                 Historial{logs.length > 20 && !showAll ? ` · mostrando 20 de ${logs.length}` : ` · ${logs.length} registros`}
               </p>
               <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
@@ -317,7 +317,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           step="0.1"
                           className={`w-20 ${INPUT_CLS} text-xs py-1`}
                         />
-                        <span className="font-mono text-[10px] text-[#c6c9ab]">kg</span>
+                        <span className="font-mono text-[10px] text-ink-2">kg</span>
                         <div className="flex gap-1 ml-auto">
                           <button
                             onClick={handleSaveEdit}
@@ -328,7 +328,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-white/7 text-[#c6c9ab] font-mono text-[10px] uppercase rounded transition-all hover:text-white"
+                            className="px-2 py-1 border border-white/7 text-ink-2 font-mono text-[10px] uppercase rounded transition-all hover:text-white"
                           >
                             ✕
                           </button>
@@ -337,13 +337,13 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                     ) : (
                       // ── Read row ─────────────────────────────────────────
                       <>
-                        <span className="font-mono text-[10px] text-[#c6c9ab] w-20 flex-shrink-0">{fmtDate(b.date)}</span>
+                        <span className="font-mono text-[10px] text-ink-2 w-20 flex-shrink-0">{fmtDate(b.date)}</span>
                         <span className="font-mono font-bold text-white text-sm flex-1">{b.weight} kg</span>
                         {!readOnly && (
                           <div className="flex gap-1 flex-shrink-0">
                             <button
                               onClick={() => startEdit(b)}
-                              className="p-1 text-[#c6c9ab] hover:text-[#00eefc] transition-colors"
+                              className="p-1 text-ink-2 hover:text-[#00eefc] transition-colors"
                               title="Editar"
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
@@ -351,7 +351,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                             <button
                               onClick={() => handleDelete(b.id)}
                               disabled={deletingId === b.id}
-                              className="p-1 text-[#c6c9ab] hover:text-red-400 transition-colors disabled:opacity-40"
+                              className="p-1 text-ink-2 hover:text-red-400 transition-colors disabled:opacity-40"
                               title="Eliminar"
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
@@ -368,7 +368,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               {logs.length > 20 && !showAll && (
                 <button
                   onClick={() => setShowAll(true)}
-                  className="text-[10px] font-mono text-[#c6c9ab] hover:text-white underline transition-colors"
+                  className="text-[10px] font-mono text-ink-2 hover:text-white underline transition-colors"
                 >
                   Ver todos ({logs.length})
                 </button>

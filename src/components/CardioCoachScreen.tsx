@@ -39,7 +39,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
         <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'}`}>
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-ink-2 hover:text-white'}`}>
               <span className="material-symbols-outlined text-base">{t.icon}</span>
               {t.label}
             </button>
@@ -74,7 +74,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
         <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3 hover:border-[#fbcb1a]/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
           <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white text-left truncate">{a.displayName}</p>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">chevron_right</span>
+          <span className="material-symbols-outlined text-ink-2 text-base">chevron_right</span>
         </button>
       ))}
     </section>
@@ -108,24 +108,24 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
 
   return (
     <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs font-mono text-[#c6c9ab] hover:text-white">
+      <button onClick={onBack} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white">
         <span className="material-symbols-outlined text-base">arrow_back</span> Atletas
       </button>
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-[#c6c9ab]">FC reposo</label>
+          <label className="text-[10px] font-mono uppercase text-ink-2">FC reposo</label>
           <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
         </div>
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-[#c6c9ab]">FCmax</label>
+          <label className="text-[10px] font-mono uppercase text-ink-2">FCmax</label>
           <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
         </div>
-        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-[#c6c9ab] text-[10px] font-mono uppercase rounded hover:text-white">Recalcular</button>
+        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-[10px] font-mono uppercase rounded hover:text-white">Recalcular</button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
           <div key={z} className="flex items-center gap-2">
-            <span className="text-xs font-mono text-[#c6c9ab] w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
+            <span className="text-xs font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
               className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
             <span className="text-[#555]">–</span>
@@ -191,10 +191,10 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
           <div key={t.id} className="bg-[#1e1e1e] border border-white/7 rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
-              <span className="text-[10px] font-mono text-[#c6c9ab]">{t.date}</span>
+              <span className="text-[10px] font-mono text-ink-2">{t.date}</span>
             </div>
             <p className="text-xs font-mono text-[#00eefc]">{t.type}</p>
-            <p className="text-[10px] font-mono text-[#c6c9ab]">
+            <p className="text-[10px] font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}
               {t.result.lthr && `LTHR: ${t.result.lthr} `}
@@ -278,19 +278,19 @@ function PrescriptionTab() {
 
       {type === 'intervalos' && (
         <div className="space-y-2 bg-[#0e0e0e] border border-white/7 rounded-xl p-3">
-          <p className="text-[9px] font-mono uppercase text-[#c6c9ab]">Bloques (se repiten en orden, uno tras otro)</p>
+          <p className="text-[9px] font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-1.5 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
                 className="flex-1 min-w-0 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
               <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
                 className="w-14 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
-              <span className="text-[9px] text-[#c6c9ab] font-mono">s</span>
+              <span className="text-[9px] text-ink-2 font-mono">s</span>
               <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
                 className="bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]">
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
-              <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-[#c6c9ab] hover:text-red-400 transition-colors">
+              <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
             </div>
@@ -299,7 +299,7 @@ function PrescriptionTab() {
             <span className="material-symbols-outlined text-sm">add</span> Añadir bloque
           </button>
           {validBlocks.length > 0 && (
-            <p className="text-[9px] font-mono text-[#c6c9ab]">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
+            <p className="text-[9px] font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
           )}
         </div>
       )}

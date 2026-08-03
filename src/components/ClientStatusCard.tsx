@@ -136,7 +136,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3 py-2 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none"
+              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3 py-2 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
@@ -144,7 +144,7 @@ export default function ClientStatusCard({
                 {savingNote ? 'Guardando…' : 'Guardar'}
               </button>
               <button onClick={() => setEditingNote(false)} disabled={savingNote}
-                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[#c6c9ab] text-[10px] font-bold uppercase tracking-wide">
+                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-ink-2 text-[10px] font-bold uppercase tracking-wide">
                 Cancelar
               </button>
             </div>
@@ -154,9 +154,9 @@ export default function ClientStatusCard({
             {note ? (
               <p className="text-sm text-white leading-relaxed">{note}</p>
             ) : (
-              <p className="text-sm text-[#c6c9ab]/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
+              <p className="text-sm text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
             )}
-            <span className="text-[9px] font-mono uppercase text-[#c6c9ab]/50 group-hover:text-[#fbcb1a] transition-colors">Editar</span>
+            <span className="text-[9px] font-mono uppercase text-ink-2/50 group-hover:text-[#fbcb1a] transition-colors">Editar</span>
           </button>
         )}
       </div>
@@ -164,7 +164,7 @@ export default function ClientStatusCard({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-white/7">
         {/* Fase */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-[#fbcb1a]">flag</span> Fase
           </p>
           {planPhase ? (
@@ -173,10 +173,10 @@ export default function ClientStatusCard({
               {planPhase.name}
             </p>
           ) : (
-            <p className="text-xs text-[#c6c9ab]/60 italic">Sin fase de plan definida</p>
+            <p className="text-xs text-ink-2/60 italic">Sin fase de plan definida</p>
           )}
           {activeMeso && (
-            <p className="font-mono text-[10px] text-[#c6c9ab]">
+            <p className="font-mono text-[10px] text-ink-2">
               Meso #{activeMeso.meso.number} · {activeMeso.meso.objective} · sem {activeMeso.week}/{activeMeso.meso.weeks}
               {!activeMeso.inRange && <span className="text-amber-300"> (terminado)</span>}
             </p>
@@ -190,19 +190,19 @@ export default function ClientStatusCard({
 
         {/* Objetivo */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-[#fbcb1a]">target</span> Objetivo
           </p>
           {onboardingData?.goalBody ? (
             <p className="text-sm font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
           ) : (
-            <p className="text-xs text-[#c6c9ab]/60 italic">Sin objetivo registrado</p>
+            <p className="text-xs text-ink-2/60 italic">Sin objetivo registrado</p>
           )}
           {onboardingData?.goalFreeText && (
-            <p className="text-[11px] text-[#c6c9ab] leading-snug">"{onboardingData.goalFreeText}"</p>
+            <p className="text-[11px] text-ink-2 leading-snug">"{onboardingData.goalFreeText}"</p>
           )}
           {latestWeight != null && athlete.targetWeight ? (
-            <p className="font-mono text-[10px] text-[#c6c9ab]">
+            <p className="font-mono text-[10px] text-ink-2">
               {latestWeight} kg → <span className="text-[#fbcb1a] font-bold">{athlete.targetWeight} kg</span>
               {' '}({Math.round(Math.abs(latestWeight - athlete.targetWeight) * 10) / 10} kg restantes)
             </p>
@@ -211,18 +211,18 @@ export default function ClientStatusCard({
 
         {/* Últimos cambios */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-[#fbcb1a]">history</span> Últimos cambios
           </p>
           {recentChanges.length === 0 ? (
-            <p className="text-xs text-[#c6c9ab]/60 italic">Sin actividad registrada aún</p>
+            <p className="text-xs text-ink-2/60 italic">Sin actividad registrada aún</p>
           ) : (
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
                 <li key={i} className="flex items-center gap-1.5 text-[11px] text-[#e5e2e1]">
-                  <span className="material-symbols-outlined text-xs text-[#c6c9ab]">{e.icon}</span>
+                  <span className="material-symbols-outlined text-xs text-ink-2">{e.icon}</span>
                   <span className="flex-1 truncate">{e.text}</span>
-                  <span className="font-mono text-[9px] text-[#c6c9ab]/70 flex-shrink-0">{daysAgo(e.date)}</span>
+                  <span className="font-mono text-[9px] text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
                 </li>
               ))}
             </ul>

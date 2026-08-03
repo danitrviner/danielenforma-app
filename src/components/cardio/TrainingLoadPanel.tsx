@@ -43,7 +43,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-mono text-[#c6c9ab]">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
+          <p className="text-[10px] font-mono text-ink-2">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
           <p className="text-xs font-sans font-bold" style={{ color: TLR_STATE_COLOR[tlrState] }}>{TLR_LABEL[tlrState]} · TLR {today.tlr.toFixed(2)}</p>
         </div>
         {/* Escala fija 0–2.0 con los 5 estados en franjas iguales (§5.4) y un
@@ -61,13 +61,13 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
       {(focus.lowAerobicPct + focus.highAerobicPct + focus.anaerobicPct) > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-mono uppercase text-[#c6c9ab]">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
+          <p className="text-[9px] font-mono uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
           <div className="flex h-2 rounded-full overflow-hidden bg-[#0e0e0e]">
             <div className="h-full bg-[#00eefc]" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />
             <div className="h-full bg-[#ff8c42]" style={{ width: `${focus.highAerobicPct}%` }} title="Aeróbico alto (Z4)" />
             <div className="h-full bg-[#ff4d4d]" style={{ width: `${focus.anaerobicPct}%` }} title="Anaeróbico (Z5)" />
           </div>
-          <div className="flex gap-3 text-[9px] font-mono text-[#c6c9ab]">
+          <div className="flex gap-3 text-[9px] font-mono text-ink-2">
             <span className="text-[#00eefc]">Z2-Z3 {focus.lowAerobicPct}%</span>
             <span className="text-[#ff8c42]">Z4 {focus.highAerobicPct}%</span>
             <span className="text-[#ff4d4d]">Z5 {focus.anaerobicPct}%</span>

@@ -114,7 +114,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
     <div className="space-y-6">
       <div>
         <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Road map del atleta</h2>
-        <p className="text-[#c6c9ab] text-xs font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
+        <p className="text-ink-2 text-xs font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
       </div>
 
       <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
@@ -123,7 +123,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
             key={t.id}
             onClick={() => setSubTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
-              subTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
+              subTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-ink-2 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-base">{t.icon}</span>

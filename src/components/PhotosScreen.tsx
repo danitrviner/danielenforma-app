@@ -96,7 +96,7 @@ export default function PhotosScreen({ profile }: Props) {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Fotos de Progreso</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
+        <p className="text-ink-2 text-sm mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
       </div>
 
       <Coachmark
@@ -115,7 +115,7 @@ export default function PhotosScreen({ profile }: Props) {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               selectedView === v
                 ? 'bg-[#fbcb1a] text-black shadow-md'
-                : 'text-[#c6c9ab] hover:text-white'
+                : 'text-ink-2 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-sm">{VIEW_ICONS[v]}</span>
@@ -127,7 +127,7 @@ export default function PhotosScreen({ profile }: Props) {
       {/* Upload bar */}
       <div className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="material-symbols-outlined text-[#c6c9ab] text-sm">calendar_today</span>
+          <span className="material-symbols-outlined text-ink-2 text-sm">calendar_today</span>
           <input
             type="date"
             value={uploadDate}
@@ -161,8 +161,8 @@ export default function PhotosScreen({ profile }: Props) {
       {visiblePhotos.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">photo_camera</span>
-          <p className="text-[#c6c9ab] text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
+          <p className="text-ink-2 text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
+          <p className="text-ink-2 text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
@@ -195,7 +195,7 @@ export default function PhotosScreen({ profile }: Props) {
               <button
                 onClick={() => handleDelete(photo)}
                 disabled={deleting === photo.id}
-                className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-[#c6c9ab] hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-ink-2 hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
               >
                 {deleting === photo.id
                   ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>

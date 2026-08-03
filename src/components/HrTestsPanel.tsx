@@ -168,12 +168,12 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
           </h2>
-          <p className="text-xs text-[#c6c9ab] font-mono">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
-          <ul className="text-xs text-[#c6c9ab] font-mono space-y-1.5 list-disc pl-4">
+          <p className="text-xs text-ink-2 font-mono">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
+          <ul className="text-xs text-ink-2 font-mono space-y-1.5 list-disc pl-4">
             {PARQ_QUESTIONS.map((q, i) => <li key={i}>{q}</li>)}
           </ul>
           <div className="flex gap-2">
-            <button onClick={() => setActiveTest(null)} className="flex-1 py-2.5 bg-white/7 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg">Cancelar</button>
+            <button onClick={() => setActiveTest(null)} className="flex-1 py-2.5 bg-white/7 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg">Cancelar</button>
             <button onClick={() => setParqPassed(true)} className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Ninguna aplica, continuar</button>
           </div>
         </section>
@@ -185,7 +185,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3 text-center">
           <span className="material-symbols-outlined text-4xl text-[#00eefc]">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
-          <p className="text-xs text-[#c6c9ab] font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
+          <p className="text-xs text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
           <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Volver</button>
         </section>
       );
@@ -195,7 +195,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
       <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-bold text-base text-white">{activeTest.title}</h2>
-          <button onClick={() => { cleanup(); setActiveTest(null); }} className="text-[#c6c9ab] hover:text-white">
+          <button onClick={() => { cleanup(); setActiveTest(null); }} className="text-ink-2 hover:text-white">
             <span className="material-symbols-outlined text-base">close</span>
           </button>
         </div>
@@ -206,7 +206,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <div className="space-y-3 text-center">
             <p className="text-[10px] font-mono uppercase text-[#00eefc]">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
-            <p className="text-xs font-mono text-[#c6c9ab]">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
+            <p className="text-xs font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
               <button onClick={finishTest} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Terminar y calcular</button>
             )}
@@ -228,7 +228,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
                 <p className="font-sans font-semibold text-sm text-white">{t.title}</p>
                 {t.highEffort && <span className="text-[9px] font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
               </div>
-              <p className="text-[10px] text-[#c6c9ab] font-mono mt-1">{t.desc}</p>
+              <p className="text-[10px] text-ink-2 font-mono mt-1">{t.desc}</p>
               {lastResult && (
                 <p className="text-[10px] font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? '#00eefc' : '#888' }}>
                   Último: {lastResult.date} {lastResult.approvedByCoach ? '· aprobado' : '· pendiente de revisión'}

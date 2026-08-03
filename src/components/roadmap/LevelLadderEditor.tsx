@@ -93,8 +93,8 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <p className="text-[#c6c9ab] text-xs font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
-          <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">
+          <p className="text-ink-2 text-xs font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
+          <p className="font-mono text-[10px] text-ink-2 mt-1">
             Nivel actual del atleta: <span className="text-[#fbcb1a] font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-[#0e0e0e] border border-white/15 rounded-lg p-2 text-xs text-[#c6c9ab] focus:outline-none focus:border-[#fbcb1a]"
+            className="bg-[#0e0e0e] border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-[#fbcb1a]"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -171,12 +171,12 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     />
                   )}
                   {c.kind === 'manual' && (
-                    <label className="flex items-center gap-1 text-[10px] text-[#c6c9ab] font-mono">
+                    <label className="flex items-center gap-1 text-[10px] text-ink-2 font-mono">
                       <input type="checkbox" checked={c.manualDone ?? false} onChange={e => updateCriterion(level.id, c.id, { manualDone: e.target.checked })} />
                       Verificado
                     </label>
                   )}
-                  <button onClick={() => removeCriterion(level.id, c.id)} className="text-[#c6c9ab] hover:text-red-400">
+                  <button onClick={() => removeCriterion(level.id, c.id)} className="text-ink-2 hover:text-red-400">
                     <span className="material-symbols-outlined text-sm">close</span>
                   </button>
                 </div>
@@ -186,7 +186,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
               </button>
             </div>
 
-            <button onClick={() => removeLevel(level.id)} className="font-mono text-[10px] text-[#c6c9ab] hover:text-red-400">
+            <button onClick={() => removeLevel(level.id)} className="font-mono text-[10px] text-ink-2 hover:text-red-400">
               Eliminar nivel
             </button>
           </div>
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-[#c6c9ab] hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
       >
         + Añadir nivel
       </button>

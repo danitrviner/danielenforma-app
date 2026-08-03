@@ -191,13 +191,13 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-[#c6c9ab] text-xs font-mono flex-1 min-w-[200px]">
+        <p className="text-ink-2 text-xs font-mono flex-1 min-w-[200px]">
           Fases del plan por progresión, no por tiempo. El cliente ve la actual destacada y las siguientes como "lo que le queda por delante".
         </p>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
           <button
             onClick={useStandardPreset}
-            className="py-2 px-3 border border-white/15 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all"
+            className="py-2 px-3 border border-white/15 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all"
           >
             Usar plan estándar (6 fases)
           </button>
@@ -222,7 +222,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
           <div className="bg-[#181816] border border-white/15 rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
             <p className="font-sans font-bold text-white text-sm">Ya existe una periodización nutricional</p>
-            <p className="text-xs text-[#c6c9ab] font-mono leading-relaxed">
+            <p className="text-xs text-ink-2 font-mono leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
             </p>
             <div className="flex flex-col gap-2 pt-1">
@@ -242,7 +242,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
               </button>
               <button
                 onClick={() => setShowNutritionModal(false)}
-                className="py-2 text-[#c6c9ab] font-mono text-xs hover:text-white"
+                className="py-2 text-ink-2 font-mono text-xs hover:text-white"
               >
                 Cancelar
               </button>
@@ -271,7 +271,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   />
                   <span
                     className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 ${
-                      phase.status === 'actual' ? 'bg-[#fbcb1a]/15 text-[#fbcb1a]' : phase.status === 'completada' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-[#c6c9ab]'
+                      phase.status === 'actual' ? 'bg-[#fbcb1a]/15 text-[#fbcb1a]' : phase.status === 'completada' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-ink-2'
                     }`}
                   >
                     {phase.status}
@@ -314,7 +314,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
                 <div className="flex flex-wrap gap-2">
                   <label className="flex flex-col gap-0.5">
-                    <span className="font-mono text-[8px] uppercase text-[#c6c9ab]">Semanas sugeridas</span>
+                    <span className="font-mono text-[8px] uppercase text-ink-2">Semanas sugeridas</span>
                     <input
                       type="number"
                       min={1}
@@ -324,7 +324,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     />
                   </label>
                   <label className="flex flex-col gap-0.5">
-                    <span className="font-mono text-[8px] uppercase text-[#c6c9ab]">Dirección de peso</span>
+                    <span className="font-mono text-[8px] uppercase text-ink-2">Dirección de peso</span>
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
                       onChange={e => updatePhase(phase.id, { weightDirection: e.target.value as WeightDirection })}
@@ -336,7 +336,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     </select>
                   </label>
                   <label className="flex flex-col gap-0.5">
-                    <span className="font-mono text-[8px] uppercase text-[#c6c9ab]">Kg por semana</span>
+                    <span className="font-mono text-[8px] uppercase text-ink-2">Kg por semana</span>
                     <input
                       type="number"
                       step={0.05}
@@ -377,12 +377,12 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         />
                       )}
                       {m.kind === 'manual' && (
-                        <label className="flex items-center gap-1 text-[10px] text-[#c6c9ab] font-mono">
+                        <label className="flex items-center gap-1 text-[10px] text-ink-2 font-mono">
                           <input type="checkbox" checked={m.manualDone ?? false} onChange={e => updateMetric(phase.id, m.id, { manualDone: e.target.checked })} />
                           Verificado
                         </label>
                       )}
-                      <button onClick={() => removeMetric(phase.id, m.id)} className="text-[#c6c9ab] hover:text-red-400">
+                      <button onClick={() => removeMetric(phase.id, m.id)} className="text-ink-2 hover:text-red-400">
                         <span className="material-symbols-outlined text-sm">close</span>
                       </button>
                     </div>
@@ -393,7 +393,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                 </div>
 
                 {phase.metrics.length > 0 && (
-                  <p className="font-mono text-[10px] text-[#c6c9ab]">Progreso actual estimado: <span className="text-white font-bold">{progress.overallPct}%</span></p>
+                  <p className="font-mono text-[10px] text-ink-2">Progreso actual estimado: <span className="text-white font-bold">{progress.overallPct}%</span></p>
                 )}
 
                 <textarea
@@ -415,7 +415,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       Completar fase → activar siguiente
                     </button>
                   )}
-                  <button onClick={() => removePhase(phase.id)} className="font-mono text-[10px] text-[#c6c9ab] hover:text-red-400 ml-auto">
+                  <button onClick={() => removePhase(phase.id)} className="font-mono text-[10px] text-ink-2 hover:text-red-400 ml-auto">
                     Eliminar fase
                   </button>
                 </div>
@@ -427,7 +427,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       <button
         onClick={addPhase}
-        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-[#c6c9ab] hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-white/15 rounded-2xl text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 font-mono text-xs transition-colors"
       >
         + Añadir fase
       </button>

@@ -107,12 +107,12 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-[9px] font-mono text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors uppercase">
+                  className="text-[9px] font-mono text-ink-2 hover:text-[#fbcb1a] transition-colors uppercase">
                   Leer todas
                 </button>
               )}
               <button type="button" onClick={() => { refetch(); }}
-                className="p-1 text-[#555] hover:text-[#c6c9ab] transition-colors">
+                className="p-1 text-[#555] hover:text-ink-2 transition-colors">
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
               </button>
             </div>
@@ -149,7 +149,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-[#c6c9ab]'}`}>
+                    <p className={`text-xs font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
                     <p className="text-[10px] font-mono text-[#555] mt-0.5 truncate">{n.body}</p>

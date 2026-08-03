@@ -77,7 +77,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
         </h3>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva tarea'}
@@ -138,12 +138,12 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
                 t.status === 'done' ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
               }`}
             >
-              <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
+              <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>
                 {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`font-sans text-sm truncate ${t.status === 'done' ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>{t.title}</p>
-                {t.dueDate && <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">Vence: {t.dueDate}</p>}
+                <p className={`font-sans text-sm truncate ${t.status === 'done' ? 'line-through text-ink-2' : 'text-white'}`}>{t.title}</p>
+                {t.dueDate && <p className="font-mono text-[10px] text-ink-2 mt-0.5">Vence: {t.dueDate}</p>}
               </div>
             </button>
           ))}

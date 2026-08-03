@@ -225,7 +225,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       <div className="text-center py-24">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">map</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Road map</p>
-        <p className="text-[#c6c9ab] text-xs font-mono">No hay planificación disponible todavía.</p>
+        <p className="text-ink-2 text-xs font-mono">No hay planificación disponible todavía.</p>
         <p className="text-[#555] text-xs font-mono mt-1">Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure.</p>
       </div>
     );
@@ -237,7 +237,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-black text-2xl text-white uppercase tracking-tight">Road map</h1>
-        <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu progreso y lo que te queda por delante</p>
+        <p className="text-ink-2 text-xs font-mono mt-1">Tu progreso y lo que te queda por delante</p>
       </div>
 
       {activePhase && phaseProgress && (
@@ -257,7 +257,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       <RecentAchievements achievements={achievements} />
 
       <div>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-3 px-1">Planificación completa</p>
+        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-3 px-1">Planificación completa</p>
         <RoadmapTimeline
           mesocycles={mesocycles}
           nutritionProgram={nutritionProgram}

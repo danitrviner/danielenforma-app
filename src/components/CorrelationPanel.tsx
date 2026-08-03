@@ -266,7 +266,7 @@ export default function CorrelationPanel({
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
             coach sí puede accionar: asignar/pedir lo que falta. */}
-        <p className="text-[#c6c9ab] text-xs font-mono max-w-xs mx-auto">
+        <p className="text-ink-2 text-xs font-mono max-w-xs mx-auto">
           Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta.
           Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones.
         </p>
@@ -281,7 +281,7 @@ export default function CorrelationPanel({
           <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
-        <p className="font-mono text-xs text-[#c6c9ab] mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
+        <p className="font-mono text-xs text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
@@ -291,13 +291,13 @@ export default function CorrelationPanel({
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
           onClick={() => setSelectorOpen(v => !v)}
         >
-          <span className="font-mono text-xs text-[#c6c9ab] uppercase tracking-wider">
+          <span className="font-mono text-xs text-ink-2 uppercase tracking-wider">
             Series disponibles
             {selectedIds.length > 0 && (
               <span className="ml-2 text-[#fbcb1a] font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
             )}
           </span>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
+          <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
             expand_more
           </span>
         </button>
@@ -314,7 +314,7 @@ export default function CorrelationPanel({
                 className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-xs font-bold border transition-all ${
                   active
                     ? 'text-black'
-                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#3a3a3a] hover:text-white'
+                    : 'bg-transparent text-ink-2 border-white/7 hover:border-[#3a3a3a] hover:text-white'
                 }`}
                 style={active ? { backgroundColor: color, borderColor: color } : {}}
               >
@@ -332,14 +332,14 @@ export default function CorrelationPanel({
 
       {selectedSeries.length === 0 ? (
         <div className="py-10 text-center border border-dashed border-white/7 rounded-xl">
-          <p className="font-mono text-xs text-[#c6c9ab]">Selecciona una o más series para visualizar.</p>
+          <p className="font-mono text-xs text-ink-2">Selecciona una o más series para visualizar.</p>
         </div>
       ) : (
         <>
           {/* Chart */}
           <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
                 {multiNorm
                   ? '% relativo por serie (mín=0 % · máx=100 %)'
                   : (selectedSeries[0].unit ? `Valor en ${selectedSeries[0].unit}` : 'Valor')}
@@ -415,7 +415,7 @@ export default function CorrelationPanel({
                 <p className="font-sans font-bold text-sm text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (
-                <p className="font-mono text-xs text-[#c6c9ab]">{correlationResult.label}</p>
+                <p className="font-mono text-xs text-ink-2">{correlationResult.label}</p>
               ) : (
                 <>
                   <div className="flex items-baseline gap-3">
@@ -428,7 +428,7 @@ export default function CorrelationPanel({
                     }}>
                       r = {correlationResult.r.toFixed(2)}
                     </span>
-                    <span className="font-mono text-xs text-[#c6c9ab]">{correlationResult.label}</span>
+                    <span className="font-mono text-xs text-ink-2">{correlationResult.label}</span>
                   </div>
                   <p className="font-mono text-[10px] text-[#555]">Correlación ≠ causalidad</p>
                 </>

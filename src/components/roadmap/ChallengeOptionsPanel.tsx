@@ -89,7 +89,7 @@ export default function ChallengeOptionsPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Opciones de reto</p>
+        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Opciones de reto</p>
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
@@ -122,10 +122,10 @@ export default function ChallengeOptionsPanel({
                   {opt.isMilestone && (
                     <span className="font-mono text-[8px] uppercase px-1.5 py-0.5 rounded-full bg-[#fbcb1a]/15 text-[#fbcb1a]">HITO</span>
                   )}
-                  <span className="font-mono text-[9px] text-[#c6c9ab]">{opt.score}</span>
+                  <span className="font-mono text-[9px] text-ink-2">{opt.score}</span>
                 </div>
               </div>
-              <p className="text-xs text-[#c6c9ab] font-mono leading-relaxed">{opt.description}</p>
+              <p className="text-xs text-ink-2 font-mono leading-relaxed">{opt.description}</p>
               <p className="text-[10px] text-[#555] font-mono">Por qué: {opt.reason}</p>
               <button
                 onClick={() => assignOption(opt)}
@@ -154,7 +154,7 @@ export default function ChallengeOptionsPanel({
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {candidateExercises.map(ex => (
-                  <label key={ex.id} className="flex items-center gap-2 text-xs text-[#c6c9ab] font-mono">
+                  <label key={ex.id} className="flex items-center gap-2 text-xs text-ink-2 font-mono">
                     <input type="checkbox" checked={selectedIds.has(ex.id)} onChange={() => toggleExercise(ex.id)} />
                     {ex.name}
                   </label>
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-1.5 px-3 bg-[#181816] border border-white/7 text-[#c6c9ab] font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
+              className="py-1.5 px-3 bg-[#181816] border border-white/7 text-ink-2 font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

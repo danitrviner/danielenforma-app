@@ -100,7 +100,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
-          <p className="text-[#c6c9ab] text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
+          <p className="text-ink-2 text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -119,7 +119,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                     </span>
                   )}
                 </div>
-                <p className="font-mono text-[10px] text-[#c6c9ab]">
+                <p className="font-mono text-[10px] text-ink-2">
                   {q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}
                   {q.description ? ` · ${q.description.slice(0, 50)}${q.description.length > 50 ? '…' : ''}` : ''}
                 </p>
@@ -135,7 +135,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                 <button
                   onClick={() => handleDelete(q.id)}
                   disabled={deleting === q.id}
-                  className="p-2 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
+                  className="p-2 bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-sm">{deleting === q.id ? 'progress_activity' : 'delete'}</span>

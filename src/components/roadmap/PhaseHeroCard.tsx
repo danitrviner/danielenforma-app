@@ -27,9 +27,9 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           <span className="material-symbols-outlined text-2xl">{phase.icon || 'route'}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Fase actual</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Fase actual</p>
           <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight truncate">{phase.name}</h2>
-          {phase.motto && <p className="text-[#c6c9ab] text-xs font-mono mt-0.5">{phase.motto}</p>}
+          {phase.motto && <p className="text-ink-2 text-xs font-mono mt-0.5">{phase.motto}</p>}
         </div>
         <ProgressRing pct={progress.overallPct} color={phase.color} label="Fase" />
       </div>
@@ -55,9 +55,9 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       {weightStatus && (
         <div className="pt-2 border-t border-white/7">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Peso en esta fase</span>
+            <span className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Peso en esta fase</span>
             {weightStatus.targetKg != null && (
-              <span className="font-mono text-[9px] text-[#c6c9ab]">objetivo {weightStatus.targetKg} kg</span>
+              <span className="font-mono text-[9px] text-ink-2">objetivo {weightStatus.targetKg} kg</span>
             )}
           </div>
           <div className="h-2 rounded-full bg-[#1e1e1b] overflow-hidden">
@@ -66,7 +66,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
               style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: phase.color }}
             />
           </div>
-          <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">
+          <p className="font-mono text-[9px] text-ink-2 mt-1">
             {weightStatus.currentKg != null ? `${weightStatus.currentKg} kg` : 'sin pesaje'}
             {weightStatus.projectedKg != null && ` · proyección ${weightStatus.projectedKg} kg`}
           </p>
@@ -75,8 +75,8 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
 
       {phase.exitCriteria && (
         <div className="flex items-start gap-2 pt-2 border-t border-white/7">
-          <span className="material-symbols-outlined text-sm text-[#c6c9ab] mt-0.5">flag</span>
-          <p className="text-[#c6c9ab] text-xs font-mono leading-relaxed">
+          <span className="material-symbols-outlined text-sm text-ink-2 mt-0.5">flag</span>
+          <p className="text-ink-2 text-xs font-mono leading-relaxed">
             <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
           </p>
         </div>

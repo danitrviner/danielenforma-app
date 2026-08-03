@@ -266,25 +266,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">tune</span>
         </button>
         <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">menu_book</span>
         </button>
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
         <button onClick={() => setShowList(s => !s)} title="Historial de chats"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">history</span>
         </button>
         <button onClick={startNew} title="Chat nuevo"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">add_comment</span>
         </button>
         <button onClick={() => setOpen(false)} title="Cerrar"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
+          className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
@@ -299,7 +299,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {showList ? (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
           {chats.length === 0 && (
-            <p className="text-[#c6c9ab] font-mono text-xs text-center py-8">Sin chats guardados todavía.</p>
+            <p className="text-ink-2 font-mono text-xs text-center py-8">Sin chats guardados todavía.</p>
           )}
           {chats.map(c => (
             <div key={c.id}
@@ -308,12 +308,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white truncate">{c.title || 'Chat sin título'}</p>
-                <p className="text-[10px] font-mono text-[#c6c9ab]">
+                <p className="text-[10px] font-mono text-ink-2">
                   {c.updatedAt.slice(0, 10)}{c.athleteId ? ` · ${c.athleteId}` : ''}
                 </p>
               </div>
               <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat"
-                className="p-1 text-[#c6c9ab] hover:text-[#ff6b6b]">
+                className="p-1 text-ink-2 hover:text-[#ff6b6b]">
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
@@ -325,14 +325,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {chat.messages.length === 0 && (
               <div className="text-center py-10 px-4">
-                <p className="text-[#c6c9ab] text-sm mb-3">Pregúntame por tus clientes:</p>
+                <p className="text-ink-2 text-sm mb-3">Pregúntame por tus clientes:</p>
                 <div className="flex flex-col gap-2 text-left">
                   {['¿Qué clientes necesitan atención?',
                     activeAthleteEmail ? 'Resume la situación de este cliente' : 'Resume la situación de un cliente',
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-[#c6c9ab] hover:text-white bg-[#161616] border border-white/7 hover:border-[#fbcb1a]/40 rounded-xl px-3 py-2 transition-colors">
+                      className="text-left text-xs text-ink-2 hover:text-white bg-[#161616] border border-white/7 hover:border-[#fbcb1a]/40 rounded-xl px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -375,7 +375,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             })}
 
             {busy && (
-              <div className="self-start flex items-center gap-2 text-xs font-mono text-[#c6c9ab] animate-pulse px-1">
+              <div className="self-start flex items-center gap-2 text-xs font-mono text-ink-2 animate-pulse px-1">
                 <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                 {toolStatus ?? 'Pensando…'}
               </div>
@@ -402,10 +402,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 return (
                 <div key={p.id} className="bg-[#161616] border border-amber-500/25 rounded-xl p-3 flex flex-col gap-2">
                   <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
-                  {p.rationale && <p className="text-[11px] text-[#c6c9ab] italic">{p.rationale}</p>}
+                  {p.rationale && <p className="text-[11px] text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
                     <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
-                      <div className="flex gap-2 flex-wrap text-[10px] font-mono text-[#c6c9ab]">
+                      <div className="flex gap-2 flex-wrap text-[10px] font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
                         <span>{meso.daysPerWeek} días/sem</span>
@@ -415,7 +415,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {mesoTrained.map(g => (
                           <div key={g} className="flex justify-between text-[11px]">
-                            <span className="text-[#c6c9ab]">{MUSCLE_LABELS[g]}</span>
+                            <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
                             <span className="text-[#e5e2e1] font-mono">{meso.groups[g].series}</span>
                           </div>
                         ))}
@@ -430,9 +430,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
-                        <span className="text-[10px] font-mono text-[#c6c9ab]">≈ {exchangeToKcal(diet.budget)} kcal</span>
+                        <span className="text-[10px] font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
                       </div>
-                      <ul className="text-[11px] text-[#c6c9ab] flex flex-col gap-0.5">
+                      <ul className="text-[11px] text-ink-2 flex flex-col gap-0.5">
                         {diet.meals.map(m => (
                           <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
                         ))}
@@ -479,11 +479,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-[#ff6b6b]/15 border-[#ff6b6b]/40 text-[#ff6b6b] animate-pulse' : 'bg-white/5 border-white/10 text-[#c6c9ab] hover:text-white'}`}>
+                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-[#ff6b6b]/15 border-[#ff6b6b]/40 text-[#ff6b6b] animate-pulse' : 'bg-white/5 border-white/10 text-ink-2 hover:text-white'}`}>
                     <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
                   </button>
                 )}
@@ -505,7 +505,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
-              <p className="text-xs text-[#c6c9ab]">
+              <p className="text-xs text-ink-2">
                 Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
               </p>
               <textarea
@@ -513,12 +513,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none"
+                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">
               <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[#c6c9ab] text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-ink-2 text-xs font-bold uppercase tracking-wide disabled:opacity-40">
                 Cancelar
               </button>
               <button onClick={saveInstructions} disabled={savingInstructions}

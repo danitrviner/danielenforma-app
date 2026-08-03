@@ -71,7 +71,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >−</button>
       <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
         {value}
@@ -79,7 +79,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >+</button>
     </div>
   );
@@ -100,7 +100,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`px-2 py-0.5 rounded text-xs font-mono transition-all ${
-            value === o.v ? 'bg-[#fbcb1a] text-black font-bold' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
+            value === o.v ? 'bg-[#fbcb1a] text-black font-bold' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
           }`}
         >{o.icon}</button>
       ))}
@@ -126,7 +126,7 @@ const ExerciseRow: React.FC<{
   return (
     <div className="flex items-center gap-2 py-1.5 border-b border-white/40 last:border-0 group">
       {/* Name */}
-      <span className="font-mono text-[10px] text-[#c6c9ab] flex-1 min-w-0 truncate" title={exName}>{exName}</span>
+      <span className="font-mono text-[10px] text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
       <div className="flex items-center gap-0.5">
         <span className="font-mono text-[9px] text-[#555]">sets</span>
@@ -167,15 +167,15 @@ const ExerciseRow: React.FC<{
       {/* Reorder + delete */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-white disabled:opacity-20">
           <span className="material-symbols-outlined text-sm">arrow_upward</span>
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-white disabled:opacity-20">
           <span className="material-symbols-outlined text-sm">arrow_downward</span>
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400">
+          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-red-400">
           <span className="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
@@ -237,7 +237,7 @@ const DayBlock: React.FC<{
     <div className="border border-white/7 rounded-xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-[#181816] cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-[#c6c9ab] transition-transform ${open ? 'rotate-90' : ''}`}>
+        <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
         <input
@@ -251,7 +251,7 @@ const DayBlock: React.FC<{
         <span className="font-mono text-[9px] text-[#555]">{day.exercises.length} ejerc.</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-red-400 transition-all"
           title="Eliminar día"
         >
           <span className="material-symbols-outlined text-sm">delete</span>
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-xs rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -375,7 +375,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
     <div className="border border-white/7 rounded-xl overflow-hidden">
       {/* Stage header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-[#181816] cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-[#c6c9ab] transition-transform ${open ? 'rotate-90' : ''}`}>
+        <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
         <span className="font-mono text-[9px] text-[#555] flex-shrink-0">#{stageIdx + 1}</span>
@@ -399,7 +399,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {!isOnly && (
             <button
               onClick={onDelete}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-ink-2 hover:text-red-400 transition-colors"
               title="Eliminar mesociclo"
             >
               <span className="material-symbols-outlined text-sm">delete</span>
@@ -418,7 +418,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
-                  tab === t ? 'text-[#fbcb1a] border-b-2 border-[#fbcb1a]' : 'text-[#555] hover:text-[#c6c9ab]'
+                  tab === t ? 'text-[#fbcb1a] border-b-2 border-[#fbcb1a]' : 'text-[#555] hover:text-ink-2'
                 }`}
               >
                 {t === 'volume' ? 'Volumen' : 'Entrenamiento'}
@@ -430,16 +430,16 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'volume' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Volumen y prioridad por grupo</span>
+                <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
                 <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalSeries} series/sem</span>
               </div>
               <div className="border border-white/7 rounded-xl overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-[#111] border-b border-white/7">
-                      <th className="px-3 py-2 text-left font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
-                      <th className="px-3 py-2 text-center font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Series</th>
-                      <th className="px-3 py-2 text-right font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Prioridad</th>
+                      <th className="px-3 py-2 text-left font-mono text-[9px] text-ink-2 uppercase tracking-wider">Grupo</th>
+                      <th className="px-3 py-2 text-center font-mono text-[9px] text-ink-2 uppercase tracking-wider">Series</th>
+                      <th className="px-3 py-2 text-right font-mono text-[9px] text-ink-2 uppercase tracking-wider">Prioridad</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -482,13 +482,13 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'training' && (
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+                <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
                   Días de entrenamiento ({stage.days.length}/{stage.daysPerWeek})
                 </span>
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Añadir día
@@ -612,7 +612,7 @@ function TemplateEditor({
           <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
-        <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors">
+        <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">close</span>
         </button>
       </div>
@@ -621,7 +621,7 @@ function TemplateEditor({
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
             <input
               type="text"
               value={form.name}
@@ -632,7 +632,7 @@ function TemplateEditor({
             {nameError && <p className="text-red-400 font-mono text-[10px] mt-1">{nameError}</p>}
           </div>
           <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
+            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
             <input
               type="text"
               value={form.description}
@@ -647,14 +647,14 @@ function TemplateEditor({
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+              <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
                 Mesociclos ({form.stages.length})
               </span>
               <span className="font-mono text-[10px] text-[#555] ml-3">{totalWeeks} semanas en total</span>
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] rounded-xl hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-xl hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir mesociclo
@@ -686,7 +686,7 @@ function TemplateEditor({
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
+            className="px-4 py-2.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
           >
             Cancelar
           </button>
@@ -738,10 +738,10 @@ function TemplateCard({
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
           {tpl.description && (
-            <p className="font-mono text-[9px] text-[#c6c9ab] mt-0.5 truncate">{tpl.description}</p>
+            <p className="font-mono text-[9px] text-ink-2 mt-0.5 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
-            <span className="font-mono text-[10px] text-[#c6c9ab]">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
+            <span className="font-mono text-[10px] text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
             <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
               <span className="font-mono text-[10px] text-[#00eefc]">{totalExercises} ejercicios</span>
@@ -758,7 +758,7 @@ function TemplateCard({
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
             <span className="material-symbols-outlined text-sm">delete</span>
@@ -785,7 +785,7 @@ function TemplateCard({
         {tpl.stages.map(st => (
           <span
             key={st.id}
-            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-[#1e1e1b] border border-white/7 text-[#c6c9ab]"
+            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-[#1e1e1b] border border-white/7 text-ink-2"
           >
             {st.name} · {st.weeks}sem
           </span>
@@ -887,7 +887,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-sans font-bold text-lg text-white">Plantillas de mesociclo</h2>
-          <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+          <p className="font-mono text-[10px] text-ink-2 mt-0.5">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
@@ -911,7 +911,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         <div className="py-16 text-center border border-dashed border-white/7 rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
-          <p className="text-[#c6c9ab] text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
+          <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
             className="mt-4 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
@@ -940,7 +940,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#1c1b1b] border border-white/7 rounded-2xl p-6 max-w-sm w-full space-y-4">
               <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
-              <p className="font-mono text-[11px] text-[#c6c9ab]">
+              <p className="font-mono text-[11px] text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
               </p>
               <div className="flex gap-3">
@@ -952,7 +952,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-[#2a2a2a] text-[#c6c9ab] font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
+                  className="flex-1 py-2 bg-[#2a2a2a] text-ink-2 font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
                 >
                   Cancelar
                 </button>

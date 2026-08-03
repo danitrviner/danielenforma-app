@@ -81,7 +81,7 @@ function ProjectionTooltip({ active, payload }: any) {
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
     <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
-      <p className="text-[#c6c9ab] mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
+      <p className="text-ink-2 mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-[#00eefc]">Esperado 100%</span>
@@ -102,7 +102,7 @@ function ProjectionTooltip({ active, payload }: any) {
       )}
       {dev != null && (
         <p className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-white/7">
-          <span className="text-[#c6c9ab]">Desvío</span>
+          <span className="text-ink-2">Desvío</span>
           <span className={`font-bold ${dev > 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}`}>{fmtKg(dev, true)} kg</span>
         </p>
       )}
@@ -237,7 +237,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     return (
       <div className="border border-dashed border-white/7 rounded-2xl py-10 flex flex-col items-center gap-3">
         <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">monitoring</span>
-        <p className="font-mono text-xs text-[#c6c9ab] text-center max-w-xs">
+        <p className="font-mono text-xs text-ink-2 text-center max-w-xs">
           {onEdit
             ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
             // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
@@ -271,13 +271,13 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               </span>
               <h2 className="font-sans font-black text-2xl text-white tracking-tight mt-0.5">{activePhase.name}</h2>
               {activeDiet && (
-                <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">Dieta: {activeDiet.name}</p>
+                <p className="font-mono text-[10px] text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
             </div>
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-[10px] font-mono font-bold text-[#c6c9ab] hover:text-white transition-colors uppercase tracking-wider border border-white/7 hover:border-white/20 px-2.5 py-1.5 rounded-lg"
+                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-white/7 hover:border-white/20 px-2.5 py-1.5 rounded-lg"
               >Editar</button>
             )}
           </div>
@@ -285,10 +285,10 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           {(activeResolved?.kcal != null || activeBalance?.dailyDeficit != null) && (
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 font-mono text-xs">
               {activeResolved?.kcal != null && (
-                <span className="text-[#c6c9ab]">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
+                <span className="text-ink-2">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
               )}
               {activeBalance?.dailyDeficit != null && (
-                <span className="text-[#c6c9ab]">
+                <span className="text-ink-2">
                   {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}:{' '}
                   <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>
                     {fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día
@@ -296,12 +296,12 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 </span>
               )}
               {activeBalance?.weeklyDeltaKg != null && (
-                <span className="text-[#c6c9ab]">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
+                <span className="text-ink-2">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
               )}
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-[#c6c9ab] mt-3.5 pt-3 border-t border-white/7">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-ink-2 mt-3.5 pt-3 border-t border-white/7">
             <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
             <span className="text-[#3a3a3a]">·</span>
             <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
@@ -323,7 +323,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>
-        <p className="font-mono text-xs text-[#c6c9ab] mt-1">
+        <p className="font-mono text-xs text-ink-2 mt-1">
           Proyección de peso por tramos, contrastada con la evolución real{athleteName ? ` de ${athleteName}` : ''}.
         </p>
       </div>
@@ -331,7 +331,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Chart */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Peso: proyección vs. real</p>
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
           <div className="inline-flex bg-[#141413] border border-white/7 rounded-lg p-0.5 gap-0.5">
             {([
               { id: 'both', label: 'Ambas' },
@@ -343,7 +343,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
                 className={`font-mono text-[9px] px-2.5 py-1.5 rounded-md transition-colors ${
-                  curveMode === opt.id ? 'bg-[#1e1e1b] text-white shadow-inner' : 'text-[#c6c9ab] hover:text-white'
+                  curveMode === opt.id ? 'bg-[#1e1e1b] text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>
             ))}
@@ -399,7 +399,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         )}
 
         {performance?.deviationKg != null && (
-          <p className="font-sans text-xs text-[#c6c9ab] leading-relaxed pt-1 border-t border-white/7">
+          <p className="font-sans text-xs text-ink-2 leading-relaxed pt-1 border-t border-white/7">
             A semana {performance.currentWeek}, el peso real (<b className="text-white">{fmtKg(performance.realToDate)} kg</b>) va{' '}
             <b className={performance.deviationKg > 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
@@ -447,21 +447,21 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Energy balance of the active phase */}
       {activePhase && activeBalance && (
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs">
-            <span className="text-[#c6c9ab]">Objetivo: <b className="text-[#fbcb1a]">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
-            <span className="text-[#c6c9ab]">Mantenimiento: <b className="text-[#00eefc]">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
-            <span className="text-[#c6c9ab]">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
-            <span className="text-[#c6c9ab]">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
+            <span className="text-ink-2">Objetivo: <b className="text-[#fbcb1a]">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
+            <span className="text-ink-2">Mantenimiento: <b className="text-[#00eefc]">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
+            <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
+            <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
             {activeBalance.dailyDeficit != null && (
-              <span className="text-[#c6c9ab]">
+              <span className="text-ink-2">
                 {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>{fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día</b>
               </span>
             )}
             {activeBalance.weeklyDeltaKg != null && (
-              <span className="text-[#c6c9ab]">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
+              <span className="text-ink-2">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
             )}
           </div>
         </div>
@@ -478,16 +478,16 @@ function StatCard({
 }) {
   return (
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex flex-col gap-2">
-      <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{label}</span>
+      <span className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
-        {value}{unit && <span className="text-xs text-[#c6c9ab] font-medium ml-1">{unit}</span>}
+        {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (
         <div className="h-1.5 rounded-full bg-[#1e1e1b] overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? '#fbcb1a' }} />
         </div>
       )}
-      <span className="font-mono text-[9px] text-[#c6c9ab]">{sub}</span>
+      <span className="font-mono text-[9px] text-ink-2">{sub}</span>
     </div>
   );
 }

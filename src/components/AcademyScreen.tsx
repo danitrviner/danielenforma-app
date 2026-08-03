@@ -63,7 +63,7 @@ export default function AcademyScreen({ profile }: Props) {
       <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
         <span className="material-symbols-outlined text-5xl text-[#555]">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
-        <p className="text-xs text-[#c6c9ab] font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
+        <p className="text-xs text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export default function AcademyScreen({ profile }: Props) {
     const done = !!progressSafe.completed[openLesson.id];
     return (
       <div className="space-y-4">
-        <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-xs font-mono text-[#c6c9ab] hover:text-white transition-colors">
+        <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span> {openCourse.title}
         </button>
         <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
@@ -115,7 +115,7 @@ export default function AcademyScreen({ profile }: Props) {
         </div>
         <div>
           <h2 className="font-sans font-bold text-lg text-white">{openLesson.title}</h2>
-          {openLesson.description && <p className="text-xs text-[#c6c9ab] font-mono mt-1">{openLesson.description}</p>}
+          {openLesson.description && <p className="text-xs text-ink-2 font-mono mt-1">{openLesson.description}</p>}
         </div>
         {openLesson.resources && openLesson.resources.length > 0 && (
           <div className="space-y-1.5">
@@ -130,7 +130,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button
           onClick={() => handleCompleteLesson(openLesson)}
           disabled={done}
-          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-[#c6c9ab]' : 'bg-[#fbcb1a] text-black hover:bg-[#d4a800] active:scale-95'}`}
+          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-[#fbcb1a] text-black hover:bg-[#d4a800] active:scale-95'}`}
         >
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
         </button>
@@ -142,13 +142,13 @@ export default function AcademyScreen({ profile }: Props) {
   if (openCourse) {
     return (
       <div className="space-y-4">
-        <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-xs font-mono text-[#c6c9ab] hover:text-white transition-colors">
+        <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span> Academia
         </button>
         <div>
           <span className="text-[10px] font-mono uppercase text-[#00eefc]">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-black text-2xl text-white">{openCourse.title}</h2>
-          <p className="text-xs text-[#c6c9ab] font-mono mt-1">{openCourse.description}</p>
+          <p className="text-xs text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">
           {courseLessons.map((l, i) => {
@@ -162,7 +162,7 @@ export default function AcademyScreen({ profile }: Props) {
                 disabled={!unlocked}
                 className={`w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-[#fbcb1a]/40' : 'opacity-50'}`}
               >
-                <span className={`material-symbols-outlined ${done ? 'text-[#fbcb1a]' : 'text-[#c6c9ab]'}`}>
+                <span className={`material-symbols-outlined ${done ? 'text-[#fbcb1a]' : 'text-ink-2'}`}>
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -187,7 +187,7 @@ export default function AcademyScreen({ profile }: Props) {
     <div className="space-y-6">
       <header>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
-        <p className="text-xs text-[#c6c9ab] font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
+        <p className="text-xs text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
       </header>
 
       {publishedCourses.length === 0 && (
@@ -212,7 +212,7 @@ export default function AcademyScreen({ profile }: Props) {
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>
                     {!unlocked && <span className="material-symbols-outlined text-[#888] text-base flex-shrink-0">lock</span>}
                   </div>
-                  <p className="text-xs text-[#c6c9ab] font-mono mt-1 line-clamp-2">{c.description}</p>
+                  <p className="text-xs text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
                     <div className="mt-3 h-1.5 bg-white/7 rounded-full overflow-hidden">
                       <div className="h-full bg-[#fbcb1a]" style={{ width: `${pct}%` }} />

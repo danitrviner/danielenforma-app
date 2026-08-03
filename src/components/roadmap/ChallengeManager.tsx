@@ -142,7 +142,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   }
 
   if (loading) {
-    return <p className="text-xs text-[#c6c9ab] font-mono animate-pulse py-4">Cargando retos...</p>;
+    return <p className="text-xs text-ink-2 font-mono animate-pulse py-4">Cargando retos...</p>;
   }
 
   const currentProgress = current ? evaluateChallengeProgress(current, challengeData, today) : null;
@@ -152,22 +152,22 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
     <div className="space-y-5">
       {/* Reto actual */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-2">Reto de esta semana</p>
+        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
         {current ? (
           <>
             <div className="flex items-center justify-between">
               <p className="font-sans font-bold text-white text-sm">{current.title}</p>
               <span className={`font-mono text-[9px] uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
-                current.origin === 'coach' ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'bg-white/5 text-[#c6c9ab]'
+                current.origin === 'coach' ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
             </div>
-            <p className="text-xs text-[#c6c9ab] font-mono mt-1">{current.description}</p>
+            <p className="text-xs text-ink-2 font-mono mt-1">{current.description}</p>
             {currentProgress && (
               <div className="mt-2">
                 <div className="h-2 rounded-full bg-[#0e0e0e] overflow-hidden">
                   <div className="h-full rounded-full bg-[#fbcb1a]" style={{ width: `${Math.max(4, currentProgress.pct)}%` }} />
                 </div>
-                <p className="font-mono text-[9px] text-[#c6c9ab] mt-1">
+                <p className="font-mono text-[9px] text-ink-2 mt-1">
                   {Math.round(currentProgress.progressValue)} / {current.metric.target} {current.metric.unit} · {current.status}
                 </p>
               </div>
@@ -177,7 +177,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <p className="text-xs text-[#555] font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
-          <p className="font-mono text-[9px] text-[#c6c9ab] mt-3 pt-3 border-t border-white/7">
+          <p className="font-mono text-[9px] text-ink-2 mt-3 pt-3 border-t border-white/7">
             Semana que viene: <span className="text-white">{next.title}</span> ({next.origin === 'coach' ? 'asignado' : 'automático'})
           </p>
         )}
@@ -202,7 +202,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       <div>
         <button
           onClick={() => setShowAssign(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showAssign ? 'close' : 'add'}</span>
           {showAssign ? 'Cancelar' : 'Asignar reto'}
@@ -282,7 +282,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       {/* Biblioteca de plantillas */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Biblioteca de retos</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Biblioteca de retos</p>
           <button onClick={() => setShowTemplateForm(v => !v)} className="font-mono text-[10px] text-[#00eefc] hover:underline">
             {showTemplateForm ? 'Cancelar' : '+ Nueva plantilla'}
           </button>
@@ -341,9 +341,9 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <div key={t.id} className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-lg p-2.5">
                 <div>
                   <p className="text-xs text-white font-sans font-bold">{t.title}</p>
-                  <p className="text-[10px] text-[#c6c9ab] font-mono">{KIND_LABEL[t.kind]}</p>
+                  <p className="text-[10px] text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
                 </div>
-                <button onClick={() => removeTemplate(t.id)} className="text-[#c6c9ab] hover:text-red-400">
+                <button onClick={() => removeTemplate(t.id)} className="text-ink-2 hover:text-red-400">
                   <span className="material-symbols-outlined text-sm">delete</span>
                 </button>
               </div>
@@ -355,16 +355,16 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       {/* Historial */}
       {history.length > 0 && (
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-2">Historial</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Historial</p>
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {history.slice(0, 20).map(h => (
               <div key={h.id} className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-lg p-2.5">
                 <div className="min-w-0">
                   <p className="text-xs text-white font-sans truncate">{h.title}</p>
-                  <p className="text-[10px] text-[#c6c9ab] font-mono">{h.isoWeek}</p>
+                  <p className="text-[10px] text-ink-2 font-mono">{h.isoWeek}</p>
                 </div>
                 <span className={`font-mono text-[9px] uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
-                  h.status === 'conseguido' ? 'bg-emerald-500/15 text-emerald-400' : h.status === 'fallido' ? 'bg-red-500/15 text-red-400' : 'bg-white/5 text-[#c6c9ab]'
+                  h.status === 'conseguido' ? 'bg-emerald-500/15 text-emerald-400' : h.status === 'fallido' ? 'bg-red-500/15 text-red-400' : 'bg-white/5 text-ink-2'
                 }`}>{h.status}</span>
               </div>
             ))}

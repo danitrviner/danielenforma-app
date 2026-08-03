@@ -299,7 +299,7 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-8 text-center space-y-2">
         <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block">restaurant_menu</span>
         <p className="font-sans font-bold text-sm text-white">Todavía no tienes un menú semanal</p>
-        <p className="font-mono text-xs text-[#c6c9ab]">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
+        <p className="font-mono text-xs text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
       </div>
     );
   }
@@ -317,7 +317,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black' : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:border-white/20'}`}
+              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black' : 'bg-[#181816] border-white/7 text-ink-2 hover:border-white/20'}`}
             >
               <span className="font-mono text-[10px] font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
               {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-[#fbcb1a]'}`} />}
@@ -334,7 +334,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">inventory_2</span>
             <div>
               <p className="font-sans font-bold text-sm text-white">Cocina de la semana</p>
-              <p className="font-mono text-[10px] text-[#c6c9ab]">Prepáralo todo de una vez y repártelo por días.</p>
+              <p className="font-mono text-[10px] text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -358,7 +358,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <span className="material-symbols-outlined text-[#00eefc] text-base">shopping_cart</span>
             Lista de la compra de la semana
           </span>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
+          <span className="material-symbols-outlined text-ink-2 text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
         </button>
         {shoppingOpen && (
           <div className="px-4 pb-4">
@@ -370,7 +370,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 {shoppingItems.map((item, i) => (
                   <div key={i} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
-                    <span className="font-sans text-[11px] text-[#c6c9ab] truncate">{item.name}</span>
+                    <span className="font-sans text-[11px] text-ink-2 truncate">{item.name}</span>
                     <span className="font-mono text-[10px] text-white flex-shrink-0">{item.display}</span>
                   </div>
                 ))}
@@ -382,13 +382,13 @@ export default function MyMenuScreen({ profile }: Props) {
 
       <div>
         <h2 className="font-sans font-extrabold text-xl text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
-        <p className="font-mono text-xs text-[#c6c9ab]">{day?.dietName ?? 'Día libre'}</p>
+        <p className="font-mono text-xs text-ink-2">{day?.dietName ?? 'Día libre'}</p>
       </div>
 
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-6 text-center">
-          <p className="font-mono text-xs text-[#c6c9ab]">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
+          <p className="font-mono text-xs text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -398,7 +398,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <div key={meal.id} className={`bg-[#181816] border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
                 <button
                   onClick={() => toggleDone(meal.id)}
-                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-[#3a3a3a] hover:border-[#c6c9ab]'}`}
+                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-[#3a3a3a] hover:border-ink-2'}`}
                   title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                 >
                   {done && <span className="material-symbols-outlined text-black text-base">check</span>}
@@ -418,12 +418,12 @@ export default function MyMenuScreen({ profile }: Props) {
                     <span className="font-mono text-[9px] text-[#555] uppercase">{meal.name}</span>
                     {meal.scale !== 1 && <span className="font-mono text-[9px] text-[#fbcb1a]">×{meal.scale}</span>}
                   </div>
-                  <p className={`font-sans font-bold text-sm leading-tight ${done ? 'text-[#c6c9ab] line-through' : 'text-white'}`}>{meal.recipeName}</p>
-                  <p className="font-mono text-[9px] text-[#c6c9ab] mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                  <p className={`font-sans font-bold text-sm leading-tight ${done ? 'text-ink-2 line-through' : 'text-white'}`}>{meal.recipeName}</p>
+                  <p className="font-mono text-[9px] text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                   {meal.complements.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-[9px] font-mono text-[#c6c9ab] bg-[#1c1b1b] border border-white/7 px-1.5 py-0.5 rounded">
+                        <span key={ci} className="text-[9px] font-mono text-ink-2 bg-[#1c1b1b] border border-white/7 px-1.5 py-0.5 rounded">
                           +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                         </span>
                       ))}
@@ -472,7 +472,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">tune</span>
             Tipos de comida que prefieres
           </span>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
+          <span className="material-symbols-outlined text-ink-2 text-base">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
         </button>
         {dishPrefsOpen && (
           <div className="px-4 pb-4 space-y-3">
@@ -486,7 +486,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
                   : st === 'excl'
                     ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                    : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:text-white';
+                    : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:text-white';
                 return (
                   <button
                     key={dt.id}
@@ -506,14 +506,14 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Variety preference */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
-        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase">¿Cómo prefieres tu menú?</p>
+        <p className="font-mono text-[10px] text-ink-2 uppercase">¿Cómo prefieres tu menú?</p>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map(v => (
             <button
               key={v}
               disabled={savingVariety}
               onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-lg font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-[#fbcb1a] text-black' : 'bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white'}`}
+              className={`flex-1 py-2 rounded-lg font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-[#fbcb1a] text-black' : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'}`}
             >
               {v}
             </button>
@@ -537,7 +537,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <span className="material-symbols-outlined text-sm text-[#fbcb1a]">inventory_2</span>
               Prefiero batch cooking
             </span>
-            <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
+            <span className="block font-mono text-[9px] text-ink-2 mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
           </span>
         </button>
 
@@ -550,7 +550,7 @@ export default function MyMenuScreen({ profile }: Props) {
           <div onClick={e => e.stopPropagation()} className="bg-[#181816] border border-white/7 rounded-2xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-sm text-white">Elige una alternativa</h3>
-              <button onClick={() => setSwapFor(null)} className="text-[#c6c9ab] hover:text-white">
+              <button onClick={() => setSwapFor(null)} className="text-ink-2 hover:text-white">
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
             </div>
@@ -570,7 +570,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-sm text-white truncate">{c.recipe.name}</p>
-                    <p className="font-mono text-[9px] text-[#c6c9ab]">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
+                    <p className="font-mono text-[9px] text-ink-2">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
                   </div>
                 </button>
               ))
@@ -591,7 +591,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <>
                 <div className="flex items-center justify-between">
                   <h3 className="font-sans font-bold text-base text-white">{detailRecipe.name}</h3>
-                  <button onClick={closeDetail} className="text-[#c6c9ab] hover:text-white">
+                  <button onClick={closeDetail} className="text-ink-2 hover:text-white">
                     <span className="material-symbols-outlined text-base">close</span>
                   </button>
                 </div>
@@ -601,7 +601,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   </div>
                 )}
                 {detailRecipe.kcal != null && (
-                  <p className="font-mono text-[10px] text-[#c6c9ab]">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
+                  <p className="font-mono text-[10px] text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
                 )}
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>
@@ -620,14 +620,14 @@ export default function MyMenuScreen({ profile }: Props) {
                               <span className="text-xs font-sans flex-1 pr-2">
                                 {swappedTo ? (
                                   <>
-                                    <span className="text-[#c6c9ab] line-through">{ing.label}</span>{' '}
+                                    <span className="text-ink-2 line-through">{ing.label}</span>{' '}
                                     <span className="text-[#fbcb1a]">→ {swappedTo}</span>
                                   </>
                                 ) : (
                                   <span className="text-white">{ing.label}</span>
                                 )}
                               </span>
-                              <span className="font-mono text-[10px] text-[#c6c9ab] shrink-0">{ing.qty}</span>
+                              <span className="font-mono text-[10px] text-ink-2 shrink-0">{ing.qty}</span>
                               {subs.length > 0 && (
                                 <button
                                   onClick={() => setSubForIngredient(open ? null : ing.label)}
@@ -643,7 +643,7 @@ export default function MyMenuScreen({ profile }: Props) {
                                 {swappedTo && (
                                   <button
                                     onClick={() => applySubstitution(ing.label, ing.label)}
-                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] hover:text-white"
+                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] hover:text-white"
                                   >↩ original</button>
                                 )}
                                 {subs.map(s => (
@@ -672,7 +672,7 @@ export default function MyMenuScreen({ profile }: Props) {
                         ? detailRecipe.stepsText.map(s => s.description)
                         : detailRecipe.steps ?? []
                       ).map((text, idx) => (
-                        <li key={idx} className="text-xs text-[#c6c9ab] font-sans leading-relaxed">{text}</li>
+                        <li key={idx} className="text-xs text-ink-2 font-sans leading-relaxed">{text}</li>
                       ))}
                     </ol>
                   </div>
@@ -681,7 +681,7 @@ export default function MyMenuScreen({ profile }: Props) {
             ) : (
               <>
                 <div className="flex justify-end">
-                  <button onClick={closeDetail} className="text-[#c6c9ab] hover:text-white">
+                  <button onClick={closeDetail} className="text-ink-2 hover:text-white">
                     <span className="material-symbols-outlined text-base">close</span>
                   </button>
                 </div>

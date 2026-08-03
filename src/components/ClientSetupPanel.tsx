@@ -42,7 +42,7 @@ const STATUS_ICON: Record<SetupItem['status'], string> = {
 const STATUS_COLOR: Record<SetupItem['status'], string> = {
   done: 'text-emerald-400',
   attention: 'text-orange-400',
-  pending: 'text-[#c6c9ab]',
+  pending: 'text-ink-2',
   na: 'text-[#4a4a4a]',
 };
 
@@ -186,7 +186,7 @@ export default function ClientSetupPanel({
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
             <>
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide mb-1">Siguiente paso</p>
+              <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
               <p className="font-sans font-bold text-sm text-white mb-2">{result.nextStep.title}</p>
               {result.nextStep.link && (
                 <button
@@ -222,7 +222,7 @@ export default function ClientSetupPanel({
               </span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-xs font-bold text-white">{alert.title}</p>
-                {alert.detail && <p className="font-mono text-[10px] text-[#c6c9ab]">{alert.detail}</p>}
+                {alert.detail && <p className="font-mono text-[10px] text-ink-2">{alert.detail}</p>}
               </div>
             </button>
           ))}
@@ -242,7 +242,7 @@ export default function ClientSetupPanel({
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-sans font-bold text-sm text-white">{phase.title}</p>
-                    {phase.subtitle && <span className="font-mono text-[9px] text-[#c6c9ab]">{phase.subtitle}</span>}
+                    {phase.subtitle && <span className="font-mono text-[9px] text-ink-2">{phase.subtitle}</span>}
                   </div>
                   <div className="w-full h-1.5 bg-[#0e0e0e] rounded-full mt-2 overflow-hidden">
                     <div
@@ -251,8 +251,8 @@ export default function ClientSetupPanel({
                     />
                   </div>
                 </div>
-                <span className="font-mono text-xs text-[#c6c9ab] flex-shrink-0">{phase.donePct}%</span>
-                <span className="material-symbols-outlined text-[#c6c9ab] flex-shrink-0">
+                <span className="font-mono text-xs text-ink-2 flex-shrink-0">{phase.donePct}%</span>
+                <span className="material-symbols-outlined text-ink-2 flex-shrink-0">
                   {expanded ? 'expand_less' : 'expand_more'}
                 </span>
               </button>
@@ -272,8 +272,8 @@ export default function ClientSetupPanel({
                         {STATUS_ICON[item.status]}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-sans text-xs ${item.status === 'done' ? 'text-[#c6c9ab] line-through' : 'text-white'}`}>{item.title}</p>
-                        {item.detail && <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">{item.detail}</p>}
+                        <p className={`font-sans text-xs ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
+                        {item.detail && <p className="font-mono text-[10px] text-ink-2 mt-0.5">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
                         <span className="material-symbols-outlined text-[#4a4a4a] text-base flex-shrink-0">chevron_right</span>
@@ -296,7 +296,7 @@ export default function ClientSetupPanel({
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
           >
             <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
@@ -335,11 +335,11 @@ export default function ClientSetupPanel({
                 }`}
               >
                 <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
-                  <span className={`material-symbols-outlined ${task.done ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
+                  <span className={`material-symbols-outlined ${task.done ? 'text-emerald-400' : 'text-ink-2'}`}>
                     {task.done ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                 </button>
-                <p className={`flex-1 min-w-0 font-sans text-sm truncate ${task.done ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>{task.title}</p>
+                <p className={`flex-1 min-w-0 font-sans text-sm truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
                 <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-[#4a4a4a] hover:text-red-400 transition-colors">
                   <span className="material-symbols-outlined text-base">delete</span>
                 </button>

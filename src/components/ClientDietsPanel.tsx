@@ -124,8 +124,8 @@ export default function ClientDietsPanel({
         {athleteDiets.length === 0 ? (
           <div className="py-6 text-center">
             <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">nutrition</span>
-            <p className="text-xs text-[#c6c9ab]">No hay dietas creadas para este atleta.</p>
-            <p className="text-[10px] text-[#c6c9ab] mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
+            <p className="text-xs text-ink-2">No hay dietas creadas para este atleta.</p>
+            <p className="text-[10px] text-ink-2 mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -142,7 +142,7 @@ export default function ClientDietsPanel({
                     className="flex-shrink-0"
                     title={active ? 'Desactivar dieta' : 'Activar dieta'}
                   >
-                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a] hover:border-[#c6c9ab]'}`}>
+                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a] hover:border-ink-2'}`}>
                       {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
                     </span>
                   </button>
@@ -150,14 +150,14 @@ export default function ClientDietsPanel({
                   {/* Diet info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <p className={`font-sans font-bold text-sm truncate ${active ? 'text-white' : 'text-[#c6c9ab]'}`}>{dt.name}</p>
+                      <p className={`font-sans font-bold text-sm truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
                       {dt.isDraft === true && (
                         <span className="flex-shrink-0 text-[8px] font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">
                           BORRADOR
                         </span>
                       )}
                     </div>
-                    <p className="font-mono text-[10px] text-[#c6c9ab]">
+                    <p className="font-mono text-[10px] text-ink-2">
                       {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {dt.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                     </p>
                   </div>
@@ -198,7 +198,7 @@ export default function ClientDietsPanel({
             </span>
           )}
         </div>
-        <p className="text-[10px] text-[#c6c9ab] font-mono">
+        <p className="text-[10px] text-ink-2 font-mono">
           Asigna una dieta a cada día. El atleta la verá cargada automáticamente.
         </p>
         <div className="overflow-x-auto">
@@ -211,13 +211,13 @@ export default function ClientDietsPanel({
               : null;
             return (
               <div key={day} className="flex flex-col gap-1">
-                <span className="text-[9px] font-mono font-bold text-[#c6c9ab] uppercase text-center tracking-widest">
+                <span className="text-[9px] font-mono font-bold text-ink-2 uppercase text-center tracking-widest">
                   {WEEK_DAY_SHORT[day]}
                 </span>
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-[#fbcb1a]/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
+                  className="w-full bg-[#1c1b1b] border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-[#fbcb1a]/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -253,14 +253,14 @@ export default function ClientDietsPanel({
             Generar menú
           </button>
         </div>
-        <p className="text-[10px] text-[#c6c9ab] font-mono">
+        <p className="text-[10px] text-ink-2 font-mono">
           Reparte recetas reales por comida según los puntos ya pautados. Se genera como borrador — el atleta solo lo ve tras publicarlo.
         </p>
 
         {publishedMenu && menuAdherence.daysLogged > 0 && (
           <div className="flex items-center gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
             <span className="material-symbols-outlined text-[#00eefc] text-sm">task_alt</span>
-            <span className="font-mono text-[10px] text-[#c6c9ab]">
+            <span className="font-mono text-[10px] text-ink-2">
               Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
             </span>
           </div>
@@ -269,7 +269,7 @@ export default function ClientDietsPanel({
         {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
           <div className="py-4 text-center">
             <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">restaurant_menu</span>
-            <p className="text-xs text-[#c6c9ab]">Aún no hay ningún menú generado.</p>
+            <p className="text-xs text-ink-2">Aún no hay ningún menú generado.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -292,7 +292,7 @@ export default function ClientDietsPanel({
                       </span>
                     )}
                   </div>
-                  <p className="font-mono text-[10px] text-[#c6c9ab]">
+                  <p className="font-mono text-[10px] text-ink-2">
                     {m.days.filter(d => d.meals.length > 0).length} días con comidas · {m.batchCooking ? 'batch cooking' : `variedad ${m.varietyLevel}/5`}
                   </p>
                 </div>
@@ -305,7 +305,7 @@ export default function ClientDietsPanel({
                 </button>
                 <button
                   onClick={() => { if (window.confirm(`¿Eliminar "${m.name}"?`)) deleteWeeklyMenu(m.id).then(reloadWeeklyMenus).catch(console.error); }}
-                  className="flex-shrink-0 text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors"
+                  className="flex-shrink-0 text-ink-2 hover:text-red-400 p-1 rounded transition-colors"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-sm">delete</span>
@@ -319,7 +319,7 @@ export default function ClientDietsPanel({
           <div>
             <button
               onClick={() => setShowSwapHistory(v => !v)}
-              className="flex items-center gap-1.5 text-[10px] font-mono text-[#c6c9ab] hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-[10px] font-mono text-ink-2 hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-sm">{showSwapHistory ? 'expand_less' : 'history'}</span>
               Historial de cambios del atleta
@@ -328,7 +328,7 @@ export default function ClientDietsPanel({
               <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
-                    <div key={i} className="font-mono text-[10px] text-[#c6c9ab] bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                    <div key={i} className="font-mono text-[10px] text-ink-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
                       <span className="text-[#555]">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-[#fbcb1a]">{s.toRecipeName}</span>
                     </div>
                   ))}
@@ -364,7 +364,7 @@ export default function ClientDietsPanel({
             <span className="material-symbols-outlined text-[#00eefc] text-sm">tune</span>
             Modos de alimentación habilitados
           </h3>
-          <p className="text-[10px] text-[#c6c9ab] font-mono">
+          <p className="text-[10px] text-ink-2 font-mono">
             Si hay varios activos, el atleta podrá elegir entre ellos en su tracker.
           </p>
           <div className="flex gap-3 flex-wrap">
@@ -374,7 +374,7 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]' : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:border-[#c6c9ab]/30 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]' : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
                 >
                   <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
                     {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
@@ -396,7 +396,7 @@ export default function ClientDietsPanel({
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Pasos/día</label>
+              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Pasos/día</label>
               <input
                 type="number"
                 min={0}
@@ -410,7 +410,7 @@ export default function ClientDietsPanel({
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Kcal/paso</label>
+              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Kcal/paso</label>
               <input
                 type="number"
                 min={0}
@@ -424,7 +424,7 @@ export default function ClientDietsPanel({
               />
             </div>
           </div>
-          <p className="text-[10px] text-[#c6c9ab] font-mono">
+          <p className="text-[10px] text-ink-2 font-mono">
             Por defecto {DEFAULT_KCAL_PER_STEP} kcal/paso (1000 pasos ≈ 46 kcal).
           </p>
         </div>

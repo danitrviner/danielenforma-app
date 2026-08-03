@@ -123,7 +123,7 @@ export default function FoodPreferencesPanel({
                 <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-[#fbcb1a]' : 'text-[#555]'}`}>
                   {g.icon}
                 </span>
-                <span className="font-mono text-[9px] text-[#c6c9ab] text-center leading-tight">{g.name}</span>
+                <span className="font-mono text-[9px] text-ink-2 text-center leading-tight">{g.name}</span>
                 {hasAny && (
                   <div className="flex gap-1.5">
                     {gFav > 0 && (
@@ -156,7 +156,7 @@ export default function FoodPreferencesPanel({
       <div className="flex items-center gap-3">
         <button
           onClick={() => setActiveGroup(null)}
-          className="text-[#c6c9ab] hover:text-white transition-colors"
+          className="text-ink-2 hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-base">arrow_back</span>
         </button>
@@ -182,7 +182,7 @@ export default function FoodPreferencesPanel({
 
       {/* Search */}
       <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
         <input
           type="text"
           value={search}
@@ -222,7 +222,7 @@ export default function FoodPreferencesPanel({
                 <span className={`flex-1 font-mono text-xs ${
                   isAllergen ? 'text-amber-400 line-through' :
                   pref === 'favorite' ? 'text-white' :
-                  pref === 'dislike'  ? 'text-[#888]' : 'text-[#c6c9ab]'
+                  pref === 'dislike'  ? 'text-[#888]' : 'text-ink-2'
                 }`}>
                   {food}
                   {isAllergen && (

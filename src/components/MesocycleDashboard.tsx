@@ -53,7 +53,7 @@ const AXIS_TICK = { fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' };
 function EmptyChart({ message }: { message: string }) {
   return (
     <div className="h-36 flex items-center justify-center border border-dashed border-white/7 rounded-xl">
-      <p className="font-mono text-xs text-[#c6c9ab]">{message}</p>
+      <p className="font-mono text-xs text-ink-2">{message}</p>
     </div>
   );
 }
@@ -145,7 +145,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     return (
       <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
         <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">bar_chart</span>
-        <p className="text-[#c6c9ab] text-sm">Sin mesociclos para mostrar.</p>
+        <p className="text-ink-2 text-sm">Sin mesociclos para mostrar.</p>
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}
@@ -162,7 +162,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (
-          <span className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">Cargando datos…</span>
+          <span className="font-mono text-[10px] text-ink-2 animate-pulse">Cargando datos…</span>
         )}
       </div>
 
@@ -239,7 +239,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               {hiddenGroups.size > 0 && (
                 <button
                   onClick={() => setHiddenGroups(new Set())}
-                  className="px-2 py-0.5 rounded font-mono text-[9px] text-[#c6c9ab] hover:text-white border border-white/7 transition-colors"
+                  className="px-2 py-0.5 rounded font-mono text-[9px] text-ink-2 hover:text-white border border-white/7 transition-colors"
                 >
                   Mostrar todos
                 </button>

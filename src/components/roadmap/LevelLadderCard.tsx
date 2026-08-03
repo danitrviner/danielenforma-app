@@ -21,7 +21,7 @@ export default function LevelLadderCard({ status }: Props) {
 
   return (
     <div className="rounded-3xl border border-white/7 bg-[#121212] p-5 flex flex-col gap-4">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Tu nivel</p>
+      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#fbcb1a]/10 text-[#fbcb1a]">
@@ -30,7 +30,7 @@ export default function LevelLadderCard({ status }: Props) {
         <div>
           <p className="font-sans font-black text-lg text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>
           {nextLevel && (
-            <p className="text-[#c6c9ab] text-xs font-mono">Siguiente: {nextLevel.name}</p>
+            <p className="text-ink-2 text-xs font-mono">Siguiente: {nextLevel.name}</p>
           )}
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function LevelLadderCard({ status }: Props) {
                 {c.done ? 'check_circle' : 'radio_button_unchecked'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-mono ${c.done ? 'text-[#8ac926]' : 'text-[#c6c9ab]'}`}>
+                <p className={`text-xs font-mono ${c.done ? 'text-[#8ac926]' : 'text-ink-2'}`}>
                   {c.criterion.label}
                 </p>
                 {c.criterion.kind !== 'manual' && (
@@ -59,7 +59,7 @@ export default function LevelLadderCard({ status }: Props) {
                 )}
               </div>
               {c.criterion.kind !== 'manual' && c.currentValue != null && (
-                <span className="font-mono text-[9px] text-[#c6c9ab] flex-shrink-0">
+                <span className="font-mono text-[9px] text-ink-2 flex-shrink-0">
                   {fmtCriterionValue(c.criterion.kind, c.currentValue)}
                 </span>
               )}

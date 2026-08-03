@@ -19,7 +19,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">Esfuerzo percibido</p>
+          <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Esfuerzo percibido</p>
           <p className="font-sans font-black text-6xl text-[#fbcb1a] tabular-nums mt-2">{pe}</p>
           <p className="text-sm font-sans font-semibold text-white mt-1">{peLabel(pe)}</p>
         </div>
@@ -29,7 +29,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
           onChange={e => setPe(Number(e.target.value))}
           className="w-full accent-[#fbcb1a]"
         />
-        <div className="flex justify-between text-[9px] font-mono text-[#c6c9ab] px-1">
+        <div className="flex justify-between text-[9px] font-mono text-ink-2 px-1">
           <span>{PE_LABELS[0]}</span>
           <span>{PE_LABELS[9]}</span>
         </div>

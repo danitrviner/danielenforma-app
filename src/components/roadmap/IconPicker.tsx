@@ -51,7 +51,7 @@ export default function IconPicker({ value, onChange, accent = '#fbcb1a' }: Prop
             <span className="material-symbols-outlined text-lg" style={{ color: selected ? accent : '#c6c9ab' }}>
               {opt.icon}
             </span>
-            <span className="font-mono text-[7px] text-[#c6c9ab] leading-none text-center">{opt.label}</span>
+            <span className="font-mono text-[7px] text-ink-2 leading-none text-center">{opt.label}</span>
           </button>
         );
       })}

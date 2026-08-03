@@ -203,7 +203,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
-          <p className="text-[#c6c9ab] text-sm mt-1">
+          <p className="text-ink-2 text-sm mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
               <span className="ml-2 text-[#fbcb1a]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo muscular</span>
@@ -230,13 +230,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       <div className="flex flex-col md:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
           <input
             type="text"
             placeholder="Buscar ejercicio..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#c6c9ab]/50 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+            className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
           />
         </div>
 
@@ -246,7 +246,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterMuscleGroup}
             onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los grupos</option>
             {MACRO_MUSCLE_GROUPS.map(g => (
@@ -257,7 +257,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los tipos</option>
             {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
@@ -266,7 +266,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEndurance}
             onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todos los perfiles de resistencia</option>
             {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -275,7 +275,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEquipment}
             onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
           >
             <option value="">Todo el material</option>
             {EQUIPMENT_OPTIONS.map(e => (
@@ -286,7 +286,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {hasFilters && (
             <button
               onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-[#3a3a3a] transition-all"
+              className="text-ink-2 hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-[#3a3a3a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
               Limpiar
@@ -296,7 +296,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       </div>
 
       {!loading && (
-        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
+        <p className="font-mono text-[10px] text-ink-2 uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
           {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
@@ -314,7 +314,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-16 text-center">
           <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-sm">Sin resultados</p>
-          <p className="text-[#c6c9ab] text-xs mt-1">
+          <p className="text-ink-2 text-xs mt-1">
             {filterMuscleGroup
               ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo muscular en el editor.`
               : 'Ajusta los filtros o añade un nuevo ejercicio.'}
@@ -328,13 +328,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-[#1e1e1b] border-b border-white/7">
-                    <th className="p-4 pl-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Ejercicio</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Material</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Tipo</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Perfil</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Origen</th>
-                    <th className="p-4 pr-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-right">Acciones</th>
+                    <th className="p-4 pl-6 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Ejercicio</th>
+                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Grupo</th>
+                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Material</th>
+                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Tipo</th>
+                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Perfil</th>
+                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Origen</th>
+                    <th className="p-4 pr-6 font-mono text-[10px] text-ink-2 uppercase tracking-wider text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,7 +346,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                           ) : (
                             <div className="w-9 h-9 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
-                              <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
+                              <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                             </div>
                           )}
                           <div>
@@ -368,7 +368,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
                           ) : (
-                            <span className="font-mono text-xs text-[#c6c9ab]">{ex.primaryFocus}</span>
+                            <span className="font-mono text-xs text-ink-2">{ex.primaryFocus}</span>
                           )}
                         </div>
                       </td>
@@ -377,7 +377,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           {(ex.equipment ?? []).length === 0 ? (
                             <span className="font-mono text-[9px] text-[#333]">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
@@ -395,7 +395,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         {ex.isCustom ? (
                           <span className="text-[9px] font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 py-0.5 rounded uppercase">Personalizado</span>
                         ) : (
-                          <span className="text-[9px] font-mono text-[#c6c9ab]/60 uppercase">Sistema</span>
+                          <span className="text-[9px] font-mono text-ink-2/60 uppercase">Sistema</span>
                         )}
                       </td>
                       <td className="p-4 pr-6 text-right">
@@ -403,14 +403,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded hover:bg-[#fbcb1a]/10 transition-all"
+                              className="text-ink-2 hover:text-[#fbcb1a] p-1.5 rounded hover:bg-[#fbcb1a]/10 transition-all"
                               title="Editar"
                             >
                               <span className="material-symbols-outlined text-sm">edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(ex.id)}
-                              className="text-[#c6c9ab] hover:text-red-400 p-1.5 rounded hover:bg-red-500/10 transition-all"
+                              className="text-ink-2 hover:text-red-400 p-1.5 rounded hover:bg-red-500/10 transition-all"
                               title="Eliminar"
                             >
                               <span className="material-symbols-outlined text-sm">delete</span>
@@ -437,12 +437,12 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
+                        <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                       </div>
                     )}
                     <div>
                       <p className="font-sans font-bold text-sm text-white">{ex.name}</p>
-                      <p className="font-mono text-[10px] text-[#c6c9ab]">{muscleLabel(ex)}</p>
+                      <p className="font-mono text-[10px] text-ink-2">{muscleLabel(ex)}</p>
                       {ex.muscleGroup && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#fbcb1a]/80">
                           <span className="material-symbols-outlined text-[9px]">link</span>
@@ -453,10 +453,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </div>
                   {canEdit(ex) && (
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => openEdit(ex)} className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded transition-all">
+                      <button onClick={() => openEdit(ex)} className="text-ink-2 hover:text-[#fbcb1a] p-1.5 rounded transition-all">
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
-                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-[#c6c9ab] hover:text-red-400 p-1.5 rounded transition-all">
+                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-ink-2 hover:text-red-400 p-1.5 rounded transition-all">
                         <span className="material-symbols-outlined text-sm">delete</span>
                       </button>
                     </div>
@@ -468,7 +468,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-[#00eefc]/70 flex items-center gap-0.5">
@@ -491,11 +491,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
               <h3 className="font-sans font-bold text-white text-lg">¿Eliminar ejercicio?</h3>
             </div>
-            <p className="text-sm text-[#c6c9ab]">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>
+            <p className="text-sm text-ink-2">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-lg transition-all"
+                className="flex-1 py-2.5 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-lg transition-all"
               >
                 Cancelar
               </button>
@@ -518,7 +518,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
                 {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
               </h2>
-              <button onClick={() => setShowForm(false)} className="text-[#c6c9ab] hover:text-white p-1 rounded transition-colors">
+              <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white p-1 rounded transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -526,20 +526,20 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <form onSubmit={handleSave} className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre *</label>
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Nombre *</label>
                 <input
                   type="text"
                   required
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="ej. Press inclinado con mancuernas"
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
               {/* Grupo muscular — the 14 typed keys */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Grupo muscular
                   <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
                 </label>
@@ -561,7 +561,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipo *</label>
+                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Tipo *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
@@ -571,7 +571,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
+                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
                   <select
                     value={form.enduranceProfile ?? ''}
                     onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
@@ -585,7 +585,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Material necesario
                   <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
                 </label>
@@ -605,7 +605,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border capitalize transition-all ${
                           selected
                             ? 'bg-[#fbcb1a]/15 border-[#fbcb1a]/40 text-[#fbcb1a] font-bold'
-                            : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
+                            : 'bg-[#181816] border-white/7 text-ink-2 hover:border-[#3a3a3a]'
                         }`}
                       >
                         {selected && '✓ '}{eq}
@@ -617,31 +617,31 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
                 <input
                   type="url"
                   value={form.imageUrl}
                   onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
                   placeholder="https://..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
               {/* Video URL */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
                 <input
                   type="url"
                   value={form.videoUrl}
                   onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
                   placeholder="https://youtube.com/..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Descripción global
                   <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
                 </label>
@@ -650,7 +650,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all resize-none"
+                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all resize-none"
                 />
               </div>
 
@@ -659,7 +659,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+                  className="flex-1 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
                 >
                   Cancelar
                 </button>

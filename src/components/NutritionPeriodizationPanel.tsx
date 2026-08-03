@@ -180,7 +180,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
             const endDate = addWeeks(startDate, phase.weeks);
             return (
               <div key={phase.id} style={{ width: `${widthPct}%` }} className="flex flex-col items-center">
-                <span className="text-[8px] font-mono text-[#c6c9ab] truncate">
+                <span className="text-[8px] font-mono text-ink-2 truncate">
                   {fmtDate(startDate)}–{fmtDate(endDate)}
                 </span>
               </div>
@@ -373,7 +373,7 @@ export default function NutritionPeriodizationPanel({
           </div>
           <div className="border border-dashed border-white/7 rounded-xl py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">timeline</span>
-            <p className="text-[#c6c9ab] text-xs font-mono text-center">Sin periodización nutricional.</p>
+            <p className="text-ink-2 text-xs font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
               className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#fbcb1a]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
@@ -424,7 +424,7 @@ export default function NutritionPeriodizationPanel({
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="text-[10px] font-mono font-bold text-[#c6c9ab] hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
+            className="text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
           >Cancelar</button>
           <button
             onClick={handleSave}
@@ -438,7 +438,7 @@ export default function NutritionPeriodizationPanel({
 
       {/* Start date */}
       <div className="space-y-1.5">
-        <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+        <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider">
           Fecha de inicio
         </label>
         <input
@@ -452,7 +452,7 @@ export default function NutritionPeriodizationPanel({
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-[#c6c9ab] text-xs font-mono text-center py-4 border border-dashed border-white/7 rounded-xl">
+          <p className="text-ink-2 text-xs font-mono text-center py-4 border border-dashed border-white/7 rounded-xl">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -477,14 +477,14 @@ export default function NutritionPeriodizationPanel({
                   <button
                     onClick={() => movePhase(idx, -1)}
                     disabled={idx === 0}
-                    className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white disabled:opacity-30 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
                     <span className="material-symbols-outlined text-sm">arrow_upward</span>
                   </button>
                   <button
                     onClick={() => movePhase(idx, 1)}
                     disabled={idx === form.phases.length - 1}
-                    className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white disabled:opacity-30 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
                     <span className="material-symbols-outlined text-sm">arrow_downward</span>
                   </button>
@@ -498,7 +498,7 @@ export default function NutritionPeriodizationPanel({
                 />
                 <button
                   onClick={() => removePhase(idx)}
-                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0"
+                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-sm">delete</span>
                 </button>
@@ -507,11 +507,11 @@ export default function NutritionPeriodizationPanel({
               {/* Phase details */}
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider">Semanas:</span>
+                  <span className="text-[10px] font-mono text-ink-2 uppercase tracking-wider">Semanas:</span>
                   <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
                 </div>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Dieta:</span>
+                  <span className="text-[10px] font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Dieta:</span>
                   <select
                     value={phase.dietId}
                     onChange={e => updatePhase(idx, { dietId: e.target.value })}
@@ -525,7 +525,7 @@ export default function NutritionPeriodizationPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
+                <span className="text-[10px] font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
                 <input
                   type="number"
                   step="0.1"
@@ -536,12 +536,12 @@ export default function NutritionPeriodizationPanel({
                   placeholder="—"
                   className="w-20 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
                 />
-                <span className="text-[10px] font-mono text-[#c6c9ab]">kg</span>
+                <span className="text-[10px] font-mono text-ink-2">kg</span>
               </div>
 
               {/* Energy objective */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
+                <span className="text-[10px] font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
                 <input
                   type="number"
                   step="25"
@@ -551,7 +551,7 @@ export default function NutritionPeriodizationPanel({
                   placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
                   className="w-24 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
                 />
-                <span className="text-[10px] font-mono text-[#c6c9ab]">
+                <span className="text-[10px] font-mono text-ink-2">
                   kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
                   {phase.targetKcal == null && resolved.source === 'diet' && ' · desde la dieta'}
                 </span>
@@ -574,7 +574,7 @@ export default function NutritionPeriodizationPanel({
 
               {/* Resolved energy balance */}
               {resolved.kcal != null && maintenanceKcal != null && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-[#c6c9ab] bg-[#181816] rounded-lg px-3 py-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-ink-2 bg-[#181816] rounded-lg px-3 py-2">
                   <span>Mantenimiento: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
                   <span>+ Pasos: <b className="text-white">{fmtKcal(stepsKcal)}</b></span>
                   <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-[#a78bfa]/40 text-[#c6c9ab] hover:text-white text-xs font-mono rounded-xl transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-[#a78bfa]/40 text-ink-2 hover:text-white text-xs font-mono rounded-xl transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir fase
@@ -604,7 +604,7 @@ export default function NutritionPeriodizationPanel({
       {/* Timeline preview */}
       {form.phases.length > 0 && (
         <div className="space-y-2">
-          <span className="block text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider">Vista previa</span>
+          <span className="block text-[10px] font-mono text-ink-2 uppercase tracking-wider">Vista previa</span>
           <ProgramTimeline program={previewProgram} diets={diets} today={today} />
         </div>
       )}

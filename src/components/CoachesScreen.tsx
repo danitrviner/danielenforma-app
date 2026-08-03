@@ -167,7 +167,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-white/7 text-[#c6c9ab] hover:text-white rounded-lg transition-all">
+            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-white/7 text-ink-2 hover:text-white rounded-lg transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
@@ -207,7 +207,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
                             className={`px-2.5 py-1 rounded font-mono text-[9px] font-bold uppercase border transition-all ${
-                              q.type === t ? 'bg-[#fbcb1a] text-black border-transparent' : 'text-[#c6c9ab] border-white/7 hover:text-white'
+                              q.type === t ? 'bg-[#fbcb1a] text-black border-transparent' : 'text-ink-2 border-white/7 hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
                           </button>
@@ -236,7 +236,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
-                                  className="text-[#c6c9ab] hover:text-red-400">
+                                  className="text-ink-2 hover:text-red-400">
                                   <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>close</span>
                                 </button>
                               </span>
@@ -272,14 +272,14 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
                         q.type === 'scale'   ? 'text-[#00eefc] border-[#00eefc]/20 bg-[#00eefc]/5' :
                         q.type === 'choice'  ? 'text-[#fbcb1a] border-[#fbcb1a]/20 bg-[#fbcb1a]/5' :
-                                               'text-[#c6c9ab] border-[#3a3a3a] bg-[#1e1e1b]'
+                                               'text-ink-2 border-[#3a3a3a] bg-[#1e1e1b]'
                       }`}>{TYPE_LABEL[q.type]}</span>
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-[#555]">sin etiqueta</em>}
                       </span>
                       {q.unit && <span className="text-[9px] text-[#555] font-mono flex-shrink-0">{q.unit}</span>}
                       <button type="button" onClick={() => { setEditingId(q.id); setOptionInput(''); }}
-                        className="p-1 text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0">
+                        className="p-1 text-ink-2 hover:text-[#00eefc] transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       </button>
                       <button type="button" onClick={() => deleteQ(q.id)}
@@ -293,7 +293,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-[#c6c9ab] hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -453,7 +453,7 @@ function IndyaImportPanel() {
 
       {(status === 'loading' || status === 'writing') && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">{phase}</p>
+          <p className="font-mono text-[10px] text-ink-2 animate-pulse">{phase}</p>
           {total > 0 && (
             <>
               <div className="w-full h-2.5 bg-[#1e1e1e] rounded-full overflow-hidden">
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-white/7 text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             Reimportar
           </button>
@@ -554,7 +554,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
           <button key={t.id} onClick={() => setSettingsTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-              settingsTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-[#c6c9ab] hover:text-white'
+              settingsTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-ink-2 hover:text-white'
             }`}>
             <span className="material-symbols-outlined text-base">{t.icon}</span>
             {t.label}
@@ -584,7 +584,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ) : sortedUsers.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
             <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">group</span>
-            <p className="text-[#c6c9ab] text-sm">Sin usuarios registrados todavía.</p>
+            <p className="text-ink-2 text-sm">Sin usuarios registrados todavía.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -604,11 +604,11 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                       {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#fbcb1a]/15 text-[#fbcb1a] uppercase font-bold border border-[#fbcb1a]/25">PROPIETARIO</span>}
                       {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#00eefc]/10 text-[#00eefc] uppercase border border-[#00eefc]/20">TÚ</span>}
                     </div>
-                    <span className="font-mono text-xs text-[#c6c9ab] truncate block">{user.email}</span>
+                    <span className="font-mono text-xs text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                      isCoach ? 'bg-[#fbcb1a]/10 text-[#fbcb1a] border-[#fbcb1a]/20' : 'bg-[#2a2a2a] text-[#c6c9ab] border-[#3a3a3a]'
+                      isCoach ? 'bg-[#fbcb1a]/10 text-[#fbcb1a] border-[#fbcb1a]/20' : 'bg-[#2a2a2a] text-ink-2 border-[#3a3a3a]'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
@@ -621,7 +621,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                         }
                       </button>
                     )}
-                    {isOwner && <span className="text-[10px] font-mono text-[#c6c9ab] italic">Permanente</span>}
+                    {isOwner && <span className="text-[10px] font-mono text-ink-2 italic">Permanente</span>}
                   </div>
                 </div>
               );
@@ -629,12 +629,12 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           </div>
         )}
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-1">
-          <p className="font-mono text-xs text-[#c6c9ab]">
+          <p className="font-mono text-xs text-ink-2">
             <span className="text-[#fbcb1a] font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
             <code className="text-white">role: 'coach' | 'client'</code>
           </p>
-          <p className="font-mono text-xs text-[#c6c9ab]">
+          <p className="font-mono text-xs text-ink-2">
             Las reglas del servidor deben impedir que un cliente se auto-asigne <code className="text-white">coach</code>{' '}
             y que nadie modifique la cuenta propietaria.
           </p>

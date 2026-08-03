@@ -143,10 +143,10 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   };
 
   if (loading) {
-    return <div className="text-center py-10 font-mono text-sm text-[#c6c9ab] animate-pulse">Analizando…</div>;
+    return <div className="text-center py-10 font-mono text-sm text-ink-2 animate-pulse">Analizando…</div>;
   }
   if (!report) {
-    return <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Sin datos suficientes para {athleteName}.</div>;
+    return <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
   }
 
   return (
@@ -156,12 +156,12 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
           Análisis nutricional
         </h2>
-        <p className="font-mono text-xs text-[#c6c9ab] mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
+        <p className="font-mono text-xs text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
       </div>
 
       {/* Summary */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2">Resumen</p>
+        <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
         <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
       </div>
 
@@ -179,15 +179,15 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Macro deviation */}
       {report.macroDeviation.length > 0 && (
         <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
               <div key={m.category}>
-                <span className="block font-mono text-[9px] text-[#c6c9ab]">{m.category}</span>
+                <span className="block font-mono text-[9px] text-ink-2">{m.category}</span>
                 <span className={`block font-mono text-sm font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
-                <span className="block font-mono text-[9px] text-[#c6c9ab]">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
+                <span className="block font-mono text-[9px] text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
               </div>
             ))}
           </div>
@@ -197,19 +197,19 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* ── Micronutrientes (estimados) ── */}
       <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Micronutrientes (estimados)</p>
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Micronutrientes (estimados)</p>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Verdura/día</span>
+            <span className="font-mono text-[9px] text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] hover:text-white flex items-center justify-center">−</button>
+              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">−</button>
               <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
-              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] hover:text-white flex items-center justify-center">+</button>
+              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Verduras habituales del atleta</p>
+          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 
@@ -217,7 +217,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           {micros.perMicro.map(m => (
             <div key={m.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-[#c6c9ab]">
+                <span className="font-mono text-[10px] text-ink-2">
                   {m.label}
                   {m.status === 'low' && <span className="ml-1.5 text-red-400">déficit</span>}
                   {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
@@ -256,7 +256,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <p className="text-xs text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
           </p>
-          <p className="text-[10px] text-[#c6c9ab] font-mono mt-0.5">
+          <p className="text-[10px] text-ink-2 font-mono mt-0.5">
             {nutritionConfig?.sharedReportSnapshot
               ? `Compartido el ${new Date(nutritionConfig.sharedReportSnapshot.generatedAt).toLocaleDateString('es-ES')}`
               : 'El atleta no ve este análisis hasta que lo compartas.'}
@@ -264,7 +264,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
           <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] font-bold uppercase rounded-lg hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] font-bold uppercase rounded-lg hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
@@ -279,9 +279,9 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 text-center">
-      <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{label}</span>
+      <span className="block font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
-      <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">{sub}</span>
+      <span className="block font-mono text-[9px] text-ink-2 mt-0.5">{sub}</span>
     </div>
   );
 }

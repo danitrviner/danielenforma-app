@@ -47,7 +47,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             <span className="material-symbols-outlined text-[#fbcb1a] text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
           </div>
-          <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
+          <p className="text-xs text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
           {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (
             <ul className="mt-2 space-y-1">
               {nutritionConfig.sharedReportSnapshot.flags.map((f, i) => (
@@ -66,7 +66,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
                 ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
-                : 'text-[#c6c9ab] hover:text-white'
+                : 'text-ink-2 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-base">{tab.icon}</span>
@@ -89,7 +89,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
                 <span className="material-symbols-outlined text-[#fbcb1a] text-base">eco</span>
                 Tus verduras habituales
               </h3>
-              <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">
+              <p className="font-mono text-[10px] text-ink-2 mt-1">
                 Marca las verduras que sueles comer en tu día a día — así tu entrenador afina la estimación de vitaminas y minerales.
               </p>
             </div>

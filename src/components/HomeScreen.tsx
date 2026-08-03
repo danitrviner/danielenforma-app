@@ -50,7 +50,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Inicio</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
+        <p className="text-ink-2 text-sm mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
       </div>
 
       {/* ── Sin ningún entrenamiento asignado todavía: recién llegado, el coach
@@ -73,7 +73,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
                 label="Entrenamientos"
                 value={`${weekCompleted}/${weekAssignments.length}`}
               />
-              <p className="text-[10px] text-[#c6c9ab] font-mono leading-relaxed">
+              <p className="text-[10px] text-ink-2 font-mono leading-relaxed">
                 {weekCompleted === weekAssignments.length
                   ? '¡Semana completada! 💪'
                   : `Te ${weekAssignments.length - weekCompleted === 1 ? 'queda' : 'quedan'} ${weekAssignments.length - weekCompleted} entrenamiento${weekAssignments.length - weekCompleted === 1 ? '' : 's'} esta semana.`}
@@ -101,7 +101,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           Entrenamiento
           <button
             onClick={() => onNavigate('training')}
-            className="ml-auto text-[10px] font-mono font-bold uppercase text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors"
+            className="ml-auto text-[10px] font-mono font-bold uppercase text-ink-2 hover:text-[#fbcb1a] transition-colors"
           >
             Ver todo
           </button>
@@ -126,7 +126,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
                     className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all"
                   >
                     <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
-                    <span className="font-mono text-[10px] text-[#c6c9ab] flex-shrink-0 ml-2">{formatDate(a.date)}</span>
+                    <span className="font-mono text-[10px] text-ink-2 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
                   </button>
                 ))}
               </div>
@@ -160,7 +160,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         >
           <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">school</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Academia</span>
-          <span className="text-[10px] text-[#c6c9ab] font-mono">Cursos y formación</span>
+          <span className="text-[10px] text-ink-2 font-mono">Cursos y formación</span>
         </button>
         <button
           onClick={() => onNavigate('cardio')}
@@ -168,7 +168,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         >
           <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">favorite</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Cardio</span>
-          <span className="text-[10px] text-[#c6c9ab] font-mono">Zonas y FC en directo</span>
+          <span className="text-[10px] text-ink-2 font-mono">Zonas y FC en directo</span>
         </button>
       </div>
 

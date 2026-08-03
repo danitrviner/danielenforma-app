@@ -189,7 +189,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
-          <p className="text-[#c6c9ab] text-sm mt-1">
+          <p className="text-ink-2 text-sm mt-1">
             Historial cronológico de check-ins y respuestas de cuestionarios.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             </>
           )}
           {loadingResponses && (
-            <span className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">Cargando respuestas...</span>
+            <span className="font-mono text-[10px] text-ink-2 animate-pulse">Cargando respuestas...</span>
           )}
         </div>
       </header>
@@ -226,7 +226,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
-        <div className="bg-[#111110] border border-dashed border-white/7 rounded-xl p-16 text-center text-[#c6c9ab]">
+        <div className="bg-[#111110] border border-dashed border-white/7 rounded-xl p-16 text-center text-ink-2">
           <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 block">verified_user</span>
           <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
@@ -236,7 +236,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
             <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
-            <span className="font-mono text-[9px] text-[#c6c9ab] ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
+            <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-[#2a2a2a]/40">
             {unifiedItems.map(item => {
@@ -288,14 +288,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                          <span className="font-mono text-[9px] text-[#c6c9ab]">Check-in · {c.dateStr}</span>
+                          <span className="font-mono text-[9px] text-ink-2">Check-in · {c.dateStr}</span>
                           <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
                             c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                           }`}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
                           </span>
                         </div>
-                        <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                        <p className="font-mono text-[10px] text-ink-2 mt-0.5">
                           {c.weight} kg · {c.adherence} · {c.mood}
                         </p>
                       </div>
@@ -303,13 +303,13 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                          className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                         >
                           <span className="material-symbols-outlined text-base">account_circle</span>
                         </button>
                       )}
                       <span
-                        className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
+                        className="material-symbols-outlined text-ink-2 text-sm transition-transform flex-shrink-0"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                       >expand_more</span>
                     </div>
@@ -322,14 +322,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
                             <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
-                              <span className="block text-[#c6c9ab] text-[10px] uppercase">{cell.label}</span>
+                              <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
                         </div>
                         {c.notes && (
                           <div className="bg-[#181818] p-3 rounded-lg border border-white/30">
-                            <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Notas del atleta</span>
+                            <span className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas del atleta</span>
                             <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                           </div>
                         )}
@@ -343,7 +343,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-lg text-xs font-mono">{errorMsg}</div>
                         )}
                         {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
-                          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+                          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
                             Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
                           </p>
                         )}
@@ -354,7 +354,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-[10px] font-mono text-[#c6c9ab] hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
+                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
                             >
                               {r}
                             </button>
@@ -363,7 +363,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             type="button"
                             onClick={openQuickReplyManager}
                             title="Gestionar plantillas de feedback"
-                            className="text-[#c6c9ab]/60 hover:text-white p-1"
+                            className="text-ink-2/60 hover:text-white p-1"
                           >
                             <span className="material-symbols-outlined text-sm">tune</span>
                           </button>
@@ -423,23 +423,23 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                        <span className="font-mono text-[9px] text-[#c6c9ab]">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
+                        <span className="font-mono text-[9px] text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
                       </div>
                       {previewAnswers && (
-                        <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5 truncate">{previewAnswers}</p>
+                        <p className="font-mono text-[10px] text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
                       )}
                     </div>
                     {athleteProfile && (
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">account_circle</span>
                       </button>
                     )}
                     <span
-                      className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
+                      className="material-symbols-outlined text-ink-2 text-sm transition-transform flex-shrink-0"
                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     >expand_more</span>
                   </div>
@@ -449,7 +449,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-mono text-[9px] text-[#c6c9ab] flex-1 pt-0.5">
+                            <span className="font-mono text-[9px] text-ink-2 flex-1 pt-0.5">
                               {question?.label ?? ans.questionId}
                             </span>
                             <span className="font-mono text-xs text-white font-bold text-right">
@@ -472,7 +472,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between">
               <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
-              <button onClick={() => setShowQuickReplyManager(false)} className="text-[#c6c9ab] hover:text-white">
+              <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
             </div>
@@ -487,7 +487,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   />
                   <button
                     onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
-                    className="text-[#c6c9ab] hover:text-red-300 p-1 flex-shrink-0"
+                    className="text-ink-2 hover:text-red-300 p-1 flex-shrink-0"
                   >
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>

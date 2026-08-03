@@ -63,13 +63,13 @@ export default function WeeklyAnalysisButton() {
               <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
-                className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5 disabled:opacity-40">
+                className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {busy && (
-                <div className="flex items-center gap-2 text-xs font-mono text-[#c6c9ab] animate-pulse">
+                <div className="flex items-center gap-2 text-xs font-mono text-ink-2 animate-pulse">
                   <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                   {status ?? 'Analizando tu cartera…'}
                 </div>
@@ -82,7 +82,7 @@ export default function WeeklyAnalysisButton() {
               )}
             </div>
             {result && (
-              <div className="px-4 py-2.5 border-t border-white/7 text-[11px] font-mono text-[#c6c9ab]">
+              <div className="px-4 py-2.5 border-t border-white/7 text-[11px] font-mono text-ink-2">
                 Guardado en tus notas de coach.
               </div>
             )}

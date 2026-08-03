@@ -44,7 +44,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
     <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm bg-[#181816] border border-white/10 rounded-2xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <h3 className="font-sans font-bold text-base text-white">Añadir sesión a mano</h3>
-        <p className="text-[10px] font-mono text-[#c6c9ab]">Sin banda de por medio — no suma XP ni puntos.</p>
+        <p className="text-[10px] font-mono text-ink-2">Sin banda de por medio — no suma XP ni puntos.</p>
 
         <div className="flex gap-2">
           <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
@@ -68,7 +68,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
           className="w-full bg-[#0e0e0e] border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none" />
 
         <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-white/15 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg hover:text-white transition-all">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-white/15 text-ink-2 font-sans font-bold text-xs uppercase rounded-lg hover:text-white transition-all">
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving || !durationMin}

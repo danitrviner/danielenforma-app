@@ -328,17 +328,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#fbcb1a] text-xl">group</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
+                <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
               <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
-              <span className="text-xs text-[#c6c9ab] font-sans pb-1">deportistas registrados</span>
+              <span className="text-xs text-ink-2 font-sans pb-1">deportistas registrados</span>
             </div>
           </div>
           <div className="mt-6 pt-4 border-t border-white/60">
-            <span className="block text-[8px] text-[#c6c9ab] uppercase font-mono mb-2">Próximos a finalizar planificación</span>
+            <span className="block text-[8px] text-ink-2 uppercase font-mono mb-2">Próximos a finalizar planificación</span>
             {athletesFinishingSoon.length === 0 ? (
               <p className="text-xs text-[#555] font-mono">Ninguno por ahora.</p>
             ) : (
@@ -368,7 +368,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#00eefc] text-xl">pending_actions</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
+                <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
                 <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-sans uppercase font-black animate-pulse">
@@ -381,7 +381,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             {pendingCheckins.length === 0 ? (
               <p className="text-xs font-bold text-white">¡Sin revisiones pendientes!</p>
             ) : (
-              <p className="text-sm text-[#c6c9ab] font-mono">
+              <p className="text-sm text-ink-2 font-mono">
                 Ve a <strong className="text-[#fbcb1a]">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
               </p>
             )}
@@ -392,7 +392,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Notas Pendientes</h2>
+                <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
                 <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-sans uppercase font-black">
@@ -431,7 +431,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <div className="space-y-4">
         <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
             <input
               type="text"
               value={search}
@@ -448,7 +448,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   onClick={() => changeGridCols(n)}
                   title={`${n} columnas`}
                   className={`w-7 h-7 rounded-md font-sans text-xs font-bold transition-all ${
-                    gridCols === n ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
+                    gridCols === n ? 'bg-[#fbcb1a] text-black' : 'text-ink-2 hover:text-white'
                   }`}
                 >
                   {n}
@@ -469,7 +469,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         ) : athletes.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center gap-3">
-            <p className="text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</p>
+            <p className="text-ink-2 font-mono text-xs">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
@@ -479,7 +479,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </button>
           </div>
         ) : filteredAthletes.length === 0 ? (
-          <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">Ningún atleta coincide con "{search}".</div>
+          <div className="text-center py-12 text-ink-2 font-mono text-xs">Ningún atleta coincide con "{search}".</div>
         ) : (
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {
@@ -511,7 +511,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-[#fbcb1a] transition-colors">{athlete.displayName}</h3>
-                        <p className="font-mono text-[10px] text-[#c6c9ab] truncate">{athlete.email}</p>
+                        <p className="font-mono text-[10px] text-ink-2 truncate">{athlete.email}</p>
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {planDaysLeft !== null ? (
@@ -538,7 +538,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     </div>
                     <div className="grid grid-cols-3 gap-2 bg-[#1b1c1c]/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
                       <div>
-                        <span className="block text-[8px] text-[#c6c9ab] uppercase">INICIAL</span>
+                        <span className="block text-[8px] text-ink-2 uppercase">INICIAL</span>
                         <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
                       </div>
                       <div>
@@ -552,13 +552,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex justify-between font-mono text-[10px]">
-                        <span className="text-[#c6c9ab] uppercase flex items-center gap-1">
+                        <span className="text-ink-2 uppercase flex items-center gap-1">
                           <span className="material-symbols-outlined text-[12px] text-orange-400">local_fire_department</span> Racha
                         </span>
                         <strong className="text-white">{athlete.currentStreak || 0} sem</strong>
                       </div>
                       <div className="flex justify-between font-mono text-[10px]">
-                        <span className="text-[#c6c9ab] uppercase flex items-center gap-1">
+                        <span className="text-ink-2 uppercase flex items-center gap-1">
                           <span className="material-symbols-outlined text-[12px] text-teal-400">military_tech</span> Nivel
                         </span>
                         <strong className="text-[#00eefc]">Lvl {athlete.level || 1}</strong>
@@ -575,7 +575,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   </div>
                   <div className="mt-5 pt-3.5 border-t border-white/60 flex items-center justify-between text-xs font-mono">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#c6c9ab]">{totalCheckCount} Reportes</span>
+                      <span className="text-ink-2">{totalCheckCount} Reportes</span>
                       {pendingCount > 0 && (
                         <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded font-sans uppercase">
                           {pendingCount} pend.
@@ -599,7 +599,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-[#fbcb1a] text-xl">person_add</span>
-          <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
+          <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
         </div>
         <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
           <input
@@ -624,13 +624,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
         {pendingInvites.length > 0 && (
           <div className="mt-4 pt-4 border-t border-white/60">
-            <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
+            <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2.5">
               Invitaciones pendientes ({pendingInvites.length})
             </p>
             <div className="space-y-1.5">
               {pendingInvites.map(inv => (
                 <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
+                  <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-xs text-white truncate">{inv.email}</p>
                     <p className="font-mono text-[9px] text-[#555]">

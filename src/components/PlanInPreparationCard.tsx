@@ -75,14 +75,14 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
         </div>
         <div>
           <h2 className="font-sans font-black uppercase tracking-tight text-base text-white">Tu coach está preparando tu plan</h2>
-          <p className="text-xs text-[#c6c9ab] mt-1 leading-relaxed">
+          <p className="text-xs text-ink-2 mt-1 leading-relaxed">
             Está revisando tu ficha para montarte un plan a medida. Normalmente lo tienes en menos de 48h — te avisamos en cuanto esté.
           </p>
         </div>
       </div>
 
       <div className="border-t border-white/7 pt-4 space-y-2">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#c6c9ab]">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-2">
           Mientras tanto ({doneCount}/{items.length})
         </p>
         {items.map(item => (
@@ -96,7 +96,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
                 : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
             } disabled:opacity-60`}
           >
-            <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
+            <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-ink-2'}`}>
               {item.done ? 'check_circle' : item.icon}
             </span>
             <span className={`font-sans text-sm flex-1 ${item.done ? 'text-emerald-200 line-through decoration-emerald-500/50' : 'text-white'}`}>
@@ -105,9 +105,9 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
           </button>
         ))}
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-white/7 bg-[#1e1e1e]/50 opacity-60">
-          <span className="material-symbols-outlined text-lg text-[#c6c9ab]">lock</span>
-          <span className="font-sans text-sm flex-1 text-[#c6c9ab]">Tu primer entrenamiento</span>
-          <span className="font-mono text-[9px] uppercase text-[#c6c9ab]">Esperando a tu coach</span>
+          <span className="material-symbols-outlined text-lg text-ink-2">lock</span>
+          <span className="font-sans text-sm flex-1 text-ink-2">Tu primer entrenamiento</span>
+          <span className="font-mono text-[9px] uppercase text-ink-2">Esperando a tu coach</span>
         </div>
       </div>
     </section>

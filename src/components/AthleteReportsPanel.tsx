@@ -46,12 +46,12 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
                   {r.title}
                   {i === 0 && <span className="font-sans text-[8px] font-bold uppercase bg-[#fbcb1a] text-black px-1.5 py-0.5 rounded flex-shrink-0">Nuevo</span>}
                 </p>
-                <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                <p className="font-mono text-[10px] text-ink-2 mt-0.5">
                   {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)}
                   {r.sentAt && ` · ${new Date(r.sentAt).toLocaleDateString('es-ES')}`}
                 </p>
               </div>
-              <span className="material-symbols-outlined text-[#c6c9ab] flex-shrink-0">chevron_right</span>
+              <span className="material-symbols-outlined text-ink-2 flex-shrink-0">chevron_right</span>
             </button>
           ))}
         </div>
@@ -62,7 +62,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
           <div className="min-h-full flex items-start justify-center sm:p-4">
             <div className="bg-[#111110] border border-white/7 sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl">
               <div className="sticky top-0 z-10 bg-[#111110] border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between">
-                <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Reporte</p>
+                <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-base">close</span>
                 </button>

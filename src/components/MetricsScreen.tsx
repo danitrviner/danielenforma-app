@@ -95,7 +95,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white m-0">Progress &amp; Evolution</h1>
-          <p className="text-[#c6c9ab] text-sm mt-1">Registra tus marcas, revisa las métricas semanales y analiza tu progreso.</p>
+          <p className="text-ink-2 text-sm mt-1">Registra tus marcas, revisa las métricas semanales y analiza tu progreso.</p>
         </div>
       </div>
 
@@ -121,21 +121,21 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
-              <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">ACTUAL</span>
+              <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">ACTUAL</span>
               <span className="font-sans font-black text-2xl md:text-3xl text-white">
-                {currentWeight} <span className="text-sm font-normal text-[#c6c9ab]">kg</span>
+                {currentWeight} <span className="text-sm font-normal text-ink-2">kg</span>
               </span>
             </div>
             
             <div className="flex flex-col">
-              <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">INICIAL</span>
+              <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">INICIAL</span>
               <span className="font-sans font-semibold text-2xl md:text-3xl text-white/95">
-                {initialWeight} <span className="text-sm font-normal text-[#c6c9ab]">kg</span>
+                {initialWeight} <span className="text-sm font-normal text-ink-2">kg</span>
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-1">DIF. TOTAL</span>
+              <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">DIF. TOTAL</span>
               <div className={`flex items-center gap-1 font-sans font-black text-2xl md:text-3xl ${difference <= 0 ? 'text-[#00eefc]' : 'text-red-400'}`}>
                 <span className="material-symbols-outlined text-sm font-bold">
                   {difference <= 0 ? 'arrow_downward' : 'arrow_upward'}
@@ -147,7 +147,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
           {/* Core Weight Chart SVG */}
           <div className="w-full bg-[#1e1e1e] border border-white/7 rounded-lg p-3 relative overflow-hidden mb-5">
-            <div className="absolute top-2 left-3 font-mono text-[10px] text-[#c6c9ab]/60 uppercase">Evolución de Peso (kg)</div>
+            <div className="absolute top-2 left-3 font-mono text-[10px] text-ink-2/60 uppercase">Evolución de Peso (kg)</div>
             
             <div className="w-full overflow-x-auto hide-scrollbar">
               <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" className="min-w-[450px]">
@@ -215,7 +215,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
           {/* Sub summary info */}
           <div className="flex justify-between items-center bg-[#1e1e1e] p-3 rounded-lg border border-white/7">
-            <span className="font-sans text-xs text-[#c6c9ab]">Tendencia últimos 7 días</span>
+            <span className="font-sans text-xs text-ink-2">Tendencia últimos 7 días</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
               <span className="text-[#00eefc] text-xs font-mono">
@@ -235,7 +235,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
             
             <form onSubmit={handleSubmitCheckIn} className="space-y-4">
               <div>
-                <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Peso Actual (kg) *</label>
+                <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Peso Actual (kg) *</label>
                 <input 
                   type="number" 
                   step="0.1"
@@ -250,7 +250,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Estado de Ánimo</label>
+                <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Estado de Ánimo</label>
                 <div className="flex justify-between items-center bg-[#1e1e1e] p-2 rounded-lg border border-white/7 gap-1">
                   {['😩', '😴', '😐', '😊', '🔥'].map((emoji) => (
                     <button
@@ -266,7 +266,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Adherencia Nutricional</label>
+                <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Adherencia Nutricional</label>
                 <div className="flex gap-2">
                   {(['Sí', 'Parcial', 'No'] as const).map((opt) => (
                     <button
@@ -282,7 +282,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Notas (Opcional)</label>
+                <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Notas (Opcional)</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -330,7 +330,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
                     <div className="h-full bg-[#00eefc]" style={{ width: `${(profile.xp / 400) * 100}%` }}></div>
                   </div>
-                  <span className="font-mono text-[11px] text-[#c6c9ab]">{profile.xp}/400 XP</span>
+                  <span className="font-mono text-[11px] text-ink-2">{profile.xp}/400 XP</span>
                 </div>
               </div>
             </div>
@@ -344,7 +344,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
             {/* Iron Calendar design */}
             <div className="mb-5">
-              <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
+              <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
               <div className="grid grid-cols-7 gap-2">
                 {Array.from({ length: 14 }).map((_, idx) => {
                   // highlight boxes in Volt if streak or arbitrary fitness progress is met
@@ -363,7 +363,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
           {/* Insignias unlocked */}
           <div>
-            <span className="font-mono text-[10px] text-[#c6c9ab] uppercase block mb-3">Insignias Desbloqueadas</span>
+            <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
             <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span>🏅</span> Primera semana
@@ -394,7 +394,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-[#c6c9ab]">{item.dateStr}</span>
+                      <span className="font-mono text-xs text-ink-2">{item.dateStr}</span>
                       <span className="font-mono font-bold text-white text-sm">{item.weight} kg</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -406,7 +406,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   </div>
 
                   {item.notes && (
-                    <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed mb-3 italic">
+                    <p className="text-xs text-ink-2 font-sans leading-relaxed mb-3 italic">
                       "{item.notes}"
                     </p>
                   )}
@@ -418,7 +418,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-[#c6c9ab]/60 font-mono italic pl-1 flex items-center gap-1">
+                    <div className="text-[11px] text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
                       Pendiente de revisión del Entrenador
                     </div>
@@ -427,7 +427,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               ))}
               
               {checkins.length === 0 && (
-                <div className="text-[#c6c9ab] text-center italic py-12 text-sm">
+                <div className="text-ink-2 text-center italic py-12 text-sm">
                   Aún no posees ningún registro de peso. Registra tu primer check-in.
                 </div>
               )}

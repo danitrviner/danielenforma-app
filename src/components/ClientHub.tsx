@@ -409,7 +409,7 @@ export default function ClientHub({
               <h1 className="font-sans font-bold text-white text-xl leading-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
-            <p className="font-mono text-[10px] text-[#c6c9ab]">{athlete.email}</p>
+            <p className="font-mono text-[10px] text-ink-2">{athlete.email}</p>
             {/* Adherence score badge */}
             <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-md border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
@@ -420,7 +420,7 @@ export default function ClientHub({
         </div>
         {/* Plan duration config */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Plan:</span>
+          <span className="font-mono text-[10px] text-ink-2 uppercase">Plan:</span>
           <input
             type="date"
             value={planStart}
@@ -478,7 +478,7 @@ export default function ClientHub({
               key={zone}
               onClick={() => goToZone(zone)}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl font-sans text-xs font-bold uppercase tracking-wide transition-all ${
-                activeZone === zone ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
+                activeZone === zone ? 'bg-[#fbcb1a] text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
               <span className="material-symbols-outlined text-base">{ZONE_META[zone].icon}</span>
@@ -498,7 +498,7 @@ export default function ClientHub({
                   className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
                     activeTab === tab
                       ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
-                      : 'border-transparent text-[#c6c9ab] hover:text-white'
+                      : 'border-transparent text-ink-2 hover:text-white'
                   }`}
                 >
                   <span className="material-symbols-outlined text-sm">{TAB_META[tab].icon}</span>
