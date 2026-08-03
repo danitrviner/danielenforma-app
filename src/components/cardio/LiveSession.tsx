@@ -74,7 +74,7 @@ export default function LiveSession({
         </div>
 
         {intervalBlocks && currentBlockIndex !== undefined && (
-          <div className="bg-black/25 rounded-surface p-3.5 space-y-2 text-center">
+          <div className="bg-black/25 rounded-surface p-4 space-y-2 text-center">
             <p className="text-caption font-mono uppercase text-white/80">
               Bloque {currentBlockIndex + 1}/{intervalBlocks.length} · {intervalBlocks[currentBlockIndex].label}
             </p>
@@ -86,7 +86,7 @@ export default function LiveSession({
         )}
 
         {!intervalBlocks && targetZone && (
-          <div className="bg-black/25 rounded-surface p-3.5 space-y-2">
+          <div className="bg-black/25 rounded-surface p-4 space-y-2">
             <p className="text-caption font-sans uppercase text-white/80 text-center">
               Objetivo: {ZONE_LABEL[targetZone]}
               {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}

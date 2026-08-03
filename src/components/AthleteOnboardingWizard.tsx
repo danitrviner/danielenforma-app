@@ -407,7 +407,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-body-s font-bold uppercase tracking-wide"
+            className="px-5 py-4 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-body-s font-bold uppercase tracking-wide"
           >
             Atrás
           </button>
@@ -416,7 +416,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
+            className="flex-1 py-4 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
           >
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </button>
@@ -424,7 +424,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={finish}
             disabled={saving}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
+            className="flex-1 py-4 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
           >
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
           </button>

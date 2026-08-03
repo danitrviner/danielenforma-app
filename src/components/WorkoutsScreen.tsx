@@ -436,7 +436,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           value={editorName}
           onChange={e => setEditorName(e.target.value)}
           placeholder="ej. Fullbody A — Semana 1"
-          className="w-full bg-raised border border-hairline rounded-control px-4 py-3.5 text-title-m font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+          className="w-full bg-raised border border-hairline rounded-control px-4 py-4 text-title-m font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
         />
       </div>
 
@@ -667,7 +667,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   <button
                     key={ex.id}
                     onClick={() => addExerciseToWorkout(ex)}
-                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-raised text-left transition-colors group"
+                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-raised text-left transition-colors group"
                   >
                     {ex.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-surface object-cover border border-hairline flex-shrink-0" />

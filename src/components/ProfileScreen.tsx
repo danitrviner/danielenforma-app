@@ -280,7 +280,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {success && (
-        <div className="bg-accent/10 border border-accent/30 text-white p-3.5 rounded-surface text-label font-bold text-center">
+        <div className="bg-accent/10 border border-accent/30 text-white p-4 rounded-surface text-label font-bold text-center">
           {success}
         </div>
       )}

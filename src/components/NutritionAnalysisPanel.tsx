@@ -264,11 +264,11 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
           <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
+            className="px-4 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
-            className="px-3.5 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all disabled:opacity-50"
+            className="px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all disabled:opacity-50"
           >Compartir resumen</button>
         )}
       </div>

@@ -448,7 +448,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
+          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
             <span
               className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>

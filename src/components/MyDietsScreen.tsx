@@ -381,7 +381,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
                         <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
@@ -399,7 +399,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     </div>
                   ) : filteredRecipes.map(recipe => (
                     <button key={recipe.id} onClick={() => addRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-surface object-cover flex-shrink-0" />
@@ -430,7 +430,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Nueva

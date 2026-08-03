@@ -323,7 +323,7 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
+              className={`flex items-center gap-4 p-4 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"

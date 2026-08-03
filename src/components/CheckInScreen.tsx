@@ -482,7 +482,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <button
                   key={a.id}
                   onClick={() => setActiveAssignment(a)}
-                  className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-3.5 text-left transition-all group"
+                  className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-4 text-left transition-all group"
                 >
                   <div>
                     <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
@@ -535,7 +535,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3.5">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-4">
                 <p className="font-sans font-bold text-body-s text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>

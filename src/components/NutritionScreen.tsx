@@ -1398,7 +1398,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <button
                       key={recipe.id}
                       onClick={() => handleApplyRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
@@ -1465,7 +1465,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   key={recipe.id}
                   onClick={() => handleApplySwap(recipe)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   {recipe.photoUrl ? (
                     <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
@@ -1533,7 +1533,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   {isSearchingFoods && (
                     <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
@@ -1561,7 +1561,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <button
               onClick={handleUpdateInPlace}
               disabled={saving}
-              className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
+              className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-accent text-title-s">edit</span>
               <span className="text-body-s text-white font-sans">Actualizar esta dieta</span>
@@ -1569,7 +1569,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <button
               onClick={handleSaveAsNew}
               disabled={saving}
-              className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
+              className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-data text-title-s">bookmark_add</span>
               <span className="text-body-s text-white font-sans">Guardar como nueva dieta mía</span>
@@ -1597,7 +1597,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   key={dt.id}
                   onClick={() => handleChooseDietForRecipe(dt)}
-                  className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
+                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
                   <span className="text-body-s text-white font-sans truncate">{dt.name}</span>
                   <span className="material-symbols-outlined text-ink-2 text-title-s flex-shrink-0">add_circle</span>
@@ -1605,7 +1605,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ))}
               <button
                 onClick={() => handleChooseDietForRecipe('new')}
-                className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
+                className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
               >
                 <span className="text-body-s text-accent font-sans font-bold">Nueva dieta</span>
                 <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">add_circle</span>
@@ -1634,7 +1634,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   key={meal.id}
                   onClick={() => { addRecipeToMeal(chooseMealForRecipe, meal.id, selectedDiet); setChooseMealForRecipe(null); }}
-                  className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
+                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
                   <span className="text-body-s text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
                   <span className="material-symbols-outlined text-ink-2 text-title-s">add_circle</span>

@@ -283,7 +283,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </div>
 
           {(activeResolved?.kcal != null || activeBalance?.dailyDeficit != null) && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 font-mono text-label">
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-4 font-mono text-label">
               {activeResolved?.kcal != null && (
                 <span className="text-ink-2">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
               )}
@@ -301,7 +301,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-caption text-ink-2 mt-3.5 pt-3 border-t border-hairline">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-caption text-ink-2 mt-4 pt-3 border-t border-hairline">
             <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
             <span className="text-ink-3">·</span>
             <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>

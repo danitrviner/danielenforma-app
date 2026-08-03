@@ -252,7 +252,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA"
-        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-3.5 rounded-full bg-accent text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
+        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
       >
         <span className="material-symbols-outlined block" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
       </button>
@@ -345,7 +345,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 const text = messageText(msg);
                 if (!text) return null; // mensajes de tool_results — no se pintan
                 return (
-                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-surface rounded-br-control px-3.5 py-2.5 text-body-s whitespace-pre-wrap">
+                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-surface rounded-br-control px-4 py-2.5 text-body-s whitespace-pre-wrap">
                     {text}
                   </div>
                 );
@@ -355,7 +355,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-surface border border-hairline text-ink rounded-surface rounded-bl-control px-3.5 py-2.5 text-body-s whitespace-pre-wrap">
+                        <div key={j} className="bg-surface border border-hairline text-ink rounded-surface rounded-bl-control px-4 py-2.5 text-body-s whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
@@ -381,7 +381,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               </div>
             )}
             {error && (
-              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-label">
+              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-2.5 text-label">
                 {error}
               </div>
             )}
@@ -479,7 +479,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
@@ -513,7 +513,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">

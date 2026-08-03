@@ -165,7 +165,7 @@ export default function ClientWorkoutsPanel({
               return (
                 <div
                   key={log.id}
-                  className={`border rounded-surface p-3.5 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-raised border-hairline'}`}
+                  className={`border rounded-surface p-4 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-raised border-hairline'}`}
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-sans text-label font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>
