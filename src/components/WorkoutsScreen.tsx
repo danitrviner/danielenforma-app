@@ -308,7 +308,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               return (
               <div
                 key={w.id}
-                className="bg-surface border border-hairline rounded-canvas p-5 hover:border-accent/30 hover:shadow-[0_0_30px_-10px_rgba(251,203,26,0.35)] transition-all group relative overflow-hidden"
+                className="bg-surface border border-hairline rounded-canvas p-5 hover:border-accent/30 transition-all group relative overflow-hidden"
               >
                 <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
 

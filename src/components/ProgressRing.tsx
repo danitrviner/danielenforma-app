@@ -24,7 +24,6 @@ export default function ProgressRing({ pct, color = 'var(--color-accent)', label
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           className="transition-all duration-500"
-          style={{ filter: `drop-shadow(0 0 6px ${color}99)` }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

@@ -1074,7 +1074,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </div>
                 <div className="h-2 w-full bg-raised rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-accent rounded-full transition-all duration-500 volt-glow"
+                    className="h-full bg-accent rounded-full transition-all duration-500"
                     style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
                   />
                 </div>

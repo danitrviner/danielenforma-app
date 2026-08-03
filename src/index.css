@@ -227,9 +227,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer utilities {
-  .volt-glow {
-    box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);
-  }
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }

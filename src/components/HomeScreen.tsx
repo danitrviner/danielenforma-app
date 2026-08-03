@@ -63,7 +63,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
       {!loadingTraining && weekAssignments.length > 0 && (
-        <section className="bg-surface border border-hairline rounded-canvas p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
+        <section className="bg-surface border border-hairline rounded-canvas p-5">
           <h2 className="font-sans font-bold uppercase tracking-tight text-title-m text-white mb-4">Resumen de hoy</h2>
           <div className="flex items-center gap-5">
             <ProgressRing pct={weekPct} />

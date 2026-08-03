@@ -859,7 +859,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {saving
             ? <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</>

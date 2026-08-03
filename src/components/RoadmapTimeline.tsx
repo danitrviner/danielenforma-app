@@ -405,15 +405,15 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
   // atleta (readonly): refuerza visualmente "dónde estás y qué te queda".
   // El coach ve siempre opacidad plena (son fases que puede seguir editando).
   function goldTimingClasses(timing: BlockTiming): string {
-    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(251,203,26,0.2)]';
+    if (!readonly) return '';
     if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
-    if (timing === 'current') return 'shadow-[0_0_24px_rgba(251,203,26,0.4)]';
+    if (timing === 'current') return '';
     return 'opacity-70';
   }
   function cyanTimingClasses(timing: BlockTiming): string {
-    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(0,238,252,0.2)]';
+    if (!readonly) return '';
     if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
-    if (timing === 'current') return 'shadow-[0_0_24px_rgba(0,238,252,0.35)]';
+    if (timing === 'current') return '';
     return 'opacity-70';
   }
 
@@ -559,7 +559,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             ))}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height, zIndex: 10 }}
-              className={readonly ? 'bg-accent shadow-[0_0_10px_#fbcb1a]' : 'bg-accent/40'}
+              className={readonly ? 'bg-accent' : 'bg-accent/40'}
             />
             {children}
           </div>
@@ -578,7 +578,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Añadir objetivo
@@ -670,12 +670,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             {/* HOY vertical line — para el atleta, badge celebratorio "estás aquí" */}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 30 }}
-              className={readonly ? 'bg-accent shadow-[0_0_10px_#fbcb1a]' : 'bg-accent/40'}
+              className={readonly ? 'bg-accent' : 'bg-accent/40'}
             >
               {readonly ? (
                 <span
                   style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
-                  className="bg-accent text-black text-caption font-bold px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
+                  className="bg-accent text-black text-caption font-bold px-2 py-1 rounded-full tracking-tighter border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
                 >
                   Estás aquí
                 </span>

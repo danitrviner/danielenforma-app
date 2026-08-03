@@ -733,7 +733,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>

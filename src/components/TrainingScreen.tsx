@@ -353,7 +353,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         key={a.id}
         className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
-            ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
+            ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
             : 'rounded-surface bg-surface border-hairline'
         }`}
       >
@@ -474,10 +474,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <div className="h-1.5 bg-raised rounded-full overflow-hidden">
           <div
             className="h-full bg-accent rounded-full transition-all duration-300"
-            style={{
-              width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%',
-              filter: 'drop-shadow(0 0 5px rgba(251,203,26,0.6))',
-            }}
+            style={{ width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%' }}
           />
         </div>
 
@@ -517,7 +514,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <div
               key={`${we.exerciseId}-${exIdx}`}
               className={`bg-surface border rounded-surface overflow-hidden ${
-                we.recordVideoSet ? 'border-accent/50 shadow-[0_0_0_1px_rgba(251,203,26,0.15)]' : 'border-hairline'
+                we.recordVideoSet ? 'border-accent/50' : 'border-hairline'
               }`}
             >
               {/* Exercise header */}

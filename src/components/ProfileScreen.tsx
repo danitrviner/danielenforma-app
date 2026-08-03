@@ -144,7 +144,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       case 'gamification':
         return (
-          <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5 shadow-[0_0_40px_-10px_rgba(251,203,26,0.3)]">
+          <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
 
             {/* Avatar + XP */}
@@ -184,7 +184,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                   return (
                     <div
                       key={idx}
-                      className={`aspect-square rounded-control border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-hairline'}`}
+                      className={`aspect-square rounded-control border transition-all ${isActive ? 'bg-accent border-transparent' : 'bg-raised border-hairline'}`}
                       title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
                     />
                   );

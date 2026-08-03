@@ -17,7 +17,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-4"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${phase.color}33`, boxShadow: `0 0 24px ${phase.color}14` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${phase.color}33` }}
     >
       <div className="flex items-center gap-4">
         <div

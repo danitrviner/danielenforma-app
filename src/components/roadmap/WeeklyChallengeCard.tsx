@@ -31,7 +31,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-3"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33`, boxShadow: `0 0 24px ${accent}14` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33` }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
         <div className="h-2.5 rounded-full bg-raised overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent, boxShadow: `0 0 8px ${accent}99` }}
+            style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent }}
           />
         </div>
       </div>
@@ -85,7 +85,7 @@ export function ChallengePendingCard() {
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-2"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33' }}
     >
       <div className="flex items-center gap-2">
         <span className="material-symbols-outlined text-title-m animate-pulse" style={{ color: 'var(--color-accent)' }}>
