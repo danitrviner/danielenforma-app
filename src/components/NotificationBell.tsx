@@ -134,7 +134,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   type="button"
                   onClick={() => handleClickNotif(n)}
                   className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-raised ${
-                    !n.read ? 'bg-[#181a18]' : ''
+                    !n.read ? 'bg-surface' : ''
                   }`}
                 >
                   {/* Icon */}

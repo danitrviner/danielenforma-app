@@ -124,7 +124,7 @@ export default function ClientStatusCard({
     : athlete.actualWeight || null;
 
   return (
-    <div className="bg-gradient-to-br from-[#16150f] to-bg border border-accent/20 rounded-2xl p-5 space-y-4">
+    <div className="bg-gradient-to-br from-surface to-bg border border-accent/20 rounded-2xl p-5 space-y-4">
       {/* Nota del coach — editable, lo más visible del panel */}
       <div className="flex items-start gap-3">
         <span className="material-symbols-outlined text-accent mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
@@ -136,7 +136,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-xl px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}

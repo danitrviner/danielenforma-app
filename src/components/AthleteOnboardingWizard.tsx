@@ -88,7 +88,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-accent/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-surface border border-white/10 focus:border-accent/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);

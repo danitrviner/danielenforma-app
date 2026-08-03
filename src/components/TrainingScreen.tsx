@@ -521,7 +521,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               }`}
             >
               {/* Exercise header */}
-              <div className="flex items-center gap-3 p-4 bg-[#161616] border-b border-white/50">
+              <div className="flex items-center gap-3 p-4 bg-surface border-b border-white/50">
                 <span className="font-mono text-[10px] text-ink-2/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-white/7 flex-shrink-0" />

@@ -1189,7 +1189,7 @@ export default function OnboardingForm({
                 ? 'bg-accent border-accent text-black'
                 : excl
                   ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                  : 'bg-[#181818] border-white/10 text-ink-2 hover:text-white';
+                  : 'bg-surface border-white/10 text-ink-2 hover:text-white';
               const cycle = () => {
                 if (pref) { set('preferredDishTypes', form.preferredDishTypes.filter(x => x !== dt.id)); set('excludedDishTypes', [...form.excludedDishTypes, dt.id]); }
                 else if (excl) { set('excludedDishTypes', form.excludedDishTypes.filter(x => x !== dt.id)); }

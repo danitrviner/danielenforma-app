@@ -303,7 +303,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           )}
           {chats.map(c => (
             <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-[#161616] hover:border-white/20'}`}
+              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-surface hover:border-white/20'}`}
               onClick={() => openChat(c)}
             >
               <div className="flex-1 min-w-0">
@@ -332,7 +332,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-ink-2 hover:text-white bg-[#161616] border border-white/7 hover:border-accent/40 rounded-xl px-3 py-2 transition-colors">
+                      className="text-left text-xs text-ink-2 hover:text-white bg-surface border border-white/7 hover:border-accent/40 rounded-xl px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -355,7 +355,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-[#161616] border border-white/7 text-ink rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                        <div key={j} className="bg-surface border border-white/7 text-ink rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
@@ -400,7 +400,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter(g => meso.groups[g]?.series > 0)
                   : [];
                 return (
-                <div key={p.id} className="bg-[#161616] border border-amber-500/25 rounded-xl p-3 flex flex-col gap-2">
+                <div key={p.id} className="bg-surface border border-amber-500/25 rounded-xl p-3 flex flex-col gap-2">
                   <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-[11px] text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
@@ -479,7 +479,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
@@ -513,7 +513,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">

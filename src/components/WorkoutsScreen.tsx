@@ -509,7 +509,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               return (
                 <div key={`${we.exerciseId}-${idx}`} className={`bg-surface border rounded-2xl overflow-hidden ${selectedIdx.has(idx) ? 'border-accent/50' : 'border-white/7'}`}>
                   {/* Exercise info bar */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-[#161616] border-b border-white/50">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface border-b border-white/50">
                     <input
                       type="checkbox"
                       checked={selectedIdx.has(idx)}

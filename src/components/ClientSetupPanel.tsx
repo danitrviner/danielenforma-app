@@ -331,7 +331,7 @@ export default function ClientSetupPanel({
               <div
                 key={task.id}
                 className={`w-full flex items-center gap-3 border rounded-lg p-3 transition-all ${
-                  task.done ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7'
+                  task.done ? 'bg-surface border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7'
                 }`}
               >
                 <button onClick={() => toggleExtra(task)} className="flex-shrink-0">

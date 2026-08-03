@@ -1088,7 +1088,7 @@ export default function ClientReviewsPanel({
                               ))}
                             </div>
                             {c.notes && (
-                              <div className="bg-[#181818] p-3 rounded-lg border border-white/30">
+                              <div className="bg-surface p-3 rounded-lg border border-white/30">
                                 <span className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas del atleta</span>
                                 <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                               </div>
