@@ -12,7 +12,7 @@ import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasI
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Badge } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -234,11 +234,9 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
                   </p>
                 </div>
               </button>
-              <span className={`flex-shrink-0 font-sans text-caption font-bold uppercase px-2 py-1 rounded-full ${
-                r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-raised text-ink-2 border border-hairline'
-              }`}>
+              <Badge tone={r.status === 'sent' ? 'success' : 'neutral'}>
                 {r.status === 'sent' ? 'Enviado' : 'Borrador'}
-              </span>
+              </Badge>
               <button
                 onClick={() => handleCopy(r)}
                 title="Copiar texto del reporte"
