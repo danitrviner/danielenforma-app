@@ -4,6 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -292,9 +293,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       </div>
 
       {recipes.length === 0 ? (
-        <div className="text-center py-10 text-ink-2 font-sans text-label uppercase tracking-widest">
-          Aún no has creado ninguna receta propia. La biblioteca Indya de abajo tiene 8.850 más.
-        </div>
+        <EmptyState icon="restaurant_menu" title="Aún no has creado ninguna receta propia. La biblioteca Indya de abajo tiene 8.850 más." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {recipes.map(recipe => {
@@ -428,9 +427,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : filteredIndya.length === 0 ? (
-          <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
-            {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
-          </div>
+          <EmptyState icon="search_off" title={indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-3">
             <p className="font-sans text-caption text-ink-2 uppercase">
