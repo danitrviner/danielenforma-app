@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
 import Skeleton from './Skeleton';
-import { ListRow } from './ui';
+import { ListRow, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -76,13 +76,9 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           <span className="material-symbols-outlined text-accent text-title-s">checklist</span>
           Tareas del atleta
         </h3>
-        <button
-          onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
-        >
-          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
+        <Button variant="secondary" size="s" onClick={() => setShowForm(v => !v)} icon={showForm ? 'close' : 'add'}>
           {showForm ? 'Cancelar' : 'Nueva tarea'}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -112,13 +108,9 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             />
           </div>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
+          <Button type="submit" disabled={createMutation.isPending} fullWidth>
             {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
-          </button>
+          </Button>
         </form>
       )}
 
