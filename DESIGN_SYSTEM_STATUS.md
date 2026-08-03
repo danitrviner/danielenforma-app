@@ -3,8 +3,8 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprints 1, 2 y 3 completados** · rama
-> `ds/f0-linea-base` · 57 commits sin pushear
+> **Última actualización:** 3 de agosto de 2026 · **Sprints 1, 2 y 3 completados, F6 cerrada** ·
+> rama `ds/f0-linea-base` · 67 commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
 refleja el presente. [`docs/DS-migracion.md`](docs/DS-migracion.md) es la *bitácora*: histórico por
@@ -19,14 +19,14 @@ en la auditoría UX/UI, el Design System y el plan de migración, que son extern
 Sprint 1  ████████████████████  F0 F1        COMPLETADO
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
-Sprint 4  ░░░░░░░░░░░░░░░░░░░░  F6 F7        pendiente
+Sprint 4  ██████████░░░░░░░░░░  F6 F7        F6 completada · F7 pendiente
 Sprint 5  ░░░░░░░░░░░░░░░░░░░░  F8 F9 F10    pendiente
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**6 de 16 fases completadas.**
+**7 de 16 fases completadas.**
 
 ## Fases
 
@@ -38,7 +38,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 2 | **F3** | Radios — fase aislada | ✅ Completada | 2026-08-03 | **Crítico** |
 | 3 | **F4** | Escala tipográfica y suelo de tamaño | ✅ Completada | 2026-08-03 | Medio |
 | 3 | **F5** | Mono → Sans | ✅ Completada | 2026-08-03 | Medio |
-| 4 | **F6** | Espaciado, ritmo vertical y sombras | ⬜ Pendiente | — | Medio |
+| 4 | **F6** | Espaciado, ritmo vertical y sombras | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F7** | Primitivas en `src/components/ui/` | ⬜ Pendiente | — | Bajo |
 | 5 | **F8** | Adopción de bajo riesgo | ⬜ Pendiente | — | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ⬜ Pendiente | — | **Alto** |
@@ -57,7 +57,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 |---|:--:|--:|--:|--:|:--:|
 | Hex distintos en componentes | ↓ | 101 | **15** | ≤ 22 | F1 ✅ |
 | Hex literales en componentes | ↓ | 4.638 | **28** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **5.224** | — | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **5.212** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
 | Textos por debajo de 11 px | ↓ | 1.151 | **0** | 0 | F4 ✅ |
@@ -65,7 +65,9 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
 | `font-mono` | ↓ | 1.527 | **1.030** | mono < sans | F5 ✅ |
 | `font-sans` | ↑ | 590 | **1.057** | > mono | F5 ✅ |
-| Espaciado fuera de escala | ↓ | 1.170 | 1.157 | 0 | F6 |
+| Espaciado fuera de escala | ↓ | 1.170 | **0** | 0 | F6 ✅ |
+| Sombras fuera de la escala | ↓ | 113 | **0** | 0 | F6 ✅ |
+| Brillos dorados ad-hoc | ↓ | 31 | **0** | 1, con token | F6 ✅ |
 | Overlays `fixed inset-0` | ↓ | 39 | 39 | 0 fuera de `ui/` | F9 |
 | `transition-all` | ↓ | 377 | 372 | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
@@ -118,6 +120,23 @@ La revisión visual que el plan declara obligatoria se resolvió extrayendo del 
 `border-radius` **computado** de cada elemento antes y después en cinco pantallas: los totales
 coinciden elemento a elemento, ninguno perdió ni ganó radio.
 
+### Sprint 4 — Ritmo · 2026-08-03
+
+**F6 · Espaciado, ritmo vertical y sombras.** 9 commits, 1.209 declaraciones de espaciado
+migradas. **Espaciado fuera de la escala: 1.208 → 0.** Los 1.157 valores que el inventario veía
+resultaron ser cero píxeles arbitrarios —todos eran pasos fraccionarios de Tailwind—, lo que
+convirtió la fase en cuatro sustituciones mecánicas en vez de una auditoría caso por caso.
+
+Antes hubo que arreglar el instrumento: la métrica no miraba escalones enteros, así que 51 usos
+de deuda real (`py-20` son 80 px, `pl-9` son 36) habrían sobrevivido con el contador a cero.
+
+**Sombras: 113 → 0 fuera de escala.** 21 pasan a `e2` (overlays), 9 a `e1` (lo que flota sobre
+contenido que se desplaza) y **67 se retiran**: sobre un fondo casi negro la elevación se
+comunica cambiando de superficie, y el borde `hairline` ya define la tarjeta.
+
+**El glow vuelve a significar algo:** de 23 brillos dorados a **uno**, el siguiente entrenamiento
+pendiente. `.volt-glow` borrada, que era lo que F5 dejó pendiente para esta fase.
+
 ### Sprint 3 — Tipografía · 2026-08-03
 
 **F4 · Escala y suelo de tamaño.** 12 commits, 2.981 declaraciones migradas. De 16 tamaños
@@ -168,7 +187,7 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 | R2 | **Sin capturas de referencia automáticas.** Se decidió no añadir Playwright ni Puppeteer. En F3 se cubrió con censo de `border-radius` computado más capturas manuales del navegador integrado, que basta para cambios medibles. Sigue abierto para F11 y F12, donde lo que cambia es la composición y no hay contador que lo detecte. | F11 · F12 | Abierto, ya no bloqueante |
 | R3 | **Modales dentro de una sesión de cardio en directo.** `LiveSession`, `EffortPrompt`, `CooldownPrompt` y `HrvTestScreen` se abren durante un entrenamiento real; un fallo ahí lo interrumpe. | F9 | Abierto |
 | R4 | **Bloqueo de scroll mal desmontado** al migrar los 39 overlays deja la página congelada. Es el bug clásico de esta migración. | F9 | Abierto |
-| R5 | **Desbordamiento de layout al subir tamaños.** Subir 1.150 textos por encima de 11 px hace que cosas que hoy caben dejen de caber. No rompe nada: solo empeora, y en sitios que nadie mira. | F4 | Abierto |
+| ~~R5~~ | ~~Desbordamiento de layout al subir tamaños~~ | F4 · F6 | ✅ **Cerrado.** Tras F6 el desbordamiento horizontal sigue a 0 en todas las rutas medidas y los únicos truncados son los previos de la barra inferior, que es R10 |
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
 | R8 | **238 campos de formulario por debajo de 16 px** provocan zoom automático en iOS al enfocarlos, y el zoom no revierte solo. La auditoría contaba 5. | F4 | **Abierto — mayor de lo estimado** |
@@ -191,8 +210,10 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | F5 parcial → F11 |
 | Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | **sigue abierto** |
 | 590 iconos Material Symbols dimensionados con tokens de TEXTO; falta una primitiva `Icon` | 590 | F7 |
-| Espaciado fuera de la escala de 4 px | 1.170 | F6 |
-| Glow en cuatro tarjetas donde no señala nada | 4 | F6 |
+| ~~Espaciado fuera de la escala de 4 px~~ | ~~1.170~~ | ✅ F6 |
+| ~~Glow en cuatro tarjetas donde no señala nada~~ | ~~4~~ | ✅ F6 |
+| Márgenes negativos para compensar espaciado | 21 | F11 |
+| `<select>` con aspecto nativo junto a campos personalizados | — | F7 · F11 |
 | Overlays artesanales sin foco atrapado ni Escape | 39 | F9 |
 | Gráficas sin especificación común (5 alturas, 2 rejillas, 6 tamaños de tick) | 7 paneles | F10 |
 | Barra inferior del coach con 7 destinos; el DS fija 5 | 7 | F12 |

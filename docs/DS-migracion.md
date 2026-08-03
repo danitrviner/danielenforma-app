@@ -370,3 +370,107 @@ años»); su contenedor es la restricción y le toca a F6.
 montaban sobre la escala de Tailwind antes de esta fase —el patrón es preexistente— y los deltas
 son de ≤1 px, pero un icono no se rige por la escala tipográfica. Una primitiva `Icon` con su
 propia escala corresponde a **F7**.
+
+---
+
+## Sprint 4 · Ritmo y primitivas
+
+### F6 · Espaciado, ritmo vertical y sombras
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 9
+
+**Resultado**
+
+| Métrica | Antes | Después |
+|---|--:|--:|
+| Espaciado fuera de la escala | 1.208 | **0** |
+| Sombras fuera de la escala | 113 | **0** |
+| Brillos dorados ad-hoc | 31 | **0** (queda 1, con token) |
+| Declaraciones de espaciado migradas | — | **1.209** |
+
+**Paso 0 — el instrumento mentía.** La métrica de espaciado solo miraba
+píxeles arbitrarios y pasos fraccionarios, así que no veía `py-20` (80 px),
+`pl-9` (36) ni `p-7` (28): 51 usos que habrían sobrevivido a la fase con el
+contador a cero. Se añadió la detección de escalones enteros y dos métricas
+nuevas —sombras fuera de escala y glow de acento—, sin las cuales los
+criterios de cierre de esta fase no eran medibles sino opinables.
+
+**Hallazgo que abarató la fase.** Medidos uno a uno, los 1.157 valores fuera
+de escala resultaron ser **cero píxeles arbitrarios**: todos eran pasos
+fraccionarios de Tailwind. Eso convirtió lo que el plan describía como una
+auditoría caso por caso en cuatro sustituciones mecánicas con tabla de
+equivalencia, del mismo tipo que F4 y reversibles commit a commit.
+
+**Tabla de equivalencia aplicada**
+
+| Origen | px | Destino | px | Usos |
+|---|--:|---|--:|--:|
+| `*-3.5` | 14 | `*-4` | 16 | 45 |
+| `*-2.5` | 10 | `*-3` | 12 | 290 |
+| `*-1.5` | 6 | `*-2` | 8 | 565 |
+| `*-0.5` | 2 | — se borra | 0 | 256 |
+| `py-12/16/20/24`, `p-12/16` | 48–96 | `*-10` | 40 | 45 |
+| `pt-24`, `pb-24` | 96 | `*-14` | 56 | 2 |
+| `p-7`, `pl-7`, `pl-9`, `px-9` | 28–36 | `*-8` / `*-10` | 32 / 40 | 6 |
+
+**Decisiones**
+
+1. **Redondeo hacia arriba**, salvo los 2 px, que el DS no redondea sino que
+   prohíbe: los llama «un accidente, no espaciado». Decisión de Dani, sin
+   excepciones. Ninguna insignia colapsó al perder el relleno vertical — la
+   altura la fijaba el interlineado.
+2. **Los estados vacíos no se redondean: se les asigna su valor.** Los 45
+   `py-12/16/20/24` son todos estados vacíos o cargadores, y el DS le asigna
+   a ese paso 40 px. Convivían cuatro alturas para exactamente lo mismo.
+3. **La regla «gap, no margen» se limitó a los contenedores ya tocados.**
+   Aplicarla a fondo eran 322 reescrituras de JSX, y eso convierte un cambio
+   de estilo en un cambio de estructura. Decisión de Dani; el resto queda
+   anotado para F11.
+4. **Ritmo vertical de alcance estrecho.** Las raíces de las pantallas ya
+   estaban a 24 px; lo que rompía el ritmo eran las vistas a las que se entra
+   desde ellas. El espaciado interno de paneles, tarjetas y listas no se
+   toca: el DS le asigna pasos menores a propósito, y confundirlo con el
+   ritmo de pantalla sería aplanar la jerarquía en vez de ordenarla.
+
+**Elevaciones.** 98 sombras clasificadas por lo que son, no por su valor: 21
+a `e2` (overlays), 9 a `e1` (lo que flota sobre contenido que se desplaza) y
+**67 retiradas** — tarjetas, botones, pestañas y chips se quedan sin sombra.
+Convivían `shadow-sm`, `md`, `lg`, `xl`, `2xl`, `inner` y `none` como si
+fueran una escala, cuando el borde `hairline` ya define la superficie.
+
+**El glow.** 23 brillos dorados retirados —incluidos los cuatro que la
+auditoría nombra— y **uno conservado**: el siguiente entrenamiento pendiente,
+que es el único uso que el DS le reserva. `.volt-glow` se queda sin usos y se
+borra del CSS; F5 la había dejado viva a propósito esperando esta fase.
+
+**Verificación**
+
+Censo de espaciado computado a 375 px sobre las rutas de entrenador, tras
+recarga completa:
+
+| | Resultado |
+|---|---|
+| Desbordamiento horizontal | **0** en todas las rutas |
+| Espaciado fuera de escala | solo geometría del marco (`--nav-h`), los 2 márgenes negativos del gutter de scroll y el *user-agent stylesheet* de `<option>` |
+| Sombras en pantalla | **solo `e1`** (barra inferior y FAB); `e2` verificada abriendo un overlay |
+| Truncados | los mismos de antes: las etiquetas de la barra inferior (R10) |
+
+`shadow-e1`, `shadow-e2` y `shadow-glow` verificadas **en el CSS compilado**,
+con sus valores exactos: una clase que Tailwind v4 no genera no falla el
+build ni avisa en consola, que es el fallo silencioso característico de este
+repo. 263 pruebas en verde, `tsc` limpio, build limpio.
+
+**Nota de método.** El primer censo «antes» resultó inservible: el viewport
+se había fijado a 375 px pero la aplicación seguía renderizando el layout de
+escritorio, así que medía la barra lateral en vez de la inferior y daba dos
+truncados nuevos que no existían. Es la misma familia de error que R9. Se
+resolvió por geometría —la etiqueta de la barra inferior pierde `px-0.5` y
+por tanto **gana** 4 px de ancho útil—, que es concluyente sin depender de
+una medición comparable.
+
+**Deuda anotada, no resuelta**
+
+| Hallazgo | Medida | Fase |
+|---|--:|:--:|
+| Márgenes negativos usados para compensar espaciado | 21 | F11 |
+| `<select>` con aspecto nativo junto a campos personalizados | — | F7 · F11 |
