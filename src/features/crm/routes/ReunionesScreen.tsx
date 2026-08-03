@@ -130,7 +130,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
             return (
               <div key={ev.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-[#fdba74]' : 'bg-accent'}`} />
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-warning' : 'bg-accent'}`} />
                   <div className="min-w-0">
                     <p className="font-sans text-[11px] text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}

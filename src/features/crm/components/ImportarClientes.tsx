@@ -247,7 +247,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           <p className="font-sans text-[10px] text-[#fca5a5] mt-0.5">{fila.errores.join('. ')}</p>
         )}
         {duplicado && (
-          <p className="font-sans text-[10px] text-[#fdba74] mt-0.5">
+          <p className="font-sans text-[10px] text-warning mt-0.5">
             Ya existe {duplicado.clienteExistente.nombre || 'un cliente'} con el mismo {duplicado.motivo === 'dni' ? 'DNI' : 'email'}
             {excluida ? ' — excluido' : ' — se importará igualmente'}
           </p>

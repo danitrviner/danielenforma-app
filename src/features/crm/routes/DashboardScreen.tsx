@@ -144,7 +144,7 @@ export default function DashboardScreen() {
               pagosPendientes.map(p => (
                 <div key={p.id} className="flex items-center justify-between gap-2 p-3">
                   <p className="font-sans text-[11px] text-ink truncate">{p.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-[#fdba74] shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
+                  <p className="font-mono text-[9px] text-warning shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
                 </div>
               ))
             )}

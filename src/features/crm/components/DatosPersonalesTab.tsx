@@ -219,7 +219,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {sucio && !bajaIncompleta && (
-          <span className="font-mono text-[9px] uppercase tracking-widest text-[#fdba74]">Sin guardar</span>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-warning">Sin guardar</span>
         )}
         <BotonPrimario onClick={onGuardar} disabled={!sucio || bajaIncompleta || guardar.isPending}>
           {guardar.isPending ? 'Guardando…' : 'Guardar cambios'}
