@@ -279,7 +279,10 @@ function medirCss() {
 }
 
 function medir() {
-  const archivos = listarArchivos(DIR_SRC);
+  // index.html también lleva clases de Tailwind en <body> y se le escapó a F1
+  // precisamente porque el inventario no lo miraba. Ahora sí.
+  const raizHtml = join(RAIZ, 'index.html');
+  const archivos = [...listarArchivos(DIR_SRC), ...(existsSync(raizHtml) ? [raizHtml] : [])];
 
   const metricas = Object.fromEntries(METRICAS.map((m) => [m.id, 0]));
   const porArchivo = {};
@@ -290,12 +293,14 @@ function medir() {
   let archivosTsx = 0;
 
   for (const ruta of archivos) {
-    const texto = readFileSync(ruta, 'utf8');
+    // Las <meta> quedan fuera: theme-color y similares exigen un hex literal,
+    // no admiten var(). Es el único hex legítimo fuera del bloque @theme.
+    const texto = readFileSync(ruta, 'utf8').replace(/<meta[^>]*>/g, '');
     const rel = relative(RAIZ, ruta);
     // Igual que `wc -l`: no cuenta el fragmento vacío tras el salto final.
     const lineas = texto.split('\n').length - (texto.endsWith('\n') ? 1 : 0);
 
-    if (extname(ruta) === '.tsx') {
+    if (extname(ruta) === ".tsx") {
       archivosTsx++;
       lineasTsx += lineas;
       if (lineas > 600) archivosGrandes.push({ archivo: rel, lineas });
