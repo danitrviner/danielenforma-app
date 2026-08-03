@@ -191,9 +191,9 @@ sobre 297 archivos.
 
 ### Sprint 5 — Adopción (F8, en curso) · 2026-08-03
 
-**F8 · Adopción de bajo riesgo.** 50 commits hasta ahora, 9 de las 13 primitivas adoptadas
-(`EmptyState`, `Badge`, `Chip`, `ListRow`, `Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) en unos
-25 archivos de `src/components/*.tsx`. **No está cerrada** — sigue en curso, y no era el objetivo
+**F8 · Adopción de bajo riesgo.** 64 commits hasta ahora, 9 de las 13 primitivas adoptadas
+(`EmptyState`, `Badge`, `Chip`, `ListRow`, `Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) en 57 de
+79 archivos de `src/components/*.tsx`. **No está cerrada** — sigue en curso, y no era el objetivo
 agotar los 79 archivos en una sola sesión (la propia fase lo declara explícitamente). `Select` y
 `Sheet`/`Dialog` no se tocan: son F11 y F9.
 
@@ -238,10 +238,16 @@ tenía la contraseña. Pendiente que Dani o el asistente de QA de navegador lo r
 pantallas reales, sobre todo la nav principal (`App.tsx`) y el cambio de color de `Tabs`, que son
 los de mayor impacto visual.
 
-**Qué queda para continuar F8:** Button y PageHeader solo se tocaron en un puñado de pantallas;
-Icon standalone solo en la nav — quedan ~580 usos repartidos por el resto de la app. `cardio/` y
-`roadmap/` siguen diferidos (ver alcance de la fase). Se recomienda retomar por pantalla, con el
-mismo ritmo de verificación.
+**Qué queda para continuar F8:** 22 archivos de `src/components/*.tsx` sin revisar todavía —
+los más grandes y complejos del lote: `OnboardingForm`, `MesocycleTemplateLibrary`,
+`WorkoutsScreen`, `NutritionPlansScreen`, `MyMenuScreen`, `WeeklyMenuEditor`, `DietMealsView`,
+`CardioScreen`/`CardioCoachScreen`, `AthleteOnboardingWizard`, `ProfileScreen`,
+`QuestionnaireEditor`, `AiChatPanel`, `RoadmapTimeline`, `WelcomeScreen`, `CommandPalette`,
+`NutritionPeriodizationPanel`, `NutritionPerformanceDashboard`. Icon standalone solo se adoptó
+donde ya tocaba por otra primitiva o en componentes pequeños — sigue habiendo cientos de usos
+sueltos en las pantallas grandes de la lista anterior. `cardio/` y `roadmap/` (subdirectorios)
+siguen diferidos (ver alcance de la fase). Se recomienda retomar por pantalla, con el mismo
+ritmo de verificación.
 
 ## Excepciones explícitas al Design System
 

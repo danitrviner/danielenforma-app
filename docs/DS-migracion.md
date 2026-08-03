@@ -590,11 +590,11 @@ sí —cada uno escucha Tab por su cuenta—. Es el mismo caso que R3 deja abier
 
 ### F8 · Adopción de bajo riesgo
 
-**Fecha:** 3 de agosto de 2026 (sesión en curso) · **Commits:** 50 hasta ahora · **Estado: no
+**Fecha:** 3-4 de agosto de 2026 (sesión en curso) · **Commits:** 64 hasta ahora · **Estado: no
 cerrada**
 
 **Alcance de esta sesión:** 9 de las 13 primitivas (`EmptyState`, `Badge`, `Chip`, `ListRow`,
-`Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) adoptadas en ~25 archivos. `Select`, `Sheet` y
+`Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) adoptadas en 57 de 79 archivos. `Select`, `Sheet` y
 `Dialog` no se tocan — son F11 y F9 respectivamente. `src/components/cardio/`, `src/components/
 roadmap/` y `src/features/crm/**` quedan fuera del alcance de F8 por decisión previa (ver
 `DESIGN_SYSTEM_STATUS.md`).
@@ -667,7 +667,7 @@ en `App.tsx` (nav principal, se ve en cada sesión de cada usuario) y en las sei
 
 | Hallazgo | Medida |
 |---|--:|
-| Usos de `Icon` standalone pendientes de migrar (solo se tocó `App.tsx`) | ~580 |
-| Pantallas con `Button` sin adoptar | la mayoría de los ~110 usos originales |
+| Archivos de `src/components/*.tsx` sin revisar — los más grandes del lote: `OnboardingForm`, `MesocycleTemplateLibrary`, `WorkoutsScreen`, `NutritionPlansScreen`, `MyMenuScreen`, `WeeklyMenuEditor`, `DietMealsView`, `CardioScreen`/`CardioCoachScreen`, `AthleteOnboardingWizard`, `ProfileScreen`, `QuestionnaireEditor`, `AiChatPanel`, `RoadmapTimeline`, `WelcomeScreen`, `CommandPalette`, `NutritionPeriodizationPanel`, `NutritionPerformanceDashboard` | 22 |
+| Usos de `Icon` standalone pendientes de migrar (solo se adoptó donde ya tocaba por otra primitiva, o en componentes pequeños) | varios cientos, concentrados en los archivos de arriba |
 | Cabeceras con `PageHeader` sin adoptar por el indicador "Sincronizado" | 3 (`TrainingCoachScreen`, `NutritionCoachScreen`, `ClientsScreen`) |
 | Verificación visual con sesión real (atleta y coach) | Pendiente — bloqueada por credenciales |
