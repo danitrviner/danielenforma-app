@@ -29,6 +29,7 @@ import HrvReadinessCard from './cardio/HrvReadinessCard';
 import HrvTestScreen from './cardio/HrvTestScreen';
 import CardioSessionDetail from './cardio/CardioSessionDetail';
 import ManualSessionModal from './cardio/ManualSessionModal';
+import { Icon, Button, PageHeader, Chip } from './ui';
 
 const XP_PER_SESSION = 15;
 const SAMPLE_INTERVAL_SEC = 4; // submuestreo — nunca FC cruda por segundo (§7.4)
@@ -517,10 +518,7 @@ export default function CardioScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
-        <p className="text-label text-ink-2 font-sans mt-1">Zonas de FC y dashboard en vivo</p>
-      </header>
+      <PageHeader title="Cardio" subtitle="Zonas de FC y dashboard en vivo" />
 
       {!cardioProfile && (
         <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
@@ -540,9 +538,7 @@ export default function CardioScreen({ profile }: Props) {
           </div>
 
           {state === 'idle' && (
-            <button onClick={handleConnect} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
-              Conectar banda
-            </button>
+            <Button onClick={handleConnect} fullWidth>Conectar banda</Button>
           )}
 
           {state === 'connecting' && <p className="text-label text-ink-2 font-sans text-center py-4">Conectando con la banda...</p>}
@@ -571,13 +567,9 @@ export default function CardioScreen({ profile }: Props) {
                     {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
                   </option>
                 </select>
-                <button onClick={handleStartSession} className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
-                  Empezar entrenamiento
-                </button>
+                <Button onClick={handleStartSession} className="flex-1">Empezar entrenamiento</Button>
               </div>
-              <button onClick={handleCancelReady} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
-                Desconectar
-              </button>
+              <Button variant="ghost" size="s" onClick={handleCancelReady} fullWidth>Desconectar</Button>
             </div>
           )}
         </section>
@@ -598,17 +590,14 @@ export default function CardioScreen({ profile }: Props) {
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-caption font-mono uppercase text-data tracking-wider">Historial</h3>
-              <button onClick={() => setShowManualAdd(true)} className="text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors flex items-center gap-1">
-                <span className="material-symbols-outlined text-body-s">add</span> Añadir a mano
-              </button>
+              <Button variant="ghost" size="s" onClick={() => setShowManualAdd(true)} icon="add">Añadir a mano</Button>
             </div>
 
             <div className="flex flex-wrap gap-2">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
-                <button key={r} onClick={() => setHistoryRange(r)}
-                  className={`px-3 py-1 rounded-full text-caption font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
+                <Chip key={r} selected={historyRange === r} onClick={() => setHistoryRange(r)}>
                   {{ all: 'Todo', week: 'Semana', month: 'Mes', year: 'Año' }[r]}
-                </button>
+                </Chip>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
                 className="bg-bg border border-hairline rounded-full px-3 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
@@ -631,7 +620,7 @@ export default function CardioScreen({ profile }: Props) {
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}
                 className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
-                <span className="material-symbols-outlined text-data">favorite</span>
+                <Icon name="favorite" size="l" className="text-data" />
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-bold text-body-s text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
@@ -651,7 +640,7 @@ export default function CardioScreen({ profile }: Props) {
                     <p className="text-caption text-ink-2 font-mono ">{s.tags.join(' · ')}</p>
                   )}
                 </div>
-                <span className="material-symbols-outlined text-ink-2 text-title-m">chevron_right</span>
+                <Icon name="chevron_right" size="l" className="text-ink-2" />
               </button>
             ))}
           </section>
