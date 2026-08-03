@@ -58,7 +58,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         </div>
       )}
 
-      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit">
+      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
         {TABS.map(tab => (
           <button
             key={tab.id}

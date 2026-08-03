@@ -107,7 +107,7 @@ export default function PhotosScreen({ profile }: Props) {
       />
 
       {/* View selector */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1 w-fit">
+      <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
         {(['front', 'side', 'back'] as PhotoView[]).map(v => (
           <button
             key={v}
