@@ -18,6 +18,7 @@ import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -348,16 +349,13 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
 
   if (groups.length === 0) {
     return (
-      <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-        <span className="material-symbols-outlined text-display text-ink-3 block mb-3">fitness_center</span>
-        <p className="text-ink-2 text-body-s">Aún no se han generado rutinas para este mesociclo.</p>
-        <button
-          onClick={onGoToDistribution}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-sans text-label uppercase rounded-control hover:bg-accent/20 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">grid_view</span>
-          Ir a Distribución para generarlas
-        </button>
+      <div className="border border-dashed border-hairline rounded-surface">
+        <EmptyState
+          icon="fitness_center"
+          title="Aún no se han generado rutinas para este mesociclo."
+          actionLabel="Ir a Distribución para generarlas"
+          onAction={onGoToDistribution}
+        />
       </div>
     );
   }
