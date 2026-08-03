@@ -28,6 +28,8 @@ type Props = {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Badge). */
+  key?: React.Key;
 };
 
 export default function Chip({
