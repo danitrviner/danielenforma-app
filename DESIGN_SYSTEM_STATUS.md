@@ -3,8 +3,8 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprint 1 completado** · rama `ds/f0-linea-base`
-> · 30 commits sin pushear
+> **Última actualización:** 3 de agosto de 2026 · **Sprints 1 y 2 completados** · rama
+> `ds/f0-linea-base` · 41 commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
 refleja el presente. [`docs/DS-migracion.md`](docs/DS-migracion.md) es la *bitácora*: histórico por
@@ -17,7 +17,7 @@ en la auditoría UX/UI, el Design System y el plan de migración, que son extern
 
 ```
 Sprint 1  ████████████████████  F0 F1        COMPLETADO
-Sprint 2  ░░░░░░░░░░░░░░░░░░░░  F2 F3        pendiente
+Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ░░░░░░░░░░░░░░░░░░░░  F4 F5        pendiente
 Sprint 4  ░░░░░░░░░░░░░░░░░░░░  F6 F7        pendiente
 Sprint 5  ░░░░░░░░░░░░░░░░░░░░  F8 F9 F10    pendiente
@@ -26,7 +26,7 @@ Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12     
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**2 de 16 fases completadas.**
+**4 de 16 fases completadas.**
 
 ## Fases
 
@@ -34,8 +34,8 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 |:--:|:--:|---|---|:--:|---|
 | 1 | **F0** | Red de seguridad y línea base | ✅ Completada | 2026-08-03 | Nulo |
 | 1 | **F1** | Tokens reales en `@theme` | ✅ Completada | 2026-08-03 | Medio |
-| 2 | **F2** | Defectos objetivos | ⬜ Pendiente | — | Bajo |
-| 2 | **F3** | Radios — fase aislada | ⬜ Pendiente | — | **Crítico** |
+| 2 | **F2** | Defectos objetivos | ✅ Completada | 2026-08-03 | Bajo |
+| 2 | **F3** | Radios — fase aislada | ✅ Completada | 2026-08-03 | **Crítico** |
 | 3 | **F4** | Escala tipográfica y suelo de tamaño | ⬜ Pendiente | — | Medio |
 | 3 | **F5** | Mono → Sans | ⬜ Pendiente | — | Medio |
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ⬜ Pendiente | — | Medio |
@@ -56,25 +56,25 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | Indicador | Dir. | Base (F0) | Hoy | Objetivo | Fase |
 |---|:--:|--:|--:|--:|:--:|
 | Hex distintos en componentes | ↓ | 101 | **15** | ≤ 22 | F1 ✅ |
-| Hex literales en componentes | ↓ | 4.638 | **29** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **4.279** | — | F1 ✅ |
+| Hex literales en componentes | ↓ | 4.638 | **28** | ~0 | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **5.224** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
-| Bordes `border-white/>12` | ↓ | 93 | 93 | 0 | F2 |
-| Textos por debajo de 11 px | ↓ | 1.151 | 1.150 | 0 | F4 |
+| Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
+| Textos por debajo de 11 px | ↓ | 1.151 | 1.145 | 0 | F4 |
 | Tamaños de texto distintos | ↓ | 12 | 12 | ≤ 8 | F4 |
-| `font-black` / `font-extrabold` | ↓ | 117 | 117 | ~0 | F4 |
-| `font-mono` | ↓ | 1.527 | 1.527 | < 500 | F5 |
-| `font-sans` | ↑ | 590 | 590 | > mono | F5 |
-| Espaciado fuera de escala | ↓ | 1.170 | 1.170 | 0 | F6 |
+| `font-black` / `font-extrabold` | ↓ | 117 | 114 | ~0 | F4 |
+| `font-mono` | ↓ | 1.527 | 1.508 | < 500 | F5 |
+| `font-sans` | ↑ | 590 | 579 | > mono | F5 |
+| Espaciado fuera de escala | ↓ | 1.170 | 1.157 | 0 | F6 |
 | Overlays `fixed inset-0` | ↓ | 39 | 39 | 0 fuera de `ui/` | F9 |
-| `transition-all` | ↓ | 377 | 377 | 0 | F13 |
+| `transition-all` | ↓ | 377 | 372 | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
 | `prefers-reduced-motion` | ↑ | 0 | 0 | > 0 | F13 |
 | `aria-label` | ↑ | 23 | 23 | — | F14 |
 | `htmlFor` | ↑ | 0 | 0 | ≥ 116 | F14 |
 | `focus-visible` | ↑ | 0 | 0 | > 0 | F14 |
 | Archivos > 600 líneas | · | 21 | 21 | 0 (a un año) | F15 |
-| Radios `lg / xl / 2xl` | · | 425/257/278 | 425/257/278 | 3 + `full` | F3 |
+| Radios `lg / xl / 2xl` | · | 425/257/278 | **0/0/0** | 3 + `full` | F3 ✅ |
 
 ## Resumen de lo hecho
 
@@ -98,6 +98,26 @@ color de texto en la numeración de ejercicios de Rutinas, ≈1,1:1.
 remediación de la auditoría de seguridad del 23 de julio, que llevaba meses aplicada en producción
 pero sin commitear, y que incluía dos archivos que F1 iba a reescribir.
 
+### Sprint 2 — Defectos y radios · 2026-08-03
+
+**F2 · Defectos objetivos.** 8 commits. Desaparecen los 93 bordes blancos por encima del 12 % (79
+estáticos a `hairline`, 14 en hover a `strong`), y con ellos **todos** los `border-white/N` de la
+app. La geometría del marco pasa a `--header-h` y `--nav-h`: el código asumía 65 px en cuatro
+sitios mientras la cabecera de escritorio mide 78, así que **13 px de contenido quedaban ocultos**.
+Se declara una escala de capas con nombre conservando los valores actuales. Los campos de Perfil
+suben a 16 px y dejan de provocar zoom en iOS. **El desbordamiento horizontal baja a 0 en las seis
+rutas medidas** — no lo causaba la barra inferior sino cuatro barras de pestañas sin scroll.
+`MetricsScreen.tsx` borrado: 441 líneas que no enrutaba nadie.
+
+**F3 · Radios.** 2 commits, 1.310 radios en 121 archivos. Se mapea por **rol del elemento**, no por
+valor actual, que es lo que desactiva la colisión `rounded-lg` = `rounded-2xl` = 16 px. Al retirar
+los overrides del `@theme`, las clases de Tailwind recuperan su semántica estándar y la colisión
+desaparece de raíz. En pantalla solo quedan 10, 16, 24 y `full`.
+
+La revisión visual que el plan declara obligatoria se resolvió extrayendo del navegador el
+`border-radius` **computado** de cada elemento antes y después en cinco pantallas: los totales
+coinciden elemento a elemento, ninguno perdió ni ganó radio.
+
 ## Reglas que la migración ha dejado sentadas
 
 Valen para todo el código nuevo, no solo para las fases que quedan.
@@ -118,13 +138,15 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 
 | # | Riesgo | Fase | Estado |
 |:--:|---|:--:|---|
-| R1 | **Colisión de radios.** `rounded-lg` y `rounded-2xl` renderizan ambos 16 px en 703 sitios, y `rounded-xl` (20 px) queda fuera de orden. Un renombrado que asuma la semántica estándar de Tailwind rompe 703 elementos sin un solo error de compilación ni aviso en consola. | F3 | **Abierto — el mayor del plan** |
-| R2 | **Sin capturas de referencia.** Se decidió no añadir Playwright ni Puppeteer. Para F1 no hicieron falta (sus cambios son medibles por contador), pero F3 declara la revisión visual obligatoria y no opcional. | F3 | **Abierto — bloqueante en F3** |
+| ~~R1~~ | ~~Colisión de radios~~ | F3 | ✅ **Cerrado.** Al retirar los overrides, `rounded-lg` vuelve a 8 px y `rounded-2xl` a 16: la colisión no existe |
+| R2 | **Sin capturas de referencia automáticas.** Se decidió no añadir Playwright ni Puppeteer. En F3 se cubrió con censo de `border-radius` computado más capturas manuales del navegador integrado, que basta para cambios medibles. Sigue abierto para F11 y F12, donde lo que cambia es la composición y no hay contador que lo detecte. | F11 · F12 | Abierto, ya no bloqueante |
 | R3 | **Modales dentro de una sesión de cardio en directo.** `LiveSession`, `EffortPrompt`, `CooldownPrompt` y `HrvTestScreen` se abren durante un entrenamiento real; un fallo ahí lo interrumpe. | F9 | Abierto |
 | R4 | **Bloqueo de scroll mal desmontado** al migrar los 39 overlays deja la página congelada. Es el bug clásico de esta migración. | F9 | Abierto |
 | R5 | **Desbordamiento de layout al subir tamaños.** Subir 1.150 textos por encima de 11 px hace que cosas que hoy caben dejen de caber. No rompe nada: solo empeora, y en sitios que nadie mira. | F4 | Abierto |
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
+| R8 | **238 campos de formulario por debajo de 16 px** provocan zoom automático en iOS al enfocarlos, y el zoom no revierte solo. La auditoría contaba 5. | F4 | **Abierto — mayor de lo estimado** |
+| R9 | **El estado caliente de HMR miente.** Una verificación de layout sobre CSS recargado en caliente dio un falso negativo: las clases `md:` parecían no aplicarse. Toda verificación de layout exige recarga completa. | Método | Vigente |
 
 ## Deuda técnica del Design System
 
@@ -132,12 +154,12 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 
 | Hallazgo | Medida | Fase |
 |---|--:|:--:|
-| Bordes blancos por encima del 12 % en 36 archivos (79 estáticos + 14 en hover) | 93 | F2 |
-| Escala de z-index elegida por orden de aparición | 11 valores | F2 |
-| `sticky top-[65px]` calibrado para el header de escritorio; el de móvil mide 69 px | 1 | F2 |
-| `MetricsScreen.tsx` no lo enruta nadie: código muerto, y aun así se migró en F1 | 441 líneas | F2 |
-| Campos de `ProfileScreen` por debajo de 16 px: provocan zoom automático en iOS | 5 | F2 |
-| Radios: 6 valores renderizados con dos colisiones | 1.209 usos | F3 |
+| ~~Bordes blancos por encima del 12 %~~ | ~~93~~ | ✅ F2 |
+| ~~Escala de z-index elegida por orden de aparición~~ | ~~11~~ | ✅ F2 — declarada; los overlays la adoptan en F9 |
+| ~~`sticky top-[65px]` contra una cabecera de 78 px~~ | ~~1~~ | ✅ F2 |
+| ~~`MetricsScreen.tsx`, código muerto~~ | ~~441 líneas~~ | ✅ F2 — borrado |
+| Campos de formulario por debajo de 16 px (Perfil resuelto; **238 en el resto de la app**) | 238 | F4 |
+| ~~Radios: 6 valores renderizados con dos colisiones~~ | ~~1.310~~ | ✅ F3 |
 | Textos por debajo de 11 px | 1.150 | F4 |
 | El 72 % de la tipografía es monoespaciada, párrafos incluidos | 1.527 | F5 |
 | Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | F5 |

@@ -196,3 +196,79 @@ paleta: son blanco y negro puros, cadenas compuestas y los módulos que el plan 
 | Los tokens antiguos siguen en `@theme` (0 usos, marcados «en retirada») | Borrar cuando el contador esté estable |
 | Los botones de la barra inferior aparecen **sin nombre** en el árbol de accesibilidad — confirmado en el navegador, no solo por lectura de código | F14 |
 | `MetricsScreen.tsx` sigue vivo y se ha migrado, aunque no lo enruta nadie | F2 lo borra |
+
+---
+
+## Sprint 2 · Defectos y radios
+
+### F2 · Defectos objetivos
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 8
+
+**Qué se corrigió**
+
+| Defecto | Medida | Resultado |
+|---|--:|---|
+| Bordes blancos por encima del 12 % | 93 | 79 estáticos → `hairline`, 14 en hover → `strong` |
+| Resto de `border-white/N` | 932 | `/7` → `hairline` (879), `/12` → `strong` (11), `/4 /5 /10` → `hairline` (42) |
+| Geometría del marco duplicada en 5 sitios | — | `--header-h` y `--nav-h` |
+| Escala de z-index por orden de aparición | 11 valores | 7 capas con nombre |
+| Campos de Perfil que provocan zoom en iOS | 3 | a 16 px |
+| Barras de pestañas que desbordan | 4 | `overflow-x-auto hide-scrollbar` |
+| Desbordamiento horizontal | 102 px + 52 px + 4 px | **0 en las 6 rutas medidas** |
+| Código muerto | 441 líneas | `MetricsScreen.tsx` borrado |
+| Hex a mano en `index.html` | 3 | a token, y el inventario ya lo mide |
+
+**Lo que la auditoría decía y no era**
+
+- Los bordes fuertes eran **93**, no 86, y **14 estaban en `hover:`**, donde el DS los quiere:
+  colapsarlos todos habría borrado la señal de hover.
+- El desbordamiento horizontal no lo causaba la barra inferior sino tres barras de pestañas sin
+  scroll. La barra inferior es `w-full` y se estiraba por herencia, así que **parecía** la culpable.
+- Los campos que provocan zoom en iOS no son 5: son **238 en toda la app**. Los 3 de Perfil eran el
+  defecto puntual que F2 nombra; el resto es la escala tipográfica entera y le toca a F4.
+- El desajuste de alturas no era de 4 px: la cabecera de escritorio mide **78 px** y el código
+  asumía 65 en cuatro sitios, así que **13 px de contenido quedaban ocultos** en escritorio.
+
+### F3 · Radios
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 2 · **1.310 radios en 121 archivos**
+
+El mapeo fue por **rol del elemento** (etiqueta JSX), no por valor actual — que es lo que desactiva
+la colisión `rounded-lg` = `rounded-2xl` = 16 px.
+
+| Clase hoy | px | Destino | px | Usos |
+|---|--:|---|--:|--:|
+| `rounded-lg` | 16 | `control` | 10 | 297 |
+| `rounded-2xl` | 16 | `surface` | 16 | 276 |
+| `rounded` | 4 | `control` | 10 | 271 |
+| `rounded-xl` | 20 | `surface` | 16 | 134 |
+| `rounded-xl` | 20 | `control` | 10 | 123 |
+| `rounded-lg` | 16 | `surface` | 16 | 122 |
+| `rounded-md` | 12 | `control` | 10 | 45 |
+| `rounded-3xl` | 24 | `canvas` | 24 | 17 |
+| `rounded-2xl` | 16 | `control` | 10 | 15 |
+| `rounded-sm` | 8 | `control` | 10 | 10 |
+
+415 conservan valor; 895 cambian a propósito. `rounded-full` intacto.
+
+Al retirar los overrides del `@theme`, las clases de Tailwind recuperan su semántica estándar
+(`rounded-lg` vuelve a 8 px, `rounded-2xl` a 16): **la colisión desaparece de raíz**, y quien
+escriba `rounded-lg` por costumbre obtiene lo que espera.
+
+**Verificación** — la revisión visual que el plan declara obligatoria en esta fase se resolvió
+extrayendo del navegador el `border-radius` **computado** de cada elemento, antes y después, en
+cinco pantallas. Los totales coinciden elemento a elemento (51, 74, 101, 45 y 43): ninguno perdió
+ni ganó radio. En pantalla solo quedan 10 px, 16 px, 24 px y `full`.
+
+**Decisión anotada:** los modales que usaban `rounded-xl` van a `surface`, no a `canvas`.
+Identificar cuáles son modales exige leer el ciclo de vida de cada overlay, y eso es exactamente lo
+que hace F9 al reescribirlos como `ui/Sheet` y `ui/Dialog`. Asignarlo a ojo ahora sería adivinar.
+
+**Nota de método:** una verificación intermedia dio un falso negativo por estado obsoleto de HMR —
+el navegador conservaba CSS antiguo y las clases `md:` parecían no aplicarse. **A partir de ahora,
+toda verificación de layout se hace tras recarga completa**, nunca sobre el estado caliente.
+
+**Línea base actualizada al cierre del sprint.** El inventario marcó una regresión de `font-sans`
+(590 → 579) y localizó la causa: `MetricsScreen.tsx`, el archivo muerto borrado en F2, aportaba 11.
+Falso positivo legítimo, así que la base se reescribe a propósito.
