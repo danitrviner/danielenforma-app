@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Mesocycle, MuscleGroup } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
+import { Icon, EmptyState } from './ui';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ function ChartCard({ title, icon, children }: { title: string; icon: string; chi
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
       <p className="font-sans font-bold text-white text-body-s flex items-center gap-2">
-        <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>{icon}</span>
+        <Icon name={icon} size="s" className="text-accent" />
         {title}
       </p>
       {children}
@@ -143,13 +144,11 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-        <span className="material-symbols-outlined text-display text-ink-3 block mb-3">bar_chart</span>
-        <p className="text-ink-2 text-body-s">Sin mesociclos para mostrar.</p>
+      <div className="border border-dashed border-hairline rounded-surface">
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}
-        <p className="text-ink-3 text-label font-sans mt-2">Créalo más abajo, en la sección de macrociclos.</p>
+        <EmptyState icon="bar_chart" title="Sin mesociclos para mostrar." description="Créalo más abajo, en la sección de macrociclos." />
       </div>
     );
   }
@@ -158,7 +157,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent">dashboard</span>
+          <Icon name="dashboard" size="m" className="text-accent" />
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (

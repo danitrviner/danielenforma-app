@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-03T22:20:08.907Z",
-  "commit": "d156f37",
+  "generado": "2026-08-03T22:23:09.764Z",
+  "commit": "f0fadb4",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39604
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5104,
+    "clasesTokenEnUso": 5101,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 998,
-    "fontSans": 1020,
+    "fontSans": 1019,
     "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -409,9 +409,9 @@
     },
     "src/components/MesocycleDashboard.tsx": {
       "hexLiterales": 1,
-      "clasesTokenEnUso": 15,
+      "clasesTokenEnUso": 12,
       "fontMono": 1,
-      "fontSans": 6,
+      "fontSans": 5,
       "transitionAll": 1,
       "animatePulse": 1
     },

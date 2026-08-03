@@ -1,6 +1,7 @@
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup } from '../types';
 import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
+import { Icon } from './ui';
 
 interface Props {
   we: WorkoutExercise;
@@ -171,7 +172,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   className="p-2 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar bloque"
                 >
-                  <span className="material-symbols-outlined text-body-s">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
             ))}
@@ -180,7 +181,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 onClick={addGroup}
                 className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
               >
-                <span className="material-symbols-outlined text-body-s">add</span>
+                <Icon name="add" size="s" />
                 Añadir bloque
               </button>
               <span className="font-mono text-caption text-ink-3">
@@ -220,7 +221,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
-          <span className="material-symbols-outlined text-body-s">videocam</span>
+          <Icon name="videocam" size="s" />
           Grabar con el móvil
         </button>
         {we.recordVideoSet && (
@@ -316,7 +317,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   className="p-1 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar"
                 >
-                  <span className="material-symbols-outlined text-body-s">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
             ))}
