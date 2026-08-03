@@ -437,7 +437,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             onClick={handleSaveBw}
             disabled={bwSaving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-data flex items-center justify-center text-black transition-all hover:bg-[#00d4e0] active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-9 h-9 rounded-lg bg-data flex items-center justify-center text-black transition-all hover:bg-data active:scale-95 disabled:opacity-50"
             title="Guardar peso"
           >
             {bwSaving

@@ -1684,7 +1684,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
                 return (
                   <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} disabled={applyingTemplate}
-                    className="w-full text-left p-4 bg-surface border border-white/7 rounded-2xl hover:border-accent/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
+                    className="w-full text-left p-4 bg-surface border border-white/7 rounded-2xl hover:border-accent/40 hover:bg-accent-bg transition-all disabled:opacity-50 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-white text-sm group-hover:text-accent transition-colors">{tpl.name}</p>

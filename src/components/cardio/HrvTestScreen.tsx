@@ -136,7 +136,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
             <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
             <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[#ff4d4d] text-lg">favorite</span>
+              <span className="material-symbols-outlined text-danger text-lg">favorite</span>
               <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
             {error && <p className="text-xs text-red-400 font-mono">{error}</p>}

@@ -888,7 +888,7 @@ export default function OnboardingForm({
             <button key={o.value} type="button" onClick={() => set('activityLevel', o.value)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                 form.activityLevel === o.value
-                  ? 'bg-[#1a1c12] border-accent/40'
+                  ? 'bg-accent-bg border-accent/40'
                   : 'bg-bg border-white/7 hover:border-hairline'
               }`}>
               <div className="flex-1 min-w-0">
@@ -1064,7 +1064,7 @@ export default function OnboardingForm({
               </div>
             ))}
           </div>
-          <div className={`flex items-center gap-1.5 font-mono text-[10px] ${totalPct === 100 ? 'text-[#06d6a0]' : 'text-amber-400'}`}>
+          <div className={`flex items-center gap-1.5 font-mono text-[10px] ${totalPct === 100 ? 'text-success' : 'text-amber-400'}`}>
             <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>{totalPct === 100 ? 'check_circle' : 'warning'}</span>
             Total: {totalPct}% {totalPct === 100 ? '✓' : `— debe sumar 100%`}
           </div>
@@ -1178,7 +1178,7 @@ export default function OnboardingForm({
 
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
-          <p className="font-mono text-[9px] text-[#7d7f68] mb-2">
+          <p className="font-mono text-[9px] text-ink-3 mb-2">
             Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
           </p>
           <div className="flex flex-wrap gap-1.5">

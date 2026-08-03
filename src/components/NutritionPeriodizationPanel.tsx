@@ -429,7 +429,7 @@ export default function NutritionPeriodizationPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black text-[10px] font-sans font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
+            className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black text-[10px] font-sans font-bold rounded-lg hover:bg-accent-press transition-colors disabled:opacity-50 uppercase tracking-wider"
           >
             {saving ? 'Guardando...' : 'Guardar'}
           </button>

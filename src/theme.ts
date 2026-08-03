@@ -5,7 +5,7 @@
 //
 // IMPORTANT constraint for any future refactor: Tailwind v4 scans source
 // files for literal class-name strings at build time. Arbitrary-value
-// classes like `bg-[#e2ff00]` or `text-[10px]` MUST stay as static string
+// classes like `bg-accent` or `text-[10px]` MUST stay as static string
 // literals in `className` — interpolating a value from this file into a
 // className (e.g. `` `bg-[${COLORS.accent}]` ``) will NOT be picked up by
 // Tailwind's scanner and will silently break the visual. These constants are

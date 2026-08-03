@@ -675,7 +675,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               {readonly ? (
                 <span
                   style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
-                  className="bg-accent text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-[#141414] whitespace-nowrap uppercase animate-pulse"
+                  className="bg-accent text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
                 >
                   Estás aquí
                 </span>

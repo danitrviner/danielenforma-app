@@ -134,7 +134,7 @@ export default function ClientDietsPanel({
               return (
                 <div
                   key={dt.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-[#1a1c12] border-accent/40' : 'bg-surface border-white/7'}`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-accent-bg border-accent/40' : 'bg-surface border-white/7'}`}
                 >
                   {/* Toggle checkbox */}
                   <button

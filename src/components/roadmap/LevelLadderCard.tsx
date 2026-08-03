@@ -46,7 +46,7 @@ export default function LevelLadderCard({ status }: Props) {
                 {c.done ? 'check_circle' : 'radio_button_unchecked'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-mono ${c.done ? 'text-[#8ac926]' : 'text-ink-2'}`}>
+                <p className={`text-xs font-mono ${c.done ? 'text-success' : 'text-ink-2'}`}>
                   {c.criterion.label}
                 </p>
                 {c.criterion.kind !== 'manual' && (

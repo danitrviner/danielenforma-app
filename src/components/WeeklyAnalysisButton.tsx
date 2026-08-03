@@ -75,7 +75,7 @@ export default function WeeklyAnalysisButton() {
                 </div>
               )}
               {error && (
-                <div className="bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] rounded-xl px-3.5 py-2.5 text-xs">{error}</div>
+                <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl px-3.5 py-2.5 text-xs">{error}</div>
               )}
               {result && (
                 <div className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{result}</div>

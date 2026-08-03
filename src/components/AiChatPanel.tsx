@@ -313,7 +313,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 </p>
               </div>
               <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat"
-                className="p-1 text-ink-2 hover:text-[#ff6b6b]">
+                className="p-1 text-ink-2 hover:text-danger">
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
@@ -381,7 +381,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               </div>
             )}
             {error && (
-              <div className="self-start max-w-[92%] bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] rounded-2xl px-3.5 py-2.5 text-xs">
+              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-2xl px-3.5 py-2.5 text-xs">
                 {error}
               </div>
             )}
@@ -450,7 +450,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <button
                       onClick={() => rejectProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-lg bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-1.5 rounded-lg bg-danger/10 border border-danger/30 text-danger text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Rechazar
                     </button>
@@ -483,7 +483,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-[#ff6b6b]/15 border-[#ff6b6b]/40 text-[#ff6b6b] animate-pulse' : 'bg-white/5 border-white/10 text-ink-2 hover:text-white'}`}>
+                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-danger/15 border-danger/40 text-danger animate-pulse' : 'bg-white/5 border-white/10 text-ink-2 hover:text-white'}`}>
                     <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
                   </button>
                 )}

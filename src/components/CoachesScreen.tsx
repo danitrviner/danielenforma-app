@@ -269,7 +269,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${
-                        q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
+                        q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
                                                'text-ink-2 border-hairline bg-raised'

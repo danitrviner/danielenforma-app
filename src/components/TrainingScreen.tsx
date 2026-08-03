@@ -353,7 +353,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         key={a.id}
         className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
-            ? 'rounded-3xl bg-[#1a1c12] border-accent/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
+            ? 'rounded-3xl bg-accent-bg border-accent/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
             : 'rounded-2xl bg-surface border-white/7'
         }`}
       >
@@ -748,7 +748,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               )}
 
               {getPersonalNote(we.exerciseId) && (
-                <div className="px-4 py-2 bg-[#1a1710] border-t border-accent/15">
+                <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
                   <p className="font-mono text-[9px] text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
                   <p className="text-xs text-accent">{getPersonalNote(we.exerciseId)}</p>
                 </div>

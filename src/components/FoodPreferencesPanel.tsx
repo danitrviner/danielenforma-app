@@ -116,7 +116,7 @@ export default function FoodPreferencesPanel({
                 onClick={() => { setActiveGroup(g); setSearch(''); }}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
                   hasAny
-                    ? 'bg-[#1a1c12] border-accent/30 hover:border-accent/60'
+                    ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
                     : 'bg-surface border-white/7 hover:border-hairline'
                 }`}
               >

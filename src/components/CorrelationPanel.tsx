@@ -407,7 +407,7 @@ export default function CorrelationPanel({
                 : Math.abs(correlationResult.r) > 0.7
                   ? 'border-accent/30'
                   : Math.abs(correlationResult.r) >= 0.4
-                    ? 'border-[#fb923c]/30'
+                    ? 'border-warning/30'
                     : 'border-white/7'
             }`}>
               <div className="flex items-center gap-2">
