@@ -80,6 +80,27 @@
   --text-caption--line-height: 1.35;
   --text-caption--letter-spacing: 0.02em;
 
+  /* ── Escala de icono · 4 pasos ──────────────────────────────────────────────
+     Un icono NO es texto y no pertenece a la escala de arriba, aunque hasta
+     ahora se dimensionara con ella: los 590 Material Symbols de la app llevan
+     `text-body-s` o `text-title-l` porque el glifo se escala con `font-size`,
+     no porque 13 px sea su tamaño correcto. Un icono no tiene interlineado que
+     respetar ni longitud de línea que medir, y su tamaño se elige por peso
+     óptico junto al texto que acompaña.
+
+     Por eso son tokens aparte, en pasos de 4 px, y por eso los consume la
+     primitiva `ui/Icon` y nadie más. Quedan fuera del contador «escalones de
+     tamaño en uso», que mide la escala tipográfica: son otra escala.
+
+       s    16   junto a texto de 11-13 px, iconos dentro de chips y badges
+       m    20   junto a títulos de 16 px, iconos de campo y de fila de lista
+       l    24   botones de solo icono, navegación, cabeceras
+       xl   32   estados vacíos y el icono protagonista de una tarjeta       */
+  --text-icon-s:  16px;
+  --text-icon-m:  20px;
+  --text-icon-l:  24px;
+  --text-icon-xl: 32px;
+
   /* ── Superficies · 4 ────────────────────────────────────────────────────────
      Cuatro niveles y ni uno más. Sustituyen a los ~20 grises casi idénticos.
      `field` es más oscuro que su contenedor a propósito: el hueco se hunde. */
