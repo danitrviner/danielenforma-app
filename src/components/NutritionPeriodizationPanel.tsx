@@ -17,6 +17,7 @@ import {
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState } from './ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -367,20 +368,12 @@ export default function NutritionPeriodizationPanel({
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
+              <Icon name="timeline" size="s" className="text-chart-3" />
               Periodización nutricional
             </h3>
           </div>
-          <div className="border border-dashed border-hairline rounded-surface py-8 flex flex-col items-center gap-3">
-            <span className="material-symbols-outlined text-display text-ink-3">timeline</span>
-            <p className="text-ink-2 text-label font-sans text-center">Sin periodización nutricional.</p>
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s text-accent">add</span>
-              Crear periodización
-            </button>
+          <div className="border border-dashed border-hairline rounded-surface">
+            <EmptyState icon="timeline" title="Sin periodización nutricional." actionLabel="Crear periodización" onAction={handleCreate} />
           </div>
         </div>
       );
@@ -410,29 +403,15 @@ export default function NutritionPeriodizationPanel({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
+          <Icon name="timeline" size="s" className="text-chart-3" />
           Periodización nutricional
         </h3>
         <div className="flex items-center gap-2">
           {program !== null && (
-            <button
-              onClick={handleDelete}
-              disabled={saving}
-              className="text-caption font-sans font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider disabled:opacity-50"
-            >Eliminar</button>
+            <Button variant="ghost" size="s" onClick={handleDelete} disabled={saving} className="text-red-400 hover:text-red-300">Eliminar</Button>
           )}
-          <button
-            onClick={handleCancel}
-            disabled={saving}
-            className="text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
-          >Cancelar</button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1 px-3 py-2 bg-accent text-black text-caption font-sans font-bold rounded-control hover:bg-accent-press transition-colors disabled:opacity-50 uppercase tracking-wider"
-          >
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
+          <Button variant="ghost" size="s" onClick={handleCancel} disabled={saving}>Cancelar</Button>
+          <Button size="s" onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
         </div>
       </div>
 
@@ -479,14 +458,14 @@ export default function NutritionPeriodizationPanel({
                     disabled={idx === 0}
                     className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-body-s">arrow_upward</span>
+                    <Icon name="arrow_upward" size="s" />
                   </button>
                   <button
                     onClick={() => movePhase(idx, 1)}
                     disabled={idx === form.phases.length - 1}
                     className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-body-s">arrow_downward</span>
+                    <Icon name="arrow_downward" size="s" />
                   </button>
                 </div>
                 <input
@@ -500,7 +479,7 @@ export default function NutritionPeriodizationPanel({
                   onClick={() => removePhase(idx)}
                   className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0"
                 >
-                  <span className="material-symbols-outlined text-body-s">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
 
@@ -596,7 +575,7 @@ export default function NutritionPeriodizationPanel({
           onClick={addPhase}
           className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-sans rounded-control transition-all"
         >
-          <span className="material-symbols-outlined text-body-s">add</span>
+          <Icon name="add" size="s" />
           Añadir fase
         </button>
       </div>

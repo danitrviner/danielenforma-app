@@ -18,6 +18,7 @@ import {
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
 import Skeleton from './Skeleton';
+import { Icon, EmptyState } from './ui';
 
 const DEFAULT_STEP_GOAL = 8000;
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-chart-3)', 'var(--color-warning)'];
@@ -235,25 +236,20 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
   if (!program || program.phases.length === 0) {
     return (
-      <div className="border border-dashed border-hairline rounded-surface py-10 flex flex-col items-center gap-3">
-        <span className="material-symbols-outlined text-display text-ink-3">monitoring</span>
-        <p className="font-sans text-label text-ink-2 text-center max-w-xs">
-          {onEdit
-            ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
-            // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
-            // así que el mensaje aclara que depende del entrenador en vez de
-            // dejarle sin ninguna pista de qué hacer.
-            : 'Tu entrenador todavía no ha configurado tu periodización nutricional. Cuando lo haga, verás aquí el plan por fases.'}
-        </p>
-        {onEdit && (
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-2 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
-          >
-            <span className="material-symbols-outlined text-body-s text-accent">add</span>
-            Crear periodización
-          </button>
-        )}
+      <div className="border border-dashed border-hairline rounded-surface">
+        <EmptyState
+          icon="monitoring"
+          title={
+            onEdit
+              ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
+              // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
+              // así que el mensaje aclara que depende del entrenador en vez de
+              // dejarle sin ninguna pista de qué hacer.
+              : 'Tu entrenador todavía no ha configurado tu periodización nutricional. Cuando lo haga, verás aquí el plan por fases.'
+          }
+          actionLabel={onEdit ? 'Crear periodización' : undefined}
+          onAction={onEdit}
+        />
       </div>
     );
   }
@@ -320,7 +316,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
       <div>
         <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+          <Icon name="monitoring" size="l" filled className="text-accent" />
           Rendimiento de la periodización
         </h2>
         <p className="font-sans text-label text-ink-2 mt-1">

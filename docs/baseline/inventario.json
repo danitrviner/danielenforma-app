@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:52:11.525Z",
-  "commit": "fcba04c",
+  "generado": "2026-08-03T22:56:52.951Z",
+  "commit": "d2650c2",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39496
+    "lineasTsx": 39471
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5036,
+    "clasesTokenEnUso": 5021,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 996,
-    "fontSans": 996,
+    "fontSans": 989,
     "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 309,
+    "transitionAll": 307,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -33,7 +33,7 @@
     "roundedFull": 165,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
-    "archivosMas600Lineas": 21,
+    "archivosMas600Lineas": 20,
     "hexEnTokensCss": 21
   },
   "listas": {
@@ -168,10 +168,6 @@
       {
         "archivo": "src/components/CheckInScreen.tsx",
         "lineas": 630
-      },
-      {
-        "archivo": "src/components/NutritionPeriodizationPanel.tsx",
-        "lineas": 613
       }
     ]
   },
@@ -477,18 +473,17 @@
     },
     "src/components/NutritionPerformanceDashboard.tsx": {
       "hexLiterales": 2,
-      "clasesTokenEnUso": 65,
+      "clasesTokenEnUso": 59,
       "fontMono": 6,
-      "fontSans": 14,
-      "transitionAll": 1,
+      "fontSans": 12,
       "roundedFull": 2
     },
     "src/components/NutritionPeriodizationPanel.tsx": {
       "hexLiterales": 5,
-      "clasesTokenEnUso": 67,
+      "clasesTokenEnUso": 58,
       "fontMono": 20,
-      "fontSans": 15,
-      "transitionAll": 3
+      "fontSans": 10,
+      "transitionAll": 2
     },
     "src/components/NutritionPlansScreen.tsx": {
       "clasesTokenEnUso": 159,
