@@ -46,6 +46,21 @@ const IGNORAR = new Set(['node_modules', 'dist', '.git']);
 const ESCALA_ESPACIADO = new Set([0, 4, 8, 12, 16, 20, 24, 32, 40, 56]);
 
 /**
+ * Los mismos nueve pasos expresados como escalón de Tailwind (escalón × 4 px).
+ * Hace falta esta segunda forma porque la deuda de espaciado no se escribe casi
+ * nunca en píxeles arbitrarios: se escribe con escalones —`py-20` son 80 px y
+ * `pl-9` son 36— que la primera versión de esta métrica no miraba.
+ */
+const PASOS_ESPACIADO = new Set([0, 1, 2, 3, 4, 5, 6, 8, 10, 14]);
+
+/**
+ * Niveles de elevación del DS. Cualquier otra sombra está fuera de la escala:
+ * las de Tailwind por defecto (`shadow-md`…), las arbitrarias (`shadow-[…]`),
+ * los `drop-shadow` y los `boxShadow` escritos en un estilo en línea.
+ */
+const SOMBRAS_DS = new Set(['e1', 'e2', 'glow', 'none']);
+
+/**
  * Tokens del Design System, tal como se llaman en el bloque @theme. Se cuenta
  * cualquier utilidad que los consuma (`bg-surface`, `text-ink-2`,
  * `border-hairline`, `hover:bg-raised`, `text-ink-2/60`…), no una lista
@@ -166,7 +181,40 @@ const METRICAS = [
         .filter((n) => !ESCALA_ESPACIADO.has(Number(n))).length;
       // Pasos de Tailwind que no caen en la escala (0.5 = 2px, 1.5 = 6px…).
       const fraccionarios = contar(t, /(?<![\w-])(?:[pmg][xytblr]?|gap(?:-[xy])?|space-[xy])-\d+\.5(?![\w-])/g);
-      return arbitrarios + fraccionarios;
+      // Escalones enteros fuera de los nueve pasos: py-20 (80 px), pl-9 (36)…
+      // El lookahead excluye el punto para no contar aquí la parte entera de
+      // un fraccionario, que ya se cuenta arriba.
+      const enteros = capturas(t, /(?<![\w-])(?:[pmg][xytblr]?|gap(?:-[xy])?|space-[xy])-(\d+)(?![\w./-])/g)
+        .filter((n) => !PASOS_ESPACIADO.has(Number(n))).length;
+      return arbitrarios + fraccionarios + enteros;
+    },
+  },
+  {
+    id: 'sombrasFueraEscala',
+    etiqueta: 'Sombras fuera de la escala',
+    direccion: 'bajar',
+    fase: 'F6',
+    medir: (t) => {
+      // Utilidades `shadow-*` que no son un nivel del DS. Se excluyen las que
+      // solo tiñen (`shadow-accent/10`), que las cuenta `glowAcento`.
+      const utilidades = capturas(t, /(?<![\w-])shadow-([a-z0-9]+(?:-[a-z0-9]+)*|\[)/g)
+        .filter((v) => !SOMBRAS_DS.has(v) && v !== 'accent').length;
+      const enLinea = contar(t, /boxShadow/g);
+      const drop = contar(t, /drop-shadow/g);
+      return utilidades + enLinea + drop;
+    },
+  },
+  {
+    id: 'glowAcento',
+    etiqueta: 'Glow de acento',
+    direccion: 'bajar',
+    fase: 'F6',
+    medir: (t) => {
+      // El DS admite exactamente uno en toda la app: el siguiente entrenamiento
+      // pendiente. Cualquier otro brillo dorado deja de significar nada.
+      const utilidad = contar(t, /(?<![\w-])(?:volt-glow|shadow-accent(?:\/\d+)?)(?![\w-])/g);
+      const literal = contar(t, /(?:shadow|boxShadow|drop-shadow)[^;"'`\n]{0,80}?(?:251,\s*203,\s*26|#fbcb1a)/gi);
+      return utilidad + literal;
     },
   },
   {

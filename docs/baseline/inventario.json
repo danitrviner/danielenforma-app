@@ -1,6 +1,6 @@
 {
-  "generado": "2026-08-03T11:58:32.737Z",
-  "commit": "7b835b4",
+  "generado": "2026-08-03T12:12:03.465Z",
+  "commit": "ab92065",
   "totales": {
     "archivosTsx": 133,
     "lineasTsx": 38072
@@ -14,7 +14,9 @@
     "fontMono": 1030,
     "fontSans": 1057,
     "pesosProhibidos": 31,
-    "espaciadoFueraEscala": 1157,
+    "espaciadoFueraEscala": 1208,
+    "sombrasFueraEscala": 113,
+    "glowAcento": 31,
     "modalesArtesanales": 39,
     "transitionAll": 372,
     "animatePulse": 29,
@@ -32,7 +34,7 @@
     "hexDistintos": 15,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 21,
-    "hexEnTokensCss": 23
+    "hexEnTokensCss": 21
   },
   "listas": {
     "hexDistintos": [
@@ -64,12 +66,10 @@
       "#3e3e3e",
       "#444",
       "#555",
-      "#555550",
       "#86efac",
       "#8a8d7b",
       "#93c5fd",
       "#a78bfa",
-      "#a8a89e",
       "#c6c9ab",
       "#d4a800",
       "#f5f5f0",
@@ -185,6 +185,7 @@
       "fontSans": 10,
       "pesosProhibidos": 2,
       "espaciadoFueraEscala": 9,
+      "sombrasFueraEscala": 2,
       "transitionAll": 3,
       "animatePulse": 5,
       "roundedFull": 4
@@ -195,6 +196,8 @@
       "fontSans": 15,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 6,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 3,
       "roundedFull": 2
     },
@@ -203,7 +206,7 @@
       "fontMono": 5,
       "fontSans": 15,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 1,
+      "espaciadoFueraEscala": 2,
       "transitionAll": 2,
       "roundedFull": 1
     },
@@ -212,6 +215,7 @@
       "fontMono": 8,
       "fontSans": 4,
       "espaciadoFueraEscala": 34,
+      "sombrasFueraEscala": 4,
       "modalesArtesanales": 1,
       "animatePulse": 2,
       "roundedFull": 1
@@ -221,6 +225,8 @@
       "fontMono": 5,
       "fontSans": 16,
       "espaciadoFueraEscala": 14,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 4,
       "roundedFull": 4
     },
@@ -229,6 +235,7 @@
       "fontMono": 2,
       "fontSans": 3,
       "espaciadoFueraEscala": 4,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "transitionAll": 1,
       "roundedFull": 1
@@ -236,13 +243,15 @@
     "src/components/AthleteRoadmapScreen.tsx": {
       "clasesTokenEnUso": 6,
       "fontMono": 1,
-      "fontSans": 5
+      "fontSans": 5,
+      "espaciadoFueraEscala": 2
     },
     "src/components/BodyweightPanel.tsx": {
       "clasesTokenEnUso": 32,
       "fontMono": 11,
       "fontSans": 5,
       "espaciadoFueraEscala": 4,
+      "sombrasFueraEscala": 1,
       "transitionAll": 3
     },
     "src/components/CardioCoachScreen.tsx": {
@@ -251,6 +260,8 @@
       "fontSans": 17,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 11,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1,
       "roundedFull": 1
     },
@@ -268,13 +279,15 @@
       "fontMono": 15,
       "fontSans": 26,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 16,
+      "espaciadoFueraEscala": 17,
       "transitionAll": 10,
       "roundedFull": 2
     },
     "src/components/ClientAnalysisPanel.tsx": {
       "clasesTokenEnUso": 5,
       "fontSans": 1,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1
     },
     "src/components/ClientDietsPanel.tsx": {
@@ -296,7 +309,8 @@
       "clasesTokenEnUso": 286,
       "fontMono": 70,
       "fontSans": 54,
-      "espaciadoFueraEscala": 52,
+      "espaciadoFueraEscala": 53,
+      "sombrasFueraEscala": 7,
       "modalesArtesanales": 1,
       "transitionAll": 20,
       "ariaLabel": 1,
@@ -320,6 +334,7 @@
       "fontMono": 15,
       "fontSans": 12,
       "espaciadoFueraEscala": 16,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "transitionAll": 3,
       "roundedFull": 4
@@ -329,7 +344,9 @@
       "fontMono": 13,
       "fontSans": 33,
       "pesosProhibidos": 2,
-      "espaciadoFueraEscala": 43,
+      "espaciadoFueraEscala": 46,
+      "sombrasFueraEscala": 4,
+      "glowAcento": 1,
       "transitionAll": 5,
       "animatePulse": 2,
       "roundedFull": 2
@@ -339,19 +356,24 @@
       "fontMono": 1,
       "fontSans": 6,
       "espaciadoFueraEscala": 5,
+      "sombrasFueraEscala": 1,
       "transitionAll": 2,
       "roundedFull": 1
     },
     "src/components/CoachRoadmapView.tsx": {
       "clasesTokenEnUso": 8,
       "fontSans": 4,
+      "espaciadoFueraEscala": 1,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1
     },
     "src/components/CoachesScreen.tsx": {
       "clasesTokenEnUso": 103,
       "fontMono": 21,
       "fontSans": 17,
-      "espaciadoFueraEscala": 22,
+      "espaciadoFueraEscala": 23,
+      "sombrasFueraEscala": 1,
       "transitionAll": 12,
       "animatePulse": 1,
       "roundedFull": 4
@@ -365,7 +387,8 @@
       "clasesTokenEnUso": 14,
       "fontMono": 3,
       "fontSans": 2,
-      "espaciadoFueraEscala": 2,
+      "espaciadoFueraEscala": 3,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "animatePulse": 1,
       "roundedFull": 1
@@ -375,7 +398,9 @@
       "fontMono": 3,
       "fontSans": 10,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 1,
+      "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1,
       "roundedFull": 2
     },
@@ -402,7 +427,9 @@
       "fontMono": 27,
       "fontSans": 25,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 36,
+      "espaciadoFueraEscala": 37,
+      "sombrasFueraEscala": 4,
+      "glowAcento": 1,
       "modalesArtesanales": 2,
       "transitionAll": 16
     },
@@ -410,13 +437,15 @@
       "clasesTokenEnUso": 13,
       "fontSans": 5,
       "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 1,
       "transitionAll": 1
     },
     "src/components/FoodLibraryScreen.tsx": {
       "clasesTokenEnUso": 51,
       "fontMono": 9,
       "fontSans": 8,
-      "espaciadoFueraEscala": 17,
+      "espaciadoFueraEscala": 18,
+      "sombrasFueraEscala": 5,
       "modalesArtesanales": 2,
       "transitionAll": 6,
       "roundedFull": 2
@@ -425,7 +454,7 @@
       "clasesTokenEnUso": 33,
       "fontMono": 9,
       "fontSans": 4,
-      "espaciadoFueraEscala": 10,
+      "espaciadoFueraEscala": 11,
       "transitionAll": 5
     },
     "src/components/HomeScreen.tsx": {
@@ -434,6 +463,8 @@
       "fontSans": 9,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 3,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 4
     },
     "src/components/HrTestsPanel.tsx": {
@@ -448,19 +479,21 @@
       "fontMono": 17,
       "fontSans": 10,
       "espaciadoFueraEscala": 15,
+      "sombrasFueraEscala": 1,
       "transitionAll": 4,
       "roundedFull": 2
     },
     "src/components/LocalModeBanner.tsx": {
       "fontSans": 2,
-      "espaciadoFueraEscala": 2
+      "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 1
     },
     "src/components/MesocycleDashboard.tsx": {
       "hexLiterales": 1,
       "clasesTokenEnUso": 15,
       "fontMono": 1,
       "fontSans": 6,
-      "espaciadoFueraEscala": 4,
+      "espaciadoFueraEscala": 5,
       "transitionAll": 1,
       "animatePulse": 1
     },
@@ -469,7 +502,7 @@
       "fontMono": 69,
       "fontSans": 39,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 51,
+      "espaciadoFueraEscala": 57,
       "modalesArtesanales": 1,
       "transitionAll": 16,
       "animatePulse": 1,
@@ -479,7 +512,9 @@
       "clasesTokenEnUso": 136,
       "fontMono": 30,
       "fontSans": 26,
-      "espaciadoFueraEscala": 31,
+      "espaciadoFueraEscala": 32,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "modalesArtesanales": 1,
       "transitionAll": 14,
       "roundedFull": 1
@@ -488,7 +523,7 @@
       "clasesTokenEnUso": 96,
       "fontMono": 10,
       "fontSans": 20,
-      "espaciadoFueraEscala": 25,
+      "espaciadoFueraEscala": 26,
       "modalesArtesanales": 1,
       "transitionAll": 8,
       "roundedFull": 3
@@ -497,7 +532,7 @@
       "clasesTokenEnUso": 111,
       "fontMono": 18,
       "fontSans": 29,
-      "espaciadoFueraEscala": 22,
+      "espaciadoFueraEscala": 23,
       "modalesArtesanales": 2,
       "transitionAll": 5,
       "roundedFull": 2
@@ -507,6 +542,7 @@
       "fontMono": 6,
       "fontSans": 3,
       "espaciadoFueraEscala": 6,
+      "sombrasFueraEscala": 2,
       "animatePulse": 1,
       "roundedFull": 2
     },
@@ -525,6 +561,8 @@
       "fontSans": 3,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 1
@@ -534,6 +572,8 @@
       "fontMono": 1,
       "fontSans": 5,
       "espaciadoFueraEscala": 1,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1
     },
     "src/components/NutritionPerformanceDashboard.tsx": {
@@ -542,6 +582,7 @@
       "fontMono": 6,
       "fontSans": 14,
       "espaciadoFueraEscala": 13,
+      "sombrasFueraEscala": 2,
       "transitionAll": 1,
       "roundedFull": 2
     },
@@ -557,7 +598,9 @@
       "clasesTokenEnUso": 159,
       "fontMono": 34,
       "fontSans": 26,
-      "espaciadoFueraEscala": 35,
+      "espaciadoFueraEscala": 37,
+      "sombrasFueraEscala": 4,
+      "glowAcento": 1,
       "modalesArtesanales": 2,
       "transitionAll": 13,
       "roundedFull": 6
@@ -567,7 +610,9 @@
       "fontMono": 32,
       "fontSans": 41,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 52,
+      "espaciadoFueraEscala": 53,
+      "sombrasFueraEscala": 5,
+      "glowAcento": 1,
       "modalesArtesanales": 6,
       "transitionAll": 31,
       "roundedFull": 15
@@ -597,7 +642,8 @@
       "fontMono": 4,
       "fontSans": 6,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 2,
+      "espaciadoFueraEscala": 3,
+      "sombrasFueraEscala": 1,
       "transitionAll": 4,
       "roundedFull": 1
     },
@@ -605,6 +651,8 @@
       "clasesTokenEnUso": 17,
       "fontSans": 5,
       "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1
     },
     "src/components/ProfileScreen.tsx": {
@@ -613,40 +661,45 @@
       "fontSans": 11,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 21,
+      "sombrasFueraEscala": 4,
+      "glowAcento": 2,
       "transitionAll": 4,
       "roundedFull": 7
     },
     "src/components/ProgressRing.tsx": {
       "clasesTokenEnUso": 1,
       "fontSans": 2,
+      "sombrasFueraEscala": 1,
       "transitionAll": 1
     },
     "src/components/QuestionnaireChartsPanel.tsx": {
       "clasesTokenEnUso": 22,
       "fontMono": 6,
       "fontSans": 4,
-      "espaciadoFueraEscala": 11,
+      "espaciadoFueraEscala": 12,
+      "sombrasFueraEscala": 1,
       "transitionAll": 1
     },
     "src/components/QuestionnaireEditor.tsx": {
       "clasesTokenEnUso": 54,
       "fontMono": 19,
       "fontSans": 7,
-      "espaciadoFueraEscala": 16,
+      "espaciadoFueraEscala": 18,
       "transitionAll": 4
     },
     "src/components/QuestionnaireManagerScreen.tsx": {
       "clasesTokenEnUso": 20,
       "fontMono": 2,
       "fontSans": 4,
-      "espaciadoFueraEscala": 4,
+      "espaciadoFueraEscala": 5,
       "transitionAll": 3
     },
     "src/components/RecipeBuilderScreen.tsx": {
       "clasesTokenEnUso": 121,
       "fontMono": 26,
       "fontSans": 19,
-      "espaciadoFueraEscala": 24,
+      "espaciadoFueraEscala": 27,
+      "sombrasFueraEscala": 2,
       "modalesArtesanales": 1,
       "transitionAll": 11,
       "roundedFull": 7
@@ -656,7 +709,8 @@
       "fontMono": 26,
       "fontSans": 23,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 26,
+      "espaciadoFueraEscala": 30,
+      "sombrasFueraEscala": 3,
       "transitionAll": 12,
       "roundedFull": 11
     },
@@ -665,6 +719,7 @@
       "fontMono": 3,
       "fontSans": 8,
       "espaciadoFueraEscala": 14,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "transitionAll": 4,
       "roundedFull": 1
@@ -690,6 +745,7 @@
       "fontMono": 2,
       "fontSans": 4,
       "espaciadoFueraEscala": 1,
+      "sombrasFueraEscala": 1,
       "transitionAll": 1
     },
     "src/components/ReviewsScreen.tsx": {
@@ -697,7 +753,7 @@
       "fontMono": 12,
       "fontSans": 15,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 16,
+      "espaciadoFueraEscala": 17,
       "modalesArtesanales": 1,
       "transitionAll": 6,
       "animatePulse": 1,
@@ -708,7 +764,9 @@
       "clasesTokenEnUso": 83,
       "fontMono": 22,
       "fontSans": 14,
-      "espaciadoFueraEscala": 27,
+      "espaciadoFueraEscala": 28,
+      "sombrasFueraEscala": 11,
+      "glowAcento": 6,
       "modalesArtesanales": 1,
       "transitionAll": 7,
       "animatePulse": 1,
@@ -743,6 +801,7 @@
       "fontMono": 2,
       "fontSans": 4,
       "espaciadoFueraEscala": 4,
+      "sombrasFueraEscala": 1,
       "transitionAll": 2
     },
     "src/components/TrainingCoachScreen.tsx": {
@@ -751,6 +810,8 @@
       "fontSans": 3,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 4,
+      "sombrasFueraEscala": 1,
+      "glowAcento": 1,
       "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 1
@@ -760,7 +821,9 @@
       "fontMono": 48,
       "fontSans": 20,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 34,
+      "espaciadoFueraEscala": 36,
+      "sombrasFueraEscala": 12,
+      "glowAcento": 4,
       "modalesArtesanales": 1,
       "transitionAll": 12,
       "animatePulse": 1,
@@ -779,6 +842,7 @@
       "fontMono": 1,
       "fontSans": 3,
       "espaciadoFueraEscala": 4,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "transitionAll": 1,
       "animatePulse": 1
@@ -787,7 +851,7 @@
       "clasesTokenEnUso": 107,
       "fontMono": 25,
       "fontSans": 32,
-      "espaciadoFueraEscala": 22,
+      "espaciadoFueraEscala": 23,
       "transitionAll": 9,
       "roundedFull": 2
     },
@@ -796,6 +860,7 @@
       "fontMono": 5,
       "fontSans": 6,
       "pesosProhibidos": 2,
+      "sombrasFueraEscala": 2,
       "transitionAll": 4,
       "animatePulse": 1,
       "roundedFull": 4
@@ -805,7 +870,9 @@
       "fontMono": 22,
       "fontSans": 18,
       "pesosProhibidos": 1,
-      "espaciadoFueraEscala": 28,
+      "espaciadoFueraEscala": 30,
+      "sombrasFueraEscala": 5,
+      "glowAcento": 3,
       "modalesArtesanales": 2,
       "transitionAll": 16
     },
@@ -860,6 +927,7 @@
       "fontSans": 10,
       "pesosProhibidos": 1,
       "espaciadoFueraEscala": 7,
+      "sombrasFueraEscala": 1,
       "modalesArtesanales": 1,
       "transitionAll": 1,
       "roundedFull": 2
@@ -932,6 +1000,7 @@
       "fontMono": 4,
       "fontSans": 3,
       "espaciadoFueraEscala": 3,
+      "sombrasFueraEscala": 1,
       "transitionAll": 1,
       "roundedFull": 2
     },
@@ -965,6 +1034,7 @@
       "fontMono": 3,
       "fontSans": 7,
       "espaciadoFueraEscala": 1,
+      "sombrasFueraEscala": 3,
       "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 2
@@ -977,6 +1047,7 @@
       "fontMono": 2,
       "fontSans": 3,
       "espaciadoFueraEscala": 5,
+      "sombrasFueraEscala": 1,
       "ariaLabel": 1
     },
     "src/features/crm/components/DataTable.tsx": {
@@ -996,11 +1067,12 @@
     "src/features/crm/components/EmptyState.tsx": {
       "clasesTokenEnUso": 5,
       "fontSans": 3,
-      "espaciadoFueraEscala": 1
+      "espaciadoFueraEscala": 2
     },
     "src/features/crm/components/ErrorState.tsx": {
       "clasesTokenEnUso": 3,
-      "fontSans": 2
+      "fontSans": 2,
+      "espaciadoFueraEscala": 1
     },
     "src/features/crm/components/HistorialTab.tsx": {
       "clasesTokenEnUso": 22,
@@ -1113,7 +1185,7 @@
       "clasesTokenEnUso": 25,
       "fontMono": 2,
       "fontSans": 5,
-      "espaciadoFueraEscala": 5,
+      "espaciadoFueraEscala": 6,
       "ariaLabel": 2
     },
     "src/features/crm/routes/CrmShell.tsx": {
@@ -1130,7 +1202,7 @@
       "clasesTokenEnUso": 19,
       "fontMono": 3,
       "fontSans": 3,
-      "espaciadoFueraEscala": 7,
+      "espaciadoFueraEscala": 8,
       "ariaLabel": 2
     },
     "src/features/crm/routes/ReunionesScreen.tsx": {
@@ -1145,7 +1217,8 @@
     "src/hooks/useToast.tsx": {
       "clasesTokenEnUso": 3,
       "fontSans": 1,
-      "espaciadoFueraEscala": 1
+      "espaciadoFueraEscala": 1,
+      "sombrasFueraEscala": 1
     },
     "src/utils/cardioZones.ts": {
       "hexLiterales": 6
