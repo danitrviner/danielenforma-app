@@ -151,7 +151,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   return (
     <div className="space-y-5">
       {/* Reto actual */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-4">
+      <div className="bg-surface border border-hairline rounded-2xl p-4">
         <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
         {current ? (
           <>
@@ -177,7 +177,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <p className="text-xs text-ink-3 font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
-          <p className="font-mono text-[9px] text-ink-2 mt-3 pt-3 border-t border-white/7">
+          <p className="font-mono text-[9px] text-ink-2 mt-3 pt-3 border-t border-hairline">
             Semana que viene: <span className="text-white">{next.title}</span> ({next.origin === 'coach' ? 'asignado' : 'automático'})
           </p>
         )}
@@ -202,19 +202,19 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       <div>
         <button
           onClick={() => setShowAssign(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showAssign ? 'close' : 'add'}</span>
           {showAssign ? 'Cancelar' : 'Asignar reto'}
         </button>
 
         {showAssign && (
-          <div className="bg-raised border border-white/7 rounded-xl p-3 mt-2 space-y-2">
+          <div className="bg-raised border border-hairline rounded-xl p-3 mt-2 space-y-2">
             <div className="flex gap-2">
               <select
                 value={form.target}
                 onChange={e => setForm(f => ({ ...f, target: e.target.value as AssignForm['target'] }))}
-                className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               >
                 <option value="esta">Esta semana</option>
                 <option value="siguiente">Semana que viene</option>
@@ -222,7 +222,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <select
                 value={form.templateId}
                 onChange={e => applyTemplate(e.target.value)}
-                className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               >
                 <option value="">Custom (sin plantilla)</option>
                 {templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
@@ -232,20 +232,20 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título del reto"
-              className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={form.kind}
                 onChange={e => setForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -253,14 +253,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={form.unit}
                 onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad (kg, pasos...)"
-                className="w-32 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-32 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={form.target_}
                 onChange={e => setForm(f => ({ ...f, target_: Number(e.target.value) }))}
                 placeholder="objetivo"
-                className="w-24 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               />
             </div>
             {overwritingAuto && (
@@ -288,25 +288,25 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           </button>
         </div>
         {showTemplateForm && (
-          <div className="bg-raised border border-white/7 rounded-xl p-3 mb-2 space-y-2">
+          <div className="bg-raised border border-hairline rounded-xl p-3 mb-2 space-y-2">
             <input
               value={tplForm.title}
               onChange={e => setTplForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título"
-              className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={tplForm.description}
               onChange={e => setTplForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={tplForm.kind}
                 onChange={e => setTplForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -314,14 +314,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={tplForm.unit}
                 onChange={e => setTplForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad"
-                className="w-24 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={tplForm.defaultTarget}
                 onChange={e => setTplForm(f => ({ ...f, defaultTarget: Number(e.target.value) }))}
                 placeholder="objetivo por defecto"
-                className="w-28 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-28 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               />
             </div>
             <button
@@ -338,7 +338,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
         ) : (
           <div className="space-y-1.5">
             {templates.map(t => (
-              <div key={t.id} className="flex items-center justify-between bg-surface border border-white/7 rounded-lg p-2.5">
+              <div key={t.id} className="flex items-center justify-between bg-surface border border-hairline rounded-lg p-2.5">
                 <div>
                   <p className="text-xs text-white font-sans font-bold">{t.title}</p>
                   <p className="text-[10px] text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
@@ -358,7 +358,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Historial</p>
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {history.slice(0, 20).map(h => (
-              <div key={h.id} className="flex items-center justify-between bg-surface border border-white/7 rounded-lg p-2.5">
+              <div key={h.id} className="flex items-center justify-between bg-surface border border-hairline rounded-lg p-2.5">
                 <div className="min-w-0">
                   <p className="text-xs text-white font-sans truncate">{h.title}</p>
                   <p className="text-[10px] text-ink-2 font-mono">{h.isoWeek}</p>

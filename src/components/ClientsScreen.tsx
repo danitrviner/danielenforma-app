@@ -322,7 +322,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
+        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -363,7 +363,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             onClick={onOpenReviews}
             disabled={!onOpenReviews}
-            className="bg-surface border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
+            className="bg-surface border border-hairline p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </button>
 
           {/* Pending notes */}
-          <div className="bg-surface border border-white/7 p-5 rounded-2xl shadow-lg">
+          <div className="bg-surface border border-hairline p-5 rounded-2xl shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
@@ -429,7 +429,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-surface border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
+        <div className="bg-surface border border-hairline p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
             <input
@@ -437,11 +437,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex bg-bg border border-white/7 p-1 rounded-lg gap-1">
+            <div className="flex bg-bg border border-hairline p-1 rounded-lg gap-1">
               {([2, 3, 4] as const).map(n => (
                 <button
                   key={n}
@@ -493,7 +493,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
                   className={`bg-bg border rounded-2xl p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
-                    needsAttention ? 'border-orange-500/30' : 'border-white/7'
+                    needsAttention ? 'border-orange-500/30' : 'border-hairline'
                   }`}
                 >
                   <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
@@ -506,7 +506,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   </button>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-accent/60 transition-all flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-hairline group-hover:border-accent/60 transition-all flex-shrink-0">
                         <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -523,7 +523,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-raised text-ink-3 border-white/7">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-raised text-ink-3 border-hairline">
                               Sin plan
                             </span>
                           )}
@@ -596,7 +596,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       </div>
 
       {/* Invite a new client by email */}
-      <div className="bg-surface border border-white/7 p-5 rounded-2xl">
+      <div className="bg-surface border border-hairline p-5 rounded-2xl">
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-accent text-xl">person_add</span>
           <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
@@ -608,7 +608,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"
@@ -629,7 +629,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </p>
             <div className="space-y-1.5">
               {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-xl px-3 py-2">
+                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-xl px-3 py-2">
                   <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-xs text-white truncate">{inv.email}</p>

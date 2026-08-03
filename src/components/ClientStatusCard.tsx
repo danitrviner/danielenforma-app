@@ -161,7 +161,7 @@ export default function ClientStatusCard({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-white/7">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-hairline">
         {/* Fase */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">

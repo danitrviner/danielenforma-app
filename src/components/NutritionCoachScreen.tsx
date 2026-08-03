@@ -33,7 +33,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Nutrición</h1>
       </header>
 
-      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit flex-wrap">
         {tabs.map(tab => (
           <button
             key={tab.id}

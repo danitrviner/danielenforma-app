@@ -262,7 +262,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   return (
     <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-white/10 flex flex-col shadow-2xl">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
@@ -290,7 +290,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       </div>
 
       {syncMsg && (
-        <div className="px-4 py-2 text-[11px] font-mono text-data border-b border-white/7 bg-data/5">
+        <div className="px-4 py-2 text-[11px] font-mono text-data border-b border-hairline bg-data/5">
           {syncMsg}
         </div>
       )}
@@ -303,7 +303,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           )}
           {chats.map(c => (
             <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-white/7 bg-surface hover:border-strong'}`}
+              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface hover:border-strong'}`}
               onClick={() => openChat(c)}
             >
               <div className="flex-1 min-w-0">
@@ -332,7 +332,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-ink-2 hover:text-white bg-surface border border-white/7 hover:border-accent/40 rounded-xl px-3 py-2 transition-colors">
+                      className="text-left text-xs text-ink-2 hover:text-white bg-surface border border-hairline hover:border-accent/40 rounded-xl px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -355,7 +355,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-surface border border-white/7 text-ink rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                        <div key={j} className="bg-surface border border-hairline text-ink rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
@@ -404,7 +404,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-[11px] text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
-                    <div className="flex flex-col gap-1.5 bg-bg border border-white/7 rounded-lg p-2.5">
+                    <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-lg p-2.5">
                       <div className="flex gap-2 flex-wrap text-[10px] font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
@@ -423,7 +423,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     </div>
                   )}
                   {diet && (
-                    <div className="flex flex-col gap-1.5 bg-bg border border-white/7 rounded-lg p-2.5">
+                    <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-lg p-2.5">
                       <div className="flex gap-1.5 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
                           <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-ink">
@@ -462,7 +462,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           )}
 
           {/* Input */}
-          <div className="p-3 border-t border-white/7">
+          <div className="p-3 border-t border-hairline">
             {chatFull ? (
               <button onClick={startNew}
                 className="w-full py-2.5 rounded-xl bg-accent/10 border border-accent/30 text-accent text-xs font-bold uppercase tracking-wider">
@@ -500,7 +500,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {editingInstructions && (
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
           <div className="bg-bg border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent">tune</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>

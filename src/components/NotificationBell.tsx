@@ -92,9 +92,9 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-white/7 rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-hairline rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/7">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
             <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">notifications</span>
               Notificaciones

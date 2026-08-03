@@ -63,8 +63,8 @@ function QuestionnaireForm({
   };
 
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
+    <div className="bg-surface border border-hairline rounded-2xl p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-5 pb-2 border-b border-hairline">
         <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-data">assignment</span>
           {questionnaire.title}
@@ -96,7 +96,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-raised border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-raised border-0 border-b border-hairline text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -108,7 +108,7 @@ function QuestionnaireForm({
                 max={q.max}
                 value={(answers[q.id] as string) ?? ''}
                 onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-raised border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
+                className="w-full bg-raised border-0 border-b border-hairline text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
               />
             )}
 
@@ -123,7 +123,7 @@ function QuestionnaireForm({
                       className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
                         answers[q.id] === v
                           ? 'bg-accent text-black'
-                          : 'bg-raised text-ink-2 border border-white/7 hover:border-accent/50'
+                          : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
                       }`}
                     >{v}</button>
                   ))}
@@ -147,7 +147,7 @@ function QuestionnaireForm({
                     className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
                       answers[q.id] === v
                         ? 'bg-accent text-black font-bold border-transparent'
-                        : 'bg-raised text-ink border-white/7'
+                        : 'bg-raised text-ink border-hairline'
                     }`}
                   >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
                 ))}
@@ -176,7 +176,7 @@ function QuestionnaireForm({
                     className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
                       isSelected
                         ? 'bg-accent text-black border-transparent font-bold'
-                        : 'bg-raised text-ink border-white/7'
+                        : 'bg-raised text-ink border-hairline'
                     }`}
                   >{opt}</button>
                   );
@@ -369,14 +369,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
-      <div className="bg-surface border border-white/7 rounded-2xl px-4 py-3 space-y-3">
+      <div className="bg-surface border border-hairline rounded-2xl px-4 py-3 space-y-3">
         {/* Modo: día a día vs. media semanal ya calculada por el atleta */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-white/7 text-ink-2'
+              bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
             Me peso cada día
@@ -385,7 +385,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-white/7 text-ink-2'
+              bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
             Llevo yo la media semanal
@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+                className="w-24 bg-raised border border-hairline rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
               <span className="font-mono text-xs text-ink-3">kg</span>
             </div>
@@ -428,7 +428,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         {!bwEditing && bwToday ? (
           <button
             onClick={() => { setBwInput(String(bwToday.weight)); setBwEditing(true); }}
-            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-ink-2 hover:text-white hover:border-hairline transition-all"
+            className="flex-shrink-0 w-9 h-9 rounded-lg border border-hairline flex items-center justify-center text-ink-2 hover:text-white hover:border-hairline transition-all"
             title="Editar"
           >
             <span className="material-symbols-outlined text-sm">edit</span>
@@ -469,7 +469,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* Pending questionnaires list */}
       {!activeAssignment && !loadingQ && pendingAssignments.length > 0 && (
         <section className="bg-surface border border-accent/20 rounded-2xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
             <span className="ml-auto bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
@@ -482,7 +482,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <button
                   key={a.id}
                   onClick={() => setActiveAssignment(a)}
-                  className="w-full flex items-center justify-between bg-raised border border-white/7 hover:border-accent/40 rounded-lg p-3.5 text-left transition-all group"
+                  className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-lg p-3.5 text-left transition-all group"
                 >
                   <div>
                     <p className="font-sans font-semibold text-sm text-white group-hover:text-accent transition-colors">{q.title}</p>
@@ -499,7 +499,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring questionnaires */}
       {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
-        <details className="group bg-surface border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-hairline rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
@@ -528,14 +528,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* Pending photo check-ins */}
       {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
         <section className="bg-surface border border-accent/20 rounded-2xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
             <span className="ml-auto bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-raised border border-white/7 rounded-lg p-3.5">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-lg p-3.5">
                 <p className="font-sans font-semibold text-sm text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
@@ -548,7 +548,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring photo check-ins */}
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
-        <details className="group bg-surface border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-hairline rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
@@ -571,8 +571,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
-      <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-6">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+      <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-6">
+        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-accent">photo_camera</span>
           Fotografías de Progreso
         </h2>
@@ -580,8 +580,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </section>
 
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
-      <section className="bg-surface border border-white/7 rounded-2xl p-5">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+      <section className="bg-surface border border-hairline rounded-2xl p-5">
+        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-data">history</span>
           Historial de Revisiones
         </h2>
@@ -589,7 +589,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           {checkins.map((item) => (
             <div
               key={item.id}
-              className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-white/7'}`}
+              className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-hairline'}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">

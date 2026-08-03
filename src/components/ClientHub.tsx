@@ -398,7 +398,7 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Clientes
@@ -425,12 +425,12 @@ export default function ClientHub({
             type="date"
             value={planStart}
             onChange={e => setPlanStart(e.target.value)}
-            className="bg-raised border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -472,7 +472,7 @@ export default function ClientHub({
 
       {/* Nav de zonas (nivel 1) */}
       <div className="sticky top-0 z-20 bg-field/95 backdrop-blur-sm space-y-1.5 pb-0.5">
-        <div className="flex bg-surface border border-white/7 p-1 rounded-2xl gap-1">
+        <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1">
           {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button
               key={zone}

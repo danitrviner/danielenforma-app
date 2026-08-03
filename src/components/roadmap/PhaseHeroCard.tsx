@@ -53,7 +53,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       )}
 
       {weightStatus && (
-        <div className="pt-2 border-t border-white/7">
+        <div className="pt-2 border-t border-hairline">
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Peso en esta fase</span>
             {weightStatus.targetKg != null && (
@@ -74,7 +74,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       )}
 
       {phase.exitCriteria && (
-        <div className="flex items-start gap-2 pt-2 border-t border-white/7">
+        <div className="flex items-start gap-2 pt-2 border-t border-hairline">
           <span className="material-symbols-outlined text-sm text-ink-2 mt-0.5">flag</span>
           <p className="text-ink-2 text-xs font-mono leading-relaxed">
             <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}

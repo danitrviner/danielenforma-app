@@ -160,7 +160,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       </div>
 
       {/* Summary */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-2xl p-5">
         <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
         <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
       </div>
@@ -178,7 +178,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
       {/* Macro deviation */}
       {report.macroDeviation.length > 0 && (
-        <div className="bg-surface border border-white/7 rounded-2xl p-5">
+        <div className="bg-surface border border-hairline rounded-2xl p-5">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
@@ -195,15 +195,15 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       )}
 
       {/* ── Micronutrientes (estimados) ── */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
+      <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Micronutrientes (estimados)</p>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[9px] text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-raised border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">−</button>
+              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">−</button>
               <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
-              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-raised border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">+</button>
+              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       )}
 
       {/* Share */}
-      <div className="flex items-center justify-between bg-surface border border-white/7 rounded-2xl p-4 gap-3 flex-wrap">
+      <div className="flex items-center justify-between bg-surface border border-hairline rounded-2xl p-4 gap-3 flex-wrap">
         <div>
           <p className="text-xs text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
@@ -264,7 +264,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
           <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-raised border border-white/7 text-ink-2 font-mono text-[10px] font-bold uppercase rounded-lg hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-mono text-[10px] font-bold uppercase rounded-lg hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
@@ -278,7 +278,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-4 text-center">
+    <div className="bg-surface border border-hairline rounded-2xl p-4 text-center">
       <span className="block font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
       <span className="block font-mono text-[9px] text-ink-2 mt-0.5">{sub}</span>

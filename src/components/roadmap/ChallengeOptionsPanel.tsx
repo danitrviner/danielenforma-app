@@ -93,7 +93,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
+          className="bg-bg border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -143,7 +143,7 @@ export default function ChallengeOptionsPanel({
         Si no eliges ninguna antes del martes, se enviará automáticamente la de mayor puntuación.
       </p>
 
-      <div className="pt-2 border-t border-white/7">
+      <div className="pt-2 border-t border-hairline">
         <button onClick={() => setShowEligible(v => !v)} className="font-mono text-[10px] text-data hover:underline">
           {showEligible ? 'Ocultar' : 'Ver'} ejercicios elegibles para retos de carga
         </button>
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-1.5 px-3 bg-surface border border-white/7 text-ink-2 font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
+              className="py-1.5 px-3 bg-surface border border-hairline text-ink-2 font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

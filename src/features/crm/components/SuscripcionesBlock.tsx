@@ -134,7 +134,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
 
   return (
     <>
-      <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={suscripciones}

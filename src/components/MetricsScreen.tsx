@@ -118,7 +118,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Section A: Visual Summary Weight & Core Chart */}
-        <section className="lg:col-span-8 bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
+        <section className="lg:col-span-8 bg-surface border border-hairline rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
               <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">ACTUAL</span>
@@ -146,7 +146,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Core Weight Chart SVG */}
-          <div className="w-full bg-raised border border-white/7 rounded-lg p-3 relative overflow-hidden mb-5">
+          <div className="w-full bg-raised border border-hairline rounded-lg p-3 relative overflow-hidden mb-5">
             <div className="absolute top-2 left-3 font-mono text-[10px] text-ink-2/60 uppercase">Evolución de Peso (kg)</div>
             
             <div className="w-full overflow-x-auto hide-scrollbar">
@@ -214,7 +214,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Sub summary info */}
-          <div className="flex justify-between items-center bg-raised p-3 rounded-lg border border-white/7">
+          <div className="flex justify-between items-center bg-raised p-3 rounded-lg border border-hairline">
             <span className="font-sans text-xs text-ink-2">Tendencia últimos 7 días</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
@@ -226,9 +226,9 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section B: New Check-in Form */}
-        <section className="lg:col-span-4 bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-surface border border-hairline rounded-3xl p-5 flex flex-col justify-between">
           <div>
-            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
               <span className="material-symbols-outlined text-accent">edit_note</span>
               Nuevo Check-in
             </h2>
@@ -244,14 +244,14 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="0.0"
-                  className="w-full bg-raised border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
+                  className="w-full bg-raised border-0 border-b border-hairline text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
                   required
                 />
               </div>
 
               <div>
                 <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Estado de Ánimo</label>
-                <div className="flex justify-between items-center bg-raised p-2 rounded-lg border border-white/7 gap-1">
+                <div className="flex justify-between items-center bg-raised p-2 rounded-lg border border-hairline gap-1">
                   {['😩', '😴', '😐', '😊', '🔥'].map((emoji) => (
                     <button
                       key={emoji}
@@ -273,7 +273,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-raised text-ink border-white/7'}`}
+                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-raised text-ink border-hairline'}`}
                     >
                       {opt}
                     </button>
@@ -288,7 +288,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={2000}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
-                  className="w-full bg-raised border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
+                  className="w-full bg-raised border-0 border-b border-hairline text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
                 ></textarea>
               </div>
 
@@ -310,7 +310,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
-        <section className="bg-surface border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
+        <section className="bg-surface border border-hairline rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
@@ -352,7 +352,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   return (
                     <div 
                       key={idx} 
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-hairline'}`}
                       title={isActive ? "Entrenamiento registrado" : "Próximo entreno"}
                     />
                   );
@@ -365,13 +365,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           <div>
             <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                 <span>🏅</span> Primera semana
               </span>
-              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                 <span className="text-accent">⚡</span> 10 días de racha
               </span>
-              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                 <span className="text-data">⭐</span> Nivel {profile.level}
               </span>
             </div>
@@ -379,9 +379,9 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section D: Historial weight & coach directives logs */}
-        <section className="bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
+        <section className="bg-surface border border-hairline rounded-3xl p-5 flex flex-col justify-between">
           <div>
-            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
+            <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
               <span className="material-symbols-outlined text-data">history</span>
               Historial de Revisiones
             </h2>
@@ -390,7 +390,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               {checkins.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-white/7'}`}
+                  className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-hairline'}`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">

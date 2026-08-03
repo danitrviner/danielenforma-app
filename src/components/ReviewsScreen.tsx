@@ -226,14 +226,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
-        <div className="bg-bg border border-dashed border-white/7 rounded-xl p-16 text-center text-ink-2">
+        <div className="bg-bg border border-dashed border-hairline rounded-xl p-16 text-center text-ink-2">
           <span className="material-symbols-outlined text-4xl text-accent mb-2 block">verified_user</span>
           <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
-        <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-white/7 bg-raised flex items-center gap-2">
+        <div className="bg-surface border border-hairline rounded-2xl overflow-hidden">
+          <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
@@ -274,7 +274,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       onClick={toggle}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
-                      <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                         <img
                           src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                           alt=""
@@ -409,7 +409,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     onClick={toggle}
                     className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
-                    <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                       <img
                         src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                         alt=""

@@ -164,7 +164,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
   if (activeTest) {
     if (activeTest.highEffort && !parqPassed) {
       return (
-        <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+        <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
           <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
           </h2>
@@ -182,7 +182,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
 
     if (phase === 'done') {
       return (
-        <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3 text-center">
+        <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3 text-center">
           <span className="material-symbols-outlined text-4xl text-data">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-xs text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
@@ -192,7 +192,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     }
 
     return (
-      <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
+      <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-bold text-base text-white">{activeTest.title}</h2>
           <button onClick={() => { cleanup(); setActiveTest(null); }} className="text-ink-2 hover:text-white">
@@ -223,7 +223,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         {TESTS.map(t => {
           const lastResult = [...tests].filter(x => x.type === t.type).sort((a, b) => b.date.localeCompare(a.date))[0];
           return (
-            <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-white/7 rounded-xl p-3 hover:border-accent/40 transition-colors">
+            <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-hairline rounded-xl p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-semibold text-sm text-white">{t.title}</p>
                 {t.highEffort && <span className="text-[9px] font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}

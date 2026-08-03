@@ -42,7 +42,7 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
 }
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
-  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-white/7' };
+  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-hairline' };
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';
@@ -295,7 +295,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             </p>
           </div>
         ) : (
-          <div className="bg-surface border border-white/7 rounded-2xl p-4">
+          <div className="bg-surface border border-hairline rounded-2xl p-4">
             <p className="font-mono text-[10px] text-ink-3 uppercase mb-3">Programación semanal (fuente de los puntos)</p>
             <div className="grid grid-cols-7 gap-1.5">
               {WEEK_DAYS.map(day => {
@@ -319,7 +319,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 font-mono"
+            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 font-mono"
           />
         </div>
 
@@ -330,7 +330,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </div>
           <div className="space-y-2">
             {slots.map((sl, i) => (
-              <div key={i} className="flex items-center gap-3 bg-surface border border-white/7 rounded-lg px-4 py-3">
+              <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-lg px-4 py-3">
                 <span className="font-mono text-xs text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
                 <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
                   <div className="h-full bg-accent/50 rounded-full transition-all" style={{ width: `${Math.min(sl.pct, 100)}%` }} />
@@ -338,7 +338,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <input
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
-                  className="w-16 text-right bg-raised border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-hairline rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-xs">%</span>
               </div>
@@ -349,7 +349,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         {/* Batch cooking — supersedes variety when on */}
         <button
           onClick={() => setBatch(b => !b)}
-          className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-white/7 hover:border-strong'}`}
+          className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-hairline hover:border-strong'}`}
         >
           <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-hairline'}`}>
             {batch && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
@@ -374,7 +374,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               <button
                 key={v}
                 onClick={() => setVariety(v)}
-                className={`flex-1 py-2.5 rounded-lg font-mono font-bold text-sm transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-white/7 text-ink-2 hover:text-white'}`}
+                className={`flex-1 py-2.5 rounded-lg font-mono font-bold text-sm transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-hairline text-ink-2 hover:text-white'}`}
               >
                 {v}
               </button>
@@ -399,7 +399,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 ? 'bg-accent border-accent text-black'
                 : st === 'excl'
                   ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                  : 'bg-surface border-white/7 text-ink-2 hover:text-white';
+                  : 'bg-surface border-hairline text-ink-2 hover:text-white';
               return (
                 <button
                   key={dt.id}
@@ -426,7 +426,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar menú
           </button>
-          <button onClick={onCancel} className="px-5 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-sm rounded-xl transition-all">
+          <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-sm rounded-xl transition-all">
             Cancelar
           </button>
         </div>
@@ -472,7 +472,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
       </div>
 
       {/* Prep / shopping preview */}
-      <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface border border-hairline rounded-2xl overflow-hidden">
         <button
           onClick={() => setShowPrep(v => !v)}
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors"
@@ -490,7 +490,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <p className="font-mono text-[10px] text-ink-3 uppercase mb-2">Cocina de una vez</p>
                 <div className="space-y-1.5">
                   {batchPlan.map(e => (
-                    <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-white/7 rounded-lg px-3 py-2">
+                    <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-hairline rounded-lg px-3 py-2">
                       <span className="font-sans text-xs text-white truncate">{e.recipeName}</span>
                       <span className="font-mono text-[10px] text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'} · ×{e.totalScale}</span>
                     </div>
@@ -522,7 +522,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           const badge = devBadge(day);
           const expanded = expandedDay === day.day;
           return (
-            <div key={day.day} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
+            <div key={day.day} className="bg-surface border border-hairline rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedDay(expanded ? null : day.day)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-bg hover:bg-field transition-colors"
@@ -551,9 +551,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                         </button>
                       </div>
                       {day.meals.map((meal, mealIdx) => (
-                        <div key={meal.id} className="bg-bg border border-white/7 rounded-xl p-3">
+                        <div key={meal.id} className="bg-bg border border-hairline rounded-xl p-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-raised border border-white/7">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-raised border border-hairline">
                               {meal.recipeImage
                                 ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-lg text-ink-3">skillet</span></div>}
@@ -568,7 +568,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1.5">
                                   {meal.complements.map((c, ci) => (
-                                    <span key={ci} className="text-[9px] font-mono text-ink-2 bg-raised border border-white/7 px-1.5 py-0.5 rounded">
+                                    <span key={ci} className="text-[9px] font-mono text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded">
                                       +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                                     </span>
                                   ))}
@@ -594,7 +594,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                           </div>
 
                           {pickerFor?.day === day.day && pickerFor.mealId === meal.id && (
-                            <div className="mt-3 border-t border-white/7 pt-2 max-h-56 overflow-y-auto space-y-1">
+                            <div className="mt-3 border-t border-hairline pt-2 max-h-56 overflow-y-auto space-y-1">
                               {pickerLoading ? (
                                 <p className="font-mono text-[10px] text-ink-3 text-center py-3">Buscando candidatas…</p>
                               ) : pickerCandidates.length === 0 ? (
@@ -641,12 +641,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handleSaveDraft}
           disabled={saving}
-          className="flex-1 py-3 bg-raised border border-white/7 text-ink-2 hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-raised border border-hairline text-ink-2 hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">save</span>
           Guardar borrador
         </button>
-        <button onClick={onCancel} className="px-5 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-sm rounded-xl transition-all">
+        <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-sm rounded-xl transition-all">
           Cancelar
         </button>
       </div>

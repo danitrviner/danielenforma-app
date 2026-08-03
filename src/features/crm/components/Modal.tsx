@@ -38,7 +38,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         aria-label={titulo}
         className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-white/12 rounded-t-2xl sm:rounded-2xl overflow-hidden"
       >
-        <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/7 shrink-0">
+        <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-hairline shrink-0">
           <h2 className="font-sans font-black text-sm text-ink">{titulo}</h2>
           <button
             type="button"
@@ -53,7 +53,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-3">{children}</div>
 
         {footer && (
-          <footer className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/7 shrink-0">
+          <footer className="flex items-center justify-end gap-2 px-4 py-3 border-t border-hairline shrink-0">
             {footer}
           </footer>
         )}
@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-2.5 py-1.5 rounded-lg bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';

@@ -279,11 +279,11 @@ function AppContent() {
       <LocalModeBanner />
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-bg fixed top-0 left-0 border-b border-white/7 z-40">
+      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-bg fixed top-0 left-0 border-b border-hairline z-40">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-surface border border-white/7 text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
+          <span className="text-[10px] bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
@@ -300,7 +300,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-bg border-b border-white/7 sticky top-0 z-40">
+      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-bg border-b border-hairline sticky top-0 z-40">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
@@ -317,7 +317,7 @@ function AppContent() {
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[65px] border-r border-white/7 p-6 justify-between select-none">
+      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[65px] border-r border-hairline p-6 justify-between select-none">
         <div className="flex flex-col gap-3">
           {mainTabs.map((tab) => (
             <button
@@ -412,7 +412,7 @@ function AppContent() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-bg border-t border-white/7 select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
+      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}

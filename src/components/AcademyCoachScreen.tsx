@@ -46,7 +46,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-        <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
+        <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -114,7 +114,7 @@ function CoursesTab() {
   };
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
@@ -124,18 +124,18 @@ function CoursesTab() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-xl p-3 space-y-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2 flex-wrap">
             <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)}
-              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
               {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </select>
             <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])}
-              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
               <option value="immediate">Desbloqueo inmediato</option>
               <option value="daysSinceJoin">Días desde el alta</option>
               <option value="level">Nivel mínimo</option>
@@ -143,7 +143,7 @@ function CoursesTab() {
             </select>
             {unlockType !== 'immediate' && (
               <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder={unlockType === 'prerequisite' ? 'ID de curso' : 'Número'}
-                className="flex-1 min-w-[100px] bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
             )}
           </div>
           <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
@@ -159,7 +159,7 @@ function CoursesTab() {
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
-            <div key={c.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
+            <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-lg p-3">
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
                 <p className="text-[10px] text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
@@ -220,7 +220,7 @@ function LessonsTab() {
   };
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
@@ -230,22 +230,22 @@ function LessonsTab() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-xl p-3 space-y-2">
           <select value={courseId} onChange={e => setCourseId(e.target.value)} required
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
             <option value="">Selecciona curso...</option>
             {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2">
             <select value={videoProvider} onChange={e => setVideoProvider(e.target.value as 'youtube' | 'vimeo')}
-              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
               <option value="youtube">YouTube</option>
               <option value="vimeo">Vimeo</option>
             </select>
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
-              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+              className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           </div>
           <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear lección'}
@@ -260,7 +260,7 @@ function LessonsTab() {
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (
-            <div key={l.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
+            <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-lg p-3">
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
@@ -318,7 +318,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   }
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Acceso por atleta</h2>
         {selected.size > 0 && (
@@ -331,7 +331,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
         {athletes.map(a => {
           const enabled = accessByEmail.get(a.email)?.enabled ?? false;
           return (
-            <div key={a.email} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
+            <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-lg p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
               <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>

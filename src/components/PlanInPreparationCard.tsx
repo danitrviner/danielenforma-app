@@ -81,7 +81,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
         </div>
       </div>
 
-      <div className="border-t border-white/7 pt-4 space-y-2">
+      <div className="border-t border-hairline pt-4 space-y-2">
         <p className="font-mono text-[10px] uppercase tracking-widest text-ink-2">
           Mientras tanto ({doneCount}/{items.length})
         </p>
@@ -93,7 +93,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all border ${
               item.done
                 ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-raised border-white/7 hover:border-accent/40'
+                : 'bg-raised border-hairline hover:border-accent/40'
             } disabled:opacity-60`}
           >
             <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-ink-2'}`}>
@@ -104,7 +104,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             </span>
           </button>
         ))}
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-white/7 bg-raised/50 opacity-60">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
           <span className="material-symbols-outlined text-lg text-ink-2">lock</span>
           <span className="font-sans text-sm flex-1 text-ink-2">Tu primer entrenamiento</span>
           <span className="font-mono text-[9px] uppercase text-ink-2">Esperando a tu coach</span>

@@ -35,7 +35,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
 
   if (value) {
     return (
-      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-field border border-white/7">
+      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-field border border-hairline">
         <span className="text-[11px] text-ink truncate">{value.nombre}</span>
         <button
           type="button"

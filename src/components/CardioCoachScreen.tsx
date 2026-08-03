@@ -36,7 +36,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-        <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
+        <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'}`}>
@@ -68,10 +68,10 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
   }
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-base text-white mb-2">Elige un atleta</h2>
       {athletes.map(a => (
-        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3 hover:border-accent/40 transition-colors">
+        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-hairline rounded-lg p-3 hover:border-accent/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
           <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white text-left truncate">{a.displayName}</p>
           <span className="material-symbols-outlined text-ink-2 text-base">chevron_right</span>
@@ -107,18 +107,18 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
   if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-4">
       <button onClick={onBack} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white">
         <span className="material-symbols-outlined text-base">arrow_back</span> Atletas
       </button>
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-[10px] font-mono uppercase text-ink-2">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
           <label className="text-[10px] font-mono uppercase text-ink-2">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
         <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-[10px] font-mono uppercase rounded hover:text-white">Recalcular</button>
       </div>
@@ -127,10 +127,10 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <div key={z} className="flex items-center gap-2">
             <span className="text-xs font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
@@ -181,14 +181,14 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
   if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-base text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
         <p className="text-xs text-ink-3 font-mono py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (
-          <div key={t.id} className="bg-raised border border-white/7 rounded-lg p-3 space-y-2">
+          <div key={t.id} className="bg-raised border border-hairline rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-[10px] font-mono text-ink-2">{t.date}</span>
@@ -256,38 +256,38 @@ function PrescriptionTab() {
   if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-base text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+        className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
       <div className="flex gap-2">
         <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+          className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
           <option value="intervalos">Intervalos</option>
         </select>
         {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
       </div>
 
       {type === 'intervalos' && (
-        <div className="space-y-2 bg-bg border border-white/7 rounded-xl p-3">
+        <div className="space-y-2 bg-bg border border-hairline rounded-xl p-3">
           <p className="text-[9px] font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-1.5 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-surface border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-0 bg-surface border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
               <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-surface border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
+                className="w-14 bg-surface border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
               <span className="text-[9px] text-ink-2 font-mono">s</span>
               <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-surface border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent">
+                className="bg-surface border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent">
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">

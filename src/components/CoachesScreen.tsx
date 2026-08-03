@@ -67,7 +67,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-bg border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
+const MINI = 'bg-bg border border-hairline rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -167,7 +167,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-white/7 text-ink-2 hover:text-white rounded-lg transition-all">
+            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-hairline text-ink-2 hover:text-white rounded-lg transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
@@ -182,7 +182,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const meta = SECTION_META[section];
         const qs   = questions.filter(q => q.section === section);
         return (
-          <div key={section} className="bg-bg border border-white/7 rounded-xl p-5 space-y-4">
+          <div key={section} className="bg-bg border border-hairline rounded-xl p-5 space-y-4">
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
@@ -207,7 +207,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
                             className={`px-2.5 py-1 rounded font-mono text-[9px] font-bold uppercase border transition-all ${
-                              q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-white/7 hover:text-white'
+                              q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
                           </button>
@@ -222,10 +222,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
@@ -293,7 +293,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-accent border border-dashed border-white/7 hover:border-accent/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -430,7 +430,7 @@ function IndyaImportPanel() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="bg-bg border border-white/7 rounded-xl p-5 space-y-4">
+    <div className="bg-bg border border-hairline rounded-xl p-5 space-y-4">
       <div>
         <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-data flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">library_books</span>
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-white/7 text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             Reimportar
           </button>
@@ -545,7 +545,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit flex-wrap">
         {([
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
@@ -582,7 +582,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             <Skeleton className="h-14 w-full" />
           </div>
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
+          <div className="text-center py-20 border border-dashed border-hairline rounded-2xl">
             <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">group</span>
             <p className="text-ink-2 text-sm">Sin usuarios registrados todavía.</p>
           </div>
@@ -595,9 +595,9 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-surface border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-white/7'}`}>
+                  className={`bg-surface border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
-                    className="w-10 h-10 rounded-full object-cover border border-white/7 flex-shrink-0" />
+                    className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
@@ -628,7 +628,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             })}
           </div>
         )}
-        <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-1">
+        <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-1">
           <p className="font-mono text-xs text-ink-2">
             <span className="text-accent font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}

@@ -59,7 +59,7 @@ export default function WeeklyAnalysisButton() {
       {open && (
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
           <div className="bg-bg border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
@@ -82,7 +82,7 @@ export default function WeeklyAnalysisButton() {
               )}
             </div>
             {result && (
-              <div className="px-4 py-2.5 border-t border-white/7 text-[11px] font-mono text-ink-2">
+              <div className="px-4 py-2.5 border-t border-hairline text-[11px] font-mono text-ink-2">
                 Guardado en tus notas de coach.
               </div>
             )}

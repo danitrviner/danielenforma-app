@@ -20,8 +20,8 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
   if (!loading && reports.length === 0) return null;
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5">
+      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
         Reportes de tu entrenador
       </h2>
@@ -38,7 +38,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               key={r.id}
               onClick={() => setOpen(r)}
               className={`w-full flex items-center justify-between gap-3 rounded-lg p-3 text-left transition-all border ${
-                i === 0 ? 'bg-raised border-accent/30 hover:border-accent/60' : 'bg-raised border-white/7 hover:border-accent/40'
+                i === 0 ? 'bg-raised border-accent/30 hover:border-accent/60' : 'bg-raised border-hairline hover:border-accent/40'
               }`}
             >
               <div className="min-w-0">
@@ -60,8 +60,8 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
       {open && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
           <div className="min-h-full flex items-start justify-center sm:p-4">
-            <div className="bg-bg border border-white/7 sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl">
-              <div className="sticky top-0 z-10 bg-bg border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="bg-bg border border-hairline sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl">
+              <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between">
                 <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-base">close</span>

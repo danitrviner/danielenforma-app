@@ -38,7 +38,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   activo
                     ? 'bg-accent/15 text-accent border border-accent/30'
-                    : 'bg-field text-ink-2 border border-white/7 hover:border-white/12'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">{s.icon}</span>

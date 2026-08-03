@@ -80,7 +80,7 @@ function ProjectionTooltip({ active, payload }: any) {
   if (!row) return null;
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
-    <div className="bg-raised border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
+    <div className="bg-raised border border-hairline rounded-xl px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
       <p className="text-ink-2 mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
@@ -101,7 +101,7 @@ function ProjectionTooltip({ active, payload }: any) {
         </p>
       )}
       {dev != null && (
-        <p className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-white/7">
+        <p className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-hairline">
           <span className="text-ink-2">Desvío</span>
           <span className={`font-bold ${dev > 0 ? 'text-warning' : 'text-success'}`}>{fmtKg(dev, true)} kg</span>
         </p>
@@ -235,7 +235,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
   if (!program || program.phases.length === 0) {
     return (
-      <div className="border border-dashed border-white/7 rounded-2xl py-10 flex flex-col items-center gap-3">
+      <div className="border border-dashed border-hairline rounded-2xl py-10 flex flex-col items-center gap-3">
         <span className="material-symbols-outlined text-3xl text-ink-3">monitoring</span>
         <p className="font-mono text-xs text-ink-2 text-center max-w-xs">
           {onEdit
@@ -262,7 +262,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     <div className="space-y-5">
       {/* Hero: current phase */}
       {activePhase ? (
-        <div className="relative bg-surface border border-white/7 rounded-2xl overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), #181816` }}>
+        <div className="relative bg-surface border border-hairline rounded-2xl overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), #181816` }}>
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -277,7 +277,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-white/7 hover:border-strong px-2.5 py-1.5 rounded-lg"
+                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-lg"
               >Editar</button>
             )}
           </div>
@@ -301,7 +301,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-ink-2 mt-3.5 pt-3 border-t border-white/7">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-ink-2 mt-3.5 pt-3 border-t border-hairline">
             <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
             <span className="text-ink-3">·</span>
             <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
@@ -329,10 +329,10 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       </div>
 
       {/* Chart */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
+      <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
-          <div className="inline-flex bg-field border border-white/7 rounded-lg p-0.5 gap-0.5">
+          <div className="inline-flex bg-field border border-hairline rounded-lg p-0.5 gap-0.5">
             {([
               { id: 'both', label: 'Ambas' },
               { id: 'exp', label: 'Esperado 100%' },
@@ -399,7 +399,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         )}
 
         {performance?.deviationKg != null && (
-          <p className="font-sans text-xs text-ink-2 leading-relaxed pt-1 border-t border-white/7">
+          <p className="font-sans text-xs text-ink-2 leading-relaxed pt-1 border-t border-hairline">
             A semana {performance.currentWeek}, el peso real (<b className="text-white">{fmtKg(performance.realToDate)} kg</b>) va{' '}
             <b className={performance.deviationKg > 0 ? 'text-warning' : 'text-success'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
@@ -446,7 +446,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
       {/* Energy balance of the active phase */}
       {activePhase && activeBalance && (
-        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
+        <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
@@ -477,7 +477,7 @@ function StatCard({
   valueColor?: string; progressPct?: number; progressColor?: string;
 }) {
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-4 flex flex-col gap-2">
+    <div className="bg-surface border border-hairline rounded-2xl p-4 flex flex-col gap-2">
       <span className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
         {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}

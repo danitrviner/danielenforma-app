@@ -107,7 +107,7 @@ export default function PhotosScreen({ profile }: Props) {
       />
 
       {/* View selector */}
-      <div className="flex bg-surface border border-white/7 p-1 rounded-2xl gap-1 w-fit">
+      <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1 w-fit">
         {(['front', 'side', 'back'] as PhotoView[]).map(v => (
           <button
             key={v}
@@ -125,7 +125,7 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* Upload bar */}
-      <div className="bg-raised border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-raised border border-hairline rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="material-symbols-outlined text-ink-2 text-sm">calendar_today</span>
           <input
@@ -159,7 +159,7 @@ export default function PhotosScreen({ profile }: Props) {
 
       {/* Gallery */}
       {visiblePhotos.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
+        <div className="text-center py-20 border border-dashed border-hairline rounded-2xl">
           <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">photo_camera</span>
           <p className="text-ink-2 text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
           <p className="text-ink-2 text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
@@ -175,7 +175,7 @@ export default function PhotosScreen({ profile }: Props) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {visiblePhotos.map((photo, idx) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-white/7 bg-raised aspect-[3/4]">
+            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-hairline bg-raised aspect-[3/4]">
               <img
                 src={photo.url}
                 alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}

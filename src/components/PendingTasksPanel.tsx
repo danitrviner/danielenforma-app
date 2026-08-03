@@ -125,7 +125,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   if (loading) {
     return (
-      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-2">
+      <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-2">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -133,8 +133,8 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   }
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5">
+      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
         <span className="material-symbols-outlined text-accent">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (
@@ -150,7 +150,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
             <button
               key={row.key}
               onClick={row.onOpen}
-              className="w-full flex items-center gap-3 bg-raised border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all group"
+              className="w-full flex items-center gap-3 bg-raised border border-hairline hover:border-accent/40 rounded-lg p-3 text-left transition-all group"
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
               <div className="flex-1 min-w-0">

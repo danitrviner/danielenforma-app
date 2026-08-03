@@ -260,7 +260,7 @@ export default function CorrelationPanel({
 
   if (!hasData) {
     return (
-      <div className="py-20 text-center border border-dashed border-white/7 rounded-2xl px-6">
+      <div className="py-20 text-center border border-dashed border-hairline rounded-2xl px-6">
         <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">insights</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Sin datos suficientes</p>
         {/* El texto anterior decía "completa más registros", una instrucción
@@ -285,7 +285,7 @@ export default function CorrelationPanel({
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
-      <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
+      <div className="bg-surface border border-hairline rounded-2xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
         {/* Mobile accordion header */}
         <button
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
@@ -314,7 +314,7 @@ export default function CorrelationPanel({
                 className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-xs font-bold border transition-all ${
                   active
                     ? 'text-black'
-                    : 'bg-transparent text-ink-2 border-white/7 hover:border-hairline hover:text-white'
+                    : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-white'
                 }`}
                 style={active ? { backgroundColor: color, borderColor: color } : {}}
               >
@@ -331,13 +331,13 @@ export default function CorrelationPanel({
       </div>
 
       {selectedSeries.length === 0 ? (
-        <div className="py-10 text-center border border-dashed border-white/7 rounded-xl">
+        <div className="py-10 text-center border border-dashed border-hairline rounded-xl">
           <p className="font-mono text-xs text-ink-2">Selecciona una o más series para visualizar.</p>
         </div>
       ) : (
         <>
           {/* Chart */}
-          <div className="bg-surface border border-white/7 rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
+          <div className="bg-surface border border-hairline rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
               <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
                 {multiNorm
@@ -403,12 +403,12 @@ export default function CorrelationPanel({
           {correlationResult && (
             <div className={`bg-surface border rounded-3xl p-5 space-y-2 ${
               correlationResult.r === null
-                ? 'border-white/7'
+                ? 'border-hairline'
                 : Math.abs(correlationResult.r) > 0.7
                   ? 'border-accent/30'
                   : Math.abs(correlationResult.r) >= 0.4
                     ? 'border-warning/30'
-                    : 'border-white/7'
+                    : 'border-hairline'
             }`}>
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-sm">functions</span>

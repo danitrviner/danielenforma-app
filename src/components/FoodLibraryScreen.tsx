@@ -120,7 +120,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               filterMode === m.id
                 ? 'bg-accent text-black shadow-md'
-                : 'bg-raised text-ink-2 border border-white/7 hover:border-accent/40 hover:text-white'
+                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
             }`}
           >
             {m.label}
@@ -157,7 +157,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         </div>
 
         <div className="flex gap-2 items-center w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-raised border border-white/7 rounded-lg px-3 py-2 flex-1 md:w-52">
+          <div className="flex items-center gap-2 bg-raised border border-hairline rounded-lg px-3 py-2 flex-1 md:w-52">
             <span className="material-symbols-outlined text-ink-2 text-sm">search</span>
             <input
               value={search}
@@ -192,7 +192,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       ) : (
         <div className="space-y-1.5">
           {filtered.map(item => (
-            <div key={item.id} className="bg-surface border border-white/7 rounded-lg px-4 py-3 flex items-center justify-between gap-3 hover:border-hairline transition-colors group">
+            <div key={item.id} className="bg-surface border border-hairline rounded-lg px-4 py-3 flex items-center justify-between gap-3 hover:border-hairline transition-colors group">
               <div className="flex items-center gap-3 min-w-0">
                 <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded flex-shrink-0 ${CAT_COLOR[item.category]}`}>
                   {item.category.replace('_', ' ')}
@@ -222,7 +222,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       {/* Create / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-white/7 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+          <div className="bg-raised border border-hairline rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
                 {editingId ? 'Editar alimento' : 'Nuevo alimento'}
@@ -238,7 +238,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
-                    className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
@@ -248,7 +248,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                    className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
@@ -261,12 +261,12 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-surface border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-surface border border-hairline rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
+              <button onClick={() => setShowModal(false)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
                 Cancelar
               </button>
               <button
@@ -287,7 +287,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <div className="bg-raised border border-red-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <h3 className="font-sans font-bold text-lg text-white">¿Eliminar alimento?</h3>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-white/7 text-ink-2 font-mono text-xs uppercase rounded-xl">Cancelar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-xs uppercase rounded-xl">Cancelar</button>
               <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-xs uppercase rounded-xl hover:bg-red-500/30 transition-colors">Eliminar</button>
             </div>
           </div>

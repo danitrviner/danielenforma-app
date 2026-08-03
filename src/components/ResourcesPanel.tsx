@@ -54,8 +54,8 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   };
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
         <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-data">folder_open</span>
           Recursos
@@ -72,20 +72,20 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       </div>
 
       {isCoach && showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-xl p-3 mb-3 space-y-2">
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -96,7 +96,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
           </div>
@@ -122,7 +122,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       ) : (
         <div className="space-y-2">
           {resources.map(r => (
-            <div key={r.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
+            <div key={r.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-lg p-3">
               <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white hover:text-accent transition-colors truncate">{r.title}</p>

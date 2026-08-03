@@ -22,7 +22,7 @@ export default function VegetableSelector({ selected, onToggle }: Props) {
             className={`px-2.5 py-1.5 rounded-full text-[10px] font-mono font-bold border transition-all ${
               on
                 ? 'bg-accent/15 border-accent/50 text-accent'
-                : 'bg-raised border-white/7 text-ink-2 hover:text-white hover:border-strong'
+                : 'bg-raised border-hairline text-ink-2 hover:text-white hover:border-strong'
             }`}
           >
             {on ? '✓ ' : ''}{v.label}

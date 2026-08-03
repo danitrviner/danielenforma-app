@@ -137,14 +137,14 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
     switch (id) {
       case 'bodyweight':
         return (
-          <div className="bg-surface border border-white/7 p-4 sm:p-6 rounded-3xl">
+          <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-3xl">
             <BodyweightPanel athleteEmail={profile.email} />
           </div>
         );
 
       case 'gamification':
         return (
-          <div className="bg-surface border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col gap-5 shadow-[0_0_40px_-10px_rgba(251,203,26,0.3)]">
+          <div className="bg-surface border border-hairline rounded-3xl p-5 relative overflow-hidden flex flex-col gap-5 shadow-[0_0_40px_-10px_rgba(251,203,26,0.3)]">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
 
             {/* Avatar + XP */}
@@ -184,7 +184,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                   return (
                     <div
                       key={idx}
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-hairline'}`}
                       title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
                     />
                   );
@@ -196,13 +196,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <div>
               <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                   <span>🏅</span> Primera semana
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                   <span className="text-accent">⚡</span> 10 días de racha
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                   <span className="text-data">⭐</span> Nivel {profile.level}
                 </span>
               </div>
@@ -212,14 +212,14 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       case 'questionnaires':
         return (
-          <div className="bg-surface border border-white/7 p-4 sm:p-6 rounded-3xl">
+          <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-3xl">
             <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
           </div>
         );
 
       case 'ficha':
         return editingFicha ? (
-          <div className="bg-surface border border-white/7 p-4 rounded-2xl">
+          <div className="bg-surface border border-hairline p-4 rounded-2xl">
             <OnboardingForm
               athleteEmail={profile.email}
               initialData={onboarding}
@@ -228,7 +228,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             />
           </div>
         ) : (
-          <div className="bg-surface border border-white/7 p-5 rounded-2xl flex items-center justify-between gap-4">
+          <div className="bg-surface border border-hairline p-5 rounded-2xl flex items-center justify-between gap-4">
             <div>
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-base">assignment_ind</span>
@@ -253,7 +253,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       case 'preferences':
         if (!onboarding) return null;
         return (
-          <div className="bg-surface border border-white/7 p-5 rounded-2xl">
+          <div className="bg-surface border border-hairline p-5 rounded-2xl">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-accent text-base">restaurant</span>
               Preferencias alimentarias
@@ -288,7 +288,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
       {isCoach && (
         showCoaches ? (
-          <div className="bg-surface border border-white/7 p-5 rounded-2xl">
+          <div className="bg-surface border border-hairline p-5 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-base">groups</span>
@@ -306,7 +306,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         ) : (
           <button
             onClick={() => setShowCoaches(true)}
-            className="w-full bg-surface border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-hairline transition-colors text-left"
+            className="w-full bg-surface border border-hairline p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-hairline transition-colors text-left"
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">groups</span>
@@ -324,7 +324,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
             reorderMode
               ? 'bg-accent/10 border-accent/40 text-accent'
-              : 'border-white/7 text-ink-2 hover:text-white hover:border-strong'
+              : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
           <span className="material-symbols-outlined text-sm">{reorderMode ? 'check' : 'reorder'}</span>
@@ -340,7 +340,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               <button
                 onClick={() => moveBlock(visibleBlocks, id, -1)}
                 disabled={idx === 0}
-                className="p-1.5 bg-surface border border-white/7 rounded-lg text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 bg-surface border border-hairline rounded-lg text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Subir"
               >
                 <span className="material-symbols-outlined text-sm">arrow_upward</span>
@@ -348,7 +348,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               <button
                 onClick={() => moveBlock(visibleBlocks, id, 1)}
                 disabled={idx === visibleBlocks.length - 1}
-                className="p-1.5 bg-surface border border-white/7 rounded-lg text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 bg-surface border border-hairline rounded-lg text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Bajar"
               >
                 <span className="material-symbols-outlined text-sm">arrow_downward</span>
@@ -360,8 +360,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       ))}
 
       {/* ── Edit profile form ─────────────────────────────────────────────────── */}
-      <form onSubmit={handleUpdate} className="bg-surface border border-white/7 p-5 rounded-2xl space-y-4">
-        <h3 className="font-sans font-bold text-base text-accent uppercase tracking-wide border-b border-white/7 pb-2">Editar Marca de Ficha</h3>
+      <form onSubmit={handleUpdate} className="bg-surface border border-hairline p-5 rounded-2xl space-y-4">
+        <h3 className="font-sans font-bold text-base text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
 
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1">Nombre deportivo</label>
@@ -369,7 +369,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
         </div>
@@ -381,7 +381,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -391,7 +391,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-accent"
           />
         </div>
 

@@ -55,7 +55,7 @@ export default function DataTable<T>({
     <div className="overflow-x-auto custom-scrollbar">
       <table className="w-full border-collapse min-w-[640px]">
         <thead>
-          <tr className="border-b border-white/7">
+          <tr className="border-b border-hairline">
             {columnas.map(c => (
               <th
                 key={c.id}

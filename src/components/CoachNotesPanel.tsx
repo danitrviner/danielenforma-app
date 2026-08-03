@@ -66,7 +66,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
   const done = notes.filter(n => n.done);
 
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-5">
+    <div className="bg-surface border border-hairline rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-base">edit_note</span>
@@ -77,7 +77,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
         </h3>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-lg"
         >
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva nota'}
@@ -88,20 +88,20 @@ export default function CoachNotesPanel({ athletes }: Props) {
       </p>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-xl p-3 mb-3 space-y-2">
           <input
             type="text"
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Escribe la nota..."
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
             autoFocus
           />
           <select
             value={relatedEmail}
             onChange={e => setRelatedEmail(e.target.value)}
-            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
           >
             <option value="">— Sin cliente asociado —</option>
             {athletes.map(a => (
@@ -131,7 +131,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
             <div
               key={n.id}
               className={`flex items-center gap-3 border rounded-lg p-3 transition-all ${
-                n.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-white/7'
+                n.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
               }`}
             >
               <button

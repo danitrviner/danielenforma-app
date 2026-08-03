@@ -147,7 +147,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
-        <div className="w-full max-w-md bg-bg border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
+        <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 text-accent mb-2">
               <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
@@ -172,7 +172,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={inviteEmailInput}
               onChange={e => setInviteEmailInput(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
               autoFocus
             />
@@ -195,7 +195,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
-      <div className="w-full max-w-md bg-bg border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
+      <div className="w-full max-w-md bg-bg border border-hairline p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 text-accent mb-2 animate-pulse">
@@ -225,7 +225,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="atleta@enforma.com"
-              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -247,7 +247,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
-              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -272,7 +272,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-md border border-white/7 active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
+          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-md border border-hairline active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
         >
           <img 
             src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 

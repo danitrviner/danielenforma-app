@@ -100,7 +100,7 @@ interface EditorProps {
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-raised border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="bg-raised border border-hairline rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
@@ -118,7 +118,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             value={item.title}
             onChange={e => onChange({ ...item, title: e.target.value })}
             placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -130,7 +130,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -141,7 +141,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="objetivo">Objetivo</option>
               <option value="hito">Hito</option>
@@ -153,7 +153,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="entreno">Entreno</option>
               <option value="nutricion">Nutrición</option>
@@ -171,7 +171,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.startDate ?? ''}
               onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div>
@@ -180,7 +180,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.targetDate ?? ''}
               onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
@@ -191,7 +191,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-surface border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="pendiente">Pendiente</option>
             <option value="en_progreso">En progreso</option>
@@ -211,7 +211,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
           >
             Cancelar
           </button>
@@ -707,7 +707,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
-        <div className="border border-white/7 rounded-xl p-4 space-y-2">
+        <div className="border border-hairline rounded-xl p-4 space-y-2">
           <p className="font-mono text-[10px] uppercase text-ink-2 tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
@@ -715,7 +715,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/7 text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-hairline text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >

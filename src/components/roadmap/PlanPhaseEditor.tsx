@@ -254,7 +254,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       {sorted.map((phase, idx) => {
         const progress = computePhaseProgress(phase, phaseData);
         return (
-          <div key={phase.id} className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
+          <div key={phase.id} className="bg-surface border border-hairline rounded-2xl p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 flex-shrink-0 pt-1">
                 <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded bg-raised text-white text-xs disabled:opacity-30">↑</button>
@@ -267,7 +267,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     value={phase.name}
                     onChange={e => updatePhase(phase.id, { name: e.target.value })}
                     placeholder="Nombre de la fase"
-                    className="flex-1 min-w-[140px] bg-bg border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
+                    className="flex-1 min-w-[140px] bg-bg border border-hairline rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
                   />
                   <span
                     className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 ${
@@ -287,7 +287,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   value={phase.motto ?? ''}
                   onChange={e => updatePhase(phase.id, { motto: e.target.value })}
                   placeholder="Frase motivadora (opcional)"
-                  className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+                  className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
                 />
 
                 <textarea
@@ -295,7 +295,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { description: e.target.value })}
                   placeholder="Descripción de la fase"
                   rows={2}
-                  className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex flex-wrap gap-2 items-start">
@@ -320,7 +320,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={1}
                       value={phase.suggestedWeeks ?? ''}
                       onChange={e => updatePhase(phase.id, { suggestedWeeks: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                   <label className="flex flex-col gap-0.5">
@@ -328,7 +328,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
                       onChange={e => updatePhase(phase.id, { weightDirection: e.target.value as WeightDirection })}
-                      className="bg-bg border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
+                      className="bg-bg border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     >
                       {(Object.keys(WEIGHT_DIRECTION_LABEL) as WeightDirection[]).map(d => (
                         <option key={d} value={d}>{WEIGHT_DIRECTION_LABEL[d]}</option>
@@ -343,7 +343,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={0}
                       value={phase.weightRateKgWeek ?? ''}
                       onChange={e => updatePhase(phase.id, { weightRateKgWeek: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
                     />
                   </label>
                 </div>
@@ -351,11 +351,11 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                 {/* Métricas objetivo */}
                 <div className="space-y-1.5 pt-1">
                   {phase.metrics.map(m => (
-                    <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-white/7 rounded-lg p-2">
+                    <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-hairline rounded-lg p-2">
                       <select
                         value={m.kind}
                         onChange={e => updateMetric(phase.id, m.id, { kind: e.target.value as PhaseMetricKind })}
-                        className="bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                        className="bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
                       >
                         {(Object.keys(METRIC_KIND_LABEL) as PhaseMetricKind[]).map(k => (
                           <option key={k} value={k}>{METRIC_KIND_LABEL[k]}</option>
@@ -365,7 +365,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         value={m.label}
                         onChange={e => updateMetric(phase.id, m.id, { label: e.target.value })}
                         placeholder="Etiqueta (ej. Bajar a 82 kg)"
-                        className="flex-1 min-w-[120px] bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                        className="flex-1 min-w-[120px] bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
                       />
                       {m.kind !== 'manual' && (
                         <input
@@ -373,7 +373,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                           value={m.targetValue ?? ''}
                           onChange={e => updateMetric(phase.id, m.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                           placeholder="Objetivo"
-                          className="w-20 bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                          className="w-20 bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
                         />
                       )}
                       {m.kind === 'manual' && (
@@ -401,7 +401,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { exitCriteria: e.target.value })}
                   placeholder="Criterios para pasar a la siguiente fase"
                   rows={2}
-                  className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex items-center gap-2 pt-1">

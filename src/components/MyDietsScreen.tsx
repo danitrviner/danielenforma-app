@@ -235,11 +235,11 @@ export default function MyDietsScreen({ profile }: Props) {
           placeholder="Nombre de la dieta"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full bg-surface border border-white/7 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-accent/50"
+          className="w-full bg-surface border border-hairline rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-accent/50"
         />
 
         {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
-        <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
+        <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
             {form.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
           </p>
@@ -254,10 +254,10 @@ export default function MyDietsScreen({ profile }: Props) {
                     step={0.25}
                     value={form.budget[cat]}
                     onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                    className="w-full bg-raised border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
+                    className="w-full bg-raised border border-hairline rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
                   />
                 ) : (
-                  <div className="w-full bg-raised/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
+                  <div className="w-full bg-raised/50 border border-hairline rounded-xl px-2 py-1.5 text-white text-xs">
                     {fmtQty(form.budget[cat])}
                   </div>
                 )}
@@ -270,7 +270,7 @@ export default function MyDietsScreen({ profile }: Props) {
         {/* Meals */}
         <div className="space-y-3">
           {form.meals.map((meal, mi) => (
-            <div key={meal.id} className="bg-raised rounded-xl border border-white/7 overflow-hidden">
+            <div key={meal.id} className="bg-raised rounded-xl border border-hairline overflow-hidden">
               <div className="px-4 py-3 bg-raised/80 flex items-center gap-2">
                 <input
                   type="text"
@@ -288,7 +288,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 {meal.items.length === 0 ? (
                   <p className="text-center py-2 font-mono text-[10px] text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface border border-white/7">
+                  <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface border border-hairline">
                     <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]}`}>
                       {item.category.replace('_', ' ')}
                     </span>
@@ -308,7 +308,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <button
                       key={cat}
                       onClick={() => openPicker(meal.id, cat)}
-                      className="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-raised border border-white/7 text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                      className="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-raised border border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                     >+ {cat.replace('_', ' ')}</button>
                   ))}
                 </div>
@@ -317,7 +317,7 @@ export default function MyDietsScreen({ profile }: Props) {
           ))}
           <button
             onClick={addMeal}
-            className="w-full py-2.5 rounded-xl border border-dashed border-white/7 text-ink-2 font-mono text-xs font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+            className="w-full py-2.5 rounded-xl border border-dashed border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
           >+ Añadir comida</button>
         </div>
 
@@ -330,8 +330,8 @@ export default function MyDietsScreen({ profile }: Props) {
         {/* Food picker sheet */}
         {pickerMealId && (
           <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-raised border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-raised z-10">
+            <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+              <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
@@ -345,7 +345,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 </button>
               </div>
 
-              <div className="px-4 pt-3 bg-raised flex gap-1 border-b border-white/7">
+              <div className="px-4 pt-3 bg-raised flex gap-1 border-b border-hairline">
                 {(['alimentos', 'recetas'] as const).map(tab => (
                   <button
                     key={tab}
@@ -358,16 +358,16 @@ export default function MyDietsScreen({ profile }: Props) {
               </div>
 
               {pickerTab === 'alimentos' && enabledModes.length > 1 && (
-                <div className="px-4 py-2 bg-bg border-b border-white/7 flex gap-2 flex-wrap">
+                <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
                   {enabledModes.map(mode => (
                     <button key={mode} onClick={() => setActiveDietMode(mode)}
-                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-white/7'}`}
+                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
                     >{MODE_LABEL[mode]}</button>
                   ))}
                 </div>
               )}
 
-              <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-white/7">
+              <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
                 <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
                 <input type="text" placeholder={pickerTab === 'alimentos' ? 'Buscar alimento...' : 'Buscar receta...'} value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
@@ -381,7 +381,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
                         <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]}`}>
@@ -399,12 +399,12 @@ export default function MyDietsScreen({ profile }: Props) {
                     </div>
                   ) : filteredRecipes.map(recipe => (
                     <button key={recipe.id} onClick={() => addRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-ink-2 text-base">skillet</span>
                         </div>
                       )}
@@ -438,7 +438,7 @@ export default function MyDietsScreen({ profile }: Props) {
       </div>
 
       {diets.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
+        <div className="text-center py-16 border border-dashed border-hairline rounded-2xl">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">bookmark</span>
           <p className="text-ink-2 text-sm font-sans">Aún no tienes ninguna dieta guardada.</p>
           <p className="text-ink-3 text-xs font-sans mt-1">Créala aquí con "Nueva", o desde Nutrición → Intercambios para partir de tu día a día.</p>
@@ -448,7 +448,7 @@ export default function MyDietsScreen({ profile }: Props) {
           {diets.map(dt => {
             const dPlaced = computeDietPlaced(dt.meals);
             return (
-              <div key={dt.id} className="bg-surface border border-white/7 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div key={dt.id} className="bg-surface border border-hairline rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="block font-sans font-bold text-sm text-white truncate">{dt.name}</span>

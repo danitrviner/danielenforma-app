@@ -117,7 +117,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
         <p className="text-ink-2 text-xs font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
       </div>
 
-      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit flex-wrap">
         {SUB_TABS.map(t => (
           <button
             key={t.id}

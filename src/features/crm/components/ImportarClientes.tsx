@@ -193,7 +193,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
         </p>
       )}
 
-      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-white/7 rounded-xl divide-y divide-white/4">
+      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-xl divide-y divide-white/4">
         {resultado.filas.map(fila => (
           <FilaPreview
             key={fila.fila}

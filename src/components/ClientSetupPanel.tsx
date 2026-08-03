@@ -181,7 +181,7 @@ export default function ClientSetupPanel({
   return (
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-5 flex items-center gap-5">
+      <div className="bg-surface border border-hairline rounded-2xl p-5 flex items-center gap-5">
         <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} label="Setup" />
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
@@ -234,7 +234,7 @@ export default function ClientSetupPanel({
         {result.phases.map(phase => {
           const expanded = expandedPhase === phase.id;
           return (
-            <div key={phase.id} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
+            <div key={phase.id} className="bg-surface border border-hairline rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedPhase(expanded ? null : phase.id)}
                 className="w-full flex items-center gap-3 p-4"
@@ -258,7 +258,7 @@ export default function ClientSetupPanel({
               </button>
 
               {expanded && (
-                <div className="border-t border-white/7 divide-y divide-white/7">
+                <div className="border-t border-hairline divide-y divide-white/7">
                   {phase.items.map(item => (
                     <button
                       key={item.id}
@@ -288,7 +288,7 @@ export default function ClientSetupPanel({
       </div>
 
       {/* Tareas extra */}
-      <div className="bg-surface border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">playlist_add_check</span>
@@ -296,7 +296,7 @@ export default function ClientSetupPanel({
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
+            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-lg"
           >
             <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
@@ -304,13 +304,13 @@ export default function ClientSetupPanel({
         </div>
 
         {showExtraForm && (
-          <form onSubmit={handleAddExtra} className="bg-raised border border-white/7 rounded-xl p-3 mb-3 flex gap-2">
+          <form onSubmit={handleAddExtra} className="bg-raised border border-hairline rounded-xl p-3 mb-3 flex gap-2">
             <input
               type="text"
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
             <button
@@ -331,7 +331,7 @@ export default function ClientSetupPanel({
               <div
                 key={task.id}
                 className={`w-full flex items-center gap-3 border rounded-lg p-3 transition-all ${
-                  task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-white/7'
+                  task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
                 }`}
               >
                 <button onClick={() => toggleExtra(task)} className="flex-shrink-0">

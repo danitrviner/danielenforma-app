@@ -47,7 +47,7 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-raised border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-raised border border-hairline rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
@@ -166,7 +166,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-bg border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
+  const INPUT_CLS = 'bg-bg border border-hairline rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-4">
@@ -280,7 +280,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
           {/* Empty state */}
           {logs.length === 0 && (
-            <div className="text-center py-8 border border-dashed border-white/7 rounded-xl">
+            <div className="text-center py-8 border border-dashed border-hairline rounded-xl">
               <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitor_weight</span>
               <p className="font-mono text-xs text-ink-2">
                 {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
@@ -298,7 +298,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 {listEntries.map(b => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-2 bg-raised border border-white/7 rounded-xl px-3 py-2"
+                    className="flex items-center gap-2 bg-raised border border-hairline rounded-xl px-3 py-2"
                   >
                     {editId === b.id ? (
                       // ── Inline edit ──────────────────────────────────────
@@ -328,7 +328,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-white/7 text-ink-2 font-mono text-[10px] uppercase rounded transition-all hover:text-white"
+                            className="px-2 py-1 border border-hairline text-ink-2 font-mono text-[10px] uppercase rounded transition-all hover:text-white"
                           >
                             ✕
                           </button>

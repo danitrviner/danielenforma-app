@@ -22,7 +22,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function SectionShell({ section, children }: { section: CoachReportSection; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
+    <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
       <p className="font-sans font-bold text-sm text-white">{section.title}</p>
       {children}
       {section.coachNote && (
@@ -76,7 +76,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
       <div className="overflow-x-auto -mx-1">
         <table className="w-full text-left" style={{ minWidth: 420 }}>
           <thead>
-            <tr className="border-b border-white/7">
+            <tr className="border-b border-hairline">
               {['Ejercicio', 'Series', 'Reps', 'Tonelaje', '1RM est.'].map(h => (
                 <th key={h} className="font-mono text-[9px] text-ink-2 uppercase tracking-wider py-1.5 px-2 whitespace-nowrap">{h}</th>
               ))}
@@ -84,7 +84,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
           </thead>
           <tbody>
             {d.rows.map(r => (
-              <tr key={r.exerciseId} className="border-b border-white/7 last:border-0">
+              <tr key={r.exerciseId} className="border-b border-hairline last:border-0">
                 <td className="py-2 px-2">
                   <span className="text-xs text-white font-sans flex items-center gap-1.5">
                     {r.name}
@@ -115,7 +115,7 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
       <div className="overflow-x-auto -mx-1">
         <table className="w-full text-left" style={{ minWidth: 420 }}>
           <thead>
-            <tr className="border-b border-white/7">
+            <tr className="border-b border-hairline">
               {['Grupo', 'Tonelaje', 'Δ vol.', '1RM medio', 'Δ fuerza'].map(h => (
                 <th key={h} className="font-mono text-[9px] text-ink-2 uppercase tracking-wider py-1.5 px-2 whitespace-nowrap">{h}</th>
               ))}
@@ -123,7 +123,7 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
           </thead>
           <tbody>
             {d.rows.map(r => (
-              <tr key={r.group} className="border-b border-white/7 last:border-0">
+              <tr key={r.group} className="border-b border-hairline last:border-0">
                 <td className="py-2 px-2 text-xs text-white font-sans whitespace-nowrap">{r.label}</td>
                 <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.tonnageDeltaPct} /></td>
@@ -265,7 +265,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
         </p>
       </div>
       {report.intro.trim() && (
-        <div className="bg-raised border border-white/7 rounded-2xl p-4">
+        <div className="bg-raised border border-hairline rounded-2xl p-4">
           <p className="text-sm text-ink-2 font-sans leading-relaxed whitespace-pre-wrap">{report.intro}</p>
         </div>
       )}

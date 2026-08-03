@@ -20,7 +20,7 @@ export default function LevelLadderCard({ status }: Props) {
   const { currentLevel, nextLevel, nextLevelCriteria } = status;
 
   return (
-    <div className="rounded-3xl border border-white/7 bg-bg p-5 flex flex-col gap-4">
+    <div className="rounded-3xl border border-hairline bg-bg p-5 flex flex-col gap-4">
       <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export default function LevelLadderCard({ status }: Props) {
       </div>
 
       {nextLevel && nextLevelCriteria.length > 0 && (
-        <div className="flex flex-col gap-2 pt-2 border-t border-white/7">
+        <div className="flex flex-col gap-2 pt-2 border-t border-hairline">
           {nextLevelCriteria.map(c => (
             <div key={c.criterion.id} className="flex items-center gap-2">
               <span
@@ -69,7 +69,7 @@ export default function LevelLadderCard({ status }: Props) {
       )}
 
       {!nextLevel && currentLevel && (
-        <p className="text-xs font-mono text-accent pt-2 border-t border-white/7">
+        <p className="text-xs font-mono text-accent pt-2 border-t border-hairline">
           Has llegado al nivel más alto de la escalera. 💪
         </p>
       )}

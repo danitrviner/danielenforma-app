@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -115,7 +115,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
-                    : 'bg-field text-ink-2 border border-white/7 hover:border-white/12'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
                 }`}
               >
                 {f === 'todos' ? 'Todos' : f === 'pendiente' ? 'Pendientes' : 'Pagados'}

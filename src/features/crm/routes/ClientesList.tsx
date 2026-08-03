@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -189,7 +189,7 @@ export default function ClientesList() {
               className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                 filtro === f.id
                   ? 'bg-accent/15 text-accent border border-accent/30'
-                  : 'bg-field text-ink-2 border border-white/7 hover:border-white/12'
+                  : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
               }`}
             >
               {f.label}
@@ -198,7 +198,7 @@ export default function ClientesList() {
         </div>
       </div>
 
-      <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={filas}

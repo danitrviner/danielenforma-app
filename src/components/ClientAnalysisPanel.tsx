@@ -28,7 +28,7 @@ export default function ClientAnalysisPanel({
   return (
     <div className="space-y-6">
       {/* Sub-switcher */}
-      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit">
+      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit">
         {([
           { id: 'reportes',      label: 'Reportes',      icon: 'analytics' },
           { id: 'nutricion',     label: 'Nutrición',     icon: 'nutrition' },

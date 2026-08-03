@@ -120,7 +120,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
   const estados = cliente.fuente === 'perfil' ? ESTADOS_PERFIL : ESTADOS_CONTACTO;
 
   return (
-    <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 space-y-3">
+    <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Campo label="Nombre">
           <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} />

@@ -97,7 +97,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
           <Skeleton className="h-16 w-full rounded-xl" />
         </div>
       ) : questionnaires.length === 0 ? (
-        <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
+        <div className="border border-dashed border-hairline rounded-2xl py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
           <p className="text-ink-2 text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
@@ -105,7 +105,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       ) : (
         <div className="space-y-3">
           {questionnaires.map(q => (
-            <div key={q.id} className="bg-surface border border-white/7 rounded-2xl p-4 flex items-center gap-4">
+            <div key={q.id} className="bg-surface border border-hairline rounded-2xl p-4 flex items-center gap-4">
               <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="material-symbols-outlined text-accent text-base">quiz</span>
               </div>
@@ -127,7 +127,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => openEditor(q)}
-                  className="p-2 bg-raised border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
+                  className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-lg transition-all"
                   title="Editar"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
@@ -135,7 +135,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                 <button
                   onClick={() => handleDelete(q.id)}
                   disabled={deleting === q.id}
-                  className="p-2 bg-raised border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
+                  className="p-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-sm">{deleting === q.id ? 'progress_activity' : 'delete'}</span>

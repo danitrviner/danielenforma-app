@@ -348,7 +348,7 @@ export default function NutritionPeriodizationPanel({
 
   if (loading) {
     return (
-      <div className="bg-surface border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-2xl p-5">
         <Skeleton className="h-32 w-full" />
       </div>
     );
@@ -364,14 +364,14 @@ export default function NutritionPeriodizationPanel({
   if (form === null) {
     if (program === null) {
       return (
-        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-chart-3 text-sm">timeline</span>
               Periodización nutricional
             </h3>
           </div>
-          <div className="border border-dashed border-white/7 rounded-xl py-8 flex flex-col items-center gap-3">
+          <div className="border border-dashed border-hairline rounded-xl py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-3xl text-ink-3">timeline</span>
             <p className="text-ink-2 text-xs font-mono text-center">Sin periodización nutricional.</p>
             <button
@@ -406,7 +406,7 @@ export default function NutritionPeriodizationPanel({
   };
 
   return (
-    <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-5">
+    <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
@@ -445,14 +445,14 @@ export default function NutritionPeriodizationPanel({
           type="date"
           value={form.startDate}
           onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-raised border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
+          className="bg-raised border border-hairline text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
         />
       </div>
 
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-ink-2 text-xs font-mono text-center py-4 border border-dashed border-white/7 rounded-xl">
+          <p className="text-ink-2 text-xs font-mono text-center py-4 border border-dashed border-hairline rounded-xl">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -468,7 +468,7 @@ export default function NutritionPeriodizationPanel({
           return (
             <div
               key={phase.id}
-              className="bg-raised border border-white/7 rounded-xl p-4 space-y-3"
+              className="bg-raised border border-hairline rounded-xl p-4 space-y-3"
               style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px' }}
             >
               {/* Phase header */}

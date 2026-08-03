@@ -23,7 +23,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
   const measuredToday = latest?.date === today;
 
   return (
-    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-3">
       <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">HRV matinal</h3>
 
       {latest ? (
