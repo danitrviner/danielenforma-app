@@ -96,7 +96,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -147,7 +147,7 @@ function QuestionnaireForm({
                     className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
                       answers[q.id] === v
                         ? 'bg-accent text-black font-bold border-transparent'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
+                        : 'bg-[#1e1e1e] text-ink border-white/7'
                     }`}
                   >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
                 ))}
@@ -176,7 +176,7 @@ function QuestionnaireForm({
                     className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
                       isSelected
                         ? 'bg-accent text-black border-transparent font-bold'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
+                        : 'bg-[#1e1e1e] text-ink border-white/7'
                     }`}
                   >{opt}</button>
                   );

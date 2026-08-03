@@ -35,7 +35,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       </div>
 
       {phase.description && (
-        <p className="text-[#e2e2e1] text-sm leading-relaxed">{phase.description}</p>
+        <p className="text-ink text-sm leading-relaxed">{phase.description}</p>
       )}
 
       {progress.metrics.length > 0 && (

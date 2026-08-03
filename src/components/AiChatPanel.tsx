@@ -345,7 +345,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 const text = messageText(msg);
                 if (!text) return null; // mensajes de tool_results — no se pintan
                 return (
-                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-[#e5e2e1] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                     {text}
                   </div>
                 );
@@ -355,7 +355,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-[#161616] border border-white/7 text-[#e5e2e1] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                        <div key={j} className="bg-[#161616] border border-white/7 text-ink rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
@@ -416,7 +416,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                         {mesoTrained.map(g => (
                           <div key={g} className="flex justify-between text-[11px]">
                             <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
-                            <span className="text-[#e5e2e1] font-mono">{meso.groups[g].series}</span>
+                            <span className="text-ink font-mono">{meso.groups[g].series}</span>
                           </div>
                         ))}
                       </div>
@@ -426,7 +426,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <div className="flex flex-col gap-1.5 bg-bg border border-white/7 rounded-lg p-2.5">
                       <div className="flex gap-1.5 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-[#e5e2e1]">
+                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-ink">
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
@@ -479,7 +479,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
@@ -513,7 +513,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">

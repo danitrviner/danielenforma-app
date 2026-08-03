@@ -274,7 +274,7 @@ function AppContent() {
   const activeAthleteEmail = clientRouteMatch ? decodeURIComponent(clientRouteMatch[1]) : undefined;
 
   return (
-    <div className="min-h-screen text-[#e5e2e1] bg-bg flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-24 md:pb-0">
 
       <LocalModeBanner />
 

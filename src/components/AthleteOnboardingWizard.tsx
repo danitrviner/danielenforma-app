@@ -213,7 +213,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
                 { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
               ].map(i => (
-                <p key={i.icon} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
+                <p key={i.icon} className="flex items-center gap-3 text-sm text-ink">
                   <span className="material-symbols-outlined text-accent">{i.icon}</span>
                   {i.text}
                 </p>
@@ -388,7 +388,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ].filter(Boolean).map((i, idx) => {
                 const item = i as { icon: string; text: string };
                 return (
-                  <p key={idx} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
+                  <p key={idx} className="flex items-center gap-3 text-sm text-ink">
                     <span className="material-symbols-outlined text-accent text-base">{item.icon}</span>
                     {item.text}
                   </p>

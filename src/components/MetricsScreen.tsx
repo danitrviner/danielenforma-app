@@ -273,7 +273,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'}`}
+                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-ink border-white/7'}`}
                     >
                       {opt}
                     </button>
@@ -288,7 +288,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={2000}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
+                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
                 ></textarea>
               </div>
 

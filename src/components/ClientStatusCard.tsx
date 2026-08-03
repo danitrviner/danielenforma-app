@@ -136,7 +136,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3 py-2 text-sm text-[#e5e2e1] placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-[#181818] border border-white/10 focus:border-accent/50 rounded-xl px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
@@ -219,7 +219,7 @@ export default function ClientStatusCard({
           ) : (
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-[11px] text-[#e5e2e1]">
+                <li key={i} className="flex items-center gap-1.5 text-[11px] text-ink">
                   <span className="material-symbols-outlined text-xs text-ink-2">{e.icon}</span>
                   <span className="flex-1 truncate">{e.text}</span>
                   <span className="font-mono text-[9px] text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>

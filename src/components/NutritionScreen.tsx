@@ -1069,7 +1069,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Overall progress bar */}
               <div className="bg-surface border border-white/7 p-4 rounded-2xl">
                 <div className="flex justify-between items-end mb-2">
-                  <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Completados hoy</h2>
+                  <h2 className="font-sans font-bold text-sm text-ink uppercase tracking-wide">Completados hoy</h2>
                   <span className="font-mono text-xs text-accent font-bold">{doneItems} / {totalItems}</span>
                 </div>
                 <div className="h-2 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
