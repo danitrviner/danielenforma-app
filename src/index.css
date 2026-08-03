@@ -14,8 +14,12 @@
      · Color             superficies, texto, líneas, marca, dato, estado (F1)
      · Radios            (F3)
      · Motion            (F13)
+   `static` es obligatorio: sin él Tailwind solo emite las variables que alguna
+   clase de utilidad usa, y un `var(--color-x)` escrito en un estilo en línea o
+   en un atributo SVG se quedaría sin definir — sin error de compilación y sin
+   aviso en consola. Es la misma clase de fallo silencioso que frenó theme.ts.
    ═══════════════════════════════════════════════════════════════════════════ */
-@theme {
+@theme static {
   /* ── Tipografía ─────────────────────────────────────────────────────────── */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
