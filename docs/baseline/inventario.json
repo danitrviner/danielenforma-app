@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:42:33.117Z",
-  "commit": "3270b65",
+  "generado": "2026-08-03T22:46:43.348Z",
+  "commit": "39f2976",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39568
+    "lineasTsx": 39541
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5068,
+    "clasesTokenEnUso": 5054,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 996,
-    "fontSans": 1009,
-    "pesosProhibidos": 26,
+    "fontSans": 1004,
+    "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 318,
+    "transitionAll": 316,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -327,9 +327,9 @@
       "ariaLabel": 1
     },
     "src/components/CommandPalette.tsx": {
-      "clasesTokenEnUso": 14,
+      "clasesTokenEnUso": 12,
       "fontMono": 3,
-      "fontSans": 2,
+      "fontSans": 1,
       "modalesArtesanales": 1,
       "animatePulse": 1,
       "roundedFull": 1
@@ -535,11 +535,10 @@
       "fontSans": 3
     },
     "src/components/ProfileScreen.tsx": {
-      "clasesTokenEnUso": 77,
+      "clasesTokenEnUso": 65,
       "fontMono": 8,
-      "fontSans": 11,
-      "pesosProhibidos": 1,
-      "transitionAll": 4,
+      "fontSans": 7,
+      "transitionAll": 2,
       "roundedFull": 7
     },
     "src/components/ProgressRing.tsx": {

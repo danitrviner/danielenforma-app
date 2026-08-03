@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { getAllUserProfiles } from '../dbService';
 import type { NavTab } from '../App';
+import { Icon, ListRow, EmptyState } from './ui';
 
 interface Props {
   onNavigateTab: (tab: NavTab) => void;
@@ -90,7 +91,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
-          <span className="material-symbols-outlined text-ink-2">search</span>
+          <Icon name="search" size="m" className="text-ink-2" />
           <input
             ref={inputRef}
             value={query}
@@ -110,17 +111,13 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             <div className="py-2">
               <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Atletas</p>
               {matchedAthletes.map(a => (
-                <button
+                <ListRow
                   key={a.userId}
                   onClick={() => goToAthlete(a)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
-                >
-                  <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-body-s text-white truncate">{a.displayName}</p>
-                    <p className="text-caption text-ink-2 truncate">{a.email}</p>
-                  </div>
-                </button>
+                  leading={<img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
+                  title={a.displayName}
+                  subtitle={a.email}
+                />
               ))}
             </div>
           )}
@@ -129,20 +126,18 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             <div className="py-2 border-t border-hairline">
               <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Acciones</p>
               {matchedActions.map(a => (
-                <button
+                <ListRow
                   key={a.id}
                   onClick={() => runAction(a.id)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
-                >
-                  <span className="material-symbols-outlined text-ink-2 text-title-s">{a.icon}</span>
-                  <span className="text-body-s text-white">{a.label}</span>
-                </button>
+                  leading={<Icon name={a.icon} size="m" className="text-ink-2" />}
+                  title={a.label}
+                />
               ))}
             </div>
           )}
 
           {!loadingAthletes && matchedAthletes.length === 0 && matchedActions.length === 0 && (
-            <p className="px-4 py-6 text-center font-sans text-label text-ink-3">Sin resultados.</p>
+            <EmptyState icon="search_off" title="Sin resultados." />
           )}
         </div>
       </div>
