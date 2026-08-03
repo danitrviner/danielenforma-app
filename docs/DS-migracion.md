@@ -272,3 +272,101 @@ toda verificación de layout se hace tras recarga completa**, nunca sobre el est
 **Línea base actualizada al cierre del sprint.** El inventario marcó una regresión de `font-sans`
 (590 → 579) y localizó la causa: `MetricsScreen.tsx`, el archivo muerto borrado en F2, aportaba 11.
 Falso positivo legítimo, así que la base se reescribe a propósito.
+
+---
+
+## Sprint 3 · Tipografía
+
+### F4 · Escala tipográfica y suelo de tamaño
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 12
+
+**Resultado**
+
+| Métrica | Antes | Después |
+|---|--:|--:|
+| Textos por debajo de 11 px | 1.145 | **0** |
+| Escalones de tamaño en uso | 16 | **8 + 2 excepciones** |
+| Pesos de fuente | 6 | **4** |
+| Declaraciones de tamaño migradas | — | **2.981** |
+| Pesos de Inter pedidos a Google Fonts | 6 | **4** |
+
+**Tabla de equivalencia aplicada**
+
+| Origen | px | Destino | px | Usos |
+|---|--:|---|--:|--:|
+| `text-[7/8/9/10/11px]` | 7–11 | `caption` | 11 | 1.210 |
+| `text-xs` · `text-[12px]` | 12 | `label` | 12 | 693 |
+| `text-sm` · `text-[13/14px]` | 13–14 | `body-s` | 13 | 610 |
+| `text-base` · `text-[16px]` | 16 | `title-s` | 16 | 238 |
+| `text-lg/xl` · `text-[18/20px]` | 18–20 | `title-m` | 19 | 115 |
+| `text-2xl` · `text-[22px]` | 22–24 | `title-l` | 24 | 36 |
+| `text-3xl/4xl/5xl` | 30–48 | `display` | 32 | 79 |
+
+**Decisiones**
+
+1. **No se declara `--text-*--font-weight`.** Emitiría el peso en la misma regla que el tamaño y
+   competiría con las clases `font-*` según el orden de la hoja. El peso va con clases explícitas.
+2. **No se declara el tracking de `label`.** De los 687 `text-xs`, 604 no llevaban tracking y son
+   prosa. Emitirlo en el token se lo aplicaría a todos: decisión semántica dentro de la fase
+   mecánica, y ~14 px más de ancho por línea de 20 caracteres.
+3. **`text-sm` (14) baja a `body-s` (13)**, no sube a `body` (15). Ambos a 1 px, pero crecer 604
+   elementos es el riesgo de desbordamiento que el plan llama el más subestimable.
+4. **El 650 del DS se sirve con 700.** Inter se carga con pesos fijos, no como eje variable.
+
+**Dos excepciones explícitas al Design System**
+
+| Excepción | Motivo | Revisar en |
+|---|---|---|
+| **Barra de navegación inferior a 10 px** | A 11 px, 5 de los 7 destinos se truncan hasta quedar ilegibles («ACA…», «CAR…»). La solución no es tipográfica sino de arquitectura de navegación. Prima la usabilidad sobre la uniformidad. | Fase posterior — ver incidencia abierta |
+| **Cifras de la sesión de cardio en directo a 60 y 72 px** | Pulsación en vivo, cuentas atrás y RPE se leen a distancia de brazo durante el esfuerzo. `display` (32 px) las reduciría a menos de la mitad justo donde el contexto de uso es más exigente. | Propuesta de extensión del DS pendiente de aprobación |
+
+### F5 · Mono → Sans
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 2 · **478 migraciones en 3 tandas**
+
+| Métrica | Antes | Después |
+|---|--:|--:|
+| `font-mono` | 1.508 | **1.030** |
+| `font-sans` | 579 | **1.057** |
+| Proporción | 72 % mono | **sans > mono** |
+
+**Clasificación de las 1.504 apariciones**, con criterio deliberadamente estrecho:
+
+| Tipo | Cuántas | Qué se hizo |
+|---|--:|---|
+| Prosa inequívoca | 256 | → sans (tanda 1) |
+| Botones y enlaces | 64 | → sans (tanda 2) |
+| Interpolación de prosa | 158 | → sans (tanda 3) |
+| Etiquetas en versalitas ≤3 palabras | 347 | se quedan en mono — el DS las quiere ahí |
+| Datos interpolados | ~555 | se quedan en mono |
+| Ambiguas | ~286 | **sin tocar**: adivinar es peor que no tocar |
+
+**Verificado:** solo 2 elementos con cifra acaban en sans sin `tabular-nums`, y ambos son frases
+con un número dentro, no cifras en columna.
+
+### Limpieza aprobada — tokens muertos
+
+12 tokens antiguos del `@theme` y la utilidad `.cyan-glow`, con **0 referencias** verificadas sobre
+297 archivos de todo el repo. `.volt-glow` **no se toca**: tiene 1 uso activo en
+`NutritionScreen.tsx:1077`, así que la limpieza se detuvo ahí, según lo acordado, y queda para F6.
+
+### Verificación del sprint
+
+Censo tipográfico computado a 375 px sobre 6 rutas, antes y después, tras recarga completa:
+
+| | Antes | Después |
+|---|--:|--:|
+| Nodos de texto | 837 | **837** |
+| Pesos distintos | 6 | **4** |
+| Nodos en mono / sans | 292 / 545 | **229 / 608** |
+| Nodos truncados | 14 | 16 |
+| Desbordamiento horizontal | 0 | **0** |
+
+Los 2 truncados nuevos son metadatos secundarios con elipsis («Ficha de iniciación», «Hombre · 36
+años»); su contenedor es la restricción y le toca a F6.
+
+**Efecto secundario anotado:** 590 iconos Material Symbols llevan ahora un token de texto. Ya
+montaban sobre la escala de Tailwind antes de esta fase —el patrón es preexistente— y los deltas
+son de ≤1 px, pero un icono no se rige por la escala tipográfica. Una primitiva `Icon` con su
+propia escala corresponde a **F7**.
