@@ -217,7 +217,7 @@ export default function ClientSetupPanel({
                   : 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/40'
               }`}
             >
-              <span className={`material-symbols-outlined text-base ${alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'}`}>
+              <span className={`material-symbols-outlined text-title-s ${alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'}`}>
                 {alert.severity === 'critical' ? 'error' : 'warning'}
               </span>
               <div className="flex-1 min-w-0">
@@ -268,7 +268,7 @@ export default function ClientSetupPanel({
                         item.status === 'na' ? 'opacity-40 cursor-default' : 'hover:bg-white/5'
                       }`}
                     >
-                      <span className={`material-symbols-outlined flex-shrink-0 text-base ${STATUS_COLOR[item.status]}`}>
+                      <span className={`material-symbols-outlined flex-shrink-0 text-title-s ${STATUS_COLOR[item.status]}`}>
                         {STATUS_ICON[item.status]}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -276,7 +276,7 @@ export default function ClientSetupPanel({
                         {item.detail && <p className="font-mono text-caption text-ink-2 mt-0.5">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
-                        <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">chevron_right</span>
+                        <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">chevron_right</span>
                       )}
                     </button>
                   ))}
@@ -290,8 +290,8 @@ export default function ClientSetupPanel({
       {/* Tareas extra */}
       <div className="bg-surface border border-hairline rounded-surface p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">playlist_add_check</span>
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent text-title-s">playlist_add_check</span>
             Tareas extra
           </h3>
           <button
@@ -341,7 +341,7 @@ export default function ClientSetupPanel({
                 </button>
                 <p className={`flex-1 min-w-0 font-sans text-body-s truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
                 <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
-                  <span className="material-symbols-outlined text-base">delete</span>
+                  <span className="material-symbols-outlined text-title-s">delete</span>
                 </button>
               </div>
             ))}

@@ -121,7 +121,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             return (
               <div key={cat} className="py-3 px-2 text-center">
                 <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                <span className={`block font-mono font-bold text-base mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                <span className={`block font-mono font-bold text-title-s mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
                   {fmtQ(v)}{b > 0 ? `/${fmtQ(b)}` : ''}
                 </span>
                 <span className={`block font-mono text-caption mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>

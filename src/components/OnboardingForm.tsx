@@ -779,7 +779,7 @@ export default function OnboardingForm({
             </p>
           </>
         ) : (
-          <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
+          <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">edit_note</span>
             Editar ficha de iniciación
           </h3>
@@ -985,7 +985,7 @@ export default function OnboardingForm({
         {autoCalc && (
           <div className="bg-data/5 border border-data/20 rounded-surface p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-data text-base">calculate</span>
+              <span className="material-symbols-outlined text-data text-title-s">calculate</span>
               <p className="font-mono text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
             <div className="space-y-0.5 font-mono text-label text-ink-3">
@@ -1009,7 +1009,7 @@ export default function OnboardingForm({
               ].map(m => (
                 <div key={m.label} className="text-center">
                   <p className="font-mono text-caption font-bold uppercase" style={{ color: m.color }}>{m.label}</p>
-                  <p className="font-mono text-base font-bold text-white">{m.g}g</p>
+                  <p className="font-mono text-title-s font-bold text-white">{m.g}g</p>
                   <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g / m.ef)} int</p>
                 </div>
               ))}
@@ -1119,7 +1119,7 @@ export default function OnboardingForm({
           <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
             {form.meals.map((meal, i) => (
               <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
-                <span className="material-symbols-outlined text-ink-3 text-base">{INTAKE_ICONS[meal.intakeType]}</span>
+                <span className="material-symbols-outlined text-ink-3 text-title-s">{INTAKE_ICONS[meal.intakeType]}</span>
                 <span className="flex-1 font-mono text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control font-mono text-caption font-bold border transition-all ${

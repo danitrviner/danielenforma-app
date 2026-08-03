@@ -31,7 +31,7 @@ export default function DeviceChip({ status, deviceName, bpm }: Props) {
       </p>
       {status === 'ready' && (
         <p className="flex items-center gap-1 text-body-s font-sans font-bold text-white tabular-nums">
-          <span className="material-symbols-outlined text-danger text-base">favorite</span>
+          <span className="material-symbols-outlined text-danger text-title-s">favorite</span>
           {bpm ?? '--'}
         </p>
       )}

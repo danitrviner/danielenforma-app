@@ -107,7 +107,7 @@ export default function ClientDietsPanel({
       {/* Diets */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-body-s">nutrition</span>
             Dietas disponibles
           </h3>
@@ -187,7 +187,7 @@ export default function ClientDietsPanel({
       {/* Weekly schedule grid */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-body-s">calendar_month</span>
             Programación semanal
           </h3>
@@ -241,7 +241,7 @@ export default function ClientDietsPanel({
           puntos de las dietas de tipo de día programadas arriba. */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-body-s">restaurant_menu</span>
             Menú semanal
           </h3>
@@ -360,7 +360,7 @@ export default function ClientDietsPanel({
       {/* Nutrition mode config */}
       {nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">tune</span>
             Modos de alimentación habilitados
           </h3>
@@ -390,7 +390,7 @@ export default function ClientDietsPanel({
       {/* Step goal config */}
       {nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">directions_walk</span>
             Objetivo de pasos
           </h3>

@@ -134,7 +134,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                   onClick={() => runAction(a.id)}
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
                 >
-                  <span className="material-symbols-outlined text-ink-2 text-base">{a.icon}</span>
+                  <span className="material-symbols-outlined text-ink-2 text-title-s">{a.icon}</span>
                   <span className="text-body-s text-white">{a.label}</span>
                 </button>
               ))}

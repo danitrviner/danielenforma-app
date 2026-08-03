@@ -134,7 +134,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+      <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
         <span className="material-symbols-outlined text-accent">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (

@@ -107,7 +107,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
           {questionnaires.map(q => (
             <div key={q.id} className="bg-surface border border-hairline rounded-surface p-4 flex items-center gap-4">
               <div className="w-9 h-9 bg-accent/10 rounded-surface flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-accent text-base">quiz</span>
+                <span className="material-symbols-outlined text-accent text-title-s">quiz</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">

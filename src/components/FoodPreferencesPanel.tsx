@@ -158,12 +158,12 @@ export default function FoodPreferencesPanel({
           onClick={() => setActiveGroup(null)}
           className="text-ink-2 hover:text-white transition-colors"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <span className="material-symbols-outlined text-title-s">arrow_back</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">{activeGroup.icon}</span>
-            <h3 className="font-sans font-bold text-base text-white">{activeGroup.name}</h3>
+            <span className="material-symbols-outlined text-accent text-title-s">{activeGroup.icon}</span>
+            <h3 className="font-sans font-bold text-title-s text-white">{activeGroup.name}</h3>
           </div>
           <div className="flex gap-3 font-mono text-caption mt-0.5">
             <span className="text-amber-400">⭐ {totalFav}</span>
@@ -182,7 +182,7 @@ export default function FoodPreferencesPanel({
 
       {/* Search */}
       <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
         <input
           type="text"
           value={search}

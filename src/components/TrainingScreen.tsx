@@ -365,7 +365,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             : isNext ? 'bg-accent/15 text-accent'
             : 'bg-raised text-ink-2'
           }`}>
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>
               {a.status === 'completed' ? 'check_circle'
                 : a.status === 'skipped' ? 'skip_next'
                 : a.status === 'perdido' ? 'event_busy'
@@ -374,7 +374,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-sans font-bold text-white text-base">{wo?.name || 'Rutina'}</p>
+              <p className="font-sans font-bold text-white text-title-s">{wo?.name || 'Rutina'}</p>
               {isNext && a.status === 'pending' && (
                 <span className="text-caption font-mono bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-control uppercase font-bold">Siguiente</span>
               )}
@@ -465,7 +465,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               aria-label="Saltar descanso"
               className="text-ink-2/60 hover:text-white p-1 -m-1"
             >
-              <span className="material-symbols-outlined text-base">close</span>
+              <span className="material-symbols-outlined text-title-s">close</span>
             </button>
           </div>
         )}
@@ -527,7 +527,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-hairline flex-shrink-0" />
                 ) : (
                   <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
+                    <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -565,7 +565,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <div className="flex-shrink-0">
                   {doneSets === totalSets ? (
                     <span className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                      <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                     </span>
                   ) : (
                     <span className="font-mono text-caption font-bold px-2 py-0.5 rounded-control bg-white/7 text-ink-2">
@@ -577,7 +577,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {we.recordVideoSet && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20">
-                  <span className="material-symbols-outlined text-accent text-base">videocam</span>
+                  <span className="material-symbols-outlined text-accent text-title-s">videocam</span>
                   <p className="font-sans text-label font-bold text-accent">
                     {we.recordVideoSet === 'all'
                       ? 'Tu entrenador quiere que grabes todas las series con el móvil'
@@ -588,7 +588,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {we.technique && (
                 <div className={`flex items-start gap-2 px-4 py-2.5 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
-                  <span className="text-base flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
+                  <span className="text-title-s flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
                   <p className="font-sans text-label leading-relaxed">
                     <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]}. </span>
                     {TECHNIQUE_DESCRIPTION[we.technique]}
@@ -878,14 +878,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           onClick={() => setMainTab('programa')}
           className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
-          <span className="material-symbols-outlined text-base">event</span>
+          <span className="material-symbols-outlined text-title-s">event</span>
           Programa
         </button>
         <button
           onClick={() => setMainTab('progresion')}
           className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
-          <span className="material-symbols-outlined text-base">trending_up</span>
+          <span className="material-symbols-outlined text-title-s">trending_up</span>
           Progresión
         </button>
       </div>

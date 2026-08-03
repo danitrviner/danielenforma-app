@@ -41,7 +41,7 @@ export default function ClientAnalysisPanel({
               analisisTab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
             }`}
           >
-            <span className="material-symbols-outlined text-base">{t.icon}</span>
+            <span className="material-symbols-outlined text-title-s">{t.icon}</span>
             {t.label}
           </button>
         ))}

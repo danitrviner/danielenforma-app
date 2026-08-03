@@ -192,8 +192,8 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
     <div className="space-y-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">show_chart</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
         <div className="flex bg-surface border border-hairline rounded-surface p-0.5 gap-0.5">

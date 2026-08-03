@@ -376,7 +376,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
             {busy && (
               <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse px-1">
-                <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                <span className="material-symbols-outlined text-title-s animate-spin">progress_activity</span>
                 {toolStatus ?? 'Pensando…'}
               </div>
             )}

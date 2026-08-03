@@ -70,7 +70,7 @@ function QuestionnaireForm({
           {questionnaire.title}
         </h2>
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors p-1">
-          <span className="material-symbols-outlined text-base">close</span>
+          <span className="material-symbols-outlined text-title-s">close</span>
         </button>
       </div>
 
@@ -394,7 +394,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
         <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-surface bg-data/10 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-data text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
+          <span className="material-symbols-outlined text-data text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
         </div>
 
         <div className="flex-1 min-w-0">
@@ -469,7 +469,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* Pending questionnaires list */}
       {!activeAssignment && !loadingQ && pendingAssignments.length > 0 && (
         <section className="bg-surface border border-accent/20 rounded-surface p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+          <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
             <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
@@ -502,7 +502,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
+              <span className="material-symbols-outlined text-ink-2 text-title-s">event_upcoming</span>
               Cuestionarios futuros
               <span className="font-mono text-caption text-ink-2">({upcomingAssignments.length})</span>
             </h2>
@@ -528,7 +528,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* Pending photo check-ins */}
       {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
         <section className="bg-surface border border-accent/20 rounded-surface p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+          <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
             <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
@@ -551,7 +551,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
+              <span className="material-symbols-outlined text-ink-2 text-title-s">event_upcoming</span>
               Fotos futuras
               <span className="font-mono text-caption text-ink-2">({upcomingPhotoAssignments.length})</span>
             </h2>
@@ -597,7 +597,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   <span className="font-mono font-bold text-white text-body-s">{item.weight} kg</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base">{item.mood}</span>
+                  <span className="text-title-s">{item.mood}</span>
                   <span className={`text-caption px-2 py-0.5 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
                     {item.adherence}
                   </span>

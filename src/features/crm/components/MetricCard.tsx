@@ -23,7 +23,7 @@ export default function MetricCard({ icon, label, value, sub, accent = 'var(--co
     >
       <div className="flex items-center gap-2">
         <span
-          className="material-symbols-outlined text-base w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+          className="material-symbols-outlined text-title-s w-7 h-7 rounded-full flex items-center justify-center shrink-0"
           style={{ color: accent, backgroundColor: `${accent}1a` }}
         >
           {icon}

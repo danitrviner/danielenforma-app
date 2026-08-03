@@ -111,7 +111,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
         className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors z-10"
       >
         <span
-          className="material-symbols-outlined text-base"
+          className="material-symbols-outlined text-title-s"
           style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
@@ -124,7 +124,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-black text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-2xl' : 'text-base'}`}>
+        <h3 className={`font-sans font-black text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-2xl' : 'text-title-s'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
@@ -374,7 +374,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
           <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">recipe</span>
+            <span className="material-symbols-outlined text-accent text-title-s">recipe</span>
             Ingredientes
           </h2>
 
@@ -419,7 +419,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           (!isIndya && recipe.steps.length > 0)) && (
           <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
             <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-base">format_list_numbered</span>
+              <span className="material-symbols-outlined text-accent text-title-s">format_list_numbered</span>
               Preparación
             </h2>
             <div className="space-y-4">
@@ -655,7 +655,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {!loading && recipes.length > 0 && (
         <section className="space-y-4">
           <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">restaurant_menu</span>
+            <span className="material-symbols-outlined text-accent text-title-s">restaurant_menu</span>
             Recetas del programa
           </h2>
 
@@ -706,7 +706,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {/* ── Biblioteca de recetas (paginated, backed by the Indya dataset — never shown to the user) ──── */}
       <section className="space-y-4">
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-data text-base">library_books</span>
+          <span className="material-symbols-outlined text-data text-title-s">library_books</span>
           Biblioteca de recetas
           <span className="font-mono text-caption text-ink-2 normal-case font-normal">8 850 recetas</span>
         </h2>
@@ -753,7 +753,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
         {/* Name search */}
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s">search</span>
           <input
             type="text"
             value={indyaSearch}

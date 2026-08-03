@@ -50,7 +50,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </p>
             </div>
             <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
-              <span className="material-symbols-outlined text-base">close</span>
+              <span className="material-symbols-outlined text-title-s">close</span>
             </button>
           </div>
 
@@ -124,7 +124,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               onClick={handleCopy}
               className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-data/50 transition-all flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
+              <span className="material-symbols-outlined text-title-s">{copied ? 'check' : 'content_copy'}</span>
               {copied ? '¡Copiado!' : 'Copiar texto'}
             </button>
             <button
@@ -139,7 +139,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               disabled={busy !== null}
               className="px-5 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-base">send</span>
+              <span className="material-symbols-outlined text-title-s">send</span>
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}
             </button>
           </div>

@@ -172,8 +172,8 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">monitor_weight</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
             <span className="font-mono text-caption text-ink-2 font-normal">

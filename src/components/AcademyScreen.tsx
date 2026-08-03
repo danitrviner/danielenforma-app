@@ -102,7 +102,7 @@ export default function AcademyScreen({ profile }: Props) {
     return (
       <div className="space-y-4">
         <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-base">arrow_back</span> {openCourse.title}
+          <span className="material-symbols-outlined text-title-s">arrow_back</span> {openCourse.title}
         </button>
         <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
           <iframe
@@ -143,7 +143,7 @@ export default function AcademyScreen({ profile }: Props) {
     return (
       <div className="space-y-4">
         <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-base">arrow_back</span> Academia
+          <span className="material-symbols-outlined text-title-s">arrow_back</span> Academia
         </button>
         <div>
           <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
@@ -210,7 +210,7 @@ export default function AcademyScreen({ profile }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-body-s text-white">{c.title}</p>
-                    {!unlocked && <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">lock</span>}
+                    {!unlocked && <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">lock</span>}
                   </div>
                   <p className="text-label text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (

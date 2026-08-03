@@ -474,7 +474,7 @@ function IndyaImportPanel() {
       {status === 'done' && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-accent font-mono text-label font-bold">
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             {done.toLocaleString('es')} recetas importadas en {elapsed}s
           </div>
           <button
@@ -556,7 +556,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               settingsTab === t.id ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'
             }`}>
-            <span className="material-symbols-outlined text-base">{t.icon}</span>
+            <span className="material-symbols-outlined text-title-s">{t.icon}</span>
             {t.label}
           </button>
         ))}

@@ -608,12 +608,12 @@ function TemplateEditor({
     <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
-        <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">edit_note</span>
+        <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-base">close</span>
+          <span className="material-symbols-outlined text-title-s">close</span>
         </button>
       </div>
 

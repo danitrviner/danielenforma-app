@@ -221,7 +221,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
       {successMsg && (
         <div className="bg-accent/10 border border-accent/25 text-white p-3 rounded-surface text-body-s flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">check_circle</span>
+          <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
           {successMsg}
         </div>
       )}
@@ -230,7 +230,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       <div className="flex flex-col md:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
           <input
             type="text"
             placeholder="Buscar ejercicio..."
@@ -346,7 +346,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-surface object-cover border border-hairline flex-shrink-0" />
                           ) : (
                             <div className="w-9 h-9 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                              <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
+                              <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
                             </div>
                           )}
                           <div>
@@ -437,7 +437,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-surface object-cover border border-hairline flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
+                        <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
                       </div>
                     )}
                     <div>

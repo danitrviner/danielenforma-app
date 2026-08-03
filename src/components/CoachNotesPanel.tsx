@@ -68,8 +68,8 @@ export default function CoachNotesPanel({ athletes }: Props) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">edit_note</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
           Mis notas
           {pending.length > 0 && (
             <span className="bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pending.length}</span>

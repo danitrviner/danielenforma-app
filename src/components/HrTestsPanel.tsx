@@ -165,7 +165,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (activeTest.highEffort && !parqPassed) {
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-          <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
+          <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
           </h2>
           <p className="text-label text-ink-2 font-mono">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
@@ -194,9 +194,9 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     return (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-sans font-bold text-base text-white">{activeTest.title}</h2>
+          <h2 className="font-sans font-bold text-title-s text-white">{activeTest.title}</h2>
           <button onClick={() => { cleanup(); setActiveTest(null); }} className="text-ink-2 hover:text-white">
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined text-title-s">close</span>
           </button>
         </div>
         {error && <p className="text-label text-red-400 font-mono">{error}</p>}

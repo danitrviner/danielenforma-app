@@ -819,7 +819,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {flashMsg && (
         <div className="flex items-center gap-2 bg-accent/10 border border-accent/25 text-white px-4 py-3 rounded-surface text-body-s">
-          <span className="material-symbols-outlined text-accent text-base">check_circle</span>
+          <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
           {flashMsg}
         </div>
       )}
@@ -835,7 +835,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             onClick={() => setPhaseBanner(null)}
             className="text-data/60 hover:text-data transition-colors flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined text-title-s">close</span>
           </button>
         </div>
       )}
@@ -844,7 +844,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           (día A/B/C); this flags the ones still missing food items to hit budget. */}
       {pendingScheduledDiets.length > 0 && (
         <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-surface text-body-s">
-          <span className="material-symbols-outlined text-amber-400 text-base flex-shrink-0">pending_actions</span>
+          <span className="material-symbols-outlined text-amber-400 text-title-s flex-shrink-0">pending_actions</span>
           <span>
             Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
             {': '}
@@ -1108,7 +1108,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={meal.name}
                             onChange={e => renameMeal(meal.id, e.target.value)}
                             placeholder={`Comida ${mi + 1}`}
-                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-base focus:outline-none focus:ring-0 p-0"
+                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-title-s focus:outline-none focus:ring-0 p-0"
                           />
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -1329,7 +1329,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-accent text-base">skillet</span>
+                    <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
                     Usar receta
                   </h3>
                   {targetMeal && (
@@ -1423,7 +1423,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         )}
                         <span className="font-mono text-caption text-accent/70">{exchStr}</span>
                       </div>
-                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
                     </button>
                   );
                 })}
@@ -1440,7 +1440,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
               <div>
                 <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-base">skillet</span>
+                  <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
                   Cambiar comida
                 </h3>
                 {swapSourceRecipe && (
@@ -1478,7 +1478,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
                     <span className="font-mono text-caption text-accent/70">{recipe.kcal} kcal</span>
                   </div>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">swap_horiz</span>
                 </button>
               ))}
             </div>
@@ -1541,7 +1541,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </span>
                   )}
                   <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
                 </button>
               ))}
             </div>
@@ -1563,7 +1563,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               disabled={saving}
               className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-accent text-base">edit</span>
+              <span className="material-symbols-outlined text-accent text-title-s">edit</span>
               <span className="text-body-s text-white font-sans">Actualizar esta dieta</span>
             </button>
             <button
@@ -1571,7 +1571,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               disabled={saving}
               className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-data text-base">bookmark_add</span>
+              <span className="material-symbols-outlined text-data text-title-s">bookmark_add</span>
               <span className="text-body-s text-white font-sans">Guardar como nueva dieta mía</span>
             </button>
             <button
@@ -1589,7 +1589,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
             <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-base">skillet</span>
+              <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
               ¿A qué dieta añadir "{chooseDietForRecipe.name}"?
             </h3>
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
@@ -1600,7 +1600,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
                   <span className="text-body-s text-white font-sans truncate">{dt.name}</span>
-                  <span className="material-symbols-outlined text-ink-2 text-base flex-shrink-0">add_circle</span>
+                  <span className="material-symbols-outlined text-ink-2 text-title-s flex-shrink-0">add_circle</span>
                 </button>
               ))}
               <button
@@ -1608,7 +1608,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
               >
                 <span className="text-body-s text-accent font-sans font-bold">Nueva dieta</span>
-                <span className="material-symbols-outlined text-accent text-base flex-shrink-0">add_circle</span>
+                <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">add_circle</span>
               </button>
             </div>
             <button
@@ -1626,7 +1626,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
             <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-base">skillet</span>
+              <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
               ¿A qué comida añadir "{chooseMealForRecipe.name}"?
             </h3>
             <div className="space-y-2">
@@ -1637,7 +1637,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
                   <span className="text-body-s text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
-                  <span className="material-symbols-outlined text-ink-2 text-base">add_circle</span>
+                  <span className="material-symbols-outlined text-ink-2 text-title-s">add_circle</span>
                 </button>
               ))}
             </div>

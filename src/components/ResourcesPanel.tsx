@@ -56,7 +56,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
-        <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-data">folder_open</span>
           Recursos
         </h2>
@@ -130,7 +130,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               </a>
               {isCoach && (
                 <button onClick={() => handleDelete(r.id)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
-                  <span className="material-symbols-outlined text-base">delete</span>
+                  <span className="material-symbols-outlined text-title-s">delete</span>
                 </button>
               )}
             </div>

@@ -96,7 +96,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           tono de "tu coach lo está preparando". */}
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-        <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+        <h2 className="font-sans font-black uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-data">fitness_center</span>
           Entrenamiento
           <button

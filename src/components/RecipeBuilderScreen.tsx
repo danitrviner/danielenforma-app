@@ -307,7 +307,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   </div>
                 )}
                 <div className="p-4 flex-1 space-y-2">
-                  <h3 className="font-sans font-bold text-base text-white">{recipe.name}</h3>
+                  <h3 className="font-sans font-bold text-title-s text-white">{recipe.name}</h3>
                   {recipe.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {recipe.categories.map(c => (
@@ -367,7 +367,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       {/* ── Biblioteca Indya (solo lectura) ─────────────────────────────── */}
       <section className="space-y-4 pt-4 border-t border-hairline">
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-data text-base">library_books</span>
+          <span className="material-symbols-outlined text-data text-title-s">library_books</span>
           Biblioteca Indya
           <span className="font-mono text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
@@ -411,7 +411,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </div>
 
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s">search</span>
           <input
             type="text"
             value={indyaSearch}

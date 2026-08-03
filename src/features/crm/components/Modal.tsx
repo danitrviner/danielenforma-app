@@ -46,7 +46,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
             aria-label="Cerrar"
             className="w-7 h-7 rounded-control flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined text-title-s">close</span>
           </button>
         </header>
 

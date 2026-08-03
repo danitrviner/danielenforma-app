@@ -169,7 +169,7 @@ export default function ClientStatusCard({
           </p>
           {planPhase ? (
             <p className="text-body-s font-bold text-white flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base" style={{ color: planPhase.color }}>{planPhase.icon}</span>
+              <span className="material-symbols-outlined text-title-s" style={{ color: planPhase.color }}>{planPhase.icon}</span>
               {planPhase.name}
             </p>
           ) : (

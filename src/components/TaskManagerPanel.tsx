@@ -71,8 +71,8 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">checklist</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">checklist</span>
           Tareas del atleta
         </h3>
         <button

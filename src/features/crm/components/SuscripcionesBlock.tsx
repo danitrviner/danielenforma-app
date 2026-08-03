@@ -114,7 +114,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             title={s.estado === 'activa' ? 'Pausar' : 'Reanudar'}
             className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 disabled:opacity-40 transition-colors"
           >
-            <span className="material-symbols-outlined text-base">
+            <span className="material-symbols-outlined text-title-s">
               {s.estado === 'activa' ? 'pause' : 'play_arrow'}
             </span>
           </button>
@@ -125,7 +125,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             title="Editar"
             className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
-            <span className="material-symbols-outlined text-base">edit</span>
+            <span className="material-symbols-outlined text-title-s">edit</span>
           </button>
         </div>
       ),

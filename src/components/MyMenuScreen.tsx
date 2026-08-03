@@ -331,7 +331,7 @@ export default function MyMenuScreen({ profile }: Props) {
       {menu.batchCooking && batchPlan.length > 0 && (
         <div className="bg-accent/5 border border-accent/25 rounded-surface p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">inventory_2</span>
+            <span className="material-symbols-outlined text-accent text-title-s">inventory_2</span>
             <div>
               <p className="font-sans font-bold text-body-s text-white">Cocina de la semana</p>
               <p className="font-mono text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
@@ -355,10 +355,10 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
-            <span className="material-symbols-outlined text-data text-base">shopping_cart</span>
+            <span className="material-symbols-outlined text-data text-title-s">shopping_cart</span>
             Lista de la compra de la semana
           </span>
-          <span className="material-symbols-outlined text-ink-2 text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
+          <span className="material-symbols-outlined text-ink-2 text-title-s">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
         </button>
         {shoppingOpen && (
           <div className="px-4 pb-4">
@@ -401,7 +401,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
                   title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                 >
-                  {done && <span className="material-symbols-outlined text-black text-base">check</span>}
+                  {done && <span className="material-symbols-outlined text-black text-title-s">check</span>}
                 </button>
 
                 <button
@@ -445,7 +445,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           className="flex items-center transition-colors"
                           style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
                         >
-                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                          <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
                         </button>
                         <button
                           onClick={() => toggleDislike(meal.recipeId, meal)}
@@ -453,7 +453,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           className="flex items-center transition-colors"
                           style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
                         >
-                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+                          <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
                         </button>
                       </>
                     )}
@@ -469,10 +469,10 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
-            <span className="material-symbols-outlined text-accent text-base">tune</span>
+            <span className="material-symbols-outlined text-accent text-title-s">tune</span>
             Tipos de comida que prefieres
           </span>
-          <span className="material-symbols-outlined text-ink-2 text-base">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
+          <span className="material-symbols-outlined text-ink-2 text-title-s">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
         </button>
         {dishPrefsOpen && (
           <div className="px-4 pb-4 space-y-3">
@@ -551,7 +551,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-body-s text-white">Elige una alternativa</h3>
               <button onClick={() => setSwapFor(null)} className="text-ink-2 hover:text-white">
-                <span className="material-symbols-outlined text-base">close</span>
+                <span className="material-symbols-outlined text-title-s">close</span>
               </button>
             </div>
             {swapLoading ? (
@@ -590,9 +590,9 @@ export default function MyMenuScreen({ profile }: Props) {
             ) : detailRecipe ? (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="font-sans font-bold text-base text-white">{detailRecipe.name}</h3>
+                  <h3 className="font-sans font-bold text-title-s text-white">{detailRecipe.name}</h3>
                   <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <span className="material-symbols-outlined text-base">close</span>
+                    <span className="material-symbols-outlined text-title-s">close</span>
                   </button>
                 </div>
                 {(detailRecipe.image ?? detailRecipe.photoUrl) && (
@@ -682,7 +682,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <>
                 <div className="flex justify-end">
                   <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <span className="material-symbols-outlined text-base">close</span>
+                    <span className="material-symbols-outlined text-title-s">close</span>
                   </button>
                 </div>
                 <p className="font-mono text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>

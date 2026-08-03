@@ -481,7 +481,7 @@ export default function ClientHub({
                 activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
-              <span className="material-symbols-outlined text-base">{ZONE_META[zone].icon}</span>
+              <span className="material-symbols-outlined text-title-s">{ZONE_META[zone].icon}</span>
               {ZONE_META[zone].label}
             </button>
           ))}

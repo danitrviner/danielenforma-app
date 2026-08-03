@@ -389,7 +389,7 @@ export default function MyDietsScreen({ profile }: Props) {
                         </span>
                       )}
                       <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
                     </button>
                   ))
                 ) : (
@@ -405,11 +405,11 @@ export default function MyDietsScreen({ profile }: Props) {
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-surface object-cover flex-shrink-0" />
                       ) : (
                         <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-ink-2 text-base">skillet</span>
+                          <span className="material-symbols-outlined text-ink-2 text-title-s">skillet</span>
                         </div>
                       )}
                       <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug flex-1">{recipe.name}</span>
-                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
                     </button>
                   ))
                 )}
@@ -468,14 +468,14 @@ export default function MyDietsScreen({ profile }: Props) {
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => openEdit(dt)} title="Editar" className="text-ink-2 hover:text-accent transition-colors p-2">
-                    <span className="material-symbols-outlined text-base select-none">edit</span>
+                    <span className="material-symbols-outlined text-title-s select-none">edit</span>
                   </button>
                   <button onClick={() => handleDuplicate(dt)} title="Duplicar" className="text-ink-2 hover:text-data transition-colors p-2">
-                    <span className="material-symbols-outlined text-base select-none">content_copy</span>
+                    <span className="material-symbols-outlined text-title-s select-none">content_copy</span>
                   </button>
                   {dt.selfManaged && (
                   <button onClick={() => handleDelete(dt.id)} title="Eliminar" className="text-ink-2 hover:text-red-400 transition-colors p-2">
-                    <span className="material-symbols-outlined text-base select-none">delete</span>
+                    <span className="material-symbols-outlined text-title-s select-none">delete</span>
                   </button>
                   )}
                 </div>

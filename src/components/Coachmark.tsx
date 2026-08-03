@@ -34,7 +34,7 @@ export default function Coachmark({ id, email, icon, text }: Props) {
         aria-label="Cerrar aviso"
         className="text-accent/60 hover:text-accent flex-shrink-0 -m-1 p-1"
       >
-        <span className="material-symbols-outlined text-base">close</span>
+        <span className="material-symbols-outlined text-title-s">close</span>
       </button>
     </div>
   );

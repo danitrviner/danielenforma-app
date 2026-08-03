@@ -329,7 +329,7 @@ export default function ClientReviewsPanel({
           return (
             <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="p-4 border-b border-hairline flex items-center justify-between bg-raised">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
                   Historial Fotográfico
                   {athletePhotos.length > 0 && (
@@ -489,8 +489,8 @@ export default function ClientReviewsPanel({
                 onClick={() => setFichaExpanded(v => !v)}
                 className="w-full flex items-center justify-between gap-3 text-left"
               >
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-accent text-base flex-shrink-0">person_check</span>
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">person_check</span>
                   <span className="truncate">Ficha de iniciación</span>
                   <span className="font-mono text-caption text-ink-3 font-normal normal-case truncate">
                     {[
@@ -847,7 +847,7 @@ export default function ClientReviewsPanel({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-ink-3 text-base">person_check</span>
+                  <span className="material-symbols-outlined text-ink-3 text-title-s">person_check</span>
                   Ficha de iniciación
                 </p>
                 <p className="font-mono text-label text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
@@ -865,8 +865,8 @@ export default function ClientReviewsPanel({
         {/* ── Preferencias alimentarias ────────────────────────────────── */}
         {onboardingData && (
           <div className="bg-surface border border-hairline rounded-surface p-5">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-accent text-base">restaurant</span>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
               Preferencias alimentarias
             </h3>
             <FoodPreferencesPanel
@@ -899,7 +899,7 @@ export default function ClientReviewsPanel({
             ))}
           </div>
           <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-data text-body-s">assignment_turned_in</span>
               Cumplimiento Semanal
             </h3>
@@ -953,7 +953,7 @@ export default function ClientReviewsPanel({
             <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
-                <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
+                <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-caption text-ink-2 ml-1">({items.length} entradas)</span>
               </div>
               <div className="divide-y divide-hairline/40">
@@ -1248,7 +1248,7 @@ export default function ClientReviewsPanel({
         {/* ── Asignar cuestionario ───────────────────────────────────── */}
             <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-body-s">quiz</span>
                   Asignar cuestionario
                 </h3>
@@ -1367,7 +1367,7 @@ export default function ClientReviewsPanel({
             {/* ── Respuestas del atleta ──────────────────────────────────── */}
             {athleteQResponses.length > 0 && (
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-data text-body-s">assignment_turned_in</span>
                   Respuestas enviadas
                 </h3>

@@ -95,8 +95,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
         <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-hairline rounded-surface shadow-2xl shadow-black/60 z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
-            <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-base">notifications</span>
+            <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
+              <span className="material-symbols-outlined text-accent text-title-s">notifications</span>
               Notificaciones
               {unread > 0 && (
                 <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-control font-mono font-bold">
@@ -139,7 +139,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                 >
                   {/* Icon */}
                   <span
-                    className={`material-symbols-outlined text-base mt-0.5 flex-shrink-0 ${
+                    className={`material-symbols-outlined text-title-s mt-0.5 flex-shrink-0 ${
                       !n.read ? 'text-accent' : 'text-ink-3'
                     }`}
                     style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}

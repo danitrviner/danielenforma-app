@@ -201,7 +201,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             onClick={handleGenerate}
             className="px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-base">auto_awesome</span>
+            <span className="material-symbols-outlined text-title-s">auto_awesome</span>
             Generar
           </button>
         </div>
@@ -244,14 +244,14 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
                 title="Copiar texto del reporte"
                 className="flex-shrink-0 p-1.5 text-ink-2 hover:text-data transition-colors"
               >
-                <span className="material-symbols-outlined text-base">{copiedId === r.id ? 'check' : 'content_copy'}</span>
+                <span className="material-symbols-outlined text-title-s">{copiedId === r.id ? 'check' : 'content_copy'}</span>
               </button>
               <button
                 onClick={() => handleSend(r)}
                 title={r.status === 'sent' ? 'Reenviar al atleta' : 'Enviar al atleta'}
                 className="flex-shrink-0 p-1.5 text-ink-2 hover:text-accent transition-colors"
               >
-                <span className="material-symbols-outlined text-base">send</span>
+                <span className="material-symbols-outlined text-title-s">send</span>
               </button>
             </div>
           ))

@@ -131,7 +131,7 @@ export default function ClientesList() {
       width: '44px',
       align: 'right',
       render: () => (
-        <span className="material-symbols-outlined text-base text-ink-3">chevron_right</span>
+        <span className="material-symbols-outlined text-title-s text-ink-3">chevron_right</span>
       ),
     },
   ];

@@ -34,7 +34,7 @@ export default function PhasePathStepper({ phases }: Props) {
                     color: isDone ? phase.color : isActive ? phase.color : 'var(--color-ink-3)',
                   }}
                 >
-                  <span className="material-symbols-outlined text-base">
+                  <span className="material-symbols-outlined text-title-s">
                     {isDone ? 'check' : phase.icon || 'circle'}
                   </span>
                 </div>

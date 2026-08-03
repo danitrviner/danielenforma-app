@@ -320,7 +320,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {DIET_TYPES.map(d => (
                 <Chip key={d.id} selected={dietType === d.id} onClick={() => setDietType(d.id)}>
                   <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base">{d.icon}</span>
+                    <span className="material-symbols-outlined text-title-s">{d.icon}</span>
                     {d.label}
                   </span>
                 </Chip>
@@ -389,7 +389,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 const item = i as { icon: string; text: string };
                 return (
                   <p key={idx} className="flex items-center gap-3 text-body-s text-ink">
-                    <span className="material-symbols-outlined text-accent text-base">{item.icon}</span>
+                    <span className="material-symbols-outlined text-accent text-title-s">{item.icon}</span>
                     {item.text}
                   </p>
                 );

@@ -103,7 +103,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-base">directions_walk</span>
+          <span className="material-symbols-outlined text-accent text-title-s">directions_walk</span>
           Pasos de hoy
         </h2>
         {!editing && (
@@ -112,7 +112,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             className="text-ink-2 hover:text-white transition-colors"
             title="Editar"
           >
-            <span className="material-symbols-outlined text-base">edit</span>
+            <span className="material-symbols-outlined text-title-s">edit</span>
           </button>
         )}
       </div>

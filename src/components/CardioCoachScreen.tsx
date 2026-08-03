@@ -40,7 +40,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'}`}>
-              <span className="material-symbols-outlined text-base">{t.icon}</span>
+              <span className="material-symbols-outlined text-title-s">{t.icon}</span>
               {t.label}
             </button>
           ))}
@@ -69,12 +69,12 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
-      <h2 className="font-sans font-bold text-base text-white mb-2">Elige un atleta</h2>
+      <h2 className="font-sans font-bold text-title-s text-white mb-2">Elige un atleta</h2>
       {athletes.map(a => (
         <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
           <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white text-left truncate">{a.displayName}</p>
-          <span className="material-symbols-outlined text-ink-2 text-base">chevron_right</span>
+          <span className="material-symbols-outlined text-ink-2 text-title-s">chevron_right</span>
         </button>
       ))}
     </section>
@@ -109,7 +109,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
       <button onClick={onBack} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white">
-        <span className="material-symbols-outlined text-base">arrow_back</span> Atletas
+        <span className="material-symbols-outlined text-title-s">arrow_back</span> Atletas
       </button>
       <div className="flex gap-2">
         <div className="flex-1">
@@ -182,7 +182,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
-      <h2 className="font-sans font-bold text-base text-white mb-2">Tests pendientes de revisión</h2>
+      <h2 className="font-sans font-bold text-title-s text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
         <p className="text-label text-ink-3 font-mono py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
@@ -257,7 +257,7 @@ function PrescriptionTab() {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <h2 className="font-sans font-bold text-base text-white">Prescribir cardio</h2>
+      <h2 className="font-sans font-bold text-title-s text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
         className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>

@@ -277,7 +277,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
         {successMsg && (
           <div className="bg-accent/10 border border-accent/25 text-white p-3 rounded-surface text-body-s flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-base">check_circle</span>
+            <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
             {successMsg}
           </div>
         )}
@@ -312,7 +312,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               >
                 <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
 
-                <h3 className="font-sans font-black text-white text-base mb-3 group-hover:text-accent transition-colors pr-4">
+                <h3 className="font-sans font-black text-white text-title-s mb-3 group-hover:text-accent transition-colors pr-4">
                   {w.name}
                 </h3>
 
@@ -626,7 +626,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             {/* Picker filters */}
             <div className="p-4 border-b border-hairline space-y-3 flex-shrink-0">
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
                 <input
                   autoFocus
                   type="text"
@@ -673,7 +673,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-surface object-cover border border-hairline flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
+                        <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">

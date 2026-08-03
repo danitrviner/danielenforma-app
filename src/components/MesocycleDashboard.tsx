@@ -157,7 +157,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
+        <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
           <span className="material-symbols-outlined text-accent">dashboard</span>
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>

@@ -43,7 +43,7 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
       <ul className="space-y-1.5">
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="material-symbols-outlined text-accent text-base flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+            <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
             <span className="text-label text-white font-sans leading-snug">{it}</span>
           </li>
         ))}
@@ -57,7 +57,7 @@ function TonnageSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-end gap-3 flex-wrap">
-        <span className="font-mono font-black text-3xl text-white">{d.current.toLocaleString('es-ES')}<span className="text-base text-ink-2 font-bold"> kg</span></span>
+        <span className="font-mono font-black text-3xl text-white">{d.current.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
         <div className="flex items-center gap-2 pb-1">
           <DeltaBadge pct={d.deltaPct} />
           {d.previous != null && <span className="font-mono text-caption text-ink-3">{d.comparisonLabel} ({d.previous.toLocaleString('es-ES')} kg)</span>}
@@ -146,7 +146,7 @@ function BodyweightSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-end gap-3 flex-wrap">
-        <span className="font-mono font-black text-3xl text-white">{d.endWeight.toLocaleString('es-ES')}<span className="text-base text-ink-2 font-bold"> kg</span></span>
+        <span className="font-mono font-black text-3xl text-white">{d.endWeight.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
         {d.deltaKg != null && (
           <span className={`font-mono text-caption font-bold pb-1.5 flex items-center gap-1 ${
             good === true ? 'text-green-400' : good === false ? 'text-amber-300' : 'text-ink-2'
@@ -174,7 +174,7 @@ function AdherenceSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-center gap-3">
-        <span className="font-mono font-black text-3xl text-white">{d.completed}<span className="text-base text-ink-2 font-bold">/{d.planned}</span></span>
+        <span className="font-mono font-black text-3xl text-white">{d.completed}<span className="text-title-s text-ink-2 font-bold">/{d.planned}</span></span>
         <div className="flex-1">
           <div className="h-2 bg-raised rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 100 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -195,7 +195,7 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-center gap-3">
-        <span className="font-mono font-black text-3xl text-white">{pct}<span className="text-base text-ink-2 font-bold">%</span></span>
+        <span className="font-mono font-black text-3xl text-white">{pct}<span className="text-title-s text-ink-2 font-bold">%</span></span>
         <div className="flex-1">
           <div className="h-2 bg-raised rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 85 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -226,7 +226,7 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
           const st = CHALLENGE_STYLE[c.status] ?? CHALLENGE_STYLE.activo;
           return (
             <li key={i} className="flex items-center gap-2.5">
-              <span className={`material-symbols-outlined text-base flex-shrink-0 ${st.cls}`} style={{ fontVariationSettings: "'FILL' 1" }}>{st.icon}</span>
+              <span className={`material-symbols-outlined text-title-s flex-shrink-0 ${st.cls}`} style={{ fontVariationSettings: "'FILL' 1" }}>{st.icon}</span>
               <span className="text-label text-white font-sans flex-1 min-w-0">{c.title}</span>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${st.cls}`}>
                 {st.label}{c.progressValue != null ? ` · ${c.progressValue}/${c.target} ${c.unit}` : ''}

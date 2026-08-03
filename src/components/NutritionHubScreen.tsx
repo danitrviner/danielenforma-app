@@ -44,7 +44,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="material-symbols-outlined text-accent text-base">insights</span>
+            <span className="material-symbols-outlined text-accent text-title-s">insights</span>
             <p className="font-sans font-bold text-body-s text-white">Análisis de tu entrenador</p>
           </div>
           <p className="text-label text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
@@ -69,7 +69,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
                 : 'text-ink-2 hover:text-white'
             }`}
           >
-            <span className="material-symbols-outlined text-base">{tab.icon}</span>
+            <span className="material-symbols-outlined text-title-s">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
@@ -85,8 +85,8 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
           {/* Config al final, tras el contenido del día (visual arriba, ajustes abajo) */}
           <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
             <div>
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-base">eco</span>
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-accent text-title-s">eco</span>
                 Tus verduras habituales
               </h3>
               <p className="font-mono text-caption text-ink-2 mt-1">

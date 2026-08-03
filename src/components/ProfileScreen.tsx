@@ -230,8 +230,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         ) : (
           <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-base">assignment_ind</span>
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-accent text-title-s">assignment_ind</span>
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
               <p className="font-mono text-caption text-ink-3 mt-1">
@@ -254,8 +254,8 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         if (!onboarding) return null;
         return (
           <div className="bg-surface border border-hairline p-5 rounded-surface">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-accent text-base">restaurant</span>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
               Preferencias alimentarias
             </h3>
             <FoodPreferencesPanel
@@ -290,15 +290,15 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         showCoaches ? (
           <div className="bg-surface border border-hairline p-5 rounded-surface">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-base">groups</span>
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-accent text-title-s">groups</span>
                 Entrenadores
               </h3>
               <button
                 onClick={() => setShowCoaches(false)}
                 className="text-ink-2 hover:text-white transition-colors"
               >
-                <span className="material-symbols-outlined text-base">close</span>
+                <span className="material-symbols-outlined text-title-s">close</span>
               </button>
             </div>
             <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
@@ -309,7 +309,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             className="w-full bg-surface border border-hairline p-4 rounded-control flex items-center justify-between gap-4 hover:border-hairline transition-colors text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-base">groups</span>
+              <span className="material-symbols-outlined text-accent text-title-s">groups</span>
               <span className="font-sans font-bold text-body-s text-white">Entrenadores</span>
             </div>
             <span className="material-symbols-outlined text-ink-2 text-body-s">chevron_right</span>
@@ -361,7 +361,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
       {/* ── Edit profile form ─────────────────────────────────────────────────── */}
       <form onSubmit={handleUpdate} className="bg-surface border border-hairline p-5 rounded-surface space-y-4">
-        <h3 className="font-sans font-bold text-base text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
+        <h3 className="font-sans font-bold text-title-s text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
 
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre deportivo</label>
@@ -369,7 +369,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-base text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-white focus:outline-none focus:border-accent"
             required
           />
         </div>
@@ -381,7 +381,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-base text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-white focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -391,7 +391,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-base text-mono text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-mono text-white focus:outline-none focus:border-accent"
           />
         </div>
 

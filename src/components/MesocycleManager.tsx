@@ -225,7 +225,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 py-0.5 rounded-control text-base sm:text-label font-mono transition-all flex items-center justify-center ${
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 py-0.5 rounded-control text-title-s sm:text-label font-mono transition-all flex items-center justify-center ${
             value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -1217,7 +1217,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               {/* Mesocycle header */}
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-sans font-bold text-white text-base">Mesociclo #{editing.number}</h2>
+                  <h2 className="font-sans font-bold text-white text-title-s">Mesociclo #{editing.number}</h2>
                   <span className={`font-mono text-label uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-red-400' :
@@ -1649,8 +1649,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-hairline flex-shrink-0">
               <div>
-                <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-base">library_books</span>
+                <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
+                  <span className="material-symbols-outlined text-accent text-title-s">library_books</span>
                   Usar plantilla
                 </h3>
                 <p className="font-mono text-caption text-ink-2 mt-0.5">
@@ -1661,7 +1661,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 onClick={() => setShowTemplatePicker(false)}
                 className="text-ink-2 hover:text-white transition-colors ml-4"
               >
-                <span className="material-symbols-outlined text-base">close</span>
+                <span className="material-symbols-outlined text-title-s">close</span>
               </button>
             </div>
 

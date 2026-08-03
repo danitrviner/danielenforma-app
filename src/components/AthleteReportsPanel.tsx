@@ -21,7 +21,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+      <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
         Reportes de tu entrenador
       </h2>
@@ -64,7 +64,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-base">close</span>
+                  <span className="material-symbols-outlined text-title-s">close</span>
                 </button>
               </div>
               <div className="p-4 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">

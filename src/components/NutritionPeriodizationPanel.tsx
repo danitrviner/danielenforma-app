@@ -366,7 +366,7 @@ export default function NutritionPeriodizationPanel({
       return (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
               Periodización nutricional
             </h3>
@@ -409,7 +409,7 @@ export default function NutritionPeriodizationPanel({
     <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
           Periodización nutricional
         </h3>

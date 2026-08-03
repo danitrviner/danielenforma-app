@@ -59,8 +59,8 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
-      <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-3">
-        <span className="material-symbols-outlined text-accent text-base">edit_note</span>
+      <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-3">
+        <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
         Observación personalizada por ejercicio
         <span className="ml-2 text-caption font-mono text-ink-3 normal-case font-sans">(solo la ve este atleta)</span>
       </h3>

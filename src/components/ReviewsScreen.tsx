@@ -204,7 +204,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 onClick={startReviewing}
                 className="flex items-center gap-1.5 text-label bg-accent text-black px-3.5 py-2 rounded-control font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
               >
-                <span className="material-symbols-outlined text-base">rate_review</span>
+                <span className="material-symbols-outlined text-title-s">rate_review</span>
                 Empezar a revisar
               </button>
             </>
@@ -235,7 +235,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
           <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
-            <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
+            <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-hairline/40">
@@ -305,7 +305,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           title="Ver perfil completo"
                           className="flex-shrink-0 p-1.5 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                         >
-                          <span className="material-symbols-outlined text-base">account_circle</span>
+                          <span className="material-symbols-outlined text-title-s">account_circle</span>
                         </button>
                       )}
                       <span
@@ -435,7 +435,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         title="Ver perfil completo"
                         className="flex-shrink-0 p-1.5 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                       >
-                        <span className="material-symbols-outlined text-base">account_circle</span>
+                        <span className="material-symbols-outlined text-title-s">account_circle</span>
                       </button>
                     )}
                     <span
@@ -473,7 +473,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             <div className="flex items-center justify-between">
               <h3 className="font-sans font-bold text-white text-body-s">Plantillas de feedback</h3>
               <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">
-                <span className="material-symbols-outlined text-base">close</span>
+                <span className="material-symbols-outlined text-title-s">close</span>
               </button>
             </div>
             <div className="space-y-2 overflow-y-auto flex-1">
@@ -489,7 +489,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
                     className="text-ink-2 hover:text-red-300 p-1 flex-shrink-0"
                   >
-                    <span className="material-symbols-outlined text-base">delete</span>
+                    <span className="material-symbols-outlined text-title-s">delete</span>
                   </button>
                 </div>
               ))}

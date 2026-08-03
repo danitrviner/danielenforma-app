@@ -46,7 +46,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
                   : 'text-ink-2 hover:text-white'
               }`}
             >
-              <span className="material-symbols-outlined text-base">{tab.icon}</span>
+              <span className="material-symbols-outlined text-title-s">{tab.icon}</span>
               {tab.label}
             </button>
           ))}

@@ -431,7 +431,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       <div className="space-y-4">
         <div className="bg-surface border border-hairline p-4 rounded-surface flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
             <input
               type="text"
               value={search}
@@ -510,7 +510,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-accent transition-colors">{athlete.displayName}</h3>
+                        <h3 className="font-sans font-bold text-white text-title-s leading-snug group-hover:text-accent transition-colors">{athlete.displayName}</h3>
                         <p className="font-mono text-caption text-ink-2 truncate">{athlete.email}</p>
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 mt-0.5">

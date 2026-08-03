@@ -25,7 +25,7 @@ export default function LocalModeBanner() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-lg">
-      <span className="material-symbols-outlined text-base">cloud_off</span>
+      <span className="material-symbols-outlined text-title-s">cloud_off</span>
       <p className="font-sans text-label font-bold">
         Sin conexión con el servidor — los cambios NO se están guardando.
       </p>

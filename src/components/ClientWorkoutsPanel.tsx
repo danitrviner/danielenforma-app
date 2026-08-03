@@ -155,8 +155,8 @@ export default function ClientWorkoutsPanel({
         if (logsWithNotes.length === 0) return null;
         return (
           <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-300 text-base">sticky_note_2</span>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
               Notas del atleta
             </h3>
             {logsWithNotes.map(log => {
@@ -206,7 +206,7 @@ export default function ClientWorkoutsPanel({
             className="flex items-center gap-2 text-left group"
           >
             <span className="material-symbols-outlined text-accent text-body-s">fitness_center</span>
-            <h3 className="font-sans font-bold text-base text-white group-hover:text-accent transition-colors">
+            <h3 className="font-sans font-bold text-title-s text-white group-hover:text-accent transition-colors">
               Entrenamientos asignados
             </h3>
             {assignments.length > 0 && (
@@ -215,7 +215,7 @@ export default function ClientWorkoutsPanel({
               </span>
             )}
             <span
-              className="material-symbols-outlined text-ink-2 text-base transition-transform"
+              className="material-symbols-outlined text-ink-2 text-title-s transition-transform"
               style={{ transform: assignmentsExpanded ? 'rotate(180deg)' : 'none' }}
             >
               expand_more
@@ -241,7 +241,7 @@ export default function ClientWorkoutsPanel({
               return (
                 <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-hairline rounded-surface">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="material-symbols-outlined text-base text-ink-2 flex-shrink-0">event</span>
+                    <span className="material-symbols-outlined text-title-s text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">
                       <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-1.5">
                         {wo?.name || <span className="italic text-ink-2">Rutina eliminada</span>}

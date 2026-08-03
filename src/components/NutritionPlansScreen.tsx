@@ -916,7 +916,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0 ml-3">add_circle</span>
                 </button>
               ))}
             </div>

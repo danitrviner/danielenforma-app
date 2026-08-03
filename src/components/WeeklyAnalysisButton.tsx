@@ -52,7 +52,7 @@ export default function WeeklyAnalysisButton() {
         disabled={busy}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-label font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
-        <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         Análisis semanal IA
       </button>
 
@@ -70,7 +70,7 @@ export default function WeeklyAnalysisButton() {
             <div className="flex-1 overflow-y-auto p-4">
               {busy && (
                 <div className="flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse">
-                  <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                  <span className="material-symbols-outlined text-title-s animate-spin">progress_activity</span>
                   {status ?? 'Analizando tu cartera…'}
                 </div>
               )}
