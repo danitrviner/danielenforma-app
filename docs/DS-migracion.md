@@ -1,10 +1,14 @@
 # Bitácora de la migración al Design System
 
 Registro de ejecución del plan de migración. **Una entrada por fase**, escrita al cerrarla:
-qué contadores movió, qué se revisó y qué se dejó fuera a propósito.
+qué contadores movió, qué se revisó y qué se dejó fuera a propósito. Es histórico: solo crece.
 
-No es documentación de diseño. Los tres documentos de referencia — auditoría UX/UI, Design System
-y plan de migración — son externos y no se duplican aquí.
+Para saber **dónde estamos ahora**, el documento es
+[`DESIGN_SYSTEM_STATUS.md`](../DESIGN_SYSTEM_STATUS.md), en la raíz: estado por fase, indicadores
+al día, riesgos abiertos y deuda pendiente.
+
+Esto no es documentación de diseño. Los tres documentos de referencia — auditoría UX/UI, Design
+System y plan de migración — son externos y no se duplican aquí.
 
 ## Cómo se usa el inventario
 
