@@ -112,17 +112,6 @@
   --radius-surface: 16px;
   --radius-canvas:  24px;
 
-  /* ── Radios antiguos ────────────────────────────────────────────────────────
-     ATENCIÓN: estos cuatro SOBRESCRIBEN los valores por defecto de Tailwind y
-     dejan el resto intactos, así que la escala real tiene dos colisiones:
-     `rounded-lg` (16 px) y `rounded-2xl` (16 px) renderizan IDÉNTICO en 703
-     sitios, y `rounded-xl` (20 px) queda fuera de orden entre ambos.
-     Cualquier renombrado que asuma la semántica estándar de Tailwind romperá
-     703 elementos sin un solo error de compilación. Se arregla en F3, sola. */
-  --radius-sm: 0.5rem;   /*  8 px — por defecto en Tailwind: 4 px */
-  --radius-md: 0.75rem;  /* 12 px — por defecto en Tailwind: 6 px */
-  --radius-lg: 1rem;     /* 16 px — por defecto en Tailwind: 8 px */
-  --radius-xl: 1.25rem;  /* 20 px — por defecto en Tailwind: 12 px */
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
