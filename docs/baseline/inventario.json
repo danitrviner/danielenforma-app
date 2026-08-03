@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:01:05.480Z",
-  "commit": "8682ffd",
+  "generado": "2026-08-03T21:07:31.068Z",
+  "commit": "8b49ed5",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39926
+    "lineasTsx": 39842
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5266,
+    "clasesTokenEnUso": 5238,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1018,
-    "fontSans": 1075,
+    "fontMono": 1016,
+    "fontSans": 1070,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 361,
+    "transitionAll": 354,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -33,7 +33,7 @@
     "roundedFull": 166,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 11,
-    "archivosMas600Lineas": 22,
+    "archivosMas600Lineas": 21,
     "hexEnTokensCss": 21
   },
   "listas": {
@@ -156,7 +156,7 @@
       },
       {
         "archivo": "src/components/CoachesScreen.tsx",
-        "lineas": 645
+        "lineas": 641
       },
       {
         "archivo": "src/components/LoadHistoryPanel.tsx",
@@ -169,10 +169,6 @@
       {
         "archivo": "src/components/CheckInScreen.tsx",
         "lineas": 630
-      },
-      {
-        "archivo": "src/components/ClientHub.tsx",
-        "lineas": 618
       },
       {
         "archivo": "src/components/NutritionPeriodizationPanel.tsx",
@@ -192,11 +188,11 @@
       "roundedFull": 4
     },
     "src/components/AcademyCoachScreen.tsx": {
-      "clasesTokenEnUso": 69,
+      "clasesTokenEnUso": 65,
       "fontMono": 5,
-      "fontSans": 12,
+      "fontSans": 11,
       "pesosProhibidos": 1,
-      "transitionAll": 3,
+      "transitionAll": 2,
       "roundedFull": 2
     },
     "src/components/AcademyScreen.tsx": {
@@ -277,10 +273,10 @@
       "transitionAll": 6
     },
     "src/components/ClientHub.tsx": {
-      "clasesTokenEnUso": 25,
-      "fontMono": 6,
-      "fontSans": 4,
-      "transitionAll": 4,
+      "clasesTokenEnUso": 17,
+      "fontMono": 5,
+      "fontSans": 3,
+      "transitionAll": 2,
       "roundedFull": 1
     },
     "src/components/ClientReviewsPanel.tsx": {
@@ -333,10 +329,10 @@
       "transitionAll": 1
     },
     "src/components/CoachesScreen.tsx": {
-      "clasesTokenEnUso": 103,
-      "fontMono": 21,
+      "clasesTokenEnUso": 99,
+      "fontMono": 20,
       "fontSans": 17,
-      "transitionAll": 12,
+      "transitionAll": 11,
       "animatePulse": 1,
       "roundedFull": 4
     },
@@ -484,19 +480,17 @@
       "roundedFull": 2
     },
     "src/components/NutritionCoachScreen.tsx": {
-      "clasesTokenEnUso": 10,
+      "clasesTokenEnUso": 6,
       "fontMono": 1,
-      "fontSans": 3,
+      "fontSans": 2,
       "pesosProhibidos": 1,
-      "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 1
     },
     "src/components/NutritionHubScreen.tsx": {
-      "clasesTokenEnUso": 12,
+      "clasesTokenEnUso": 8,
       "fontMono": 1,
-      "fontSans": 5,
-      "transitionAll": 1
+      "fontSans": 4
     },
     "src/components/NutritionPerformanceDashboard.tsx": {
       "hexLiterales": 2,
@@ -680,11 +674,10 @@
       "transitionAll": 1
     },
     "src/components/TrainingCoachScreen.tsx": {
-      "clasesTokenEnUso": 10,
+      "clasesTokenEnUso": 6,
       "fontMono": 1,
-      "fontSans": 3,
+      "fontSans": 2,
       "pesosProhibidos": 1,
-      "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 1
     },
