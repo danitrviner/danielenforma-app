@@ -206,7 +206,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-2.5 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
+                            className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
                               q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
@@ -256,11 +256,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
+                          className="px-3 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-2.5 py-1 font-mono text-caption uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
+                          className="px-3 py-1 font-mono text-caption uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
                           Eliminar
                         </button>
                       </div>

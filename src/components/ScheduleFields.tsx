@@ -31,7 +31,7 @@ export default function ScheduleFields({
       <select
         value={schedType}
         onChange={e => { onSchedTypeChange(e.target.value as QScheduleType); onWeekdaysChange([]); }}
-        className="bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+        className="bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
       >
         <option value="once">Una vez</option>
         <option value="weekdays">Días de la semana</option>

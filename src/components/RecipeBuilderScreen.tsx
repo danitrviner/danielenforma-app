@@ -37,7 +37,7 @@ function IndyaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
           {recipe.kcal} kcal
         </div>
       ) : null}
-      <p className="relative z-10 p-2.5 text-label text-white font-sans font-bold leading-tight">{recipe.name}</p>
+      <p className="relative z-10 p-3 text-label text-white font-sans font-bold leading-tight">{recipe.name}</p>
     </article>
   );
 }
@@ -417,7 +417,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
         </div>
 
@@ -482,7 +482,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Ej. Bowl de pollo y quinoa"
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
               />
             </div>
 
@@ -494,7 +494,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.photoUrl}
                 onChange={e => setForm(f => ({ ...f, photoUrl: e.target.value }))}
                 placeholder="https://..."
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-2.5 text-label text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
+                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-label text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
               />
               {form.photoUrl && (
                 <img
@@ -535,7 +535,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {(Object.entries(liveExchanges) as [FoodCategory, number][])
                     .filter(([, v]) => v > 0)
                     .map(([cat, val]) => (
-                      <span key={cat} className={`px-2.5 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
+                      <span key={cat} className={`px-3 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
                         {val} {CAT_LABELS[cat]}
                       </span>
                     ))
@@ -556,7 +556,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     value={ingredientSearch}
                     onChange={e => setIngSearch(e.target.value)}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                    className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-2xl">
@@ -565,7 +565,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                           key={item.id}
                           type="button"
                           onClick={() => addIngredient(item)}
-                          className="w-full text-left px-4 py-2.5 hover:bg-raised transition-colors flex items-center justify-between"
+                          className="w-full text-left px-4 py-3 hover:bg-raised transition-colors flex items-center justify-between"
                         >
                           <span className="text-label text-white font-sans truncate pr-2">{item.label}</span>
                           <span className={`font-sans text-caption font-bold shrink-0 ${CAT_COLORS[item.category].split(' ')[0]}`}>
@@ -621,7 +621,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               {form.extras.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.extras.map((ex, idx) => (
-                    <span key={idx} className="flex items-center gap-1 px-2.5 py-1 bg-raised rounded-full">
+                    <span key={idx} className="flex items-center gap-1 px-3 py-1 bg-raised rounded-full">
                       <span className="font-mono text-caption text-ink-2">{ex}</span>
                       <button type="button" onClick={() => setForm(f => ({ ...f, extras: f.extras.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors">
                         <span className="material-symbols-outlined text-label leading-none" style={{ fontSize: '14px' }}>close</span>
@@ -648,7 +648,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               {form.steps.length > 0 && (
                 <ol className="space-y-2">
                   {form.steps.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-3 px-3 py-2.5 bg-raised rounded-surface border border-hairline">
+                    <li key={idx} className="flex items-start gap-3 px-3 py-3 bg-raised rounded-surface border border-hairline">
                       <span className="w-5 h-5 rounded-full bg-raised text-ink-2 font-mono text-caption font-bold flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
                       <p className="text-label text-ink-2 flex-1 leading-relaxed">{step}</p>
                       <button type="button" onClick={() => setForm(f => ({ ...f, steps: f.steps.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors shrink-0">
@@ -664,7 +664,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 py-2.5 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-colors"
+                className="flex-1 py-3 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-colors"
               >
                 Cancelar
               </button>
@@ -672,7 +672,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-control bg-accent text-black font-sans text-label uppercase tracking-wider font-bold hover:bg-accent-press disabled:opacity-40 transition-all active:scale-95"
+                className="flex-1 py-3 rounded-control bg-accent text-black font-sans text-label uppercase tracking-wider font-bold hover:bg-accent-press disabled:opacity-40 transition-all active:scale-95"
               >
                 {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
               </button>

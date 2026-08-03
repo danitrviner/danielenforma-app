@@ -532,7 +532,7 @@ export default function CardioScreen({ profile }: Props) {
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap gap-2">
             {ZONE_ORDER.map(z => (
-              <div key={z} className="flex-1 min-w-[100px] rounded-surface p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
+              <div key={z} className="flex-1 min-w-[100px] rounded-surface p-3 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
                 <p className="text-caption font-sans uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
                 <p className="text-label font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
@@ -540,7 +540,7 @@ export default function CardioScreen({ profile }: Props) {
           </div>
 
           {state === 'idle' && (
-            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+            <button onClick={handleConnect} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Conectar banda
             </button>
           )}
@@ -564,14 +564,14 @@ export default function CardioScreen({ profile }: Props) {
               )}
               <div className="flex items-center gap-2">
                 <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-bg border border-hairline rounded-control p-2.5 text-label text-white focus:outline-none focus:border-accent">
+                  className="bg-bg border border-hairline rounded-control p-3 text-label text-white focus:outline-none focus:border-accent">
                   <option value="libre">Libre</option>
                   <option value="zona2">Sesión Zona 2</option>
                   <option value="intervalos" disabled={!intervalAssignment}>
                     {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
                   </option>
                 </select>
-                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+                <button onClick={handleStartSession} className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
                   Empezar entrenamiento
                 </button>
               </div>
@@ -606,12 +606,12 @@ export default function CardioScreen({ profile }: Props) {
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
                 <button key={r} onClick={() => setHistoryRange(r)}
-                  className={`px-2.5 py-1 rounded-full text-caption font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
+                  className={`px-3 py-1 rounded-full text-caption font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
                   {{ all: 'Todo', week: 'Semana', month: 'Mes', year: 'Año' }[r]}
                 </button>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
-                className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
+                className="bg-bg border border-hairline rounded-full px-3 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
                 <option value="">Cualquier tipo</option>
                 <option value="libre">Libre</option>
                 <option value="zona2">Zona 2</option>
@@ -619,7 +619,7 @@ export default function CardioScreen({ profile }: Props) {
               </select>
               {tags.length > 0 && (
                 <select value={historyTag} onChange={e => setHistoryTag(e.target.value)}
-                  className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
+                  className="bg-bg border border-hairline rounded-full px-3 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
                   <option value="">Cualquier etiqueta</option>
                   {tags.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>

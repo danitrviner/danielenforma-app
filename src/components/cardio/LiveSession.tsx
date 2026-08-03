@@ -100,11 +100,11 @@ export default function LiveSession({
         )}
 
         <div className="flex justify-center gap-3">
-          <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
+          <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-3 text-center">
             <p className="text-caption font-sans uppercase text-white/70">FC prom.</p>
             <p className="text-title-m font-sans font-bold text-white tabular-nums">{avgHR ?? '--'}</p>
           </div>
-          <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
+          <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-3 text-center">
             <p className="text-caption font-sans uppercase text-white/70">FC máx.</p>
             <p className="text-title-m font-sans font-bold text-white tabular-nums">{maxHRSoFar ?? '--'}</p>
           </div>
@@ -121,7 +121,7 @@ export default function LiveSession({
         </div>
       </div>
 
-      <div className="px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-2 space-y-2.5">
+      <div className="px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-2 space-y-3">
         <SlideAction label="Desliza para guardar" icon="fiber_manual_record" color="var(--color-danger)" onConfirm={onSave} disabled={saving} />
         <SlideAction label="Deslizar para descartar" icon="delete" color="var(--color-ink)" onConfirm={onDiscard} disabled={saving} />
       </div>

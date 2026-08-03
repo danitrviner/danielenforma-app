@@ -295,7 +295,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <p className="text-ink-2 text-label mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
             <button
               onClick={() => openEditor()}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/30 text-accent font-mono text-label uppercase rounded-control hover:bg-accent/20 transition-all"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-3 bg-accent/10 border border-accent/30 text-accent font-mono text-label uppercase rounded-control hover:bg-accent/20 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Crear primera rutina
@@ -389,10 +389,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               </div>
               <p className="text-body-s text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
+                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
                   Cancelar
                 </button>
-                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all">
+                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-3 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all">
                   Eliminar
                 </button>
               </div>
@@ -633,7 +633,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   placeholder="Buscar por nombre..."
                   value={pickerSearch}
                   onChange={e => setPickerSearch(e.target.value)}
-                  className="w-full bg-surface border border-hairline rounded-control pl-10 pr-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full bg-surface border border-hairline rounded-control pl-10 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex gap-2">

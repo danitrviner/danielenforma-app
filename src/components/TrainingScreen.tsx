@@ -388,7 +388,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <span className={`text-caption font-sans font-bold uppercase px-2.5 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
+          <span className={`text-caption font-sans font-bold uppercase px-3 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
             {STATUS_LABEL[a.status]}
           </span>
           {canAct && (
@@ -403,7 +403,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {wo && (
                 <button
                   onClick={() => openPlayer(a)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
                 >
                   <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
@@ -448,7 +448,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
+          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-3">
             <span
               className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
@@ -587,7 +587,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               )}
 
               {we.technique && (
-                <div className={`flex items-start gap-2 px-4 py-2.5 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
+                <div className={`flex items-start gap-2 px-4 py-3 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
                   <span className="text-title-s flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
                   <p className="font-sans text-label leading-relaxed">
                     <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]}. </span>
@@ -612,7 +612,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <tbody>
                     {warmup.sets.map((w, wIdx) => (
                       <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-orange-500/5">
-                        <td className="px-4 py-2.5">
+                        <td className="px-4 py-3">
                           <span className="font-mono text-label font-bold text-orange-300 flex items-center gap-1">
                             🔥 W{wIdx + 1}
                           </span>
@@ -638,7 +638,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                             setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-raised'
                           }`}
                         >
-                          <td className="px-4 py-2.5">
+                          <td className="px-4 py-3">
                             <span className="font-mono text-label font-bold text-ink-2 flex items-center gap-1">
                               S{sIdx + 1}
                               {shouldRecord && (
@@ -730,7 +730,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
                   placeholder="ej. Molestia leve en el hombro derecho..."
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-2.5 text-label text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded-control p-3 text-label text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
 
@@ -876,14 +876,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-full sm:w-fit">
         <button
           onClick={() => setMainTab('programa')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-title-s">event</span>
           Programa
         </button>
         <button
           onClick={() => setMainTab('progresion')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
         >
           <span className="material-symbols-outlined text-title-s">trending_up</span>
           Progresión

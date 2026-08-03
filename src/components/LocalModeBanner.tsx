@@ -24,14 +24,14 @@ export default function LocalModeBanner() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
       <span className="material-symbols-outlined text-title-s">cloud_off</span>
       <p className="font-sans text-label font-bold">
         Sin conexión con el servidor — los cambios NO se están guardando.
       </p>
       <button
         onClick={retry}
-        className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-control transition-colors"
+        className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-3 py-1 rounded-control transition-colors"
       >
         Reintentar
       </button>

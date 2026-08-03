@@ -365,7 +365,7 @@ export default function ClientReviewsPanel({
                 <div className="p-3 bg-bg/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -373,13 +373,13 @@ export default function ClientReviewsPanel({
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="relative rounded-surface overflow-hidden border border-hairline group">
-                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-hairline px-2.5 py-0.5 rounded-control text-white font-mono text-caption">
+                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-hairline px-3 py-0.5 rounded-control text-white font-mono text-caption">
                           Baseline · {fmtDate(baseline.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
                       <div className="relative rounded-surface overflow-hidden border border-accent/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -439,7 +439,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignPhotoCheckIn}
                     disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningPhoto ? '…' : 'Asignar'}
                   </button>
@@ -508,7 +508,7 @@ export default function ClientReviewsPanel({
                 <div className="flex justify-end -mt-2">
                   <button
                     onClick={() => setEditingOnboarding(true)}
-                    className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
+                    className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-1.5 rounded-control"
                   >
                     <span className="material-symbols-outlined text-body-s">edit</span>Editar
                   </button>
@@ -601,7 +601,7 @@ export default function ClientReviewsPanel({
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Comidas ({onboardingData.mealCount ?? onboardingData.meals.length} ingestas)</p>
                   <div className="flex flex-wrap gap-1.5">
                     {onboardingData.meals.map(m => (
-                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-raised border border-hairline rounded-surface px-2.5 py-1.5">
+                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-raised border border-hairline rounded-surface px-3 py-1.5">
                         <span className="font-sans text-caption text-ink-2">{m.name}</span>
                         {m.needsTupper && (
                           <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-1.5 py-0.5">tupper</span>
@@ -854,7 +854,7 @@ export default function ClientReviewsPanel({
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
               </button>
@@ -1008,14 +1008,14 @@ export default function ClientReviewsPanel({
                               <div className="flex items-center gap-2 pb-1">
                                 <button
                                   onClick={() => handleStartEditCheckin(c, key)}
-                                  className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                                 >
                                   <span className="material-symbols-outlined text-label">edit</span>Editar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCheckin(c.id, key)}
                                   disabled={deletingReviewKey === key}
-                                  className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
+                                  className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                                 >
                                   <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                                 </button>
@@ -1081,7 +1081,7 @@ export default function ClientReviewsPanel({
                                 { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                                 { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                               ].map(cell => (
-                                <div key={cell.label} className="bg-raised p-2.5 rounded-surface border border-hairline">
+                                <div key={cell.label} className="bg-raised p-3 rounded-surface border border-hairline">
                                   <span className="block text-ink-2 text-caption uppercase">{cell.label}</span>
                                   <strong className={`${cell.color}`}>{cell.value}</strong>
                                 </div>
@@ -1163,14 +1163,14 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 pb-1">
                               <button
                                 onClick={() => handleStartEditResponse(r, key)}
-                                className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                               >
                                 <span className="material-symbols-outlined text-label">edit</span>Editar
                               </button>
                               <button
                                 onClick={() => handleDeleteResponse(r.id, key)}
                                 disabled={deletingReviewKey === key}
-                                className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
+                                className="flex items-center gap-1 font-mono text-caption uppercase px-3 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                               >
                                 <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                               </button>
@@ -1294,7 +1294,7 @@ export default function ClientReviewsPanel({
                   <select
                     value={assignQId}
                     onChange={e => setAssignQId(e.target.value)}
-                    className="w-full bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
                     {coachQuestionnaires.map(q => (
@@ -1318,7 +1318,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>

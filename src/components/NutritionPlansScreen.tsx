@@ -387,7 +387,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <select
               value={selectedEmail}
               onChange={e => setSelectedEmail(e.target.value)}
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="">— Seleccionar atleta —</option>
               {athletes.map(a => (
@@ -404,7 +404,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Crear dieta
@@ -480,8 +480,8 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar dieta?</h3>
               <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
-                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
+                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
+                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
               </div>
             </div>
           </div>
@@ -518,7 +518,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {/* Live dashboard */}
       <div className="bg-bg border border-hairline rounded-surface p-4 sticky top-0 z-10">
         <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Distribución en vivo</p>
-        <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-3">
           {BUDGET_CATS.map(cat => {
             const b = form.budget[cat];
             const p = placed[cat];
@@ -660,12 +660,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <div className="flex items-center bg-bg border border-hairline rounded-surface overflow-hidden">
                 <button
                   onClick={() => setBudget(cat, form.budget[cat] - 0.5)}
-                  className="px-2.5 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
+                  className="px-3 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
                 >−</button>
                 <span className="flex-1 text-center font-mono text-body-s text-white">{fmtQty(form.budget[cat])}</span>
                 <button
                   onClick={() => setBudget(cat, form.budget[cat] + 0.5)}
-                  className="px-2.5 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
+                  className="px-3 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
                 >+</button>
               </div>
             </div>
@@ -798,7 +798,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               {/* Add food button */}
               <button
                 onClick={() => openPicker(meal.id)}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-hairline hover:border-accent/40 py-2.5 rounded-control text-caption font-mono text-ink-2 hover:text-accent transition-colors"
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-hairline hover:border-accent/40 py-3 rounded-control text-caption font-mono text-ink-2 hover:text-accent transition-colors"
               >
                 <span className="material-symbols-outlined text-body-s">add_circle</span>
                 Añadir alimento

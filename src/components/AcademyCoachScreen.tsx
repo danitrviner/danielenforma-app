@@ -51,7 +51,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -146,7 +146,7 @@ function CoursesTab() {
                 className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
             )}
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear curso'}
           </button>
         </form>
@@ -247,7 +247,7 @@ function LessonsTab() {
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
               className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear lección'}
           </button>
         </form>

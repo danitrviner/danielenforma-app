@@ -491,7 +491,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   <button
                     key={dt.id}
                     onClick={() => cycleDishType(dt.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                     {dt.label}
@@ -563,7 +563,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 <button
                   key={ci}
                   onClick={() => confirmSwap(c)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
                 >
                   <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
                     {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}

@@ -43,7 +43,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
         <p className="text-label text-ink-2 font-sans">Mide 3 min al despertar para ver tu preparación diaria.</p>
       )}
 
-      <button onClick={onMeasure} className="w-full py-2.5 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
+      <button onClick={onMeasure} className="w-full py-3 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
         {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
       </button>
     </section>

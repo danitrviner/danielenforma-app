@@ -451,17 +451,17 @@ const StageAccordion: React.FC<StageFormProps> = ({
                           className="border-b border-hairline last:border-0 transition-colors"
                           style={{ backgroundColor: heatmapBg(cfg.series) }}
                         >
-                          <td className="px-3 py-2.5">
+                          <td className="px-3 py-3">
                             <span className="font-sans text-label font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
                               {MUSCLE_LABELS[g]}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td className="px-3 py-3">
                             <div className="flex justify-center">
                               <Stepper value={cfg.series} onChange={v => updateGroup(g, 'series', v)} />
                             </div>
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td className="px-3 py-3">
                             <div className="flex justify-end">
                               <PrioritySelector
                                 value={cfg.priority}
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir mesociclo
@@ -680,13 +680,13 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
+            className="px-4 py-3 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
           >
             Cancelar
           </button>

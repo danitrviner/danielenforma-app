@@ -130,7 +130,7 @@ export default function PagoModal({ cliente, pago, coachEmail, onCerrar }: Props
                 type="button"
                 onClick={() => setEstado(e)}
                 aria-pressed={estado === e}
-                className={`flex-1 px-2.5 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
+                className={`flex-1 px-3 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   estado === e
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'

@@ -321,7 +321,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-raised p-2.5 rounded-surface border border-hairline">
+                            <div key={cell.label} className="bg-raised p-3 rounded-surface border border-hairline">
                               <span className="block text-ink-2 text-caption uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
@@ -504,7 +504,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               onClick={saveQuickReplyManager}
               disabled={savingQuickReplies}
-              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {savingQuickReplies ? 'Guardando...' : 'Guardar'}
             </button>

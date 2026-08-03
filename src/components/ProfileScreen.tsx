@@ -242,7 +242,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-body-s">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
@@ -369,7 +369,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
             required
           />
         </div>
@@ -381,7 +381,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -391,14 +391,14 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-title-s text-mono text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-mono text-white focus:outline-none focus:border-accent"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-bold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
+          className="w-full py-3 bg-white hover:bg-opacity-95 text-black font-bold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
         >
           {loading ? 'Sincronizando...' : 'Guardar Cambios Deportivos'}
         </button>

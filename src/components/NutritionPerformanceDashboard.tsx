@@ -80,7 +80,7 @@ function ProjectionTooltip({ active, payload }: any) {
   if (!row) return null;
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-2.5 text-label font-mono shadow-xl min-w-[170px]">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-3 text-label font-mono shadow-xl min-w-[170px]">
       <p className="text-ink-2 mb-1.5 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
@@ -277,7 +277,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-control"
+                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-3 py-1.5 rounded-control"
               >Editar</button>
             )}
           </div>
@@ -342,7 +342,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 key={opt.id}
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
-                className={`font-sans text-caption px-2.5 py-1.5 rounded-control transition-colors ${
+                className={`font-sans text-caption px-3 py-1.5 rounded-control transition-colors ${
                   curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>

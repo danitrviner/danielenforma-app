@@ -236,7 +236,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             placeholder="Buscar ejercicio..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
           />
         </div>
 
@@ -246,7 +246,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterMuscleGroup}
             onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-3 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los grupos</option>
             {MACRO_MUSCLE_GROUPS.map(g => (
@@ -257,7 +257,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-3 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los tipos</option>
             {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
@@ -266,7 +266,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEndurance}
             onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-sans text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-3 text-label font-sans text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los perfiles de resistencia</option>
             {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -275,7 +275,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEquipment}
             onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-3 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todo el material</option>
             {EQUIPMENT_OPTIONS.map(e => (
@@ -286,7 +286,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {hasFilters && (
             <button
               onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1 px-3 py-2.5 border border-hairline rounded-control hover:border-hairline transition-all"
+              className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1 px-3 py-3 border border-hairline rounded-control hover:border-hairline transition-all"
             >
               <span className="material-symbols-outlined text-body-s">close</span>
               Limpiar
@@ -495,13 +495,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
+                className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all"
+                className="flex-1 py-3 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all"
               >
                 Eliminar
               </button>
@@ -602,7 +602,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             ? (f.equipment ?? []).filter(e => e !== eq)
                             : [...(f.equipment ?? []), eq],
                         }))}
-                        className={`px-2.5 py-1 rounded-control font-mono text-caption border capitalize transition-all ${
+                        className={`px-3 py-1 rounded-control font-mono text-caption border capitalize transition-all ${
                           selected
                             ? 'bg-accent/15 border-accent/40 text-accent font-bold'
                             : 'bg-surface border-hairline text-ink-2 hover:border-hairline'

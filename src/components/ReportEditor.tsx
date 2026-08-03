@@ -62,7 +62,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -73,17 +73,17 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
                   <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
                       onClick={() => setSection(s.id, { included: !s.included })}
-                      className="w-full flex items-center gap-2.5 text-left"
+                      className="w-full flex items-center gap-3 text-left"
                     >
                       <span className={`material-symbols-outlined text-title-m flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
                         {s.included ? 'check_box' : 'check_box_outline_blank'}
@@ -95,7 +95,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-raised border border-hairline rounded-control px-2.5 py-2 text-label text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
+                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>
@@ -115,14 +115,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-4 py-2.5 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
+              className="px-4 py-3 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>
             <div className="flex-1" />
             <button
               onClick={handleCopy}
-              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-data/50 transition-all flex items-center gap-2"
+              className="px-4 py-3 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-data/50 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-title-s">{copied ? 'check' : 'content_copy'}</span>
               {copied ? '¡Copiado!' : 'Copiar texto'}
@@ -130,14 +130,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('save', () => onSaveDraft(draft))}
               disabled={busy !== null}
-              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-accent/50 transition-all disabled:opacity-40"
+              className="px-4 py-3 bg-surface border border-hairline text-white font-sans text-label font-bold uppercase rounded-control hover:border-accent/50 transition-all disabled:opacity-40"
             >
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
             </button>
             <button
               onClick={() => run('send', () => onSend(draft))}
               disabled={busy !== null}
-              className="px-5 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-3 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-title-s">send</span>
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}

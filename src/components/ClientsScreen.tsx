@@ -347,7 +347,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-control border border-hairline text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-1.5 rounded-control border border-hairline text-left transition-colors"
                   >
                     <span className="text-label text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-caption font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
@@ -371,11 +371,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
-                <span className="text-caption bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded-control font-sans uppercase font-bold animate-pulse">
+                <span className="text-caption bg-red-500/10 text-rose-400 px-3 py-0.5 border border-red-500/25 rounded-control font-sans uppercase font-bold animate-pulse">
                   {pendingCheckins.length} por evaluar
                 </span>
               ) : (
-                <span className="text-caption bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+                <span className="text-caption bg-accent/10 text-accent px-3 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {pendingCheckins.length === 0 ? (
@@ -395,11 +395,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
-                <span className="text-caption bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
+                <span className="text-caption bg-amber-500/10 text-amber-300 px-3 py-0.5 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
                   {totalPendingNotes} por leer
                 </span>
               ) : (
-                <span className="text-caption bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+                <span className="text-caption bg-accent/10 text-accent px-3 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {totalPendingNotes === 0 ? (
@@ -410,7 +410,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-control border border-hairline text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-1.5 rounded-control border border-hairline text-left transition-colors"
                   >
                     <span className="text-label text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-caption font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
@@ -437,7 +437,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-2.5 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-3 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -536,7 +536,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-surface border border-hairline text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-3 rounded-surface border border-hairline text-center font-mono">
                       <div>
                         <span className="block text-caption text-ink-2 uppercase">INICIAL</span>
                         <span className="block text-label font-bold text-white">{athlete.initialWeight} kg</span>
@@ -564,7 +564,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <strong className="text-data">Lvl {athlete.level || 1}</strong>
                       </div>
                       {/* Adherence score */}
-                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-surface border font-sans ${adh.bg}`}>
+                      <div className={`flex items-center justify-between px-3 py-1.5 rounded-surface border font-sans ${adh.bg}`}>
                         <span className={`text-caption uppercase font-bold flex items-center gap-1 ${adh.text}`}>
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
@@ -608,12 +608,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"
             disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-3 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-body-s">mail</span>
             {inviting ? 'Enviando...' : 'Invitar'}
@@ -624,7 +624,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
         {pendingInvites.length > 0 && (
           <div className="mt-4 pt-4 border-t border-hairline">
-            <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2.5">
+            <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">
               Invitaciones pendientes ({pendingInvites.length})
             </p>
             <div className="space-y-1.5">

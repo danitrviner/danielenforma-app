@@ -35,7 +35,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
 
   if (value) {
     return (
-      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-surface bg-field border border-hairline">
+      <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-surface bg-field border border-hairline">
         <span className="text-caption text-ink truncate">{value.nombre}</span>
         <button
           type="button"
@@ -63,10 +63,10 @@ export default function ClienteSelector({ value, onChange }: Props) {
       {abierto && (
         <div className="absolute z-10 mt-1 w-full max-h-[200px] overflow-y-auto custom-scrollbar rounded-surface bg-raised border border-strong shadow-xl">
           {isPending && (
-            <p className="px-2.5 py-2 font-sans text-caption text-ink-3">Cargando…</p>
+            <p className="px-3 py-2 font-sans text-caption text-ink-3">Cargando…</p>
           )}
           {!isPending && resultados.length === 0 && (
-            <p className="px-2.5 py-2 font-sans text-caption text-ink-3">Sin resultados</p>
+            <p className="px-3 py-2 font-sans text-caption text-ink-3">Sin resultados</p>
           )}
           {resultados.map(c => (
             <button
@@ -76,7 +76,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
               // input, que si no cierra la lista un instante antes de que el
               // clic llegue a registrarse.
               onMouseDown={() => onChange(c)}
-              className="w-full text-left px-2.5 py-2 hover:bg-white/6 transition-colors"
+              className="w-full text-left px-3 py-2 hover:bg-white/6 transition-colors"
             >
               <p className="font-sans text-caption text-ink truncate">{c.nombre}</p>
               <p className="font-mono text-caption text-ink-3 truncate">{c.email ?? c.dni ?? ''}</p>

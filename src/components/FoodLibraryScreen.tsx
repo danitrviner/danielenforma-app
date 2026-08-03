@@ -136,7 +136,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => setFilterCat('all')}
-            className={`px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
+            className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
               filterCat === 'all' ? 'bg-raised text-white' : 'text-ink-2 hover:text-white'
             }`}
           >
@@ -146,7 +146,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             <button
               key={cat.id}
               onClick={() => setFilterCat(cat.id)}
-              className={`px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
+              className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
                 filterCat === cat.id ? CAT_COLOR[cat.id] + ' shadow-sm' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -168,7 +168,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
+            className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Añadir
@@ -238,7 +238,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
@@ -248,7 +248,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
@@ -287,8 +287,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
             <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar alimento?</h3>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-3 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
+              <button onClick={() => handleDelete(deleteId)} className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
             </div>
           </div>
         </div>

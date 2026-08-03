@@ -288,7 +288,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 {meal.items.length === 0 ? (
                   <p className="text-center py-2 font-sans text-caption text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-surface bg-surface border border-hairline">
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-surface bg-surface border border-hairline">
                     <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                       {item.category.replace('_', ' ')}
                     </span>
@@ -308,7 +308,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <button
                       key={cat}
                       onClick={() => openPicker(meal.id, cat)}
-                      className="px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase tracking-wider bg-raised border border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                      className="px-3 py-1 rounded-full font-mono text-caption font-bold uppercase tracking-wider bg-raised border border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                     >+ {cat.replace('_', ' ')}</button>
                   ))}
                 </div>
@@ -317,7 +317,7 @@ export default function MyDietsScreen({ profile }: Props) {
           ))}
           <button
             onClick={addMeal}
-            className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+            className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
           >+ Añadir comida</button>
         </div>
 

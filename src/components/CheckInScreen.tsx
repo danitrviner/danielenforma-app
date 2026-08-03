@@ -96,7 +96,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-raised border-0 border-b border-hairline text-ink text-label p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-raised border-0 border-b border-hairline text-ink text-label p-3 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -108,7 +108,7 @@ function QuestionnaireForm({
                 max={q.max}
                 value={(answers[q.id] as string) ?? ''}
                 onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-raised border-0 border-b border-hairline text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
+                className="w-full bg-raised border-0 border-b border-hairline text-white font-mono p-3 focus:ring-0 focus:border-accent transition-colors"
               />
             )}
 
@@ -173,7 +173,7 @@ function QuestionnaireForm({
                         setAnswer(q.id, opt);
                       }
                     }}
-                    className={`w-full py-2.5 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
+                    className={`w-full py-3 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
                       isSelected
                         ? 'bg-accent text-black border-transparent font-bold'
                         : 'bg-raised text-ink border-hairline'
@@ -375,7 +375,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
-            className={`px-2.5 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
+            className={`px-3 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -384,7 +384,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
-            className={`px-2.5 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
+            className={`px-3 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+                className="w-24 bg-raised border border-hairline rounded-control px-3 py-1.5 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
               <span className="font-mono text-label text-ink-3">kg</span>
             </div>

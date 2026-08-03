@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-3 py-1.5 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';

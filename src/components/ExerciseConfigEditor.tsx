@@ -244,7 +244,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <button
             type="button"
             onClick={() => setTechnique(undefined)}
-            className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+            className={`px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
               !we.technique
                 ? 'bg-white/10 border-hairline text-white'
                 : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -256,7 +256,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               type="button"
               onClick={() => setTechnique(we.technique === t ? undefined : t)}
               title={TECHNIQUE_DESCRIPTION[t]}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                 we.technique === t
                   ? TECHNIQUE_COLOR[t]
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -278,7 +278,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               key={mode}
               type="button"
               onClick={() => setWarmupMode(mode)}
-              className={`px-2.5 py-1 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
                 (we.warmupMode || 'none') === mode
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'

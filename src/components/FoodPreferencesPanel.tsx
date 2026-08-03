@@ -104,7 +104,7 @@ export default function FoodPreferencesPanel({
         )}
 
         {/* Group tiles */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3">
           {FOOD_GROUPS.map(g => {
             const gFav     = g.foods.filter(f => prefs[f] === 'favorite').length;
             const gDislike = g.foods.filter(f => prefs[f] === 'dislike').length;

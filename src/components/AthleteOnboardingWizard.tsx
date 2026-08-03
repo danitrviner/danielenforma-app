@@ -65,7 +65,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-2.5 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
+      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-3 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
           : 'bg-surface border-hairline text-ink-2 hover:border-strong'
@@ -249,7 +249,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 2 && (
           <StepShell title="Tu objetivo" subtitle="¿Qué quieres conseguir? Esto marca todo el plan.">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
@@ -280,7 +280,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 3 && (
           <StepShell title="Tu entrenamiento" subtitle="Para ajustar el plan a tu nivel y tu material.">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {EXPERIENCE.map(x => (
                 <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
                   <span className="block font-bold text-white">{x.label}</span>
@@ -366,7 +366,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 5 && (
           <StepShell title="Tu día a día" subtitle="Fuera del entrenamiento, ¿cómo te mueves?">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {ACTIVITY.map(a => (
                 <Chip key={a.id} big selected={activityLevel === a.id} onClick={() => setActivityLevel(a.id)}>
                   <span className="block font-bold text-white">{a.label}</span>
@@ -379,7 +379,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 6 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
-            <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-2.5">
+            <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-3">
               {[
                 goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },

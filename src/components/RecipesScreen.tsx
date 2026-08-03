@@ -326,7 +326,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {(recipe.categoria || recipe.categories.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
-              <span key={c} className="px-2.5 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
+              <span key={c} className="px-3 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
             ))}
           </div>
         )}
@@ -347,7 +347,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {(Object.entries(exch) as [FoodCategory, number][])
             .filter(([, v]) => v > 0)
             .map(([cat, val]) => (
-              <span key={cat} className={`px-2.5 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
+              <span key={cat} className={`px-3 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
                 {val} {CAT_LABELS[cat]}
               </span>
             ))}
@@ -407,7 +407,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Extras</p>
               <div className="flex flex-wrap gap-1.5">
                 {recipe.extras.map((ex, idx) => (
-                  <span key={idx} className="px-2.5 py-1 rounded-full bg-raised text-ink-2 font-mono text-caption">{ex}</span>
+                  <span key={idx} className="px-3 py-1 rounded-full bg-raised text-ink-2 font-mono text-caption">{ex}</span>
                 ))}
               </div>
             </div>
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">

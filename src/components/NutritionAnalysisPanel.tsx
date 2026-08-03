@@ -213,7 +213,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5">
+        <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
           {micros.perMicro.map(m => (
             <div key={m.key}>
               <div className="flex items-center justify-between mb-1">

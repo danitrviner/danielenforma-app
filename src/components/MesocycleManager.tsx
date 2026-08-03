@@ -383,7 +383,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                 group.exercises.map((we, exIdx) => {
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   return (
-                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-2.5 space-y-2">
+                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-3 space-y-2">
                       <p className="text-label font-sans font-bold text-white truncate">
                         {ex?.name || we.exerciseId}
                         {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
@@ -418,7 +418,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {LEGEND.map(l => (
-          <div key={l.label} className="flex items-center gap-2 px-2.5 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
+          <div key={l.label} className="flex items-center gap-2 px-3 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
             <span className="font-sans text-caption font-bold" style={{ color: l.text }}>{l.label}</span>
             <span className="font-mono text-caption opacity-70" style={{ color: l.text }}>{l.range}</span>
           </div>
@@ -461,7 +461,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           <tbody>
             {MUSCLE_GROUPS.map((group, rowIdx) => (
               <tr key={group} className={rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}>
-                <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
+                <td className={`sticky left-0 z-10 px-4 py-3 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
                   {MUSCLE_LABELS[group]}
                 </td>
                 {columns.map((m, mIdx) => {
@@ -486,7 +486,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                   }
 
                   return (
-                    <td key={m.id} className="px-3 py-2.5 border-r border-hairline last:border-r-0 text-center"
+                    <td key={m.id} className="px-3 py-3 border-r border-hairline last:border-r-0 text-center"
                       style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
                     >
                       {cfg.series === 0 ? (
@@ -509,13 +509,13 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           <tfoot>
             <tr><td colSpan={columns.length + 1} className="h-px bg-raised p-0" /></tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
+              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
               {columns.map((m, mIdx) => {
                 const total = totals[mIdx];
                 const delta = mIdx > 0 ? total - totals[mIdx - 1] : null;
                 const isCurrent = m.id === editing.id;
                 return (
-                  <td key={m.id} className={`px-3 py-2.5 border-r border-t border-hairline last:border-r-0 text-center ${isCurrent ? 'bg-accent/5' : ''}`}>
+                  <td key={m.id} className={`px-3 py-3 border-r border-t border-hairline last:border-r-0 text-center ${isCurrent ? 'bg-accent/5' : ''}`}>
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-body-s font-bold text-white tabular-nums">{total}</span>
                       <Delta delta={delta} showEqual />
@@ -525,11 +525,11 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
               })}
             </tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
+              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.daysPerWeek - columns[mIdx - 1].daysPerWeek : null;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-hairline last:border-r-0 text-center">
+                  <td key={m.id} className="px-3 py-3 border-r border-t border-hairline last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-label font-bold text-ink-2">{m.daysPerWeek}d</span>
                       <Delta delta={delta} />
@@ -539,11 +539,11 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
               })}
             </tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
+              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.weeks - columns[mIdx - 1].weeks : null;
                 return (
-                  <td key={m.id} className="px-3 py-2.5 border-r border-t border-hairline last:border-r-0 text-center">
+                  <td key={m.id} className="px-3 py-3 border-r border-t border-hairline last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
                       <span className="font-mono text-label font-bold text-ink-2">{m.weeks} sem</span>
                       <Delta delta={delta} />
@@ -1160,7 +1160,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           <div className="xl:w-64 flex-shrink-0 space-y-3">
             <button
               onClick={handleNew} disabled={creating}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               {creating ? 'Creando…' : 'Nuevo mesociclo'}
@@ -1231,7 +1231,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1239,7 +1239,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1247,7 +1247,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="date"
                       value={editing.startDate}
                       onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-1.5 text-body-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1286,7 +1286,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <button
                       key={tab.id}
                       onClick={() => { setEditorTab(tab.id); if (tab.id !== 'distribution') setGenPhase('idle'); }}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-1.5 px-3 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
                         editorTab === tab.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
                       }`}
                     >
@@ -1323,7 +1323,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={handleGenerateDistribution}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all"
+                          className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all"
                         >
                           <span className="material-symbols-outlined text-body-s">shuffle</span>
                           Distribución Automática
@@ -1411,7 +1411,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             <button
                               onClick={handleGenerate}
                               disabled={genPhase === 'loading'}
-                              className="flex items-center gap-2 px-4 py-2.5 bg-raised border border-accent/40 text-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-3 bg-raised border border-accent/40 text-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
                             >
                               {genPhase === 'loading' ? (
                                 <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Analizando…</>
@@ -1487,7 +1487,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             {/* Exercise rows */}
                             <div className="space-y-2">
                               {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-raised rounded-surface p-2.5 space-y-1.5">
+                                <div key={peIdx} className="bg-raised rounded-surface p-3 space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>

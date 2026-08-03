@@ -225,7 +225,7 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
         {d.items.map((c, i) => {
           const st = CHALLENGE_STYLE[c.status] ?? CHALLENGE_STYLE.activo;
           return (
-            <li key={i} className="flex items-center gap-2.5">
+            <li key={i} className="flex items-center gap-3">
               <span className={`material-symbols-outlined text-title-s flex-shrink-0 ${st.cls}`} style={{ fontVariationSettings: "'FILL' 1" }}>{st.icon}</span>
               <span className="text-label text-white font-sans flex-1 min-w-0">{c.title}</span>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${st.cls}`}>

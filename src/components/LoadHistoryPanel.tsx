@@ -394,7 +394,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <button
                   key={s}
                   onClick={toggle}
-                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
+                  className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
                     active ? 'bg-white/10 border-hairline text-white' : 'border-hairline text-ink-3 hover:text-ink-2'
                   }`}
                 >
@@ -415,7 +415,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-3 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -437,7 +437,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   <button
                     key={g}
                     onClick={() => setGranularity(g)}
-                    className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold transition-all ${
+                    className={`px-3 py-1 rounded-control font-mono text-caption font-bold transition-all ${
                       granularity === g ? 'bg-data/15 text-data' : 'text-ink-3 hover:text-ink-2'
                     }`}
                   >
@@ -583,7 +583,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
-            <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center justify-between gap-2">
+            <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
               <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
                 <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
@@ -615,14 +615,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-2.5 font-sans text-caption text-ink-2">{row.label}</td>
-                  <td className="px-3 py-2.5 font-mono text-caption text-white font-bold">{row.sets}</td>
-                  <td className="px-3 py-2.5 font-mono text-caption text-white">{row.reps}</td>
-                  <td className="px-3 py-2.5 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
+                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-white font-bold">{row.sets}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-white">{row.reps}</td>
+                  <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
                     {row.tonnage.toLocaleString()} kg
                   </td>
                   {ormActive && (
-                    <td className="px-3 py-2.5 font-mono text-caption font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
+                    <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                       {row.orm ? `${row.orm} kg` : '—'}
                     </td>
                   )}

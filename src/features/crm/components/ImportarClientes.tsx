@@ -113,7 +113,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
+            <p className="flex items-start gap-1.5 px-3 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
               <span className="material-symbols-outlined text-body-s shrink-0">error</span>
               {errorGeneral}
             </p>
@@ -223,7 +223,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
 }) {
   const conError = fila.errores.length > 0;
   return (
-    <div className={`flex items-start gap-2 px-2.5 py-2 ${excluida ? 'opacity-40' : ''}`}>
+    <div className={`flex items-start gap-2 px-3 py-2 ${excluida ? 'opacity-40' : ''}`}>
       {!conError && (
         <input
           type="checkbox"

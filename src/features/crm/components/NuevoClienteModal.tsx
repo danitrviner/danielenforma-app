@@ -122,7 +122,7 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
         </Campo>
 
         {duplicado && (
-          <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-warning/10 border border-warning/25 font-sans text-caption text-warning">
+          <p className="flex items-start gap-1.5 px-3 py-2 rounded-surface bg-warning/10 border border-warning/25 font-sans text-caption text-warning">
             <span className="material-symbols-outlined text-body-s shrink-0">warning</span>
             Ya existe un cliente con este DNI: <strong>{duplicado.nombre}</strong>. Puedes crearlo igualmente, pero probablemente sea un duplicado.
           </p>

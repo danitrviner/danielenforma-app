@@ -879,7 +879,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <button
                 key={day}
                 onClick={() => setViewDay(day)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`flex-1 flex flex-col items-center gap-0.5 py-3 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                   isViewing
                     ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
@@ -908,7 +908,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <p className="text-ink-2 text-label font-sans mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
           <button
             onClick={handleStartBlank}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Crear mi primer menú
@@ -933,7 +933,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     {BUDGET_CATS.map(cat => {
                       const b = browseDiet.budget[cat];
                       return b > 0 ? (
-                        <span key={cat} className={`text-caption font-mono font-bold px-2.5 py-1 rounded-surface border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
+                        <span key={cat} className={`text-caption font-mono font-bold px-3 py-1 rounded-surface border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
                           {cat}: {b} int.
                         </span>
                       ) : null;
@@ -946,7 +946,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </div>
             <button
               onClick={() => setViewDay(TODAY_WD)}
-              className="w-full py-2.5 rounded-control border border-accent/30 text-accent font-sans text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
+              className="w-full py-3 rounded-control border border-accent/30 text-accent font-sans text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
             >
               ← Volver a hoy
             </button>
@@ -959,7 +959,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="flex gap-2 flex-wrap items-center">
               {allDietsList.map(dt => (
                 <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-3 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
                     selectedDiet?.id === dt.id
                       ? 'bg-accent text-black shadow-md'
                       : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
@@ -973,7 +973,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ))}
               <button
                 onClick={handleStartBlank}
-                className="flex items-center gap-1 px-3 py-2.5 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-sans text-label font-bold uppercase tracking-wider transition-all"
+                className="flex items-center gap-1 px-3 py-3 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-sans text-label font-bold uppercase tracking-wider transition-all"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>
                 Nuevo
@@ -1039,7 +1039,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">
                   Progreso por categoría
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
                   {BUDGET_CATS.map(cat => {
                     const b = selectedDiet.budget[cat];
                     const d = doneByCat[cat];
@@ -1099,7 +1099,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     >
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
@@ -1148,14 +1148,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       </div>
 
                       {savingMealAsRecipeId === meal.id && (
-                        <div className="px-4 py-2.5 bg-bg/60 border-b border-hairline flex items-center gap-2">
+                        <div className="px-4 py-3 bg-bg/60 border-b border-hairline flex items-center gap-2">
                           <input
                             type="text"
                             autoFocus
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-label text-white font-mono focus:outline-none focus:border-data/50"
+                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-1.5 text-label text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
@@ -1223,7 +1223,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
                           return (
                             <div key={key}
-                              className={`flex items-center gap-2.5 p-3 rounded-surface border transition-all ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
+                              className={`flex items-center gap-3 p-3 rounded-surface border transition-all ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
                             >
                               {/* Checkbox */}
                               <button
@@ -1294,7 +1294,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 })}
                 <button
                   onClick={addMeal}
-                  className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+                  className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
                 >
                   + Añadir comida
                 </button>

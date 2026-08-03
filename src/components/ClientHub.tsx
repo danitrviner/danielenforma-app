@@ -477,7 +477,7 @@ export default function ClientHub({
             <button
               key={zone}
               onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
                 activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >

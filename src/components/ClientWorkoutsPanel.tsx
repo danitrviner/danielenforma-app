@@ -107,7 +107,7 @@ export default function ClientWorkoutsPanel({
               <p className="font-mono text-caption text-ink-2 uppercase">Favoritos</p>
               <div className="flex flex-wrap gap-1.5">
                 {onboardingData.favoriteExercises.map(e => (
-                  <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-2.5 py-1 rounded-full text-caption font-mono font-bold">
+                  <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-3 py-1 rounded-full text-caption font-mono font-bold">
                     {e}
                   </span>
                 ))}
@@ -119,7 +119,7 @@ export default function ClientWorkoutsPanel({
               <p className="font-mono text-caption text-ink-2 uppercase">Evitar</p>
               <div className="flex flex-wrap gap-1.5">
                 {onboardingData.hatedExercises.map(e => (
-                  <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-2.5 py-1 rounded-full text-caption font-mono">
+                  <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
                   </span>
                 ))}
@@ -131,7 +131,7 @@ export default function ClientWorkoutsPanel({
               <p className="font-mono text-caption text-ink-2 uppercase">Material disponible</p>
               <div className="flex flex-wrap gap-1.5">
                 {onboardingData.equipment.map(e => (
-                  <span key={e} className="bg-raised border border-hairline text-ink-2 px-2.5 py-1 rounded-full text-caption font-mono">
+                  <span key={e} className="bg-raised border border-hairline text-ink-2 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
                   </span>
                 ))}

@@ -442,7 +442,7 @@ function TagInput({
     <div className="space-y-1.5">
       <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
       {helpText && <p className="font-sans text-caption text-ink-3">{helpText}</p>}
-      <div className="flex flex-wrap gap-1.5 p-2.5 bg-bg border border-hairline rounded-surface min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
+      <div className="flex flex-wrap gap-1.5 p-3 bg-bg border border-hairline rounded-surface min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
           <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 py-0.5 rounded-full text-label font-mono">
             {t}
@@ -495,7 +495,7 @@ function SupplementsTable({
         </div>
       )}
       <button type="button" onClick={add}
-        className="flex items-center gap-1 font-sans text-caption text-ink-2 hover:text-accent transition-colors border border-dashed border-hairline hover:border-accent/40 px-2.5 py-1.5 rounded-control">
+        className="flex items-center gap-1 font-sans text-caption text-ink-2 hover:text-accent transition-colors border border-dashed border-hairline hover:border-accent/40 px-3 py-1.5 rounded-control">
         <span className="material-symbols-outlined text-body-s">add</span>
         Añadir suplemento
       </button>
@@ -1122,7 +1122,7 @@ export default function OnboardingForm({
                 <span className="material-symbols-outlined text-ink-3 text-title-s">{INTAKE_ICONS[meal.intakeType]}</span>
                 <span className="flex-1 font-sans text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control font-mono text-caption font-bold border transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-mono text-caption font-bold border transition-all ${
                     meal.needsTupper
                       ? 'bg-data/15 border-data/40 text-data'
                       : 'bg-raised border-hairline text-ink-3 hover:text-ink-2 hover:border-hairline'
@@ -1197,7 +1197,7 @@ export default function OnboardingForm({
               };
               return (
                 <button type="button" key={dt.id} onClick={cycle}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}>
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                   {dt.label}
                 </button>

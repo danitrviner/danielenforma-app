@@ -70,7 +70,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
         return (
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
             {/* Meal header */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
               <span className="font-sans font-bold text-white text-body-s">{labelForMeal(meal.name, mi + 1)}</span>
               <span className="font-mono text-accent font-bold text-body-s">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
             </div>

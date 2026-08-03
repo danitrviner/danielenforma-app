@@ -26,7 +26,7 @@ export default function Coachmark({ id, email, icon, text }: Props) {
   if (dismissed) return null;
 
   return (
-    <div className="flex items-start gap-2.5 bg-accent/8 border border-accent/25 rounded-surface px-4 py-3">
+    <div className="flex items-start gap-3 bg-accent/8 border border-accent/25 rounded-surface px-4 py-3">
       <span className="material-symbols-outlined text-accent text-title-m flex-shrink-0">{icon}</span>
       <p className="flex-1 text-label text-accent leading-relaxed">{text}</p>
       <button

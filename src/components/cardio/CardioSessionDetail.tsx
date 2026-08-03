@@ -117,7 +117,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-caption font-mono uppercase text-ink-2">Etiquetas</p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map(t => (
-              <span key={t} className="flex items-center gap-1 bg-surface border border-hairline rounded-full px-2.5 py-1 text-caption font-mono text-white">
+              <span key={t} className="flex items-center gap-1 bg-surface border border-hairline rounded-full px-3 py-1 text-caption font-mono text-white">
                 {t}
                 <button onClick={() => setTags(tags.filter(x => x !== t))} className="text-ink-2 hover:text-white">×</button>
               </span>
@@ -150,7 +150,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-2.5 text-center">
+    <div className="bg-surface border border-hairline rounded-surface p-3 text-center">
       <p className="text-caption font-sans uppercase text-ink-2">{label}</p>
       <p className="text-body-s font-sans font-bold text-white mt-0.5">{value}</p>
     </div>

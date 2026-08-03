@@ -90,7 +90,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             key={item.key}
             onClick={item.onClick}
             disabled={!loaded}
-            className={`w-full flex items-center gap-3 rounded-control px-3 py-2.5 text-left transition-all border ${
+            className={`w-full flex items-center gap-3 rounded-control px-3 py-3 text-left transition-all border ${
               item.done
                 ? 'bg-emerald-500/5 border-emerald-500/20'
                 : 'bg-raised border-hairline hover:border-accent/40'
@@ -104,7 +104,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             </span>
           </button>
         ))}
-        <div className="flex items-center gap-3 rounded-surface px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
+        <div className="flex items-center gap-3 rounded-surface px-3 py-3 border border-hairline bg-raised/50 opacity-60">
           <span className="material-symbols-outlined text-title-m text-ink-2">lock</span>
           <span className="font-sans text-body-s flex-1 text-ink-2">Tu primer entrenamiento</span>
           <span className="font-sans text-caption uppercase text-ink-2">Esperando a tu coach</span>

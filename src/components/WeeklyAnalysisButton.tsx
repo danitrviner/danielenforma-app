@@ -75,14 +75,14 @@ export default function WeeklyAnalysisButton() {
                 </div>
               )}
               {error && (
-                <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-2.5 text-label">{error}</div>
+                <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label">{error}</div>
               )}
               {result && (
                 <div className="text-body-s text-ink whitespace-pre-wrap leading-relaxed">{result}</div>
               )}
             </div>
             {result && (
-              <div className="px-4 py-2.5 border-t border-hairline text-caption font-sans text-ink-2">
+              <div className="px-4 py-3 border-t border-hairline text-caption font-sans text-ink-2">
                 Guardado en tus notas de coach.
               </div>
             )}

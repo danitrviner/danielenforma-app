@@ -117,7 +117,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
             <div
               key={phase.id}
               style={{ backgroundColor: bg, color: fg, outline: isActive ? '2px solid white' : 'none', outlineOffset: '-2px' }}
-              className="flex items-center justify-between px-3 py-2.5 rounded-surface relative"
+              className="flex items-center justify-between px-3 py-3 rounded-surface relative"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-label font-bold font-sans truncate">{phase.name}</p>
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-sans rounded-control transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-3 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-sans rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Añadir fase

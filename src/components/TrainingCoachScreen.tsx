@@ -40,7 +40,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
+              className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-accent text-black shadow-lg shadow-accent/10'
                   : 'text-ink-2 hover:text-white'

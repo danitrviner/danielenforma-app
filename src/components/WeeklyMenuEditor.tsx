@@ -319,7 +319,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50 font-mono"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50 font-mono"
           />
         </div>
 
@@ -374,7 +374,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               <button
                 key={v}
                 onClick={() => setVariety(v)}
-                className={`flex-1 py-2.5 rounded-control font-mono font-bold text-body-s transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-hairline text-ink-2 hover:text-white'}`}
+                className={`flex-1 py-3 rounded-control font-mono font-bold text-body-s transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-hairline text-ink-2 hover:text-white'}`}
               >
                 {v}
               </button>
@@ -404,7 +404,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <button
                   key={dt.id}
                   onClick={() => cycleDishType(dt.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                   {dt.label}
@@ -576,7 +576,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 mt-2.5">
+                          <div className="flex items-center gap-3 mt-3">
                             <button
                               onClick={() => openPicker(day.day, meal.id, mealIdx)}
                               className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
@@ -604,7 +604,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                   <button
                                     key={ci}
                                     onClick={() => pickCandidate(day.day, mealIdx, c)}
-                                    className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left hover:bg-raised rounded-control transition-colors"
+                                    className="w-full flex items-center gap-3 px-2 py-1.5 text-left hover:bg-raised rounded-control transition-colors"
                                   >
                                     <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
                                       {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
