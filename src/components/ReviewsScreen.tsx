@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
-import { Badge } from './ui';
+import { Badge, PageHeader, Button } from './ui';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -187,33 +187,25 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
-        <div>
-          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Revisiones</h1>
-          <p className="text-ink-2 text-body-s mt-1">
-            Historial cronológico de check-ins y respuestas de cuestionarios.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {pendingCount > 0 && (
-            <>
-              <Badge tone="warning" icon="pending_actions">
-                {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
-              </Badge>
-              <button
-                onClick={startReviewing}
-                className="flex items-center gap-2 text-label bg-accent text-black px-4 py-2 rounded-control font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
-              >
-                <span className="material-symbols-outlined text-title-s">rate_review</span>
-                Empezar a revisar
-              </button>
-            </>
-          )}
-          {loadingResponses && (
-            <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title="Revisiones"
+        subtitle="Historial cronológico de check-ins y respuestas de cuestionarios."
+        action={
+          <div className="flex items-center gap-3">
+            {pendingCount > 0 && (
+              <>
+                <Badge tone="warning" icon="pending_actions">
+                  {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
+                </Badge>
+                <Button onClick={startReviewing} icon="rate_review">Empezar a revisar</Button>
+              </>
+            )}
+            {loadingResponses && (
+              <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
         <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-surface text-body-s flex items-center gap-2">
