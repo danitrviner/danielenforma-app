@@ -37,6 +37,8 @@ type Props = {
   label?: string;
   as?: 'div' | 'li';
   className?: string;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Badge). */
+  key?: React.Key;
 };
 
 export default function ListRow({
