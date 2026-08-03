@@ -941,7 +941,7 @@ export default function ClientReviewsPanel({
 
           if (items.length === 0) {
             return (
-              <div className="bg-surface border border-dashed border-hairline rounded-surface p-12 text-center text-ink-2">
+              <div className="bg-surface border border-dashed border-hairline rounded-surface p-10 text-center text-ink-2">
                 <span className="material-symbols-outlined text-display text-ink-3 block mb-2">history_edu</span>
                 <p className="text-body-s font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-label mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>

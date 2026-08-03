@@ -260,7 +260,7 @@ export default function CorrelationPanel({
 
   if (!hasData) {
     return (
-      <div className="py-20 text-center border border-dashed border-hairline rounded-surface px-6">
+      <div className="py-10 text-center border border-dashed border-hairline rounded-surface px-6">
         <span className="material-symbols-outlined text-display text-ink-3 block mb-3">insights</span>
         <p className="font-sans font-bold text-white text-body-s mb-1">Sin datos suficientes</p>
         {/* El texto anterior decía "completa más registros", una instrucción

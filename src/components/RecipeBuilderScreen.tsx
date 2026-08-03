@@ -417,7 +417,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
         </div>
 
@@ -428,7 +428,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : filteredIndya.length === 0 ? (
-          <div className="text-center py-16 text-ink-2 font-mono text-label uppercase tracking-widest">
+          <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
             {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
           </div>
         ) : (
@@ -556,7 +556,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     value={ingredientSearch}
                     onChange={e => setIngSearch(e.target.value)}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                    className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-2xl">

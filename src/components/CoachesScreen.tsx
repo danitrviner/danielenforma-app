@@ -582,7 +582,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             <Skeleton className="h-14 w-full" />
           </div>
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
+          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-display text-ink-3 block mb-3">group</span>
             <p className="text-ink-2 text-body-s">Sin usuarios registrados todavía.</p>
           </div>

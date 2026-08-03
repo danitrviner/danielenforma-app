@@ -214,7 +214,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <div className="flex items-center justify-center py-10">
         <span className="material-symbols-outlined text-display text-accent animate-spin">refresh</span>
       </div>
     );
@@ -222,7 +222,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   if (!roadmap) {
     return (
-      <div className="text-center py-24">
+      <div className="text-center py-10">
         <span className="material-symbols-outlined text-display text-ink-3 block mb-3">map</span>
         <p className="font-sans font-bold text-white text-body-s mb-1">Road map</p>
         <p className="text-ink-2 text-label font-sans">No hay planificación disponible todavía.</p>

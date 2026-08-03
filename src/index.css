@@ -166,6 +166,11 @@
   --header-h: 70px;
   /* 59 px de contenido + la safe area del iPhone, que en escritorio son 20 px */
   --nav-h: calc(59px + max(20px, env(safe-area-inset-bottom, 20px)));
+  /* Ancho de la navegación lateral de escritorio. El propio panel y el margen
+     que le deja el contenido salían ambos de un 280 escrito a mano en dos
+     sitios: si uno cambiaba, el otro se quedaba desfasado — que es el fallo
+     que F2 corrigió con la altura de la cabecera. */
+  --sidebar-w: 280px;
 }
 
 @media (min-width: 768px) {

@@ -731,7 +731,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Empty state */}
       {roadmap.items.length === 0 && mesocycles.length === 0 && !nutritionProgram && (
-        <div className="text-center py-12">
+        <div className="text-center py-10">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-2">map</span>
           <p className="text-ink-2 text-label font-sans">No hay datos de planificación todavía.</p>
         </div>

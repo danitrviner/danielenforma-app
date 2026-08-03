@@ -438,7 +438,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
 
   if (step === 'generating') {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <div className="flex flex-col items-center justify-center py-10 gap-4">
         <span className="material-symbols-outlined text-display text-accent animate-spin">progress_activity</span>
         <p className="font-mono text-body-s text-white">{genPhase}</p>
         <p className="font-sans text-caption text-ink-3">Repartiendo recetas por comida y ajustando escalas…</p>

@@ -289,7 +289,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : workouts.length === 0 ? (
-          <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
+          <div className="bg-surface border border-dashed border-hairline rounded-surface p-10 text-center">
             <span className="material-symbols-outlined text-display text-accent/40 block mb-3">format_list_bulleted</span>
             <p className="text-white font-bold text-body-s">Sin rutinas todavía</p>
             <p className="text-ink-2 text-label mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
@@ -659,7 +659,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             {/* Picker list */}
             <div className="overflow-y-auto flex-1 divide-y divide-hairline/40">
               {pickerFiltered.length === 0 ? (
-                <div className="py-12 text-center text-ink-2 text-body-s">
+                <div className="py-10 text-center text-ink-2 text-body-s">
                   {allExercises.length === 0 ? 'Cargando ejercicios...' : 'Sin resultados para los filtros actuales.'}
                 </div>
               ) : (

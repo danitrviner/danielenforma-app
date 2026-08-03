@@ -620,7 +620,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             </div>
           ))}
           {checkins.length === 0 && (
-            <div className="text-ink-2 text-center italic py-12 text-body-s">
+            <div className="text-ink-2 text-center italic py-10 text-body-s">
               Aún no tienes registros de peso. Envía tu primer check-in.
             </div>
           )}

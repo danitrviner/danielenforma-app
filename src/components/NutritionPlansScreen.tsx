@@ -413,7 +413,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         )}
 
         {!selectedEmail ? (
-          <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
+          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-display text-ink-3 block mb-3">person_search</span>
             <p className="text-ink-2 text-body-s">Selecciona un atleta para ver y crear sus dietas.</p>
           </div>
@@ -423,7 +423,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <Skeleton className="h-24 w-full rounded-surface" />
           </div>
         ) : diets.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
+          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
             <p className="text-ink-2 text-body-s">Sin dietas. Crea la primera para este atleta.</p>
           </div>

@@ -197,7 +197,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
             </div>
 
             {/* Help text */}
-            <div className="pl-9">
+            <div className="pl-10">
               <input
                 value={q.helpText ?? ''}
                 onChange={e => setQ(idx, { helpText: e.target.value || undefined })}
@@ -207,7 +207,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
             </div>
 
             {/* Type-specific config */}
-            <div className="pl-9 space-y-2">
+            <div className="pl-10 space-y-2">
               {q.type === 'numeric' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>

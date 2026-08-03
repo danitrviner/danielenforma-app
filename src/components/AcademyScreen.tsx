@@ -60,7 +60,7 @@ export default function AcademyScreen({ profile }: Props) {
 
   if (!access?.enabled) {
     return (
-      <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
+      <div className="flex flex-col items-center justify-center text-center gap-3 py-10">
         <span className="material-symbols-outlined text-display text-ink-3">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
         <p className="text-label text-ink-2 font-sans max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>

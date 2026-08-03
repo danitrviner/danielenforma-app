@@ -12,7 +12,7 @@ interface Props {
 // vacía sea accionable y no un callejón sin salida.
 export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-2 py-12 px-6">
+    <div className="flex flex-col items-center justify-center text-center gap-2 py-10 px-6">
       <span className="material-symbols-outlined text-display text-ink-3">{icon}</span>
       <p className="font-sans font-bold text-body-s text-ink">{titulo}</p>
       {descripcion && (

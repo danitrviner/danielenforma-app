@@ -437,7 +437,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-3 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-control pl-10 pr-3 py-3 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -468,7 +468,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : athletes.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center gap-3">
+          <div className="text-center py-10 flex flex-col items-center gap-3">
             <p className="text-ink-2 font-sans text-label">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
@@ -479,7 +479,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </button>
           </div>
         ) : filteredAthletes.length === 0 ? (
-          <div className="text-center py-12 text-ink-2 font-mono text-label">Ningún atleta coincide con "{search}".</div>
+          <div className="text-center py-10 text-ink-2 font-mono text-label">Ningún atleta coincide con "{search}".</div>
         ) : (
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {

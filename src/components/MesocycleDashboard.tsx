@@ -143,7 +143,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
+      <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
         <span className="material-symbols-outlined text-display text-ink-3 block mb-3">bar_chart</span>
         <p className="text-ink-2 text-body-s">Sin mesociclos para mostrar.</p>
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la

@@ -438,7 +438,7 @@ export default function MyDietsScreen({ profile }: Props) {
       </div>
 
       {diets.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
+        <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-3">bookmark</span>
           <p className="text-ink-2 text-body-s font-sans">Aún no tienes ninguna dieta guardada.</p>
           <p className="text-ink-3 text-label font-sans mt-1">Créala aquí con "Nueva", o desde Nutrición → Intercambios para partir de tu día a día.</p>

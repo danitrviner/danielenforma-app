@@ -311,7 +311,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <Skeleton className="h-12 w-full" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
+        <div className="bg-surface border border-dashed border-hairline rounded-surface p-10 text-center">
           <span className="material-symbols-outlined text-display text-accent/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-body-s">Sin resultados</p>
           <p className="text-ink-2 text-label mt-1">

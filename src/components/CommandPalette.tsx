@@ -82,7 +82,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-24 px-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
       onClick={() => setOpen(false)}
     >
       <div

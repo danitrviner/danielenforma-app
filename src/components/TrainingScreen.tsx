@@ -426,7 +426,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     const totalSets = playerSets.flat().length;
 
     return (
-      <div className="space-y-5 pb-24">
+      <div className="space-y-5 pb-14">
         {/* Player header */}
         <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg z-[var(--z-sticky)] pt-2">
           <button
@@ -803,7 +803,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
         {celebration && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
+            <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-8 space-y-5 shadow-2xl text-center">
               <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
                 <span className="material-symbols-outlined text-display text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {celebration.isFirstEver ? 'celebration' : 'bolt'}

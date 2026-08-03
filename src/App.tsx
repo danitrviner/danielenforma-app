@@ -317,7 +317,7 @@ function AppContent() {
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[var(--header-h)] border-r border-hairline p-6 justify-between select-none">
+      <nav className="hidden md:flex flex-col w-[var(--sidebar-w)] bg-bg h-screen fixed left-0 top-[var(--header-h)] border-r border-hairline p-6 justify-between select-none">
         <div className="flex flex-col gap-3">
           {mainTabs.map((tab) => (
             <button
@@ -349,7 +349,7 @@ function AppContent() {
         )}
       </nav>
 
-      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[var(--sidebar-w)] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
       <Suspense fallback={<ScreenFallback />}>
         <Routes>
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />

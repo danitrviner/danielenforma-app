@@ -681,7 +681,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
 
           {filteredRecipes.length === 0 ? (
-            <div className="text-center py-12 text-ink-2 font-mono text-label uppercase tracking-widest">
+            <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
               {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.'
                 : selectedCat === 'MisRecetas' ? 'Aún no has guardado ninguna receta propia.'
                 : 'No hay recetas en esta categoría.'}
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
@@ -777,7 +777,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
-          <div className="flex flex-col items-center gap-3 py-16">
+          <div className="flex flex-col items-center gap-3 py-10">
             <p className="font-sans text-label text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
             <button
               onClick={handleLoadMore}
@@ -791,7 +791,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             </button>
           </div>
         ) : indyaTotalVisible === 0 ? (
-          <div className="text-center py-16 text-ink-2 font-mono text-label uppercase tracking-widest">
+          <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
             {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
           </div>
         ) : (

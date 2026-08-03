@@ -288,7 +288,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-10">
         <span className="material-symbols-outlined text-display text-accent animate-spin">progress_activity</span>
       </div>
     );

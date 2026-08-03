@@ -159,7 +159,7 @@ export default function PhotosScreen({ profile }: Props) {
 
       {/* Gallery */}
       {visiblePhotos.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
+        <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-3">photo_camera</span>
           <p className="text-ink-2 text-body-s font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
           <p className="text-ink-2 text-label font-sans mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>

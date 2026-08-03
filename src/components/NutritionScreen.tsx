@@ -902,7 +902,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <Skeleton className="h-24 w-full rounded-surface" />
         </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
-        <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
+        <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
           <p className="text-ink-2 text-body-s font-sans">Aún no tienes ningún menú.</p>
           <p className="text-ink-2 text-label font-sans mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>

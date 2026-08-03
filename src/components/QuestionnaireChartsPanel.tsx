@@ -157,7 +157,7 @@ function QuestionChart({
 
       {/* Scale end labels */}
       {question.type === 'scale' && (question.scaleMinLabel || question.scaleMaxLabel) && (
-        <div className="flex justify-between px-9">
+        <div className="flex justify-between px-10">
           <span className="font-mono text-caption text-ink-2">{yMin} – {question.scaleMinLabel}</span>
           <span className="font-mono text-caption text-ink-2">{question.scaleMaxLabel} – {yMax}</span>
         </div>

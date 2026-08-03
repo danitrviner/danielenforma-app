@@ -212,7 +212,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             </div>
           ))}
           {filtered.length === 0 && !loading && (
-            <div className="text-center py-12 text-ink-2 font-sans text-label italic">
+            <div className="text-center py-10 text-ink-2 font-sans text-label italic">
               Ningún alimento coincide.
             </div>
           )}
