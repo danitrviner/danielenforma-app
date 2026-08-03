@@ -206,7 +206,7 @@ export default function MyDietsScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-6">
         <Skeleton className="h-24 w-full rounded-surface" />
         <Skeleton className="h-24 w-full rounded-surface" />
       </div>

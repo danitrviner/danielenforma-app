@@ -305,7 +305,7 @@ export default function MyMenuScreen({ profile }: Props) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Week strip */}
       <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {

@@ -227,7 +227,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
     : (recipe.ingredients ?? []).filter(ing => enabledModes.includes(ing.mode));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Back bar */}
       <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
@@ -645,7 +645,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // ── Gallery view ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Recetas</h1>
         <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>

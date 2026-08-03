@@ -50,7 +50,7 @@ export default function AcademyScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full rounded-surface" />
         <Skeleton className="h-32 w-full rounded-surface" />
@@ -100,7 +100,7 @@ export default function AcademyScreen({ profile }: Props) {
   if (openLesson && openCourse) {
     const done = !!progressSafe.completed[openLesson.id];
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-title-s">arrow_back</span> {openCourse.title}
         </button>
@@ -141,7 +141,7 @@ export default function AcademyScreen({ profile }: Props) {
   // ── DETALLE DE CURSO (lista de lecciones) ───────────────────────────────
   if (openCourse) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-title-s">arrow_back</span> Academia
         </button>

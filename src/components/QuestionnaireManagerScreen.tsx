@@ -79,7 +79,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
 
   // ── List view ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-title-m text-white">Cuestionarios</h2>
         <button

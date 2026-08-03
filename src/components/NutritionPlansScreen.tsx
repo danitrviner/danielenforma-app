@@ -377,7 +377,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
   if (view === 'list') {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Athlete selector — hidden in embedded mode */}
         {!isEmbedded && (
           <div className="bg-surface border border-hairline rounded-surface p-4">
@@ -493,7 +493,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   // ── Render: editor ────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button

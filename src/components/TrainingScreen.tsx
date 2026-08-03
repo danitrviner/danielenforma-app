@@ -426,7 +426,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     const totalSets = playerSets.flat().length;
 
     return (
-      <div className="space-y-5 pb-14">
+      <div className="space-y-6 pb-14">
         {/* Player header */}
         <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg z-[var(--z-sticky)] pt-2">
           <button
