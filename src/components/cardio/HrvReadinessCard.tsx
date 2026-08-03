@@ -24,7 +24,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
 
   return (
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
-      <h3 className="text-[10px] font-mono uppercase text-[#00eefc] tracking-wider">HRV matinal</h3>
+      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">HRV matinal</h3>
 
       {latest ? (
         <div className="flex items-center justify-between">
@@ -43,7 +43,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
         <p className="text-xs text-ink-2 font-mono">Mide 3 min al despertar para ver tu preparación diaria.</p>
       )}
 
-      <button onClick={onMeasure} className="w-full py-2.5 bg-[#0e0e0e] border border-[#00eefc]/30 text-[#00eefc] font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#00eefc]/10 active:scale-95 transition-all">
+      <button onClick={onMeasure} className="w-full py-2.5 bg-[#0e0e0e] border border-data/30 text-data font-sans font-bold text-xs uppercase rounded-lg hover:bg-data/10 active:scale-95 transition-all">
         {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
       </button>
     </section>

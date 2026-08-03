@@ -143,7 +143,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
               <div className="flex-1 min-w-0">
                 <p className={`font-sans text-xs text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
                 {n.relatedAthleteName && (
-                  <p className="font-mono text-[9px] text-[#00eefc] mt-0.5">{n.relatedAthleteName}</p>
+                  <p className="font-mono text-[9px] text-data mt-0.5">{n.relatedAthleteName}</p>
                 )}
               </div>
               <button

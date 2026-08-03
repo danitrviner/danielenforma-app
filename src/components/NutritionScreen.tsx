@@ -826,14 +826,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {/* Phase change banner */}
       {phaseBanner && (
-        <div className="flex items-center justify-between gap-3 bg-[#00eefc]/10 border border-[#00eefc]/30 rounded-xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3 bg-data/10 border border-data/30 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00eefc] text-lg flex-shrink-0">swap_horiz</span>
-            <p className="font-sans font-bold text-[#00eefc] text-sm">{phaseBanner}</p>
+            <span className="material-symbols-outlined text-data text-lg flex-shrink-0">swap_horiz</span>
+            <p className="font-sans font-bold text-data text-sm">{phaseBanner}</p>
           </div>
           <button
             onClick={() => setPhaseBanner(null)}
-            className="text-[#00eefc]/60 hover:text-[#00eefc] transition-colors flex-shrink-0"
+            className="text-data/60 hover:text-data transition-colors flex-shrink-0"
           >
             <span className="material-symbols-outlined text-base">close</span>
           </button>
@@ -888,7 +888,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
-                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-[#00eefc]/50' : 'bg-transparent'}`} />
+                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-data/50' : 'bg-transparent'}`} />
               </button>
             );
           })}
@@ -927,7 +927,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <>
                   <span className="block font-sans font-bold text-lg text-white leading-tight">{browseDiet.name}</span>
                   {browseDiet.coachNote && (
-                    <span className="block text-xs text-[#00eefc] italic mt-1">{browseDiet.coachNote}</span>
+                    <span className="block text-xs text-data italic mt-1">{browseDiet.coachNote}</span>
                   )}
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {BUDGET_CATS.map(cat => {
@@ -998,7 +998,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   className="block w-full bg-transparent border-none font-sans font-bold text-lg text-white leading-tight focus:outline-none focus:ring-0 p-0"
                 />
                 {selectedDiet.coachNote && (
-                  <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
+                  <span className="block font-sans text-xs text-data italic mt-1">{selectedDiet.coachNote}</span>
                 )}
                 <span className="block font-mono text-[9px] text-ink-2 mt-1.5">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
@@ -1129,7 +1129,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <button
                               onClick={() => openSaveMealAsRecipe(meal)}
                               title="Guardar como receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#00eefc]/50 hover:text-[#00eefc] text-ink-2 transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-data/50 hover:text-data text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-xs select-none">bookmark_add</span>
                               <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Guardar receta</span>
@@ -1155,12 +1155,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#00eefc]/50"
+                            className="flex-1 min-w-0 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-1.5 bg-[#00eefc] text-black font-mono text-[10px] font-bold uppercase rounded-lg disabled:opacity-40 transition-all"
+                            className="px-3 py-1.5 bg-data text-black font-mono text-[10px] font-bold uppercase rounded-lg disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>
@@ -1262,7 +1262,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               <button
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
                                 title="Cambiar alimento"
-                                className="text-ink-2 hover:text-[#00eefc] transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                className="text-ink-2 hover:text-data transition-colors flex-shrink-0 p-1.5 -m-1.5"
                               >
                                 <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
                               </button>
@@ -1571,7 +1571,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               disabled={saving}
               className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-[#00eefc] text-base">bookmark_add</span>
+              <span className="material-symbols-outlined text-data text-base">bookmark_add</span>
               <span className="text-sm text-white font-sans">Guardar como nueva dieta mía</span>
             </button>
             <button

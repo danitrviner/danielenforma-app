@@ -95,7 +95,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.reps}</td>
                 <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2 whitespace-nowrap">
-                  <span className="font-mono text-xs text-[#00eefc]">{r.bestOrm} kg</span>
+                  <span className="font-mono text-xs text-data">{r.bestOrm} kg</span>
                   {r.deltaOrmPct != null && <span className="ml-1.5"><DeltaBadge pct={r.deltaOrmPct} /></span>}
                 </td>
               </tr>
@@ -127,7 +127,7 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2 text-xs text-white font-sans whitespace-nowrap">{r.label}</td>
                 <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.tonnageDeltaPct} /></td>
-                <td className="py-2 px-2 font-mono text-xs text-[#00eefc]">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
+                <td className="py-2 px-2 font-mono text-xs text-data">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.ormDeltaPct} /></td>
               </tr>
             ))}
@@ -213,7 +213,7 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
 const CHALLENGE_STYLE: Record<string, { icon: string; cls: string; label: string }> = {
   conseguido: { icon: 'emoji_events', cls: 'text-green-400', label: 'Conseguido' },
   fallido:    { icon: 'close',        cls: 'text-amber-300', label: 'No salió' },
-  activo:     { icon: 'timelapse',    cls: 'text-[#00eefc]', label: 'En marcha' },
+  activo:     { icon: 'timelapse',    cls: 'text-data', label: 'En marcha' },
 };
 
 function ChallengesSection({ section }: { section: CoachReportSection }) {

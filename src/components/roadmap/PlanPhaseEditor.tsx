@@ -204,7 +204,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
           <button
             onClick={onGenerateClick}
             disabled={generatingNutrition || phases.length === 0}
-            className="py-2 px-3 border border-[#00eefc]/40 text-[#00eefc] font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#00eefc]/10 transition-all disabled:opacity-40"
+            className="py-2 px-3 border border-data/40 text-data font-sans font-bold text-xs uppercase rounded-lg hover:bg-data/10 transition-all disabled:opacity-40"
           >
             {generatingNutrition ? 'Generando...' : 'Generar periodización nutricional'}
           </button>
@@ -229,7 +229,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
               <button
                 onClick={() => generateNutritionProgram('futuras')}
                 disabled={generatingNutrition}
-                className="py-2 bg-[#00eefc] text-black font-sans font-bold text-xs uppercase rounded hover:opacity-90 disabled:opacity-50"
+                className="py-2 bg-data text-black font-sans font-bold text-xs uppercase rounded hover:opacity-90 disabled:opacity-50"
               >
                 Regenerar solo fases futuras
               </button>
@@ -277,7 +277,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     {phase.status}
                   </span>
                   {phase.nutritionPhaseId && (
-                    <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 bg-[#00eefc]/15 text-[#00eefc]">
+                    <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 bg-data/15 text-data">
                       → enlazada a nutrición
                     </span>
                   )}
@@ -387,7 +387,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => addMetric(phase.id)} className="font-mono text-[10px] text-[#00eefc] hover:underline">
+                  <button onClick={() => addMetric(phase.id)} className="font-mono text-[10px] text-data hover:underline">
                     + Añadir métrica objetivo
                   </button>
                 </div>

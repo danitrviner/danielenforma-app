@@ -171,7 +171,7 @@ export default function ClientDietsPanel({
                   {/* Edit button */}
                   <button
                     onClick={() => setDietEditorDiet(dt)}
-                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                     title="Editar dieta"
                   >
                     <span className="material-symbols-outlined text-sm">edit</span>
@@ -259,7 +259,7 @@ export default function ClientDietsPanel({
 
         {publishedMenu && menuAdherence.daysLogged > 0 && (
           <div className="flex items-center gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
-            <span className="material-symbols-outlined text-[#00eefc] text-sm">task_alt</span>
+            <span className="material-symbols-outlined text-data text-sm">task_alt</span>
             <span className="font-mono text-[10px] text-ink-2">
               Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
             </span>
@@ -298,7 +298,7 @@ export default function ClientDietsPanel({
                 </div>
                 <button
                   onClick={() => setMenuEditor(m)}
-                  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
                   {m.status === 'published' ? 'Revisar' : 'Editar'}
@@ -361,7 +361,7 @@ export default function ClientDietsPanel({
       {nutritionConfig && (
         <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00eefc] text-sm">tune</span>
+            <span className="material-symbols-outlined text-data text-sm">tune</span>
             Modos de alimentación habilitados
           </h3>
           <p className="text-[10px] text-ink-2 font-mono">
@@ -391,7 +391,7 @@ export default function ClientDietsPanel({
       {nutritionConfig && (
         <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00eefc] text-sm">directions_walk</span>
+            <span className="material-symbols-outlined text-data text-sm">directions_walk</span>
             Objetivo de pasos
           </h3>
           <div className="grid grid-cols-2 gap-3">

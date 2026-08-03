@@ -181,7 +181,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                   </button>
                 </div>
               ))}
-              <button onClick={() => addCriterion(level.id)} className="font-mono text-[10px] text-[#00eefc] hover:underline">
+              <button onClick={() => addCriterion(level.id)} className="font-mono text-[10px] text-data hover:underline">
                 + Añadir criterio
               </button>
             </div>

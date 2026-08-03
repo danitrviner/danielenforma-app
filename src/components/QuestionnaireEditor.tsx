@@ -187,7 +187,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <span className="font-mono text-[9px] text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
               <button onClick={() => duplicateQ(idx)}
-                className="flex-shrink-0 mt-0.5 p-1.5 text-ink-2 hover:text-[#00eefc] transition-colors" title="Duplicar">
+                className="flex-shrink-0 mt-0.5 p-1.5 text-ink-2 hover:text-data transition-colors" title="Duplicar">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
               </button>
               <button onClick={() => removeQ(idx)} disabled={form.questions.length === 1}

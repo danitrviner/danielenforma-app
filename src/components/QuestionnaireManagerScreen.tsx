@@ -127,7 +127,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => openEditor(q)}
-                  className="p-2 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                  className="p-2 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                   title="Editar"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>

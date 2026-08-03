@@ -604,7 +604,7 @@ export default function ClientReviewsPanel({
                       <div key={m.intakeType} className="flex items-center gap-1.5 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5">
                         <span className="font-mono text-[10px] text-ink-2">{m.name}</span>
                         {m.needsTupper && (
-                          <span className="font-mono text-[8px] bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] rounded px-1.5 py-0.5">tupper</span>
+                          <span className="font-mono text-[8px] bg-data/10 border border-data/30 text-data rounded px-1.5 py-0.5">tupper</span>
                         )}
                       </div>
                     ))}
@@ -887,7 +887,7 @@ export default function ClientReviewsPanel({
             {[
               { label: 'Correo',     value: athlete.email,                                        color: 'text-white'     },
               { label: 'Racha',      value: `${athlete.currentStreak || 0} Semanas`,              color: 'text-orange-400'},
-              { label: 'Nivel',      value: `Nivel ${athlete.level || 1}`,                        color: 'text-[#00eefc]' },
+              { label: 'Nivel',      value: `Nivel ${athlete.level || 1}`,                        color: 'text-data' },
               { label: 'XP',         value: `${athlete.xp || 0} / 400`,                          color: 'text-slate-300' },
               { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-accent' },
               { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-[#86efac]' },
@@ -900,7 +900,7 @@ export default function ClientReviewsPanel({
           </div>
           <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
+              <span className="material-symbols-outlined text-data text-sm">assignment_turned_in</span>
               Cumplimiento Semanal
             </h3>
             {weekTotal === 0 ? (
@@ -1008,7 +1008,7 @@ export default function ClientReviewsPanel({
                               <div className="flex items-center gap-2 pb-1">
                                 <button
                                   onClick={() => handleStartEditCheckin(c, key)}
-                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                                 >
                                   <span className="material-symbols-outlined text-xs">edit</span>Editar
                                 </button>
@@ -1029,13 +1029,13 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Peso (kg)</label>
                                     <input type="number" step="0.1" value={checkinEditForm.weight}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#00eefc]/50 font-mono" />
+                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                   <div>
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Fecha</label>
                                     <input type="text" value={checkinEditForm.dateStr}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#00eefc]/50 font-mono" />
+                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1043,7 +1043,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Adherencia</label>
                                     <select value={checkinEditForm.adherence}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#00eefc]/50 font-mono">
+                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1051,7 +1051,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Humor</label>
                                     <select value={checkinEditForm.mood}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#00eefc]/50 font-mono">
+                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1060,7 +1060,7 @@ export default function ClientReviewsPanel({
                                   <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas</label>
                                   <textarea value={checkinEditForm.notes}
                                     onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#00eefc]/50 font-sans resize-none min-h-[60px]" />
+                                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
@@ -1163,7 +1163,7 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 pb-1">
                               <button
                                 onClick={() => handleStartEditResponse(r, key)}
-                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 rounded-lg transition-all"
+                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                               >
                                 <span className="material-symbols-outlined text-xs">edit</span>Editar
                               </button>
@@ -1189,24 +1189,24 @@ export default function ClientReviewsPanel({
                                     {isChoice && question?.options ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#00eefc]/50 font-mono w-32">
+                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-32">
                                         {question.options.map(o => <option key={o} value={o}>{o}</option>)}
                                       </select>
                                     ) : isBool ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#00eefc]/50 font-mono w-24">
+                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24">
                                         <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                                         <option value="false">{question?.labelFalse ?? 'No'}</option>
                                       </select>
                                     ) : isNum ? (
                                       <input type="number" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: parseFloat(e.target.value) || 0 } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#00eefc]/50 font-mono w-24 text-right" />
+                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
                                     ) : (
                                       <input type="text" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#00eefc]/50 font-mono flex-1 min-w-0" />
+                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
                                     )}
                                   </div>
                                 );
@@ -1368,7 +1368,7 @@ export default function ClientReviewsPanel({
             {athleteQResponses.length > 0 && (
               <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
+                  <span className="material-symbols-outlined text-data text-sm">assignment_turned_in</span>
                   Respuestas enviadas
                 </h3>
                 <div className="space-y-3">

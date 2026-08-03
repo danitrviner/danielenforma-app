@@ -122,7 +122,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <div className="flex-1" />
             <button
               onClick={handleCopy}
-              className="px-4 py-2.5 bg-surface border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#00eefc]/50 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 bg-surface border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-data/50 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
               {copied ? '¡Copiado!' : 'Copiar texto'}

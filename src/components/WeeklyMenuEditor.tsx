@@ -544,7 +544,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                       <div className="flex justify-end">
                         <button
                           onClick={() => handleRegenerateDay(day.day)}
-                          className="flex items-center gap-1.5 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
+                          className="flex items-center gap-1.5 text-[10px] font-mono text-data hover:text-white transition-colors"
                         >
                           <span className="material-symbols-outlined text-sm">refresh</span>
                           Regenerar día completo
@@ -579,7 +579,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                           <div className="flex items-center gap-3 mt-2.5">
                             <button
                               onClick={() => openPicker(day.day, meal.id, mealIdx)}
-                              className="flex items-center gap-1 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
+                              className="flex items-center gap-1 text-[10px] font-mono text-data hover:text-white transition-colors"
                             >
                               <span className="material-symbols-outlined text-sm">swap_horiz</span>
                               Cambiar receta

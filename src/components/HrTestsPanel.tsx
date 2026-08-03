@@ -183,7 +183,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (phase === 'done') {
       return (
         <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3 text-center">
-          <span className="material-symbols-outlined text-4xl text-[#00eefc]">check_circle</span>
+          <span className="material-symbols-outlined text-4xl text-data">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-xs text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
           <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Volver</button>
@@ -204,7 +204,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800]">Conectar banda y empezar</button>
         ) : (
           <div className="space-y-3 text-center">
-            <p className="text-[10px] font-mono uppercase text-[#00eefc]">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
+            <p className="text-[10px] font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-xs font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
@@ -218,7 +218,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
 
   return (
     <section className="space-y-2">
-      <h3 className="text-[10px] font-mono uppercase text-[#00eefc] tracking-wider">Tests de FC</h3>
+      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">Tests de FC</h3>
       <div className="space-y-2">
         {TESTS.map(t => {
           const lastResult = [...tests].filter(x => x.type === t.type).sort((a, b) => b.date.localeCompare(a.date))[0];

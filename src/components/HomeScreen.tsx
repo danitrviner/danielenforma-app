@@ -97,7 +97,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
         <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
+          <span className="material-symbols-outlined text-data">fitness_center</span>
           Entrenamiento
           <button
             onClick={() => onNavigate('training')}

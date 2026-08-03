@@ -242,7 +242,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <button
                 onClick={() => handleCopy(r)}
                 title="Copiar texto del reporte"
-                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-[#00eefc] transition-colors"
+                className="flex-shrink-0 p-1.5 text-ink-2 hover:text-data transition-colors"
               >
                 <span className="material-symbols-outlined text-base">{copiedId === r.id ? 'check' : 'content_copy'}</span>
               </button>

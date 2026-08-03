@@ -150,7 +150,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             </div>
             <div>
               <span className="block text-[9px] text-ink-2 uppercase">Objetivo</span>
-              <span className="block text-sm font-bold text-[#00eefc]">{goal.toLocaleString('es-ES')}</span>
+              <span className="block text-sm font-bold text-data">{goal.toLocaleString('es-ES')}</span>
             </div>
             <div>
               <span className="block text-[9px] text-ink-2 uppercase">Restantes</span>

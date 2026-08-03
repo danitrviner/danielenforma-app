@@ -367,7 +367,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       {/* ── Biblioteca Indya (solo lectura) ─────────────────────────────── */}
       <section className="space-y-4 pt-4 border-t border-white/7">
         <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc] text-base">library_books</span>
+          <span className="material-symbols-outlined text-data text-base">library_books</span>
           Biblioteca Indya
           <span className="font-mono text-[10px] text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
@@ -380,7 +380,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 onClick={() => setIndyaCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold whitespace-nowrap transition-all ${
                   indyaCat === cat
-                    ? 'bg-[#00eefc] text-black shadow-md'
+                    ? 'bg-data text-black shadow-md'
                     : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
               >{cat}</button>
@@ -417,7 +417,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-[#00eefc]/50 font-mono"
+            className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
         </div>
 
@@ -447,7 +447,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 <button
                   onClick={handleIndyaLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-[#00eefc]/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>

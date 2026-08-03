@@ -1311,9 +1311,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <>
                       {/* Notice: predefined days from template */}
                       {(editing.days?.length ?? 0) > 0 && (
-                        <div className="flex items-center gap-2 bg-[#00eefc]/5 border border-[#00eefc]/20 rounded-xl p-3 mb-2">
-                          <span className="material-symbols-outlined text-[#00eefc] text-sm flex-shrink-0">fitness_center</span>
-                          <p className="font-mono text-[10px] text-[#00eefc]">
+                        <div className="flex items-center gap-2 bg-data/5 border border-data/20 rounded-xl p-3 mb-2">
+                          <span className="material-symbols-outlined text-data text-sm flex-shrink-0">fitness_center</span>
+                          <p className="font-mono text-[10px] text-data">
                             Entrenamiento prediseñado: {editing.days!.length} días · {editing.days!.reduce((s, d) => s + d.exercises.length, 0)} ejercicios. El generador los usará en vez de auto-sugerir.
                           </p>
                         </div>
@@ -1694,7 +1694,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     </div>
                     <div className="flex gap-3 flex-wrap">
                       <span className="font-mono text-[10px] text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
-                      <span className="font-mono text-[10px] text-[#00eefc]">{totalWeeks} sem en total</span>
+                      <span className="font-mono text-[10px] text-data">{totalWeeks} sem en total</span>
                     </div>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {tpl.stages.map((st) => (

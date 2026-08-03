@@ -193,7 +193,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-[10px] font-mono text-ink-2">{t.date}</span>
             </div>
-            <p className="text-xs font-mono text-[#00eefc]">{t.type}</p>
+            <p className="text-xs font-mono text-data">{t.type}</p>
             <p className="text-[10px] font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}

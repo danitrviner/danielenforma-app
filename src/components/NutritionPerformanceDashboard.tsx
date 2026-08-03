@@ -84,7 +84,7 @@ function ProjectionTooltip({ active, payload }: any) {
       <p className="text-ink-2 mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
-          <span className="text-[#00eefc]">Esperado 100%</span>
+          <span className="text-data">Esperado 100%</span>
           <span className="text-white font-bold">{fmtKg(row.expected100)} kg</span>
         </p>
       )}
@@ -452,7 +452,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs">
             <span className="text-ink-2">Objetivo: <b className="text-accent">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
-            <span className="text-ink-2">Mantenimiento: <b className="text-[#00eefc]">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
+            <span className="text-ink-2">Mantenimiento: <b className="text-data">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
             <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
             <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
             {activeBalance.dailyDeficit != null && (

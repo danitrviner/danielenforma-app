@@ -350,7 +350,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     return (
       <div className="bg-surface border border-white/7 rounded-2xl p-5">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
+          <span className="material-symbols-outlined text-data text-sm">monitoring</span>
           Historial de carga
         </h3>
         <div className="py-8 text-center border border-dashed border-white/7 rounded-xl">
@@ -364,7 +364,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   return (
     <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-5">
       <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
+        <span className="material-symbols-outlined text-data text-sm">monitoring</span>
         Historial de carga
       </h3>
 
@@ -415,7 +415,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-[#1c1b1b] border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-[#1c1b1b] border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -438,7 +438,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                     key={g}
                     onClick={() => setGranularity(g)}
                     className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-all ${
-                      granularity === g ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'text-[#555] hover:text-ink-2'
+                      granularity === g ? 'bg-data/15 text-data' : 'text-[#555] hover:text-ink-2'
                     }`}
                   >
                     {g === 'week' ? 'Semana' : 'Día'}
@@ -449,7 +449,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-[#1c1b1b] border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+                  className="bg-[#1c1b1b] border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (
@@ -471,7 +471,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
                   className={`min-w-[44px] min-h-[44px] px-2 rounded-lg font-mono text-[10px] font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
                     included
-                      ? 'bg-[#00eefc]/10 border-[#00eefc]/40 text-[#00eefc]'
+                      ? 'bg-data/10 border-data/40 text-data'
                       : 'bg-transparent border-white/7 text-[#555] opacity-50'
                   }`}
                 >

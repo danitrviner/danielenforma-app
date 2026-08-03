@@ -66,7 +66,7 @@ function QuestionnaireForm({
     <div className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-6">
       <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
         <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
+          <span className="material-symbols-outlined text-data">assignment</span>
           {questionnaire.title}
         </h2>
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors p-1">
@@ -376,7 +376,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             type="button"
             onClick={() => changeBwMode('daily')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'daily' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-ink-2'
+              bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-white/7 text-ink-2'
             }`}
           >
             Me peso cada día
@@ -385,7 +385,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
             className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'weekly_avg' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-ink-2'
+              bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-white/7 text-ink-2'
             }`}
           >
             Llevo yo la media semanal
@@ -393,8 +393,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-[#00eefc]/10 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-[#00eefc] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
+        <div className="w-9 h-9 rounded-lg bg-data/10 flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-data text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
         </div>
 
         <div className="flex-1 min-w-0">
@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#00eefc] placeholder-[#444]"
+                className="w-24 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-[#444]"
               />
               <span className="font-mono text-xs text-[#555]">kg</span>
             </div>
@@ -437,7 +437,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             onClick={handleSaveBw}
             disabled={bwSaving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#00eefc] flex items-center justify-center text-black transition-all hover:bg-[#00d4e0] active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-9 h-9 rounded-lg bg-data flex items-center justify-center text-black transition-all hover:bg-[#00d4e0] active:scale-95 disabled:opacity-50"
             title="Guardar peso"
           >
             {bwSaving
@@ -582,14 +582,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
       <section className="bg-surface border border-white/7 rounded-2xl p-5">
         <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">history</span>
+          <span className="material-symbols-outlined text-data">history</span>
           Historial de Revisiones
         </h2>
         <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
           {checkins.map((item) => (
             <div
               key={item.id}
-              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-white/7'}`}
+              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-data/30' : 'border-white/7'}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
@@ -598,7 +598,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.mood}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
                     {item.adherence}
                   </span>
                 </div>

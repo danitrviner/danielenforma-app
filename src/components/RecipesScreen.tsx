@@ -194,7 +194,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
             </span>
           )}
           {recipe.tupper && (
-            <span className="font-mono text-[9px] text-[#00eefc]">tupper</span>
+            <span className="font-mono text-[9px] text-data">tupper</span>
           )}
         </div>
       </div>
@@ -241,7 +241,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {onAddToIntercambios && (
             <button
               onClick={() => onAddToIntercambios(recipe)}
-              className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#00eefc] hover:text-white transition-all"
+              className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
             >
               <span className="material-symbols-outlined text-xl">playlist_add</span>
               Añadir a Intercambios
@@ -314,7 +314,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               </span>
             )}
             {recipe.tupper && (
-              <span className="flex items-center gap-1 text-[#00eefc]">
+              <span className="flex items-center gap-1 text-data">
                 <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>takeout_dining</span>
                 apto tupper
               </span>
@@ -706,7 +706,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {/* ── Biblioteca de recetas (paginated, backed by the Indya dataset — never shown to the user) ──── */}
       <section className="space-y-4">
         <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc] text-base">library_books</span>
+          <span className="material-symbols-outlined text-data text-base">library_books</span>
           Biblioteca de recetas
           <span className="font-mono text-[10px] text-ink-2 normal-case font-normal">8 850 recetas</span>
         </h2>
@@ -720,7 +720,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 onClick={() => setIndyaCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold whitespace-nowrap transition-all ${
                   indyaCat === cat
-                    ? 'bg-[#00eefc] text-black shadow-md'
+                    ? 'bg-data text-black shadow-md'
                     : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
               >{cat}</button>
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-[#00eefc]/50 font-mono"
+            className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
@@ -782,7 +782,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               onClick={handleLoadMore}
               disabled={indyaLoadingMore}
-              className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-[#00eefc]/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
                 ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
@@ -883,7 +883,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-[#00eefc]/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>

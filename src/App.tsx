@@ -333,7 +333,7 @@ function AppContent() {
               </span>
               <span className="font-sans text-xs uppercase tracking-wider font-bold flex-1">{tab.label}</span>
               {tab.id === 'reviews' && pendingCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00eefc] animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
               )}
             </button>
           ))}
@@ -429,7 +429,7 @@ function AppContent() {
               {tab.shortLabel ?? tab.label}
             </span>
             {tab.id === 'reviews' && pendingCount > 0 && (
-              <span className="absolute top-0.5 right-1 w-1.5 h-1.5 rounded-full bg-[#00eefc]"></span>
+              <span className="absolute top-0.5 right-1 w-1.5 h-1.5 rounded-full bg-data"></span>
             )}
           </button>
         ))}

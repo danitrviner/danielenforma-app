@@ -120,7 +120,7 @@ export default function AcademyScreen({ profile }: Props) {
         {openLesson.resources && openLesson.resources.length > 0 && (
           <div className="space-y-1.5">
             {openLesson.resources.map((r, i) => (
-              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-mono text-[#00eefc] hover:underline">
+              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-mono text-data hover:underline">
                 <span className="material-symbols-outlined text-sm">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>
                 {r.title}
               </a>
@@ -146,7 +146,7 @@ export default function AcademyScreen({ profile }: Props) {
           <span className="material-symbols-outlined text-base">arrow_back</span> Academia
         </button>
         <div>
-          <span className="text-[10px] font-mono uppercase text-[#00eefc]">{CATEGORY_LABEL[openCourse.category]}</span>
+          <span className="text-[10px] font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-black text-2xl text-white">{openCourse.title}</h2>
           <p className="text-xs text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
@@ -196,7 +196,7 @@ export default function AcademyScreen({ profile }: Props) {
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
         <div key={cat} className="space-y-2">
-          <h3 className="text-[10px] font-mono uppercase text-[#00eefc] tracking-wider">{CATEGORY_LABEL[cat]}</h3>
+          <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {byCategory[cat].map(c => {
               const { unlocked, reason } = evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);

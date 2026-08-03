@@ -270,7 +270,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
-                        q.type === 'scale'   ? 'text-[#00eefc] border-[#00eefc]/20 bg-[#00eefc]/5' :
+                        q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
                                                'text-ink-2 border-[#3a3a3a] bg-[#1e1e1b]'
                       }`}>{TYPE_LABEL[q.type]}</span>
@@ -279,7 +279,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       </span>
                       {q.unit && <span className="text-[9px] text-[#555] font-mono flex-shrink-0">{q.unit}</span>}
                       <button type="button" onClick={() => { setEditingId(q.id); setOptionInput(''); }}
-                        className="p-1 text-ink-2 hover:text-[#00eefc] transition-colors flex-shrink-0">
+                        className="p-1 text-ink-2 hover:text-data transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       </button>
                       <button type="button" onClick={() => deleteQ(q.id)}
@@ -432,7 +432,7 @@ function IndyaImportPanel() {
   return (
     <div className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
       <div>
-        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-[#00eefc] flex items-center gap-2">
+        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-data flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">library_books</span>
           Importar biblioteca Indya
         </h3>
@@ -444,7 +444,7 @@ function IndyaImportPanel() {
       {status === 'idle' && (
         <button
           onClick={startImport}
-          className="px-4 py-2 bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/20 font-mono text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2"
+          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-mono text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-sm">upload</span>
           Importar / Reimportar
@@ -458,7 +458,7 @@ function IndyaImportPanel() {
             <>
               <div className="w-full h-2.5 bg-[#1e1e1e] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#00eefc] transition-all duration-300 rounded-full"
+                  className="h-full bg-data transition-all duration-300 rounded-full"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -493,7 +493,7 @@ function IndyaImportPanel() {
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/10 font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-[10px] uppercase rounded-lg transition-all"
           >
             Reintentar
           </button>
@@ -602,7 +602,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
                       {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#00eefc]/10 text-[#00eefc] uppercase border border-[#00eefc]/20">TÚ</span>}
+                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-xs text-ink-2 truncate block">{user.email}</span>
                   </div>
@@ -613,7 +613,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
                         className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
-                          isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-[#00eefc]/40 text-[#00eefc] hover:bg-[#00eefc]/10'
+                          isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId
                           ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>

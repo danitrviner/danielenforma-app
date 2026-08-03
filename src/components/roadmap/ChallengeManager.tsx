@@ -158,7 +158,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             <div className="flex items-center justify-between">
               <p className="font-sans font-bold text-white text-sm">{current.title}</p>
               <span className={`font-mono text-[9px] uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
-                current.origin === 'coach' ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'bg-white/5 text-ink-2'
+                current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
             </div>
             <p className="text-xs text-ink-2 font-mono mt-1">{current.description}</p>
@@ -283,7 +283,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Biblioteca de retos</p>
-          <button onClick={() => setShowTemplateForm(v => !v)} className="font-mono text-[10px] text-[#00eefc] hover:underline">
+          <button onClick={() => setShowTemplateForm(v => !v)} className="font-mono text-[10px] text-data hover:underline">
             {showTemplateForm ? 'Cancelar' : '+ Nueva plantilla'}
           </button>
         </div>
@@ -327,7 +327,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             <button
               onClick={saveTemplate}
               disabled={saving || !tplForm.title.trim()}
-              className="w-full py-2 bg-[#00eefc] text-black font-sans font-bold text-xs uppercase rounded hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2 bg-data text-black font-sans font-bold text-xs uppercase rounded hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
             >
               Guardar plantilla
             </button>

@@ -67,7 +67,7 @@ const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
 };
 
 const TYPE_CHIP: Record<string, string> = {
-  fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
+  fuerza:       'bg-data/10 text-data border border-data/20',
   cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
   estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
   pliometría:   'bg-accent/10 text-accent border border-accent/20',

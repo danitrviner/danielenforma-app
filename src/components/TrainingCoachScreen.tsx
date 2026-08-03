@@ -25,8 +25,8 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
           <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
-            <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
+            <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
             Sincronizado
           </span>
         </div>

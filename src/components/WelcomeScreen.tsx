@@ -145,7 +145,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
         <div className="w-full max-w-md bg-[#111110] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
           <div className="flex flex-col items-center mb-6">
@@ -193,7 +193,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
       {/* Background glow designs */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
       <div className="w-full max-w-md bg-[#111110] border border-white/7 p-8 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 transition-all">
         {/* En Forma Header */}

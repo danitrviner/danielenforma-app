@@ -290,7 +290,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       </div>
 
       {syncMsg && (
-        <div className="px-4 py-2 text-[11px] font-mono text-[#00eefc] border-b border-white/7 bg-[#00eefc]/5">
+        <div className="px-4 py-2 text-[11px] font-mono text-data border-b border-white/7 bg-data/5">
           {syncMsg}
         </div>
       )}
@@ -362,7 +362,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     }
                     if (block.type === 'tool_use') {
                       return (
-                        <div key={j} className="flex items-center gap-1.5 text-[10px] font-mono text-[#00eefc]/80 px-1">
+                        <div key={j} className="flex items-center gap-1.5 text-[10px] font-mono text-data/80 px-1">
                           <span className="material-symbols-outlined text-[14px]">manufacturing</span>
                           {block.name}
                         </div>

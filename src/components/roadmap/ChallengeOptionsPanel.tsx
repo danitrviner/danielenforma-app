@@ -144,7 +144,7 @@ export default function ChallengeOptionsPanel({
       </p>
 
       <div className="pt-2 border-t border-white/7">
-        <button onClick={() => setShowEligible(v => !v)} className="font-mono text-[10px] text-[#00eefc] hover:underline">
+        <button onClick={() => setShowEligible(v => !v)} className="font-mono text-[10px] text-data hover:underline">
           {showEligible ? 'Ocultar' : 'Ver'} ejercicios elegibles para retos de carga
         </button>
         {showEligible && (

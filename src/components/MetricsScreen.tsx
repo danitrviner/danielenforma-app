@@ -136,7 +136,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
             <div className="flex flex-col items-end">
               <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">DIF. TOTAL</span>
-              <div className={`flex items-center gap-1 font-sans font-black text-2xl md:text-3xl ${difference <= 0 ? 'text-[#00eefc]' : 'text-red-400'}`}>
+              <div className={`flex items-center gap-1 font-sans font-black text-2xl md:text-3xl ${difference <= 0 ? 'text-data' : 'text-red-400'}`}>
                 <span className="material-symbols-outlined text-sm font-bold">
                   {difference <= 0 ? 'arrow_downward' : 'arrow_upward'}
                 </span>
@@ -218,7 +218,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
             <span className="font-sans text-xs text-ink-2">Tendencia últimos 7 días</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
-              <span className="text-[#00eefc] text-xs font-mono">
+              <span className="text-data text-xs font-mono">
                 ({difference <= 0 ? 'Progreso positivo' : 'Fase de volumen'})
               </span>
             </div>
@@ -328,7 +328,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                 <h3 className="font-sans font-bold text-lg text-white">Nivel {profile.level}: Élite</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#00eefc]" style={{ width: `${(profile.xp / 400) * 100}%` }}></div>
+                    <div className="h-full bg-data" style={{ width: `${(profile.xp / 400) * 100}%` }}></div>
                   </div>
                   <span className="font-mono text-[11px] text-ink-2">{profile.xp}/400 XP</span>
                 </div>
@@ -372,7 +372,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                 <span className="text-accent">⚡</span> 10 días de racha
               </span>
               <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
-                <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
+                <span className="text-data">⭐</span> Nivel {profile.level}
               </span>
             </div>
           </div>
@@ -382,7 +382,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         <section className="bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#00eefc]">history</span>
+              <span className="material-symbols-outlined text-data">history</span>
               Historial de Revisiones
             </h2>
 
@@ -390,7 +390,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               {checkins.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-white/7'}`}
+                  className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-data/30' : 'border-white/7'}`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">
@@ -399,7 +399,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-base">{item.mood}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
                         {item.adherence}
                       </span>
                     </div>

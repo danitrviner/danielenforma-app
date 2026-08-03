@@ -182,7 +182,7 @@ export default function ClientStatusCard({
             </p>
           )}
           {nutriPhase && (
-            <p className="font-mono text-[10px] text-[#00eefc]">
+            <p className="font-mono text-[10px] text-data">
               Nutrición: {nutriPhase.name}{nutriPhase.targetKcal ? ` · ${nutriPhase.targetKcal} kcal` : ''}
             </p>
           )}

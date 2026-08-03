@@ -580,7 +580,7 @@ export default function NutritionPeriodizationPanel({
                   <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>
                   {balance.dailyDeficit != null && (
                     <span>
-                      {balance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={balance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#00eefc]'}>{fmtKcal(Math.abs(balance.dailyDeficit))}/día</b>
+                      {balance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={balance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-data'}>{fmtKcal(Math.abs(balance.dailyDeficit))}/día</b>
                     </span>
                   )}
                   {balance.weeklyDeltaKg != null && (

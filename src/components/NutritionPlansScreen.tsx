@@ -438,7 +438,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                       <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
                     </div>
                     {dt.coachNote && (
-                      <p className="text-[10px] text-[#00eefc] italic font-sans mb-2">{dt.coachNote}</p>
+                      <p className="text-[10px] text-data italic font-sans mb-2">{dt.coachNote}</p>
                     )}
                     {/* Budget summary */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -457,7 +457,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   <div className="flex gap-2 pt-3 border-t border-white/7">
                     <button
                       onClick={() => openEdit(dt)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                     >
                       <span className="material-symbols-outlined text-sm">edit</span>Editar
                     </button>
@@ -683,7 +683,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {CATS.some(c => form.budget[c] > 0) && form.meals.length > 1 && (
               <button
                 onClick={autoDistribute}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-[#00eefc]/40 text-[#00eefc] hover:border-[#00eefc]/70 font-mono text-[10px] uppercase rounded-lg transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-data/40 text-data hover:border-data/70 font-mono text-[10px] uppercase rounded-lg transition-all"
               >
                 <span className="material-symbols-outlined text-sm">auto_fix_high</span>
                 Repartir

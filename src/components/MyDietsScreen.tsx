@@ -470,7 +470,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <button onClick={() => openEdit(dt)} title="Editar" className="text-ink-2 hover:text-accent transition-colors p-2">
                     <span className="material-symbols-outlined text-base select-none">edit</span>
                   </button>
-                  <button onClick={() => handleDuplicate(dt)} title="Duplicar" className="text-ink-2 hover:text-[#00eefc] transition-colors p-2">
+                  <button onClick={() => handleDuplicate(dt)} title="Duplicar" className="text-ink-2 hover:text-data transition-colors p-2">
                     <span className="material-symbols-outlined text-base select-none">content_copy</span>
                   </button>
                   {dt.selfManaged && (

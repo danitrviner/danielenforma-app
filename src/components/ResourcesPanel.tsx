@@ -57,7 +57,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">folder_open</span>
+          <span className="material-symbols-outlined text-data">folder_open</span>
           Recursos
         </h2>
         {isCoach && (
@@ -123,7 +123,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
         <div className="space-y-2">
           {resources.map(r => (
             <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
-              <span className="material-symbols-outlined text-[#00eefc] flex-shrink-0">{KIND_ICON[r.kind]}</span>
+              <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white hover:text-accent transition-colors truncate">{r.title}</p>
                 <p className="font-mono text-[10px] text-ink-2">{KIND_LABEL[r.kind]}</p>

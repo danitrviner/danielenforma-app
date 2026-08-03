@@ -160,7 +160,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <p className="font-mono text-[10px] text-ink-2 truncate">{profile.email}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#00eefc]" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+                    <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
                   </div>
                   <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
                 </div>
@@ -203,7 +203,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                   <span className="text-accent">⚡</span> 10 días de racha
                 </span>
                 <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
-                  <span className="text-[#00eefc]">⭐</span> Nivel {profile.level}
+                  <span className="text-data">⭐</span> Nivel {profile.level}
                 </span>
               </div>
             </div>

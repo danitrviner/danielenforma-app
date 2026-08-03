@@ -744,14 +744,14 @@ function TemplateCard({
             <span className="font-mono text-[10px] text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
             <span className="font-mono text-[10px] text-accent font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
-              <span className="font-mono text-[10px] text-[#00eefc]">{totalExercises} ejercicios</span>
+              <span className="font-mono text-[10px] text-data">{totalExercises} ejercicios</span>
             )}
           </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 transition-all"
+            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
             <span className="material-symbols-outlined text-sm">edit</span>

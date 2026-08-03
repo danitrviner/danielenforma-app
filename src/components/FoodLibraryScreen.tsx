@@ -32,7 +32,7 @@ const CAT_COLOR: Record<FoodCategory, string> = {
 const MODE_COLOR: Record<DietMode, string> = {
   OMNIVORO:  'bg-accent/10 text-accent border border-accent/20',
   VEGANO:    'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  SIN_PESAR: 'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
+  SIN_PESAR: 'bg-data/10 text-data border border-data/20',
 };
 
 const EMPTY_FORM: Omit<MealItem, 'id'> = { mode: 'OMNIVORO', category: 'HC', label: '' };
@@ -201,7 +201,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               </div>
               {!isSystem(item) && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-[#00eefc]/10 text-ink-2 hover:text-[#00eefc] transition-colors">
+                  <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-data/10 text-ink-2 hover:text-data transition-colors">
                     <span className="material-symbols-outlined text-sm">edit</span>
                   </button>
                   <button onClick={() => setDeleteId(item.id)} className="p-1.5 rounded hover:bg-red-500/10 text-ink-2 hover:text-red-400 transition-colors">

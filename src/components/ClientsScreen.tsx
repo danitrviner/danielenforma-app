@@ -308,8 +308,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
-            <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
+            <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
             Sincronizado
           </span>
         </div>
@@ -330,7 +330,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <span className="material-symbols-outlined text-accent text-xl">group</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
-              <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
+              <span className="text-[10px] bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
@@ -363,11 +363,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             onClick={onOpenReviews}
             disabled={!onOpenReviews}
-            className="bg-surface border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-[#00eefc]/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
+            className="bg-surface border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#00eefc] text-xl">pending_actions</span>
+                <span className="material-symbols-outlined text-data text-xl">pending_actions</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
@@ -546,8 +546,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <span className="block text-xs font-bold text-accent">{athlete.actualWeight || athlete.initialWeight} kg</span>
                       </div>
                       <div>
-                        <span className="block text-[8px] text-[#00eefc] uppercase">META</span>
-                        <span className="block text-xs font-bold text-[#00eefc]">{athlete.targetWeight} kg</span>
+                        <span className="block text-[8px] text-data uppercase">META</span>
+                        <span className="block text-xs font-bold text-data">{athlete.targetWeight} kg</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -561,7 +561,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <span className="text-ink-2 uppercase flex items-center gap-1">
                           <span className="material-symbols-outlined text-[12px] text-teal-400">military_tech</span> Nivel
                         </span>
-                        <strong className="text-[#00eefc]">Lvl {athlete.level || 1}</strong>
+                        <strong className="text-data">Lvl {athlete.level || 1}</strong>
                       </div>
                       {/* Adherence score */}
                       <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border font-mono ${adh.bg}`}>
@@ -639,7 +639,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   </div>
                   <button
                     onClick={() => handleResendInvite(inv.email)}
-                    className="font-mono text-[9px] text-[#00eefc] hover:underline uppercase tracking-wide flex-shrink-0"
+                    className="font-mono text-[9px] text-data hover:underline uppercase tracking-wide flex-shrink-0"
                   >
                     Reenviar
                   </button>

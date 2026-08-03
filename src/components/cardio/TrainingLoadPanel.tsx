@@ -39,7 +39,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
   return (
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
-      <h3 className="text-[10px] font-mono uppercase text-[#00eefc] tracking-wider">Carga de entrenamiento</h3>
+      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">Carga de entrenamiento</h3>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
@@ -63,12 +63,12 @@ export default function TrainingLoadPanel({ sessions }: Props) {
         <div className="space-y-1.5">
           <p className="text-[9px] font-mono uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
           <div className="flex h-2 rounded-full overflow-hidden bg-[#0e0e0e]">
-            <div className="h-full bg-[#00eefc]" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />
+            <div className="h-full bg-data" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />
             <div className="h-full bg-[#ff8c42]" style={{ width: `${focus.highAerobicPct}%` }} title="Aeróbico alto (Z4)" />
             <div className="h-full bg-[#ff4d4d]" style={{ width: `${focus.anaerobicPct}%` }} title="Anaeróbico (Z5)" />
           </div>
           <div className="flex gap-3 text-[9px] font-mono text-ink-2">
-            <span className="text-[#00eefc]">Z2-Z3 {focus.lowAerobicPct}%</span>
+            <span className="text-data">Z2-Z3 {focus.lowAerobicPct}%</span>
             <span className="text-[#ff8c42]">Z4 {focus.highAerobicPct}%</span>
             <span className="text-[#ff4d4d]">Z5 {focus.anaerobicPct}%</span>
           </div>

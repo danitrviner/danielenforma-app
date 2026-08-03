@@ -53,7 +53,7 @@ const EQUIPMENT_OPTIONS = [
 type EquipmentOption = typeof EQUIPMENT_OPTIONS[number];
 
 const TYPE_STYLES: Record<ExerciseType, string> = {
-  fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
+  fuerza:       'bg-data/10 text-data border border-data/20',
   cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
   estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
   pliometría:   'bg-accent/10 text-accent border border-accent/20',
@@ -352,7 +352,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div>
                             <span className="font-sans font-bold text-sm text-white block">{ex.name}</span>
                             {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-mono text-[#00eefc]/70 hover:text-[#00eefc] flex items-center gap-0.5 transition-colors">
+                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-mono text-data/70 hover:text-data flex items-center gap-0.5 transition-colors">
                                 <span className="material-symbols-outlined text-[10px]">play_circle</span>
                                 Ver video
                               </a>
@@ -471,7 +471,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-[#00eefc]/70 flex items-center gap-0.5">
+                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-data/70 flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-xs">play_circle</span>
                       Video
                     </a>

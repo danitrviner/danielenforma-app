@@ -53,7 +53,7 @@ function BwTooltip({ active, payload }: any) {
         <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
-        <p className="text-[#00eefc] text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
+        <p className="text-data text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
       )}
     </div>
   );
@@ -188,7 +188,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               Diario
             </span>
             <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
-              <span className="inline-block w-4 border-t border-dashed border-[#00eefc]" />
+              <span className="inline-block w-4 border-t border-dashed border-data" />
               Media 7d
             </span>
           </div>
@@ -343,7 +343,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           <div className="flex gap-1 flex-shrink-0">
                             <button
                               onClick={() => startEdit(b)}
-                              className="p-1 text-ink-2 hover:text-[#00eefc] transition-colors"
+                              className="p-1 text-ink-2 hover:text-data transition-colors"
                               title="Editar"
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>

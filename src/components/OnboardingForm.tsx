@@ -983,10 +983,10 @@ export default function OnboardingForm({
 
         {/* Auto-calc panel */}
         {autoCalc && (
-          <div className="bg-[#00eefc]/5 border border-[#00eefc]/20 rounded-xl p-4 space-y-3">
+          <div className="bg-data/5 border border-data/20 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#00eefc] text-base">calculate</span>
-              <p className="font-mono text-[10px] text-[#00eefc] uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
+              <span className="material-symbols-outlined text-data text-base">calculate</span>
+              <p className="font-mono text-[10px] text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
             <div className="space-y-0.5 font-mono text-xs text-[#888]">
               <p>BMR: <span className="text-white font-bold">{autoCalc.bmr.toLocaleString()} kcal</span></p>
@@ -1001,7 +1001,7 @@ export default function OnboardingForm({
                 {' '}<span className="text-accent font-bold">{autoCalc.kcal.toLocaleString()} kcal</span>
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#00eefc]/10">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-data/10">
               {[
                 { label: 'HC',    g: autoCalc.hcG,    pct: autoCalc.hcPct,    ef: 25, color: '#ffa500' },
                 { label: 'PROT',  g: autoCalc.protG,  pct: autoCalc.protPct,  ef: 25, color: '#00eefc' },
@@ -1015,7 +1015,7 @@ export default function OnboardingForm({
               ))}
             </div>
             <button type="button" onClick={applyAuto}
-              className="w-full py-2 bg-[#00eefc]/10 hover:bg-[#00eefc]/15 border border-[#00eefc]/30 text-[#00eefc] font-mono font-bold text-[10px] uppercase rounded-lg tracking-wide active:scale-95 transition-all">
+              className="w-full py-2 bg-data/10 hover:bg-data/15 border border-data/30 text-data font-mono font-bold text-[10px] uppercase rounded-lg tracking-wide active:scale-95 transition-all">
               Aplicar este cálculo
             </button>
           </div>
@@ -1124,7 +1124,7 @@ export default function OnboardingForm({
                 <button type="button" onClick={() => toggleTupper(i)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold border transition-all ${
                     meal.needsTupper
-                      ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]'
+                      ? 'bg-data/15 border-data/40 text-data'
                       : 'bg-[#1e1e1b] border-white/7 text-[#555] hover:text-ink-2 hover:border-[#3a3a3a]'
                   }`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>lunch_dining</span>

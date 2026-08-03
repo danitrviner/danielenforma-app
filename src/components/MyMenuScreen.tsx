@@ -355,7 +355,7 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
         <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
-            <span className="material-symbols-outlined text-[#00eefc] text-base">shopping_cart</span>
+            <span className="material-symbols-outlined text-data text-base">shopping_cart</span>
             Lista de la compra de la semana
           </span>
           <span className="material-symbols-outlined text-ink-2 text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
@@ -432,7 +432,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   <div className="flex items-center gap-3 mt-1.5">
                     <button
                       onClick={() => openSwap(meal)}
-                      className="flex items-center gap-1 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-mono text-data hover:text-white transition-colors"
                     >
                       <span className="material-symbols-outlined text-sm">swap_horiz</span>
                       Intercambiar
@@ -632,7 +632,7 @@ export default function MyMenuScreen({ profile }: Props) {
                                 <button
                                   onClick={() => setSubForIngredient(open ? null : ing.label)}
                                   title="Cambiar por un alimento parecido"
-                                  className="text-[#00eefc] hover:text-white shrink-0"
+                                  className="text-data hover:text-white shrink-0"
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>swap_horiz</span>
                                 </button>

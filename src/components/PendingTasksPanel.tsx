@@ -23,7 +23,7 @@ const TYPE_ICON: Record<TaskType, string> = {
 };
 
 const TYPE_COLOR: Record<TaskType, string> = {
-  revision: 'text-[#00eefc]',
+  revision: 'text-data',
   cuestionario: 'text-accent',
   foto: 'text-violet-300',
   manual: 'text-amber-300',
