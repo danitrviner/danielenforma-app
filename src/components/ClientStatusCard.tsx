@@ -8,6 +8,7 @@ import {
   getRoadmap, getNutritionProgram, computeActivePhase,
   getAthleteStatusNote, saveAthleteStatusNote,
 } from '../dbService';
+import { Icon, Button } from './ui';
 
 // Panel de estado del cliente — lo primero que ve el coach al abrir su ficha:
 // en qué fase está, qué objetivo persigue, qué ha cambiado últimamente y una
@@ -127,7 +128,7 @@ export default function ClientStatusCard({
     <div className="bg-gradient-to-br from-surface to-bg border border-accent/20 rounded-surface p-5 space-y-4">
       {/* Nota del coach — editable, lo más visible del panel */}
       <div className="flex items-start gap-3">
-        <span className="material-symbols-outlined text-accent " style={{ fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
+        <Icon name="sticky_note_2" size="l" filled className="text-accent" />
         {editingNote ? (
           <div className="flex-1 space-y-2">
             <textarea
@@ -139,14 +140,8 @@ export default function ClientStatusCard({
               className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-body-s text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
-              <button onClick={saveNote} disabled={savingNote}
-                className="px-3 py-2 rounded-control bg-accent text-black text-caption font-bold uppercase tracking-wide disabled:opacity-40">
-                {savingNote ? 'Guardando…' : 'Guardar'}
-              </button>
-              <button onClick={() => setEditingNote(false)} disabled={savingNote}
-                className="px-3 py-2 rounded-control bg-white/5 border border-hairline text-ink-2 text-caption font-bold uppercase tracking-wide">
-                Cancelar
-              </button>
+              <Button size="s" onClick={saveNote} disabled={savingNote}>{savingNote ? 'Guardando…' : 'Guardar'}</Button>
+              <Button variant="secondary" size="s" onClick={() => setEditingNote(false)} disabled={savingNote}>Cancelar</Button>
             </div>
           </div>
         ) : (
@@ -165,11 +160,11 @@ export default function ClientStatusCard({
         {/* Fase */}
         <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-label text-accent">flag</span> Fase
+            <Icon name="flag" size="s" className="text-accent" /> Fase
           </p>
           {planPhase ? (
             <p className="text-body-s font-bold text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-title-s" style={{ color: planPhase.color }}>{planPhase.icon}</span>
+              <Icon name={planPhase.icon} size="m" style={{ color: planPhase.color }} />
               {planPhase.name}
             </p>
           ) : (
@@ -191,7 +186,7 @@ export default function ClientStatusCard({
         {/* Objetivo */}
         <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-label text-accent">target</span> Objetivo
+            <Icon name="target" size="s" className="text-accent" /> Objetivo
           </p>
           {onboardingData?.goalBody ? (
             <p className="text-body-s font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
@@ -212,7 +207,7 @@ export default function ClientStatusCard({
         {/* Últimos cambios */}
         <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-label text-accent">history</span> Últimos cambios
+            <Icon name="history" size="s" className="text-accent" /> Últimos cambios
           </p>
           {recentChanges.length === 0 ? (
             <p className="text-label text-ink-2/60 italic">Sin actividad registrada aún</p>
@@ -220,7 +215,7 @@ export default function ClientStatusCard({
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
                 <li key={i} className="flex items-center gap-2 text-caption text-ink">
-                  <span className="material-symbols-outlined text-label text-ink-2">{e.icon}</span>
+                  <Icon name={e.icon} size="s" className="text-ink-2" />
                   <span className="flex-1 truncate">{e.text}</span>
                   <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
                 </li>

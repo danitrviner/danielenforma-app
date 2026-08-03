@@ -5,6 +5,7 @@ import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import Skeleton from './Skeleton';
+import { Icon, Button, PageHeader, Tabs, EmptyState } from './ui';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -94,10 +95,7 @@ export default function PhotosScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Fotos de Progreso</h1>
-        <p className="text-ink-2 text-body-s mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
-      </div>
+      <PageHeader title="Fotos de Progreso" subtitle="Sube fotos por fecha para registrar tu evolución física." />
 
       <Coachmark
         id="photos_upload_hint"
@@ -107,27 +105,17 @@ export default function PhotosScreen({ profile }: Props) {
       />
 
       {/* View selector */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
-        {(['front', 'side', 'back'] as PhotoView[]).map(v => (
-          <button
-            key={v}
-            onClick={() => setSelectedView(v)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
-              selectedView === v
-                ? 'bg-accent text-black'
-                : 'text-ink-2 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-body-s">{VIEW_ICONS[v]}</span>
-            {VIEW_LABELS[v]}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        items={(['front', 'side', 'back'] as PhotoView[]).map(v => ({ id: v, label: VIEW_LABELS[v], icon: VIEW_ICONS[v] }))}
+        value={selectedView}
+        onChange={id => setSelectedView(id as PhotoView)}
+        label="Ángulo de la foto"
+      />
 
       {/* Upload bar */}
       <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="material-symbols-outlined text-ink-2 text-body-s">calendar_today</span>
+          <Icon name="calendar_today" size="s" className="text-ink-2" />
           <input
             type="date"
             value={uploadDate}
@@ -135,16 +123,9 @@ export default function PhotosScreen({ profile }: Props) {
             className="bg-transparent border-none text-white font-mono text-body-s focus:outline-none focus:ring-0 min-w-0"
           />
         </div>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
-        >
-          {uploading
-            ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span> Subiendo…</>
-            : <><span className="material-symbols-outlined text-body-s">upload</span> Subir foto ({VIEW_LABELS[selectedView]})</>
-          }
-        </button>
+        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload">
+          {uploading ? 'Subiendo…' : `Subir foto (${VIEW_LABELS[selectedView]})`}
+        </Button>
         <input
           ref={fileInputRef}
           type="file"
@@ -159,18 +140,14 @@ export default function PhotosScreen({ profile }: Props) {
 
       {/* Gallery */}
       {visiblePhotos.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">photo_camera</span>
-          <p className="text-ink-2 text-body-s font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
-          <p className="text-ink-2 text-label font-sans mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-body-s">upload</span>
-            Subir foto
-          </button>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="photo_camera"
+            title={`Sin fotos de ${VIEW_LABELS[selectedView].toLowerCase()} todavía.`}
+            description="Sube tu primera foto para empezar a registrar tu evolución."
+            actionLabel="Subir foto"
+            onAction={() => fileInputRef.current?.click()}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -197,10 +174,7 @@ export default function PhotosScreen({ profile }: Props) {
                 disabled={deleting === photo.id}
                 className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-ink-2 hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
               >
-                {deleting === photo.id
-                  ? <span className="material-symbols-outlined text-label animate-spin">progress_activity</span>
-                  : <span className="material-symbols-outlined text-body-s">delete</span>
-                }
+                <Icon name={deleting === photo.id ? 'progress_activity' : 'delete'} size="s" className={deleting === photo.id ? 'animate-spin' : ''} />
               </button>
             </div>
           ))}
