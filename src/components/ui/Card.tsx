@@ -54,6 +54,8 @@ type Props = {
   /** Nombre accesible cuando la tarjeta se pulsa y su título no basta. */
   label?: string;
   className?: string;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Badge). */
+  key?: React.Key;
 };
 
 export default function Card({
