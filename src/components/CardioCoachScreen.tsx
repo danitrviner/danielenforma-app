@@ -9,6 +9,7 @@ import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import Skeleton from './Skeleton';
+import { Icon, Button, PageHeader, Tabs, ListRow } from './ui';
 
 const XP_PER_APPROVED_TEST = 30;
 
@@ -28,24 +29,9 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
-          Consola de Entrenador
-        </span>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
-      </header>
+      <PageHeader eyebrow="Consola de Entrenador" title="Cardio" />
 
-      <div className="overflow-x-auto -mx-1 px-1 ">
-        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}>
-              <span className="material-symbols-outlined text-title-s">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de Cardio" />
 
       {tab === 'zonas' && <ZonesTab coachEmail={coachEmail} />}
       {tab === 'tests' && <PendingTestsTab coachEmail={coachEmail} />}
@@ -71,11 +57,14 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-title-s text-white mb-2">Elige un atleta</h2>
       {athletes.map(a => (
-        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
-          <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-          <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white text-left truncate">{a.displayName}</p>
-          <span className="material-symbols-outlined text-ink-2 text-title-s">chevron_right</span>
-        </button>
+        <ListRow
+          key={a.email}
+          onClick={() => setSelected(a.email)}
+          className="rounded-control border bg-raised border-hairline"
+          leading={<img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
+          title={a.displayName}
+          chevron
+        />
       ))}
     </section>
   );
@@ -108,9 +97,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-label font-sans text-ink-2 hover:text-white">
-        <span className="material-symbols-outlined text-title-s">arrow_back</span> Atletas
-      </button>
+      <Button variant="ghost" size="s" onClick={onBack} icon="arrow_back">Atletas</Button>
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
@@ -120,7 +107,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
           <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
         </div>
-        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-caption font-sans uppercase rounded-control hover:text-white">Recalcular</button>
+        <Button variant="secondary" size="s" onClick={regenerate} className="self-end">Recalcular</Button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
@@ -134,9 +121,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           </div>
         ))}
       </div>
-      <button onClick={handleSave} disabled={saving} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
-        {saving ? 'Guardando...' : 'Guardar zonas'}
-      </button>
+      <Button onClick={handleSave} disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Guardar zonas'}</Button>
     </section>
   );
 }
@@ -201,7 +186,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
               {t.result.z2Ceiling && `Techo Z2: ${t.result.z2Ceiling} `}
               {t.result.decouplingPct !== undefined && `Desacople: ${t.result.decouplingPct}% `}
             </p>
-            <button onClick={() => approve(t)} className="w-full py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press">Aprobar y aplicar a zonas</button>
+            <Button size="s" onClick={() => approve(t)} fullWidth>Aprobar y aplicar a zonas</Button>
           </div>
         );
       })}
@@ -291,23 +276,20 @@ function PrescriptionTab() {
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
-                <span className="material-symbols-outlined text-body-s">close</span>
+                <Icon name="close" size="s" />
               </button>
             </div>
           ))}
-          <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-caption font-mono uppercase text-accent hover:text-white transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-body-s">add</span> Añadir bloque
-          </button>
+          <Button variant="ghost" size="s" onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} icon="add">Añadir bloque</Button>
           {validBlocks.length > 0 && (
             <p className="text-caption font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
           )}
         </div>
       )}
 
-      <button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)}
-        className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
+      <Button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)} fullWidth>
         {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
-      </button>
+      </Button>
     </section>
   );
 }
