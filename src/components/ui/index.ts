@@ -32,3 +32,5 @@ export { default as Tabs } from './Tabs';
 export type { TabItem } from './Tabs';
 
 export { default as Chip } from './Chip';
+
+export { default as ListRow } from './ListRow';

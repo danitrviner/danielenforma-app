@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Icon, Input, Select, Tabs,
+  Badge, Button, Card, Chip, Icon, Input, ListRow, Select, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -132,6 +132,7 @@ export default function Showcase() {
   const [pestanaLarga, setPestanaLarga] = React.useState('revisiones');
   const [categorias, setCategorias] = React.useState<string[]>(['Pecho']);
   const [tags, setTags] = React.useState(['Sin gluten', 'Vegetariano', 'Rápido']);
+  const [filaPulsada, setFilaPulsada] = React.useState('');
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -427,6 +428,43 @@ export default function Showcase() {
           {' '}El botón de quitar es HERMANO del de seleccionar, no está anidado dentro: un botón
           dentro de otro botón es HTML inválido y el navegador lo repara moviéndolo a un sitio
           impredecible del árbol.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="ListRow"
+        resumen="El patrón «icono a la izquierda, título y subtítulo en medio, algo a la derecha» que se repite en más de una docena de pantallas. Cuando es pulsable, la fila entera es el objetivo táctil, no solo el texto."
+      >
+        <Card padding="none">
+          <ListRow
+            title="Marcos García"
+            subtitle="Última revisión hace 3 días"
+            leading={
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-raised">
+                <Icon name="person" size="m" />
+              </span>
+            }
+            trailing={<Badge tone="warning">Pendiente</Badge>}
+            onClick={() => setFilaPulsada('Marcos García')}
+          />
+          <ListRow
+            title="Press banca"
+            subtitle="Pecho · Barra"
+            leading={<Icon name="fitness_center" size="m" className="text-ink-3" />}
+            chevron
+            onClick={() => setFilaPulsada('Press banca')}
+          />
+          <ListRow
+            title="Sin interacción"
+            subtitle="Esta fila no lleva onClick: renderiza un div, no un button"
+            leading={<Icon name="info" size="m" className="text-ink-3" />}
+          />
+        </Card>
+
+        <p className="font-sans text-body-s text-ink-3">
+          {filaPulsada ? `Última fila pulsada: ${filaPulsada}.` : 'Ninguna fila pulsada todavía.'}
+          {' '}Con onClick renderiza un button que ocupa el ancho completo; sin él, un contenedor
+          simple.
         </p>
       </Seccion>
     </div>
