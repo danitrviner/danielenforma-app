@@ -4,7 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Badge } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -310,7 +310,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {recipe.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {recipe.categories.map(c => (
-                        <span key={c} className="px-2 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
+                        <Badge key={c} tone="neutral">{c}</Badge>
                       ))}
                     </div>
                   )}

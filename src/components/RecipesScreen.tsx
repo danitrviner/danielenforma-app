@@ -10,7 +10,7 @@ import {
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Badge } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -327,7 +327,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {(recipe.categoria || recipe.categories.length > 0) && (
           <div className="flex flex-wrap gap-2">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
-              <span key={c} className="px-3 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
+              <Badge key={c} tone="neutral">{c}</Badge>
             ))}
           </div>
         )}
