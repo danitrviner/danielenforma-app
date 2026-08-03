@@ -376,7 +376,7 @@ export default function NutritionPeriodizationPanel({
             <p className="text-ink-2 text-xs font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-[#3a3a3a] hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
             >
               <span className="material-symbols-outlined text-sm text-accent">add</span>
               Crear periodización
@@ -445,7 +445,7 @@ export default function NutritionPeriodizationPanel({
           type="date"
           value={form.startDate}
           onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-raised border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-[#3a3a3a] transition-colors"
+          className="bg-raised border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
         />
       </div>
 
@@ -494,7 +494,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.name}
                   onChange={e => updatePhase(idx, { name: e.target.value })}
                   placeholder="Nombre de la fase"
-                  className="flex-1 bg-raised border border-[#3a3a3a] text-white text-sm font-sans rounded-lg px-3 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="flex-1 bg-raised border border-hairline text-white text-sm font-sans rounded-lg px-3 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <button
                   onClick={() => removePhase(idx)}
@@ -515,7 +515,7 @@ export default function NutritionPeriodizationPanel({
                   <select
                     value={phase.dietId}
                     onChange={e => updatePhase(idx, { dietId: e.target.value })}
-                    className="flex-1 min-w-0 bg-raised border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                    className="flex-1 min-w-0 bg-raised border border-hairline text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                   >
                     <option value="">Sin dieta</option>
                     {diets.map(d => (
@@ -534,7 +534,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetWeight ?? ''}
                   onChange={e => updatePhase(idx, { targetWeight: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder="—"
-                  className="w-20 bg-raised border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="w-20 bg-raised border border-hairline text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-[10px] font-mono text-ink-2">kg</span>
               </div>
@@ -549,7 +549,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetKcal ?? ''}
                   onChange={e => updatePhase(idx, { targetKcal: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
-                  className="w-24 bg-raised border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="w-24 bg-raised border border-hairline text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-[10px] font-mono text-ink-2">
                   kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-chart-3/40 text-ink-2 hover:text-white text-xs font-mono rounded-xl transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-xs font-mono rounded-xl transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir fase

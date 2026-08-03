@@ -495,7 +495,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
     <>
       <div
         style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}
-        className="bg-bg border-b border-[#1e1e1e]"
+        className="bg-bg border-b border-hairline"
       />
       <svg style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}>
         {[wDomainMin, (wDomainMin + wDomainMax) / 2, wDomainMax].map(w => (
@@ -542,7 +542,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
       <div className="rounded-2xl border border-white/5 bg-field overflow-hidden shadow-xl">
-        <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
+        <div className="px-3 py-2 border-b border-hairline flex items-center gap-1.5">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
         </div>
@@ -617,7 +617,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
             <div
               key={label}
               style={{ height: LANE_H }}
-              className="flex items-center justify-end pr-3 border-b border-[#1e1e1e]"
+              className="flex items-center justify-end pr-3 border-b border-hairline"
             >
               <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
             </div>
@@ -625,7 +625,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           {showWeightChart && (
             <div
               style={{ height: WEIGHT_LANE_H }}
-              className="flex flex-col justify-between pr-2 py-1.5 border-b border-[#1e1e1e]"
+              className="flex flex-col justify-between pr-2 py-1.5 border-b border-hairline"
             >
               <span className="font-mono text-[7px] text-ink-2 text-right block">{wDomainMax.toFixed(1)}</span>
               <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest text-right block">Peso</span>
@@ -663,7 +663,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={i}
                 style={{ position: 'absolute', left: 0, top: HEADER_H + i * LANE_H, width: containerWidth, height: LANE_H }}
-                className={`border-b border-[#1e1e1e] ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}
+                className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}
               />
             ))}
 

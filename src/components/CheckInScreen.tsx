@@ -428,7 +428,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         {!bwEditing && bwToday ? (
           <button
             onClick={() => { setBwInput(String(bwToday.weight)); setBwEditing(true); }}
-            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-ink-2 hover:text-white hover:border-[#3a3a3a] transition-all"
+            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-ink-2 hover:text-white hover:border-hairline transition-all"
             title="Editar"
           >
             <span className="material-symbols-outlined text-sm">edit</span>

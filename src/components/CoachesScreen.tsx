@@ -195,7 +195,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-[#1e1e1e] bg-bg'}`}>
+                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
@@ -272,7 +272,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
-                                               'text-ink-2 border-[#3a3a3a] bg-raised'
+                                               'text-ink-2 border-hairline bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-ink-3">sin etiqueta</em>}
@@ -608,7 +608,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-[#3a3a3a]'
+                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}

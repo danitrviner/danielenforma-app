@@ -1190,7 +1190,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 className={`w-full text-left p-3 rounded-xl border transition-all ${
                   editing?.id === m.id
                     ? 'border-accent/60 bg-accent/5'
-                    : 'border-white/7 bg-surface hover:border-[#3a3a3a]'
+                    : 'border-white/7 bg-surface hover:border-hairline'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1518,7 +1518,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-raised border border-dashed border-[#3a3a3a] rounded-xl px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                                className="w-full bg-raised border border-dashed border-hairline rounded-xl px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (
@@ -1570,7 +1570,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       </div>
                       <button
                         onClick={() => setGenPhase('idle')}
-                        className="px-4 py-2 font-mono text-xs text-ink-2 border border-white/7 rounded-lg hover:text-white hover:border-[#3a3a3a] transition-all"
+                        className="px-4 py-2 font-mono text-xs text-ink-2 border border-white/7 rounded-lg hover:text-white hover:border-hairline transition-all"
                       >
                         Volver a la distribución
                       </button>

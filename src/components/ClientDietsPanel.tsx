@@ -142,7 +142,7 @@ export default function ClientDietsPanel({
                     className="flex-shrink-0"
                     title={active ? 'Desactivar dieta' : 'Activar dieta'}
                   >
-                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-[#3a3a3a] hover:border-ink-2'}`}>
+                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline hover:border-ink-2'}`}>
                       {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
                     </span>
                   </button>
@@ -217,7 +217,7 @@ export default function ClientDietsPanel({
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-raised border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
+                  className="w-full bg-raised border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-hairline transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -376,7 +376,7 @@ export default function ClientDietsPanel({
                   onClick={() => onToggleDietMode(mode)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-raised border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
                 >
-                  <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
+                  <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline'}`}>
                     {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
                   </span>
                   {DIET_MODE_LABELS[mode]}

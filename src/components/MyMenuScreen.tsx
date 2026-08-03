@@ -398,7 +398,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <div key={meal.id} className={`bg-surface border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
                 <button
                   onClick={() => toggleDone(meal.id)}
-                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-[#3a3a3a] hover:border-ink-2'}`}
+                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
                   title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                 >
                   {done && <span className="material-symbols-outlined text-black text-base">check</span>}
@@ -529,7 +529,7 @@ export default function MyMenuScreen({ profile }: Props) {
           disabled={savingBatchPref}
           className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-white/7 text-left disabled:opacity-50"
         >
-          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
+          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) ? 'bg-accent border-accent' : 'border-hairline'}`}>
             {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">

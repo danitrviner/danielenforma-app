@@ -70,12 +70,12 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
         return (
           <div key={meal.id} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
             {/* Meal header */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e1e1e]">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline">
               <span className="font-sans font-bold text-white text-sm">{labelForMeal(meal.name, mi + 1)}</span>
               <span className="font-mono text-accent font-bold text-sm">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
             </div>
             {/* Category grid */}
-            <div className="grid grid-cols-3 divide-x divide-[#1e1e1e]">
+            <div className="grid grid-cols-3 divide-x divide-hairline">
               {DISPLAY_CATS.map(cat => {
                 const v = exch[cat];
                 const tgt = meal.target?.[cat] ?? 0;
@@ -100,7 +100,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
 
       {/* Day totals */}
       <div className="bg-bg border border-accent/20 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
           <span className="font-mono text-[10px] text-accent uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
             <span className="font-mono font-bold text-accent">{totalKcal} kcal</span>
@@ -111,7 +111,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-3 divide-x divide-[#1e1e1e]">
+        <div className="grid grid-cols-3 divide-x divide-hairline">
           {DISPLAY_CATS.map(cat => {
             const v = totals[cat];
             const b = budget[cat] ?? 0;

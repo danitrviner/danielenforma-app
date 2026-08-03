@@ -432,7 +432,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {diets.map(dt => {
               const dtPlaced = computePlaced(dt.meals);
               return (
-                <div key={dt.id} className="bg-surface border border-white/7 rounded-2xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
+                <div key={dt.id} className="bg-surface border border-white/7 rounded-2xl p-5 hover:border-hairline transition-colors flex flex-col gap-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
@@ -723,7 +723,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               const activeCats = CATS.filter(c => form.budget[c] > 0);
               const mPlaced = computeMealPlaced(meal);
               return (
-                <div className="px-4 py-3 bg-bg/50 border-b border-[#1c1b1b]">
+                <div className="px-4 py-3 bg-bg/50 border-b border-hairline">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Objetivo comida</p>
                   <div className="flex flex-wrap gap-2">
                     {activeCats.map(cat => {
@@ -763,7 +763,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {/* Items */}
             <div className="p-3 space-y-2">
               {meal.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-bg border border-[#1c1b1b] rounded-lg px-3 py-2">
+                <div key={idx} className="flex items-center gap-2 bg-bg border border-hairline rounded-lg px-3 py-2">
                   {/* Category */}
                   <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]}`}>
                     {item.category.replace('_', ' ')}
@@ -821,7 +821,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <span className={`material-symbols-outlined text-ink-3 text-sm transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
         </button>
         {showPreview && (
-          <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e] pt-3">
+          <div className="px-4 pb-4 space-y-3 border-t border-hairline pt-3">
             <div className="space-y-2">
               {form.meals.map((meal, mi) => (
                 <div key={meal.id} className="bg-surface border border-white/7 rounded-2xl px-4 py-3">

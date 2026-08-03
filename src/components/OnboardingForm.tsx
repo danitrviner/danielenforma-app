@@ -337,7 +337,7 @@ function PillSelect<T extends string>({
             className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
               value === o.value
                 ? 'bg-accent text-black border-transparent'
-                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-hairline'
             }`}>
             {o.label}
           </button>
@@ -357,7 +357,7 @@ function YesNo({ label, value, onChange }: { label: string; value: boolean; onCh
             className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${
               value === o.v
                 ? 'bg-accent text-black border-transparent'
-                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-hairline'
             }`}>
             {o.l}
           </button>
@@ -383,7 +383,7 @@ function CheckboxGroup({
             className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
               values.includes(opt)
                 ? 'bg-accent text-black border-transparent'
-                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-hairline'
             }`}>
             {opt}
           </button>
@@ -444,7 +444,7 @@ function TagInput({
       {helpText && <p className="font-mono text-[9px] text-ink-3">{helpText}</p>}
       <div className="flex flex-wrap gap-1.5 p-2.5 bg-bg border border-white/7 rounded-lg min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
-          <span key={t} className="flex items-center gap-1 bg-raised border border-[#3a3a3a] text-white px-2 py-0.5 rounded-full text-xs font-mono">
+          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 py-0.5 rounded-full text-xs font-mono">
             {t}
             <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-ink-2 hover:text-red-400 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
@@ -889,7 +889,7 @@ export default function OnboardingForm({
               className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                 form.activityLevel === o.value
                   ? 'bg-[#1a1c12] border-accent/40'
-                  : 'bg-bg border-white/7 hover:border-[#3a3a3a]'
+                  : 'bg-bg border-white/7 hover:border-hairline'
               }`}>
               <div className="flex-1 min-w-0">
                 <p className={`font-mono text-xs font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
@@ -1106,7 +1106,7 @@ export default function OnboardingForm({
                 className={`flex-1 py-2 rounded-lg font-mono text-sm font-bold border transition-all ${
                   form.mealCount === n
                     ? 'bg-accent text-black border-transparent'
-                    : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                    : 'bg-transparent text-ink-2 border-white/7 hover:text-white hover:border-hairline'
                 }`}>
                 {n}
               </button>
@@ -1116,7 +1116,7 @@ export default function OnboardingForm({
 
         <div className="space-y-2">
           <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wide">Ingestas y tupper</p>
-          <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
+          <div className="divide-y divide-hairline rounded-xl overflow-hidden border border-white/7">
             {form.meals.map((meal, i) => (
               <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
                 <span className="material-symbols-outlined text-ink-3 text-base">{INTAKE_ICONS[meal.intakeType]}</span>
@@ -1125,7 +1125,7 @@ export default function OnboardingForm({
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold border transition-all ${
                     meal.needsTupper
                       ? 'bg-data/15 border-data/40 text-data'
-                      : 'bg-raised border-white/7 text-ink-3 hover:text-ink-2 hover:border-[#3a3a3a]'
+                      : 'bg-raised border-white/7 text-ink-3 hover:text-ink-2 hover:border-hairline'
                   }`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>lunch_dining</span>
                   Tupper
@@ -1324,7 +1324,7 @@ export default function OnboardingForm({
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel}
-            className="px-5 py-3 border border-white/7 text-ink-2 font-mono text-sm rounded-xl hover:text-white hover:border-[#3a3a3a] transition-all">
+            className="px-5 py-3 border border-white/7 text-ink-2 font-mono text-sm rounded-xl hover:text-white hover:border-hairline transition-all">
             Cancelar
           </button>
         )}

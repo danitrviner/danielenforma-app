@@ -416,7 +416,7 @@ export default function ClientReviewsPanel({
                           className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
                             active
                               ? 'bg-accent border-accent text-black'
-                              : 'bg-raised border-white/7 text-ink-2 hover:border-[#3a3a3a]'
+                              : 'bg-raised border-white/7 text-ink-2 hover:border-hairline'
                           }`}
                         >{v.label}</button>
                       );
@@ -956,7 +956,7 @@ export default function ClientReviewsPanel({
                 <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-[9px] text-ink-2 ml-1">({items.length} entradas)</span>
               </div>
-              <div className="divide-y divide-[#2a2a2a]/40">
+              <div className="divide-y divide-hairline/40">
                 {items.map(item => {
                   const key = item.kind === 'checkin' ? `c_${item.data.id}` : `r_${item.data.id}`;
                   const isExpanded = expandedReviewId === key;

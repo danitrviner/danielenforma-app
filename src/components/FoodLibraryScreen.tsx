@@ -192,7 +192,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       ) : (
         <div className="space-y-1.5">
           {filtered.map(item => (
-            <div key={item.id} className="bg-surface border border-white/7 rounded-lg px-4 py-3 flex items-center justify-between gap-3 hover:border-[#3a3a3a] transition-colors group">
+            <div key={item.id} className="bg-surface border border-white/7 rounded-lg px-4 py-3 flex items-center justify-between gap-3 hover:border-hairline transition-colors group">
               <div className="flex items-center gap-3 min-w-0">
                 <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded flex-shrink-0 ${CAT_COLOR[item.category]}`}>
                   {item.category.replace('_', ' ')}

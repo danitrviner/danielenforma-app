@@ -306,7 +306,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         ) : (
           <button
             onClick={() => setShowCoaches(true)}
-            className="w-full bg-surface border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-[#3a3a3a] transition-colors text-left"
+            className="w-full bg-surface border border-white/7 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-hairline transition-colors text-left"
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">groups</span>

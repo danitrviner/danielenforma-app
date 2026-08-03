@@ -314,7 +314,7 @@ export default function CorrelationPanel({
                 className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-xs font-bold border transition-all ${
                   active
                     ? 'text-black'
-                    : 'bg-transparent text-ink-2 border-white/7 hover:border-[#3a3a3a] hover:text-white'
+                    : 'bg-transparent text-ink-2 border-white/7 hover:border-hairline hover:text-white'
                 }`}
                 style={active ? { backgroundColor: color, borderColor: color } : {}}
               >

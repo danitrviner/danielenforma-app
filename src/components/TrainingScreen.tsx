@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
 const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
   completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-raised text-ink-2 border border-[#3a3a3a]',
+  skipped:   'bg-raised text-ink-2 border border-hairline',
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
@@ -395,7 +395,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <>
               <button
                 onClick={() => handleSkip(a)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono text-[10px] uppercase font-bold rounded-lg active:scale-95 transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-hairline font-mono text-[10px] uppercase font-bold rounded-lg active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-sm">skip_next</span>
                 Saltar
@@ -431,7 +431,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <header className="flex items-center gap-3 pb-4 border-b border-white/60 sticky top-[65px] bg-bg z-30 pt-2">
           <button
             onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
-            className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all flex-shrink-0"
+            className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-hairline px-3 py-2 rounded-lg transition-all flex-shrink-0"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Volver
@@ -781,7 +781,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               setWorkoutNoteInput('');
               setRestTimer(null);
             }}
-            className="flex items-center gap-2 px-5 py-4 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
+            className="flex items-center gap-2 px-5 py-4 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-hairline font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined">skip_next</span>
             Saltar
@@ -902,7 +902,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 className={`px-4 py-2 rounded-full font-mono text-[10px] uppercase font-bold border transition-all min-h-[36px] ${
                   listFilter === f
                     ? 'bg-accent border-accent text-black'
-                    : 'border-white/7 text-ink-2 hover:border-[#3a3a3a] hover:text-white'
+                    : 'border-white/7 text-ink-2 hover:border-hairline hover:text-white'
                 }`}
               >
                 {f === 'pending' ? `Pendientes (${visiblePendingCount})` :

@@ -20,7 +20,7 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
 const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
   completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-raised text-ink-2 border border-[#3a3a3a]',
+  skipped:   'bg-raised text-ink-2 border border-hairline',
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 

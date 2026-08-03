@@ -53,7 +53,7 @@ export default function ScheduleFields({
                   className={`w-9 h-9 rounded-lg font-mono text-xs font-bold border transition-all ${
                     active
                       ? 'bg-accent border-accent text-black'
-                      : 'bg-raised border-white/7 text-ink-2 hover:border-[#3a3a3a]'
+                      : 'bg-raised border-white/7 text-ink-2 hover:border-hairline'
                   }`}
                 >{label}</button>
               );

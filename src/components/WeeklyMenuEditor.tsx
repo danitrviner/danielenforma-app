@@ -351,7 +351,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           onClick={() => setBatch(b => !b)}
           className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-white/7 hover:border-white/20'}`}
         >
-          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
+          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-hairline'}`}>
             {batch && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">

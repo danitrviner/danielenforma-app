@@ -96,7 +96,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-[#3a3a3a] rounded-lg transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-hairline rounded-lg transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
         </button>
@@ -179,7 +179,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-1.5" title="Obligatoria">
                 <span
-                  className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                   onClick={() => setQ(idx, { required: !q.required })}
                 >
                   {q.required && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
@@ -271,7 +271,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer w-fit">
                     <span
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
                       onClick={() => setQ(idx, { multiSelect: !q.multiSelect })}
                     >
                       {q.multiSelect && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}

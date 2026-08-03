@@ -379,7 +379,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 className={`px-3 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
-                    : 'bg-transparent text-ink-2 border-white/7 hover:border-[#555]'
+                    : 'bg-transparent text-ink-2 border-white/7 hover:border-hairline'
                 }`}
                 style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
               >

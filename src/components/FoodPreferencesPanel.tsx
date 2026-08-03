@@ -117,7 +117,7 @@ export default function FoodPreferencesPanel({
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
                   hasAny
                     ? 'bg-[#1a1c12] border-accent/30 hover:border-accent/60'
-                    : 'bg-surface border-white/7 hover:border-[#3a3a3a]'
+                    : 'bg-surface border-white/7 hover:border-hairline'
                 }`}
               >
                 <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
@@ -201,7 +201,7 @@ export default function FoodPreferencesPanel({
       </div>
 
       {/* Food list */}
-      <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
+      <div className="divide-y divide-hairline rounded-xl overflow-hidden border border-white/7">
         {filteredFoods.length === 0 ? (
           <p className="py-6 text-center font-mono text-xs text-ink-3">Sin resultados</p>
         ) : (

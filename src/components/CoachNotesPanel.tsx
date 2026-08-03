@@ -136,7 +136,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
             >
               <button
                 onClick={() => handleToggle(n)}
-                className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}
+                className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-hairline'}`}
               >
                 {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
               </button>

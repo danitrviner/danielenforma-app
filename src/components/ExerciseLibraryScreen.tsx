@@ -286,7 +286,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {hasFilters && (
             <button
               onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-ink-2 hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-[#3a3a3a] transition-all"
+              className="text-ink-2 hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-hairline transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
               Limpiar
@@ -605,7 +605,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border capitalize transition-all ${
                           selected
                             ? 'bg-accent/15 border-accent/40 text-accent font-bold'
-                            : 'bg-surface border-white/7 text-ink-2 hover:border-[#3a3a3a]'
+                            : 'bg-surface border-white/7 text-ink-2 hover:border-hairline'
                         }`}
                       >
                         {selected && '✓ '}{eq}

@@ -883,8 +883,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   isViewing
                     ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
-                    ? 'bg-raised border-[#3a3a3a] text-white'
-                    : 'bg-raised border-white/7 text-ink-2 hover:border-[#3a3a3a] hover:text-white'
+                    ? 'bg-raised border-hairline text-white'
+                    : 'bg-raised border-white/7 text-ink-2 hover:border-hairline hover:text-white'
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
@@ -1100,7 +1100,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
+                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline'}`}>
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
                           </span>
                           <input

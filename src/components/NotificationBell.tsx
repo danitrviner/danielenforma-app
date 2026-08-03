@@ -119,7 +119,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
           </div>
 
           {/* List */}
-          <div className="max-h-[420px] overflow-y-auto divide-y divide-[#1e1e1e]">
+          <div className="max-h-[420px] overflow-y-auto divide-y divide-hairline">
             {loading ? (
               <p className="text-center py-6 font-mono text-xs text-ink-3 animate-pulse">Cargando…</p>
             ) : notifs.length === 0 ? (

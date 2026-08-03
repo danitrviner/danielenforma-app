@@ -410,7 +410,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       <header className="flex items-center gap-4 pb-4 border-b border-white/60">
         <button
           onClick={() => setView('list')}
-          className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-[#3a3a3a] px-3 py-2 rounded-lg transition-all"
+          className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-white/7 hover:border-hairline px-3 py-2 rounded-lg transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Volver
@@ -657,7 +657,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             </div>
 
             {/* Picker list */}
-            <div className="overflow-y-auto flex-1 divide-y divide-[#2a2a2a]/40">
+            <div className="overflow-y-auto flex-1 divide-y divide-hairline/40">
               {pickerFiltered.length === 0 ? (
                 <div className="py-12 text-center text-ink-2 text-sm">
                   {allExercises.length === 0 ? 'Cargando ejercicios...' : 'Sin resultados para los filtros actuales.'}

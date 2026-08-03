@@ -238,7 +238,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
-          <div className="divide-y divide-[#2a2a2a]/40">
+          <div className="divide-y divide-hairline/40">
             {unifiedItems.map(item => {
               const key = item.kind === 'checkin' ? `c_${item.data.id}` : `r_${item.data.id}`;
               const isExpanded = expandedId === key;
