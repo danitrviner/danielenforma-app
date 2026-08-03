@@ -8,6 +8,7 @@ import {
 import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
+import { Icon, Button } from './ui';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -488,7 +489,7 @@ function SupplementsTable({
               <input type="text" value={r.frequency} onChange={e => update(i, { frequency: e.target.value })}
                 placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-2 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <button type="button" onClick={() => remove(i)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
-                <span className="material-symbols-outlined text-body-s">close</span>
+                <Icon name="close" size="s" />
               </button>
             </div>
           ))}
@@ -496,7 +497,7 @@ function SupplementsTable({
       )}
       <button type="button" onClick={add}
         className="flex items-center gap-1 font-sans text-caption text-ink-2 hover:text-accent transition-colors border border-dashed border-hairline hover:border-accent/40 px-3 py-2 rounded-control">
-        <span className="material-symbols-outlined text-body-s">add</span>
+        <Icon name="add" size="s" />
         Añadir suplemento
       </button>
     </div>
@@ -507,10 +508,10 @@ function Section({ icon, title, children, complete }: { icon: string; title: str
   return (
     <div className={`space-y-4 bg-bg border rounded-surface p-5 transition-colors ${complete ? 'border-accent/25' : 'border-hairline'}`}>
       <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
-        <span className="material-symbols-outlined text-body-s">{icon}</span>
+        <Icon name={icon} size="s" />
         {title}
         {complete && (
-          <span className="material-symbols-outlined text-emerald-400 text-body-s ml-auto" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+          <Icon name="check_circle" size="s" filled className="text-emerald-400 ml-auto" />
         )}
       </h4>
       {children}
@@ -772,7 +773,7 @@ export default function OnboardingForm({
       <div className={isFirstTime ? 'text-center space-y-2 py-4' : 'space-y-1'}>
         {isFirstTime ? (
           <>
-            <span className="material-symbols-outlined text-display text-accent">waving_hand</span>
+            <Icon name="waving_hand" size="xl" className="text-accent" />
             <h2 className="font-sans font-bold text-title-l text-white">¡Bienvenido/a!</h2>
             <p className="text-ink-2 text-body-s font-sans max-w-md mx-auto">
               Rellena los datos básicos. Tu entrenador usará esta información para personalizar tu plan.
@@ -780,7 +781,7 @@ export default function OnboardingForm({
           </>
         ) : (
           <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent">edit_note</span>
+            <Icon name="edit_note" size="m" className="text-accent" />
             Editar ficha de iniciación
           </h3>
         )}
@@ -985,7 +986,7 @@ export default function OnboardingForm({
         {autoCalc && (
           <div className="bg-data/5 border border-data/20 rounded-surface p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-data text-title-s">calculate</span>
+              <Icon name="calculate" size="m" className="text-data" />
               <p className="font-sans text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
             <div className="font-mono text-label text-ink-3">
@@ -1022,7 +1023,7 @@ export default function OnboardingForm({
         )}
         {!autoCalc && (
           <p className="font-mono text-caption text-ink-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-label">info</span>
+            <Icon name="info" size="s" />
             Completa composición + actividad + objetivo para ver el cálculo automático de kcal y macros.
           </p>
         )}
@@ -1119,7 +1120,7 @@ export default function OnboardingForm({
           <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
             {form.meals.map((meal, i) => (
               <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
-                <span className="material-symbols-outlined text-ink-3 text-title-s">{INTAKE_ICONS[meal.intakeType]}</span>
+                <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-3" />
                 <span className="flex-1 font-sans text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all ${
@@ -1291,7 +1292,7 @@ export default function OnboardingForm({
       {template.length > 0 && (
         <div className="space-y-4">
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex items-center gap-2">
-            <span className="material-symbols-outlined text-body-s text-ink-3">tune</span>
+            <Icon name="tune" size="s" className="text-ink-3" />
             Valoración detallada
           </p>
           {(['entrenamiento', 'nutricion', 'descanso'] as OnboardingSection[]).map(section => {
@@ -1318,15 +1319,13 @@ export default function OnboardingForm({
 
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex gap-3">
-        <button type="button" onClick={handleSave} disabled={saving}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
-          {saving ? 'Guardando…' : isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
-        </button>
+        <Button onClick={handleSave} loading={saving} variant="primary" fullWidth>
+          {isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
+        </Button>
         {onCancel && (
-          <button type="button" onClick={onCancel}
-            className="px-5 py-3 border border-hairline text-ink-2 font-sans text-body-s rounded-control hover:text-white hover:border-hairline transition-all">
+          <Button onClick={onCancel} variant="secondary">
             Cancelar
-          </button>
+          </Button>
         )}
       </div>
     </div>

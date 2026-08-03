@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T23:21:44.145Z",
-  "commit": "2283c4f",
+  "generado": "2026-08-03T23:25:13.027Z",
+  "commit": "11deeff",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39405
+    "lineasTsx": 39404
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4944,
+    "clasesTokenEnUso": 4939,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 989,
-    "fontSans": 955,
+    "fontSans": 953,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 289,
+    "transitionAll": 287,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -103,7 +103,7 @@
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
-        "lineas": 1334
+        "lineas": 1333
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
@@ -499,10 +499,10 @@
       "roundedFull": 15
     },
     "src/components/OnboardingForm.tsx": {
-      "clasesTokenEnUso": 190,
+      "clasesTokenEnUso": 185,
       "fontMono": 58,
-      "fontSans": 29,
-      "transitionAll": 12,
+      "fontSans": 27,
+      "transitionAll": 10,
       "roundedFull": 3
     },
     "src/components/PendingTasksPanel.tsx": {
