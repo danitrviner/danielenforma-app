@@ -7,7 +7,7 @@ import {
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import Skeleton from './Skeleton';
-import { Card, Tabs } from './ui';
+import { Card, Tabs, Button } from './ui';
 
 interface Props {
   coachId: string;
@@ -133,9 +133,7 @@ function CoursesTab() {
                 className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
             )}
           </div>
-          <button type="submit" disabled={saving} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Crear curso'}
-          </button>
+          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear curso'}</Button>
         </form>
       )}
 
@@ -235,9 +233,7 @@ function LessonsTab() {
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
               className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           </div>
-          <button type="submit" disabled={saving} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Crear lección'}
-          </button>
+          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear lección'}</Button>
         </form>
       )}
 
