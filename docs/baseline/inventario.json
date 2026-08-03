@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-03T18:52:36.717Z",
-  "commit": "f4e4dd2",
+  "generado": "2026-08-03T19:47:46.670Z",
+  "commit": "85258a1",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39972
+    "lineasTsx": 39962
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5326,
+    "clasesTokenEnUso": 5310,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1025,
-    "fontSans": 1094,
+    "fontMono": 1022,
+    "fontSans": 1085,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 175,
+    "roundedFull": 171,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 22,
@@ -100,7 +100,7 @@
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
-        "lineas": 1415
+        "lineas": 1414
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
@@ -108,7 +108,7 @@
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
-        "lineas": 1007
+        "lineas": 1006
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
@@ -152,7 +152,7 @@
       },
       {
         "archivo": "src/components/ClientsScreen.tsx",
-        "lineas": 651
+        "lineas": 645
       },
       {
         "archivo": "src/components/CoachesScreen.tsx",
@@ -172,7 +172,7 @@
       },
       {
         "archivo": "src/components/ClientHub.tsx",
-        "lineas": 621
+        "lineas": 618
       },
       {
         "archivo": "src/components/NutritionPeriodizationPanel.tsx",
@@ -279,14 +279,14 @@
     "src/components/ClientHub.tsx": {
       "clasesTokenEnUso": 25,
       "fontMono": 6,
-      "fontSans": 5,
+      "fontSans": 4,
       "transitionAll": 4,
       "roundedFull": 1
     },
     "src/components/ClientReviewsPanel.tsx": {
       "clasesTokenEnUso": 286,
       "fontMono": 70,
-      "fontSans": 54,
+      "fontSans": 53,
       "modalesArtesanales": 1,
       "transitionAll": 20,
       "ariaLabel": 1,
@@ -304,17 +304,17 @@
       "fontMono": 8
     },
     "src/components/ClientWorkoutsPanel.tsx": {
-      "clasesTokenEnUso": 62,
+      "clasesTokenEnUso": 59,
       "fontMono": 15,
-      "fontSans": 12,
+      "fontSans": 11,
       "modalesArtesanales": 1,
       "transitionAll": 3,
       "roundedFull": 4
     },
     "src/components/ClientsScreen.tsx": {
-      "clasesTokenEnUso": 92,
+      "clasesTokenEnUso": 89,
       "fontMono": 12,
-      "fontSans": 31,
+      "fontSans": 28,
       "pesosProhibidos": 2,
       "transitionAll": 4,
       "animatePulse": 2,
@@ -593,20 +593,20 @@
       "transitionAll": 3
     },
     "src/components/RecipeBuilderScreen.tsx": {
-      "clasesTokenEnUso": 119,
-      "fontMono": 25,
+      "clasesTokenEnUso": 117,
+      "fontMono": 24,
       "fontSans": 18,
       "modalesArtesanales": 1,
       "transitionAll": 11,
-      "roundedFull": 7
+      "roundedFull": 6
     },
     "src/components/RecipesScreen.tsx": {
-      "clasesTokenEnUso": 103,
-      "fontMono": 24,
+      "clasesTokenEnUso": 101,
+      "fontMono": 23,
       "fontSans": 23,
       "pesosProhibidos": 1,
       "transitionAll": 12,
-      "roundedFull": 11
+      "roundedFull": 10
     },
     "src/components/ReportEditor.tsx": {
       "clasesTokenEnUso": 40,
@@ -624,11 +624,10 @@
       "roundedFull": 4
     },
     "src/components/ReportsPanel.tsx": {
-      "clasesTokenEnUso": 29,
+      "clasesTokenEnUso": 26,
       "fontMono": 8,
-      "fontSans": 5,
-      "transitionAll": 2,
-      "roundedFull": 1
+      "fontSans": 4,
+      "transitionAll": 2
     },
     "src/components/ResourcesPanel.tsx": {
       "clasesTokenEnUso": 26,
@@ -638,8 +637,8 @@
     },
     "src/components/ReviewsScreen.tsx": {
       "clasesTokenEnUso": 73,
-      "fontMono": 12,
-      "fontSans": 15,
+      "fontMono": 11,
+      "fontSans": 14,
       "pesosProhibidos": 1,
       "modalesArtesanales": 1,
       "transitionAll": 6,
@@ -692,15 +691,15 @@
       "roundedFull": 1
     },
     "src/components/TrainingScreen.tsx": {
-      "clasesTokenEnUso": 170,
+      "clasesTokenEnUso": 167,
       "fontMono": 48,
-      "fontSans": 20,
+      "fontSans": 19,
       "pesosProhibidos": 1,
       "modalesArtesanales": 1,
       "transitionAll": 12,
       "animatePulse": 1,
       "ariaLabel": 1,
-      "roundedFull": 7
+      "roundedFull": 6
     },
     "src/components/VegetableSelector.tsx": {
       "clasesTokenEnUso": 7,
