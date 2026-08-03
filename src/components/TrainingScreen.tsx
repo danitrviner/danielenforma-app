@@ -819,11 +819,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-2xl font-black text-white tabular-nums">{celebration.totalSets}</p>
+                  <p className="font-mono text-title-l font-black text-white tabular-nums">{celebration.totalSets}</p>
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
                 </div>
                 <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-2xl font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
+                  <p className="font-mono text-title-l font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
                 </div>
               </div>

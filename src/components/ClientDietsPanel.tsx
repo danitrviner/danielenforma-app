@@ -123,7 +123,7 @@ export default function ClientDietsPanel({
         </div>
         {athleteDiets.length === 0 ? (
           <div className="py-6 text-center">
-            <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">nutrition</span>
+            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">nutrition</span>
             <p className="text-label text-ink-2">No hay dietas creadas para este atleta.</p>
             <p className="text-caption text-ink-2 mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
           </div>
@@ -268,7 +268,7 @@ export default function ClientDietsPanel({
 
         {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
           <div className="py-4 text-center">
-            <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">restaurant_menu</span>
+            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">restaurant_menu</span>
             <p className="text-label text-ink-2">Aún no hay ningún menú generado.</p>
           </div>
         ) : (

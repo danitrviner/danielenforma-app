@@ -71,7 +71,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
     <section className="bg-surface border border-accent/25 rounded-canvas p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
       <div className="flex items-start gap-3">
         <div className="w-12 h-12 rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+          <span className="material-symbols-outlined text-title-l text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
         </div>
         <div>
           <h2 className="font-sans font-black uppercase tracking-tight text-title-s text-white">Tu coach está preparando tu plan</h2>

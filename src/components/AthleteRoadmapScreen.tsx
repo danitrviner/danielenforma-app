@@ -236,7 +236,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-black text-2xl text-white uppercase tracking-tight">Road map</h1>
+        <h1 className="font-sans font-black text-title-l text-white uppercase tracking-tight">Road map</h1>
         <p className="text-ink-2 text-label font-mono mt-1">Tu progreso y lo que te queda por delante</p>
       </div>
 

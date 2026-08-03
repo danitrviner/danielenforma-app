@@ -80,7 +80,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   return (
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
-        <h2 className="font-sans font-black text-2xl text-white tracking-tight">{title}</h2>
+        <h2 className="font-sans font-black text-title-l text-white tracking-tight">{title}</h2>
         {subtitle && <p className="text-body-s text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
@@ -253,7 +253,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
-                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-accent' : 'text-ink-2'}`}>{g.icon}</span>
+                    <span className={`material-symbols-outlined text-title-l ${goalBody === g.id ? 'text-accent' : 'text-ink-2'}`}>{g.icon}</span>
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
                       <span className="block text-label text-ink-2">{g.desc}</span>

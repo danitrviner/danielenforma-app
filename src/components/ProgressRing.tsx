@@ -28,7 +28,7 @@ export default function ProgressRing({ pct, color = 'var(--color-accent)', label
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`font-sans font-extrabold text-white leading-none ${compact ? 'text-label' : 'text-2xl'}`}>{Math.round(clamped)}%</span>
+        <span className={`font-sans font-extrabold text-white leading-none ${compact ? 'text-label' : 'text-title-l'}`}>{Math.round(clamped)}%</span>
         {!compact && <span className="font-mono text-caption text-ink-2 uppercase tracking-widest mt-1">{label}</span>}
       </div>
     </div>

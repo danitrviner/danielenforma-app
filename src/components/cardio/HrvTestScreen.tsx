@@ -137,7 +137,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
             <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
               <span className="material-symbols-outlined text-danger text-title-m">favorite</span>
-              <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
+              <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
             {error && <p className="text-label text-red-400 font-mono">{error}</p>}
             <button onClick={cancel} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">

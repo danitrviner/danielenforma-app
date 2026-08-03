@@ -425,7 +425,7 @@ export default function MyDietsScreen({ profile }: Props) {
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-sans font-extrabold text-2xl text-white tracking-tight">Mis Dietas</h1>
+          <h1 className="font-sans font-extrabold text-title-l text-white tracking-tight">Mis Dietas</h1>
           <p className="text-ink-2 text-body-s mt-1">Tus dietas propias y las que te asigna tu entrenador — edítalas o duplícalas para partir de una ya creada.</p>
         </div>
         <button

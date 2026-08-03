@@ -269,7 +269,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               <span className="font-mono text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
-              <h2 className="font-sans font-black text-2xl text-white tracking-tight mt-0.5">{activePhase.name}</h2>
+              <h2 className="font-sans font-black text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
               {activeDiet && (
                 <p className="font-mono text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}

@@ -282,7 +282,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
           </button>
           <div>
-            <h2 className="font-sans font-extrabold text-2xl text-white">Generar menú semanal</h2>
+            <h2 className="font-sans font-extrabold text-title-l text-white">Generar menú semanal</h2>
             <p className="text-ink-2 text-label mt-0.5 font-mono">Las recetas son la base — puntos de intercambios ya pautados por día</p>
           </div>
         </div>
@@ -457,7 +457,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <span className="material-symbols-outlined text-body-s">arrow_back</span>
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="font-sans font-extrabold text-2xl text-white truncate flex items-center gap-2">
+          <h2 className="font-sans font-extrabold text-title-l text-white truncate flex items-center gap-2">
             {menu.name}
             {menu.batchCooking && (
               <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-control">

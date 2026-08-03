@@ -120,7 +120,7 @@ export default function FoodPreferencesPanel({
                     : 'bg-surface border-hairline hover:border-hairline'
                 }`}
               >
-                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
+                <span className={`material-symbols-outlined text-title-l ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
                 <span className="font-mono text-caption text-ink-2 text-center leading-tight">{g.name}</span>

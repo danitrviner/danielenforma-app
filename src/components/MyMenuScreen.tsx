@@ -585,7 +585,7 @@ export default function MyMenuScreen({ profile }: Props) {
           <div onClick={e => e.stopPropagation()} className="bg-surface border border-hairline rounded-surface w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
-                <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
+                <span className="material-symbols-outlined text-title-l text-accent animate-spin">progress_activity</span>
               </div>
             ) : detailRecipe ? (
               <>

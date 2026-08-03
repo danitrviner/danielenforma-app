@@ -158,7 +158,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           onClick={() => onNavigate('academy')}
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-accent text-2xl">school</span>
+          <span className="material-symbols-outlined text-accent text-title-l">school</span>
           <span className="font-sans font-black text-body-s text-white uppercase tracking-tight">Academia</span>
           <span className="text-caption text-ink-2 font-mono">Cursos y formación</span>
         </button>
@@ -166,7 +166,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           onClick={() => onNavigate('cardio')}
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
-          <span className="material-symbols-outlined text-accent text-2xl">favorite</span>
+          <span className="material-symbols-outlined text-accent text-title-l">favorite</span>
           <span className="font-sans font-black text-body-s text-white uppercase tracking-tight">Cardio</span>
           <span className="text-caption text-ink-2 font-mono">Zonas y FC en directo</span>
         </button>

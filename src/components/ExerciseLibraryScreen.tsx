@@ -488,7 +488,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
+              <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
               <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar ejercicio?</h3>
             </div>
             <p className="text-body-s text-ink-2">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>

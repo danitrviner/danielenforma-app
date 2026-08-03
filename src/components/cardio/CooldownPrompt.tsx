@@ -32,7 +32,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
 
         <div className="flex items-center justify-center gap-2">
           <span className="material-symbols-outlined text-danger text-title-m">favorite</span>
-          <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
+          <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
         </div>
 
         <button onClick={onDone}

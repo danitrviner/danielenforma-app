@@ -103,7 +103,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'elegir' && (
         <div className="space-y-3">
           <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-strong hover:border-accent/40 cursor-pointer transition-colors">
-            <span className="material-symbols-outlined text-2xl text-ink-3">upload_file</span>
+            <span className="material-symbols-outlined text-title-l text-ink-3">upload_file</span>
             <span className="font-sans text-caption text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input
               type="file"
@@ -127,7 +127,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
+          <span className="material-symbols-outlined text-title-l text-accent animate-spin">progress_activity</span>
           <p className="font-sans text-caption text-ink-2">Leyendo {nombreArchivo}…</p>
         </div>
       )}
@@ -144,14 +144,14 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
+          <span className="material-symbols-outlined text-title-l text-accent animate-spin">progress_activity</span>
           <p className="font-sans text-caption text-ink-2">Importando {aImportar.length} clientes…</p>
         </div>
       )}
 
       {paso === 'hecho' && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <span className="material-symbols-outlined text-2xl text-success">check_circle</span>
+          <span className="material-symbols-outlined text-title-l text-success">check_circle</span>
           <p className="font-sans font-bold text-body-s text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>

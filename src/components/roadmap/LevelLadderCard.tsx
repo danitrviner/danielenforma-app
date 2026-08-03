@@ -25,7 +25,7 @@ export default function LevelLadderCard({ status }: Props) {
 
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
-          <span className="material-symbols-outlined text-2xl">{currentLevel?.icon || 'military_tech'}</span>
+          <span className="material-symbols-outlined text-title-l">{currentLevel?.icon || 'military_tech'}</span>
         </div>
         <div>
           <p className="font-sans font-black text-title-m text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>

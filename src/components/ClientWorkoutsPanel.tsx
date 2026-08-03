@@ -231,7 +231,7 @@ export default function ClientWorkoutsPanel({
         </div>
         {assignments.length === 0 ? (
           <div className="py-6 text-center">
-            <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">calendar_today</span>
+            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">calendar_today</span>
             <p className="text-label text-ink-2">Sin entrenamientos asignados todavía.</p>
           </div>
         ) : !assignmentsExpanded ? null : (

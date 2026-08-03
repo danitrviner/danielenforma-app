@@ -147,7 +147,7 @@ export default function AcademyScreen({ profile }: Props) {
         </button>
         <div>
           <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
-          <h2 className="font-sans font-black text-2xl text-white">{openCourse.title}</h2>
+          <h2 className="font-sans font-black text-title-l text-white">{openCourse.title}</h2>
           <p className="text-label text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">

@@ -384,7 +384,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
+                <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
                 <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar rutina?</h3>
               </div>
               <p className="text-body-s text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
@@ -415,7 +415,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <span className="material-symbols-outlined text-body-s">arrow_back</span>
           Volver
         </button>
-        <h1 className="font-sans font-black text-2xl tracking-tight text-white uppercase">
+        <h1 className="font-sans font-black text-title-l tracking-tight text-white uppercase">
           {editingId ? 'Editar rutina' : 'Nueva rutina'}
         </h1>
       </header>

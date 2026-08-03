@@ -420,7 +420,7 @@ function AppContent() {
             className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
             <span
-              className="material-symbols-outlined text-[22px]"
+              className="material-symbols-outlined text-title-l"
               style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
             >
               {tab.icon}

@@ -124,7 +124,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-black text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-2xl' : 'text-title-s'}`}>
+        <h3 className={`font-sans font-black text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
@@ -284,7 +284,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
       {/* Title + metadata */}
       <div className="space-y-3">
-        <h1 className="font-sans font-black text-2xl text-white tracking-tight">{recipe.name}</h1>
+        <h1 className="font-sans font-black text-title-l text-white tracking-tight">{recipe.name}</h1>
 
         {/* Indya metadata row */}
         {isIndya && (
