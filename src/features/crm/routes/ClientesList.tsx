@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -189,7 +189,7 @@ export default function ClientesList() {
               className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
                 filtro === f.id
                   ? 'bg-accent/15 text-accent border border-accent/30'
-                  : 'bg-[#141413] text-[#a8a89e] border border-white/7 hover:border-white/12'
+                  : 'bg-field text-[#a8a89e] border border-white/7 hover:border-white/12'
               }`}
             >
               {f.label}

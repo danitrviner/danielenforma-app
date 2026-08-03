@@ -332,7 +332,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
-          <div className="inline-flex bg-[#141413] border border-white/7 rounded-lg p-0.5 gap-0.5">
+          <div className="inline-flex bg-field border border-white/7 rounded-lg p-0.5 gap-0.5">
             {([
               { id: 'both', label: 'Ambas' },
               { id: 'exp', label: 'Esperado 100%' },
