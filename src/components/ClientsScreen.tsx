@@ -322,7 +322,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-bg border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
+        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">

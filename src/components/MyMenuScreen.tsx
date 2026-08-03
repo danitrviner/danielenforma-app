@@ -353,7 +353,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Shopping list — available for any menu */}
       <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-        <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
+        <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
             <span className="material-symbols-outlined text-data text-base">shopping_cart</span>
             Lista de la compra de la semana
@@ -467,7 +467,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Dish-type preferences (tri-state) */}
       <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-        <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
+        <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
             <span className="material-symbols-outlined text-accent text-base">tune</span>
             Tipos de comida que prefieres

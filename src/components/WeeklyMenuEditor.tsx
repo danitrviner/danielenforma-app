@@ -475,7 +475,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
       <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
         <button
           onClick={() => setShowPrep(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors"
         >
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
             <span className="material-symbols-outlined text-accent text-base">{menu.batchCooking ? 'inventory_2' : 'shopping_cart'}</span>
@@ -525,7 +525,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             <div key={day.day} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedDay(expanded ? null : day.day)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-bg hover:bg-[#141414] transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 bg-bg hover:bg-field transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-ink-2 text-base">{expanded ? 'expand_less' : 'expand_more'}</span>

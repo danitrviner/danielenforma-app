@@ -541,7 +541,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-2xl border border-white/5 bg-[#141414] overflow-hidden shadow-xl">
+      <div className="rounded-2xl border border-white/5 bg-field overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
@@ -605,12 +605,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-white/5 rounded-2xl bg-[#141414] overflow-hidden shadow-2xl">
+      <div className="hidden sm:flex border border-white/5 rounded-2xl bg-field overflow-hidden shadow-2xl">
 
         {/* Sidebar — never scrolls */}
         <div
           style={{ width: LANE_HEADER_W, flexShrink: 0, height: totalHeight }}
-          className="bg-[#141414] border-r border-white/10 relative z-10"
+          className="bg-field border-r border-white/10 relative z-10"
         >
           <div style={{ height: HEADER_H }} />
           {(['Entrenamiento', 'Nutrición', 'Objetivos'] as const).map((label, i) => (
