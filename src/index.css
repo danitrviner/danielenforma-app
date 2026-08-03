@@ -133,26 +133,7 @@
   --color-chart-4: #86efac;  /* = success */
   --color-chart-5: #fdba74;  /* = warning */
 
-  /* ═════════════════════════════════════════════════════════════════════════
-     TOKENS ANTIGUOS — EN RETIRADA
-     No se usan en ningún componente (0 apariciones medidas). Se conservan
-     mientras dure la migración para que ningún paso intermedio pueda romper
-     nada, y se borran en cuanto sus contadores estén a cero de forma estable.
-     No añadir nada aquí.
-     ═════════════════════════════════════════════════════════════════════════ */
-  --color-accent-dark: #d4a800;
-  --color-accent-border: rgba(251, 203, 26, 0.30);
-  --color-bg-base: #111110;
-  --color-bg-card: #181816;
-  --color-bg-elevated: #1e1e1b;
-  --color-bg-input: #141413;
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.12);
-  --color-text-primary: #f5f5f0;
-  --color-text-secondary: #a8a89e;
-  --color-text-muted: #555550;
-  --color-cyan: #00eefc;
-
+  
   /* ── Radios · 3 + full ──────────────────────────────────────────────────────
      Tres valores y una regla de anidamiento: un hijo siempre baja un escalón
      respecto a su padre. Dentro de una `surface` (16) los elementos son
@@ -224,9 +205,6 @@ h1, h2, h3, h4, h5, h6 {
 @layer utilities {
   .volt-glow {
     box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);
-  }
-  .cyan-glow {
-    box-shadow: 0 0 12px 2px rgba(0, 238, 252, 0.2);
   }
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
