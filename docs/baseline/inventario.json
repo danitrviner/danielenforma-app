@@ -1,28 +1,28 @@
 {
-  "generado": "2026-08-03T15:54:47.970Z",
-  "commit": "d998baf",
+  "generado": "2026-08-03T17:43:10.561Z",
+  "commit": "00027a0",
   "totales": {
-    "archivosTsx": 133,
-    "lineasTsx": 38072
+    "archivosTsx": 147,
+    "lineasTsx": 39977
   },
   "metricas": {
-    "hexLiterales": 28,
-    "clasesTokenEnUso": 5212,
+    "hexLiterales": 25,
+    "clasesTokenEnUso": 5362,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 1030,
-    "fontSans": 1057,
+    "fontSans": 1108,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
-    "sombrasFueraEscala": 25,
-    "glowAcento": 19,
+    "sombrasFueraEscala": 0,
+    "glowAcento": 0,
     "modalesArtesanales": 39,
     "transitionAll": 372,
     "animatePulse": 29,
-    "ariaLabel": 23,
-    "htmlFor": 0,
-    "focusVisible": 0,
+    "ariaLabel": 33,
+    "htmlFor": 1,
+    "focusVisible": 31,
     "reducedMotion": 0,
     "roundedSm": 0,
     "roundedMd": 0,
@@ -30,10 +30,10 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 167,
-    "hexDistintos": 15,
+    "roundedFull": 175,
+    "hexDistintos": 14,
     "tamanosTextoDistintos": 11,
-    "archivosMas600Lineas": 21,
+    "archivosMas600Lineas": 22,
     "hexEnTokensCss": 21
   },
   "listas": {
@@ -45,7 +45,6 @@
       "#6b7280",
       "#a78bfa",
       "#fbcb1a",
-      "#fbcb1a14",
       "#fbcb1a33",
       "#fbcb1a55",
       "#ff4d4d",
@@ -109,7 +108,7 @@
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
-        "lineas": 1010
+        "lineas": 1007
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
@@ -168,6 +167,10 @@
         "lineas": 631
       },
       {
+        "archivo": "src/components/ui/Showcase.tsx",
+        "lineas": 631
+      },
+      {
         "archivo": "src/components/ClientHub.tsx",
         "lineas": 621
       },
@@ -179,7 +182,7 @@
   },
   "porArchivo": {
     "src/App.tsx": {
-      "clasesTokenEnUso": 38,
+      "clasesTokenEnUso": 40,
       "textoBajo11px": 1,
       "fontMono": 1,
       "fontSans": 10,
@@ -313,8 +316,6 @@
       "fontMono": 13,
       "fontSans": 33,
       "pesosProhibidos": 2,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "transitionAll": 5,
       "animatePulse": 2,
       "roundedFull": 2
@@ -356,8 +357,6 @@
       "fontMono": 3,
       "fontSans": 10,
       "pesosProhibidos": 1,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "transitionAll": 1,
       "roundedFull": 2
     },
@@ -409,8 +408,6 @@
       "fontMono": 7,
       "fontSans": 9,
       "pesosProhibidos": 1,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "transitionAll": 4
     },
     "src/components/HrTestsPanel.tsx": {
@@ -451,8 +448,6 @@
       "clasesTokenEnUso": 136,
       "fontMono": 30,
       "fontSans": 26,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "modalesArtesanales": 1,
       "transitionAll": 14,
       "roundedFull": 1
@@ -522,8 +517,6 @@
       "clasesTokenEnUso": 159,
       "fontMono": 34,
       "fontSans": 26,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "modalesArtesanales": 2,
       "transitionAll": 13,
       "roundedFull": 6
@@ -533,7 +526,6 @@
       "fontMono": 32,
       "fontSans": 41,
       "pesosProhibidos": 1,
-      "glowAcento": 1,
       "modalesArtesanales": 6,
       "transitionAll": 31,
       "roundedFull": 15
@@ -567,8 +559,6 @@
     "src/components/PlanInPreparationCard.tsx": {
       "clasesTokenEnUso": 17,
       "fontSans": 5,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "transitionAll": 1
     },
     "src/components/ProfileScreen.tsx": {
@@ -576,15 +566,12 @@
       "fontMono": 8,
       "fontSans": 11,
       "pesosProhibidos": 1,
-      "sombrasFueraEscala": 2,
-      "glowAcento": 2,
       "transitionAll": 4,
       "roundedFull": 7
     },
     "src/components/ProgressRing.tsx": {
       "clasesTokenEnUso": 1,
       "fontSans": 2,
-      "sombrasFueraEscala": 1,
       "transitionAll": 1
     },
     "src/components/QuestionnaireChartsPanel.tsx": {
@@ -660,12 +647,9 @@
       "roundedFull": 2
     },
     "src/components/RoadmapTimeline.tsx": {
-      "hexLiterales": 2,
       "clasesTokenEnUso": 83,
       "fontMono": 22,
       "fontSans": 14,
-      "sombrasFueraEscala": 8,
-      "glowAcento": 6,
       "modalesArtesanales": 1,
       "transitionAll": 7,
       "animatePulse": 1,
@@ -712,8 +696,6 @@
       "fontMono": 48,
       "fontSans": 20,
       "pesosProhibidos": 1,
-      "sombrasFueraEscala": 3,
-      "glowAcento": 3,
       "modalesArtesanales": 1,
       "transitionAll": 12,
       "animatePulse": 1,
@@ -755,8 +737,6 @@
       "fontMono": 22,
       "fontSans": 18,
       "pesosProhibidos": 1,
-      "sombrasFueraEscala": 1,
-      "glowAcento": 1,
       "modalesArtesanales": 2,
       "transitionAll": 16
     },
@@ -871,7 +851,6 @@
       "clasesTokenEnUso": 11,
       "fontMono": 4,
       "fontSans": 3,
-      "sombrasFueraEscala": 1,
       "transitionAll": 1,
       "roundedFull": 2
     },
@@ -897,14 +876,89 @@
       "roundedFull": 1
     },
     "src/components/roadmap/WeeklyChallengeCard.tsx": {
-      "hexLiterales": 2,
+      "hexLiterales": 1,
       "clasesTokenEnUso": 7,
       "fontMono": 3,
       "fontSans": 7,
-      "sombrasFueraEscala": 3,
       "transitionAll": 1,
       "animatePulse": 1,
       "roundedFull": 2
+    },
+    "src/components/ui/Badge.tsx": {
+      "clasesTokenEnUso": 18,
+      "fontSans": 2,
+      "roundedFull": 2
+    },
+    "src/components/ui/Button.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontSans": 1,
+      "ariaLabel": 1,
+      "focusVisible": 6
+    },
+    "src/components/ui/Card.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 5
+    },
+    "src/components/ui/Chip.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 7,
+      "roundedFull": 3
+    },
+    "src/components/ui/Dialog.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 1,
+      "ariaLabel": 2,
+      "focusVisible": 3
+    },
+    "src/components/ui/EmptyState.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2
+    },
+    "src/components/ui/Icon.tsx": {
+      "ariaLabel": 1
+    },
+    "src/components/ui/Input.tsx": {
+      "clasesTokenEnUso": 13,
+      "fontSans": 3,
+      "htmlFor": 1
+    },
+    "src/components/ui/ListRow.tsx": {
+      "clasesTokenEnUso": 5,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/PageHeader.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 3
+    },
+    "src/components/ui/Select.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 1
+    },
+    "src/components/ui/Sheet.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 1,
+      "ariaLabel": 2,
+      "focusVisible": 3,
+      "roundedFull": 1
+    },
+    "src/components/ui/Showcase.tsx": {
+      "clasesTokenEnUso": 37,
+      "fontSans": 29,
+      "focusVisible": 1,
+      "roundedFull": 1
+    },
+    "src/components/ui/Tabs.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 3,
+      "roundedFull": 1
     },
     "src/data/phasePresets.ts": {
       "hexLiterales": 6

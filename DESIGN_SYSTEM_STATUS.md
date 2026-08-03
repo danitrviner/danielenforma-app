@@ -3,8 +3,8 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprints 1, 2 y 3 completados, F6 cerrada** ·
-> rama `ds/f0-linea-base` · 67 commits sin pushear
+> **Última actualización:** 3 de agosto de 2026 · **Sprints 1-4 completados** ·
+> rama `ds/f0-linea-base` · 85 commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
 refleja el presente. [`docs/DS-migracion.md`](docs/DS-migracion.md) es la *bitácora*: histórico por
@@ -19,14 +19,14 @@ en la auditoría UX/UI, el Design System y el plan de migración, que son extern
 Sprint 1  ████████████████████  F0 F1        COMPLETADO
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
-Sprint 4  ██████████░░░░░░░░░░  F6 F7        F6 completada · F7 pendiente
+Sprint 4  ████████████████████  F6 F7        COMPLETADO
 Sprint 5  ░░░░░░░░░░░░░░░░░░░░  F8 F9 F10    pendiente
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**7 de 16 fases completadas.**
+**8 de 16 fases completadas.**
 
 ## Fases
 
@@ -39,7 +39,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 3 | **F4** | Escala tipográfica y suelo de tamaño | ✅ Completada | 2026-08-03 | Medio |
 | 3 | **F5** | Mono → Sans | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ✅ Completada | 2026-08-03 | Medio |
-| 4 | **F7** | Primitivas en `src/components/ui/` | ⬜ Pendiente | — | Bajo |
+| 4 | **F7** | Primitivas en `src/components/ui/` | ✅ Completada | 2026-08-03 | Bajo |
 | 5 | **F8** | Adopción de bajo riesgo | ⬜ Pendiente | — | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ⬜ Pendiente | — | **Alto** |
 | 5 | **F10** | Chart unificado | ⬜ Pendiente | — | Bajo |
@@ -55,26 +55,26 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 
 | Indicador | Dir. | Base (F0) | Hoy | Objetivo | Fase |
 |---|:--:|--:|--:|--:|:--:|
-| Hex distintos en componentes | ↓ | 101 | **15** | ≤ 22 | F1 ✅ |
-| Hex literales en componentes | ↓ | 4.638 | **28** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **5.212** | — | F1 ✅ |
+| Hex distintos en componentes | ↓ | 101 | **14** | ≤ 22 | F1 ✅ |
+| Hex literales en componentes | ↓ | 4.638 | **25** | ~0 | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **5.362** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
 | Textos por debajo de 11 px | ↓ | 1.151 | **0** | 0 | F4 ✅ |
 | Escalones de tamaño en uso | ↓ | 16 | **8 + 2 excep.** | ≤ 8 | F4 ✅ |
 | Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
 | `font-mono` | ↓ | 1.527 | **1.030** | mono < sans | F5 ✅ |
-| `font-sans` | ↑ | 590 | **1.057** | > mono | F5 ✅ |
+| `font-sans` | ↑ | 590 | **1.108** | > mono | F5 ✅ |
 | Espaciado fuera de escala | ↓ | 1.170 | **0** | 0 | F6 ✅ |
 | Sombras fuera de la escala | ↓ | 113 | **0** | 0 | F6 ✅ |
 | Brillos dorados ad-hoc | ↓ | 31 | **0** | 1, con token | F6 ✅ |
-| Overlays `fixed inset-0` | ↓ | 39 | 39 | 0 fuera de `ui/` | F9 |
+| Overlays artesanales (no `ui/`) | ↓ | 39 | **39** | 0 | F9 |
 | `transition-all` | ↓ | 377 | 372 | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
 | `prefers-reduced-motion` | ↑ | 0 | 0 | > 0 | F13 |
-| `aria-label` | ↑ | 23 | 23 | — | F14 |
-| `htmlFor` | ↑ | 0 | 0 | ≥ 116 | F14 |
-| `focus-visible` | ↑ | 0 | 0 | > 0 | F14 |
+| `aria-label` | ↑ | 23 | **33** | — | F14 |
+| `htmlFor` | ↑ | 0 | **1** | ≥ 116 | F14 |
+| `focus-visible` | ↑ | 0 | **31** | > 0 | F14 |
 | Archivos > 600 líneas | · | 21 | 21 | 0 (a un año) | F15 |
 | Radios `lg / xl / 2xl` | · | 425/257/278 | **0/0/0** | 3 + `full` | F3 ✅ |
 
@@ -137,6 +137,41 @@ comunica cambiando de superficie, y el borde `hairline` ya define la tarjeta.
 **El glow vuelve a significar algo:** de 23 brillos dorados a **uno**, el siguiente entrenamiento
 pendiente. `.volt-glow` borrada, que era lo que F5 dejó pendiente para esta fase.
 
+**F7 · Primitivas en `src/components/ui/`.** 14 commits, 13 primitivas: `Icon`, `Button`, `Input`,
+`Select`, `Card`, `Badge`, `Chip`, `Tabs`, `ListRow`, `PageHeader`, `Sheet`, `Dialog`,
+`EmptyState`. Ninguna pantalla de producción las adopta —eso es F8— y el CRM sigue con sus
+componentes propios sin tocar. Escaparate en `/ui`, solo en `import.meta.env.DEV`, con un `<div>`
+que se salta la puerta de sesión: no necesitan Firebase ni un perfil para verse.
+
+**El instrumento tuvo que ceder terreno antes de escribir nada.** La métrica de overlays contaba
+`fixed inset-0` en todo `src/`, así que `Sheet` y `Dialog` la habrían subido de 39 a 41 —el propio
+trabajo de la fase marcado como regresión—. Se le dio a cada métrica un `ambito(rel)` opcional; la
+de overlays declara el suyo: cuenta fuera de `ui/`, que es el objetivo que este mismo panel ya
+tenía escrito. Los 39 overlays artesanales siguen siendo deuda real de F9.
+
+**Un hallazgo que cambia lo que F8 va a parecer.** Los 590 iconos de la app se renderizan hoy a
+24 px pase lo que pase: la clase `.material-symbols-outlined` de Google trae `font-size: 24px` y
+llega sin capa CSS, y sin capa gana a cualquier utilidad de Tailwind, que vive en `@layer
+utilities`. `text-caption`, `text-body-s`, `text-display` sobre un icono no hacen nada — ni el
+`tsc`, ni el build, ni el inventario lo detectan, solo medirlo en el navegador. `Icon` usa una base
+propia (`.ui-icon`, sin capa, sin tamaño dentro) y resuelve el problema para la primitiva; los 590
+usos existentes siguen a 24 px hasta que F8 los adopte, y esa adopción va a **cambiar tamaños
+visibles**, no a ser el cambio neutro que parecía.
+
+**R4 (bloqueo de scroll mal desmontado) cerrado en la propia infraestructura.** El patrón que ya
+usa el CRM (`features/crm/components/Modal.tsx`) captura y restaura el `overflow` del body por
+overlay: con dos overlays independientes, el que cierra primero libera el scroll aunque el otro
+siga abierto. `Sheet` y `Dialog` comparten `internal/overlayHooks.ts`, con un contador a nivel de
+módulo — verificado abriendo los dos a la vez y cerrándolos en orden inverso al de apertura: el
+`overflow` no se libera hasta que cierra el último. Foco atrapado y devuelto al cerrar, en los dos.
+
+**Deuda que se mueve sola sin haber sido objetivo de la fase:** `focus-visible` 0 → 31 y
+`htmlFor` 0 → 1 con solo ocho primitivas nuevas, ninguna adoptada todavía. F14 hereda una base
+que ya no parte de cero.
+
+**Línea base fijada al cierre del Sprint 4** — F6 y F7 movieron once métricas en la dirección
+correcta, así que el inventario compara desde ahora contra este suelo, no contra el de F0.
+
 ### Sprint 3 — Tipografía · 2026-08-03
 
 **F4 · Escala y suelo de tamaño.** 12 commits, 2.981 declaraciones migradas. De 16 tamaños
@@ -186,7 +221,7 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 | ~~R1~~ | ~~Colisión de radios~~ | F3 | ✅ **Cerrado.** Al retirar los overrides, `rounded-lg` vuelve a 8 px y `rounded-2xl` a 16: la colisión no existe |
 | R2 | **Sin capturas de referencia automáticas.** Se decidió no añadir Playwright ni Puppeteer. En F3 se cubrió con censo de `border-radius` computado más capturas manuales del navegador integrado, que basta para cambios medibles. Sigue abierto para F11 y F12, donde lo que cambia es la composición y no hay contador que lo detecte. | F11 · F12 | Abierto, ya no bloqueante |
 | R3 | **Modales dentro de una sesión de cardio en directo.** `LiveSession`, `EffortPrompt`, `CooldownPrompt` y `HrvTestScreen` se abren durante un entrenamiento real; un fallo ahí lo interrumpe. | F9 | Abierto |
-| R4 | **Bloqueo de scroll mal desmontado** al migrar los 39 overlays deja la página congelada. Es el bug clásico de esta migración. | F9 | Abierto |
+| R4 | **Bloqueo de scroll mal desmontado** al migrar los 39 overlays deja la página congelada. Es el bug clásico de esta migración. | F9 | Abierto — el arreglo ya existe y está verificado en `ui/internal/overlayHooks.ts` (contador compartido, no captura por overlay); falta aplicarlo a los 39 |
 | ~~R5~~ | ~~Desbordamiento de layout al subir tamaños~~ | F4 · F6 | ✅ **Cerrado.** Tras F6 el desbordamiento horizontal sigue a 0 en todas las rutas medidas y los únicos truncados son los previos de la barra inferior, que es R10 |
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
@@ -209,12 +244,12 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Textos por debajo de 11 px~~ | ~~1.145~~ | ✅ F4 |
 | Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | F5 parcial → F11 |
 | Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | **sigue abierto** |
-| 590 iconos Material Symbols dimensionados con tokens de TEXTO; falta una primitiva `Icon` | 590 | F7 |
+| 590 iconos Material Symbols con tokens de texto que no aplican — la clase de Google gana sin capa a cualquier utilidad de Tailwind | 590 | F7 ✅ primitiva construida → F8 adopción |
 | ~~Espaciado fuera de la escala de 4 px~~ | ~~1.170~~ | ✅ F6 |
 | ~~Glow en cuatro tarjetas donde no señala nada~~ | ~~4~~ | ✅ F6 |
 | Márgenes negativos para compensar espaciado | 21 | F11 |
-| `<select>` con aspecto nativo junto a campos personalizados | — | F7 · F11 |
-| Overlays artesanales sin foco atrapado ni Escape | 39 | F9 |
+| `<select>` con aspecto nativo junto a campos personalizados | — | F7 ✅ primitiva construida → F11 adopción |
+| Overlays artesanales sin foco atrapado ni Escape | 39 | F9 — plantilla lista en `ui/Sheet` y `ui/Dialog` |
 | Gráficas sin especificación común (5 alturas, 2 rejillas, 6 tamaños de tick) | 7 paneles | F10 |
 | Barra inferior del coach con 7 destinos; el DS fija 5 | 7 | F12 |
 | Botones de la barra inferior **sin nombre accesible** — confirmado en el árbol de accesibilidad | 7 | F14 |

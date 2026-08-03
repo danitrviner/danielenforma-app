@@ -474,3 +474,112 @@ una medición comparable.
 |---|--:|:--:|
 | Márgenes negativos usados para compensar espaciado | 21 | F11 |
 | `<select>` con aspecto nativo junto a campos personalizados | — | F7 · F11 |
+
+---
+
+### F7 · Primitivas en `src/components/ui/`
+
+**Fecha:** 3 de agosto de 2026 · **Commits:** 14 · **13 primitivas**
+
+**Resultado**
+
+| Métrica | Antes | Después |
+|---|--:|--:|
+| Primitivas en `ui/` | 0 | **13** |
+| `aria-label` | 23 | **33** |
+| `htmlFor` | 0 | **1** |
+| `focus-visible` | 0 | **31** |
+| Overlays artesanales fuera de `ui/` | 39 | **39** (sin cambio: F9 los migra) |
+
+Ninguna pantalla de producción adopta las primitivas —eso es F8— y el CRM sigue con `StatusPill`,
+`Modal`, `MetricCard` y el resto de sus componentes propios, sin tocar. Un commit por primitiva,
+verificado a 375 px tras recarga completa en cada uno: `tsc`, 263 pruebas, build,
+`ds:inventario`, y comprobación en el navegador con clic y teclado reales — no simulados por
+lectura de código.
+
+**Paso 0 — el instrumento otra vez por delante del trabajo.** Igual que en F6, hubo que arreglar
+el contador antes de escribir la primera línea de una primitiva. La métrica de overlays contaba
+`fixed inset-0` en todo `src/`; `Sheet` y `Dialog` la habrían subido de 39 a 41 y roto el build en
+cada commit posterior — penalizando exactamente el trabajo que la fase pide hacer. Se añadió un
+campo `ambito(rel)` opcional a la definición de métrica; la de overlays declara el suyo: cuenta
+solo fuera de `ui/`. No es una decisión nueva — es el criterio que el panel de estado ya tenía
+escrito («0 fuera de `ui/`») y que el contador no sabía leer. Verificado con un archivo temporal a
+cada lado de la frontera antes de construir nada más.
+
+**Primitivas construidas, en orden**
+
+1. **`Icon`.** Escala propia de 4 pasos (`--text-icon-s/m/l/xl`, 16/20/24/32), no la tipográfica.
+2. **Escaparate en `/ui`**, solo `import.meta.env.DEV`, y el hallazgo que cambia F8 (ver abajo).
+3. **`Button`.** 4 variantes, 3 tamaños, 44 px mínimo, `focus-visible` de serie.
+4. **`Input`** + `Campo` (envoltorio compartido con `Select`). 16 px fijo, `htmlFor` por `useId`.
+5. **`Select`.** `appearance-none` sobre la piel del sistema; el comportamiento nativo se conserva.
+6. **`Card`.** Sin prop de sombra — F6 ya decidió que la elevación por defecto es «ninguna».
+7. **`Badge`.** 6 tonos de estado; sin tono dorado, a propósito.
+8. **`Tabs`.** Scroll contenido con anclaje, roving tabindex, flechas/Inicio/Fin.
+9. **`Chip`.** Botón de seleccionar y de quitar como HERMANOS, nunca uno dentro del otro.
+10. **`ListRow`.** `<button>` cuando es pulsable, elemento simple cuando no.
+11. **`PageHeader`.** Ceja en borde de acento, nunca oro sólido; oro reservado para la acción.
+12. **`Sheet`.** Portal a `document.body`, foco atrapado, Escape, bloqueo de scroll compartido.
+13. **`Dialog`.** Misma infraestructura que `Sheet`; solo cambia la posición.
+14. **`EmptyState`.** 40 px de relleno vertical — el valor que F6 ya había asignado a este caso.
+
+**El hallazgo que cambia lo que va a parecer F8.** Midiendo `Icon` en el navegador: los cuatro
+tamaños computaban 24 px sin importar el token pedido. Causa: `.material-symbols-outlined` (Google
+Fonts) trae `font-size: 24px` y llega por `<link>` externo, **sin capa CSS**; las utilidades de
+Tailwind v4 viven en `@layer utilities`, y en la cascada de capas lo que no tiene capa gana siempre
+a lo que sí la tiene, sin importar el orden de carga ni la especificidad del selector. Consecuencia
+verificada, no leída: **los 590 iconos de la app se renderizan hoy a 24 px pase lo que pase** —
+`text-caption`, `text-body-s`, `text-display` sobre un icono no hacen nada. Ni `tsc`, ni el build,
+ni el inventario lo habrían visto; solo medir en pantalla. `Icon` usa `.ui-icon` (index.css), la
+misma base sin capa y sin tamaño dentro, para que la utilidad de tamaño no compita con nada. F8
+hereda una tabla de equivalencia (en la cabecera de `Icon.tsx`) y la certeza de que adoptar el
+icono no es cosmético: va a cambiar tamaños visibles en 590 sitios.
+
+**R4 (bloqueo de scroll mal desmontado) resuelto en la infraestructura, no en la app.**
+`features/crm/components/Modal.tsx` —el único overlay del repo con intento de bloqueo de scroll—
+captura el `overflow` previo del body y lo restaura al desmontar: correcto con un overlay, roto con
+dos independientes, porque el que cierra primero restaura el scroll aunque el otro siga abierto.
+`internal/overlayHooks.ts` (nuevo, compartido por `Sheet` y `Dialog`, no es una primitiva pública)
+usa un contador a nivel de módulo: solo el ÚLTIMO overlay en cerrarse restaura. **Verificado con
+overlays reales**, no simulado: se abrieron un `Dialog` y un `Sheet` a la vez y se cerraron en
+orden inverso al de apertura —primero el que se abrió después—; `document.body.style.overflow`
+siguió en `'hidden'` con uno de los dos todavía abierto, y solo se liberó al cerrar el segundo. La
+primera versión de esta prueba reutilizaba por error la misma variable de estado para dos `Sheet`
+distintos (abría 3 overlays donde el texto decía 2); se corrigió antes de dar la prueba por buena.
+
+**Límite anotado, no resuelto:** dos overlays abiertos A LA VEZ no coordinan el foco atrapado entre
+sí —cada uno escucha Tab por su cuenta—. Es el mismo caso que R3 deja abierto para F9.
+
+**Verificado**
+
+- `tsc --noEmit` y 263 pruebas en verde tras cada uno de los 14 commits.
+- `npm run build` limpio en los 14; ningún chunk del escaparate en `dist/` (el `import.meta.env.DEV`
+  envuelve el `lazy()`, no solo la ruta, así que Vite poda la rama entera).
+- Foco atrapado y Escape probados con teclado real (Tab, Shift+Tab, Escape), no con `.focus()` por
+  consola — un `.focus()` de consola no activa `:focus-visible` ni las heurísticas del navegador.
+- Un error propio detectado antes de verificar: `Chip` anidaba un `role="button"` (la X de quitar)
+  DENTRO de su botón de seleccionar — HTML inválido, el navegador repara el árbol moviendo el
+  interior a un sitio impredecible. Reescrito como hermanos antes de medir nada.
+- Otro error propio: `PageHeader` pasaba `<Icon>` como children del botón de volver en vez de la
+  prop `icon`, perdiendo el tratamiento cuadrado de «solo icono» de `Button`. Corregido.
+- Nota de método: leer `document.querySelectorAll` inmediatamente después de `.click()` en consola
+  da falsos negativos —React no aplica la actualización de estado de forma síncrona—. Misma familia
+  de error que R9 (estado caliente de HMR), aplicada a estado de React en vez de a CSS.
+
+**Qué se dejó fuera, y por qué**
+
+| Qué | Por qué |
+|---|---|
+| Adopción en pantallas de producción | Es F8. Cero pantallas importan de `ui/` fuera del escaparate |
+| Conversión del CRM a re-exports | Decisión explícita: el CRM no se toca en F7, es adopción (F8) |
+| `Skeleton` | No estaba en la lista pedida; además rompería la métrica `animate-pulse` (deuda a 29) sin el mismo tratamiento de ámbito que overlays |
+| `@types/react` en el repo | Cuesta 3 errores, los tres el mismo bug real (`setEditorTab('volume')` en `MesocycleManager.tsx`, valor fuera de la unión `EditorTab`) — fuera de alcance de F7, anotado para arreglo aparte |
+
+**Deuda anotada, no resuelta**
+
+| Hallazgo | Fase |
+|---|:--:|
+| 590 iconos con tokens de texto inertes (primitiva lista, adopción pendiente) | F8 |
+| `<select>` nativo junto a campos personalizados (primitiva lista, adopción pendiente) | F11 |
+| 39 overlays artesanales sin foco atrapado ni Escape (plantilla lista en `Sheet`/`Dialog`) | F9 |
+| `setEditorTab('volume')`, valor fuera de la unión `EditorTab` en `MesocycleManager.tsx` — invisible para `tsc` porque el repo no tiene `@types/react` | Ajena al DS |
