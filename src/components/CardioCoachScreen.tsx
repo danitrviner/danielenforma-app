@@ -184,7 +184,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-title-s text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
-        <p className="text-label text-ink-3 font-mono py-2">No hay tests pendientes.</p>
+        <p className="text-label text-ink-3 font-sans py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (
@@ -278,7 +278,7 @@ function PrescriptionTab() {
 
       {type === 'intervalos' && (
         <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
-          <p className="text-caption font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
+          <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-1.5 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}

@@ -279,7 +279,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Opciones (una por línea)</label>
+                    <label className="block font-sans text-caption text-ink-2 uppercase mb-1.5">Opciones (una por línea)</label>
                     <textarea
                       value={(q.options ?? []).join('\n')}
                       onChange={e => setQ(idx, { options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
@@ -292,7 +292,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'text' && (
                 <div className="w-40">
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Máx. caracteres</label>
+                  <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Máx. caracteres</label>
                   <input type="number" value={q.maxChars ?? ''} min={1}
                     onChange={e => setQ(idx, { maxChars: e.target.value === '' ? undefined : Number(e.target.value) })}
                     placeholder="Sin límite" className={`w-full ${MINI_INPUT_CLS}`} />

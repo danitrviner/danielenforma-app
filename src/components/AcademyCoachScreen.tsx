@@ -155,7 +155,7 @@ function CoursesTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
       ) : courses.length === 0 ? (
-        <p className="text-label text-ink-3 font-mono py-2">Todavía no hay cursos.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Todavía no hay cursos.</p>
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
@@ -256,7 +256,7 @@ function LessonsTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
       ) : lessons.length === 0 ? (
-        <p className="text-label text-ink-3 font-mono py-2">Todavía no hay lecciones.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Todavía no hay lecciones.</p>
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (

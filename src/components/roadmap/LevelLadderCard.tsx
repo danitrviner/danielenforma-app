@@ -69,7 +69,7 @@ export default function LevelLadderCard({ status }: Props) {
       )}
 
       {!nextLevel && currentLevel && (
-        <p className="text-label font-mono text-accent pt-2 border-t border-hairline">
+        <p className="text-label font-sans text-accent pt-2 border-t border-hairline">
           Has llegado al nivel más alto de la escalera. 💪
         </p>
       )}

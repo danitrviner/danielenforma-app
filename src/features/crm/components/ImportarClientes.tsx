@@ -118,7 +118,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
               {errorGeneral}
             </p>
           )}
-          <p className="font-mono text-caption text-ink-3 leading-relaxed">
+          <p className="font-sans text-caption text-ink-3 leading-relaxed">
             Columnas reconocidas: nombre (obligatoria), email, dni/nif, teléfono, dirección.
             El nombre exacto de la cabecera no importa mientras sea razonable.
           </p>

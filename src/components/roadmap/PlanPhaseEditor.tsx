@@ -191,7 +191,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-ink-2 text-label font-mono flex-1 min-w-[200px]">
+        <p className="text-ink-2 text-label font-sans flex-1 min-w-[200px]">
           Fases del plan por progresión, no por tiempo. El cliente ve la actual destacada y las siguientes como "lo que le queda por delante".
         </p>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
@@ -222,7 +222,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
           <div className="bg-surface border border-hairline rounded-surface p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
             <p className="font-sans font-bold text-white text-body-s">Ya existe una periodización nutricional</p>
-            <p className="text-label text-ink-2 font-mono leading-relaxed">
+            <p className="text-label text-ink-2 font-sans leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
             </p>
             <div className="flex flex-col gap-2 pt-1">
@@ -277,7 +277,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     {phase.status}
                   </span>
                   {phase.nutritionPhaseId && (
-                    <span className="font-mono text-caption uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 bg-data/15 text-data">
+                    <span className="font-sans text-caption uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 bg-data/15 text-data">
                       → enlazada a nutrición
                     </span>
                   )}
@@ -387,7 +387,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => addMetric(phase.id)} className="font-mono text-caption text-data hover:underline">
+                  <button onClick={() => addMetric(phase.id)} className="font-sans text-caption text-data hover:underline">
                     + Añadir métrica objetivo
                   </button>
                 </div>
@@ -406,12 +406,12 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
                 <div className="flex items-center gap-2 pt-1">
                   {phase.status === 'futura' && (
-                    <button onClick={() => activate(phase.id)} className="font-mono text-caption text-accent hover:underline">
+                    <button onClick={() => activate(phase.id)} className="font-sans text-caption text-accent hover:underline">
                       Activar esta fase ahora
                     </button>
                   )}
                   {phase.status === 'actual' && idx < sorted.length - 1 && (
-                    <button onClick={() => completeAndActivateNext(phase.id)} className="font-mono text-caption text-emerald-400 hover:underline">
+                    <button onClick={() => completeAndActivateNext(phase.id)} className="font-sans text-caption text-emerald-400 hover:underline">
                       Completar fase → activar siguiente
                     </button>
                   )}

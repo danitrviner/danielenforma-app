@@ -156,7 +156,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
           Análisis nutricional
         </h2>
-        <p className="font-mono text-label text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
       </div>
 
       {/* Summary */}
@@ -179,7 +179,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Macro deviation */}
       {report.macroDeviation.length > 0 && (
         <div className="bg-surface border border-hairline rounded-surface p-5">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
               <div key={m.category}>
@@ -209,7 +209,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
 
         <div className="space-y-1.5">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 

@@ -796,7 +796,7 @@ export default function OnboardingForm({
           trata este formulario como algo que se revisa/edita puntualmente,
           no como un wizard de un solo paso, así que no fuerza secuencia. */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between font-mono text-caption text-ink-2 uppercase tracking-wide">
+        <div className="flex items-center justify-between font-sans text-caption text-ink-2 uppercase tracking-wide">
           <span>Progreso de la ficha</span>
           <span>{coreFieldsFilled}/{coreFieldsTotal}</span>
         </div>
@@ -920,7 +920,7 @@ export default function OnboardingForm({
           ]}
         />
         <div className="space-y-1.5">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Objetivo, en tus palabras <span className="text-ink-3 normal-case">(opc)</span></p>
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Objetivo, en tus palabras <span className="text-ink-3 normal-case">(opc)</span></p>
           <textarea rows={2} value={form.goalFreeText} onChange={e => set('goalFreeText', e.target.value)}
             placeholder="Describe con tus palabras qué quieres conseguir…"
             className={`${FIELD} resize-none placeholder:text-ink-3`} />
@@ -941,7 +941,7 @@ export default function OnboardingForm({
             <TextField label="¿Dónde?" value={form.currentInjuryLocation} onChange={v => set('currentInjuryLocation', v)} />
             <SliderField label="Intensidad" min={1} max={10} value={form.currentInjuryIntensity} onChange={v => set('currentInjuryIntensity', v)} />
             <div className="space-y-1.5">
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">¿En qué gestos/movimientos/ejercicios sientes dolor?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">¿En qué gestos/movimientos/ejercicios sientes dolor?</p>
               <textarea rows={2} value={form.currentInjuryMovements} onChange={e => set('currentInjuryMovements', e.target.value)}
                 className={`${FIELD} resize-none placeholder:text-ink-3`} />
             </div>
@@ -986,7 +986,7 @@ export default function OnboardingForm({
           <div className="bg-data/5 border border-data/20 rounded-surface p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-data text-title-s">calculate</span>
-              <p className="font-mono text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
+              <p className="font-sans text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
             <div className="space-y-0.5 font-mono text-label text-ink-3">
               <p>BMR: <span className="text-white font-bold">{autoCalc.bmr.toLocaleString()} kcal</span></p>
@@ -1177,8 +1177,8 @@ export default function OnboardingForm({
         <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
 
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
-          <p className="font-mono text-caption text-ink-3 mb-2">
+          <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
+          <p className="font-sans text-caption text-ink-3 mb-2">
             Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -1250,7 +1250,7 @@ export default function OnboardingForm({
         />
         <SliderField label="Motivación actual" min={1} max={10} value={form.currentMotivation} onChange={v => set('currentMotivation', v)} />
         <div className="space-y-1.5">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Grupos musculares o ejercicios a mejorar</p>
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Grupos musculares o ejercicios a mejorar</p>
           <textarea rows={2} value={form.muscleGroupsToImprove} onChange={e => set('muscleGroupsToImprove', e.target.value)}
             className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>

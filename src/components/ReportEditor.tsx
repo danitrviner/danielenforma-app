@@ -67,7 +67,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
                 <textarea
                   value={draft.intro}
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
@@ -78,7 +78,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div className="space-y-2.5">
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
                   <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
@@ -105,7 +105,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
 
             {/* ── Right: live preview ── */}
             <div className="lg:border-l lg:border-hairline lg:pl-5">
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
               <ReportView report={draft} />
             </div>
           </div>

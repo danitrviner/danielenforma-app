@@ -202,7 +202,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
             <span className="font-sans font-extrabold text-display tracking-tighter uppercase">EN FORMA</span>
           </div>
-          <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Coaching de alto rendimiento</p>
+          <p className="text-ink-2 text-label font-sans tracking-widest uppercase">Coaching de alto rendimiento</p>
         </div>
 
         {error && (

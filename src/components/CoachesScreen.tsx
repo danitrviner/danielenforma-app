@@ -160,8 +160,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
-          <p className="font-mono text-caption text-ink-3 mt-0.5">
+          <p className="font-sans text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
+          <p className="font-sans text-caption text-ink-3 mt-0.5">
             Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
           </p>
         </div>
@@ -190,7 +190,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </h4>
 
             {qs.length === 0 && (
-              <p className="font-mono text-caption text-ink-3 italic">Sin preguntas en esta sección.</p>
+              <p className="font-sans text-caption text-ink-3 italic">Sin preguntas en esta sección.</p>
             )}
 
             <div className="space-y-3">
@@ -612,7 +612,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
-                        className={`px-3 py-1.5 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
+                        className={`px-3 py-1.5 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
                           isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId
@@ -629,12 +629,12 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           </div>
         )}
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-1">
-          <p className="font-mono text-label text-ink-2">
+          <p className="font-sans text-label text-ink-2">
             <span className="text-accent font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
             <code className="text-white">role: 'coach' | 'client'</code>
           </p>
-          <p className="font-mono text-label text-ink-2">
+          <p className="font-sans text-label text-ink-2">
             Las reglas del servidor deben impedir que un cliente se auto-asigne <code className="text-white">coach</code>{' '}
             y que nadie modifique la cuenta propietaria.
           </p>

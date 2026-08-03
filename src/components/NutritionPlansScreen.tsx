@@ -546,7 +546,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {targetMismatches.length > 0 && (
           <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-surface px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="font-mono text-caption text-amber-400 uppercase tracking-wider w-full mb-0.5">
+            <span className="font-sans text-caption text-amber-400 uppercase tracking-wider w-full mb-0.5">
               ⚠ Objetivos por comida no cuadran con el presupuesto
             </span>
             {targetMismatches.map(({ cat, sum, budget: b }) => (
@@ -617,7 +617,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
           {/* Warnings */}
           {onboardingData.dislikedFoods.length > 0 && (
-            <p className="font-mono text-caption text-ink-2">
+            <p className="font-sans text-caption text-ink-2">
               <span className="text-ink-3 mr-1">No le gusta:</span>
               {onboardingData.dislikedFoods.join(', ')}
             </p>
@@ -634,7 +634,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {/* Budget */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">
+          <h3 className="font-sans text-label text-ink-2 uppercase tracking-wider">
             Presupuesto diario (intercambios por categoría)
           </h3>
           {onboardingData && (
@@ -816,7 +816,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         >
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-ink-3 text-body-s">visibility</span>
-            <span className="font-mono text-caption text-ink-3 uppercase tracking-wide">Vista previa del atleta</span>
+            <span className="font-sans text-caption text-ink-3 uppercase tracking-wide">Vista previa del atleta</span>
           </div>
           <span className={`material-symbols-outlined text-ink-3 text-body-s transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
         </button>
@@ -910,7 +910,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ningún alimento coincide.</div>
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"

@@ -266,7 +266,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEndurance}
             onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-sans text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los perfiles de resistencia</option>
             {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -296,7 +296,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       </div>
 
       {!loading && (
-        <p className="font-mono text-caption text-ink-2 uppercase tracking-widest">
+        <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
           {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
@@ -539,7 +539,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Grupo muscular — the 14 typed keys */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Grupo muscular
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(vincula con el plan de volumen)</span>
                 </label>
@@ -585,7 +585,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Material necesario
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(sin tag = siempre disponible)</span>
                 </label>
@@ -617,7 +617,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
                 <input
                   type="url"
                   value={form.imageUrl}
@@ -629,7 +629,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Video URL */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
                 <input
                   type="url"
                   value={form.videoUrl}
@@ -641,7 +641,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Descripción global
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(visible para cualquier atleta)</span>
                 </label>

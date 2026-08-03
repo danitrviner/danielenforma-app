@@ -905,7 +905,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
           <p className="text-ink-2 text-body-s font-sans">Aún no tienes ningún menú.</p>
-          <p className="text-ink-2 text-label font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
+          <p className="text-ink-2 text-label font-sans mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
           <button
             onClick={handleStartBlank}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
@@ -946,7 +946,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </div>
             <button
               onClick={() => setViewDay(TODAY_WD)}
-              className="w-full py-2.5 rounded-control border border-accent/30 text-accent font-mono text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
+              className="w-full py-2.5 rounded-control border border-accent/30 text-accent font-sans text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
             >
               ← Volver a hoy
             </button>
@@ -959,7 +959,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="flex gap-2 flex-wrap items-center">
               {allDietsList.map(dt => (
                 <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
                     selectedDiet?.id === dt.id
                       ? 'bg-accent text-black shadow-md'
                       : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
@@ -1209,7 +1209,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       <div className="p-3 border-t border-hairline bg-bg/40 space-y-2">
                         {meal.items.length === 0 ? (
                           <div className="text-center py-4">
-                            <p className="font-mono text-caption text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>
+                            <p className="font-sans text-caption text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>
                             <button
                               onClick={() => handleOpenAddPicker(meal.id)}
                               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
@@ -1444,7 +1444,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   Cambiar comida
                 </h3>
                 {swapSourceRecipe && (
-                  <span className="font-mono text-caption text-ink-2 uppercase">
+                  <span className="font-sans text-caption text-ink-2 uppercase">
                     Alternativas a {swapSourceRecipe.name} (±10% kcal)
                   </span>
                 )}
@@ -1458,7 +1458,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {swapCandidates.length === 0 ? (
-                <div className="text-center py-10 font-mono text-label text-ink-2 italic">
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">
                   Sin alternativas nutricionalmente similares disponibles.
                 </div>
               ) : swapCandidates.map(recipe => (
@@ -1493,7 +1493,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
               <div>
                 <h3 className="font-sans font-bold text-title-m text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
-                <span className="font-mono text-caption text-ink-2 uppercase">
+                <span className="font-sans text-caption text-ink-2 uppercase">
                   {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                 </span>
               </div>
@@ -1530,7 +1530,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ningún alimento coincide.</div>
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
                   className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"

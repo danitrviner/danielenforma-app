@@ -292,7 +292,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       </div>
 
       {recipes.length === 0 ? (
-        <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
+        <div className="text-center py-10 text-ink-2 font-sans text-label uppercase tracking-widest">
           Aún no has creado ninguna receta propia. La biblioteca Indya de abajo tiene 8.850 más.
         </div>
       ) : (
@@ -369,7 +369,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-title-s">library_books</span>
           Biblioteca Indya
-          <span className="font-mono text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
+          <span className="font-sans text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
 
         <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
@@ -433,7 +433,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="font-mono text-caption text-ink-2 uppercase">
+            <p className="font-sans text-caption text-ink-2 uppercase">
               {indyaSearch
                 ? `${filteredIndya.length} de ${indyaRecipes.length} resultados en esta página`
                 : `${indyaRecipes.length} receta${indyaRecipes.length !== 1 ? 's' : ''} cargada${indyaRecipes.length !== 1 ? 's' : ''}${indyaHasMore ? ' · hay más' : ''}`
@@ -488,7 +488,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Photo URL */}
             <div className="space-y-1.5">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">URL de foto (opcional)</label>
+              <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">URL de foto (opcional)</label>
               <input
                 type="url"
                 value={form.photoUrl}
@@ -606,7 +606,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Extras */}
             <div className="space-y-2">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Extras (condimentos, sal…)</label>
+              <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">Extras (condimentos, sal…)</label>
               <div className="flex gap-2">
                 <input
                   type="text"

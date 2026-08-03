@@ -125,7 +125,7 @@ export default function ClientDietsPanel({
           <div className="py-6 text-center">
             <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">nutrition</span>
             <p className="text-label text-ink-2">No hay dietas creadas para este atleta.</p>
-            <p className="text-caption text-ink-2 mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
+            <p className="text-caption text-ink-2 mt-1 font-sans">Pulsa "Nueva dieta" para crear la primera.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -198,7 +198,7 @@ export default function ClientDietsPanel({
             </span>
           )}
         </div>
-        <p className="text-caption text-ink-2 font-mono">
+        <p className="text-caption text-ink-2 font-sans">
           Asigna una dieta a cada día. El atleta la verá cargada automáticamente.
         </p>
         <div className="overflow-x-auto">
@@ -253,7 +253,7 @@ export default function ClientDietsPanel({
             Generar menú
           </button>
         </div>
-        <p className="text-caption text-ink-2 font-mono">
+        <p className="text-caption text-ink-2 font-sans">
           Reparte recetas reales por comida según los puntos ya pautados. Se genera como borrador — el atleta solo lo ve tras publicarlo.
         </p>
 
@@ -364,7 +364,7 @@ export default function ClientDietsPanel({
             <span className="material-symbols-outlined text-data text-body-s">tune</span>
             Modos de alimentación habilitados
           </h3>
-          <p className="text-caption text-ink-2 font-mono">
+          <p className="text-caption text-ink-2 font-sans">
             Si hay varios activos, el atleta podrá elegir entre ellos en su tracker.
           </p>
           <div className="flex gap-3 flex-wrap">

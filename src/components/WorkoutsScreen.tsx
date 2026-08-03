@@ -429,7 +429,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
       {/* Name */}
       <div>
-        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la rutina *</label>
+        <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la rutina *</label>
         <input
           type="text"
           autoFocus

@@ -286,7 +286,7 @@ export default function MyDietsScreen({ profile }: Props) {
               </div>
               <div className="p-3 space-y-2 border-t border-hairline">
                 {meal.items.length === 0 ? (
-                  <p className="text-center py-2 font-mono text-caption text-ink-2 italic">Sin alimentos.</p>
+                  <p className="text-center py-2 font-sans text-caption text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-surface bg-surface border border-hairline">
                     <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
@@ -335,7 +335,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 <div>
                   <h3 className="font-sans font-bold text-title-m text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
-                    <span className="font-mono text-caption text-ink-2 uppercase">
+                    <span className="font-sans text-caption text-ink-2 uppercase">
                       {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                     </span>
                   )}
@@ -378,7 +378,7 @@ export default function MyDietsScreen({ profile }: Props) {
               <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
                 {pickerTab === 'alimentos' ? (
                   filteredFoods.length === 0 ? (
-                    <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ningún alimento coincide.</div>
+                    <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
                       className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"

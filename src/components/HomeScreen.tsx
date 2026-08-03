@@ -113,7 +113,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             <Skeleton className="h-11 w-full rounded-surface" />
           </div>
         ) : thisWeekPending.length === 0 && overdue.length === 0 ? (
-          <p className="text-label text-ink-3 font-mono py-2">Sin entrenamientos pendientes esta semana.</p>
+          <p className="text-label text-ink-3 font-sans py-2">Sin entrenamientos pendientes esta semana.</p>
         ) : (
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
@@ -168,7 +168,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         >
           <span className="material-symbols-outlined text-accent text-title-l">favorite</span>
           <span className="font-sans font-bold text-body-s text-white uppercase tracking-tight">Cardio</span>
-          <span className="text-caption text-ink-2 font-mono">Zonas y FC en directo</span>
+          <span className="text-caption text-ink-2 font-sans">Zonas y FC en directo</span>
         </button>
       </div>
 

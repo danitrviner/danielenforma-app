@@ -212,7 +212,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             </div>
           ))}
           {filtered.length === 0 && !loading && (
-            <div className="text-center py-12 text-ink-2 font-mono text-label italic">
+            <div className="text-center py-12 text-ink-2 font-sans text-label italic">
               Ningún alimento coincide.
             </div>
           )}
@@ -255,7 +255,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 </div>
               </div>
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Descripción (1 intercambio = ...) *</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase mb-1.5">Descripción (1 intercambio = ...) *</label>
                 <textarea
                   value={form.label}
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}

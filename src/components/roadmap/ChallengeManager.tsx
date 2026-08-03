@@ -142,7 +142,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   }
 
   if (loading) {
-    return <p className="text-label text-ink-2 font-mono animate-pulse py-4">Cargando retos...</p>;
+    return <p className="text-label text-ink-2 font-sans animate-pulse py-4">Cargando retos...</p>;
   }
 
   const currentProgress = current ? evaluateChallengeProgress(current, challengeData, today) : null;
@@ -152,7 +152,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
     <div className="space-y-5">
       {/* Reto actual */}
       <div className="bg-surface border border-hairline rounded-surface p-4">
-        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
         {current ? (
           <>
             <div className="flex items-center justify-between">
@@ -174,7 +174,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             )}
           </>
         ) : (
-          <p className="text-label text-ink-3 font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
+          <p className="text-label text-ink-3 font-sans">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
           <p className="font-mono text-caption text-ink-2 mt-3 pt-3 border-t border-hairline">
@@ -264,7 +264,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               />
             </div>
             {overwritingAuto && (
-              <p className="font-mono text-caption text-orange-400">
+              <p className="font-sans text-caption text-orange-400">
                 Ya hay un reto automático en curso con progreso — se sobrescribirá.
               </p>
             )}
@@ -334,7 +334,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           </div>
         )}
         {templates.length === 0 ? (
-          <p className="text-label text-ink-3 font-mono">Sin plantillas todavía.</p>
+          <p className="text-label text-ink-3 font-sans">Sin plantillas todavía.</p>
         ) : (
           <div className="space-y-1.5">
             {templates.map(t => (

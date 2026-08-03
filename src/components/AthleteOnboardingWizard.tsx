@@ -263,7 +263,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ))}
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
               <div className="flex flex-wrap gap-2">
                 {CAPACITIES.map(c => (
                   <Chip key={c.id} selected={goalCapacity === c.id} onClick={() => setGoalCapacity(c.id)}>{c.label}</Chip>
@@ -271,7 +271,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
               <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={2}
                 placeholder="Ej: quiero verme bien en verano y sentirme con energía" className={`${inputCls} resize-none`} />
             </div>
@@ -289,7 +289,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ))}
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
               <div className="flex flex-wrap gap-2">
                 {EQUIPMENT_OPTIONS.map(eq => (
                   <Chip key={eq} selected={equipment.includes(eq)}
@@ -300,7 +300,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
               <div className="space-y-2">
                 <Chip selected={noInjuries} onClick={() => { setNoInjuries(v => !v); if (!noInjuries) setInjuries(''); }}>
                   No tengo lesiones
@@ -327,7 +327,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ))}
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
               <div className="flex gap-2">
                 {[3, 4, 5].map(n => (
                   <Chip key={n} selected={mealCount === n} onClick={() => setMealCount(n)}>{n} comidas</Chip>
@@ -335,30 +335,30 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(n => (
                   <Chip key={n} selected={menuVariety === n} onClick={() => setMenuVariety(n)}>{n}</Chip>
                 ))}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="font-mono text-caption text-ink-3">Repetitivo, sencillo</span>
+                <span className="font-sans text-caption text-ink-3">Repetitivo, sencillo</span>
                 <span className="font-mono text-caption text-ink-3">Muy variado</span>
               </div>
             </div>
             <div>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
               <div className="flex gap-2">
                 <Chip selected={batchCookingPreferred} onClick={() => setBatchCookingPreferred(true)}>Sí, cocino de golpe</Chip>
                 <Chip selected={!batchCookingPreferred} onClick={() => setBatchCookingPreferred(false)}>No, cocino cada día</Chip>
               </div>
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
               <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej: lactosa, frutos secos" className={inputCls} />
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
               <input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="Ej: pescado azul, coliflor" className={inputCls} />
             </div>
           </StepShell>

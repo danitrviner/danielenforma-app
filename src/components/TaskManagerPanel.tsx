@@ -127,7 +127,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : tasks.length === 0 ? (
-        <p className="text-label text-ink-3 font-mono py-2">Sin tareas asignadas.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Sin tareas asignadas.</p>
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(t => (

@@ -90,7 +90,7 @@ export default function ClientWorkoutsPanel({
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Periodización de entrenamiento
         </h2>
-        <p className="font-mono text-label text-ink-2 mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
       </div>
       <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
       <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
@@ -291,7 +291,7 @@ export default function ClientWorkoutsPanel({
             <div>
               <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Rutina *</label>
               {workouts.length === 0 ? (
-                <p className="text-label text-ink-2 font-mono italic">No hay rutinas disponibles.</p>
+                <p className="text-label text-ink-2 font-sans italic">No hay rutinas disponibles.</p>
               ) : (
                 <select
                   value={assignWorkoutId}

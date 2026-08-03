@@ -324,7 +324,7 @@ export default function ClientSetupPanel({
         )}
 
         {extraTasks.length === 0 ? (
-          <p className="text-label text-ink-3 font-mono py-2">Sin tareas extra.</p>
+          <p className="text-label text-ink-3 font-sans py-2">Sin tareas extra.</p>
         ) : (
           <div className="space-y-2">
             {extraTasks.map(task => (

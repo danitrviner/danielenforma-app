@@ -89,7 +89,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
                 <span className="material-symbols-outlined text-accent text-title-s">eco</span>
                 Tus verduras habituales
               </h3>
-              <p className="font-mono text-caption text-ink-2 mt-1">
+              <p className="font-sans text-caption text-ink-2 mt-1">
                 Marca las verduras que sueles comer en tu día a día — así tu entrenador afina la estimación de vitaminas y minerales.
               </p>
             </div>

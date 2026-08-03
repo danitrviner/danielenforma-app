@@ -59,7 +59,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             <span className="material-symbols-outlined text-title-m text-ink-2">flag</span>
             <div>
               <p className="font-sans font-bold text-label text-ink">No continúa</p>
-              <p className="font-mono text-caption text-ink-3">Termina el programa aquí</p>
+              <p className="font-sans text-caption text-ink-3">Termina el programa aquí</p>
             </div>
           </button>
         </div>

@@ -72,7 +72,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
         {comparison.count > 0 && (
           <div className="bg-surface border border-hairline rounded-surface p-3">
-            <p className="text-caption font-mono uppercase text-ink-2 mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
+            <p className="text-caption font-sans uppercase text-ink-2 mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
             <div className="flex gap-4 text-label font-mono">
               {pctDelta(session.durationSec, comparison.durationSec) && (
                 <span className="text-white">Duración {pctDelta(session.durationSec, comparison.durationSec)}</span>

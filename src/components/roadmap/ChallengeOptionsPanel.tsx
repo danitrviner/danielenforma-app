@@ -101,13 +101,13 @@ export default function ChallengeOptionsPanel({
       </div>
 
       {overwriting && (
-        <p className="font-mono text-caption text-orange-400">
+        <p className="font-sans text-caption text-orange-400">
           Ya hay un reto automático en curso con progreso — enviar una opción lo sobrescribirá.
         </p>
       )}
 
       {options.length === 0 ? (
-        <p className="text-label text-ink-3 font-mono">Sin datos suficientes todavía para proponer opciones.</p>
+        <p className="text-label text-ink-3 font-sans">Sin datos suficientes todavía para proponer opciones.</p>
       ) : (
         <div className="space-y-2">
           {options.map(opt => (
@@ -139,7 +139,7 @@ export default function ChallengeOptionsPanel({
         </div>
       )}
 
-      <p className="text-caption text-ink-3 font-mono">
+      <p className="text-caption text-ink-3 font-sans">
         Si no eliges ninguna antes del martes, se enviará automáticamente la de mayor puntuación.
       </p>
 
@@ -150,7 +150,7 @@ export default function ChallengeOptionsPanel({
         {showEligible && (
           <div className="mt-2 space-y-2">
             {candidateExercises.length === 0 ? (
-              <p className="text-label text-ink-3 font-mono">Aún no hay ejercicios con series registradas.</p>
+              <p className="text-label text-ink-3 font-sans">Aún no hay ejercicios con series registradas.</p>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {candidateExercises.map(ex => (

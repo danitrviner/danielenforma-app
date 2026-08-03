@@ -93,7 +93,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <p className="text-ink-2 text-label font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
+          <p className="text-ink-2 text-label font-sans">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
           <p className="font-mono text-caption text-ink-2 mt-1">
             Nivel actual del atleta: <span className="text-accent font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>

@@ -85,7 +85,7 @@ function QuestionnaireForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         {questionnaire.questions.map((q: QuestionnaireQuestion) => (
           <div key={q.id}>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">
+            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
               {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
             </label>
             {q.helpText && <p className="text-caption text-ink-2/70 mb-2">{q.helpText}</p>}
@@ -375,7 +375,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
-            className={`px-2.5 py-1 rounded-control font-mono text-caption uppercase tracking-wide border transition-all ${
+            className={`px-2.5 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -384,7 +384,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
-            className={`px-2.5 py-1 rounded-control font-mono text-caption uppercase tracking-wide border transition-all ${
+            className={`px-2.5 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -449,7 +449,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         {bwMode === 'weekly_avg' && (
-          <p className="font-mono text-caption text-ink-2/70 -mt-1">
+          <p className="font-sans text-caption text-ink-2/70 -mt-1">
             Pon un único valor con la media que ya llevas calculada de la semana — no hace falta que te peses aquí a diario.
           </p>
         )}
@@ -515,7 +515,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               return (
                 <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
                   <p className="font-sans text-label text-ink-2">{q.title}</p>
-                  <span className="font-mono text-caption text-ink-3 uppercase">
+                  <span className="font-sans text-caption text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                   </span>
                 </div>
@@ -539,7 +539,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <p className="font-sans font-bold text-body-s text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
-                <p className="font-mono text-caption text-ink-2">Sube las fotos abajo</p>
+                <p className="font-sans text-caption text-ink-2">Sube las fotos abajo</p>
               </div>
             ))}
           </div>
@@ -561,7 +561,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             {upcomingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
                 <p className="font-sans text-label text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
-                <span className="font-mono text-caption text-ink-3 uppercase">
+                <span className="font-sans text-caption text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
               </div>
@@ -608,7 +608,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               )}
               {item.coachFeedback ? (
                 <div className="text-label border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r-control p-2">
-                  <span className="font-mono font-bold text-accent block mb-1">Nota del Entrenador:</span>
+                  <span className="font-sans font-bold text-accent block mb-1">Nota del Entrenador:</span>
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (

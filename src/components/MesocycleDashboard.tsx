@@ -149,7 +149,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}
-        <p className="text-ink-3 text-label font-mono mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
+        <p className="text-ink-3 text-label font-sans mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
       </div>
     );
   }
@@ -162,7 +162,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (
-          <span className="font-mono text-caption text-ink-2 animate-pulse">Cargando datos…</span>
+          <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando datos…</span>
         )}
       </div>
 

@@ -301,7 +301,7 @@ const DayCard: React.FC<{
       <select
         value=""
         onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-control px-2 py-1 text-caption font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
       >
         <option value="">+ Añadir grupo…</option>
         {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (
@@ -378,7 +378,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
             </div>
             <div className="p-3 space-y-2">
               {group.exercises.length === 0 ? (
-                <p className="text-label text-ink-3 font-mono px-1 py-2">Sin ejercicios en este día.</p>
+                <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
               ) : (
                 group.exercises.map((we, exIdx) => {
                   const ex = allExercises.find(e => e.id === we.exerciseId);
@@ -443,7 +443,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                 const isCurrent = m.id === editing.id;
                 return (
                   <th key={m.id} className={`px-3 py-3 border-b border-r border-hairline last:border-r-0 text-center align-bottom ${isCurrent ? 'bg-accent/5' : ''}`}>
-                    <span className="font-mono text-caption text-accent uppercase tracking-wider block">
+                    <span className="font-sans text-caption text-accent uppercase tracking-wider block">
                       {isCurrent ? `Meso #${m.number} (actual)` : `Meso #${m.number}`}
                     </span>
                     <span className="font-mono text-caption text-ink-2 block mt-0.5">{m.startDate}</span>
@@ -557,7 +557,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
       </div>
 
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between">
-        <span className="font-mono text-label text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
+        <span className="font-sans text-label text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
         <span className="font-mono font-bold text-title-m text-white">{currentTotal}</span>
       </div>
 
@@ -1132,7 +1132,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <select
               value={selectedEmail}
               onChange={e => { setSelectedEmail(e.target.value); setEditing(null); setGenPhase('idle'); }}
-              className="bg-raised border border-hairline text-white font-mono text-body-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
+              className="bg-raised border border-hairline text-white font-sans text-body-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
             >
               <option value="">— Selecciona un atleta —</option>
               {athletes.map(a => (
@@ -1180,7 +1180,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               </div>
             )}
             {!loadingMeso && mesocycles.length === 0 && (
-              <p className="text-center text-ink-2 font-mono text-label py-6">Sin mesociclos todavía.</p>
+              <p className="text-center text-ink-2 font-sans text-label py-6">Sin mesociclos todavía.</p>
             )}
 
             {mesocycles.map(m => (
@@ -1331,7 +1331,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         {editing.distribution && isStale(editing, editing.distribution) && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-surface">
                             <span className="material-symbols-outlined text-body-s text-orange-400">warning</span>
-                            <span className="font-mono text-label text-orange-300">
+                            <span className="font-sans text-label text-orange-300">
                               El volumen o los días cambiaron — recalcula para actualizar
                             </span>
                           </div>
@@ -1411,7 +1411,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             <button
                               onClick={handleGenerate}
                               disabled={genPhase === 'loading'}
-                              className="flex items-center gap-2 px-4 py-2.5 bg-raised border border-accent/40 text-accent font-mono text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-2.5 bg-raised border border-accent/40 text-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
                             >
                               {genPhase === 'loading' ? (
                                 <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Analizando…</>
@@ -1427,7 +1427,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       )}
 
                       {editing.distribution && isStale(editing, editing.distribution) && (
-                        <p className="font-mono text-caption text-ink-3 pt-2">Recalcula la distribución antes de generar rutinas.</p>
+                        <p className="font-sans text-caption text-ink-3 pt-2">Recalcula la distribución antes de generar rutinas.</p>
                       )}
                     </>
                   )}
@@ -1518,7 +1518,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-label font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                                className="w-full bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-label font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (
@@ -1532,7 +1532,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         ))}
                       </div>
 
-                      <p className="font-mono text-caption text-ink-3">
+                      <p className="font-sans text-caption text-ink-3">
                         Los cambios en sets/reps/RIR se aplican igual en todas las semanas.
                         Después de asignar, edita semanas concretas en la vista de entrenamientos del atleta.
                       </p>
@@ -1570,7 +1570,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       </div>
                       <button
                         onClick={() => setGenPhase('idle')}
-                        className="px-4 py-2 font-mono text-label text-ink-2 border border-hairline rounded-control hover:text-white hover:border-hairline transition-all"
+                        className="px-4 py-2 font-sans text-label text-ink-2 border border-hairline rounded-control hover:text-white hover:border-hairline transition-all"
                       >
                         Volver a la distribución
                       </button>
@@ -1616,7 +1616,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   </button>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-label text-red-400">¿Eliminar este mesociclo?</span>
+                    <span className="font-sans text-label text-red-400">¿Eliminar este mesociclo?</span>
                     <button onClick={handleDelete}
                       className="px-3 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-label rounded-control hover:bg-red-500/30 transition-all"
                     >Confirmar</button>
@@ -1676,7 +1676,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               ) : templates.length === 0 ? (
                 <div className="text-center py-10">
                   <span className="material-symbols-outlined text-display text-ink-3 block mb-2">library_books</span>
-                  <p className="font-mono text-label text-ink-2">
+                  <p className="font-sans text-label text-ink-2">
                     Sin plantillas. Crea una en Ejercicios → Plantillas.
                   </p>
                 </div>

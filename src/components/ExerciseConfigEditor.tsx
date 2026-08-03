@@ -188,7 +188,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               </span>
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
               <input
                 type="number" min={0}
                 value={we.restSeconds}
@@ -239,7 +239,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
 
       {/* Técnica de alta intensidad */}
       <div className="space-y-1.5">
-        <label className="block font-mono text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
+        <label className="block font-sans text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
@@ -271,7 +271,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
 
       {/* Warm-up (series de aproximación) */}
       <div className="space-y-2 border-t border-hairline pt-3">
-        <label className="block font-mono text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
+        <label className="block font-sans text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
         <div className="flex items-center gap-1.5 flex-wrap">
           {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
             <button

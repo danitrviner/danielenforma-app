@@ -299,7 +299,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {showList ? (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
           {chats.length === 0 && (
-            <p className="text-ink-2 font-mono text-label text-center py-8">Sin chats guardados todavía.</p>
+            <p className="text-ink-2 font-sans text-label text-center py-8">Sin chats guardados todavía.</p>
           )}
           {chats.map(c => (
             <div key={c.id}
@@ -390,7 +390,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           {/* Propuestas pendientes del cliente activo — la IA propone, Dani aprueba */}
           {proposals.length > 0 && (
             <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto">
-              <p className="text-caption font-mono font-bold uppercase tracking-wider text-amber-300/80">
+              <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
                 {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
               </p>
               {proposals.map(p => {

@@ -82,7 +82,7 @@ export default function WeeklyAnalysisButton() {
               )}
             </div>
             {result && (
-              <div className="px-4 py-2.5 border-t border-hairline text-caption font-mono text-ink-2">
+              <div className="px-4 py-2.5 border-t border-hairline text-caption font-sans text-ink-2">
                 Guardado en tus notas de coach.
               </div>
             )}

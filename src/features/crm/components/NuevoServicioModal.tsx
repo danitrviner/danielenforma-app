@@ -136,7 +136,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <button
             type="button"
             onClick={sugerirFin}
-            className="font-mono text-caption uppercase tracking-widest text-accent hover:underline"
+            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
           >
             Calcular fin desde la periodicidad
           </button>

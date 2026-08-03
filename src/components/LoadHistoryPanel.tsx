@@ -355,7 +355,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         </h3>
         <div className="py-8 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-2">monitoring</span>
-          <p className="text-label text-ink-2 font-mono">Sin registros de carga aún.</p>
+          <p className="text-label text-ink-2 font-sans">Sin registros de carga aún.</p>
         </div>
       </div>
     );
@@ -409,7 +409,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Exercise selector (only when 1RM metric is active) ── */}
       {ormActive && loggedExercises.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="font-mono text-caption uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
+          <span className="font-sans text-caption uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
             Ejercicio (1RM):
           </span>
           <select
@@ -505,7 +505,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Chart ── */}
       {activeMetrics.size === 0 ? (
         <div className="py-6 text-center border border-dashed border-hairline rounded-surface">
-          <p className="font-mono text-caption text-ink-3">Selecciona al menos una métrica.</p>
+          <p className="font-sans text-caption text-ink-3">Selecciona al menos una métrica.</p>
         </div>
       ) : (
         <div>

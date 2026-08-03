@@ -62,7 +62,7 @@ export default function LiveSession({
       </div>
 
       {deviceStatus === 'reconnecting' && (
-        <p className="mx-5 mt-2 text-center text-caption font-mono uppercase text-white bg-black/25 rounded-surface py-1.5">
+        <p className="mx-5 mt-2 text-center text-caption font-sans uppercase text-white bg-black/25 rounded-surface py-1.5">
           Reconectando con la banda… la sesión sigue grabándose
         </p>
       )}
@@ -87,7 +87,7 @@ export default function LiveSession({
 
         {!intervalBlocks && targetZone && (
           <div className="bg-black/25 rounded-surface p-3.5 space-y-2">
-            <p className="text-caption font-mono uppercase text-white/80 text-center">
+            <p className="text-caption font-sans uppercase text-white/80 text-center">
               Objetivo: {ZONE_LABEL[targetZone]}
               {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}
             </p>
@@ -101,11 +101,11 @@ export default function LiveSession({
 
         <div className="flex justify-center gap-3">
           <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
-            <p className="text-caption font-mono uppercase text-white/70">FC prom.</p>
+            <p className="text-caption font-sans uppercase text-white/70">FC prom.</p>
             <p className="text-title-m font-sans font-bold text-white tabular-nums">{avgHR ?? '--'}</p>
           </div>
           <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
-            <p className="text-caption font-mono uppercase text-white/70">FC máx.</p>
+            <p className="text-caption font-sans uppercase text-white/70">FC máx.</p>
             <p className="text-title-m font-sans font-bold text-white tabular-nums">{maxHRSoFar ?? '--'}</p>
           </div>
         </div>

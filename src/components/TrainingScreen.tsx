@@ -749,7 +749,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {getPersonalNote(we.exerciseId) && (
                 <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
-                  <p className="font-mono text-caption text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
+                  <p className="font-sans text-caption text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
                   <p className="text-label text-accent">{getPersonalNote(we.exerciseId)}</p>
                 </div>
               )}
@@ -759,7 +759,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Nota del entrenamiento completo */}
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-          <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
+          <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
           <textarea
             value={workoutNoteInput}
             onChange={e => setWorkoutNoteInput(e.target.value)}
@@ -866,7 +866,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {/* Week summary chip */}
         <div className="flex items-center gap-2 bg-surface border border-hairline px-4 py-2 rounded-surface">
           <span className="material-symbols-outlined text-accent text-body-s">calendar_today</span>
-          <span className="font-mono text-label text-ink-2">Esta semana:</span>
+          <span className="font-sans text-label text-ink-2">Esta semana:</span>
           <span className="font-mono text-body-s font-bold text-white">{weekCompleted}/{weekAssignments.length}</span>
           <span className="font-mono text-label text-ink-2">completados</span>
         </div>
@@ -899,7 +899,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <button
                 key={f}
                 onClick={() => setListFilter(f)}
-                className={`px-4 py-2 rounded-full font-mono text-caption uppercase font-bold border transition-all min-h-[36px] ${
+                className={`px-4 py-2 rounded-full font-sans text-caption uppercase font-bold border transition-all min-h-[36px] ${
                   listFilter === f
                     ? 'bg-accent border-accent text-black'
                     : 'border-hairline text-ink-2 hover:border-hairline hover:text-white'

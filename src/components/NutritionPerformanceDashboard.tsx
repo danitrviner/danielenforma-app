@@ -266,7 +266,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <span className="font-mono text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
+              <span className="font-sans text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
               <h2 className="font-sans font-bold text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
@@ -331,7 +331,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Chart */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
           <div className="inline-flex bg-field border border-hairline rounded-surface p-0.5 gap-0.5">
             {([
               { id: 'both', label: 'Ambas' },
@@ -447,7 +447,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Energy balance of the active phase */}
       {activePhase && activeBalance && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-label">

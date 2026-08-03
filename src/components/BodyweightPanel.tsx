@@ -291,7 +291,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {/* List */}
           {logs.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                 Historial{logs.length > 20 && !showAll ? ` · mostrando 20 de ${logs.length}` : ` · ${logs.length} registros`}
               </p>
               <div className="space-y-1 max-h-64 overflow-y-auto pr-1">

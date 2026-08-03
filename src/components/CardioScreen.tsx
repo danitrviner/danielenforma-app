@@ -519,12 +519,12 @@ export default function CardioScreen({ profile }: Props) {
     <div className="space-y-6">
       <header>
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
-        <p className="text-label text-ink-2 font-mono mt-1">Zonas de FC y dashboard en vivo</p>
+        <p className="text-label text-ink-2 font-sans mt-1">Zonas de FC y dashboard en vivo</p>
       </header>
 
       {!cardioProfile && (
         <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
-          <p className="text-label text-ink-2 font-mono">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
+          <p className="text-label text-ink-2 font-sans">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
         </div>
       )}
 
@@ -545,7 +545,7 @@ export default function CardioScreen({ profile }: Props) {
             </button>
           )}
 
-          {state === 'connecting' && <p className="text-label text-ink-2 font-mono text-center py-4">Conectando con la banda...</p>}
+          {state === 'connecting' && <p className="text-label text-ink-2 font-sans text-center py-4">Conectando con la banda...</p>}
 
           {error && <p className="text-label text-red-400 font-mono">{error}</p>}
 
@@ -626,7 +626,7 @@ export default function CardioScreen({ profile }: Props) {
               )}
             </div>
 
-            {filtered.length === 0 && <p className="text-label text-ink-2 font-mono py-3 text-center">Ningún entreno con estos filtros.</p>}
+            {filtered.length === 0 && <p className="text-label text-ink-2 font-sans py-3 text-center">Ningún entreno con estos filtros.</p>}
 
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}

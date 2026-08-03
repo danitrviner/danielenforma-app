@@ -226,7 +226,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
-        <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
+        <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
     );
   }
@@ -256,7 +256,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
-        <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
+        <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
     );
   }

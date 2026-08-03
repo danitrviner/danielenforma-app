@@ -160,7 +160,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
           <div className="h-1.5 bg-raised rounded-full overflow-hidden">
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-widest mt-2 text-center">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-widest mt-2 text-center">
             +{kcalEarned.toLocaleString('es-ES')} kcal por actividad
           </p>
         </>

@@ -177,7 +177,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
             {/* Iron Calendar */}
             <div>
-              <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
+              <span className="font-sans text-caption text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
               <div className="grid grid-cols-7 gap-2">
                 {Array.from({ length: 14 }).map((_, idx) => {
                   const isActive = idx < Math.min(14, streakDays % 14 || 6);
@@ -375,7 +375,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
 
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
+          <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
           <input
             type="number"
             step="0.1"

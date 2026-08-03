@@ -14,7 +14,7 @@ export default function PhasePathStepper({ phases }: Props) {
 
   return (
     <div className="rounded-canvas border border-hairline bg-bg p-5">
-      <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-4">
+      <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">
         Tu camino · lo que te queda por delante
       </p>
       <div className="flex flex-col gap-3">

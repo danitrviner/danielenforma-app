@@ -210,7 +210,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             </>
           )}
           {loadingResponses && (
-            <span className="font-mono text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
+            <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
           )}
         </div>
       </header>

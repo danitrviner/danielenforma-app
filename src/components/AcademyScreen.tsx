@@ -63,7 +63,7 @@ export default function AcademyScreen({ profile }: Props) {
       <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
         <span className="material-symbols-outlined text-display text-ink-3">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
-        <p className="text-label text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
+        <p className="text-label text-ink-2 font-sans max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
       </div>
     );
   }
@@ -187,11 +187,11 @@ export default function AcademyScreen({ profile }: Props) {
     <div className="space-y-6">
       <header>
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">TrainingLab</h1>
-        <p className="text-label text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
+        <p className="text-label text-ink-2 font-sans mt-1">Academia de formación — entrenamiento, nutrición y más</p>
       </header>
 
       {publishedCourses.length === 0 && (
-        <p className="text-label text-ink-3 font-mono py-6 text-center">Todavía no hay cursos publicados.</p>
+        <p className="text-label text-ink-3 font-sans py-6 text-center">Todavía no hay cursos publicados.</p>
       )}
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (

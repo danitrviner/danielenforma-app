@@ -38,7 +38,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
           <span className="material-symbols-outlined text-title-m" style={{ color: accent }}>
             {achieved ? 'emoji_events' : 'flag'}
           </span>
-          <p className="font-mono text-caption uppercase tracking-widest text-ink-2">
+          <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
             Reto de la semana · de tu entrenador
           </p>
         </div>
@@ -91,10 +91,10 @@ export function ChallengePendingCard() {
         <span className="material-symbols-outlined text-title-m animate-pulse" style={{ color: 'var(--color-accent)' }}>
           hourglass_top
         </span>
-        <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
       <h3 className="font-sans font-bold text-title-m text-white leading-tight">Tu entrenador está preparando tu reto</h3>
-      <p className="text-ink-2 text-label font-mono leading-relaxed">
+      <p className="text-ink-2 text-label font-sans leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>
     </div>

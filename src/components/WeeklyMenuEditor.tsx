@@ -283,20 +283,20 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </button>
           <div>
             <h2 className="font-sans font-bold text-title-l text-white">Generar menú semanal</h2>
-            <p className="text-ink-2 text-label mt-0.5 font-mono">Las recetas son la base — puntos de intercambios ya pautados por día</p>
+            <p className="text-ink-2 text-label mt-0.5 font-sans">Las recetas son la base — puntos de intercambios ya pautados por día</p>
           </div>
         </div>
 
         {scheduledCount === 0 ? (
           <div className="bg-amber-400/10 border border-amber-400/20 rounded-surface p-4 flex items-start gap-2">
             <span className="material-symbols-outlined text-amber-400 text-title-s">warning</span>
-            <p className="font-mono text-caption text-amber-300">
+            <p className="font-sans text-caption text-amber-300">
               Este atleta no tiene ningún día programado en "Programación semanal". Asigna al menos una dieta a un día antes de generar el menú.
             </p>
           </div>
         ) : (
           <div className="bg-surface border border-hairline rounded-surface p-4">
-            <p className="font-mono text-caption text-ink-3 uppercase mb-3">Programación semanal (fuente de los puntos)</p>
+            <p className="font-sans text-caption text-ink-3 uppercase mb-3">Programación semanal (fuente de los puntos)</p>
             <div className="grid grid-cols-7 gap-1.5">
               {WEEK_DAYS.map(day => {
                 const dietId = schedule[day];
@@ -325,7 +325,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="font-mono text-caption text-ink-2 uppercase">Ingestas (de la anamnesis, ajustable)</label>
+            <label className="font-sans text-caption text-ink-2 uppercase">Ingestas (de la anamnesis, ajustable)</label>
             <span className={`font-mono text-caption font-bold ${pctSum === 100 ? 'text-emerald-400' : 'text-red-400'}`}>Suma: {pctSum}%</span>
           </div>
           <div className="space-y-2">
@@ -359,14 +359,14 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               <span className="material-symbols-outlined text-title-s text-accent">inventory_2</span>
               Batch cooking
             </span>
-            <span className="block font-mono text-caption text-ink-2 mt-0.5">
+            <span className="block font-sans text-caption text-ink-2 mt-0.5">
               Una sola receta por comida para toda la semana, portada por día. El atleta cocina de golpe y se lo reparte.
             </span>
           </span>
         </button>
 
         <div className={batch ? 'opacity-40 pointer-events-none' : ''}>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">
+          <label className="block font-sans text-caption text-ink-2 uppercase mb-2">
             Variedad — cuánto se repiten las recetas entre días
           </label>
           <div className="flex gap-2">
@@ -389,7 +389,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         {/* Dish-type filter — prefilled from the athlete's preference */}
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Tipos de plato</label>
-          <p className="font-mono text-caption text-ink-3 mb-2">
+          <p className="font-sans text-caption text-ink-3 mb-2">
             Prellenado con lo que eligió el atleta. Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">excluir</span>.
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -441,7 +441,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <span className="material-symbols-outlined text-display text-accent animate-spin">progress_activity</span>
         <p className="font-mono text-body-s text-white">{genPhase}</p>
-        <p className="font-mono text-caption text-ink-3">Repartiendo recetas por comida y ajustando escalas…</p>
+        <p className="font-sans text-caption text-ink-3">Repartiendo recetas por comida y ajustando escalas…</p>
       </div>
     );
   }
@@ -487,7 +487,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <div className="px-4 pb-4 space-y-4">
             {menu.batchCooking && batchPlan.length > 0 && (
               <div>
-                <p className="font-mono text-caption text-ink-3 uppercase mb-2">Cocina de una vez</p>
+                <p className="font-sans text-caption text-ink-3 uppercase mb-2">Cocina de una vez</p>
                 <div className="space-y-1.5">
                   {batchPlan.map(e => (
                     <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
@@ -499,9 +499,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               </div>
             )}
             <div>
-              <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes de la semana</p>
+              <p className="font-sans text-caption text-ink-3 uppercase mb-2">Ingredientes de la semana</p>
               {shoppingList.length === 0 ? (
-                <p className="font-mono text-caption text-ink-3">Regenera el menú para calcular los ingredientes.</p>
+                <p className="font-sans text-caption text-ink-3">Regenera el menú para calcular los ingredientes.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   {shoppingList.map((item, i) => (
@@ -538,7 +538,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               {expanded && (
                 <div className="p-4 space-y-3">
                   {day.meals.length === 0 ? (
-                    <p className="font-mono text-label text-ink-3 text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
+                    <p className="font-sans text-label text-ink-3 text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
                   ) : (
                     <>
                       <div className="flex justify-end">
@@ -596,9 +596,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                           {pickerFor?.day === day.day && pickerFor.mealId === meal.id && (
                             <div className="mt-3 border-t border-hairline pt-2 max-h-56 overflow-y-auto space-y-1">
                               {pickerLoading ? (
-                                <p className="font-mono text-caption text-ink-3 text-center py-3">Buscando candidatas…</p>
+                                <p className="font-sans text-caption text-ink-3 text-center py-3">Buscando candidatas…</p>
                               ) : pickerCandidates.length === 0 ? (
-                                <p className="font-mono text-caption text-ink-3 text-center py-3">Sin alternativas disponibles para esta ingesta.</p>
+                                <p className="font-sans text-caption text-ink-3 text-center py-3">Sin alternativas disponibles para esta ingesta.</p>
                               ) : (
                                 pickerCandidates.map((c, ci) => (
                                   <button

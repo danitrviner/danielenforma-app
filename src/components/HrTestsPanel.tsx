@@ -168,7 +168,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
           </h2>
-          <p className="text-label text-ink-2 font-mono">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
+          <p className="text-label text-ink-2 font-sans">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
           <ul className="text-label text-ink-2 font-mono space-y-1.5 list-disc pl-4">
             {PARQ_QUESTIONS.map((q, i) => <li key={i}>{q}</li>)}
           </ul>
@@ -185,7 +185,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3 text-center">
           <span className="material-symbols-outlined text-display text-data">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
-          <p className="text-label text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
+          <p className="text-label text-ink-2 font-sans">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
           <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Volver</button>
         </section>
       );

@@ -359,7 +359,7 @@ export default function ClientReviewsPanel({
               ) : viewPhotos.length === 0 ? (
                 <div className="p-10 text-center">
                   <span className="material-symbols-outlined text-display text-ink-3 block mb-2">photo_camera</span>
-                  <p className="font-mono text-label text-ink-2">Sin fotos todavía.</p>
+                  <p className="font-sans text-label text-ink-2">Sin fotos todavía.</p>
                 </div>
               ) : (
                 <div className="p-3 bg-bg/90">
@@ -696,7 +696,7 @@ export default function ClientReviewsPanel({
                       </p>
                     )}
                     {onboardingData.hadPastInjuries && (
-                      <p className="font-mono text-caption text-ink-2">
+                      <p className="font-sans text-caption text-ink-2">
                         <span className="text-ink-3 mr-1">Lesiones anteriores:</span>{onboardingData.pastInjuriesDetail || '—'}
                       </p>
                     )}
@@ -706,17 +706,17 @@ export default function ClientReviewsPanel({
                       </p>
                     )}
                     {onboardingData.recentSurgery && (
-                      <p className="font-mono text-caption text-ink-2">
+                      <p className="font-sans text-caption text-ink-2">
                         <span className="text-ink-3 mr-1">Cirugía reciente:</span>{onboardingData.recentSurgeryDetail || '—'}
                       </p>
                     )}
                     {onboardingData.smokesAlcoholSubstances && (
-                      <p className="font-mono text-caption text-ink-2">
+                      <p className="font-sans text-caption text-ink-2">
                         <span className="text-ink-3 mr-1">Tabaco/alcohol/otras sustancias:</span>{onboardingData.smokesAlcoholSubstances}
                       </p>
                     )}
                     {onboardingData.sunExposureWeekly && (
-                      <p className="font-mono text-caption text-ink-2">
+                      <p className="font-sans text-caption text-ink-2">
                         <span className="text-ink-3 mr-1">Exposición al sol:</span>{onboardingData.sunExposureWeekly}
                       </p>
                     )}
@@ -746,7 +746,7 @@ export default function ClientReviewsPanel({
                     {onboardingData.hipCm && <span className="text-ink-2">Cadera: <span className="text-white font-bold">{onboardingData.hipCm}cm</span></span>}
                   </div>
                   {onboardingData.weightTendency && (
-                    <p className="font-mono text-caption text-ink-2"><span className="text-ink-3 mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
+                    <p className="font-sans text-caption text-ink-2"><span className="text-ink-3 mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
                   )}
                   {(onboardingData.supplements?.length ?? 0) > 0 && (
                     <div className="pt-1">
@@ -784,10 +784,10 @@ export default function ClientReviewsPanel({
                     {onboardingData.restDayActive && <span className="text-ink-2">Activo en descanso{onboardingData.restDayActiveDetail ? ` (${onboardingData.restDayActiveDetail})` : ''}</span>}
                   </div>
                   {onboardingData.muscleGroupsToImprove && (
-                    <p className="font-mono text-caption text-ink-2"><span className="text-ink-3 mr-1">A mejorar:</span>{onboardingData.muscleGroupsToImprove}</p>
+                    <p className="font-sans text-caption text-ink-2"><span className="text-ink-3 mr-1">A mejorar:</span>{onboardingData.muscleGroupsToImprove}</p>
                   )}
                   {onboardingData.stressReason && (
-                    <p className="font-mono text-caption text-ink-2"><span className="text-ink-3 mr-1">Motivo de estrés:</span>{onboardingData.stressReason}</p>
+                    <p className="font-sans text-caption text-ink-2"><span className="text-ink-3 mr-1">Motivo de estrés:</span>{onboardingData.stressReason}</p>
                   )}
                 </div>
               )}
@@ -797,7 +797,7 @@ export default function ClientReviewsPanel({
                 <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Descanso — detalle</p>
                   {(onboardingData.sleepDeficitCauses?.length ?? 0) > 0 && (
-                    <p className="font-mono text-caption text-ink-2"><span className="text-ink-3 mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
+                    <p className="font-sans text-caption text-ink-2"><span className="text-ink-3 mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.sleepRoutineOrScreen && (
@@ -850,7 +850,7 @@ export default function ClientReviewsPanel({
                   <span className="material-symbols-outlined text-ink-3 text-title-s">person_check</span>
                   Ficha de iniciación
                 </p>
-                <p className="font-mono text-label text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
+                <p className="font-sans text-label text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
@@ -904,7 +904,7 @@ export default function ClientReviewsPanel({
               Cumplimiento Semanal
             </h3>
             {weekTotal === 0 ? (
-              <p className="font-mono text-caption text-ink-2">Sin entrenamientos esta semana</p>
+              <p className="font-sans text-caption text-ink-2">Sin entrenamientos esta semana</p>
             ) : (
               <div className="flex items-center gap-4">
                 <ProgressRing pct={weekPct} color="var(--color-data)" />
@@ -1285,7 +1285,7 @@ export default function ClientReviewsPanel({
 
               {coachQuestionnaires.length === 0 ? (
                 <div className="py-4 text-center">
-                  <p className="text-caption font-mono text-ink-2">
+                  <p className="text-caption font-sans text-ink-2">
                     Todavía no hay cuestionarios. Usa el botón de arriba para crear uno.
                   </p>
                 </div>

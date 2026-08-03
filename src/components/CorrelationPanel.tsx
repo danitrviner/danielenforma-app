@@ -266,7 +266,7 @@ export default function CorrelationPanel({
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
             coach sí puede accionar: asignar/pedir lo que falta. */}
-        <p className="text-ink-2 text-label font-mono max-w-xs mx-auto">
+        <p className="text-ink-2 text-label font-sans max-w-xs mx-auto">
           Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta.
           Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones.
         </p>
@@ -281,7 +281,7 @@ export default function CorrelationPanel({
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
-        <p className="font-mono text-label text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
@@ -291,7 +291,7 @@ export default function CorrelationPanel({
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
           onClick={() => setSelectorOpen(v => !v)}
         >
-          <span className="font-mono text-label text-ink-2 uppercase tracking-wider">
+          <span className="font-sans text-label text-ink-2 uppercase tracking-wider">
             Series disponibles
             {selectedIds.length > 0 && (
               <span className="ml-2 text-accent font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
@@ -332,14 +332,14 @@ export default function CorrelationPanel({
 
       {selectedSeries.length === 0 ? (
         <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
-          <p className="font-mono text-label text-ink-2">Selecciona una o más series para visualizar.</p>
+          <p className="font-sans text-label text-ink-2">Selecciona una o más series para visualizar.</p>
         </div>
       ) : (
         <>
           {/* Chart */}
           <div className="bg-surface border border-hairline rounded-canvas p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                 {multiNorm
                   ? '% relativo por serie (mín=0 % · máx=100 %)'
                   : (selectedSeries[0].unit ? `Valor en ${selectedSeries[0].unit}` : 'Valor')}

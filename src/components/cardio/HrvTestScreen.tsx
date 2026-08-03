@@ -129,7 +129,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
           </>
         )}
 
-        {phase === 'connecting' && <p className="text-label text-ink-2 font-mono">Conectando con la banda...</p>}
+        {phase === 'connecting' && <p className="text-label text-ink-2 font-sans">Conectando con la banda...</p>}
 
         {phase === 'measuring' && (
           <>

@@ -263,7 +263,7 @@ const DayBlock: React.FC<{
         <div className="px-3 py-2 bg-bg space-y-1">
           {/* Exercise list */}
           {sortedExs.length === 0 ? (
-            <p className="font-mono text-caption text-ink-3 italic py-1">Sin ejercicios.</p>
+            <p className="font-sans text-caption text-ink-3 italic py-1">Sin ejercicios.</p>
           ) : (
             sortedExs.map((ex, idx) => {
               const exObj = exercises.find(e => e.id === ex.exerciseId);
@@ -288,7 +288,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-mono text-label focus:outline-none focus:border-accent/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-sans text-label focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -430,7 +430,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'volume' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
+                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
                 <span className="font-mono text-caption text-accent font-bold">{totalSeries} series/sem</span>
               </div>
               <div className="border border-hairline rounded-surface overflow-hidden">
@@ -482,7 +482,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'training' && (
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                   Días de entrenamiento ({stage.days.length}/{stage.daysPerWeek})
                 </span>
                 <button
@@ -496,7 +496,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               </div>
               {stage.days.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-hairline rounded-surface">
-                  <p className="font-mono text-caption text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
+                  <p className="font-sans text-caption text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -621,7 +621,7 @@ function TemplateEditor({
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
+            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
             <input
               type="text"
               value={form.name}
@@ -887,7 +887,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-sans font-bold text-title-m text-white">Plantillas de mesociclo</h2>
-          <p className="font-mono text-caption text-ink-2 mt-0.5">
+          <p className="font-sans text-caption text-ink-2 mt-0.5">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
@@ -911,7 +911,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         <div className="py-16 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-display text-ink-3 block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-body-s mb-1">Sin plantillas todavía</p>
-          <p className="text-ink-2 text-label font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
+          <p className="text-ink-2 text-label font-sans">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
             className="mt-4 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all"

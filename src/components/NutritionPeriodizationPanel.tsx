@@ -373,7 +373,7 @@ export default function NutritionPeriodizationPanel({
           </div>
           <div className="border border-dashed border-hairline rounded-surface py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-display text-ink-3">timeline</span>
-            <p className="text-ink-2 text-label font-mono text-center">Sin periodización nutricional.</p>
+            <p className="text-ink-2 text-label font-sans text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
               className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
@@ -452,7 +452,7 @@ export default function NutritionPeriodizationPanel({
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-ink-2 text-label font-mono text-center py-4 border border-dashed border-hairline rounded-surface">
+          <p className="text-ink-2 text-label font-sans text-center py-4 border border-dashed border-hairline rounded-surface">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -525,7 +525,7 @@ export default function NutritionPeriodizationPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
+                <span className="text-caption font-sans text-ink-2 uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
                 <input
                   type="number"
                   step="0.1"
@@ -541,7 +541,7 @@ export default function NutritionPeriodizationPanel({
 
               {/* Energy objective */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
+                <span className="text-caption font-sans text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
                 <input
                   type="number"
                   step="25"

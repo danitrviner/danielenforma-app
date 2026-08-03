@@ -338,9 +338,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </div>
           </div>
           <div className="mt-6 pt-4 border-t border-hairline">
-            <span className="block text-caption text-ink-2 uppercase font-mono mb-2">Próximos a finalizar planificación</span>
+            <span className="block text-caption text-ink-2 uppercase font-sans mb-2">Próximos a finalizar planificación</span>
             {athletesFinishingSoon.length === 0 ? (
-              <p className="text-label text-ink-3 font-mono">Ninguno por ahora.</p>
+              <p className="text-label text-ink-3 font-sans">Ninguno por ahora.</p>
             ) : (
               <div className="space-y-1.5">
                 {athletesFinishingSoon.slice(0, 3).map(a => (
@@ -403,7 +403,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               )}
             </div>
             {totalPendingNotes === 0 ? (
-              <p className="text-label text-ink-3 font-mono">Sin notas nuevas de ejercicios o entrenamientos.</p>
+              <p className="text-label text-ink-3 font-sans">Sin notas nuevas de ejercicios o entrenamientos.</p>
             ) : (
               <div className="space-y-1.5">
                 {enrichedAthletes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
@@ -469,7 +469,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         ) : athletes.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center gap-3">
-            <p className="text-ink-2 font-mono text-label">No hay atletas registrados todavía.</p>
+            <p className="text-ink-2 font-sans text-label">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
@@ -624,7 +624,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
         {pendingInvites.length > 0 && (
           <div className="mt-4 pt-4 border-t border-hairline">
-            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2.5">
+            <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2.5">
               Invitaciones pendientes ({pendingInvites.length})
             </p>
             <div className="space-y-1.5">

@@ -141,7 +141,7 @@ export default function ClientesList() {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-bold text-title-m text-ink">Clientes</h1>
-          <p className="font-mono text-caption uppercase tracking-widest text-ink-3 tabular-nums">
+          <p className="font-sans text-caption uppercase tracking-widest text-ink-3 tabular-nums">
             {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
           </p>
         </div>

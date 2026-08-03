@@ -62,7 +62,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
       <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
         Observación personalizada por ejercicio
-        <span className="ml-2 text-caption font-mono text-ink-3 normal-case font-sans">(solo la ve este atleta)</span>
+        <span className="ml-2 text-caption font-sans text-ink-3 normal-case font-sans">(solo la ve este atleta)</span>
       </h3>
 
       {loading ? (
@@ -83,7 +83,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
             ))}
           </select>
           {inProgram && (
-            <p className="font-mono text-caption text-ink-3">Mostrando los ejercicios de sus rutinas asignadas (y los que ya tienen observación).</p>
+            <p className="font-sans text-caption text-ink-3">Mostrando los ejercicios de sus rutinas asignadas (y los que ya tienen observación).</p>
           )}
 
           {selectedExerciseId && (

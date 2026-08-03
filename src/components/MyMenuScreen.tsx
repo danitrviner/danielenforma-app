@@ -299,7 +299,7 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface p-8 text-center space-y-2">
         <span className="material-symbols-outlined text-display text-ink-3 block">restaurant_menu</span>
         <p className="font-sans font-bold text-body-s text-white">Todavía no tienes un menú semanal</p>
-        <p className="font-mono text-label text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
+        <p className="font-sans text-label text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
       </div>
     );
   }
@@ -334,7 +334,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <span className="material-symbols-outlined text-accent text-title-s">inventory_2</span>
             <div>
               <p className="font-sans font-bold text-body-s text-white">Cocina de la semana</p>
-              <p className="font-mono text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
+              <p className="font-sans text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -365,7 +365,7 @@ export default function MyMenuScreen({ profile }: Props) {
             {shoppingLoading ? (
               <div className="flex justify-center py-4"><span className="material-symbols-outlined text-title-m text-accent animate-spin">progress_activity</span></div>
             ) : !shoppingItems || shoppingItems.length === 0 ? (
-              <p className="font-mono text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
+              <p className="font-sans text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 {shoppingItems.map((item, i) => (
@@ -388,7 +388,7 @@ export default function MyMenuScreen({ profile }: Props) {
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
         <div className="bg-surface border border-hairline rounded-surface p-6 text-center">
-          <p className="font-mono text-label text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
+          <p className="font-sans text-label text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -476,7 +476,7 @@ export default function MyMenuScreen({ profile }: Props) {
         </button>
         {dishPrefsOpen && (
           <div className="px-4 pb-4 space-y-3">
-            <p className="font-mono text-caption text-ink-3">
+            <p className="font-sans text-caption text-ink-3">
               Toca una vez para que salga <span className="text-accent">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -499,14 +499,14 @@ export default function MyMenuScreen({ profile }: Props) {
                 );
               })}
             </div>
-            <p className="font-mono text-caption text-ink-3">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
+            <p className="font-sans text-caption text-ink-3">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
           </div>
         )}
       </div>
 
       {/* Variety preference */}
       <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-        <p className="font-mono text-caption text-ink-2 uppercase">¿Cómo prefieres tu menú?</p>
+        <p className="font-sans text-caption text-ink-2 uppercase">¿Cómo prefieres tu menú?</p>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map(v => (
             <button
@@ -520,7 +520,7 @@ export default function MyMenuScreen({ profile }: Props) {
           ))}
         </div>
         <div className="flex justify-between">
-          <span className="font-mono text-caption text-ink-3">Repetitivo, más sencillo</span>
+          <span className="font-sans text-caption text-ink-3">Repetitivo, más sencillo</span>
           <span className="font-mono text-caption text-ink-3">Muy variado</span>
         </div>
 
@@ -537,11 +537,11 @@ export default function MyMenuScreen({ profile }: Props) {
               <span className="material-symbols-outlined text-body-s text-accent">inventory_2</span>
               Prefiero batch cooking
             </span>
-            <span className="block font-mono text-caption text-ink-2 mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
+            <span className="block font-sans text-caption text-ink-2 mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
           </span>
         </button>
 
-        <p className="font-mono text-caption text-ink-3">Se aplicará la próxima vez que tu entrenador genere el menú.</p>
+        <p className="font-sans text-caption text-ink-3">Se aplicará la próxima vez que tu entrenador genere el menú.</p>
       </div>
 
       {/* Swap sheet */}
@@ -555,9 +555,9 @@ export default function MyMenuScreen({ profile }: Props) {
               </button>
             </div>
             {swapLoading ? (
-              <p className="font-mono text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
+              <p className="font-sans text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
             ) : swapCandidates.length === 0 ? (
-              <p className="font-mono text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
+              <p className="font-sans text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
             ) : (
               swapCandidates.map((c, ci) => (
                 <button
@@ -660,7 +660,7 @@ export default function MyMenuScreen({ profile }: Props) {
                       })}
                     </ul>
                     {detailMealId && (
-                      <p className="font-mono text-caption text-ink-3 mt-1.5">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
+                      <p className="font-sans text-caption text-ink-3 mt-1.5">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
                     )}
                   </div>
                 ) : null}
@@ -685,7 +685,7 @@ export default function MyMenuScreen({ profile }: Props) {
                     <span className="material-symbols-outlined text-title-s">close</span>
                   </button>
                 </div>
-                <p className="font-mono text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
+                <p className="font-sans text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
               </>
             )}
           </div>

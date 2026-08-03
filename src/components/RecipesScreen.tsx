@@ -399,7 +399,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               ))}
             </ul>
           ) : (
-            <p className="font-mono text-label text-ink-2 italic">Sin ingredientes disponibles.</p>
+            <p className="font-sans text-label text-ink-2 italic">Sin ingredientes disponibles.</p>
           )}
 
           {!isIndya && recipe.extras.length > 0 && (
@@ -796,7 +796,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
         ) : (
           <div className="space-y-6">
-            <p className="font-mono text-caption text-ink-2 uppercase">
+            <p className="font-sans text-caption text-ink-2 uppercase">
               {indyaSearch
                 ? `${indyaTotalVisible} de ${indyaRecipes.length} resultados en esta página`
                 : `${indyaRecipes.length} receta${indyaRecipes.length !== 1 ? 's' : ''} cargada${indyaRecipes.length !== 1 ? 's' : ''}${indyaHasMore ? ' · hay más' : ''}`
@@ -808,7 +808,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-amber-400 text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <h3 className="font-mono text-caption text-amber-400 uppercase tracking-wider font-bold">
+                  <h3 className="font-sans text-caption text-amber-400 uppercase tracking-wider font-bold">
                     Destacadas para ti ({indyaFeatured.length})
                   </h3>
                 </div>
@@ -852,7 +852,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   <span className="material-symbols-outlined text-body-s text-ink-3 group-hover:text-ink-2 transition-colors">
                     {showDislikedSection ? 'expand_less' : 'expand_more'}
                   </span>
-                  <span className="font-mono text-caption text-ink-3 group-hover:text-ink-2 uppercase tracking-wider transition-colors">
+                  <span className="font-sans text-caption text-ink-3 group-hover:text-ink-2 uppercase tracking-wider transition-colors">
                     Con ingredientes que no te gustan ({indyaDisliked.length})
                   </span>
                 </button>
