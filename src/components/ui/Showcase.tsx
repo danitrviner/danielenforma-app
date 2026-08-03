@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Icon, type ButtonSize, type ButtonVariant, type IconSize } from './index';
+import { Button, Icon, Input, type ButtonSize, type ButtonVariant, type IconSize } from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escaparate de primitivas — ruta `/ui`, solo en desarrollo
@@ -85,6 +85,13 @@ const TAMANOS_ICONO: { size: IconSize; pie: string }[] = [
 ];
 
 export default function Showcase() {
+  // Estado local solo para que los ejemplos se puedan tocar de verdad. Un campo
+  // que no se deja escribir no prueba nada.
+  const [texto, setTexto] = React.useState('');
+  const [correo, setCorreo] = React.useState('');
+  const [peso, setPeso] = React.useState('');
+  const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
+
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
@@ -174,6 +181,41 @@ export default function Showcase() {
           Sin texto, el botón se vuelve cuadrado para no perder objetivo táctil y exige la prop
           label. Con el tabulador se ve el anillo de foco: hoy no hay ni un focus-visible en toda
           la app, y una primitiva nueva no puede nacer con esa deuda.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Input"
+        resumen="16 px siempre, porque por debajo iOS hace zoom al enfocar y no lo deshace. La etiqueta apunta a su campo: hoy hay 116 que no lo hacen."
+      >
+        <div className="flex flex-col gap-4">
+          <Input label="Nombre" value={texto} onChange={setTexto} placeholder="Cómo te llamas" />
+          <Input
+            label="Correo"
+            type="email"
+            icon="mail"
+            value={correo}
+            onChange={setCorreo}
+            placeholder="tu@correo.com"
+            hint="Lo usamos para avisarte de tus revisiones."
+            required
+          />
+          <Input
+            label="Peso de hoy"
+            value={peso}
+            onChange={setPeso}
+            inputMode="decimal"
+            placeholder="72,4"
+            hint="En kilos, con un decimal."
+            error={pesoInvalido ? 'Escribe solo números.' : undefined}
+          />
+          <Input label="Bloqueado" value="No se puede editar" onChange={() => {}} disabled />
+        </div>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Al tocar la etiqueta se enfoca el campo: objetivo táctil gratis en móvil. La ayuda y el
+          error ocupan el mismo sitio —mientras haya error, tapa a la ayuda— y el campo lo anuncia
+          con aria-invalid. Escribe letras en el peso para verlo.
         </p>
       </Seccion>
     </div>

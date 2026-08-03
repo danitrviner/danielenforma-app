@@ -15,3 +15,6 @@ export type { IconSize } from './Icon';
 
 export { default as Button } from './Button';
 export type { ButtonVariant, ButtonSize } from './Button';
+
+export { default as Input, Campo } from './Input';
+export type { InputType } from './Input';
