@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ExerciseLibraryScreen from './ExerciseLibraryScreen';
 import WorkoutsScreen from './WorkoutsScreen';
 import MesocycleTemplateLibrary from './MesocycleTemplateLibrary';
+import { Tabs } from './ui';
 
 interface TrainingCoachScreenProps {
   coachId: string;
@@ -33,25 +34,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Entrenamiento</h1>
       </header>
 
-      {/* Sub-tab switcher */}
-      <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 ">
-        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
-                activeTab === tab.id
-                  ? 'bg-accent text-black'
-                  : 'text-ink-2 hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-title-s">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Entrenamiento" />
 
       {activeTab === 'rutinas'    && <WorkoutsScreen coachId={coachId} />}
       {activeTab === 'ejercicios' && <ExerciseLibraryScreen coachId={coachId} />}
