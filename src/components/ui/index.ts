@@ -18,3 +18,6 @@ export type { ButtonVariant, ButtonSize } from './Button';
 
 export { default as Input, Campo } from './Input';
 export type { InputType } from './Input';
+
+export { default as Select } from './Select';
+export type { SelectOption } from './Select';

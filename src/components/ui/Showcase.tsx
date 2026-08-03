@@ -1,5 +1,8 @@
 import React from 'react';
-import { Button, Icon, Input, type ButtonSize, type ButtonVariant, type IconSize } from './index';
+import {
+  Button, Icon, Input, Select,
+  type ButtonSize, type ButtonVariant, type IconSize, type SelectOption,
+} from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escaparate de primitivas — ruta `/ui`, solo en desarrollo
@@ -77,6 +80,12 @@ const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
   { size: 'l', pie: 'l · 48' },
 ];
 
+const OPCIONES_OBJETIVO: SelectOption[] = [
+  { value: 'reducir_grasa', label: 'Reducir grasa' },
+  { value: 'mantener', label: 'Mantener' },
+  { value: 'aumentar_musculo', label: 'Aumentar músculo' },
+];
+
 const TAMANOS_ICONO: { size: IconSize; pie: string }[] = [
   { size: 's', pie: 's · 16' },
   { size: 'm', pie: 'm · 20' },
@@ -90,6 +99,7 @@ export default function Showcase() {
   const [texto, setTexto] = React.useState('');
   const [correo, setCorreo] = React.useState('');
   const [peso, setPeso] = React.useState('');
+  const [objetivo, setObjetivo] = React.useState('');
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -216,6 +226,37 @@ export default function Showcase() {
           Al tocar la etiqueta se enfoca el campo: objetivo táctil gratis en móvil. La ayuda y el
           error ocupan el mismo sitio —mientras haya error, tapa a la ayuda— y el campo lo anuncia
           con aria-invalid. Escribe letras en el peso para verlo.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Select"
+        resumen="Sigue siendo un desplegable nativo —en móvil la rueda del sistema gana a cualquier lista que dibujemos— pero con la piel del DS en vez de la del sistema."
+      >
+        <div className="flex flex-col gap-4">
+          <Select
+            label="Objetivo"
+            value={objetivo}
+            onChange={setObjetivo}
+            options={OPCIONES_OBJETIVO}
+            placeholder="Elige uno…"
+            hint="Se puede cambiar en cualquier momento."
+          />
+          <Select
+            label="Nivel"
+            value=""
+            onChange={() => {}}
+            options={OPCIONES_OBJETIVO}
+            placeholder="Sin elegir"
+            error="Elige un nivel para continuar."
+          />
+          <Select label="Bloqueado" value="mantener" onChange={() => {}} options={OPCIONES_OBJETIVO} disabled />
+        </div>
+
+        <p className="font-sans text-body-s text-ink-3">
+          La lista desplegada la dibuja el sistema operativo y no se puede maquillar desde aquí. Un
+          selector con iconos, descripciones o búsqueda necesita un menú propio: eso llega en F9,
+          cuando exista Sheet.
         </p>
       </Seccion>
     </div>
