@@ -51,8 +51,9 @@ Cuando una regresión aparece, el informe lista **los archivos concretos** donde
 
 | Métrica | Dir. | Fase | Valor |
 |---|:--:|:--:|--:|
-| Hex distintos | ↓ | F1 | 102 |
-| Hex literales (apariciones) | ↓ | F1 | 4.656 |
+| Hex distintos en componentes | ↓ | F1 | 101 |
+| Hex literales en componentes | ↓ | F1 | 4.638 |
+| Hex en tokens (`index.css`) | · | F1 | 23 |
 | Clases de token `@theme` en uso | ↑ | F1 | **0** |
 | Imports de `src/theme.ts` | ↓ | F1 | **0** |
 | Bordes `border-white/>12` | ↓ | F2 | 93 |
@@ -95,6 +96,15 @@ Cuando una regresión aparece, el informe lista **los archivos concretos** donde
 - El desglose **por archivo** tampoco estaba en el plan. Es lo que convierte «una métrica ha
   empeorado» en «este archivo la ha empeorado», y es el sustituto barato de la regresión visual
   para todos los cambios mecánicos.
+
+**Corrección aplicada durante F1**
+
+La primera versión del script medía el hex de `src/index.css` junto al de los componentes. Eso
+mezclaba dos señales opuestas: migrar un color a un token baja el contador en el componente y lo
+sube en el CSS, así que el instrumento marcaba como regresión exactamente el trabajo que la
+migración persigue. Se separó en dos métricas —`hex en componentes` (deuda) y `hex en tokens`
+(informativa)— y se regeneró la línea base. Los números de componente no cambian respecto a F0:
+entre ambos puntos solo se tocó `index.css`.
 
 **Deuda detectada, no resuelta (no pertenece a este sprint)**
 

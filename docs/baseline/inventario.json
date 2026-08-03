@@ -1,12 +1,12 @@
 {
-  "generado": "2026-08-03T08:34:16.397Z",
-  "commit": "5b5e313",
+  "generado": "2026-08-03T08:43:28.877Z",
+  "commit": "c1d1308",
   "totales": {
     "archivosTsx": 134,
     "lineasTsx": 38507
   },
   "metricas": {
-    "hexLiterales": 4656,
+    "hexLiterales": 4638,
     "clasesTokenEnUso": 0,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 93,
@@ -29,9 +29,10 @@
     "rounded2xl": 278,
     "rounded3xl": 21,
     "roundedFull": 174,
-    "hexDistintos": 102,
+    "hexDistintos": 101,
     "tamanosTextoDistintos": 12,
-    "archivosMas600Lineas": 21
+    "archivosMas600Lineas": 21,
+    "hexEnTokensCss": 23
   },
   "listas": {
     "hexDistintos": [
@@ -81,7 +82,6 @@
       "#2c2b2b",
       "#333",
       "#34d399",
-      "#353534",
       "#3a3a3a",
       "#3a86ff",
       "#3e3e3e",
@@ -137,6 +137,31 @@
       "#ffbe0b",
       "#fff",
       "#ffffff"
+    ],
+    "hexEnTokensCss": [
+      "#000000",
+      "#00eefc",
+      "#111110",
+      "#141413",
+      "#181816",
+      "#1e1e1b",
+      "#2a2a2a",
+      "#353534",
+      "#3e3e3e",
+      "#444",
+      "#555",
+      "#555550",
+      "#86efac",
+      "#8a8d7b",
+      "#93c5fd",
+      "#a78bfa",
+      "#a8a89e",
+      "#c6c9ab",
+      "#d4a800",
+      "#f5f5f0",
+      "#fbcb1a",
+      "#fca5a5",
+      "#fdba74"
     ],
     "tamanosTexto": [
       7,
@@ -1696,9 +1721,6 @@
       "fontSans": 1,
       "espaciadoFueraEscala": 1,
       "roundedXl": 1
-    },
-    "src/index.css": {
-      "hexLiterales": 18
     },
     "src/theme.ts": {
       "hexLiterales": 73,

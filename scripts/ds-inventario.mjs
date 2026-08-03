@@ -28,7 +28,18 @@ const RAIZ = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const DIR_SRC = join(RAIZ, 'src');
 const RUTA_BASE = join(RAIZ, 'docs/baseline/inventario.json');
 
-const EXTENSIONES = new Set(['.tsx', '.ts', '.css']);
+/**
+ * Las métricas se miden SOLO sobre código de componente (.tsx/.ts).
+ *
+ * `src/index.css` queda fuera a propósito: es el bloque @theme, es decir el
+ * único sitio donde un valor hexadecimal *debe* estar. Contarlo junto a los
+ * componentes mezcla dos señales opuestas — migrar un color a un token baja el
+ * hex en el componente y lo sube en el CSS — y haría que el instrumento
+ * marcase como regresión justo el trabajo que la migración persigue.
+ * El CSS se mide aparte, como métrica informativa.
+ */
+const EXTENSIONES = new Set(['.tsx', '.ts']);
+const EXTENSIONES_CSS = new Set(['.css']);
 const IGNORAR = new Set(['node_modules', 'dist', '.git']);
 
 /** Escala de espaciado admitida por el DS, en px (base 4). */
@@ -70,7 +81,7 @@ function capturas(texto, patron) {
 const METRICAS = [
   {
     id: 'hexLiterales',
-    etiqueta: 'Hex literales (apariciones)',
+    etiqueta: "Hex literales en componentes",
     direccion: 'bajar',
     fase: 'F1',
     medir: (t) => contar(t, /#[0-9a-fA-F]{3,8}\b/g),
@@ -225,15 +236,29 @@ const METRICAS = [
 // Recorrido y medición
 // ─────────────────────────────────────────────────────────────────────────────
 
-function listarArchivos(dir) {
+function listarArchivos(dir, extensiones = EXTENSIONES) {
   const salida = [];
   for (const entrada of readdirSync(dir)) {
     if (IGNORAR.has(entrada)) continue;
     const ruta = join(dir, entrada);
-    if (statSync(ruta).isDirectory()) salida.push(...listarArchivos(ruta));
-    else if (EXTENSIONES.has(extname(entrada))) salida.push(ruta);
+    if (statSync(ruta).isDirectory()) salida.push(...listarArchivos(ruta, extensiones));
+    else if (extensiones.has(extname(entrada))) salida.push(ruta);
   }
   return salida.sort();
+}
+
+/** Hex declarados en el CSS: no son deuda, son la fuente de verdad. */
+function medirCss() {
+  const distintos = new Set();
+  let apariciones = 0;
+  for (const ruta of listarArchivos(DIR_SRC, EXTENSIONES_CSS)) {
+    for (const hex of readFileSync(ruta, 'utf8').match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+      apariciones++;
+      const v = hex.toLowerCase();
+      if ([4, 5, 7, 9].includes(v.length)) distintos.add(v);
+    }
+  }
+  return { distintos: distintos.size, apariciones, lista: [...distintos].sort() };
 }
 
 function medir() {
@@ -278,9 +303,12 @@ function medir() {
     if (Object.keys(conteo).length > 0) porArchivo[rel] = conteo;
   }
 
+  const css = medirCss();
+
   metricas.hexDistintos = hexDistintos.size;
   metricas.tamanosTextoDistintos = tamanosTexto.size;
   metricas.archivosMas600Lineas = archivosGrandes.length;
+  metricas.hexEnTokensCss = css.distintos;
 
   return {
     generado: new Date().toISOString(),
@@ -289,6 +317,7 @@ function medir() {
     metricas,
     listas: {
       hexDistintos: [...hexDistintos].sort(),
+      hexEnTokensCss: css.lista,
       tamanosTexto: [...tamanosTexto].sort((a, b) => a - b),
       archivosGrandes: archivosGrandes.sort((a, b) => b.lineas - a.lineas),
     },
@@ -310,9 +339,10 @@ function commitActual() {
 
 /** Métricas derivadas que no salen de METRICAS pero sí se vigilan. */
 const DERIVADAS = [
-  { id: 'hexDistintos',          etiqueta: 'Hex distintos',              direccion: 'bajar', fase: 'F1' },
-  { id: 'tamanosTextoDistintos', etiqueta: 'Tamaños de texto distintos', direccion: 'bajar', fase: 'F4' },
-  { id: 'archivosMas600Lineas',  etiqueta: 'Archivos > 600 líneas',      direccion: 'info',  fase: 'F15' },
+  { id: 'hexDistintos',          etiqueta: 'Hex distintos en componentes', direccion: 'bajar', fase: 'F1' },
+  { id: 'hexEnTokensCss',        etiqueta: 'Hex en tokens (index.css)',    direccion: 'info',  fase: 'F1' },
+  { id: 'tamanosTextoDistintos', etiqueta: 'Tamaños de texto distintos',   direccion: 'bajar', fase: 'F4' },
+  { id: 'archivosMas600Lineas',  etiqueta: 'Archivos > 600 líneas',        direccion: 'info',  fase: 'F15' },
 ];
 
 const TODAS = [...DERIVADAS, ...METRICAS.map(({ id, etiqueta, direccion, fase }) => ({ id, etiqueta, direccion, fase }))];
