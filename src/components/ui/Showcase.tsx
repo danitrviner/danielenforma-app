@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
+  Badge, Button, Card, Chip, Dialog, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -135,6 +135,8 @@ export default function Showcase() {
   const [filaPulsada, setFilaPulsada] = React.useState('');
   const [vecesAtras, setVecesAtras] = React.useState(0);
   const [sheetAbierto, setSheetAbierto] = React.useState(false);
+  const [dialogAbierto, setDialogAbierto] = React.useState(false);
+  const [segundoOverlayAbierto, setSegundoOverlayAbierto] = React.useState(false);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -537,6 +539,65 @@ export default function Showcase() {
         <p className="font-sans text-body-s text-ink-3">
           Se monta en un portal a document.body: el z-index de la escala declarada en F2 es la
           autoridad real y no compite con overflow o position de un contenedor intermedio.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Dialog"
+        resumen="La caja centrada: confirmar una acción, un formulario corto. Comparte toda la infraestructura de Sheet — mismo foco atrapado, mismo Escape, mismo bloqueo de scroll."
+      >
+        <div className="flex flex-wrap gap-3">
+          <Button variant="secondary" icon="edit" onClick={() => setDialogAbierto(true)}>
+            Abrir Dialog
+          </Button>
+          <Button
+            variant="danger"
+            icon="delete"
+            onClick={() => { setSegundoOverlayAbierto(true); setDialogAbierto(true); }}
+          >
+            Abrir los dos a la vez
+          </Button>
+        </div>
+
+        <Dialog
+          open={dialogAbierto}
+          onClose={() => setDialogAbierto(false)}
+          title="Eliminar ejercicio"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setDialogAbierto(false)}>Cancelar</Button>
+              <Button variant="danger" onClick={() => setDialogAbierto(false)}>Eliminar</Button>
+            </>
+          }
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            Esta acción no se puede deshacer. El tono danger del botón no es una prop de Dialog: es
+            pasar Button variant=&quot;danger&quot; como footer — el diálogo no conoce el dominio de
+            lo que confirma.
+          </p>
+        </Dialog>
+
+        {/* Estado propio, aparte de sheetAbierto de la sección de arriba: es la
+            prueba de R4 y necesita DOS overlays de verdad independientes, no
+            dos instancias que compartan la misma variable. Si Sheet y Dialog
+            se abren a la vez y se cierran en orden distinto, solo el ÚLTIMO en
+            cerrarse debe restaurar el scroll de fondo. */}
+        <Sheet
+          open={segundoOverlayAbierto}
+          onClose={() => setSegundoOverlayAbierto(false)}
+          title="Segundo overlay, independiente"
+          footer={<Button variant="secondary" onClick={() => setSegundoOverlayAbierto(false)}>Cerrar este</Button>}
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            Con el Dialog de arriba también abierto, ciérralos en cualquier orden: el scroll del
+            fondo solo se libera cuando se cierran los dos.
+          </p>
+        </Sheet>
+
+        <p className="font-sans text-body-s text-ink-3">
+          «Abrir los dos a la vez» abre este Sheet y el Dialog de arriba, cada uno con su propio
+          estado. Es la prueba de R4: dos overlays independientes, no anidados, cerrados en
+          cualquier orden.
         </p>
       </Seccion>
     </div>

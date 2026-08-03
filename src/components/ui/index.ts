@@ -38,3 +38,6 @@ export { default as ListRow } from './ListRow';
 export { default as PageHeader } from './PageHeader';
 
 export { default as Sheet } from './Sheet';
+
+export { default as Dialog } from './Dialog';
+export type { DialogSize } from './Dialog';
