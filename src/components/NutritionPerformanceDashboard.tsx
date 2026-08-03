@@ -90,7 +90,7 @@ function ProjectionTooltip({ active, payload }: any) {
       )}
       {row.expectedAdherence != null && (
         <p className="flex items-center justify-between gap-3">
-          <span className="text-[#a78bfa]">S/ adherencia</span>
+          <span className="text-chart-3">S/ adherencia</span>
           <span className="text-white font-bold">{fmtKg(row.expectedAdherence)} kg</span>
         </p>
       )}

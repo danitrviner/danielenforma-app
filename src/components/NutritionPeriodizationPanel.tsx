@@ -367,7 +367,7 @@ export default function NutritionPeriodizationPanel({
         <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+              <span className="material-symbols-outlined text-chart-3 text-sm">timeline</span>
               Periodización nutricional
             </h3>
           </div>
@@ -410,7 +410,7 @@ export default function NutritionPeriodizationPanel({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+          <span className="material-symbols-outlined text-chart-3 text-sm">timeline</span>
           Periodización nutricional
         </h3>
         <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function NutritionPeriodizationPanel({
           type="date"
           value={form.startDate}
           onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-[#1c1b1b] border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-[#a78bfa]/50 hover:border-[#3a3a3a] transition-colors"
+          className="bg-[#1c1b1b] border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-[#3a3a3a] transition-colors"
         />
       </div>
 
@@ -494,7 +494,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.name}
                   onChange={e => updatePhase(idx, { name: e.target.value })}
                   placeholder="Nombre de la fase"
-                  className="flex-1 bg-[#252525] border border-[#3a3a3a] text-white text-sm font-sans rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="flex-1 bg-[#252525] border border-[#3a3a3a] text-white text-sm font-sans rounded-lg px-3 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <button
                   onClick={() => removePhase(idx)}
@@ -515,7 +515,7 @@ export default function NutritionPeriodizationPanel({
                   <select
                     value={phase.dietId}
                     onChange={e => updatePhase(idx, { dietId: e.target.value })}
-                    className="flex-1 min-w-0 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                    className="flex-1 min-w-0 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                   >
                     <option value="">Sin dieta</option>
                     {diets.map(d => (
@@ -534,7 +534,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetWeight ?? ''}
                   onChange={e => updatePhase(idx, { targetWeight: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder="—"
-                  className="w-20 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="w-20 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-[10px] font-mono text-ink-2">kg</span>
               </div>
@@ -549,7 +549,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetKcal ?? ''}
                   onChange={e => updatePhase(idx, { targetKcal: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
-                  className="w-24 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="w-24 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-[10px] font-mono text-ink-2">
                   kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
@@ -559,7 +559,7 @@ export default function NutritionPeriodizationPanel({
                   <button
                     onClick={() => handleSuggestKcal(idx)}
                     title="Calcula el objetivo a partir del peso deseado"
-                    className="text-[9px] font-mono font-bold text-[#a78bfa] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#a78bfa]/30 hover:border-[#a78bfa]/60"
+                    className="text-[9px] font-mono font-bold text-chart-3 hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-chart-3/30 hover:border-chart-3/60"
                   >Sugerir</button>
                 )}
                 {canAdjustDiet && (
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-[#a78bfa]/40 text-ink-2 hover:text-white text-xs font-mono rounded-xl transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-chart-3/40 text-ink-2 hover:text-white text-xs font-mono rounded-xl transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir fase
