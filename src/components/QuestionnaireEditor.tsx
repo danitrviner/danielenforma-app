@@ -1,5 +1,6 @@
 import React from 'react';
 import { QuestionnaireQuestion, QuestionType } from '../types';
+import { Icon, Button } from './ui';
 
 // ── Shared types & helpers (consumed by QuestionnaireManagerScreen + ClientHub) ─
 
@@ -94,12 +95,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
     <div className="space-y-5 pb-10">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={onCancel}
-          className="flex items-center gap-2 px-3 py-2 text-label font-sans text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
-        </button>
+        <Button variant="secondary" size="s" onClick={onCancel} icon="arrow_back">Volver</Button>
         <h2 className="font-sans font-bold text-title-m text-white">
           {isNew ? 'Nuevo cuestionario' : 'Editar cuestionario'}
         </h2>
@@ -149,11 +145,11 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               <div className="flex flex-col flex-shrink-0 mt-1">
                 <button onClick={() => moveQ(idx, -1)} disabled={idx === 0}
                   className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Subir">
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>keyboard_arrow_up</span>
+                  <Icon name="keyboard_arrow_up" size="s" />
                 </button>
                 <button onClick={() => moveQ(idx, 1)} disabled={idx === form.questions.length - 1}
                   className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Bajar">
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>keyboard_arrow_down</span>
+                  <Icon name="keyboard_arrow_down" size="s" />
                 </button>
               </div>
               <span className="font-mono text-caption text-ink-2/50 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
@@ -174,7 +170,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               </select>
               {(q.type === 'numeric' || q.type === 'scale') && (
                 <span title="Graficable" className="flex-shrink-0 mt-2">
-                  <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>show_chart</span>
+                  <Icon name="show_chart" size="s" className="text-accent" />
                 </span>
               )}
               <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-2" title="Obligatoria">
@@ -182,18 +178,12 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                   onClick={() => setQ(idx, { required: !q.required })}
                 >
-                  {q.required && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
+                  {q.required && <Icon name="check" size="s" className="text-black" />}
                 </span>
                 <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
-              <button onClick={() => duplicateQ(idx)}
-                className="flex-shrink-0 p-2 text-ink-2 hover:text-data transition-colors" title="Duplicar">
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
-              </button>
-              <button onClick={() => removeQ(idx)} disabled={form.questions.length === 1}
-                className="flex-shrink-0 p-2 text-ink-2 hover:text-red-400 disabled:opacity-20 transition-colors" title="Eliminar">
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
-              </button>
+              <Button variant="ghost" size="s" onClick={() => duplicateQ(idx)} icon="content_copy" label="Duplicar" />
+              <Button variant="ghost" size="s" onClick={() => removeQ(idx)} disabled={form.questions.length === 1} icon="delete" label="Eliminar" />
             </div>
 
             {/* Help text */}
@@ -274,7 +264,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                       className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
                       onClick={() => setQ(idx, { multiSelect: !q.multiSelect })}
                     >
-                      {q.multiSelect && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
+                      {q.multiSelect && <Icon name="check" size="s" className="text-black" />}
                     </span>
                     <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
@@ -321,19 +311,10 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
 
       {/* Save / Cancel */}
       <div className="flex gap-3">
-        <button
-          onClick={onCancel}
-          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-label uppercase rounded-control transition-all"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={onSave}
-          disabled={saving || !form.title.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-        >
+        <Button variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
+        <Button onClick={onSave} disabled={saving || !form.title.trim()} className="flex-1">
           {saving ? 'Guardando…' : isNew ? 'Crear cuestionario' : 'Guardar cambios'}
-        </button>
+        </Button>
       </div>
     </div>
   );

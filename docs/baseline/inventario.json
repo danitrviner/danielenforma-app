@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:46:43.348Z",
-  "commit": "39f2976",
+  "generado": "2026-08-03T22:49:28.523Z",
+  "commit": "a97b731",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39541
+    "lineasTsx": 39522
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5054,
+    "clasesTokenEnUso": 5044,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 996,
-    "fontSans": 1004,
+    "fontSans": 1001,
     "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 316,
+    "transitionAll": 313,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -553,10 +553,10 @@
       "transitionAll": 1
     },
     "src/components/QuestionnaireEditor.tsx": {
-      "clasesTokenEnUso": 54,
+      "clasesTokenEnUso": 44,
       "fontMono": 19,
-      "fontSans": 7,
-      "transitionAll": 4
+      "fontSans": 4,
+      "transitionAll": 1
     },
     "src/components/QuestionnaireManagerScreen.tsx": {
       "clasesTokenEnUso": 12,
