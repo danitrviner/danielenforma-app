@@ -5,6 +5,7 @@ import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, g
 import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import Skeleton from './Skeleton';
+import { ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -147,20 +148,15 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
       ) : (
         <div className="space-y-2">
           {rows.map(row => (
-            <button
+            <ListRow
               key={row.key}
               onClick={row.onOpen}
-              className="w-full flex items-center gap-3 bg-raised border border-hairline hover:border-accent/40 rounded-control p-3 text-left transition-all group"
-            >
-              <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{row.title}</p>
-                {row.dueDate && (
-                  <p className="font-mono text-caption text-ink-2 ">Vence: {row.dueDate}</p>
-                )}
-              </div>
-              <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0">chevron_right</span>
-            </button>
+              className="bg-raised border border-hairline rounded-control"
+              leading={<span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>}
+              title={row.title}
+              subtitle={row.dueDate ? `Vence: ${row.dueDate}` : undefined}
+              chevron
+            />
           ))}
         </div>
       )}
