@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Resource, ResourceKind } from '../types';
 import { getAllResources, createResource, deleteResource } from '../dbService';
 import Skeleton from './Skeleton';
+import { Button } from './ui';
 
 interface Props {
   coachId?: string; // required only when isCoach (used to tag newly created resources)
@@ -100,13 +101,9 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               required
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving} fullWidth>
             {saving ? 'Guardando...' : 'Compartir recurso'}
-          </button>
+          </Button>
         </form>
       )}
 
