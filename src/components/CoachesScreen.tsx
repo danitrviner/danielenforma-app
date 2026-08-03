@@ -5,6 +5,7 @@ import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboard
 import { db, doc, writeBatch } from '../firebase';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
 import Skeleton from './Skeleton';
+import { Tabs } from './ui';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
@@ -545,22 +546,17 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">
-        {([
+      <Tabs
+        items={[
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
           { id: 'ficha',         label: 'Ficha',         icon: 'assignment'      },
           ...(isOwnerOrDev ? [{ id: 'biblioteca' as SettingsTab, label: 'Biblioteca', icon: 'library_books' }] : []),
-        ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
-          <button key={t.id} onClick={() => setSettingsTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
-              settingsTab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-            }`}>
-            <span className="material-symbols-outlined text-title-s">{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+        ]}
+        value={settingsTab}
+        onChange={id => setSettingsTab(id as SettingsTab)}
+        label="Ajustes"
+      />
 
       {settingsTab === 'cuestionarios' && (
         <QuestionnaireManagerScreen coachId={currentUserId} />
