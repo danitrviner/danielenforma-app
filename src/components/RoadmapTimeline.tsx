@@ -102,7 +102,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
+          <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
           </h2>
           <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">

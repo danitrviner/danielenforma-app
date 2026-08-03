@@ -327,7 +327,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-xl">group</span>
+                <span className="material-symbols-outlined text-accent text-title-m">group</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-label uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
               <span className="text-caption bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
@@ -367,7 +367,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-data text-xl">pending_actions</span>
+                <span className="material-symbols-outlined text-data text-title-m">pending_actions</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-label uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
@@ -391,7 +391,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className="bg-surface border border-hairline p-5 rounded-surface shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
+                <span className="material-symbols-outlined text-amber-300 text-title-m">sticky_note_2</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-label uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
@@ -598,7 +598,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Invite a new client by email */}
       <div className="bg-surface border border-hairline p-5 rounded-surface">
         <div className="flex items-center gap-2 mb-3">
-          <span className="material-symbols-outlined text-accent text-xl">person_add</span>
+          <span className="material-symbols-outlined text-accent text-title-m">person_add</span>
           <h2 className="font-sans font-extrabold text-ink-2 text-label uppercase tracking-wider">Invitar nuevo atleta</h2>
         </div>
         <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">

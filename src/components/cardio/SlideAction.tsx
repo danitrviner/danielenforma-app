@@ -74,7 +74,7 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
           touchAction: 'pan-y',
         }}
       >
-        <span className="material-symbols-outlined text-black text-xl">{icon}</span>
+        <span className="material-symbols-outlined text-black text-title-m">{icon}</span>
       </div>
     </div>
   );

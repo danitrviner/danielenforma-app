@@ -435,7 +435,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <div key={dt.id} className="bg-surface border border-hairline rounded-surface p-5 hover:border-hairline transition-colors flex flex-col gap-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
+                      <h3 className="font-sans font-bold text-white text-title-m leading-tight">{dt.name}</h3>
                     </div>
                     {dt.coachNote && (
                       <p className="text-caption text-data italic font-sans mb-2">{dt.coachNote}</p>
@@ -477,7 +477,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         {deleteId && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
-              <h3 className="font-sans font-bold text-lg text-white">¿Eliminar dieta?</h3>
+              <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar dieta?</h3>
               <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
@@ -503,7 +503,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
         </button>
         <div>
-          <h2 className="font-sans font-bold text-xl text-white">
+          <h2 className="font-sans font-bold text-title-m text-white">
             {editingId ? 'Editar dieta' : 'Nueva dieta'}
           </h2>
           {!isEmbedded && selectedAthlete && (
@@ -874,7 +874,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
               <div>
-                <h3 className="font-sans font-bold text-lg text-white">Añadir alimento</h3>
+                <h3 className="font-sans font-bold text-title-m text-white">Añadir alimento</h3>
                 <span className="font-mono text-caption text-ink-2 uppercase">{CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}</span>
               </div>
               <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">

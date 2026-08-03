@@ -982,7 +982,7 @@ export default function ClientReviewsPanel({
                           className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                         >
                           <span
-                            className="material-symbols-outlined flex-shrink-0 text-lg"
+                            className="material-symbols-outlined flex-shrink-0 text-title-m"
                             style={{ color: c.approved ? 'var(--color-accent)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
                           >rate_review</span>
                           <div className="flex-1 min-w-0">
@@ -1142,7 +1142,7 @@ export default function ClientReviewsPanel({
                         className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                       >
                         <span
-                          className="material-symbols-outlined flex-shrink-0 text-lg"
+                          className="material-symbols-outlined flex-shrink-0 text-title-m"
                           style={{ color: 'var(--color-data)', fontVariationSettings: "'FILL' 1" }}
                         >quiz</span>
                         <div className="flex-1 min-w-0">
@@ -1269,7 +1269,7 @@ export default function ClientReviewsPanel({
                       className="absolute top-4 right-4 p-1.5 text-ink-2 hover:text-white transition-colors"
                       aria-label="Cerrar"
                     >
-                      <span className="material-symbols-outlined text-xl">close</span>
+                      <span className="material-symbols-outlined text-title-m">close</span>
                     </button>
                     <QuestionnaireEditor
                       form={newQForm}

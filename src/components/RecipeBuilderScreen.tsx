@@ -466,7 +466,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           <div className="w-full max-w-2xl bg-bg border border-hairline rounded-surface p-6 my-6 space-y-5">
 
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
+              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar receta' : 'Nueva receta'}
               </h2>
               <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white transition-colors p-1">

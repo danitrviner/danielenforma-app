@@ -558,7 +558,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
 
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between">
         <span className="font-mono text-label text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
-        <span className="font-mono font-black text-xl text-white">{currentTotal}</span>
+        <span className="font-mono font-black text-title-m text-white">{currentTotal}</span>
       </div>
 
       <p className="font-mono text-caption text-ink-3">
@@ -1380,13 +1380,13 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             <div className="flex items-center gap-4">
                               <div>
                                 <span className="font-mono text-caption text-ink-2 uppercase block">Series totales</span>
-                                <span className="font-mono font-black text-lg text-white">
+                                <span className="font-mono font-black text-title-m text-white">
                                   {editing.distribution.days.reduce((s, d) => s + d.totalSeries, 0)}
                                 </span>
                               </div>
                               <div>
                                 <span className="font-mono text-caption text-ink-2 uppercase block">Sesiones activas</span>
-                                <span className="font-mono font-black text-lg text-white">
+                                <span className="font-mono font-black text-title-m text-white">
                                   {editing.distribution.days.filter(d => d.assignments.length > 0).length}/{editing.daysPerWeek}
                                 </span>
                               </div>

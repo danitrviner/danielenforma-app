@@ -828,7 +828,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {phaseBanner && (
         <div className="flex items-center justify-between gap-3 bg-data/10 border border-data/30 rounded-surface px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-data text-lg flex-shrink-0">swap_horiz</span>
+            <span className="material-symbols-outlined text-data text-title-m flex-shrink-0">swap_horiz</span>
             <p className="font-sans font-bold text-data text-body-s">{phaseBanner}</p>
           </div>
           <button
@@ -925,7 +925,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </span>
               {browseDiet ? (
                 <>
-                  <span className="block font-sans font-bold text-lg text-white leading-tight">{browseDiet.name}</span>
+                  <span className="block font-sans font-bold text-title-m text-white leading-tight">{browseDiet.name}</span>
                   {browseDiet.coachNote && (
                     <span className="block text-label text-data italic mt-1">{browseDiet.coachNote}</span>
                   )}
@@ -995,7 +995,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   type="text"
                   value={selectedDiet.name}
                   onChange={e => renameDiet(e.target.value)}
-                  className="block w-full bg-transparent border-none font-sans font-bold text-lg text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                  className="block w-full bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
                 />
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
@@ -1328,7 +1328,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Header */}
               <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
-                  <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+                  <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
                     <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
                     Usar receta
                   </h3>
@@ -1404,7 +1404,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
                       ) : (
                         <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-ink-2 text-xl">skillet</span>
+                          <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -1439,7 +1439,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
               <div>
-                <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+                <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
                   Cambiar comida
                 </h3>
@@ -1471,7 +1471,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-ink-2 text-xl">skillet</span>
+                      <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -1492,7 +1492,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
               <div>
-                <h3 className="font-sans font-bold text-lg text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
+                <h3 className="font-sans font-bold text-title-m text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
                 <span className="font-mono text-caption text-ink-2 uppercase">
                   {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                 </span>
@@ -1553,7 +1553,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {saveChoiceOpen && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white">¿Cómo quieres guardar?</h3>
+            <h3 className="font-sans font-bold text-title-m text-white">¿Cómo quieres guardar?</h3>
             <p className="text-label text-ink-2">
               Esta dieta la creó tu entrenador. Puedes actualizarla directamente o guardar tus
               cambios como una dieta nueva tuya, sin tocar la original.
@@ -1588,7 +1588,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {chooseDietForRecipe && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+            <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
               ¿A qué dieta añadir "{chooseDietForRecipe.name}"?
             </h3>
@@ -1625,7 +1625,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {chooseMealForRecipe && selectedDiet && (
         <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
           <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+            <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
               ¿A qué comida añadir "{chooseMealForRecipe.name}"?
             </h3>

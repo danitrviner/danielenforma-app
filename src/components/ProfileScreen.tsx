@@ -156,7 +156,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-sans font-bold text-lg text-white">{profile.displayName}</h3>
+                <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>
                 <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">

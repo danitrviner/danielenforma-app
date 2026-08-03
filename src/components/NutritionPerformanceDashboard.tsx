@@ -319,7 +319,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       )}
 
       <div>
-        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
+        <h2 className="font-sans font-black text-title-m tracking-tight text-white uppercase flex items-center gap-2">
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>
@@ -479,7 +479,7 @@ function StatCard({
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
       <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
-      <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
+      <span className="font-mono font-bold text-title-m" style={{ color: valueColor ?? '#fff' }}>
         {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (

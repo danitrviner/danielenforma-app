@@ -243,7 +243,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               onClick={() => onAddToIntercambios(recipe)}
               className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
             >
-              <span className="material-symbols-outlined text-xl">playlist_add</span>
+              <span className="material-symbols-outlined text-title-m">playlist_add</span>
               Añadir a Intercambios
             </button>
           )}
@@ -254,7 +254,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
           >
             <span
-              className="material-symbols-outlined text-xl"
+              className="material-symbols-outlined text-title-m"
               style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
@@ -267,7 +267,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             style={{ color: isDisliked ? 'var(--color-danger)' : 'var(--color-ink-2)' }}
           >
             <span
-              className="material-symbols-outlined text-xl"
+              className="material-symbols-outlined text-title-m"
               style={{ fontVariationSettings: isDisliked ? "'FILL' 1" : "'FILL' 0" }}
             >thumb_down</span>
           </button>

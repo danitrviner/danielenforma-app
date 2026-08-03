@@ -65,7 +65,7 @@ function QuestionnaireForm({
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-6">
       <div className="flex items-center justify-between mb-5 pb-2 border-b border-hairline">
-        <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-data">assignment</span>
           {questionnaire.title}
         </h2>
@@ -402,7 +402,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             {bwMode === 'weekly_avg' ? 'Media semanal' : 'Peso de hoy'}
           </p>
           {!bwEditing && bwToday ? (
-            <p className="font-mono text-lg font-bold text-white leading-tight">
+            <p className="font-mono text-title-m font-bold text-white leading-tight">
               {bwToday.weight} <span className="text-label text-ink-2 font-normal">kg</span>
             </p>
           ) : (
@@ -572,7 +572,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-6">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-m text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-accent">photo_camera</span>
           Fotografías de Progreso
         </h2>
@@ -581,7 +581,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
       <section className="bg-surface border border-hairline rounded-surface p-5">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-m text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-data">history</span>
           Historial de Revisiones
         </h2>

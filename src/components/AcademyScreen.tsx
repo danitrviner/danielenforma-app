@@ -114,7 +114,7 @@ export default function AcademyScreen({ profile }: Props) {
           />
         </div>
         <div>
-          <h2 className="font-sans font-bold text-lg text-white">{openLesson.title}</h2>
+          <h2 className="font-sans font-bold text-title-m text-white">{openLesson.title}</h2>
           {openLesson.description && <p className="text-label text-ink-2 font-mono mt-1">{openLesson.description}</p>}
         </div>
         {openLesson.resources && openLesson.resources.length > 0 && (

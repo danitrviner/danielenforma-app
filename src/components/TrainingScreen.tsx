@@ -412,7 +412,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             </>
           )}
           {a.status === 'completed' && (
-            <span className="material-symbols-outlined text-emerald-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+            <span className="material-symbols-outlined text-emerald-400 text-title-m" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
           )}
         </div>
       </div>
@@ -437,7 +437,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             Volver
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-sans font-black text-xl text-white truncate">{activeWorkout.name}</h1>
+            <h1 className="font-sans font-black text-title-m text-white truncate">{activeWorkout.name}</h1>
             <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
           </div>
           <div className="flex-shrink-0 text-right">
@@ -450,10 +450,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {restTimer && (
           <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
             <span
-              className={`material-symbols-outlined text-accent text-lg ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
+              className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
             <div className="leading-none">
-              <p className="font-mono text-lg font-black text-white tabular-nums">
+              <p className="font-mono text-title-m font-black text-white tabular-nums">
                 {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
               </p>
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mt-0.5">
@@ -810,7 +810,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </span>
               </div>
               <div>
-                <h2 className="font-sans font-black text-xl text-white">
+                <h2 className="font-sans font-black text-title-m text-white">
                   {celebration.isFirstEver ? '¡Primera sesión registrada! 💪' : '¡Entreno completado! 💪'}
                 </h2>
                 <p className="text-body-s text-ink-2 mt-1">

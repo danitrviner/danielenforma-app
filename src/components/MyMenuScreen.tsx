@@ -363,7 +363,7 @@ export default function MyMenuScreen({ profile }: Props) {
         {shoppingOpen && (
           <div className="px-4 pb-4">
             {shoppingLoading ? (
-              <div className="flex justify-center py-4"><span className="material-symbols-outlined text-xl text-accent animate-spin">progress_activity</span></div>
+              <div className="flex justify-center py-4"><span className="material-symbols-outlined text-title-m text-accent animate-spin">progress_activity</span></div>
             ) : !shoppingItems || shoppingItems.length === 0 ? (
               <p className="font-mono text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
             ) : (
@@ -381,7 +381,7 @@ export default function MyMenuScreen({ profile }: Props) {
       </div>
 
       <div>
-        <h2 className="font-sans font-extrabold text-xl text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
+        <h2 className="font-sans font-extrabold text-title-m text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
         <p className="font-mono text-label text-ink-2">{day?.dietName ?? 'Día libre'}</p>
       </div>
 
@@ -410,7 +410,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 >
                   {meal.recipeImage
                     ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-xl text-ink-3">skillet</span></div>}
+                    : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-title-m text-ink-3">skillet</span></div>}
                 </button>
 
                 <div className="flex-1 min-w-0">

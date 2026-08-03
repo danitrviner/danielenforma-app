@@ -886,7 +886,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-sans font-bold text-lg text-white">Plantillas de mesociclo</h2>
+          <h2 className="font-sans font-bold text-title-m text-white">Plantillas de mesociclo</h2>
           <p className="font-mono text-caption text-ink-2 mt-0.5">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>

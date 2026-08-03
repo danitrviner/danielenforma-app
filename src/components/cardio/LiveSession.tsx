@@ -55,7 +55,7 @@ export default function LiveSession({
       style={{ background: `linear-gradient(180deg, ${zoneColor}f2, ${zoneColor}cc)` }}
     >
       <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)]">
-        <span className="material-symbols-outlined text-white/80 text-lg">
+        <span className="material-symbols-outlined text-white/80 text-title-m">
           {deviceStatus === 'connected' ? 'bluetooth_connected' : deviceStatus === 'reconnecting' ? 'bluetooth_searching' : 'bluetooth_disabled'}
         </span>
         <p className="text-label font-mono text-white/80 tabular-nums">{fmtClock(elapsedSec)}</p>
@@ -102,11 +102,11 @@ export default function LiveSession({
         <div className="flex justify-center gap-3">
           <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
             <p className="text-caption font-mono uppercase text-white/70">FC prom.</p>
-            <p className="text-lg font-sans font-bold text-white tabular-nums">{avgHR ?? '--'}</p>
+            <p className="text-title-m font-sans font-bold text-white tabular-nums">{avgHR ?? '--'}</p>
           </div>
           <div className="flex-1 max-w-[140px] bg-black/25 rounded-surface p-2.5 text-center">
             <p className="text-caption font-mono uppercase text-white/70">FC máx.</p>
-            <p className="text-lg font-sans font-bold text-white tabular-nums">{maxHRSoFar ?? '--'}</p>
+            <p className="text-title-m font-sans font-bold text-white tabular-nums">{maxHRSoFar ?? '--'}</p>
           </div>
         </div>
 

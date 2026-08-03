@@ -152,7 +152,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
+        <h2 className="font-sans font-black text-title-m tracking-tight text-white uppercase flex items-center gap-2">
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
           Análisis nutricional
         </h2>
@@ -280,7 +280,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub: 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
       <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
-      <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
+      <span className="block font-sans font-bold text-title-m text-white mt-1">{value}</span>
       <span className="block font-mono text-caption text-ink-2 mt-0.5">{sub}</span>
     </div>
   );

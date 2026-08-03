@@ -218,7 +218,7 @@ export default function MyDietsScreen({ profile }: Props) {
       <div className="w-full space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="font-sans font-bold text-lg text-white">{editingId ? 'Editar dieta' : 'Nueva dieta'}</h2>
+            <h2 className="font-sans font-bold text-title-m text-white">{editingId ? 'Editar dieta' : 'Nueva dieta'}</h2>
             {editingId && !form.selfManaged && (
               <span className="text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                 De tu entrenador
@@ -333,7 +333,7 @@ export default function MyDietsScreen({ profile }: Props) {
             <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
               <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
-                  <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
+                  <h3 className="font-sans font-bold text-title-m text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
                     <span className="font-mono text-caption text-ink-2 uppercase">
                       {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}

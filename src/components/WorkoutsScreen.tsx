@@ -385,7 +385,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
-                <h3 className="font-sans font-bold text-white text-lg">¿Eliminar rutina?</h3>
+                <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar rutina?</h3>
               </div>
               <p className="text-body-s text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
               <div className="flex gap-3">
@@ -436,7 +436,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           value={editorName}
           onChange={e => setEditorName(e.target.value)}
           placeholder="ej. Fullbody A — Semana 1"
-          className="w-full bg-raised border border-hairline rounded-control px-4 py-3.5 text-lg font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+          className="w-full bg-raised border border-hairline rounded-control px-4 py-3.5 text-title-m font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
         />
       </div>
 
@@ -617,7 +617,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <div className="bg-raised border border-hairline rounded-t-surface md:rounded-surface w-full md:max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
             {/* Picker header */}
             <div className="flex items-center justify-between p-5 border-b border-hairline flex-shrink-0">
-              <h3 className="font-sans font-bold text-white text-lg">Seleccionar ejercicio</h3>
+              <h3 className="font-sans font-bold text-white text-title-m">Seleccionar ejercicio</h3>
               <button onClick={() => setShowPicker(false)} className="text-ink-2 hover:text-white transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>

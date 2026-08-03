@@ -35,7 +35,7 @@ export default function RecentAchievements({ achievements }: Props) {
             style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
           >
             <span
-              className="material-symbols-outlined text-xl w-9 h-9 rounded-full flex items-center justify-center"
+              className="material-symbols-outlined text-title-m w-9 h-9 rounded-full flex items-center justify-center"
               style={{ color: a.color, backgroundColor: `${a.color}1a` }}
             >
               {a.icon}

@@ -267,25 +267,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">tune</span>
+          <span className="material-symbols-outlined text-title-m">tune</span>
         </button>
         <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">menu_book</span>
+          <span className="material-symbols-outlined text-title-m">menu_book</span>
         </button>
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
         <button onClick={() => setShowList(s => !s)} title="Historial de chats"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">history</span>
+          <span className="material-symbols-outlined text-title-m">history</span>
         </button>
         <button onClick={startNew} title="Chat nuevo"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">add_comment</span>
+          <span className="material-symbols-outlined text-title-m">add_comment</span>
         </button>
         <button onClick={() => setOpen(false)} title="Cerrar"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">close</span>
+          <span className="material-symbols-outlined text-title-m">close</span>
         </button>
       </div>
 
@@ -314,7 +314,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               </div>
               <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat"
                 className="p-1 text-ink-2 hover:text-danger">
-                <span className="material-symbols-outlined text-[18px]">delete</span>
+                <span className="material-symbols-outlined text-title-m">delete</span>
               </button>
             </div>
           ))}
@@ -484,12 +484,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
                     className={`p-2.5 rounded-control border transition-colors disabled:opacity-30 ${listening ? 'bg-danger/15 border-danger/40 text-danger animate-pulse' : 'bg-white/5 border-hairline text-ink-2 hover:text-white'}`}>
-                    <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
+                    <span className="material-symbols-outlined block text-title-m">{listening ? 'stop_circle' : 'mic'}</span>
                   </button>
                 )}
                 <button onClick={send} disabled={busy || !input.trim()} title="Enviar"
                   className="p-2.5 rounded-control bg-accent text-black disabled:opacity-30 transition-opacity">
-                  <span className="material-symbols-outlined block text-[20px]">send</span>
+                  <span className="material-symbols-outlined block text-title-m">send</span>
                 </button>
               </div>
             )}

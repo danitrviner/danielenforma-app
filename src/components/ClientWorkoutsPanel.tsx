@@ -86,7 +86,7 @@ export default function ClientWorkoutsPanel({
     <div className="space-y-6">
       {/* Periodización de entrenamiento — visión analítica */}
       <div>
-        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
+        <h2 className="font-sans font-black text-title-m tracking-tight text-white uppercase flex items-center gap-2">
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Periodización de entrenamiento
         </h2>
@@ -279,7 +279,7 @@ export default function ClientWorkoutsPanel({
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center sm:p-4">
           <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 w-full sm:max-w-md shadow-2xl space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Asignar entrenamiento</h2>
+              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">Asignar entrenamiento</h2>
               <button onClick={() => setShowAssignModal(false)} className="text-ink-2 hover:text-white transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>

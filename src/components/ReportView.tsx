@@ -258,7 +258,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-sans font-bold text-lg text-white">{report.title}</h3>
+        <h3 className="font-sans font-bold text-title-m text-white">{report.title}</h3>
         <p className="font-mono text-caption text-ink-2 mt-0.5">
           {fmtReportDate(report.periodStart)} – {fmtReportDate(report.periodEnd)}
           {report.sentAt && ` · enviado el ${new Date(report.sentAt).toLocaleDateString('es-ES')}`}

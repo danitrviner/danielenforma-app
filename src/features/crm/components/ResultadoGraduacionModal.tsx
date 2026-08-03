@@ -44,7 +44,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             disabled={actualizar.isPending}
             className="flex items-center gap-2 p-3 rounded-control bg-success/10 border border-success/25 hover:bg-success/15 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-success">trending_up</span>
+            <span className="material-symbols-outlined text-title-m text-success">trending_up</span>
             <div>
               <p className="font-sans font-bold text-label text-ink">Sigue con nosotros</p>
               <p className="font-mono text-caption text-ink-3">Pasa a continuidad</p>
@@ -56,7 +56,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             disabled={actualizar.isPending}
             className="flex items-center gap-2 p-3 rounded-control bg-white/5 border border-hairline hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-ink-2">flag</span>
+            <span className="material-symbols-outlined text-title-m text-ink-2">flag</span>
             <div>
               <p className="font-sans font-bold text-label text-ink">No continúa</p>
               <p className="font-mono text-caption text-ink-3">Termina el programa aquí</p>

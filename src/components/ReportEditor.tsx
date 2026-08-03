@@ -42,7 +42,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
           {/* Header */}
           <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
+              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
               <p className="font-mono text-caption text-ink-2 mt-0.5">
@@ -85,7 +85,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-2.5 text-left"
                     >
-                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
+                      <span className={`material-symbols-outlined text-title-m flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
                         {s.included ? 'check_box' : 'check_box_outline_blank'}
                       </span>
                       <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>

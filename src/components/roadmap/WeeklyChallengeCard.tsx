@@ -35,7 +35,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg" style={{ color: accent }}>
+          <span className="material-symbols-outlined text-title-m" style={{ color: accent }}>
             {achieved ? 'emoji_events' : 'flag'}
           </span>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">
@@ -49,7 +49,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
         )}
       </div>
 
-      <h3 className="font-sans font-black text-lg text-white leading-tight">{challenge.title}</h3>
+      <h3 className="font-sans font-black text-title-m text-white leading-tight">{challenge.title}</h3>
       <p className="text-ink-2 text-label font-mono leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
@@ -88,12 +88,12 @@ export function ChallengePendingCard() {
       style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
     >
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: 'var(--color-accent)' }}>
+        <span className="material-symbols-outlined text-title-m animate-pulse" style={{ color: 'var(--color-accent)' }}>
           hourglass_top
         </span>
         <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
-      <h3 className="font-sans font-black text-lg text-white leading-tight">Tu entrenador está preparando tu reto</h3>
+      <h3 className="font-sans font-black text-title-m text-white leading-tight">Tu entrenador está preparando tu reto</h3>
       <p className="text-ink-2 text-label font-mono leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>

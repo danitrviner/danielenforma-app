@@ -81,7 +81,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
+        <h2 className="font-sans font-bold text-title-m text-white">Cuestionarios</h2>
         <button
           onClick={() => openEditor()}
           className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"

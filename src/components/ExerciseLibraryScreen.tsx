@@ -489,7 +489,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
-              <h3 className="font-sans font-bold text-white text-lg">¿Eliminar ejercicio?</h3>
+              <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar ejercicio?</h3>
             </div>
             <p className="text-body-s text-ink-2">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>
             <div className="flex gap-3">
@@ -515,7 +515,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-hairline rounded-surface p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
+              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
               </h2>
               <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white p-1 rounded-control transition-colors">

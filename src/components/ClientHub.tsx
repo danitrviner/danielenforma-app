@@ -406,7 +406,7 @@ export default function ClientHub({
           <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-sans font-bold text-white text-xl leading-tight">{athlete.displayName}</h1>
+              <h1 className="font-sans font-bold text-white text-title-m leading-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
             <p className="font-mono text-caption text-ink-2">{athlete.email}</p>

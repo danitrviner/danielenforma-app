@@ -193,7 +193,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       <div className="w-full max-w-lg mx-auto px-6 pt-8">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-control" />
-          <span className="font-sans font-black text-lg tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-black text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
           <span className="ml-auto font-mono text-caption text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">

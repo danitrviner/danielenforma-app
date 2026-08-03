@@ -556,7 +556,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                             <div className="w-12 h-12 rounded-surface overflow-hidden flex-shrink-0 bg-raised border border-hairline">
                               {meal.recipeImage
                                 ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-lg text-ink-3">skillet</span></div>}
+                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-title-m text-ink-3">skillet</span></div>}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">

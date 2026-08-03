@@ -113,7 +113,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Road map del atleta</h2>
+        <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">Road map del atleta</h2>
         <p className="text-ink-2 text-label font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
       </div>
 

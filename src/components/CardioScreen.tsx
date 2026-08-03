@@ -651,7 +651,7 @@ export default function CardioScreen({ profile }: Props) {
                     <p className="text-caption text-ink-2 font-mono mt-0.5">{s.tags.join(' · ')}</p>
                   )}
                 </div>
-                <span className="material-symbols-outlined text-ink-2 text-lg">chevron_right</span>
+                <span className="material-symbols-outlined text-ink-2 text-title-m">chevron_right</span>
               </button>
             ))}
           </section>

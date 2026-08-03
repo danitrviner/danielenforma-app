@@ -224,7 +224,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-hairline rounded-surface p-6 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
+              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar alimento' : 'Nuevo alimento'}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-ink-2 hover:text-white">
@@ -285,7 +285,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       {deleteId && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <h3 className="font-sans font-bold text-lg text-white">¿Eliminar alimento?</h3>
+            <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar alimento?</h3>
             <div className="flex gap-3">
               <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
               <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>

@@ -16,7 +16,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
   return (
     <div className="space-y-3">
       <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 flex items-center gap-3">
-        <span className="material-symbols-outlined text-lg text-accent">flag</span>
+        <span className="material-symbols-outlined text-title-m text-accent">flag</span>
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fin de programa</p>
           <p className="font-sans font-bold text-body-s text-ink">

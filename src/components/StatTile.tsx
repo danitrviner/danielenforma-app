@@ -13,13 +13,13 @@ export default function StatTile({ icon, label, value, accent = 'var(--color-acc
   return (
     <div className="bg-raised border border-hairline rounded-surface p-3 flex flex-col items-center text-center gap-1.5">
       <span
-        className="material-symbols-outlined text-lg w-8 h-8 rounded-full flex items-center justify-center"
+        className="material-symbols-outlined text-title-m w-8 h-8 rounded-full flex items-center justify-center"
         style={{ color: accent, backgroundColor: `${accent}1a` }}
       >
         {icon}
       </span>
       <span className="font-mono text-caption uppercase tracking-widest text-ink-2">{label}</span>
-      <span className="font-sans font-black text-lg text-white leading-none">{value}</span>
+      <span className="font-sans font-black text-title-m text-white leading-none">{value}</span>
     </div>
   );
 }

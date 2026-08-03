@@ -100,7 +100,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         >
           <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
         </button>
-        <h2 className="font-sans font-bold text-xl text-white">
+        <h2 className="font-sans font-bold text-title-m text-white">
           {isNew ? 'Nuevo cuestionario' : 'Editar cuestionario'}
         </h2>
       </div>
