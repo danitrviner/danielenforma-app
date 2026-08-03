@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T19:53:39.078Z",
-  "commit": "93ac2fb",
+  "generado": "2026-08-03T20:55:14.628Z",
+  "commit": "9f2769c",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39926
+    "lineasTsx": 39922
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5281,
+    "clasesTokenEnUso": 5272,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1020,
-    "fontSans": 1082,
+    "fontMono": 1018,
+    "fontSans": 1078,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 364,
+    "transitionAll": 361,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -321,10 +321,10 @@
       "roundedFull": 2
     },
     "src/components/CoachNotesPanel.tsx": {
-      "clasesTokenEnUso": 28,
+      "clasesTokenEnUso": 27,
       "fontMono": 1,
-      "fontSans": 6,
-      "transitionAll": 2,
+      "fontSans": 4,
+      "transitionAll": 1,
       "roundedFull": 1
     },
     "src/components/CoachRoadmapView.tsx": {
@@ -538,10 +538,8 @@
       "roundedFull": 3
     },
     "src/components/PendingTasksPanel.tsx": {
-      "clasesTokenEnUso": 18,
-      "fontMono": 1,
-      "fontSans": 3,
-      "transitionAll": 1,
+      "clasesTokenEnUso": 13,
+      "fontSans": 2,
       "roundedFull": 1
     },
     "src/components/PendingTray.tsx": {
@@ -676,10 +674,10 @@
       "roundedFull": 2
     },
     "src/components/TaskManagerPanel.tsx": {
-      "clasesTokenEnUso": 28,
-      "fontMono": 2,
-      "fontSans": 4,
-      "transitionAll": 2
+      "clasesTokenEnUso": 25,
+      "fontMono": 1,
+      "fontSans": 3,
+      "transitionAll": 1
     },
     "src/components/TrainingCoachScreen.tsx": {
       "clasesTokenEnUso": 10,
