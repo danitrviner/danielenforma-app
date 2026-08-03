@@ -4,7 +4,7 @@ import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
-import { ListRow } from './ui';
+import { ListRow, Button } from './ui';
 
 interface Props {
   athletes: UserProfile[];
@@ -109,13 +109,9 @@ export default function CoachNotesPanel({ athletes }: Props) {
               <option key={a.email} value={a.email}>{a.displayName}</option>
             ))}
           </select>
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving} fullWidth>
             {saving ? 'Guardando...' : 'Guardar nota'}
-          </button>
+          </Button>
         </form>
       )}
 
