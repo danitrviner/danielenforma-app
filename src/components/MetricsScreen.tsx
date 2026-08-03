@@ -283,9 +283,10 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
 
               <div>
                 <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">Notas (Opcional)</label>
-                <textarea 
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  maxLength={2000}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
                   className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[75px]"
                 ></textarea>

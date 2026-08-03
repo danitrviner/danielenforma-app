@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, isSignInWithEmailLink, signInWithEmailLink } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, sendPasswordResetEmail, isSignInWithEmailLink, signInWithEmailLink } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
 
 interface WelcomeScreenProps {
@@ -132,55 +132,6 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         setError('La autenticación con Correo/Contraseña no está habilitada en la consola Firebase. Usa el botón "Google Sign-In" de abajo para ingresar de forma instantánea sin contraseña.');
       } else {
         setError(err.message || 'Error de autenticación.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sandbox login: always resets any in-progress loading state first
-  const handleSandboxLogin = async (role: 'client' | 'coach') => {
-    setError('');
-    setLoading(true); // grab the lock (cancels any concurrent form submission visually)
-    const sandboxEmail = role === 'coach' ? 'danitrviner@gmail.com' : 'atleta@enforma.com';
-    const sandboxPassword = 'enforma_sandbox_123';
-    
-    try {
-      let user;
-
-      // 1. Intenta sign-in con credenciales existentes
-      try {
-        const result = await signInWithEmailAndPassword(auth, sandboxEmail, sandboxPassword);
-        user = result.user;
-      } catch (loginErr: any) {
-        // 2. Solo si el usuario no existe, intenta crearlo
-        if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') {
-          const result = await createUserWithEmailAndPassword(auth, sandboxEmail, sandboxPassword);
-          user = result.user;
-        } else {
-          throw loginErr;
-        }
-      }
-
-      // 3. Éxito — flujo Firebase real, sin bypass
-      setLocalBypassMode(false);
-      localStorage.setItem('enforma_sandbox_role_hint', role);
-      onLoginSuccess(user);
-    } catch (err: any) {
-      // 4. Bypass SOLO ante operation-not-allowed o error de red (sin código Firebase)
-      if (err.code === 'auth/operation-not-allowed' || !err.code) {
-        console.warn('Firebase Auth bloqueado o sin red. Entrando en Offline Local Bypass:', err);
-        setLocalBypassMode(true);
-        localStorage.setItem('enforma_sandbox_role_hint', role);
-        const mockUser = {
-          uid: role === 'coach' ? 'coach_dani_local' : 'client_alex_default',
-          email: sandboxEmail,
-          displayName: role === 'coach' ? 'Dani Coach (En Forma)' : 'Atleta En Forma',
-        };
-        onLoginSuccess(mockUser);
-      } else {
-        console.error('Sandbox login error:', err.code, err.message);
-        setError(`Error de acceso (${err.code}). Intenta con Google o el formulario.`);
       }
     } finally {
       setLoading(false);
@@ -331,23 +282,6 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           Google Sign-In
         </button>
 
-        {/* Guest Demo — solo en entorno de desarrollo */}
-        {import.meta.env.DEV && (
-          <div className="mt-8 pt-6 border-t border-white/60 text-center">
-            <span className="block text-xs font-mono text-[#fbcb1a] uppercase mb-4 tracking-wider font-extrabold">DEV · Acceso Sandbox</span>
-            <button
-              onClick={() => handleSandboxLogin('client')}
-              disabled={loading}
-              className="w-full py-3 px-3 bg-gradient-to-r from-teal-950 to-[#121414] hover:from-teal-900 border border-teal-700/60 rounded-md text-teal-200 text-xs font-mono flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
-            >
-              <span className="material-symbols-outlined text-lg">fitness_center</span>
-              <span className="font-bold">Sandbox Atleta</span>
-            </button>
-            <p className="text-[10px] text-[#c6c9ab] mt-2 font-mono">
-              Solo visible en desarrollo. En producción, usa Google Sign-In.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
