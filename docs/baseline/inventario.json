@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-03T23:05:28.317Z",
-  "commit": "1c9fd7b",
+  "generado": "2026-08-03T23:13:10.213Z",
+  "commit": "e483676",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39430
+    "lineasTsx": 39435
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4987,
+    "clasesTokenEnUso": 4981,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 993,
-    "fontSans": 972,
+    "fontMono": 992,
+    "fontSans": 968,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -126,12 +126,12 @@
         "lineas": 766
       },
       {
-        "archivo": "src/components/WorkoutsScreen.tsx",
-        "lineas": 700
+        "archivo": "src/components/MyMenuScreen.tsx",
+        "lineas": 701
       },
       {
-        "archivo": "src/components/MyMenuScreen.tsx",
-        "lineas": 696
+        "archivo": "src/components/WorkoutsScreen.tsx",
+        "lineas": 700
       },
       {
         "archivo": "src/components/ExerciseLibraryScreen.tsx",
@@ -432,9 +432,9 @@
       "roundedFull": 3
     },
     "src/components/MyMenuScreen.tsx": {
-      "clasesTokenEnUso": 111,
-      "fontMono": 18,
-      "fontSans": 29,
+      "clasesTokenEnUso": 105,
+      "fontMono": 17,
+      "fontSans": 25,
       "modalesArtesanales": 2,
       "transitionAll": 5,
       "roundedFull": 2

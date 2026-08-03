@@ -14,6 +14,7 @@ import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
+import { Icon, EmptyState, ListRow, Badge } from './ui';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -289,17 +290,19 @@ export default function MyMenuScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <span className="material-symbols-outlined text-display text-accent animate-spin">progress_activity</span>
+        <Icon name="progress_activity" size="xl" className="text-accent animate-spin" />
       </div>
     );
   }
 
   if (!menu) {
     return (
-      <div className="bg-surface border border-hairline rounded-surface p-8 text-center space-y-2">
-        <span className="material-symbols-outlined text-display text-ink-3 block">restaurant_menu</span>
-        <p className="font-sans font-bold text-body-s text-white">Todavía no tienes un menú semanal</p>
-        <p className="font-sans text-label text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
+      <div className="bg-surface border border-hairline rounded-surface">
+        <EmptyState
+          icon="restaurant_menu"
+          title="Todavía no tienes un menú semanal"
+          description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios."
+        />
       </div>
     );
   }
@@ -331,7 +334,7 @@ export default function MyMenuScreen({ profile }: Props) {
       {menu.batchCooking && batchPlan.length > 0 && (
         <div className="bg-accent/5 border border-accent/25 rounded-surface p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">inventory_2</span>
+            <Icon name="inventory_2" size="m" className="text-accent" />
             <div>
               <p className="font-sans font-bold text-body-s text-white">Cocina de la semana</p>
               <p className="font-sans text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
@@ -339,13 +342,17 @@ export default function MyMenuScreen({ profile }: Props) {
           </div>
           <div className="space-y-2">
             {batchPlan.map(e => (
-              <div key={e.recipeId} className="flex items-center gap-3 bg-bg border border-hairline rounded-surface px-3 py-2">
-                <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                  {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
-                </div>
-                <span className="flex-1 font-sans text-label text-white truncate">{e.recipeName}</span>
-                <span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>
-              </div>
+              <ListRow
+                key={e.recipeId}
+                className="rounded-surface border bg-bg border-hairline"
+                leading={
+                  <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
+                    {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
+                  </div>
+                }
+                title={e.recipeName}
+                trailing={<span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>}
+              />
             ))}
           </div>
         </div>
@@ -355,15 +362,15 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
-            <span className="material-symbols-outlined text-data text-title-s">shopping_cart</span>
+            <Icon name="shopping_cart" size="m" className="text-data" />
             Lista de la compra de la semana
           </span>
-          <span className="material-symbols-outlined text-ink-2 text-title-s">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
+          <Icon name={shoppingOpen ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />
         </button>
         {shoppingOpen && (
           <div className="px-4 pb-4">
             {shoppingLoading ? (
-              <div className="flex justify-center py-4"><span className="material-symbols-outlined text-title-m text-accent animate-spin">progress_activity</span></div>
+              <div className="flex justify-center py-4"><Icon name="progress_activity" size="l" className="text-accent animate-spin" /></div>
             ) : !shoppingItems || shoppingItems.length === 0 ? (
               <p className="font-sans text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
             ) : (
@@ -387,8 +394,8 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
-        <div className="bg-surface border border-hairline rounded-surface p-6 text-center">
-          <p className="font-sans text-label text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
+        <div className="bg-surface border border-hairline rounded-surface">
+          <EmptyState icon="event_busy" title="Sin menú para este día" description="Usa Intercambios si quieres montarte algo igualmente." />
         </div>
       ) : (
         <div className="space-y-3">
@@ -401,7 +408,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
                   title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                 >
-                  {done && <span className="material-symbols-outlined text-black text-title-s">check</span>}
+                  {done && <Icon name="check" size="m" className="text-black" />}
                 </button>
 
                 <button
@@ -410,7 +417,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 >
                   {meal.recipeImage
                     ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-title-m text-ink-3">skillet</span></div>}
+                    : <div className="w-full h-full flex items-center justify-center"><Icon name="skillet" size="l" className="text-ink-3" /></div>}
                 </button>
 
                 <div className="flex-1 min-w-0">
@@ -423,9 +430,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   {meal.complements.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 rounded-control">
-                          +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
-                        </span>
+                        <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
                       ))}
                     </div>
                   )}
@@ -434,7 +439,7 @@ export default function MyMenuScreen({ profile }: Props) {
                       onClick={() => openSwap(meal)}
                       className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
                     >
-                      <span className="material-symbols-outlined text-body-s">swap_horiz</span>
+                      <Icon name="swap_horiz" size="s" />
                       Intercambiar
                     </button>
                     {meal.recipeId && (
@@ -445,7 +450,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           className="flex items-center transition-colors"
                           style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
                         >
-                          <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                          <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
                         </button>
                         <button
                           onClick={() => toggleDislike(meal.recipeId, meal)}
@@ -453,7 +458,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           className="flex items-center transition-colors"
                           style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
                         >
-                          <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+                          <Icon name="thumb_down" size="m" filled={isDisliked(meal.recipeId)} />
                         </button>
                       </>
                     )}
@@ -469,10 +474,10 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
-            <span className="material-symbols-outlined text-accent text-title-s">tune</span>
+            <Icon name="tune" size="m" className="text-accent" />
             Tipos de comida que prefieres
           </span>
-          <span className="material-symbols-outlined text-ink-2 text-title-s">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
+          <Icon name={dishPrefsOpen ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />
         </button>
         {dishPrefsOpen && (
           <div className="px-4 pb-4 space-y-3">
@@ -534,7 +539,7 @@ export default function MyMenuScreen({ profile }: Props) {
           </span>
           <span className="flex-1">
             <span className="flex items-center gap-2 font-sans font-bold text-label text-white">
-              <span className="material-symbols-outlined text-body-s text-accent">inventory_2</span>
+              <Icon name="inventory_2" size="s" className="text-accent" />
               Prefiero batch cooking
             </span>
             <span className="block font-sans text-caption text-ink-2 ">Cocinar todo de una vez y repartirlo por días.</span>
@@ -551,7 +556,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-body-s text-white">Elige una alternativa</h3>
               <button onClick={() => setSwapFor(null)} className="text-ink-2 hover:text-white">
-                <span className="material-symbols-outlined text-title-s">close</span>
+                <Icon name="close" size="m" />
               </button>
             </div>
             {swapLoading ? (
@@ -585,14 +590,14 @@ export default function MyMenuScreen({ profile }: Props) {
           <div onClick={e => e.stopPropagation()} className="bg-surface border border-hairline rounded-surface w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
-                <span className="material-symbols-outlined text-title-l text-accent animate-spin">progress_activity</span>
+                <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
               </div>
             ) : detailRecipe ? (
               <>
                 <div className="flex items-center justify-between">
                   <h3 className="font-sans font-bold text-title-s text-white">{detailRecipe.name}</h3>
                   <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <span className="material-symbols-outlined text-title-s">close</span>
+                    <Icon name="close" size="m" />
                   </button>
                 </div>
                 {(detailRecipe.image ?? detailRecipe.photoUrl) && (
@@ -682,7 +687,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <>
                 <div className="flex justify-end">
                   <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <span className="material-symbols-outlined text-title-s">close</span>
+                    <Icon name="close" size="m" />
                   </button>
                 </div>
                 <p className="font-sans text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
