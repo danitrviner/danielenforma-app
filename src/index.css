@@ -213,6 +213,14 @@
   --z-toast:   200;  /* avisos: siempre por encima de todo                    */
 }
 
+/* Los títulos reparten sus líneas en vez de dejar una palabra suelta abajo.
+   Evita el «Historial / unificado» partido en dos que señala la auditoría.
+   Se aplica a los encabezados, no a los tokens: un token es un tamaño y puede
+   usarse en algo que no sea un título. */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
 @layer utilities {
   .volt-glow {
     box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);
