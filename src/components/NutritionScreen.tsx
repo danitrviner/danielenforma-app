@@ -9,6 +9,7 @@ import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -902,17 +903,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <Skeleton className="h-24 w-full rounded-surface" />
         </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
-        <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
-          <p className="text-ink-2 text-body-s font-sans">Aún no tienes ningún menú.</p>
-          <p className="text-ink-2 text-label font-sans mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
-          <button
-            onClick={handleStartBlank}
-            className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-body-s">add</span>
-            Crear mi primer menú
-          </button>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="nutrition"
+            title="Aún no tienes ningún menú."
+            description="Crea tu propio menú con alimentos y recetas hasta completar tus intercambios."
+            actionLabel="Crear mi primer menú"
+            onAction={handleStartBlank}
+          />
         </div>
       ) : viewDay !== TODAY_WD ? (() => {
         const browseDietId = weeklySchedule[viewDay] ?? null;
