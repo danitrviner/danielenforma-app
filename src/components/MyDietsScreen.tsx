@@ -207,8 +207,8 @@ export default function MyDietsScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="space-y-3">
-        <Skeleton className="h-24 w-full rounded-2xl" />
-        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-24 w-full rounded-surface" />
+        <Skeleton className="h-24 w-full rounded-surface" />
       </div>
     );
   }
@@ -220,7 +220,7 @@ export default function MyDietsScreen({ profile }: Props) {
           <div className="flex items-center gap-2">
             <h2 className="font-sans font-bold text-lg text-white">{editingId ? 'Editar dieta' : 'Nueva dieta'}</h2>
             {editingId && !form.selfManaged && (
-              <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-accent/10 text-accent border-accent/20">
+              <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                 De tu entrenador
               </span>
             )}
@@ -235,11 +235,11 @@ export default function MyDietsScreen({ profile }: Props) {
           placeholder="Nombre de la dieta"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full bg-surface border border-hairline rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-accent/50"
+          className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-white text-sm focus:outline-none focus:border-accent/50"
         />
 
         {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
-        <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+        <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
             {form.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
           </p>
@@ -254,10 +254,10 @@ export default function MyDietsScreen({ profile }: Props) {
                     step={0.25}
                     value={form.budget[cat]}
                     onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                    className="w-full bg-raised border border-hairline rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
+                    className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
                   />
                 ) : (
-                  <div className="w-full bg-raised/50 border border-hairline rounded-xl px-2 py-1.5 text-white text-xs">
+                  <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-1.5 text-white text-xs">
                     {fmtQty(form.budget[cat])}
                   </div>
                 )}
@@ -270,7 +270,7 @@ export default function MyDietsScreen({ profile }: Props) {
         {/* Meals */}
         <div className="space-y-3">
           {form.meals.map((meal, mi) => (
-            <div key={meal.id} className="bg-raised rounded-xl border border-hairline overflow-hidden">
+            <div key={meal.id} className="bg-raised rounded-surface border border-hairline overflow-hidden">
               <div className="px-4 py-3 bg-raised/80 flex items-center gap-2">
                 <input
                   type="text"
@@ -288,8 +288,8 @@ export default function MyDietsScreen({ profile }: Props) {
                 {meal.items.length === 0 ? (
                   <p className="text-center py-2 font-mono text-[10px] text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface border border-hairline">
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]}`}>
+                  <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-surface bg-surface border border-hairline">
+                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                       {item.category.replace('_', ' ')}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -317,20 +317,20 @@ export default function MyDietsScreen({ profile }: Props) {
           ))}
           <button
             onClick={addMeal}
-            className="w-full py-2.5 rounded-xl border border-dashed border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+            className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
           >+ Añadir comida</button>
         </div>
 
         <button
           onClick={handleSave}
           disabled={!form.name.trim()}
-          className="w-full py-3 rounded-xl bg-accent text-black font-sans font-bold text-sm disabled:opacity-40 hover:bg-accent-press transition-all"
+          className="w-full py-3 rounded-control bg-accent text-black font-sans font-bold text-sm disabled:opacity-40 hover:bg-accent-press transition-all"
         >Guardar dieta</button>
 
         {/* Food picker sheet */}
         {pickerMealId && (
           <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
               <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
@@ -350,7 +350,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <button
                     key={tab}
                     onClick={() => setPickerTab(tab)}
-                    className={`flex-1 py-2 rounded-t-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    className={`flex-1 py-2 rounded-t-control font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${
                       pickerTab === tab ? 'bg-surface text-accent' : 'text-ink-2 hover:text-white'
                     }`}
                   >{tab === 'alimentos' ? 'Alimentos' : 'Recetas'}</button>
@@ -381,10 +381,10 @@ export default function MyDietsScreen({ profile }: Props) {
                     <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-hairline hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
-                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]}`}>
+                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
                           {food.category.replace('_', ' ')}
                         </span>
                       )}
@@ -399,12 +399,12 @@ export default function MyDietsScreen({ profile }: Props) {
                     </div>
                   ) : filteredRecipes.map(recipe => (
                     <button key={recipe.id} onClick={() => addRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-hairline hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
-                        <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-surface object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-ink-2 text-base">skillet</span>
                         </div>
                       )}
@@ -430,7 +430,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -438,7 +438,7 @@ export default function MyDietsScreen({ profile }: Props) {
       </div>
 
       {diets.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-hairline rounded-2xl">
+        <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">bookmark</span>
           <p className="text-ink-2 text-sm font-sans">Aún no tienes ninguna dieta guardada.</p>
           <p className="text-ink-3 text-xs font-sans mt-1">Créala aquí con "Nueva", o desde Nutrición → Intercambios para partir de tu día a día.</p>
@@ -448,19 +448,19 @@ export default function MyDietsScreen({ profile }: Props) {
           {diets.map(dt => {
             const dPlaced = computeDietPlaced(dt.meals);
             return (
-              <div key={dt.id} className="bg-surface border border-hairline rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div key={dt.id} className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="block font-sans font-bold text-sm text-white truncate">{dt.name}</span>
                     {!dt.selfManaged && (
-                      <span className="flex-shrink-0 text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-accent/10 text-accent border-accent/20">
+                      <span className="flex-shrink-0 text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                         De tu entrenador
                       </span>
                     )}
                   </div>
                   <div className="flex gap-2 mt-1.5 flex-wrap">
                     {BUDGET_CATS.map(cat => dt.budget[cat] > 0 && (
-                      <span key={cat} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${CAT_BG[cat]}`}>
+                      <span key={cat} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-control border ${CAT_BG[cat]}`}>
                         {cat}: {fmtQty(dPlaced[cat])}/{fmtQty(dt.budget[cat])}
                       </span>
                     ))}

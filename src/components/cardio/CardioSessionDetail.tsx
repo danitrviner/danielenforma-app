@@ -71,7 +71,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         />
 
         {comparison.count > 0 && (
-          <div className="bg-surface border border-hairline rounded-xl p-3">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
             <p className="text-[9px] font-mono uppercase text-ink-2 mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
             <div className="flex gap-4 text-xs font-mono">
               {pctDelta(session.durationSec, comparison.durationSec) && (
@@ -102,13 +102,13 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         </div>
 
         {chartData.length > 1 && zones && (
-          <div className="bg-surface border border-hairline rounded-2xl p-3">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
             <HrChart data={chartData} zones={zones} />
           </div>
         )}
 
         {zones && (
-          <div className="bg-surface border border-hairline rounded-2xl p-3">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
             <ZoneBars timeInZone={session.timeInZoneSec} belowZoneSec={0} elapsedSec={session.durationSec} />
           </div>
         )}
@@ -134,13 +134,13 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-[10px] font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-surface border border-hairline rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>
 
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>
@@ -150,7 +150,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-surface border border-hairline rounded-xl p-2.5 text-center">
+    <div className="bg-surface border border-hairline rounded-surface p-2.5 text-center">
       <p className="text-[8px] font-mono uppercase text-ink-2">{label}</p>
       <p className="text-sm font-sans font-bold text-white mt-0.5">{value}</p>
     </div>

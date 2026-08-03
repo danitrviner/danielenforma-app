@@ -52,8 +52,8 @@ export default function AcademyScreen({ profile }: Props) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-32 w-full rounded-surface" />
+        <Skeleton className="h-32 w-full rounded-surface" />
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span> {openCourse.title}
         </button>
-        <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
+        <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
           <iframe
             src={embedUrl(openLesson)}
             title={openLesson.title}
@@ -130,7 +130,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button
           onClick={() => handleCompleteLesson(openLesson)}
           disabled={done}
-          className={`w-full py-3 rounded-lg font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
+          className={`w-full py-3 rounded-control font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
         >
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
         </button>
@@ -160,7 +160,7 @@ export default function AcademyScreen({ profile }: Props) {
                 key={l.id}
                 onClick={() => unlocked && setOpenLessonId(l.id)}
                 disabled={!unlocked}
-                className={`w-full flex items-center gap-3 bg-surface border border-hairline rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
+                className={`w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
               >
                 <span className={`material-symbols-outlined ${done ? 'text-accent' : 'text-ink-2'}`}>
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
@@ -206,7 +206,7 @@ export default function AcademyScreen({ profile }: Props) {
                   key={c.id}
                   onClick={() => unlocked && setOpenCourseId(c.id)}
                   disabled={!unlocked}
-                  className={`text-left bg-surface border border-hairline rounded-2xl p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
+                  className={`text-left bg-surface border border-hairline rounded-control p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>

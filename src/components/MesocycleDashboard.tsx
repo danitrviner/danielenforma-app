@@ -52,7 +52,7 @@ const AXIS_TICK = { fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monosp
 
 function EmptyChart({ message }: { message: string }) {
   return (
-    <div className="h-36 flex items-center justify-center border border-dashed border-hairline rounded-xl">
+    <div className="h-36 flex items-center justify-center border border-dashed border-hairline rounded-surface">
       <p className="font-mono text-xs text-ink-2">{message}</p>
     </div>
   );
@@ -62,7 +62,7 @@ function EmptyChart({ message }: { message: string }) {
 
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+    <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
       <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>{icon}</span>
         {title}
@@ -143,7 +143,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-20 border border-dashed border-hairline rounded-2xl">
+      <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
         <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">bar_chart</span>
         <p className="text-ink-2 text-sm">Sin mesociclos para mostrar.</p>
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
@@ -225,7 +225,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       if (next.has(g)) next.delete(g); else next.add(g);
                       return next;
                     })}
-                    className={`px-2 py-0.5 rounded font-mono text-[10px] uppercase font-bold border transition-all ${
+                    className={`px-2 py-0.5 rounded-control font-mono text-[10px] uppercase font-bold border transition-all ${
                       hidden
                         ? 'bg-transparent border-hairline text-ink-3'
                         : 'border-transparent text-black'
@@ -239,7 +239,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               {hiddenGroups.size > 0 && (
                 <button
                   onClick={() => setHiddenGroups(new Set())}
-                  className="px-2 py-0.5 rounded font-mono text-[9px] text-ink-2 hover:text-white border border-hairline transition-colors"
+                  className="px-2 py-0.5 rounded-control font-mono text-[9px] text-ink-2 hover:text-white border border-hairline transition-colors"
                 >
                   Mostrar todos
                 </button>

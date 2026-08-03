@@ -20,11 +20,11 @@ export default function LevelLadderCard({ status }: Props) {
   const { currentLevel, nextLevel, nextLevelCriteria } = status;
 
   return (
-    <div className="rounded-3xl border border-hairline bg-bg p-5 flex flex-col gap-4">
+    <div className="rounded-canvas border border-hairline bg-bg p-5 flex flex-col gap-4">
       <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
+        <div className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
           <span className="material-symbols-outlined text-2xl">{currentLevel?.icon || 'military_tech'}</span>
         </div>
         <div>

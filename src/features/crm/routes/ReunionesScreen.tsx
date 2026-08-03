@@ -102,7 +102,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva reunión
@@ -113,7 +113,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
         <ErrorState />
       ) : cargando ? (
         <div className="space-y-1.5">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-white/4 animate-pulse" />)}
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-surface bg-white/4 animate-pulse" />)}
         </div>
       ) : eventos.length === 0 ? (
         <EmptyState
@@ -123,7 +123,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
           cta={{ label: 'Nueva reunión', onClick: () => setModalAbierto(true) }}
         />
       ) : (
-        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl divide-y divide-white/7">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
           {eventos.map(ev => {
             const whatsapp = enlaceWhatsApp(telefonoPorClientId.get(ev.clientId));
             const pasada = ev.fecha < hoy;
@@ -145,7 +145,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                     <a
                       href={whatsapp} target="_blank" rel="noopener noreferrer"
                       aria-label="Abrir WhatsApp" title="WhatsApp"
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+                      className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                     >
                       <span className="material-symbols-outlined text-base">chat</span>
                     </a>
@@ -156,7 +156,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => setEditando(ev.reunion!)}
                         aria-label="Editar" title="Editar"
-                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+                        className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">edit</span>
                       </button>
@@ -164,7 +164,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => marcarRealizada(ev.reunion!)}
                         disabled={actualizar.isPending && actualizar.variables?.id === ev.reunion!.id}
-                        className="px-2 py-1 rounded-lg bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
+                        className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
                       >
                         Realizada
                       </button>

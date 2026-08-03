@@ -65,7 +65,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
+      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-2.5 rounded-control'} border font-sans text-sm transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
           : 'bg-surface border-white/10 text-ink-2 hover:border-strong'
@@ -88,7 +88,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-const inputCls = 'w-full bg-surface border border-white/10 focus:border-accent/60 rounded-xl px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-surface border border-white/10 focus:border-accent/60 rounded-surface px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -192,7 +192,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       {/* Progreso */}
       <div className="w-full max-w-lg mx-auto px-6 pt-8">
         <div className="flex items-center gap-2 mb-2">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-md" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-control" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase text-accent">EN FORMA</span>
           <span className="ml-auto font-mono text-[10px] text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
         </div>
@@ -206,8 +206,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step === 0 && (
           <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
-                <video src="..." controls poster="..." className="rounded-2xl w-full" /> */}
-            <div className="bg-surface border border-white/10 rounded-2xl p-5 space-y-3">
+                <video src="..." controls poster="..." className="rounded-surface w-full" /> */}
+            <div className="bg-surface border border-white/10 rounded-surface p-5 space-y-3">
               {[
                 { icon: 'person', text: 'Cuéntanos sobre ti y tu objetivo' },
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
@@ -379,7 +379,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 6 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
-            <div className="bg-surface border border-accent/25 rounded-2xl p-5 space-y-2.5">
+            <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-2.5">
               {[
                 goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },
@@ -396,7 +396,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               })}
             </div>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-xl text-sm text-center">{error}</div>
+              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-surface text-sm text-center">{error}</div>
             )}
           </StepShell>
         )}
@@ -407,7 +407,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
+            className="px-5 py-3.5 rounded-control bg-white/5 border border-white/10 text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
           >
             Atrás
           </button>
@@ -416,7 +416,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-xl bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
           >
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </button>
@@ -424,7 +424,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={finish}
             disabled={saving}
-            className="flex-1 py-3.5 rounded-xl bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
           >
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
           </button>

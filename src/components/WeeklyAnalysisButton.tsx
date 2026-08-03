@@ -50,7 +50,7 @@ export default function WeeklyAnalysisButton() {
       <button
         onClick={run}
         disabled={busy}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
         <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         Análisis semanal IA
@@ -58,12 +58,12 @@ export default function WeeklyAnalysisButton() {
 
       {open && (
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
-          <div className="bg-bg border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg border border-white/10 rounded-surface w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
-                className="p-1.5 rounded-lg text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
+                className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
@@ -75,7 +75,7 @@ export default function WeeklyAnalysisButton() {
                 </div>
               )}
               {error && (
-                <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl px-3.5 py-2.5 text-xs">{error}</div>
+                <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-xs">{error}</div>
               )}
               {result && (
                 <div className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{result}</div>

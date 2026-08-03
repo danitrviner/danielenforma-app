@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg font-sans text-sm font-bold w-full ${KIND_STYLE[t.kind].classes}`}
+            className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-surface shadow-lg font-sans text-sm font-bold w-full ${KIND_STYLE[t.kind].classes}`}
           >
             <span className="material-symbols-outlined text-base flex-shrink-0">{KIND_STYLE[t.kind].icon}</span>
             <span className="min-w-0">{t.message}</span>

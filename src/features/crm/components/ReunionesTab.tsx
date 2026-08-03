@@ -15,7 +15,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
 
   return (
     <div className="space-y-3">
-      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-4 flex items-center gap-3">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 flex items-center gap-3">
         <span className="material-symbols-outlined text-lg text-accent">flag</span>
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Fin de programa</p>
@@ -29,7 +29,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva reunión

@@ -171,9 +171,9 @@ export default function ClientSetupPanel({
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-24 w-full rounded-2xl" />
-        <Skeleton className="h-14 w-full rounded-xl" />
-        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-surface" />
+        <Skeleton className="h-14 w-full rounded-surface" />
+        <Skeleton className="h-14 w-full rounded-surface" />
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function ClientSetupPanel({
   return (
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
-      <div className="bg-surface border border-hairline rounded-2xl p-5 flex items-center gap-5">
+      <div className="bg-surface border border-hairline rounded-surface p-5 flex items-center gap-5">
         <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} label="Setup" />
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
@@ -191,7 +191,7 @@ export default function ClientSetupPanel({
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-accent-press transition-all"
+                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
                 >
                   Ir ahora
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -211,7 +211,7 @@ export default function ClientSetupPanel({
             <button
               key={alert.id}
               onClick={() => alert.link && onGoToTab(alert.link.tab)}
-              className={`flex items-center gap-2 text-left border rounded-xl p-3 transition-all ${
+              className={`flex items-center gap-2 text-left border rounded-control p-3 transition-all ${
                 alert.severity === 'critical'
                   ? 'bg-red-500/10 border-red-500/20 hover:border-red-500/40'
                   : 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/40'
@@ -234,7 +234,7 @@ export default function ClientSetupPanel({
         {result.phases.map(phase => {
           const expanded = expandedPhase === phase.id;
           return (
-            <div key={phase.id} className="bg-surface border border-hairline rounded-2xl overflow-hidden">
+            <div key={phase.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <button
                 onClick={() => setExpandedPhase(expanded ? null : phase.id)}
                 className="w-full flex items-center gap-3 p-4"
@@ -288,7 +288,7 @@ export default function ClientSetupPanel({
       </div>
 
       {/* Tareas extra */}
-      <div className="bg-surface border border-hairline rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-surface p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">playlist_add_check</span>
@@ -296,7 +296,7 @@ export default function ClientSetupPanel({
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-lg"
+            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
           >
             <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
@@ -304,19 +304,19 @@ export default function ClientSetupPanel({
         </div>
 
         {showExtraForm && (
-          <form onSubmit={handleAddExtra} className="bg-raised border border-hairline rounded-xl p-3 mb-3 flex gap-2">
+          <form onSubmit={handleAddExtra} className="bg-raised border border-hairline rounded-surface p-3 mb-3 flex gap-2">
             <input
               type="text"
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-bg border border-hairline rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
             <button
               type="submit"
               disabled={savingExtra}
-              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {savingExtra ? '...' : 'Crear'}
             </button>
@@ -330,7 +330,7 @@ export default function ClientSetupPanel({
             {extraTasks.map(task => (
               <div
                 key={task.id}
-                className={`w-full flex items-center gap-3 border rounded-lg p-3 transition-all ${
+                className={`w-full flex items-center gap-3 border rounded-surface p-3 transition-all ${
                   task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
                 }`}
               >

@@ -58,7 +58,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
     : exercises;
 
   return (
-    <div className="bg-surface border border-hairline rounded-2xl p-5">
+    <div className="bg-surface border border-hairline rounded-surface p-5">
       <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-accent text-base">edit_note</span>
         Observación personalizada por ejercicio
@@ -75,7 +75,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
           <select
             value={selectedExerciseId}
             onChange={e => setSelectedExerciseId(e.target.value)}
-            className="w-full bg-bg border border-hairline rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control px-3 py-2.5 text-xs text-white focus:outline-none focus:border-accent"
           >
             <option value="">{inProgram ? 'Selecciona un ejercicio de su programa...' : 'Selecciona un ejercicio...'}</option>
             {selectable.map(ex => (
@@ -93,12 +93,12 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
                 onChange={e => setText(e.target.value)}
                 placeholder="ej. Utiliza elevación de talones..."
                 rows={3}
-                className="w-full bg-bg border border-hairline rounded-lg p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
+                className="w-full bg-bg border border-hairline rounded-control p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
               />
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
               >
                 {saving ? 'Guardando...' : 'Guardar observación'}
               </button>

@@ -438,7 +438,7 @@ export default function CardioScreen({ profile }: Props) {
   };
 
   if (loadingProfile || loadingSessions) {
-    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40 w-full rounded-2xl" /></div>;
+    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-40 w-full rounded-surface" /></div>;
   }
 
   const currentZone = bpm !== null && cardioProfile ? getZoneForBpm(bpm, cardioProfile.zones) : null;
@@ -523,16 +523,16 @@ export default function CardioScreen({ profile }: Props) {
       </header>
 
       {!cardioProfile && (
-        <div className="bg-surface border border-hairline rounded-2xl p-4 text-center">
+        <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
           <p className="text-xs text-ink-2 font-mono">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
         </div>
       )}
 
       {cardioProfile && (
-        <section className="bg-surface border border-hairline rounded-2xl p-4 sm:p-5 space-y-4">
+        <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap gap-2">
             {ZONE_ORDER.map(z => (
-              <div key={z} className="flex-1 min-w-[100px] rounded-xl p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
+              <div key={z} className="flex-1 min-w-[100px] rounded-surface p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
                 <p className="text-[9px] font-mono uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
                 <p className="text-xs font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
@@ -540,7 +540,7 @@ export default function CardioScreen({ profile }: Props) {
           </div>
 
           {state === 'idle' && (
-            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all">
+            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Conectar banda
             </button>
           )}
@@ -564,14 +564,14 @@ export default function CardioScreen({ profile }: Props) {
               )}
               <div className="flex items-center gap-2">
                 <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-bg border border-hairline rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent">
+                  className="bg-bg border border-hairline rounded-control p-2.5 text-xs text-white focus:outline-none focus:border-accent">
                   <option value="libre">Libre</option>
                   <option value="zona2">Sesión Zona 2</option>
                   <option value="intervalos" disabled={!intervalAssignment}>
                     {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
                   </option>
                 </select>
-                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all">
+                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
                   Empezar entrenamiento
                 </button>
               </div>
@@ -630,7 +630,7 @@ export default function CardioScreen({ profile }: Props) {
 
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}
-                className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-xl p-3 text-left hover:border-strong transition-colors">
+                className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
                 <span className="material-symbols-outlined text-data">favorite</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white">

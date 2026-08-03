@@ -305,7 +305,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Header */}
       <header className="pb-4 border-b border-hairline">
         <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
@@ -322,7 +322,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
+        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between shadow-lg">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -330,7 +330,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <span className="material-symbols-outlined text-accent text-xl">group</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
-              <span className="text-[10px] bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
+              <span className="text-[10px] bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
@@ -347,7 +347,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-hairline text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-control border border-hairline text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
@@ -363,7 +363,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             onClick={onOpenReviews}
             disabled={!onOpenReviews}
-            className="bg-surface border border-hairline p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
+            className="bg-surface border border-hairline p-5 rounded-control flex flex-col justify-between shadow-lg text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -371,11 +371,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
-                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-sans uppercase font-black animate-pulse">
+                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded-control font-sans uppercase font-black animate-pulse">
                   {pendingCheckins.length} por evaluar
                 </span>
               ) : (
-                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded font-sans uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {pendingCheckins.length === 0 ? (
@@ -388,18 +388,18 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </button>
 
           {/* Pending notes */}
-          <div className="bg-surface border border-hairline p-5 rounded-2xl shadow-lg">
+          <div className="bg-surface border border-hairline p-5 rounded-surface shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
                 <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
-                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-sans uppercase font-black">
+                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded-control font-sans uppercase font-black">
                   {totalPendingNotes} por leer
                 </span>
               ) : (
-                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded font-sans uppercase font-bold">Al día</span>
+                <span className="text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {totalPendingNotes === 0 ? (
@@ -410,7 +410,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-hairline text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-control border border-hairline text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
@@ -429,7 +429,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-surface border border-hairline p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
+        <div className="bg-surface border border-hairline p-4 rounded-surface flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
             <input
@@ -437,17 +437,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex bg-bg border border-hairline p-1 rounded-lg gap-1">
+            <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
               {([2, 3, 4] as const).map(n => (
                 <button
                   key={n}
                   onClick={() => changeGridCols(n)}
                   title={`${n} columnas`}
-                  className={`w-7 h-7 rounded-md font-sans text-xs font-bold transition-all ${
+                  className={`w-7 h-7 rounded-control font-sans text-xs font-bold transition-all ${
                     gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
                   }`}
                 >
@@ -455,7 +455,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 </button>
               ))}
             </div>
-            <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1.5 border border-teal-500/20 rounded font-sans uppercase whitespace-nowrap">
+            <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1.5 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
               {filteredAthletes.length} ATLETAS
             </span>
           </div>
@@ -463,16 +463,16 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
         {loadingAthletes ? (
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : athletes.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center gap-3">
             <p className="text-ink-2 font-mono text-xs">No hay atletas registrados todavía.</p>
             <button
               onClick={() => inviteInputRef.current?.focus()}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-sm">person_add</span>
               Invitar a tu primer atleta
@@ -492,7 +492,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-bg border rounded-2xl p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  className={`bg-bg border rounded-surface p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-hairline'
                   }`}
                 >
@@ -515,7 +515,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {planDaysLeft !== null ? (
-                            <span className={`text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border ${
+                            <span className={`text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border ${
                               planDaysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
                               planDaysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                                                    'bg-red-500/10     text-red-400     border-red-500/20'
@@ -523,20 +523,20 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-raised text-ink-3 border-hairline">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-raised text-ink-3 border-hairline">
                               Sin plan
                             </span>
                           )}
                           {/* Check-in atrasado badge */}
                           {checkinLate && (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-orange-500/10 text-orange-300 border-orange-500/20">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-orange-500/10 text-orange-300 border-orange-500/20">
                               {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-lg border border-hairline text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-surface border border-hairline text-center font-mono">
                       <div>
                         <span className="block text-[8px] text-ink-2 uppercase">INICIAL</span>
                         <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
@@ -564,7 +564,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <strong className="text-data">Lvl {athlete.level || 1}</strong>
                       </div>
                       {/* Adherence score */}
-                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border font-mono ${adh.bg}`}>
+                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-surface border font-mono ${adh.bg}`}>
                         <span className={`text-[10px] uppercase font-bold flex items-center gap-1 ${adh.text}`}>
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
@@ -577,7 +577,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     <div className="flex items-center gap-2">
                       <span className="text-ink-2">{totalCheckCount} Reportes</span>
                       {pendingCount > 0 && (
-                        <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded font-sans uppercase">
+                        <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded-control font-sans uppercase">
                           {pendingCount} pend.
                         </span>
                       )}
@@ -596,7 +596,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       </div>
 
       {/* Invite a new client by email */}
-      <div className="bg-surface border border-hairline p-5 rounded-2xl">
+      <div className="bg-surface border border-hairline p-5 rounded-surface">
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-accent text-xl">person_add</span>
           <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
@@ -608,12 +608,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"
             disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-sm">mail</span>
             {inviting ? 'Enviando...' : 'Invitar'}
@@ -629,7 +629,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </p>
             <div className="space-y-1.5">
               {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-xl px-3 py-2">
+                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
                   <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-xs text-white truncate">{inv.email}</p>

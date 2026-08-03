@@ -13,7 +13,7 @@ export default function PhasePathStepper({ phases }: Props) {
   const ordered = [...phases].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="rounded-3xl border border-hairline bg-bg p-5">
+    <div className="rounded-canvas border border-hairline bg-bg p-5">
       <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-4">
         Tu camino · lo que te queda por delante
       </p>

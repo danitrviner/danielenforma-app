@@ -120,7 +120,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
   const estados = cliente.fuente === 'perfil' ? ESTADOS_PERFIL : ESTADOS_CONTACTO;
 
   return (
-    <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-4 space-y-3">
+    <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Campo label="Nombre">
           <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} />
@@ -180,7 +180,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       {mostrarCamposBaja && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-danger/8 border border-danger/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
           <div className="sm:col-span-2 flex items-start gap-1.5">
             <span className="material-symbols-outlined text-[13px] text-danger shrink-0 mt-0.5">warning</span>
             <p className="font-sans text-[10px] text-danger leading-relaxed">

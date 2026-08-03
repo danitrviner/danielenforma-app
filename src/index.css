@@ -98,7 +98,21 @@
   --color-text-muted: #555550;
   --color-cyan: #00eefc;
 
-  /* ── Radios ─────────────────────────────────────────────────────────────────
+  /* ── Radios · 3 + full ──────────────────────────────────────────────────────
+     Tres valores y una regla de anidamiento: un hijo siempre baja un escalón
+     respecto a su padre. Dentro de una `surface` (16) los elementos son
+     `control` (10). Nunca igual al padre, nunca mayor — eso es lo que produce
+     el efecto de esquinas concéntricas descuadradas.
+
+       control   botones, campos, chips, badges, celdas, iconos-botón
+       surface   tarjetas, paneles, filas de lista, contenedores de sección
+       canvas    modales, bottom sheets y la tarjeta protagonista
+       full      avatares, pills de estado, FAB, interruptores, anillos     */
+  --radius-control: 10px;
+  --radius-surface: 16px;
+  --radius-canvas:  24px;
+
+  /* ── Radios antiguos ────────────────────────────────────────────────────────
      ATENCIÓN: estos cuatro SOBRESCRIBEN los valores por defecto de Tailwind y
      dejan el resto intactos, así que la escala real tiene dos colisiones:
      `rounded-lg` (16 px) y `rounded-2xl` (16 px) renderizan IDÉNTICO en 703

@@ -98,7 +98,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
+      className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
@@ -143,7 +143,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`group relative rounded-xl overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
+      className={`group relative rounded-surface overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
         isFeatured
           ? 'border-amber-400/40 hover:border-amber-400/70'
           : 'border-hairline hover:border-accent/40'
@@ -168,12 +168,12 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
 
       {/* kcal or featured badge */}
       {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-amber-400/90 rounded px-1.5 py-0.5 font-mono text-[9px] text-black font-bold z-10 flex items-center gap-0.5">
+        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-1.5 py-0.5 font-mono text-[9px] text-black font-bold z-10 flex items-center gap-0.5">
           <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
           Para ti
         </div>
       ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-1.5 py-0.5 font-mono text-[9px] text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -229,7 +229,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
   return (
     <div className="space-y-5">
       {/* Back bar */}
-      <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-xl border border-hairline">
+      <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-xs uppercase tracking-wider"
@@ -275,7 +275,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       </div>
 
       {/* Photo */}
-      <div className="w-full aspect-[16/7] rounded-2xl overflow-hidden bg-raised border border-hairline">
+      <div className="w-full aspect-[16/7] rounded-surface overflow-hidden bg-raised border border-hairline">
         {photo
           ? <img src={photo} alt={recipe.name} className="w-full h-full object-cover" />
           : <RecipePlaceholder />
@@ -347,7 +347,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {(Object.entries(exch) as [FoodCategory, number][])
             .filter(([, v]) => v > 0)
             .map(([cat, val]) => (
-              <span key={cat} className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold ${CAT_COLORS[cat]}`}>
+              <span key={cat} className={`px-2.5 py-1 rounded-surface border font-mono text-xs font-bold ${CAT_COLORS[cat]}`}>
                 {val} {CAT_LABELS[cat]}
               </span>
             ))}
@@ -355,7 +355,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
         {/* Indya macros breakdown */}
         {isIndya && recipe.macros && (
-          <div className="grid grid-cols-3 gap-2 bg-raised border border-hairline rounded-lg p-3">
+          <div className="grid grid-cols-3 gap-2 bg-raised border border-hairline rounded-surface p-3">
             {[
               { label: 'Carbos', val: recipe.macros.carb },
               { label: 'Proteína', val: recipe.macros.prot },
@@ -372,7 +372,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Ingredients */}
-        <section className="bg-raised border border-hairline rounded-xl p-5 space-y-3">
+        <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
           <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">recipe</span>
             Ingredientes
@@ -417,7 +417,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {/* Steps */}
         {((isIndya && recipe.stepsText && recipe.stepsText.length > 0) ||
           (!isIndya && recipe.steps.length > 0)) && (
-          <section className="bg-raised border border-hairline rounded-xl p-5 space-y-4">
+          <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
             <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">format_list_numbered</span>
               Preparación
@@ -699,7 +699,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-          <Skeleton className="md:col-span-12 h-48 w-full rounded-2xl" />
+          <Skeleton className="md:col-span-12 h-48 w-full rounded-surface" />
         </div>
       )}
 
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
@@ -771,10 +771,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         {/* Grid */}
         {indyaLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
           <div className="flex flex-col items-center gap-3 py-16">
@@ -782,7 +782,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               onClick={handleLoadMore}
               disabled={indyaLoadingMore}
-              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
                 ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
@@ -883,7 +883,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>

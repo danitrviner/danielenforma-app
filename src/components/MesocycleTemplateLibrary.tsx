@@ -71,7 +71,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-6 h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >−</button>
       <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
         {value}
@@ -79,7 +79,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-6 h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >+</button>
     </div>
   );
@@ -99,7 +99,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`px-2 py-0.5 rounded text-xs font-mono transition-all ${
+          className={`px-2 py-0.5 rounded-control text-xs font-mono transition-all ${
             value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -133,7 +133,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
@@ -142,7 +142,7 @@ const ExerciseRow: React.FC<{
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
@@ -152,7 +152,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
@@ -161,21 +161,21 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
-          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
           <span className="material-symbols-outlined text-sm">arrow_upward</span>
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
-          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
           <span className="material-symbols-outlined text-sm">arrow_downward</span>
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
-          className="w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-red-400">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400">
           <span className="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
@@ -234,7 +234,7 @@ const DayBlock: React.FC<{
   const sortedExs = [...day.exercises].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="border border-hairline rounded-xl overflow-hidden">
+    <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
         <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
@@ -251,7 +251,7 @@ const DayBlock: React.FC<{
         <span className="font-mono text-[9px] text-ink-3">{day.exercises.length} ejerc.</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-ink-2 hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
           title="Eliminar día"
         >
           <span className="material-symbols-outlined text-sm">delete</span>
@@ -288,7 +288,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-lg px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-accent/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-xs rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-xs rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -372,7 +372,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
   };
 
   return (
-    <div className="border border-hairline rounded-xl overflow-hidden">
+    <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Stage header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
         <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
@@ -399,7 +399,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {!isOnly && (
             <button
               onClick={onDelete}
-              className="w-6 h-6 flex items-center justify-center rounded text-ink-2 hover:text-red-400 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-colors"
               title="Eliminar mesociclo"
             >
               <span className="material-symbols-outlined text-sm">delete</span>
@@ -433,7 +433,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
                 <span className="font-mono text-[10px] text-accent font-bold">{totalSeries} series/sem</span>
               </div>
-              <div className="border border-hairline rounded-xl overflow-hidden">
+              <div className="border border-hairline rounded-surface overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-bg border-b border-hairline">
@@ -488,14 +488,14 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Añadir día
                 </button>
               </div>
               {stage.days.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-hairline rounded-xl">
+                <div className="text-center py-6 border border-dashed border-hairline rounded-surface">
                   <p className="font-mono text-[10px] text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
                 </div>
               ) : (
@@ -605,7 +605,7 @@ function TemplateEditor({
   const totalWeeks = form.stages.reduce((s, st) => s + st.weeks, 0);
 
   return (
-    <div className="bg-surface border border-hairline rounded-2xl overflow-hidden">
+    <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
         <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
@@ -627,7 +627,7 @@ function TemplateEditor({
               value={form.name}
               onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
               placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-bg border border-hairline rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
             {nameError && <p className="text-red-400 font-mono text-[10px] mt-1">{nameError}</p>}
           </div>
@@ -638,7 +638,7 @@ function TemplateEditor({
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Breve descripción de la plantilla"
-              className="w-full bg-bg border border-hairline rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
           </div>
         </div>
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-xl hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir mesociclo
@@ -680,13 +680,13 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
+            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
           >
             Cancelar
           </button>
@@ -733,7 +733,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-surface border border-hairline rounded-3xl p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
@@ -751,14 +751,14 @@ function TemplateCard({
         <div className="flex gap-1.5 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg bg-raised border border-hairline text-data hover:border-data/40 transition-all"
+            className="p-1.5 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
             <span className="material-symbols-outlined text-sm">edit</span>
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-1.5 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
             <span className="material-symbols-outlined text-sm">delete</span>
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-mono text-[8px] px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -893,7 +893,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -903,18 +903,18 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {/* Content */}
       {loading ? (
         <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-surface" />
+          <Skeleton className="h-20 w-full rounded-surface" />
+          <Skeleton className="h-20 w-full rounded-surface" />
         </div>
       ) : templates.length === 0 ? (
-        <div className="py-16 text-center border border-dashed border-hairline rounded-2xl">
+        <div className="py-16 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
           <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-accent-press transition-all"
+            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press transition-all"
           >
             Crear plantilla
           </button>
@@ -938,7 +938,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         const tpl = templates.find(t => t.id === confirmDeleteId);
         return (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-hairline rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div className="bg-raised border border-hairline rounded-surface p-6 max-w-sm w-full space-y-4">
               <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
               <p className="font-mono text-[11px] text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
@@ -946,13 +946,13 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 py-2 bg-red-500 text-white font-mono text-xs font-bold uppercase rounded-xl hover:bg-red-600 transition-all"
+                  className="flex-1 py-2 bg-red-500 text-white font-mono text-xs font-bold uppercase rounded-control hover:bg-red-600 transition-all"
                 >
                   Eliminar
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
+                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-xs font-bold uppercase rounded-control hover:text-white transition-all"
                 >
                   Cancelar
                 </button>

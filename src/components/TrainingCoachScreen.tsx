@@ -22,7 +22,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
@@ -35,12 +35,12 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
 
       {/* Sub-tab switcher */}
       <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5">
-        <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
+        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
+              className={`snap-start flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-accent text-black shadow-lg shadow-accent/10'
                   : 'text-ink-2 hover:text-white'

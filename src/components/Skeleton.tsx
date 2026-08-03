@@ -4,7 +4,7 @@ import React from 'react';
 // silueta del contenido real — se percibe más rápido y evita el parpadeo de
 // "aquí no hay nada" un instante antes de que lleguen los datos.
 export default function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`bg-white/7 rounded-lg animate-pulse ${className}`} />;
+  return <div className={`bg-white/7 rounded-surface animate-pulse ${className}`} />;
 }
 
 // Silueta genérica de pantalla: usada como fallback de Suspense al cambiar de
@@ -18,9 +18,9 @@ export function ScreenSkeleton() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-72" />
       </div>
-      <Skeleton className="h-32 w-full rounded-2xl" />
-      <Skeleton className="h-20 w-full rounded-2xl" />
-      <Skeleton className="h-20 w-full rounded-2xl" />
+      <Skeleton className="h-32 w-full rounded-surface" />
+      <Skeleton className="h-20 w-full rounded-surface" />
+      <Skeleton className="h-20 w-full rounded-surface" />
     </div>
   );
 }

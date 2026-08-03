@@ -28,7 +28,7 @@ export default function ClientAnalysisPanel({
   return (
     <div className="space-y-6">
       {/* Sub-switcher */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
+      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
         {([
           { id: 'reportes',      label: 'Reportes',      icon: 'analytics' },
           { id: 'nutricion',     label: 'Nutrición',     icon: 'nutrition' },
@@ -37,7 +37,7 @@ export default function ClientAnalysisPanel({
           <button
             key={t.id}
             onClick={() => onAnalisisTabChange(t.id)}
-            className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               analisisTab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
             }`}
           >

@@ -30,7 +30,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
 
   return (
     <div
-      className="rounded-3xl border p-5 flex flex-col gap-3"
+      className="rounded-canvas border p-5 flex flex-col gap-3"
       style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33`, boxShadow: `0 0 24px ${accent}14` }}
     >
       <div className="flex items-center justify-between">
@@ -84,7 +84,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
 export function ChallengePendingCard() {
   return (
     <div
-      className="rounded-3xl border p-5 flex flex-col gap-2"
+      className="rounded-canvas border p-5 flex flex-col gap-2"
       style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
     >
       <div className="flex items-center gap-2">

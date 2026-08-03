@@ -16,12 +16,12 @@ interface Props {
 export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) {
   return (
     <div
-      className="rounded-3xl border p-5 flex flex-col gap-4"
+      className="rounded-canvas border p-5 flex flex-col gap-4"
       style={{ backgroundColor: 'var(--color-bg)', borderColor: `${phase.color}33`, boxShadow: `0 0 24px ${phase.color}14` }}
     >
       <div className="flex items-center gap-4">
         <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${phase.color}1a`, color: phase.color }}
         >
           <span className="material-symbols-outlined text-2xl">{phase.icon || 'route'}</span>

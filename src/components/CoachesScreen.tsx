@@ -67,7 +67,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-bg border border-hairline rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
+const MINI = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -167,11 +167,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-hairline text-ink-2 hover:text-white rounded-lg transition-all">
+            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-accent text-black font-bold rounded-lg hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -182,7 +182,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const meta = SECTION_META[section];
         const qs   = questions.filter(q => q.section === section);
         return (
-          <div key={section} className="bg-bg border border-hairline rounded-xl p-5 space-y-4">
+          <div key={section} className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
@@ -195,7 +195,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
+                <div key={q.id} className={`border rounded-surface transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
@@ -206,7 +206,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-2.5 py-1 rounded font-mono text-[9px] font-bold uppercase border transition-all ${
+                            className={`px-2.5 py-1 rounded-control font-mono text-[9px] font-bold uppercase border transition-all ${
                               q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
@@ -222,10 +222,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
@@ -256,11 +256,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded hover:bg-accent-press">
+                          className="px-2.5 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-2.5 py-1 font-mono text-[10px] uppercase text-red-400 border border-red-500/30 rounded hover:bg-red-500/10">
+                          className="px-2.5 py-1 font-mono text-[10px] uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
                           Eliminar
                         </button>
                       </div>
@@ -268,7 +268,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${
+                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
@@ -293,7 +293,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -304,7 +304,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-sans text-xs uppercase bg-accent text-black font-bold rounded-lg hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-xs uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -430,7 +430,7 @@ function IndyaImportPanel() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="bg-bg border border-hairline rounded-xl p-5 space-y-4">
+    <div className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
       <div>
         <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-data flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">library_books</span>
@@ -444,7 +444,7 @@ function IndyaImportPanel() {
       {status === 'idle' && (
         <button
           onClick={startImport}
-          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-mono text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2"
+          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-mono text-xs uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-sm">upload</span>
           Importar / Reimportar
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -488,12 +488,12 @@ function IndyaImportPanel() {
 
       {status === 'error' && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-red-400 bg-red-500/5 border border-red-500/20 rounded p-3 break-all">
+          <p className="font-mono text-[10px] text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
             {error}
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-[10px] uppercase rounded-control transition-all"
           >
             Reintentar
           </button>
@@ -545,7 +545,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">
         {([
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
@@ -553,7 +553,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           ...(isOwnerOrDev ? [{ id: 'biblioteca' as SettingsTab, label: 'Biblioteca', icon: 'library_books' }] : []),
         ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
           <button key={t.id} onClick={() => setSettingsTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-xs font-bold uppercase tracking-wider transition-all ${
               settingsTab === t.id ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'
             }`}>
             <span className="material-symbols-outlined text-base">{t.icon}</span>
@@ -582,7 +582,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             <Skeleton className="h-14 w-full" />
           </div>
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-hairline rounded-2xl">
+          <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">group</span>
             <p className="text-ink-2 text-sm">Sin usuarios registrados todavía.</p>
           </div>
@@ -595,24 +595,24 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-surface border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
+                  className={`bg-surface border rounded-surface p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
+                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-xs text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-control uppercase font-bold border ${
                       isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
-                        className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
+                        className={`px-3 py-1.5 rounded-control font-mono text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
                           isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId
@@ -628,7 +628,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             })}
           </div>
         )}
-        <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-1">
+        <div className="bg-surface border border-hairline rounded-surface p-4 space-y-1">
           <p className="font-mono text-xs text-ink-2">
             <span className="text-accent font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}

@@ -68,7 +68,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
         const kcal = mealKcal(meal.items);
         const exch = mealExch(meal.items);
         return (
-          <div key={meal.id} className="bg-surface border border-hairline rounded-2xl overflow-hidden">
+          <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline">
               <span className="font-sans font-bold text-white text-sm">{labelForMeal(meal.name, mi + 1)}</span>
@@ -99,7 +99,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       })}
 
       {/* Day totals */}
-      <div className="bg-bg border border-accent/20 rounded-xl overflow-hidden">
+      <div className="bg-bg border border-accent/20 rounded-surface overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
           <span className="font-mono text-[10px] text-accent uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">

@@ -119,7 +119,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => marcarPagado(p)}
               aria-label="Marcar como pagado"
               title="Marcar como pagado"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-emerald-400 hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-emerald-400 hover:bg-white/6 transition-colors"
             >
               <span className="material-symbols-outlined text-base">check_circle</span>
             </button>
@@ -129,7 +129,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             onClick={() => setEditando(p)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <span className="material-symbols-outlined text-base">edit</span>
           </button>
@@ -139,7 +139,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => borrar(p)}
               aria-label="Borrar"
               title="Borrar"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
             >
               <span className="material-symbols-outlined text-base">delete</span>
             </button>
@@ -151,7 +151,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
 
   return (
     <>
-      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={pagos}

@@ -86,7 +86,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
       onClick={() => setOpen(false)}
     >
       <div
-        className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+        className="bg-surface border border-white/10 rounded-surface w-full max-w-lg shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
@@ -98,7 +98,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             placeholder="Buscar atleta o acción..."
             className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-ink-2/50"
           />
-          <span className="font-mono text-[9px] text-ink-2/50 border border-white/10 rounded px-1.5 py-0.5 flex-shrink-0">ESC</span>
+          <span className="font-mono text-[9px] text-ink-2/50 border border-white/10 rounded-control px-1.5 py-0.5 flex-shrink-0">ESC</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">

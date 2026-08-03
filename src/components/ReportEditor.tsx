@@ -38,7 +38,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center sm:p-4">
-        <div className="bg-bg border border-hairline sm:rounded-2xl w-full sm:max-w-4xl shadow-2xl">
+        <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-4xl shadow-2xl">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
@@ -62,7 +62,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-surface border border-hairline rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -73,14 +73,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-hairline rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
               <div className="space-y-2.5">
                 <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
-                  <div key={s.id} className="bg-surface border border-hairline rounded-xl p-3 space-y-2">
+                  <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-2.5 text-left"
@@ -95,7 +95,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-raised border border-hairline rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
+                        className="w-full bg-raised border border-hairline rounded-control px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>
@@ -115,14 +115,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-3.5 py-2.5 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-[10px] font-bold uppercase rounded-xl transition-all disabled:opacity-40"
+              className="px-3.5 py-2.5 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-[10px] font-bold uppercase rounded-control transition-all disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>
             <div className="flex-1" />
             <button
               onClick={handleCopy}
-              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-data/50 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-xs font-bold uppercase rounded-control hover:border-data/50 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
               {copied ? '¡Copiado!' : 'Copiar texto'}
@@ -130,14 +130,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('save', () => onSaveDraft(draft))}
               disabled={busy !== null}
-              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-accent/50 transition-all disabled:opacity-40"
+              className="px-4 py-2.5 bg-surface border border-hairline text-white font-sans text-xs font-bold uppercase rounded-control hover:border-accent/50 transition-all disabled:opacity-40"
             >
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
             </button>
             <button
               onClick={() => run('send', () => onSend(draft))}
               disabled={busy !== null}
-              className="px-5 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">send</span>
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}

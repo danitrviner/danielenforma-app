@@ -22,11 +22,11 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function SectionShell({ section, children }: { section: CoachReportSection; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+    <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
       <p className="font-sans font-bold text-sm text-white">{section.title}</p>
       {children}
       {section.coachNote && (
-        <div className="bg-raised border-l-2 border-accent rounded-r-lg px-3 py-2">
+        <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
           <p className="font-mono text-[9px] text-accent uppercase tracking-wider mb-0.5">Nota del entrenador</p>
           <p className="text-xs text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
@@ -88,7 +88,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2">
                   <span className="text-xs text-white font-sans flex items-center gap-1.5">
                     {r.name}
-                    {r.isPR && <span className="font-mono text-[8px] font-bold uppercase bg-accent text-black px-1 py-0.5 rounded">PR</span>}
+                    {r.isPR && <span className="font-mono text-[8px] font-bold uppercase bg-accent text-black px-1 py-0.5 rounded-control">PR</span>}
                   </span>
                 </td>
                 <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.sets}</td>
@@ -265,7 +265,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
         </p>
       </div>
       {report.intro.trim() && (
-        <div className="bg-raised border border-hairline rounded-2xl p-4">
+        <div className="bg-raised border border-hairline rounded-surface p-4">
           <p className="text-sm text-ink-2 font-sans leading-relaxed whitespace-pre-wrap">{report.intro}</p>
         </div>
       )}

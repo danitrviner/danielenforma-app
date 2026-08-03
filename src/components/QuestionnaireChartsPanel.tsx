@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-raised border border-hairline rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-ink-2 mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
@@ -102,16 +102,16 @@ function QuestionChart({
   if (raw.length === 0) return null;
 
   return (
-    <div className="bg-surface border border-hairline rounded-3xl p-4 space-y-3">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
-            <span className="font-mono text-[9px] text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[9px] text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+          <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-control flex items-center gap-0.5">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
@@ -196,12 +196,12 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
           <span className="material-symbols-outlined text-accent text-base">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
-        <div className="flex bg-surface border border-hairline rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-surface border border-hairline rounded-surface p-0.5 gap-0.5">
           {(['Puntos', 'Media semanal'] as const).map((label, i) => (
             <button
               key={label}
               onClick={() => setWeekly(i === 1)}
-              className={`px-3 min-h-[44px] rounded-md font-mono text-[10px] uppercase font-bold transition-all ${
+              className={`px-3 min-h-[44px] rounded-control font-mono text-[10px] uppercase font-bold transition-all ${
                 weekly === (i === 1)
                   ? 'bg-accent text-black shadow'
                   : 'text-ink-2 hover:text-white'

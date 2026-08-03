@@ -46,8 +46,8 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   boolean: 'Sí / No',
 };
 
-const INPUT_CLS      = 'bg-bg border border-hairline rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent';
-const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-lg transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
         </button>
@@ -106,7 +106,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       </div>
 
       {/* Title + description */}
-      <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Título *</label>
           <input
@@ -135,14 +135,14 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-control hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>Añadir pregunta
           </button>
         </div>
 
         {form.questions.map((q, idx) => (
-          <div key={q.id} className="bg-surface border border-hairline rounded-2xl p-4 space-y-3">
+          <div key={q.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
 
             {/* Main row */}
             <div className="flex items-start gap-2">
@@ -166,7 +166,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               <select
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
-                className="bg-raised border border-hairline rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
@@ -179,7 +179,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-1.5" title="Obligatoria">
                 <span
-                  className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
+                  className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                   onClick={() => setQ(idx, { required: !q.required })}
                 >
                   {q.required && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
@@ -271,7 +271,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer w-fit">
                     <span
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
+                      className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
                       onClick={() => setQ(idx, { multiSelect: !q.multiSelect })}
                     >
                       {q.multiSelect && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
@@ -323,14 +323,14 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex gap-3">
         <button
           onClick={onCancel}
-          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
         >
           Cancelar
         </button>
         <button
           onClick={onSave}
           disabled={saving || !form.title.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? 'Guardando…' : isNew ? 'Crear cuestionario' : 'Guardar cambios'}
         </button>

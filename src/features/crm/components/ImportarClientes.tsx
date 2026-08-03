@@ -102,7 +102,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
     >
       {paso === 'elegir' && (
         <div className="space-y-3">
-          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl border-2 border-dashed border-white/12 hover:border-accent/40 cursor-pointer transition-colors">
+          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-white/12 hover:border-accent/40 cursor-pointer transition-colors">
             <span className="material-symbols-outlined text-2xl text-ink-3">upload_file</span>
             <span className="font-sans text-[11px] text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input
@@ -113,7 +113,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-danger/10 border border-danger/25 font-sans text-[10px] text-danger">
+            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-[10px] text-danger">
               <span className="material-symbols-outlined text-[13px] shrink-0">error</span>
               {errorGeneral}
             </p>
@@ -193,7 +193,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
         </p>
       )}
 
-      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-xl divide-y divide-white/4">
+      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-surface divide-y divide-white/4">
         {resultado.filas.map(fila => (
           <FilaPreview
             key={fila.fila}
@@ -210,7 +210,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
 function Resumen({ icono, color, numero, label }: { icono: string; color: string; numero: number; label: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white/4">
+    <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
       <span className="material-symbols-outlined text-base" style={{ color }}>{icono}</span>
       <span className="font-sans font-black text-base text-ink tabular-nums">{numero}</span>
       <span className="font-mono text-[8px] uppercase tracking-widest text-ink-3">{label}</span>

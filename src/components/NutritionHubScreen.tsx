@@ -42,7 +42,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   return (
     <div className="space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
-        <div className="bg-surface border border-hairline rounded-2xl p-4">
+        <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="material-symbols-outlined text-accent text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
@@ -58,12 +58,12 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         </div>
       )}
 
-      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
+      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
                 ? 'bg-accent text-black shadow-lg shadow-accent/10'
                 : 'text-ink-2 hover:text-white'
@@ -83,7 +83,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             onConsumedPendingRecipe={() => setPendingRecipe(null)}
           />
           {/* Config al final, tras el contenido del día (visual arriba, ajustes abajo) */}
-          <div className="bg-surface border border-hairline rounded-2xl p-5 space-y-3">
+          <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
             <div>
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-base">eco</span>

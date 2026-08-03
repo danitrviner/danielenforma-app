@@ -92,14 +92,14 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-hairline rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-hairline rounded-surface shadow-2xl shadow-black/60 z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
             <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">notifications</span>
               Notificaciones
               {unread > 0 && (
-                <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
+                <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-control font-mono font-bold">
                   {unread} nueva{unread !== 1 ? 's' : ''}
                 </span>
               )}

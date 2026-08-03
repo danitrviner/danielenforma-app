@@ -89,7 +89,7 @@ export default function PendingTray({
         <button
           key={item.key}
           onClick={item.onClick}
-          className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 hover:border-amber-500/50 text-amber-200 px-3 py-2 rounded-xl font-mono text-[11px] font-bold transition-all"
+          className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 hover:border-amber-500/50 text-amber-200 px-3 py-2 rounded-control font-mono text-[11px] font-bold transition-all"
         >
           <span className="material-symbols-outlined text-base">{item.icon}</span>
           {item.text}

@@ -36,7 +36,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-white/12 rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-white/12 rounded-t-surface sm:rounded-surface overflow-hidden"
       >
         <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-hairline shrink-0">
           <h2 className="font-sans font-black text-sm text-ink">{titulo}</h2>
@@ -44,7 +44,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-control flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <span className="material-symbols-outlined text-base">close</span>
           </button>
@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-lg bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-2.5 py-1.5 rounded-surface bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
@@ -89,7 +89,7 @@ export function BotonPrimario({ children, disabled, onClick, type = 'button' }: 
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>
@@ -101,7 +101,7 @@ export function BotonSecundario({ children, onClick }: { children: React.ReactNo
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+      className="px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
     >
       {children}
     </button>

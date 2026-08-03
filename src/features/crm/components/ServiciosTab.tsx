@@ -88,7 +88,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => onArchivar(s)}
           aria-label={s.archivado ? 'Recuperar servicio' : 'Archivar servicio'}
           title={s.archivado ? 'Recuperar' : 'Archivar'}
-          className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+          className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
         >
           <span className="material-symbols-outlined text-base">
             {s.archivado ? 'unarchive' : 'archive'}
@@ -119,14 +119,14 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nuevo servicio
         </button>
       </div>
 
-      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={visibles}

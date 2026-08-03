@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-bg border border-hairline rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
+            className="bg-bg border border-hairline rounded-control p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -110,7 +110,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -120,13 +120,13 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
       {sorted.map(level => {
         const achieved = ladder.achievedLevelIds?.[level.id];
         return (
-          <div key={level.id} className="bg-surface border border-hairline rounded-2xl p-4 space-y-2.5">
+          <div key={level.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-2.5">
             <div className="flex flex-wrap items-start gap-2">
               <input
                 value={level.name}
                 onChange={e => updateLevel(level.id, { name: e.target.value })}
                 placeholder="Nombre del nivel"
-                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
+                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
                 <span className="font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
@@ -136,11 +136,11 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
             <div className="space-y-1.5">
               {level.criteria.map(c => (
-                <div key={c.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-hairline rounded-lg p-2">
+                <div key={c.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-hairline rounded-surface p-2">
                   <select
                     value={c.kind}
                     onChange={e => updateCriterion(level.id, c.id, { kind: e.target.value as LevelCriterionKind })}
-                    className="bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
+                    className="bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
                   >
                     {(Object.keys(CRITERION_KIND_LABEL) as LevelCriterionKind[]).map(k => (
                       <option key={k} value={k}>{CRITERION_KIND_LABEL[k]}</option>
@@ -150,7 +150,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     value={c.label}
                     onChange={e => updateCriterion(level.id, c.id, { label: e.target.value })}
                     placeholder="Etiqueta (ej. 10 dominadas)"
-                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
+                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
                   />
                   {c.kind !== 'manual' && (
                     <input
@@ -159,7 +159,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.targetValue ?? ''}
                       onChange={e => updateCriterion(level.id, c.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="Objetivo"
-                      className="w-20 bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-20 bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'sentadilla_xbw' && (
@@ -167,7 +167,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.exerciseNameMatch ?? 'sentadilla'}
                       onChange={e => updateCriterion(level.id, c.id, { exerciseNameMatch: e.target.value })}
                       placeholder="nombre del ejercicio"
-                      className="w-28 bg-raised border border-hairline rounded p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-28 bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'manual' && (
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-hairline rounded-2xl text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
       >
         + Añadir nivel
       </button>

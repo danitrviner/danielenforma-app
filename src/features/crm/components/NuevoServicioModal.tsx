@@ -146,7 +146,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <input className={inputClass} value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Opcional" />
         </Campo>
 
-        <label className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-accent/8 border border-accent/20 cursor-pointer">
+        <label className="flex items-start gap-2 px-2.5 py-2 rounded-control bg-accent/8 border border-accent/20 cursor-pointer">
           <input
             type="checkbox"
             checked={generarPago}

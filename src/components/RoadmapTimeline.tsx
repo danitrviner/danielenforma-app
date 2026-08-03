@@ -100,7 +100,7 @@ interface EditorProps {
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-raised border border-hairline rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}
@@ -118,7 +118,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             value={item.title}
             onChange={e => onChange({ ...item, title: e.target.value })}
             placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -130,7 +130,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -141,7 +141,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="objetivo">Objetivo</option>
               <option value="hito">Hito</option>
@@ -153,7 +153,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="entreno">Entreno</option>
               <option value="nutricion">Nutrición</option>
@@ -171,7 +171,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.startDate ?? ''}
               onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div>
@@ -180,7 +180,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.targetDate ?? ''}
               onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
@@ -191,7 +191,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-surface border border-hairline rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="pendiente">Pendiente</option>
             <option value="en_progreso">En progreso</option>
@@ -204,21 +204,21 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           {!isNew && onDelete && (
             <button
               onClick={onDelete}
-              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-xs uppercase rounded-xl transition-all"
+              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-xs uppercase rounded-control transition-all"
             >
               Eliminar
             </button>
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
+            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -429,7 +429,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={m.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden cursor-default transition-all ${goldTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-all ${goldTimingClasses(timing)}`}
         title={`${m.objective || `Mes. ${m.number}`} · ${m.weeks} semanas · ${fmtDate(m.startDate)} – ${fmtDate(mEnd)}`}
       >
         <div style={{ background: color }} className="h-full px-3 flex flex-col justify-center">
@@ -450,7 +450,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={b.key}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden cursor-default transition-all ${cyanTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-all ${cyanTimingClasses(timing)}`}
         title={`${b.label} · ${fmtDate(b.start)} – ${fmtDate(b.end)}`}
       >
         <div style={{ background: b.color }} className="h-full px-3 flex flex-col justify-center">
@@ -474,7 +474,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={item.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden border border-white/10 transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
+        className={`rounded-surface overflow-hidden border border-white/10 transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
         title={`${item.title}${item.description ? ' — ' + item.description : ''}${item.targetDate ? ' · ' + fmtDate(item.targetDate) : ''}`}
         onClick={() => !readonly && openEdit(item)}
       >
@@ -541,7 +541,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-2xl border border-white/5 bg-field overflow-hidden shadow-xl">
+      <div className="rounded-surface border border-white/5 bg-field overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-hairline flex items-center gap-1.5">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
@@ -578,7 +578,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           </p>
           <button
             onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir objetivo
@@ -605,7 +605,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-white/5 rounded-2xl bg-field overflow-hidden shadow-2xl">
+      <div className="hidden sm:flex border border-white/5 rounded-surface bg-field overflow-hidden shadow-2xl">
 
         {/* Sidebar — never scrolls */}
         <div
@@ -707,7 +707,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
-        <div className="border border-hairline rounded-xl p-4 space-y-2">
+        <div className="border border-hairline rounded-surface p-4 space-y-2">
           <p className="font-mono text-[10px] uppercase text-ink-2 tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
@@ -715,7 +715,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-hairline text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border border-hairline text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >
@@ -740,23 +740,23 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {/* Legend */}
       <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-white/5">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: MESO_COLORS[0] }} />
+          <div className="w-3 h-3 rounded-control" style={{ background: MESO_COLORS[0] }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Mesociclo</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: NUTRI_COLORS[0] }} />
+          <div className="w-3 h-3 rounded-control" style={{ background: NUTRI_COLORS[0] }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Nutrición</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-warning)' }} />
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-warning)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Pendiente</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-accent)' }} />
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-accent)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">En progreso</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-success)' }} />
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-success)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Logrado</span>
         </div>
         {showWeightChart && (

@@ -86,7 +86,7 @@ export default function FoodPreferencesPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -95,7 +95,7 @@ export default function FoodPreferencesPanel({
 
         {/* Allergies reminder */}
         {allergies.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-surface">
             <span className="material-symbols-outlined text-sm text-amber-400">warning</span>
             <p className="font-mono text-[10px] text-amber-300">
               Alergias/intolerancias: {allergies.join(', ')} — gestionadas en la ficha.
@@ -114,7 +114,7 @@ export default function FoodPreferencesPanel({
               <button
                 key={g.id}
                 onClick={() => { setActiveGroup(g); setSearch(''); }}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
+                className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-all active:scale-95 ${
                   hasAny
                     ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
                     : 'bg-surface border-hairline hover:border-hairline'
@@ -173,7 +173,7 @@ export default function FoodPreferencesPanel({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
           {saving ? '…' : saved ? 'OK' : 'Guardar'}
@@ -188,7 +188,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-raised border border-hairline rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
@@ -201,7 +201,7 @@ export default function FoodPreferencesPanel({
       </div>
 
       {/* Food list */}
-      <div className="divide-y divide-hairline rounded-xl overflow-hidden border border-hairline">
+      <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
         {filteredFoods.length === 0 ? (
           <p className="py-6 text-center font-mono text-xs text-ink-3">Sin resultados</p>
         ) : (
@@ -234,7 +234,7 @@ export default function FoodPreferencesPanel({
                   <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggle(food, 'dislike')}
-                      className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-red-500/20 border border-red-500/50 text-red-400'
                           : 'bg-raised border border-hairline text-ink-3 hover:text-red-400 hover:border-red-500/30'
@@ -245,7 +245,7 @@ export default function FoodPreferencesPanel({
                     </button>
                     <button
                       onClick={() => toggle(food, 'favorite')}
-                      className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
                           : 'bg-raised border border-hairline text-ink-3 hover:text-amber-400 hover:border-amber-400/30'

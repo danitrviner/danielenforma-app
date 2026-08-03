@@ -223,7 +223,7 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
@@ -253,7 +253,7 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
@@ -281,9 +281,9 @@ function AppContent() {
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
+          <span className="text-[10px] bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded-control font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
@@ -302,9 +302,9 @@ function AppContent() {
       {/* MOBILE HEADER */}
       <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-[8px] bg-white/7 text-ink-2 px-1.5 py-0.5 rounded font-bold uppercase select-none">
+          <span className="text-[8px] bg-white/7 text-ink-2 px-1.5 py-0.5 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
@@ -323,7 +323,7 @@ function AppContent() {
             <button
               key={tab.id}
               onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
+              className={`flex items-center gap-3.5 p-3.5 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold shadow-md' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
             >
               <span
                 className="material-symbols-outlined group-hover:scale-110 transition-transform"
@@ -341,7 +341,7 @@ function AppContent() {
         {isCoach && (
           <button
             onClick={() => goToTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-lg text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-control text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
             <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
@@ -417,7 +417,7 @@ function AppContent() {
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-2xl transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"

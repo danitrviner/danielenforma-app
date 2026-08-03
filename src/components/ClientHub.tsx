@@ -381,7 +381,7 @@ export default function ClientHub({
 
   const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
   const planBadge = daysLeft !== null ? (
-    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg border flex-shrink-0 ${
+    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-surface border flex-shrink-0 ${
       daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
       daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                        'bg-red-500/10     text-red-300     border-red-500/20'
@@ -398,7 +398,7 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-xs font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Clientes
@@ -411,7 +411,7 @@ export default function ClientHub({
             </div>
             <p className="font-mono text-[10px] text-ink-2">{athlete.email}</p>
             {/* Adherence score badge */}
-            <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-md border font-mono ${adh.bg}`}>
+            <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
               <span className={`text-[9px] font-bold uppercase ${adh.text}`}>{adh.label}</span>
               <span className={`text-sm font-black ${adh.text}`}>{adherence.score}</span>
@@ -425,12 +425,12 @@ export default function ClientHub({
             type="date"
             value={planStart}
             onChange={e => setPlanStart(e.target.value)}
-            className="bg-raised border border-hairline rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -439,7 +439,7 @@ export default function ClientHub({
           <button
             onClick={handleSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-[10px] font-bold uppercase rounded hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -472,12 +472,12 @@ export default function ClientHub({
 
       {/* Nav de zonas (nivel 1) */}
       <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-1.5 pb-0.5">
-        <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1">
+        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1">
           {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button
               key={zone}
               onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl font-sans text-xs font-bold uppercase tracking-wide transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-control font-sans text-xs font-bold uppercase tracking-wide transition-all ${
                 activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -495,7 +495,7 @@ export default function ClientHub({
                 <button
                   key={tab}
                   onClick={() => guardedTabChange(tab)}
-                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
+                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-control font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
                     activeTab === tab
                       ? 'bg-accent/10 border-accent/40 text-accent'
                       : 'border-transparent text-ink-2 hover:text-white'

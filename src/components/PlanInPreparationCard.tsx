@@ -68,9 +68,9 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
   const doneCount = items.filter(i => i.done).length;
 
   return (
-    <section className="bg-surface border border-accent/25 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
+    <section className="bg-surface border border-accent/25 rounded-canvas p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
           <span className="material-symbols-outlined text-2xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
         </div>
         <div>
@@ -90,7 +90,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             key={item.key}
             onClick={item.onClick}
             disabled={!loaded}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all border ${
+            className={`w-full flex items-center gap-3 rounded-control px-3 py-2.5 text-left transition-all border ${
               item.done
                 ? 'bg-emerald-500/5 border-emerald-500/20'
                 : 'bg-raised border-hairline hover:border-accent/40'
@@ -104,7 +104,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             </span>
           </button>
         ))}
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
+        <div className="flex items-center gap-3 rounded-surface px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
           <span className="material-symbols-outlined text-lg text-ink-2">lock</span>
           <span className="font-sans text-sm flex-1 text-ink-2">Tu primer entrenamiento</span>
           <span className="font-mono text-[9px] uppercase text-ink-2">Esperando a tu coach</span>

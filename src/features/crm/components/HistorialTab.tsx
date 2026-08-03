@@ -66,7 +66,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-2xl bg-white/4 animate-pulse" />
+          <div key={i} className="h-24 rounded-surface bg-white/4 animate-pulse" />
         ))}
       </div>
     );
@@ -82,20 +82,20 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-3">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">Primer programa</p>
           <p className="font-sans font-bold text-sm text-ink mt-1">
             {resumen.primerPrograma ? formatDia(resumen.primerPrograma) : '—'}
           </p>
         </div>
-        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-3">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">Último fin</p>
           <p className="font-sans font-bold text-sm text-ink mt-1">
             {resumen.ultimoFin ? formatDia(resumen.ultimoFin) : '—'}
           </p>
         </div>
         {resumen.conversionContinuidad !== null && (
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-3">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
             <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">Conversión continuidad</p>
             <p className="font-sans font-bold text-sm text-ink mt-1">{resumen.conversionContinuidad}%</p>
           </div>
@@ -107,7 +107,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         {resumen.timeline.length === 0 ? (
           <EmptyState icon="history" titulo="Sin programas todavía" descripcion="La línea de tiempo aparecerá cuando el cliente tenga al menos un servicio." />
         ) : (
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {resumen.timeline.map(s => {
               const enCurso = !s.fechaFin || s.fechaFin >= hoy;
               return (

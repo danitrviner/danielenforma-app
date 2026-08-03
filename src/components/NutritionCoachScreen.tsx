@@ -22,7 +22,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
@@ -33,12 +33,12 @@ export default function NutritionCoachScreen({ coachId }: Props) {
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Nutrición</h1>
       </header>
 
-      <div className="flex bg-surface border border-hairline p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
               activeTab === tab.id
                 ? 'bg-accent text-black shadow-lg shadow-accent/10'
                 : 'text-ink-2 hover:text-white'

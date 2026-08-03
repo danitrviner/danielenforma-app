@@ -46,7 +46,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   };
 
   if (isPending) {
-    return <div className="h-40 rounded-2xl bg-white/4 animate-pulse" />;
+    return <div className="h-40 rounded-surface bg-white/4 animate-pulse" />;
   }
 
   if (!cliente) {
@@ -73,7 +73,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         Clientes
       </button>
 
-      <header className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-2xl p-4 flex flex-wrap items-start justify-between gap-3">
+      <header className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-sans font-black text-xl text-ink truncate">{cliente.nombre}</h1>
@@ -91,7 +91,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">chat</span>
               WhatsApp
@@ -103,7 +103,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <button
               type="button"
               onClick={() => navigate(`/clients/${cliente.userId}`)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">fitness_center</span>
               Ficha de entreno
@@ -120,7 +120,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => irATab(t.id)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
               tab === t.id
                 ? 'bg-accent/15 text-accent border border-accent/30'
                 : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
