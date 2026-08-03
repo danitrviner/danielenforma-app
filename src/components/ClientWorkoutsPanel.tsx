@@ -9,6 +9,7 @@ import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
+import { Badge, BadgeTone } from './ui';
 
 const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   pending:   'Pendiente',
@@ -17,11 +18,11 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   perdido:   'Perdido',
 };
 
-const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
-  pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-  completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-raised text-ink-2 border border-hairline',
-  perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
+const STATUS_TONE: Record<WorkoutAssignment['status'], BadgeTone> = {
+  pending:   'warning',
+  completed: 'success',
+  skipped:   'neutral',
+  perdido:   'danger',
 };
 
 interface Props {
@@ -253,9 +254,7 @@ export default function ClientWorkoutsPanel({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface ${STATUS_STYLE[a.status]}`}>
-                      {STATUS_LABEL[a.status]}
-                    </span>
+                    <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
                     <button onClick={() => handleDeleteAssignment(a.id)} className="text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors" title="Eliminar">
                       <span className="material-symbols-outlined text-body-s">delete</span>
                     </button>

@@ -18,6 +18,7 @@ import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import Skeleton from './Skeleton';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
+import { Badge, BadgeTone } from './ui';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -59,11 +60,11 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   perdido:   'Perdido',
 };
 
-const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
-  pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-  completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-raised text-ink-2 border border-hairline',
-  perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
+const STATUS_TONE: Record<WorkoutAssignment['status'], BadgeTone> = {
+  pending:   'warning',
+  completed: 'success',
+  skipped:   'neutral',
+  perdido:   'danger',
 };
 
 const TYPE_CHIP: Record<string, string> = {
@@ -388,9 +389,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <span className={`text-caption font-sans font-bold uppercase px-3 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
-            {STATUS_LABEL[a.status]}
-          </span>
+          <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
           {canAct && (
             <>
               <button
