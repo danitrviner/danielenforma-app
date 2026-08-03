@@ -1,41 +1,110 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS DEL DESIGN SYSTEM
+   Fuente única de verdad del color en Forma. Los valores viven aquí, en CSS,
+   porque es lo único que Tailwind v4 sabe leer: no hay tailwind.config.js.
+
+   Regla dura: TypeScript elige QUÉ token, nunca QUÉ valor. Interpolar un valor
+   dentro de un className (`bg-[${x}]`) no genera CSS, no falla el build y no
+   avisa en consola — el estilo simplemente desaparece.
+
+   Estructura, para que las fases siguientes inserten sin reescribir:
+     · Tipografía        familias (F1) · escala de tamaños (F4)
+     · Color             superficies, texto, líneas, marca, dato, estado (F1)
+     · Radios            (F3)
+     · Motion            (F13)
+   ═══════════════════════════════════════════════════════════════════════════ */
 @theme {
+  /* ── Tipografía ─────────────────────────────────────────────────────────── */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Acento principal: volt → oro */
-  --color-accent: #fbcb1a;
-  --color-accent-dark: #d4a800;
-  --color-accent-bg: rgba(251, 203, 26, 0.10);
-  --color-accent-border: rgba(251, 203, 26, 0.30);
+  /* ── Superficies · 4 ────────────────────────────────────────────────────────
+     Cuatro niveles y ni uno más. Sustituyen a los ~20 grises casi idénticos.
+     `field` es más oscuro que su contenedor a propósito: el hueco se hunde. */
+  --color-bg:      #111110;
+  --color-surface: #181816;
+  --color-raised:  #1e1e1b;
+  --color-field:   #141413;
 
-  /* Fondos (más cálidos, menos pitch black) */
+  /* ── Texto · 3 + inverso ────────────────────────────────────────────────────
+     Contraste medido sobre `surface`. `ink-3` es nuevo: sustituye a #555 y #444
+     (2,38:1 y 1,83:1, ambos por debajo del mínimo AA de 4,5:1). */
+  --color-ink:       #f5f5f0;  /* 16,3:1 — títulos, cifras, nombres           */
+  --color-ink-2:     #c6c9ab;  /* 10,5:1 — apoyo, etiquetas, descripciones    */
+  --color-ink-3:     #8a8d7b;  /*  5,2:1 — placeholders, ayudas, timestamps   */
+  --color-on-accent: #000000;  /* 13,7:1 — único color admitido sobre el oro  */
+
+  /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
+     Todos los bordes son de 1 px. El borde —no la sombra— define una superficie.
+     Nada de blanco por encima del 12 %: sobre #111110 es una línea blanca.
+     `accent-line` se llama así, y no `accent`, porque `--color-accent` ya es el
+     oro sólido: en Tailwind ambos generarían la misma clase `border-accent`. */
+  --color-hairline:    rgba(255, 255, 255, 0.07);
+  --color-strong:      rgba(255, 255, 255, 0.12);
+  --color-accent-line: rgba(251, 203, 26, 0.35);
+
+  /* ── Marca · 2 ──────────────────────────────────────────────────────────────
+     El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
+     Máximo un elemento amarillo relleno por pantalla visible. */
+  --color-accent:       #fbcb1a;
+  --color-accent-press: #d4a800;  /* solo pulsado y hover del primario        */
+  --color-accent-bg:    rgba(251, 203, 26, 0.10);
+
+  /* ── Dato · 1 ───────────────────────────────────────────────────────────────
+     El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo. */
+  --color-data: #00eefc;
+
+  /* ── Estado · 4 ─────────────────────────────────────────────────────────────
+     Un tono por estado: texto al 100 %, fondo al 10 %, borde al 25 %. */
+  --color-success: #86efac;  /* completado, al día, dentro de objetivo        */
+  --color-warning: #fdba74;  /* atención sin urgencia                         */
+  --color-danger:  #fca5a5;  /* error, atrasado, acción destructiva           */
+  --color-info:    #93c5fd;  /* neutro informativo                            */
+
+  /* ── Series de gráfica · 5 ──────────────────────────────────────────────────
+     Orden de asignación fijo; la primera serie siempre es `data`. Se declaran
+     aquí para que ningún hex literal sobreviva en los paneles de gráficas.
+     Quien las consume de verdad es F10. Una sexta serie significa que la
+     gráfica está mal planteada. */
+  --color-chart-1: #00eefc;  /* = data    */
+  --color-chart-2: #fbcb1a;  /* = accent  */
+  --color-chart-3: #a78bfa;
+  --color-chart-4: #86efac;  /* = success */
+  --color-chart-5: #fdba74;  /* = warning */
+
+  /* ═════════════════════════════════════════════════════════════════════════
+     TOKENS ANTIGUOS — EN RETIRADA
+     No se usan en ningún componente (0 apariciones medidas). Se conservan
+     mientras dure la migración para que ningún paso intermedio pueda romper
+     nada, y se borran en cuanto sus contadores estén a cero de forma estable.
+     No añadir nada aquí.
+     ═════════════════════════════════════════════════════════════════════════ */
+  --color-accent-dark: #d4a800;
+  --color-accent-border: rgba(251, 203, 26, 0.30);
   --color-bg-base: #111110;
   --color-bg-card: #181816;
   --color-bg-elevated: #1e1e1b;
   --color-bg-input: #141413;
-
-  /* Bordes */
   --color-border: rgba(255, 255, 255, 0.07);
   --color-border-strong: rgba(255, 255, 255, 0.12);
-
-  /* Texto */
   --color-text-primary: #f5f5f0;
   --color-text-secondary: #a8a89e;
   --color-text-muted: #555550;
-
-  /* Estados (sin cambio) */
-  --color-success: #86efac;
-  --color-warning: #fdba74;
-  --color-danger: #fca5a5;
   --color-cyan: #00eefc;
 
-  /* Radio consistente */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
+  /* ── Radios ─────────────────────────────────────────────────────────────────
+     ATENCIÓN: estos cuatro SOBRESCRIBEN los valores por defecto de Tailwind y
+     dejan el resto intactos, así que la escala real tiene dos colisiones:
+     `rounded-lg` (16 px) y `rounded-2xl` (16 px) renderizan IDÉNTICO en 703
+     sitios, y `rounded-xl` (20 px) queda fuera de orden entre ambos.
+     Cualquier renombrado que asuma la semántica estándar de Tailwind romperá
+     703 elementos sin un solo error de compilación. Se arregla en F3, sola. */
+  --radius-sm: 0.5rem;   /*  8 px — por defecto en Tailwind: 4 px */
+  --radius-md: 0.75rem;  /* 12 px — por defecto en Tailwind: 6 px */
+  --radius-lg: 1rem;     /* 16 px — por defecto en Tailwind: 8 px */
+  --radius-xl: 1.25rem;  /* 20 px — por defecto en Tailwind: 12 px */
 }
 
 @layer utilities {
