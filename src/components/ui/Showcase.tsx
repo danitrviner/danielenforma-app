@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Dialog, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
+  Badge, Button, Card, Chip, Dialog, EmptyState, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -136,6 +136,7 @@ export default function Showcase() {
   const [vecesAtras, setVecesAtras] = React.useState(0);
   const [sheetAbierto, setSheetAbierto] = React.useState(false);
   const [dialogAbierto, setDialogAbierto] = React.useState(false);
+  const [vecesCrearRutina, setVecesCrearRutina] = React.useState(0);
   const [segundoOverlayAbierto, setSegundoOverlayAbierto] = React.useState(false);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
@@ -598,6 +599,31 @@ export default function Showcase() {
           «Abrir los dos a la vez» abre este Sheet y el Dialog de arriba, cada uno con su propio
           estado. Es la prueba de R4: dos overlays independientes, no anidados, cerrados en
           cualquier orden.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="EmptyState"
+        resumen="La última primitiva de F7. El relleno vertical es 40 px, no un valor nuevo: F6 ya decidió que los py-12/16/20/24 que convivían en la app eran todos estados vacíos y les asignó ese paso."
+      >
+        <Card padding="none">
+          <EmptyState
+            icon="fitness_center"
+            title="Aún no hay rutinas"
+            description="Crea la primera rutina para este cliente desde Entrenamientos."
+            actionLabel="Crear rutina"
+            onAction={() => setVecesCrearRutina((n) => n + 1)}
+          />
+        </Card>
+
+        <Card padding="none">
+          <EmptyState icon="search_off" title="Sin resultados" description="Prueba con otro término de búsqueda." />
+        </Card>
+
+        <p className="font-sans text-body-s text-ink-3">
+          {vecesCrearRutina > 0
+            ? `Botón de acción pulsado ${vecesCrearRutina} ${vecesCrearRutina === 1 ? 'vez' : 'veces'}.`
+            : 'El icono va en ink-3, nunca en accent: un estado vacío no es una llamada a la acción dorada por sí solo — si tiene acción, la lleva el botón, no el icono.'}
         </p>
       </Seccion>
     </div>

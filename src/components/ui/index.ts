@@ -41,3 +41,5 @@ export { default as Sheet } from './Sheet';
 
 export { default as Dialog } from './Dialog';
 export type { DialogSize } from './Dialog';
+
+export { default as EmptyState } from './EmptyState';
