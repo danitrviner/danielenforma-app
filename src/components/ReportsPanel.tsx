@@ -12,6 +12,7 @@ import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasI
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -216,9 +217,8 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             <Skeleton className="h-12 w-full" />
           </div>
         ) : reports.length === 0 ? (
-          <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
-            <span className="material-symbols-outlined text-display text-ink-3 block mb-2">description</span>
-            <p className="font-sans text-label text-ink-2">Aún no hay reportes para este atleta.</p>
+          <div className="border border-dashed border-hairline rounded-surface">
+            <EmptyState icon="description" title="Aún no hay reportes para este atleta." />
           </div>
         ) : (
           reports.map(r => (
