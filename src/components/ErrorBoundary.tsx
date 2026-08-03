@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon, Button } from './ui';
 
 interface State {
   error: Error | null;
@@ -31,16 +32,11 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
         <div className="min-h-screen flex items-center justify-center bg-bg p-6">
           <div className="max-w-lg w-full bg-surface border border-red-500/30 rounded-surface p-6 space-y-4">
             <h1 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-red-400">error</span>
+              <Icon name="error" size="l" className="text-red-400" />
               Se ha producido un error
             </h1>
             <p className="font-sans text-label text-ink-2 break-words">{this.state.error.message}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press transition-all"
-            >
-              Recargar
-            </button>
+            <Button onClick={() => window.location.reload()}>Recargar</Button>
           </div>
         </div>
       );

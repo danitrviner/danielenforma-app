@@ -9,6 +9,7 @@ import { WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles } from '../dbService';
 import { epley } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
+import { Icon, EmptyState } from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -350,12 +351,11 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     return (
       <div className="bg-surface border border-hairline rounded-surface p-5">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-data text-body-s">monitoring</span>
+          <Icon name="monitoring" size="s" className="text-data" />
           Historial de carga
         </h3>
-        <div className="py-8 text-center border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-2">monitoring</span>
-          <p className="text-label text-ink-2 font-sans">Sin registros de carga aún.</p>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState icon="monitoring" title="Sin registros de carga aún." />
         </div>
       </div>
     );
@@ -364,7 +364,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
       <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-        <span className="material-symbols-outlined text-data text-body-s">monitoring</span>
+        <Icon name="monitoring" size="s" className="text-data" />
         Historial de carga
       </h3>
 

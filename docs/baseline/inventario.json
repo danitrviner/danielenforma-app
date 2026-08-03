@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:23:09.764Z",
-  "commit": "f0fadb4",
+  "generado": "2026-08-03T22:26:12.432Z",
+  "commit": "307ad64",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39604
+    "lineasTsx": 39600
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5101,
+    "clasesTokenEnUso": 5097,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 998,
-    "fontSans": 1019,
+    "fontSans": 1017,
     "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 322,
+    "transitionAll": 321,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -349,9 +349,8 @@
       "fontSans": 1
     },
     "src/components/ErrorBoundary.tsx": {
-      "clasesTokenEnUso": 5,
-      "fontSans": 3,
-      "transitionAll": 1
+      "clasesTokenEnUso": 3,
+      "fontSans": 2
     },
     "src/components/ExerciseConfigEditor.tsx": {
       "clasesTokenEnUso": 80,
@@ -398,9 +397,9 @@
       "pesosProhibidos": 1
     },
     "src/components/LoadHistoryPanel.tsx": {
-      "clasesTokenEnUso": 62,
+      "clasesTokenEnUso": 60,
       "fontMono": 17,
-      "fontSans": 10,
+      "fontSans": 9,
       "transitionAll": 4,
       "roundedFull": 2
     },
