@@ -529,7 +529,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Live exchanges */}
             {form.ingredients.length > 0 && (
-              <div className="bg-[#1e1e1b] border border-accent/20 rounded-xl p-3">
+              <div className="bg-raised border border-accent/20 rounded-xl p-3">
                 <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Intercambios totales</p>
                 <div className="flex flex-wrap gap-2">
                   {(Object.entries(liveExchanges) as [FoodCategory, number][])

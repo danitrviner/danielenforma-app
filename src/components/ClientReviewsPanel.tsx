@@ -452,7 +452,7 @@ export default function ClientReviewsPanel({
                       const schedLabel = scheduleLabel(a.schedule);
                       const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
                       return (
-                        <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                        <div key={a.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-xl px-3 py-2">
                           <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
@@ -575,7 +575,7 @@ export default function ClientReviewsPanel({
                     { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  ef: 25, color: '#00eefc' },
                     { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: '#ff6b6b' },
                   ]).map(m => (
-                    <div key={m.label} className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-1.5 text-center">
+                    <div key={m.label} className="bg-raised border border-white/7 rounded-xl px-3 py-1.5 text-center">
                       <p className="font-mono text-[10px] uppercase" style={{ color: m.color }}>{m.label}</p>
                       <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
                       <p className="font-mono text-[9px] text-[#555]">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
@@ -601,7 +601,7 @@ export default function ClientReviewsPanel({
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Comidas ({onboardingData.mealCount ?? onboardingData.meals.length} ingestas)</p>
                   <div className="flex flex-wrap gap-1.5">
                     {onboardingData.meals.map(m => (
-                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5">
+                      <div key={m.intakeType} className="flex items-center gap-1.5 bg-raised border border-white/7 rounded-xl px-2.5 py-1.5">
                         <span className="font-mono text-[10px] text-ink-2">{m.name}</span>
                         {m.needsTupper && (
                           <span className="font-mono text-[8px] bg-data/10 border border-data/30 text-data rounded px-1.5 py-0.5">tupper</span>
@@ -642,7 +642,7 @@ export default function ClientReviewsPanel({
                 {onboardingData.equipment.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {onboardingData.equipment.map(e => (
-                      <span key={e} className="bg-[#1e1e1b] border border-white/7 text-ink-2 px-2 py-0.5 rounded-full text-[10px] font-mono">{e}</span>
+                      <span key={e} className="bg-raised border border-white/7 text-ink-2 px-2 py-0.5 rounded-full text-[10px] font-mono">{e}</span>
                     ))}
                   </div>
                 )}
@@ -979,7 +979,7 @@ export default function ClientReviewsPanel({
                       <div key={key}>
                         <div
                           onClick={toggle}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                         >
                           <span
                             className="material-symbols-outlined flex-shrink-0 text-lg"
@@ -1081,7 +1081,7 @@ export default function ClientReviewsPanel({
                                 { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                                 { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                               ].map(cell => (
-                                <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
+                                <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-white/40">
                                   <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
                                   <strong className={`${cell.color}`}>{cell.value}</strong>
                                 </div>
@@ -1139,7 +1139,7 @@ export default function ClientReviewsPanel({
                     <div key={key}>
                       <div
                         onClick={toggle}
-                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                       >
                         <span
                           className="material-symbols-outlined flex-shrink-0 text-lg"
@@ -1333,7 +1333,7 @@ export default function ClientReviewsPanel({
                     const tmpl = coachQuestionnaires.find(q => q.id === a.questionnaireId);
                     const schedLabel = scheduleLabel(a.schedule);
                     return (
-                      <div key={a.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                      <div key={a.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-xl px-3 py-2">
                         <span className="material-symbols-outlined text-accent text-sm">quiz</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-bold text-white text-xs truncate">{tmpl?.title ?? a.questionnaireId}</p>
@@ -1379,7 +1379,7 @@ export default function ClientReviewsPanel({
                       const tmpl = coachQuestionnaires.find(q => q.id === r.questionnaireId);
                       const date = new Date(r.submittedAt);
                       return (
-                        <details key={r.id} className="bg-[#1e1e1b] border border-white/7 rounded-xl overflow-hidden">
+                        <details key={r.id} className="bg-raised border border-white/7 rounded-xl overflow-hidden">
                           <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-[#222]">
                             <span className="material-symbols-outlined text-ink-2 text-sm">expand_more</span>
                             <div className="flex-1 min-w-0">

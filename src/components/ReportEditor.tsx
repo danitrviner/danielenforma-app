@@ -95,7 +95,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-[#555]"
+                        className="w-full bg-raised border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-[#555]"
                       />
                     )}
                   </div>

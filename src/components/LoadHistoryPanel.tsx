@@ -613,7 +613,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               {[...sessionRows].reverse().map((row, i) => (
                 <tr
                   key={row.date}
-                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-[#1e1e1b] transition-colors`}
+                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-raised transition-colors`}
                 >
                   <td className="px-3 py-2.5 font-mono text-[11px] text-ink-2">{row.label}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>

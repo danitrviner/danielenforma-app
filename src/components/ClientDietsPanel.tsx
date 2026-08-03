@@ -406,7 +406,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -420,7 +420,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

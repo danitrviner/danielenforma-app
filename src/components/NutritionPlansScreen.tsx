@@ -476,7 +476,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {deleteId && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1e1e1b] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="bg-raised border border-red-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
               <h3 className="font-sans font-bold text-lg text-white">¿Eliminar dieta?</h3>
               <p className="text-sm text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">

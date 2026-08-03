@@ -201,9 +201,9 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <div className="flex items-center gap-2">
             <span className="font-mono text-[9px] text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">−</button>
+              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-raised border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">−</button>
               <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
-              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">+</button>
+              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-raised border border-white/7 text-ink-2 hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
                   {m.intake}{m.unit} <span className="text-[#555]">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-[#1e1e1b] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-raised overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, m.rdaPct)}%`, backgroundColor: STATUS_COLOR[m.status] }} />
               </div>
             </div>

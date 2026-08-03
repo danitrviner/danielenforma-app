@@ -1125,7 +1125,7 @@ export default function OnboardingForm({
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold border transition-all ${
                     meal.needsTupper
                       ? 'bg-data/15 border-data/40 text-data'
-                      : 'bg-[#1e1e1b] border-white/7 text-[#555] hover:text-ink-2 hover:border-[#3a3a3a]'
+                      : 'bg-raised border-white/7 text-[#555] hover:text-ink-2 hover:border-[#3a3a3a]'
                   }`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>lunch_dining</span>
                   Tupper

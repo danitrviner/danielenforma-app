@@ -80,7 +80,7 @@ function ProjectionTooltip({ active, payload }: any) {
   if (!row) return null;
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
+    <div className="bg-raised border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
       <p className="text-ink-2 mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
@@ -343,7 +343,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
                 className={`font-mono text-[9px] px-2.5 py-1.5 rounded-md transition-colors ${
-                  curveMode === opt.id ? 'bg-[#1e1e1b] text-white shadow-inner' : 'text-ink-2 hover:text-white'
+                  curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>
             ))}
@@ -483,7 +483,7 @@ function StatCard({
         {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (
-        <div className="h-1.5 rounded-full bg-[#1e1e1b] overflow-hidden">
+        <div className="h-1.5 rounded-full bg-raised overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? '#fbcb1a' }} />
         </div>
       )}

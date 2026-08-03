@@ -171,7 +171,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             <select
               value={periodMode}
               onChange={e => setPeriodMode(e.target.value as PeriodMode)}
-              className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+              className="bg-raised border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
             >
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
@@ -184,7 +184,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <select
                 value={compareWeeks}
                 onChange={e => setCompareWeeks(Number(e.target.value))}
-                className="bg-[#1e1e1b] border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+                className="bg-raised border border-white/7 text-white text-xs font-mono rounded-lg px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
               >
                 {compareWeekOptions.map(w => (
                   <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>
@@ -235,7 +235,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
                 </div>
               </button>
               <span className={`flex-shrink-0 font-sans text-[9px] font-bold uppercase px-2 py-1 rounded-full ${
-                r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-[#1e1e1b] text-ink-2 border border-white/7'
+                r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-raised text-ink-2 border border-white/7'
               }`}>
                 {r.status === 'sent' ? 'Enviado' : 'Borrador'}
               </span>

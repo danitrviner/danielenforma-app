@@ -272,7 +272,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <div key={key} ref={isExpanded ? expandedRowRef : undefined}>
                     <div
                       onClick={toggle}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
                       <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
                         <img
@@ -321,7 +321,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
+                            <div key={cell.label} className="bg-raised p-2.5 rounded-xl border border-white/40">
                               <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
@@ -407,7 +407,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div key={key}>
                   <div
                     onClick={toggle}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
                       <img

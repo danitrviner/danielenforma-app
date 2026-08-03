@@ -21,7 +21,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const KIND_STYLE: Record<ToastKind, { icon: string; classes: string }> = {
   error:   { icon: 'error',        classes: 'bg-red-600 text-white' },
   success: { icon: 'check_circle', classes: 'bg-emerald-600 text-white' },
-  info:    { icon: 'cloud_sync',   classes: 'bg-[#1e1e1b] text-[#f5f5f0] border border-white/12' },
+  info:    { icon: 'cloud_sync',   classes: 'bg-raised text-[#f5f5f0] border border-white/12' },
 };
 
 let nextId = 0;

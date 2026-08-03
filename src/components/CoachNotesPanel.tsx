@@ -88,7 +88,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
       </p>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 mb-3 space-y-2">
           <input
             type="text"
             value={text}

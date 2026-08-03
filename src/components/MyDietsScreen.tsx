@@ -254,10 +254,10 @@ export default function MyDietsScreen({ profile }: Props) {
                     step={0.25}
                     value={form.budget[cat]}
                     onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                    className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
+                    className="w-full bg-raised border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
                   />
                 ) : (
-                  <div className="w-full bg-[#1e1e1b]/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
+                  <div className="w-full bg-raised/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
                     {fmtQty(form.budget[cat])}
                   </div>
                 )}
@@ -308,7 +308,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <button
                       key={cat}
                       onClick={() => openPicker(meal.id, cat)}
-                      className="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-[#1e1e1b] border border-white/7 text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                      className="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-raised border border-white/7 text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                     >+ {cat.replace('_', ' ')}</button>
                   ))}
                 </div>

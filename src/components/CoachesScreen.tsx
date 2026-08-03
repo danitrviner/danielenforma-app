@@ -272,7 +272,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
-                                               'text-ink-2 border-[#3a3a3a] bg-[#1e1e1b]'
+                                               'text-ink-2 border-[#3a3a3a] bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-[#555]">sin etiqueta</em>}

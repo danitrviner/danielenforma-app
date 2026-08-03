@@ -124,7 +124,7 @@ function CoursesTab() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 space-y-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
             className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
@@ -230,7 +230,7 @@ function LessonsTab() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-white/7 rounded-xl p-3 space-y-2">
           <select value={courseId} onChange={e => setCourseId(e.target.value)} required
             className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
             <option value="">Selecciona curso...</option>

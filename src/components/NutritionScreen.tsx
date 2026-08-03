@@ -884,7 +884,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
                     ? 'bg-[#1c1b1b] border-[#3a3a3a] text-white'
-                    : 'bg-[#1e1e1b] border-white/7 text-ink-2 hover:border-[#3a3a3a] hover:text-white'
+                    : 'bg-raised border-white/7 text-ink-2 hover:border-[#3a3a3a] hover:text-white'
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
@@ -1022,10 +1022,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           step={0.25}
                           value={selectedDiet.budget[cat]}
                           onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
+                          className="w-full bg-raised border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-accent/50"
                         />
                       ) : (
-                        <div className="w-full bg-[#1e1e1b]/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
+                        <div className="w-full bg-raised/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
                           {fmtQty(selectedDiet.budget[cat])}
                         </div>
                       )}
@@ -1119,7 +1119,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
                               title="Usar receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-raised border border-white/7 hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-xs select-none">skillet</span>
                               <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Receta</span>
@@ -1129,7 +1129,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <button
                               onClick={() => openSaveMealAsRecipe(meal)}
                               title="Guardar como receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-data/50 hover:text-data text-ink-2 transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-raised border border-white/7 hover:border-data/50 hover:text-data text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-xs select-none">bookmark_add</span>
                               <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Guardar receta</span>
@@ -1155,7 +1155,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-data/50"
+                            className="flex-1 min-w-0 bg-raised border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
@@ -1212,7 +1212,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <p className="font-mono text-[10px] text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>
                             <button
                               onClick={() => handleOpenAddPicker(meal.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-raised border border-white/7 hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-sm select-none">add_circle</span>
                               <span className="font-mono text-[10px] uppercase tracking-wider">Añadir alimento</span>

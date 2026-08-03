@@ -785,7 +785,7 @@ function TemplateCard({
         {tpl.stages.map(st => (
           <span
             key={st.id}
-            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-[#1e1e1b] border border-white/7 text-ink-2"
+            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-raised border border-white/7 text-ink-2"
           >
             {st.name} · {st.weeks}sem
           </span>

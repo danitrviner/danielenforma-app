@@ -26,7 +26,7 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
       <p className="font-sans font-bold text-sm text-white">{section.title}</p>
       {children}
       {section.coachNote && (
-        <div className="bg-[#1e1e1b] border-l-2 border-accent rounded-r-lg px-3 py-2">
+        <div className="bg-raised border-l-2 border-accent rounded-r-lg px-3 py-2">
           <p className="font-mono text-[9px] text-accent uppercase tracking-wider mb-0.5">Nota del entrenador</p>
           <p className="text-xs text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
@@ -176,7 +176,7 @@ function AdherenceSection({ section }: { section: CoachReportSection }) {
       <div className="flex items-center gap-3">
         <span className="font-mono font-black text-3xl text-white">{d.completed}<span className="text-base text-ink-2 font-bold">/{d.planned}</span></span>
         <div className="flex-1">
-          <div className="h-2 bg-[#1e1e1b] rounded-full overflow-hidden">
+          <div className="h-2 bg-raised rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 100 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-[10px] text-ink-2 mt-1">
@@ -197,7 +197,7 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
       <div className="flex items-center gap-3">
         <span className="font-mono font-black text-3xl text-white">{pct}<span className="text-base text-ink-2 font-bold">%</span></span>
         <div className="flex-1">
-          <div className="h-2 bg-[#1e1e1b] rounded-full overflow-hidden">
+          <div className="h-2 bg-raised rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 85 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-[10px] text-ink-2 mt-1">
@@ -265,7 +265,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
         </p>
       </div>
       {report.intro.trim() && (
-        <div className="bg-[#1e1e1b] border border-white/7 rounded-2xl p-4">
+        <div className="bg-raised border border-white/7 rounded-2xl p-4">
           <p className="text-sm text-ink-2 font-sans leading-relaxed whitespace-pre-wrap">{report.intro}</p>
         </div>
       )}

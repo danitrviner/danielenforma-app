@@ -629,7 +629,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             </p>
             <div className="space-y-1.5">
               {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
+                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-xl px-3 py-2">
                   <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-xs text-white truncate">{inv.email}</p>

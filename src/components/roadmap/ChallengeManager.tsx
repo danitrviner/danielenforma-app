@@ -209,7 +209,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
         </button>
 
         {showAssign && (
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mt-2 space-y-2">
+          <div className="bg-raised border border-white/7 rounded-xl p-3 mt-2 space-y-2">
             <div className="flex gap-2">
               <select
                 value={form.target}
@@ -288,7 +288,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           </button>
         </div>
         {showTemplateForm && (
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-2 space-y-2">
+          <div className="bg-raised border border-white/7 rounded-xl p-3 mb-2 space-y-2">
             <input
               value={tplForm.title}
               onChange={e => setTplForm(f => ({ ...f, title: e.target.value }))}

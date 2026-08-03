@@ -166,7 +166,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               <select
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
-                className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                className="bg-raised border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>

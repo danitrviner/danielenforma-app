@@ -47,7 +47,7 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-raised border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
@@ -298,7 +298,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 {listEntries.map(b => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-2 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2"
+                    className="flex items-center gap-2 bg-raised border border-white/7 rounded-xl px-3 py-2"
                   >
                     {editId === b.id ? (
                       // ── Inline edit ──────────────────────────────────────

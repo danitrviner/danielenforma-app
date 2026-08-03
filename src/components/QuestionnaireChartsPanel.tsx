@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-raised border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
       <p className="text-ink-2 mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
@@ -107,7 +107,7 @@ function QuestionChart({
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
-            <span className="font-mono text-[9px] text-ink-2 bg-[#1e1e1b] border border-white/7 px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[9px] text-ink-2 bg-raised border border-white/7 px-1.5 py-0.5 rounded">
               {question.unit}
             </span>
           )}

@@ -604,7 +604,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                   <button
                                     key={ci}
                                     onClick={() => pickCandidate(day.day, mealIdx, c)}
-                                    className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left hover:bg-[#1e1e1b] rounded-lg transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left hover:bg-raised rounded-lg transition-colors"
                                   >
                                     <div className="w-7 h-7 rounded overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
                                       {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}

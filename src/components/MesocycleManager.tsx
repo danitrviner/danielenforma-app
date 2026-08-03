@@ -383,7 +383,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                 group.exercises.map((we, exIdx) => {
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   return (
-                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-[#1e1e1b] rounded-xl p-2.5 space-y-2">
+                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-xl p-2.5 space-y-2">
                       <p className="text-xs font-sans font-semibold text-white truncate">
                         {ex?.name || we.exerciseId}
                         {we.muscleGroup && <span className="text-[9px] font-mono text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
@@ -1487,7 +1487,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             {/* Exercise rows */}
                             <div className="space-y-2">
                               {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-[#1e1e1b] rounded-xl p-2.5 space-y-1.5">
+                                <div key={peIdx} className="bg-raised rounded-xl p-2.5 space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <p className="text-xs font-sans font-semibold text-white truncate">{pe.name}</p>
@@ -1518,7 +1518,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-[#1e1e1b] border border-dashed border-[#3a3a3a] rounded-xl px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                                className="w-full bg-raised border border-dashed border-[#3a3a3a] rounded-xl px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (
@@ -1698,7 +1698,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     </div>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {tpl.stages.map((st) => (
-                        <span key={st.id} className="font-mono text-[9px] bg-[#1e1e1b] border border-white/7 px-2 py-0.5 rounded text-ink-2">
+                        <span key={st.id} className="font-mono text-[9px] bg-raised border border-white/7 px-2 py-0.5 rounded text-ink-2">
                           {st.name} · {st.weeks}sem
                         </span>
                       ))}

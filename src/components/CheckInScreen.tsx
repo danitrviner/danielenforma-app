@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-[#444]"
+                className="w-24 bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-[#444]"
               />
               <span className="font-mono text-xs text-[#555]">kg</span>
             </div>

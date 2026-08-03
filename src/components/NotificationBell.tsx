@@ -133,7 +133,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   key={n.id}
                   type="button"
                   onClick={() => handleClickNotif(n)}
-                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#1e1e1b] ${
+                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-raised ${
                     !n.read ? 'bg-[#181a18]' : ''
                   }`}
                 >

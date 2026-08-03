@@ -350,7 +350,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 <div className="flex items-center gap-2 pt-3 border-t border-white/60">
                   <button
                     onClick={() => openEditor(w)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#1e1e1b] hover:bg-accent/10 border border-white/7 hover:border-accent/30 text-ink-2 hover:text-accent rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-raised hover:bg-accent/10 border border-white/7 hover:border-accent/30 text-ink-2 hover:text-accent rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
                   >
                     <span className="material-symbols-outlined text-sm">edit</span>
                     Editar
@@ -359,7 +359,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     onClick={() => handleDuplicate(w)}
                     disabled={duplicatingId === w.id}
                     title="Duplicar rutina"
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1e1e1b] hover:bg-accent/10 border border-white/7 hover:border-accent/30 text-ink-2 hover:text-accent rounded-xl font-mono text-[10px] uppercase font-bold transition-all disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-raised hover:bg-accent/10 border border-white/7 hover:border-accent/30 text-ink-2 hover:text-accent rounded-xl font-mono text-[10px] uppercase font-bold transition-all disabled:opacity-50"
                   >
                     <span className={`material-symbols-outlined text-sm ${duplicatingId === w.id ? 'animate-spin' : ''}`}>
                       {duplicatingId === w.id ? 'progress_activity' : 'content_copy'}
@@ -368,7 +368,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   <button
                     onClick={() => setDeleteConfirm(w.id)}
                     title="Eliminar rutina"
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1e1e1b] hover:bg-red-500/10 border border-white/7 hover:border-red-500/30 text-ink-2 hover:text-red-400 rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-raised hover:bg-red-500/10 border border-white/7 hover:border-red-500/30 text-ink-2 hover:text-red-400 rounded-xl font-mono text-[10px] uppercase font-bold transition-all"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
@@ -382,7 +382,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         {/* Delete confirm */}
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1e1e1b] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="bg-raised border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
                 <h3 className="font-sans font-bold text-white text-lg">¿Eliminar rutina?</h3>
@@ -436,7 +436,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           value={editorName}
           onChange={e => setEditorName(e.target.value)}
           placeholder="ej. Fullbody A — Semana 1"
-          className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-4 py-3.5 text-lg font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+          className="w-full bg-raised border border-white/7 rounded-xl px-4 py-3.5 text-lg font-sans font-bold text-white placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
         />
       </div>
 
@@ -614,7 +614,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       {/* Exercise picker modal */}
       {showPicker && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl md:rounded-2xl w-full md:max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="bg-raised border border-white/7 rounded-t-2xl md:rounded-2xl w-full md:max-w-2xl shadow-2xl flex flex-col max-h-[85vh]">
             {/* Picker header */}
             <div className="flex items-center justify-between p-5 border-b border-white/7 flex-shrink-0">
               <h3 className="font-sans font-bold text-white text-lg">Seleccionar ejercicio</h3>

@@ -50,7 +50,7 @@ export default function LevelLadderCard({ status }: Props) {
                   {c.criterion.label}
                 </p>
                 {c.criterion.kind !== 'manual' && (
-                  <div className="h-1 rounded-full bg-[#1e1e1b] overflow-hidden mt-1">
+                  <div className="h-1 rounded-full bg-raised overflow-hidden mt-1">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(4, c.pct)}%`, backgroundColor: c.done ? '#8ac926' : '#00eefc' }}

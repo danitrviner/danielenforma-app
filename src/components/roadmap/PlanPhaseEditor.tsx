@@ -355,7 +355,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       <select
                         value={m.kind}
                         onChange={e => updateMetric(phase.id, m.id, { kind: e.target.value as PhaseMetricKind })}
-                        className="bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                        className="bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                       >
                         {(Object.keys(METRIC_KIND_LABEL) as PhaseMetricKind[]).map(k => (
                           <option key={k} value={k}>{METRIC_KIND_LABEL[k]}</option>
@@ -365,7 +365,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         value={m.label}
                         onChange={e => updateMetric(phase.id, m.id, { label: e.target.value })}
                         placeholder="Etiqueta (ej. Bajar a 82 kg)"
-                        className="flex-1 min-w-[120px] bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                        className="flex-1 min-w-[120px] bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                       />
                       {m.kind !== 'manual' && (
                         <input
@@ -373,7 +373,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                           value={m.targetValue ?? ''}
                           onChange={e => updateMetric(phase.id, m.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                           placeholder="Objetivo"
-                          className="w-20 bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                          className="w-20 bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                         />
                       )}
                       {m.kind === 'manual' && (

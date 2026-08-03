@@ -100,7 +100,7 @@ interface EditorProps {
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="bg-raised border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
             {isNew ? 'Nuevo item' : 'Editar item'}

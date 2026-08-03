@@ -38,7 +38,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               key={r.id}
               onClick={() => setOpen(r)}
               className={`w-full flex items-center justify-between gap-3 rounded-lg p-3 text-left transition-all border ${
-                i === 0 ? 'bg-[#1e1e1b] border-accent/30 hover:border-accent/60' : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
+                i === 0 ? 'bg-raised border-accent/30 hover:border-accent/60' : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
               }`}
             >
               <div className="min-w-0">

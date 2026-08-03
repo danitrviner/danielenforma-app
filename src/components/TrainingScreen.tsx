@@ -363,7 +363,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             : a.status === 'skipped'  ? 'bg-[#1c1b1b] text-ink-2'
             : a.status === 'perdido'  ? 'bg-red-500/10 text-red-300'
             : isNext ? 'bg-accent/15 text-accent'
-            : 'bg-[#1e1e1b] text-ink-2'
+            : 'bg-raised text-ink-2'
           }`}>
             <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
               {a.status === 'completed' ? 'check_circle'
@@ -526,7 +526,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-white/7 flex-shrink-0" />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-[#1e1e1b] border border-white/7 flex items-center justify-center flex-shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                     <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                   </div>
                 )}
@@ -635,7 +635,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         <tr
                           key={sIdx}
                           className={`border-b border-white/20 transition-colors ${
-                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-[#1e1e1b]'
+                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-raised'
                           }`}
                         >
                           <td className="px-4 py-2.5">
@@ -818,11 +818,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#1e1e1b] rounded-xl p-3">
+                <div className="bg-raised rounded-xl p-3">
                   <p className="font-mono text-2xl font-black text-white tabular-nums">{celebration.totalSets}</p>
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Series</p>
                 </div>
-                <div className="bg-[#1e1e1b] rounded-xl p-3">
+                <div className="bg-raised rounded-xl p-3">
                   <p className="font-mono text-2xl font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">kg movidos</p>
                 </div>

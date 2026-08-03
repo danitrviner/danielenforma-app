@@ -140,7 +140,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                   <select
                     value={c.kind}
                     onChange={e => updateCriterion(level.id, c.id, { kind: e.target.value as LevelCriterionKind })}
-                    className="bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                    className="bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                   >
                     {(Object.keys(CRITERION_KIND_LABEL) as LevelCriterionKind[]).map(k => (
                       <option key={k} value={k}>{CRITERION_KIND_LABEL[k]}</option>
@@ -150,7 +150,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     value={c.label}
                     onChange={e => updateCriterion(level.id, c.id, { label: e.target.value })}
                     placeholder="Etiqueta (ej. 10 dominadas)"
-                    className="flex-1 min-w-[120px] bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                    className="flex-1 min-w-[120px] bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                   />
                   {c.kind !== 'manual' && (
                     <input
@@ -159,7 +159,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.targetValue ?? ''}
                       onChange={e => updateCriterion(level.id, c.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="Objetivo"
-                      className="w-20 bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-20 bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'sentadilla_xbw' && (
@@ -167,7 +167,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.exerciseNameMatch ?? 'sentadilla'}
                       onChange={e => updateCriterion(level.id, c.id, { exerciseNameMatch: e.target.value })}
                       placeholder="nombre del ejercicio"
-                      className="w-28 bg-[#1e1e1b] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-28 bg-raised border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'manual' && (

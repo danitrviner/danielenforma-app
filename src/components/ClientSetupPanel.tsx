@@ -304,7 +304,7 @@ export default function ClientSetupPanel({
         </div>
 
         {showExtraForm && (
-          <form onSubmit={handleAddExtra} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 flex gap-2">
+          <form onSubmit={handleAddExtra} className="bg-raised border border-white/7 rounded-xl p-3 mb-3 flex gap-2">
             <input
               type="text"
               value={extraTitle}

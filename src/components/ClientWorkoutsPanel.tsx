@@ -131,7 +131,7 @@ export default function ClientWorkoutsPanel({
               <p className="font-mono text-[9px] text-ink-2 uppercase">Material disponible</p>
               <div className="flex flex-wrap gap-1.5">
                 {onboardingData.equipment.map(e => (
-                  <span key={e} className="bg-[#1e1e1b] border border-white/7 text-ink-2 px-2.5 py-1 rounded-full text-[10px] font-mono">
+                  <span key={e} className="bg-raised border border-white/7 text-ink-2 px-2.5 py-1 rounded-full text-[10px] font-mono">
                     {e}
                   </span>
                 ))}
@@ -277,7 +277,7 @@ export default function ClientWorkoutsPanel({
       {/* ── Assign modal ──────────────────────────────────────────────────── */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center sm:p-4">
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+          <div className="bg-raised border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
             <div className="flex items-center justify-between">
               <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Asignar entrenamiento</h2>
               <button onClick={() => setShowAssignModal(false)} className="text-ink-2 hover:text-white transition-colors">
