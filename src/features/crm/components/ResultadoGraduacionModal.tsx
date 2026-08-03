@@ -42,9 +42,9 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             type="button"
             onClick={() => elegir('continua')}
             disabled={actualizar.isPending}
-            className="flex items-center gap-2 p-3 rounded-xl bg-[#86efac]/10 border border-[#86efac]/25 hover:bg-[#86efac]/15 disabled:opacity-40 transition-colors text-left"
+            className="flex items-center gap-2 p-3 rounded-xl bg-success/10 border border-success/25 hover:bg-success/15 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-[#86efac]">trending_up</span>
+            <span className="material-symbols-outlined text-lg text-success">trending_up</span>
             <div>
               <p className="font-sans font-bold text-[12px] text-ink">Sigue con nosotros</p>
               <p className="font-mono text-[9px] text-[#555550]">Pasa a continuidad</p>

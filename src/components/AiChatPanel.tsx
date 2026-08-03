@@ -443,7 +443,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <button
                       onClick={() => approveProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-lg bg-[#86efac]/15 border border-[#86efac]/40 text-[#86efac] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-1.5 rounded-lg bg-success/15 border border-success/40 text-success text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Aprobar
                     </button>

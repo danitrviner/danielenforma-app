@@ -890,7 +890,7 @@ export default function ClientReviewsPanel({
               { label: 'Nivel',      value: `Nivel ${athlete.level || 1}`,                        color: 'text-data' },
               { label: 'XP',         value: `${athlete.xp || 0} / 400`,                          color: 'text-slate-300' },
               { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-accent' },
-              { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-[#86efac]' },
+              { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-success' },
             ].map(row => (
               <div key={row.label} className="flex justify-between items-baseline text-xs font-mono">
                 <span className="text-ink-2 uppercase">{row.label}:</span>

@@ -9,7 +9,7 @@ import type { EstadoCrm, EstadoPago, EstadoSuscripcion } from '../types';
 type Tono = 'ok' | 'aviso' | 'apagado' | 'peligro';
 
 const TONO_CLASS: Record<Tono, string> = {
-  ok:       'bg-[#86efac]/12 text-[#86efac] border-[#86efac]/25',
+  ok:       'bg-success/12 text-success border-success/25',
   aviso:    'bg-[#fdba74]/12 text-[#fdba74] border-[#fdba74]/25',
   apagado:  'bg-white/5 text-[#a8a89e] border-white/10',
   peligro:  'bg-[#fca5a5]/12 text-[#fca5a5] border-[#fca5a5]/25',

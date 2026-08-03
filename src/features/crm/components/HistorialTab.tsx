@@ -120,7 +120,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
                   </div>
                   <span className={`shrink-0 px-2 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-widest border ${
                     enCurso
-                      ? 'bg-[#86efac]/12 text-[#86efac] border-[#86efac]/25'
+                      ? 'bg-success/12 text-success border-success/25'
                       : 'bg-white/5 text-[#a8a89e] border-white/10'
                   }`}>
                     {enCurso ? 'En curso' : 'Finalizado'}

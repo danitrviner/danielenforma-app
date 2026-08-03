@@ -151,7 +151,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'hecho' && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <span className="material-symbols-outlined text-2xl text-[#86efac]">check_circle</span>
+          <span className="material-symbols-outlined text-2xl text-success">check_circle</span>
           <p className="font-sans font-bold text-sm text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>

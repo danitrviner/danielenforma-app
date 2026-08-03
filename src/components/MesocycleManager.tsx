@@ -320,7 +320,7 @@ const PRIORITY_ICON: Record<'alta' | 'media' | 'baja', string> = {
 
 function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?: boolean }) {
   if (delta === null) return null;
-  if (delta > 0) return <span className="font-mono text-[10px] text-[#86efac] ml-1 tabular-nums">▲+{delta}</span>;
+  if (delta > 0) return <span className="font-mono text-[10px] text-success ml-1 tabular-nums">▲+{delta}</span>;
   if (delta < 0) return <span className="font-mono text-[10px] text-[#fca5a5] ml-1 tabular-nums">▼{delta}</span>;
   return showEqual ? <span className="font-mono text-[10px] text-[#555] ml-1">=</span> : null;
 }
@@ -426,7 +426,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
       </div>
 
       <div className="flex flex-wrap gap-3 text-[10px] font-mono">
-        <span className="text-[#86efac]">▲ Sube</span>
+        <span className="text-success">▲ Sube</span>
         <span className="text-[#fca5a5]">▼ Baja</span>
         <span className="text-[#555]">= Sin cambio</span>
         <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
@@ -1201,7 +1201,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 <p className="text-ink-2 text-[10px] font-mono mt-0.5">{m.startDate}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {m.distribution && (
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#86efac]">
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-success">
                       <span className="material-symbols-outlined text-[10px]">grid_view</span>Distribución
                     </span>
                   )}
@@ -1219,7 +1219,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-white text-base">Mesociclo #{editing.number}</h2>
                   <span className={`font-mono text-xs uppercase tracking-wider transition-colors ${
-                    saveState === 'saved'  ? 'text-[#86efac]' :
+                    saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-red-400' :
                     saveState === 'saving' ? 'text-accent animate-pulse' : 'text-ink-2'
                   }`}>{saveLabel}</span>
@@ -1561,7 +1561,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {/* === Done === */}
                   {genPhase === 'done' && (
                     <div className="text-center py-16 space-y-4">
-                      <span className="material-symbols-outlined text-5xl text-[#86efac] block">check_circle</span>
+                      <span className="material-symbols-outlined text-5xl text-success block">check_circle</span>
                       <div>
                         <p className="font-sans font-bold text-white text-sm">¡Rutinas asignadas!</p>
                         <p className="font-mono text-[10px] text-ink-2 mt-1">

@@ -103,7 +103,7 @@ function ProjectionTooltip({ active, payload }: any) {
       {dev != null && (
         <p className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-white/7">
           <span className="text-ink-2">Desvío</span>
-          <span className={`font-bold ${dev > 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}`}>{fmtKg(dev, true)} kg</span>
+          <span className={`font-bold ${dev > 0 ? 'text-[#fdba74]' : 'text-success'}`}>{fmtKg(dev, true)} kg</span>
         </p>
       )}
     </div>
@@ -290,7 +290,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               {activeBalance?.dailyDeficit != null && (
                 <span className="text-ink-2">
                   {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}:{' '}
-                  <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>
+                  <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-success'}>
                     {fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día
                   </b>
                 </span>
@@ -401,7 +401,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {performance?.deviationKg != null && (
           <p className="font-sans text-xs text-ink-2 leading-relaxed pt-1 border-t border-white/7">
             A semana {performance.currentWeek}, el peso real (<b className="text-white">{fmtKg(performance.realToDate)} kg</b>) va{' '}
-            <b className={performance.deviationKg > 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
+            <b className={performance.deviationKg > 0 ? 'text-[#fdba74]' : 'text-success'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
             {performance.achievedPct != null && <> · <b className="text-white">{performance.achievedPct}%</b> del objetivo conseguido</>}.
             {performance.explainedByAdherenceKg != null && performance.explainedByMetabolicKg != null && (
@@ -457,7 +457,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
             {activeBalance.dailyDeficit != null && (
               <span className="text-ink-2">
-                {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#86efac]'}>{fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día</b>
+                {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={activeBalance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-success'}>{fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día</b>
               </span>
             )}
             {activeBalance.weeklyDeltaKg != null && (
