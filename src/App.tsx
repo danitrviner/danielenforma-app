@@ -40,6 +40,15 @@ const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'
 const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
 const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
 
+// Escaparate de las primitivas de `ui/` (F7). El ternario NO es un lazy() con
+// una guarda alrededor: Vite sustituye `import.meta.env.DEV` por `false` al
+// compilar, así que en producción la rama entera se poda y el `import()`
+// desaparece del grafo — no se genera ni un chunk que nadie va a pedir. Con la
+// guarda solo en la ruta, el chunk se habría empaquetado igual.
+const UiShowcase = import.meta.env.DEV
+  ? lazy(() => import('./components/ui/Showcase'))
+  : null;
+
 function ScreenFallback() {
   return <ScreenSkeleton />;
 }
@@ -218,6 +227,19 @@ function AppContent() {
       setLoading(false);
     }
   };
+
+  // El escaparate de primitivas va ANTES de la puerta de sesión: son piezas sin
+  // datos, no necesitan Firebase ni un perfil, y pedir un login para mirar un
+  // botón es fricción sin motivo. Solo existe en desarrollo (ver UiShowcase).
+  if (UiShowcase && location.pathname === '/ui') {
+    return (
+      <div className="min-h-screen bg-bg p-4">
+        <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+          <UiShowcase />
+        </Suspense>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

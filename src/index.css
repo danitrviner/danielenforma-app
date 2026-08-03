@@ -257,6 +257,40 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE DE LA PRIMITIVA Icon
+   La clase de Google, `.material-symbols-outlined`, trae `font-size: 24px`
+   dentro, y viene de una hoja EXTERNA que no está en ninguna capa. En la
+   cascada, una declaración sin capa gana a cualquier declaración normal que sí
+   esté en una, y todas las utilidades de Tailwind v4 viven en `@layer
+   utilities`. Resultado medido en el navegador: los 590 iconos de la app se
+   renderizan a 24 px pase lo que pase, y los `text-caption`, `text-body-s` o
+   `text-display` que llevan al lado no cambian nada. El token estaba escrito,
+   la clase se generaba, y aun así no se aplicaba: el fallo silencioso de
+   siempre, esta vez por capas y no por interpolación.
+
+   Por eso la primitiva no usa la clase de Google. Reproduce lo que necesita
+   —familia, ligaduras, caja— y deja fuera exactamente una propiedad: el
+   tamaño, que es lo que el token tiene que poder decidir.
+
+   Va sin capa a propósito: es la base sobre la que la utilidad de tamaño
+   escribe, y no debe competir con ella.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ui-icon {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Custom scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;

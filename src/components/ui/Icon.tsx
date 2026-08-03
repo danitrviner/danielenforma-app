@@ -7,10 +7,17 @@ import React from 'react';
 
    Qué corrige. La app dibuja 590 iconos como `<span className="material-
    symbols-outlined text-body-s">`, es decir dimensionados con la escala
-   TIPOGRÁFICA. Funciona —el glifo se escala con `font-size`— pero significa
-   que el tamaño de un icono queda atado al escalón del texto que tiene al
-   lado, y no al peso óptico que le corresponde. La escala de icono vive ahora
-   en su propio grupo de tokens (`--text-icon-*` en index.css).
+   TIPOGRÁFICA. Eso ata el tamaño del icono al escalón del texto que tiene al
+   lado y no a su peso óptico, y la escala de icono pasa a ser un grupo de
+   tokens aparte (`--text-icon-*` en index.css).
+
+   Y hay algo peor, medido en el navegador al construir esta primitiva: esos
+   tokens de texto sobre un icono NO HACEN NADA. La clase de Google trae
+   `font-size: 24px` y llega sin capa; las utilidades de Tailwind v4 viven en
+   `@layer utilities`, y sin capa gana. Los 590 iconos de la app se renderizan
+   hoy a 24 px, `text-caption` o `text-display` incluidos. Por eso la primitiva
+   no usa la clase de Google sino `.ui-icon`, que es la misma base sin el
+   tamaño dentro (ver el bloque en index.css).
 
    Tres cosas que esta primitiva deja de dejar al criterio de cada pantalla:
 
@@ -82,7 +89,7 @@ export default function Icon({
   return (
     <span
       {...resto}
-      className={`material-symbols-outlined leading-none select-none ${TAMANO[size]} ${className}`}
+      className={`ui-icon leading-none select-none ${TAMANO[size]} ${className}`}
       style={{ fontVariationSettings: filled ? RELLENO.si : RELLENO.no, ...style }}
       role={label ? 'img' : undefined}
       aria-label={label}
