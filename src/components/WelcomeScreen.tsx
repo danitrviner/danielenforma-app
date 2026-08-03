@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, sendPasswordResetEmail, isSignInWithEmailLink, signInWithEmailLink } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
+import { Button } from './ui';
 
 interface WelcomeScreenProps {
   onLoginSuccess: (user: any) => void;
@@ -176,13 +177,9 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               required
               autoFocus
             />
-            <button
-              type="submit"
-              disabled={completingInvite}
-              className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-body-s tracking-widest disabled:opacity-50"
-            >
+            <Button type="submit" disabled={completingInvite} fullWidth>
               {completingInvite ? 'Verificando...' : 'Continuar'}
-            </button>
+            </Button>
           </form>
         </div>
       </div>
@@ -252,14 +249,9 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-body-s tracking-widest flex items-center justify-center gap-2"
-          >
+          <Button type="submit" disabled={loading} fullWidth iconTrailing="login">
             {loading ? 'Procesando...' : 'Ingresar al Portal'}
-            <span className="material-symbols-outlined text-body-s">login</span>
-          </button>
+          </Button>
         </form>
 
         <div className="flex items-center justify-center my-6">
@@ -269,18 +261,14 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         </div>
 
         {/* Google Authentication */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-sans rounded-control border border-hairline active:scale-95 transition-all text-body-s flex items-center justify-center gap-3"
-        >
-          <img 
-            src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 
-            alt="Google" 
+        <Button variant="secondary" onClick={handleGoogleLogin} disabled={loading} fullWidth>
+          <img
+            src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png"
+            alt="Google"
             className="w-5 h-5 object-contain"
           />
           Google Sign-In
-        </button>
+        </Button>
 
       </div>
     </div>
