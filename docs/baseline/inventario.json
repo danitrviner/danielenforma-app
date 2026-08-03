@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:07:31.068Z",
-  "commit": "8b49ed5",
+  "generado": "2026-08-03T21:13:41.559Z",
+  "commit": "603f5d8",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39842
+    "lineasTsx": 39817
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5238,
+    "clasesTokenEnUso": 5223,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1016,
-    "fontSans": 1070,
+    "fontMono": 1015,
+    "fontSans": 1064,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 354,
+    "transitionAll": 348,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -188,11 +188,10 @@
       "roundedFull": 4
     },
     "src/components/AcademyCoachScreen.tsx": {
-      "clasesTokenEnUso": 65,
+      "clasesTokenEnUso": 61,
       "fontMono": 5,
-      "fontSans": 11,
+      "fontSans": 9,
       "pesosProhibidos": 1,
-      "transitionAll": 2,
       "roundedFull": 2
     },
     "src/components/AcademyScreen.tsx": {
@@ -317,10 +316,9 @@
       "roundedFull": 2
     },
     "src/components/CoachNotesPanel.tsx": {
-      "clasesTokenEnUso": 27,
+      "clasesTokenEnUso": 25,
       "fontMono": 1,
-      "fontSans": 4,
-      "transitionAll": 1,
+      "fontSans": 3,
       "roundedFull": 1
     },
     "src/components/CoachRoadmapView.tsx": {
@@ -616,16 +614,15 @@
       "roundedFull": 4
     },
     "src/components/ReportsPanel.tsx": {
-      "clasesTokenEnUso": 26,
+      "clasesTokenEnUso": 24,
       "fontMono": 8,
-      "fontSans": 4,
-      "transitionAll": 2
+      "fontSans": 3,
+      "transitionAll": 1
     },
     "src/components/ResourcesPanel.tsx": {
-      "clasesTokenEnUso": 26,
+      "clasesTokenEnUso": 24,
       "fontMono": 2,
-      "fontSans": 4,
-      "transitionAll": 1
+      "fontSans": 3
     },
     "src/components/ReviewsScreen.tsx": {
       "clasesTokenEnUso": 73,
@@ -668,10 +665,8 @@
       "roundedFull": 2
     },
     "src/components/TaskManagerPanel.tsx": {
-      "clasesTokenEnUso": 25,
-      "fontMono": 1,
-      "fontSans": 3,
-      "transitionAll": 1
+      "clasesTokenEnUso": 20,
+      "fontSans": 2
     },
     "src/components/TrainingCoachScreen.tsx": {
       "clasesTokenEnUso": 6,
