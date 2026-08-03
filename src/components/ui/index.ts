@@ -30,3 +30,5 @@ export type { BadgeTone } from './Badge';
 
 export { default as Tabs } from './Tabs';
 export type { TabItem } from './Tabs';
+
+export { default as Chip } from './Chip';

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Icon, Input, Select, Tabs,
+  Badge, Button, Card, Chip, Icon, Input, Select, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -81,6 +81,8 @@ const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
   { size: 'l', pie: 'l · 48' },
 ];
 
+const CATEGORIAS = ['Pecho', 'Espalda', 'Pierna', 'Hombro'];
+
 const PESTANAS_POCAS: TabItem[] = [
   { id: 'resumen', label: 'Resumen', icon: 'dashboard' },
   { id: 'dietas', label: 'Dietas', icon: 'restaurant' },
@@ -128,6 +130,8 @@ export default function Showcase() {
   const [pulsaciones, setPulsaciones] = React.useState(0);
   const [pestana, setPestana] = React.useState('resumen');
   const [pestanaLarga, setPestanaLarga] = React.useState('revisiones');
+  const [categorias, setCategorias] = React.useState<string[]>(['Pecho']);
+  const [tags, setTags] = React.useState(['Sin gluten', 'Vegetariano', 'Rápido']);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -382,6 +386,47 @@ export default function Showcase() {
           Seis pestañas no caben en 375 px, y no hay reparto de anchos que lo arregle: se desliza.
           Con el tabulador se entra en el grupo y con las flechas se cambia de pestaña — Inicio y
           Fin van a los extremos.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Chip"
+        resumen="Lo que Badge deja fuera a propósito: se pulsa. Filtros que se activan y desactivan, alimentos seleccionables, tags que se pueden quitar."
+      >
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIAS.map((cat) => (
+            <span key={cat}>
+              <Chip
+                selected={categorias.includes(cat)}
+                onClick={() => setCategorias((prev) =>
+                  prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat])}
+              >
+                {cat}
+              </Chip>
+            </span>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <span key={tag}>
+              <Chip icon="local_offer" onRemove={() => setTags((prev) => prev.filter((t) => t !== tag))}>
+                {tag}
+              </Chip>
+            </span>
+          ))}
+          {tags.length === 0 && (
+            <span className="font-sans text-body-s text-ink-3">Sin tags — quítalos todos arriba.</span>
+          )}
+        </div>
+
+        <p className="font-sans text-body-s text-ink-3">
+          {categorias.length === 0
+            ? 'Ningún filtro activo.'
+            : `Filtros activos: ${categorias.join(', ')}.`}
+          {' '}El botón de quitar es HERMANO del de seleccionar, no está anidado dentro: un botón
+          dentro de otro botón es HTML inválido y el navegador lo repara moviéndolo a un sitio
+          impredecible del árbol.
         </p>
       </Seccion>
     </div>
