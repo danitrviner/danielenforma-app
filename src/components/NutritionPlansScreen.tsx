@@ -5,6 +5,7 @@ import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, s
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 import Skeleton from './Skeleton';
+import { Icon, Button, Chip, EmptyState } from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -402,20 +403,15 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <p className="text-label text-ink-2 font-mono">
               {diets.length} dieta{diets.length !== 1 ? 's' : ''} para {selectedAthlete?.displayName}
             </p>
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s">add</span>
+            <Button onClick={openCreate} variant="primary" icon="add">
               Crear dieta
-            </button>
+            </Button>
           </div>
         )}
 
         {!selectedEmail ? (
-          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-            <span className="material-symbols-outlined text-display text-ink-3 block mb-3">person_search</span>
-            <p className="text-ink-2 text-body-s">Selecciona un atleta para ver y crear sus dietas.</p>
+          <div className="border border-dashed border-hairline rounded-surface">
+            <EmptyState icon="person_search" title="Selecciona un atleta" description="Elige un atleta para ver y crear sus dietas." />
           </div>
         ) : loadingDiets ? (
           <div className="space-y-3">
@@ -423,9 +419,8 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <Skeleton className="h-24 w-full rounded-surface" />
           </div>
         ) : diets.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
-            <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
-            <p className="text-ink-2 text-body-s">Sin dietas. Crea la primera para este atleta.</p>
+          <div className="border border-dashed border-hairline rounded-surface">
+            <EmptyState icon="nutrition" title="Sin dietas" description="Crea la primera para este atleta." />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -459,13 +454,13 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                       onClick={() => openEdit(dt)}
                       className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
                     >
-                      <span className="material-symbols-outlined text-body-s">edit</span>Editar
+                      <Icon name="edit" size="s" />Editar
                     </button>
                     <button
                       onClick={() => setDeleteId(dt.id)}
                       className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 font-mono text-caption uppercase rounded-control transition-all"
                     >
-                      <span className="material-symbols-outlined text-body-s">delete</span>Eliminar
+                      <Icon name="delete" size="s" />Eliminar
                     </button>
                   </div>
                 </div>
@@ -480,8 +475,8 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar dieta?</h3>
               <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
-                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
+                <Button onClick={() => setDeleteId(null)} variant="secondary" fullWidth>Cancelar</Button>
+                <Button onClick={() => handleDelete(deleteId)} variant="danger" fullWidth>Eliminar</Button>
               </div>
             </div>
           </div>
@@ -496,12 +491,9 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleBack}
-          className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
-        </button>
+        <Button onClick={handleBack} variant="secondary" size="s" icon="arrow_back">
+          Volver
+        </Button>
         <div>
           <h2 className="font-sans font-bold text-title-m text-white">
             {editingId ? 'Editar dieta' : 'Nueva dieta'}
@@ -589,7 +581,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
-              <span className="material-symbols-outlined text-body-s">person_check</span>
+              <Icon name="person_check" size="s" />
               Referencia del atleta
             </p>
           </div>
@@ -624,7 +616,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           )}
           {onboardingData.allergies.length > 0 && (
             <p className="font-mono text-caption text-amber-400">
-              <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
+              <Icon name="warning" size="s" className="align-middle mr-1" />
               Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
             </p>
           )}
@@ -646,7 +638,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               }}
               className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
             >
-              <span className="material-symbols-outlined text-body-s">auto_fix_high</span>
+              <Icon name="auto_fix_high" size="s" />
               Prefijar desde macros
             </button>
           )}
@@ -685,7 +677,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 onClick={autoDistribute}
                 className="flex items-center gap-2 px-3 py-2 bg-raised border border-data/40 text-data hover:border-data/70 font-sans text-caption uppercase rounded-control transition-all"
               >
-                <span className="material-symbols-outlined text-body-s">auto_fix_high</span>
+                <Icon name="auto_fix_high" size="s" />
                 Repartir
               </button>
             )}
@@ -693,7 +685,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               onClick={addMeal}
               className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
             >
-              <span className="material-symbols-outlined text-body-s">add</span>Añadir comida
+              <Icon name="add" size="s" />Añadir comida
             </button>
           </div>
         </div>
@@ -713,7 +705,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               />
               {form.meals.length > 1 && (
                 <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
-                  <span className="material-symbols-outlined text-body-s">remove_circle</span>
+                  <Icon name="remove_circle" size="s" />
                 </button>
               )}
             </div>
@@ -790,7 +782,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   </span>
                   {/* Remove */}
                   <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
-                    <span className="material-symbols-outlined text-body-s">close</span>
+                    <Icon name="close" size="s" />
                   </button>
                 </div>
               ))}
@@ -800,7 +792,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 onClick={() => openPicker(meal.id)}
                 className="w-full flex items-center justify-center gap-2 border border-dashed border-hairline hover:border-accent/40 py-3 rounded-control text-caption font-mono text-ink-2 hover:text-accent transition-colors"
               >
-                <span className="material-symbols-outlined text-body-s">add_circle</span>
+                <Icon name="add_circle" size="s" />
                 Añadir alimento
               </button>
             </div>
@@ -815,10 +807,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-ink-3 text-body-s">visibility</span>
+            <Icon name="visibility" size="s" className="text-ink-3" />
             <span className="font-sans text-caption text-ink-3 uppercase tracking-wide">Vista previa del atleta</span>
           </div>
-          <span className={`material-symbols-outlined text-ink-3 text-body-s transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
+          <Icon name="expand_more" size="s" className={`text-ink-3 transition-transform ${showPreview ? 'rotate-180' : ''}`} />
         </button>
         {showPreview && (
           <div className="px-4 pb-4 space-y-3 border-t border-hairline pt-3">
@@ -853,19 +845,19 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
       {/* Save */}
       <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-bg">
-        <button onClick={handleBack} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-label uppercase rounded-control transition-all">
+        <Button onClick={handleBack} variant="secondary" fullWidth>
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
-          disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+          disabled={!form.name.trim()}
+          loading={saving}
+          variant="primary"
+          icon="save"
+          fullWidth
         >
-          {saving
-            ? <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</>
-            : <><span className="material-symbols-outlined text-body-s">save</span>Guardar dieta</>
-          }
-        </button>
+          Guardar dieta
+        </Button>
       </div>
 
       {/* Food picker sheet */}
@@ -878,30 +870,30 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <span className="font-sans text-caption text-ink-2 uppercase">{CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}</span>
               </div>
               <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
-                <span className="material-symbols-outlined text-body-s select-none">close</span>
+                <Icon name="close" size="s" className="select-none" />
               </button>
             </div>
 
             {enabledModes.length > 1 && (
               <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
-                  <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
-                  >{MODE_LABEL[mode]}</button>
+                  <Chip key={mode} selected={activeDietMode === mode} onClick={() => setActiveDietMode(mode)}>
+                    {MODE_LABEL[mode]}
+                  </Chip>
                 ))}
               </div>
             )}
 
             <div className="p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap">
               {CATS.map(cat => (
-                <button key={cat} onClick={() => setPickerCategory(cat)}
-                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
-                >{cat.replace('_', ' ')}</button>
+                <Chip key={cat} selected={pickerCategory === cat} onClick={() => setPickerCategory(cat)}>
+                  {cat.replace('_', ' ')}
+                </Chip>
               ))}
             </div>
 
             <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-              <span className="material-symbols-outlined text-ink-2 text-body-s select-none">search</span>
+              <Icon name="search" size="s" className="text-ink-2 select-none" />
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
@@ -916,7 +908,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                   className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0 ml-3">add_circle</span>
+                  <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent transition-colors select-none flex-shrink-0 ml-3" />
                 </button>
               ))}
             </div>

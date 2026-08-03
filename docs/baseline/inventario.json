@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T23:17:37.304Z",
-  "commit": "46e27e1",
+  "generado": "2026-08-03T23:21:44.145Z",
+  "commit": "2283c4f",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39413
+    "lineasTsx": 39405
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4968,
+    "clasesTokenEnUso": 4944,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 990,
-    "fontSans": 962,
+    "fontMono": 989,
+    "fontSans": 955,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 295,
+    "transitionAll": 289,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 164,
+    "roundedFull": 162,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -115,7 +115,7 @@
       },
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
-        "lineas": 928
+        "lineas": 920
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
@@ -482,12 +482,12 @@
       "transitionAll": 2
     },
     "src/components/NutritionPlansScreen.tsx": {
-      "clasesTokenEnUso": 159,
-      "fontMono": 34,
-      "fontSans": 26,
+      "clasesTokenEnUso": 135,
+      "fontMono": 33,
+      "fontSans": 19,
       "modalesArtesanales": 2,
-      "transitionAll": 13,
-      "roundedFull": 6
+      "transitionAll": 7,
+      "roundedFull": 4
     },
     "src/components/NutritionScreen.tsx": {
       "clasesTokenEnUso": 257,
