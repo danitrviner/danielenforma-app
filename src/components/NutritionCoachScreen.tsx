@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import RecipeBuilderScreen from './RecipeBuilderScreen';
+import { Tabs } from './ui';
 
 type Tab = 'tipos' | 'alimentos' | 'recetas';
 
@@ -33,22 +34,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Nutrición</h1>
       </header>
 
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
-              activeTab === tab.id
-                ? 'bg-accent text-black'
-                : 'text-ink-2 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-title-s">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Nutrición" />
 
       {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}
