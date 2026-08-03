@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:13:41.559Z",
-  "commit": "603f5d8",
+  "generado": "2026-08-03T21:17:41.947Z",
+  "commit": "2cd41b1",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39817
+    "lineasTsx": 39804
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5223,
+    "clasesTokenEnUso": 5215,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 1015,
-    "fontSans": 1064,
-    "pesosProhibidos": 31,
+    "fontSans": 1060,
+    "pesosProhibidos": 29,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 348,
+    "transitionAll": 347,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -188,10 +188,9 @@
       "roundedFull": 4
     },
     "src/components/AcademyCoachScreen.tsx": {
-      "clasesTokenEnUso": 61,
+      "clasesTokenEnUso": 57,
       "fontMono": 5,
-      "fontSans": 9,
-      "pesosProhibidos": 1,
+      "fontSans": 7,
       "roundedFull": 2
     },
     "src/components/AcademyScreen.tsx": {
@@ -625,12 +624,11 @@
       "fontSans": 3
     },
     "src/components/ReviewsScreen.tsx": {
-      "clasesTokenEnUso": 73,
+      "clasesTokenEnUso": 69,
       "fontMono": 11,
-      "fontSans": 14,
-      "pesosProhibidos": 1,
+      "fontSans": 12,
       "modalesArtesanales": 1,
-      "transitionAll": 6,
+      "transitionAll": 5,
       "animatePulse": 1,
       "roundedFull": 2
     },
