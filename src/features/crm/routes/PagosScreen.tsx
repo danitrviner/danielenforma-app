@@ -47,7 +47,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Pagos</h1>
+        <h1 className="font-sans font-black text-xl text-ink">Pagos</h1>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -62,7 +62,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Nueva suscripción
@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
+              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">

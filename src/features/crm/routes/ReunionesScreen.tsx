@@ -94,7 +94,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
     <div className="space-y-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Reuniones</h1>
+          <h1 className="font-sans font-black text-xl text-ink">Reuniones</h1>
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
@@ -132,7 +132,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-[#fdba74]' : 'bg-accent'}`} />
                   <div className="min-w-0">
-                    <p className="font-sans text-[11px] text-[#f5f5f0] truncate">
+                    <p className="font-sans text-[11px] text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
                     </p>
                     <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-[#fca5a5]' : 'text-[#555550]'}`}>

@@ -67,7 +67,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       <button
         type="button"
         onClick={() => navigate('/crm/clientes')}
-        className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-[#a8a89e] hover:text-[#f5f5f0] transition-colors"
+        className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-[#a8a89e] hover:text-ink transition-colors"
       >
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         Clientes
@@ -76,7 +76,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       <header className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-sans font-black text-xl text-[#f5f5f0] truncate">{cliente.nombre}</h1>
+            <h1 className="font-sans font-black text-xl text-ink truncate">{cliente.nombre}</h1>
             <EstadoClientePill estado={cliente.estadoCrm} />
           </div>
           <p className="font-mono text-[9px] text-[#555550] mt-0.5">
@@ -91,7 +91,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">chat</span>
               WhatsApp
@@ -103,7 +103,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <button
               type="button"
               onClick={() => navigate(`/clients/${cliente.userId}`)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">fitness_center</span>
               Ficha de entreno

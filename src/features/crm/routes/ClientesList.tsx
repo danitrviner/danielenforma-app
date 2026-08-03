@@ -140,7 +140,7 @@ export default function ClientesList() {
     <div className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Clientes</h1>
+          <h1 className="font-sans font-black text-xl text-ink">Clientes</h1>
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550] tabular-nums">
             {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
           </p>
@@ -149,7 +149,7 @@ export default function ClientesList() {
           <button
             type="button"
             onClick={() => setImportarAbierto(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">upload_file</span>
             Importar
@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">

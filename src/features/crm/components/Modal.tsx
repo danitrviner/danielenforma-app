@@ -39,7 +39,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-white/12 rounded-t-2xl sm:rounded-2xl overflow-hidden"
       >
         <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/7 shrink-0">
-          <h2 className="font-sans font-black text-sm text-[#f5f5f0]">{titulo}</h2>
+          <h2 className="font-sans font-black text-sm text-ink">{titulo}</h2>
           <button
             type="button"
             onClick={onCerrar}
@@ -79,7 +79,7 @@ export function Campo({ label, children, hint, error }: {
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-accent/40';
+  'w-full px-2.5 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
@@ -101,7 +101,7 @@ export function BotonSecundario({ children, onClick }: { children: React.ReactNo
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+      className="px-3 py-1.5 rounded-lg bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
     >
       {children}
     </button>

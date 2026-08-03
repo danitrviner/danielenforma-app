@@ -19,7 +19,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
         <span className="material-symbols-outlined text-lg text-accent">flag</span>
         <div>
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Fin de programa</p>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0]">
+          <p className="font-sans font-bold text-sm text-ink">
             {finPrograma ? `${formatDia(finPrograma)} · ${tiempoRelativo(finPrograma)}` : 'Sin fecha de fin definida'}
           </p>
         </div>

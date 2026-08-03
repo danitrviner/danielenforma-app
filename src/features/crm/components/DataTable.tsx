@@ -98,7 +98,7 @@ export default function DataTable<T>({
                 {columnas.map(c => (
                   <td
                     key={c.id}
-                    className={`px-3 py-2.5 font-sans text-[11px] text-[#f5f5f0] align-middle ${
+                    className={`px-3 py-2.5 font-sans text-[11px] text-ink align-middle ${
                       c.align === 'right' ? 'text-right tabular-nums' : 'text-left'
                     }`}
                   >

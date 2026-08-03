@@ -46,7 +46,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
           >
             <span className="material-symbols-outlined text-lg text-[#86efac]">trending_up</span>
             <div>
-              <p className="font-sans font-bold text-[12px] text-[#f5f5f0]">Sigue con nosotros</p>
+              <p className="font-sans font-bold text-[12px] text-ink">Sigue con nosotros</p>
               <p className="font-mono text-[9px] text-[#555550]">Pasa a continuidad</p>
             </div>
           </button>
@@ -58,7 +58,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
           >
             <span className="material-symbols-outlined text-lg text-[#a8a89e]">flag</span>
             <div>
-              <p className="font-sans font-bold text-[12px] text-[#f5f5f0]">No continúa</p>
+              <p className="font-sans font-bold text-[12px] text-ink">No continúa</p>
               <p className="font-mono text-[9px] text-[#555550]">Termina el programa aquí</p>
             </div>
           </button>

@@ -66,7 +66,7 @@ export default function DashboardScreen() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Resumen</h1>
+        <h1 className="font-sans font-black text-xl text-ink">Resumen</h1>
       </header>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -125,7 +125,7 @@ export default function DashboardScreen() {
             ) : (
               proximasReuniones.map(r => (
                 <div key={r.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-[#f5f5f0] truncate">{r.clientNombre}</p>
+                  <p className="font-sans text-[11px] text-ink truncate">{r.clientNombre}</p>
                   <p className="font-mono text-[9px] text-[#555550] shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
                 </div>
               ))
@@ -143,7 +143,7 @@ export default function DashboardScreen() {
             ) : (
               pagosPendientes.map(p => (
                 <div key={p.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-[#f5f5f0] truncate">{p.clientNombre}</p>
+                  <p className="font-sans text-[11px] text-ink truncate">{p.clientNombre}</p>
                   <p className="font-mono text-[9px] text-[#fdba74] shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
                 </div>
               ))

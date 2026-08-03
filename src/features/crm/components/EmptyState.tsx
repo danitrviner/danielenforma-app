@@ -14,7 +14,7 @@ export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
   return (
     <div className="flex flex-col items-center justify-center text-center gap-2 py-12 px-6">
       <span className="material-symbols-outlined text-3xl text-[#555550]">{icon}</span>
-      <p className="font-sans font-bold text-sm text-[#f5f5f0]">{titulo}</p>
+      <p className="font-sans font-bold text-sm text-ink">{titulo}</p>
       {descripcion && (
         <p className="font-sans text-[11px] text-[#a8a89e] max-w-[320px] leading-relaxed">{descripcion}</p>
       )}

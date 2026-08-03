@@ -14,7 +14,7 @@ export default function ErrorState({ descripcion }: Props) {
   return (
     <div className="flex flex-col items-center justify-center text-center gap-2 py-12 px-6">
       <span className="material-symbols-outlined text-3xl text-[#fca5a5]">error</span>
-      <p className="font-sans font-bold text-sm text-[#f5f5f0]">No se ha podido cargar</p>
+      <p className="font-sans font-bold text-sm text-ink">No se ha podido cargar</p>
       <p className="font-sans text-[11px] text-[#a8a89e] max-w-[320px] leading-relaxed">
         {descripcion ?? 'Puede ser un problema temporal de conexión. Recarga la página en un momento.'}
       </p>

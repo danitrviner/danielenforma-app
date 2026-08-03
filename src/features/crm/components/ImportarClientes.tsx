@@ -152,7 +152,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'hecho' && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
           <span className="material-symbols-outlined text-2xl text-[#86efac]">check_circle</span>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0]">
+          <p className="font-sans font-bold text-sm text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>
           <p className="font-sans text-[11px] text-[#a8a89e]">Ya aparecen en la lista de clientes.</p>
@@ -212,7 +212,7 @@ function Resumen({ icono, color, numero, label }: { icono: string; color: string
   return (
     <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white/4">
       <span className="material-symbols-outlined text-base" style={{ color }}>{icono}</span>
-      <span className="font-sans font-black text-base text-[#f5f5f0] tabular-nums">{numero}</span>
+      <span className="font-sans font-black text-base text-ink tabular-nums">{numero}</span>
       <span className="font-mono text-[8px] uppercase tracking-widest text-[#555550]">{label}</span>
     </div>
   );
@@ -235,7 +235,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
       )}
       {conError && <span className="material-symbols-outlined text-[13px] text-[#fca5a5] mt-0.5">error</span>}
       <div className="min-w-0 flex-1">
-        <p className="font-sans text-[11px] text-[#f5f5f0] truncate">
+        <p className="font-sans text-[11px] text-ink truncate">
           {fila.nombre || <span className="text-[#555550]">(sin nombre) — fila {fila.fila}</span>}
         </p>
         {(fila.email || fila.dni) && (

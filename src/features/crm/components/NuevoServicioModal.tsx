@@ -153,7 +153,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             onChange={e => setGenerarPago(e.target.checked)}
             className="mt-0.5 accent-accent"
           />
-          <span className="font-sans text-[10px] text-[#f5f5f0] leading-relaxed">
+          <span className="font-sans text-[10px] text-ink leading-relaxed">
             Generar el cobro pendiente al crear el servicio
             <span className="block text-[#a8a89e]">
               Se escriben todos los documentos en la misma transacción: o entran todos, o ninguno.
