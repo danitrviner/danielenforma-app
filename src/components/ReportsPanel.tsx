@@ -12,7 +12,7 @@ import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasI
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge } from './ui';
+import { EmptyState, Badge, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -198,13 +198,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               {mesoPair.previous ? `vs Macrociclo ${mesoPair.previous.number}` : 'sin macrociclo previo para comparar'}
             </p>
           )}
-          <button
-            onClick={handleGenerate}
-            className="px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-title-s">auto_awesome</span>
-            Generar
-          </button>
+          <Button onClick={handleGenerate} icon="auto_awesome">Generar</Button>
         </div>
       </div>
 
