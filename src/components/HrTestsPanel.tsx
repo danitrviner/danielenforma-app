@@ -4,6 +4,7 @@ import { UserProfile, AthleteCardioProfile, HrTestType, HrTestResult } from '../
 import { getHrTestsForAthlete, createHrTest, createNotificationDeduped } from '../dbService';
 import { HeartRateMonitor, isBleAvailable } from '../services/bleHeartRate';
 import Skeleton from './Skeleton';
+import { Icon, Button } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 
@@ -166,15 +167,15 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
           <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-red-400">warning</span> Cuestionario PAR-Q
+            <Icon name="warning" size="m" className="text-red-400" /> Cuestionario PAR-Q
           </h2>
           <p className="text-label text-ink-2 font-sans">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
           <ul className="text-label text-ink-2 font-mono space-y-2 list-disc pl-4">
             {PARQ_QUESTIONS.map((q, i) => <li key={i}>{q}</li>)}
           </ul>
           <div className="flex gap-2">
-            <button onClick={() => setActiveTest(null)} className="flex-1 py-3 bg-white/7 text-ink-2 font-sans font-bold text-label uppercase rounded-control">Cancelar</button>
-            <button onClick={() => setParqPassed(true)} className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Ninguna aplica, continuar</button>
+            <Button variant="secondary" onClick={() => setActiveTest(null)} className="flex-1">Cancelar</Button>
+            <Button onClick={() => setParqPassed(true)} className="flex-1">Ninguna aplica, continuar</Button>
           </div>
         </section>
       );
@@ -183,10 +184,10 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (phase === 'done') {
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3 text-center">
-          <span className="material-symbols-outlined text-display text-data">check_circle</span>
+          <Icon name="check_circle" size="xl" className="text-data" />
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-label text-ink-2 font-sans">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
-          <button onClick={() => setActiveTest(null)} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Volver</button>
+          <Button onClick={() => setActiveTest(null)} fullWidth>Volver</Button>
         </section>
       );
     }
@@ -195,20 +196,18 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-sans font-bold text-title-s text-white">{activeTest.title}</h2>
-          <button onClick={() => { cleanup(); setActiveTest(null); }} className="text-ink-2 hover:text-white">
-            <span className="material-symbols-outlined text-title-s">close</span>
-          </button>
+          <Button variant="ghost" size="s" onClick={() => { cleanup(); setActiveTest(null); }} icon="close" label="Cerrar" />
         </div>
         {error && <p className="text-label text-red-400 font-sans">{error}</p>}
         {!monitorRef.current ? (
-          <button onClick={startRecording} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Conectar banda y empezar</button>
+          <Button onClick={startRecording} fullWidth>Conectar banda y empezar</Button>
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-caption font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-extrabold text-display text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-label font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
-              <button onClick={finishTest} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Terminar y calcular</button>
+              <Button onClick={finishTest} fullWidth>Terminar y calcular</Button>
             )}
           </div>
         )}

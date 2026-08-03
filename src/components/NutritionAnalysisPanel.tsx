@@ -9,6 +9,7 @@ import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
 import VegetableSelector from './VegetableSelector';
+import { Icon, Button } from './ui';
 
 const DEFAULT_STEP_GOAL = 8000;
 const DEFAULT_VEG_SERVINGS = 3;
@@ -153,7 +154,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
     <div className="space-y-5">
       <div>
         <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
+          <Icon name="nutrition" size="l" filled className="text-accent" />
           Análisis nutricional
         </h2>
         <p className="font-sans text-label text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
@@ -263,13 +264,9 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           </p>
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
-          <button onClick={handleUnshare} disabled={sharing}
-            className="px-4 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
-          >Dejar de compartir</button>
+          <Button variant="secondary" size="s" onClick={handleUnshare} disabled={sharing}>Dejar de compartir</Button>
         ) : (
-          <button onClick={handleShare} disabled={sharing}
-            className="px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all disabled:opacity-50"
-          >Compartir resumen</button>
+          <Button size="s" onClick={handleShare} disabled={sharing}>Compartir resumen</Button>
         )}
       </div>
     </div>
