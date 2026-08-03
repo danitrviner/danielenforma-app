@@ -146,7 +146,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Core Weight Chart SVG */}
-          <div className="w-full bg-[#1e1e1e] border border-white/7 rounded-lg p-3 relative overflow-hidden mb-5">
+          <div className="w-full bg-raised border border-white/7 rounded-lg p-3 relative overflow-hidden mb-5">
             <div className="absolute top-2 left-3 font-mono text-[10px] text-ink-2/60 uppercase">Evolución de Peso (kg)</div>
             
             <div className="w-full overflow-x-auto hide-scrollbar">
@@ -214,7 +214,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           </div>
 
           {/* Sub summary info */}
-          <div className="flex justify-between items-center bg-[#1e1e1e] p-3 rounded-lg border border-white/7">
+          <div className="flex justify-between items-center bg-raised p-3 rounded-lg border border-white/7">
             <span className="font-sans text-xs text-ink-2">Tendencia últimos 7 días</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-white text-sm font-semibold">{currentWeight} kg</span>
@@ -244,20 +244,20 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="0.0"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
+                  className="w-full bg-raised border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
                   required
                 />
               </div>
 
               <div>
                 <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">Estado de Ánimo</label>
-                <div className="flex justify-between items-center bg-[#1e1e1e] p-2 rounded-lg border border-white/7 gap-1">
+                <div className="flex justify-between items-center bg-raised p-2 rounded-lg border border-white/7 gap-1">
                   {['😩', '😴', '😐', '😊', '🔥'].map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
                       onClick={() => setMood(emoji)}
-                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-[#201f1f] ring-1 ring-accent scale-110' : 'opacity-55'}`}
+                      className={`text-xl hover:scale-125 hover:rotate-6 transition-all duration-150 p-1.5 rounded-full ${mood === emoji ? 'bg-raised ring-1 ring-accent scale-110' : 'opacity-55'}`}
                     >
                       {emoji}
                     </button>
@@ -273,7 +273,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                       key={opt}
                       type="button"
                       onClick={() => setAdherence(opt)}
-                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-[#1e1e1e] text-ink border-white/7'}`}
+                      className={`flex-1 py-2 font-sans text-xs rounded-lg border transition-all ${adherence === opt ? 'bg-accent text-black font-bold border-transparent' : 'bg-raised text-ink border-white/7'}`}
                     >
                       {opt}
                     </button>
@@ -288,7 +288,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={2000}
                   placeholder="¿Cómo te sentiste esta semana, dudas, dolores, fatiga?"
-                  className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
+                  className="w-full bg-raised border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[75px]"
                 ></textarea>
               </div>
 
@@ -315,7 +315,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           
           <div>
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-16 h-16 rounded-full bg-[#1e1e1e] border-2 border-accent overflow-hidden relative shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-raised border-2 border-accent overflow-hidden relative shadow-lg">
                 <img 
                   alt="Athlete avatar" 
                   className="w-full h-full object-cover" 
@@ -327,7 +327,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               <div className="flex-1">
                 <h3 className="font-sans font-bold text-lg text-white">Nivel {profile.level}: Élite</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
                     <div className="h-full bg-data" style={{ width: `${(profile.xp / 400) * 100}%` }}></div>
                   </div>
                   <span className="font-mono text-[11px] text-ink-2">{profile.xp}/400 XP</span>
@@ -352,7 +352,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   return (
                     <div 
                       key={idx} 
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-white/7'}`}
                       title={isActive ? "Entrenamiento registrado" : "Próximo entreno"}
                     />
                   );
@@ -365,13 +365,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
           <div>
             <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span>🏅</span> Primera semana
               </span>
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span className="text-accent">⚡</span> 10 días de racha
               </span>
-              <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+              <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                 <span className="text-data">⭐</span> Nivel {profile.level}
               </span>
             </div>
@@ -390,7 +390,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
               {checkins.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-data/30' : 'border-white/7'}`}
+                  className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-white/7'}`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">

@@ -444,7 +444,7 @@ function TagInput({
       {helpText && <p className="font-mono text-[9px] text-ink-3">{helpText}</p>}
       <div className="flex flex-wrap gap-1.5 p-2.5 bg-bg border border-white/7 rounded-lg min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
-          <span key={t} className="flex items-center gap-1 bg-[#2a2a2a] border border-[#3a3a3a] text-white px-2 py-0.5 rounded-full text-xs font-mono">
+          <span key={t} className="flex items-center gap-1 bg-raised border border-[#3a3a3a] text-white px-2 py-0.5 rounded-full text-xs font-mono">
             {t}
             <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-ink-2 hover:text-red-400 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>

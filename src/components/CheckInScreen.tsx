@@ -96,7 +96,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-raised border-0 border-b border-white/7 text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -108,7 +108,7 @@ function QuestionnaireForm({
                 max={q.max}
                 value={(answers[q.id] as string) ?? ''}
                 onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
+                className="w-full bg-raised border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-accent transition-colors"
               />
             )}
 
@@ -123,7 +123,7 @@ function QuestionnaireForm({
                       className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
                         answers[q.id] === v
                           ? 'bg-accent text-black'
-                          : 'bg-[#1e1e1e] text-ink-2 border border-white/7 hover:border-accent/50'
+                          : 'bg-raised text-ink-2 border border-white/7 hover:border-accent/50'
                       }`}
                     >{v}</button>
                   ))}
@@ -147,7 +147,7 @@ function QuestionnaireForm({
                     className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
                       answers[q.id] === v
                         ? 'bg-accent text-black font-bold border-transparent'
-                        : 'bg-[#1e1e1e] text-ink border-white/7'
+                        : 'bg-raised text-ink border-white/7'
                     }`}
                   >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
                 ))}
@@ -176,7 +176,7 @@ function QuestionnaireForm({
                     className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
                       isSelected
                         ? 'bg-accent text-black border-transparent font-bold'
-                        : 'bg-[#1e1e1e] text-ink border-white/7'
+                        : 'bg-raised text-ink border-white/7'
                     }`}
                   >{opt}</button>
                   );
@@ -482,7 +482,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <button
                   key={a.id}
                   onClick={() => setActiveAssignment(a)}
-                  className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-accent/40 rounded-lg p-3.5 text-left transition-all group"
+                  className="w-full flex items-center justify-between bg-raised border border-white/7 hover:border-accent/40 rounded-lg p-3.5 text-left transition-all group"
                 >
                   <div>
                     <p className="font-sans font-semibold text-sm text-white group-hover:text-accent transition-colors">{q.title}</p>
@@ -513,7 +513,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               const q = templates.get(a.questionnaireId);
               if (!q) return null;
               return (
-                <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
+                <div key={a.id} className="flex items-center justify-between bg-raised border border-white/60 rounded-lg p-3">
                   <p className="font-sans text-xs text-ink-2">{q.title}</p>
                   <span className="font-mono text-[9px] text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
@@ -535,7 +535,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/7 rounded-lg p-3.5">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-white/7 rounded-lg p-3.5">
                 <p className="font-sans font-semibold text-sm text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
@@ -559,7 +559,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-white/60 rounded-lg p-3">
                 <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
                 <span className="font-mono text-[9px] text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
@@ -589,7 +589,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           {checkins.map((item) => (
             <div
               key={item.id}
-              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-data/30' : 'border-white/7'}`}
+              className={`bg-raised border rounded-lg p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-white/7'}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">

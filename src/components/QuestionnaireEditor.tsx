@@ -135,7 +135,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>Añadir pregunta
           </button>

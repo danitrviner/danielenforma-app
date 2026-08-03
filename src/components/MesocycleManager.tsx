@@ -197,7 +197,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-11 h-11 sm:w-6 sm:h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-sm sm:text-xs font-bold flex items-center justify-center flex-shrink-0"
+        className="w-11 h-11 sm:w-6 sm:h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-sm sm:text-xs font-bold flex items-center justify-center flex-shrink-0"
       >−</button>
       <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
         {value}
@@ -205,7 +205,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-11 h-11 sm:w-6 sm:h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-sm sm:text-xs font-bold flex items-center justify-center flex-shrink-0"
+        className="w-11 h-11 sm:w-6 sm:h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-sm sm:text-xs font-bold flex items-center justify-center flex-shrink-0"
       >+</button>
     </div>
   );
@@ -226,7 +226,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 py-0.5 rounded text-base sm:text-xs font-mono transition-all flex items-center justify-center ${
-            value === o.v ? 'bg-accent text-black font-bold' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
+            value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
       ))}
@@ -507,7 +507,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
             ))}
           </tbody>
           <tfoot>
-            <tr><td colSpan={columns.length + 1} className="h-px bg-[#2a2a2a] p-0" /></tr>
+            <tr><td colSpan={columns.length + 1} className="h-px bg-raised p-0" /></tr>
             <tr className="bg-bg">
               <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
               {columns.map((m, mIdx) => {
@@ -1132,7 +1132,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <select
               value={selectedEmail}
               onChange={e => { setSelectedEmail(e.target.value); setEditing(null); setGenPhase('idle'); }}
-              className="bg-[#1c1b1b] border border-white/7 text-white font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
+              className="bg-raised border border-white/7 text-white font-mono text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
             >
               <option value="">— Selecciona un atleta —</option>
               {athletes.map(a => (
@@ -1231,7 +1231,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1239,7 +1239,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1247,7 +1247,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="date"
                       value={editing.startDate}
                       onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-white/7 rounded px-2.5 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1256,7 +1256,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       {[2,3,4,5,6].map(d => (
                         <button key={d} onClick={() => updateField('daysPerWeek', d)}
                           className={`w-11 h-11 rounded font-mono text-xs font-bold transition-all ${
-                            editing.daysPerWeek === d ? 'bg-accent text-black' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
+                            editing.daysPerWeek === d ? 'bg-accent text-black' : 'bg-raised text-ink-2 hover:bg-raised'
                           }`}
                         >{d}</button>
                       ))}
@@ -1270,7 +1270,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
                     value={editing.objective}
                     onChange={e => updateField('objective', e.target.value)}
-                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-3 py-2 text-sm text-white placeholder-ink-3 focus:outline-none focus:border-accent"
+                    className="w-full bg-raised border border-white/7 rounded px-3 py-2 text-sm text-white placeholder-ink-3 focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -1357,7 +1357,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           <div className="flex flex-wrap gap-3 text-[10px] font-mono">
                             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block bg-[rgba(34,197,94,.4)]"></span><span className="text-ink-2">9–12 series</span></span>
                             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block bg-[rgba(249,115,22,.4)]"></span><span className="text-ink-2">&gt;12 series</span></span>
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block bg-[#2a2a2a]"></span><span className="text-ink-2">&lt;9 series</span></span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block bg-raised"></span><span className="text-ink-2">&lt;9 series</span></span>
                           </div>
 
                           <div className="flex flex-wrap gap-3">
@@ -1411,7 +1411,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             <button
                               onClick={handleGenerate}
                               disabled={genPhase === 'loading'}
-                              className="flex items-center gap-2 px-4 py-2.5 bg-[#1c1b1b] border border-accent/40 text-accent font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-2.5 bg-raised border border-accent/40 text-accent font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
                             >
                               {genPhase === 'loading' ? (
                                 <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Analizando…</>
@@ -1545,7 +1545,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <span className="material-symbols-outlined text-4xl text-accent animate-spin block">refresh</span>
                       <p className="font-sans font-bold text-white text-sm">Creando sesiones en Firestore…</p>
                       <div className="max-w-xs mx-auto">
-                        <div className="bg-[#2a2a2a] rounded-full h-2 overflow-hidden">
+                        <div className="bg-raised rounded-full h-2 overflow-hidden">
                           <div
                             className="bg-accent h-2 rounded-full transition-all duration-300"
                             style={{ width: `${assignProgress.total ? (assignProgress.done / assignProgress.total) * 100 : 0}%` }}
@@ -1621,7 +1621,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       className="px-3 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-xs rounded-lg hover:bg-red-500/30 transition-all"
                     >Confirmar</button>
                     <button onClick={() => setConfirmDelete(false)}
-                      className="px-3 py-1.5 bg-[#2a2a2a] text-ink-2 font-mono text-xs rounded-lg hover:bg-[#3a3a3a] transition-all"
+                      className="px-3 py-1.5 bg-raised text-ink-2 font-mono text-xs rounded-lg hover:bg-raised transition-all"
                     >Cancelar</button>
                   </div>
                 )}
@@ -1645,7 +1645,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       {/* ── Template picker modal ── */}
       {showTemplatePicker && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1c1b1b] border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
+          <div className="bg-raised border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/7 flex-shrink-0">
               <div>

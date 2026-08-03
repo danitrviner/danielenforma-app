@@ -71,7 +71,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >−</button>
       <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
         {value}
@@ -79,7 +79,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
       >+</button>
     </div>
   );
@@ -100,7 +100,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`px-2 py-0.5 rounded text-xs font-mono transition-all ${
-            value === o.v ? 'bg-accent text-black font-bold' : 'bg-[#2a2a2a] text-ink-2 hover:bg-[#3a3a3a]'
+            value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
       ))}
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-raised border border-white/7 text-ink-2 font-mono text-xs rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -488,7 +488,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-white/7 text-ink-2 font-mono text-[10px] rounded-lg hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Añadir día
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] rounded-xl hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-white/7 text-ink-2 font-mono text-[10px] rounded-xl hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir mesociclo
@@ -686,7 +686,7 @@ function TemplateEditor({
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
+            className="px-4 py-2.5 bg-raised border border-white/7 text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
           >
             Cancelar
           </button>
@@ -751,14 +751,14 @@ function TemplateCard({
         <div className="flex gap-1.5 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 transition-all"
+            className="p-1.5 rounded-lg bg-raised border border-white/7 text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
             <span className="material-symbols-outlined text-sm">edit</span>
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-1.5 rounded-lg bg-raised border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
             <span className="material-symbols-outlined text-sm">delete</span>
@@ -938,7 +938,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         const tpl = templates.find(t => t.id === confirmDeleteId);
         return (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1c1b1b] border border-white/7 rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div className="bg-raised border border-white/7 rounded-2xl p-6 max-w-sm w-full space-y-4">
               <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
               <p className="font-mono text-[11px] text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
@@ -952,7 +952,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-[#2a2a2a] text-ink-2 font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
+                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
                 >
                   Cancelar
                 </button>

@@ -157,7 +157,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
               <span className="block text-sm font-bold text-accent">{remaining.toLocaleString('es-ES')}</span>
             </div>
           </div>
-          <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-raised rounded-full overflow-hidden">
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-widest mt-2 text-center">

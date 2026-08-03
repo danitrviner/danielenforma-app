@@ -39,7 +39,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
-        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
+        <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
@@ -159,7 +159,7 @@ function CoursesTab() {
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
-            <div key={c.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+            <div key={c.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
                 <p className="text-[10px] text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
@@ -260,7 +260,7 @@ function LessonsTab() {
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (
-            <div key={l.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+            <div key={l.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
@@ -331,7 +331,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
         {athletes.map(a => {
           const enabled = accessByEmail.get(a.email)?.enabled ?? false;
           return (
-            <div key={a.email} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+            <div key={a.email} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
               <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>

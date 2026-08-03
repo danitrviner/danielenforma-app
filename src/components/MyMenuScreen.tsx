@@ -340,7 +340,7 @@ export default function MyMenuScreen({ profile }: Props) {
           <div className="space-y-1.5">
             {batchPlan.map(e => (
               <div key={e.recipeId} className="flex items-center gap-3 bg-bg border border-white/7 rounded-lg px-3 py-2">
-                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
+                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-raised">
                   {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
                 </div>
                 <span className="flex-1 font-sans text-xs text-white truncate">{e.recipeName}</span>
@@ -406,7 +406,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
                 <button
                   onClick={() => openDetail(meal)}
-                  className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7"
+                  className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-raised border border-white/7"
                 >
                   {meal.recipeImage
                     ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
@@ -423,7 +423,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   {meal.complements.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-[9px] font-mono text-ink-2 bg-[#1c1b1b] border border-white/7 px-1.5 py-0.5 rounded">
+                        <span key={ci} className="text-[9px] font-mono text-ink-2 bg-raised border border-white/7 px-1.5 py-0.5 rounded">
                           +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                         </span>
                       ))}
@@ -486,7 +486,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   ? 'bg-accent border-accent text-black'
                   : st === 'excl'
                     ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                    : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:text-white';
+                    : 'bg-raised border-white/7 text-ink-2 hover:text-white';
                 return (
                   <button
                     key={dt.id}
@@ -513,7 +513,7 @@ export default function MyMenuScreen({ profile }: Props) {
               key={v}
               disabled={savingVariety}
               onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-lg font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-accent text-black' : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-lg font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-accent text-black' : 'bg-raised border border-white/7 text-ink-2 hover:text-white'}`}
             >
               {v}
             </button>
@@ -565,7 +565,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   onClick={() => confirmSwap(c)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-bg border border-white/7 hover:border-accent/40 rounded-xl transition-all"
                 >
-                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-raised">
                     {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -596,7 +596,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   </button>
                 </div>
                 {(detailRecipe.image ?? detailRecipe.photoUrl) && (
-                  <div className="w-full aspect-[16/9] rounded-xl overflow-hidden bg-[#1c1b1b]">
+                  <div className="w-full aspect-[16/9] rounded-xl overflow-hidden bg-raised">
                     <img src={detailRecipe.image ?? detailRecipe.photoUrl} alt={detailRecipe.name} className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -643,14 +643,14 @@ export default function MyMenuScreen({ profile }: Props) {
                                 {swappedTo && (
                                   <button
                                     onClick={() => applySubstitution(ing.label, ing.label)}
-                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-ink-2 font-mono text-[10px] hover:text-white"
+                                    className="px-2 py-0.5 rounded-md bg-raised border border-white/7 text-ink-2 font-mono text-[10px] hover:text-white"
                                   >↩ original</button>
                                 )}
                                 {subs.map(s => (
                                   <button
                                     key={s}
                                     onClick={() => applySubstitution(ing.label, s)}
-                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-white font-mono text-[10px] hover:border-accent/50 hover:text-accent"
+                                    className="px-2 py-0.5 rounded-md bg-raised border border-white/7 text-white font-mono text-[10px] hover:border-accent/50 hover:text-accent"
                                   >{s}</button>
                                 ))}
                               </div>

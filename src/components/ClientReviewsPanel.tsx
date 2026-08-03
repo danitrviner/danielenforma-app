@@ -328,7 +328,7 @@ export default function ClientReviewsPanel({
 
           return (
             <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
+              <div className="p-4 border-b border-white/7 flex items-center justify-between bg-raised">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
                   Historial Fotográfico
@@ -336,7 +336,7 @@ export default function ClientReviewsPanel({
                     <span className="font-mono text-[9px] text-ink-2">({athletePhotos.length} fotos)</span>
                   )}
                 </h3>
-                <div className="flex bg-[#2a2a2a] rounded p-0.5">
+                <div className="flex bg-raised rounded p-0.5">
                   {([
                     { id: 'front', label: 'Frente'   },
                     { id: 'side',  label: 'Lateral'  },
@@ -416,7 +416,7 @@ export default function ClientReviewsPanel({
                           className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
                             active
                               ? 'bg-accent border-accent text-black'
-                              : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-[#3a3a3a]'
+                              : 'bg-raised border-white/7 text-ink-2 hover:border-[#3a3a3a]'
                           }`}
                         >{v.label}</button>
                       );
@@ -951,7 +951,7 @@ export default function ClientReviewsPanel({
 
           return (
             <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
+              <div className="p-4 border-b border-white/7 bg-raised flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
                 <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-[9px] text-ink-2 ml-1">({items.length} entradas)</span>
@@ -1008,14 +1008,14 @@ export default function ClientReviewsPanel({
                               <div className="flex items-center gap-2 pb-1">
                                 <button
                                   onClick={() => handleStartEditCheckin(c, key)}
-                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
+                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-raised border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                                 >
                                   <span className="material-symbols-outlined text-xs">edit</span>Editar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCheckin(c.id, key)}
                                   disabled={deletingReviewKey === key}
-                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
+                                  className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-raised border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
                                 >
                                   <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                                 </button>
@@ -1029,13 +1029,13 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Peso (kg)</label>
                                     <input type="number" step="0.1" value={checkinEditForm.weight}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                   <div>
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Fecha</label>
                                     <input type="text" value={checkinEditForm.dateStr}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1043,7 +1043,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Adherencia</label>
                                     <select value={checkinEditForm.adherence}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1051,7 +1051,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Humor</label>
                                     <select value={checkinEditForm.mood}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                                      className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1060,7 +1060,7 @@ export default function ClientReviewsPanel({
                                   <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas</label>
                                   <textarea value={checkinEditForm.notes}
                                     onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
+                                    className="w-full bg-raised border border-white/7 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
@@ -1107,7 +1107,7 @@ export default function ClientReviewsPanel({
                                 value={expandedReviewId === key ? unifiedFeedbackText : (c.coachFeedback || '')}
                                 onChange={e => setUnifiedFeedbackText(e.target.value)}
                                 placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                                className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                                className="w-full bg-raised border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                               />
                               <button
                                 type="submit"
@@ -1163,14 +1163,14 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 pb-1">
                               <button
                                 onClick={() => handleStartEditResponse(r, key)}
-                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
+                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-raised border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                               >
                                 <span className="material-symbols-outlined text-xs">edit</span>Editar
                               </button>
                               <button
                                 onClick={() => handleDeleteResponse(r.id, key)}
                                 disabled={deletingReviewKey === key}
-                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
+                                className="flex items-center gap-1 font-mono text-[10px] uppercase px-2.5 py-1.5 bg-raised border border-white/7 text-red-400 hover:border-red-500/40 rounded-lg transition-all disabled:opacity-50"
                               >
                                 <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                               </button>
@@ -1189,24 +1189,24 @@ export default function ClientReviewsPanel({
                                     {isChoice && question?.options ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-32">
+                                        className="bg-raised border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-32">
                                         {question.options.map(o => <option key={o} value={o}>{o}</option>)}
                                       </select>
                                     ) : isBool ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24">
+                                        className="bg-raised border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24">
                                         <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                                         <option value="false">{question?.labelFalse ?? 'No'}</option>
                                       </select>
                                     ) : isNum ? (
                                       <input type="number" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: parseFloat(e.target.value) || 0 } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
+                                        className="bg-raised border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
                                     ) : (
                                       <input type="text" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-[#1c1b1b] border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
+                                        className="bg-raised border border-white/7 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
                                     )}
                                   </div>
                                 );
@@ -1254,7 +1254,7 @@ export default function ClientReviewsPanel({
                 </h3>
                 <button
                   onClick={() => { setNewQForm(blankQForm()); setShowNewQEditor(true); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1b1b] border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-lg hover:border-accent/70 transition-all flex-shrink-0"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>Crear cuestionario nuevo
                 </button>
@@ -1380,7 +1380,7 @@ export default function ClientReviewsPanel({
                       const date = new Date(r.submittedAt);
                       return (
                         <details key={r.id} className="bg-raised border border-white/7 rounded-xl overflow-hidden">
-                          <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-[#222]">
+                          <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-raised">
                             <span className="material-symbols-outlined text-ink-2 text-sm">expand_more</span>
                             <div className="flex-1 min-w-0">
                               <p className="font-sans font-bold text-white text-xs">{tmpl?.title ?? r.questionnaireId}</p>

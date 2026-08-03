@@ -108,7 +108,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   const point = payload[0]?.payload as ChartPoint | undefined;
   if (!point) return null;
   return (
-    <div className="bg-[#1c1b1b] border border-white/7 rounded-lg px-3 py-2 shadow-xl">
+    <div className="bg-raised border border-white/7 rounded-lg px-3 py-2 shadow-xl">
       <p className="font-mono text-[10px] text-ink-2 mb-1.5">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
@@ -386,7 +386,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 {METRIC_LABEL[m]}
               </button>
             ))}
-            <div className="w-px h-4 bg-[#2a2a2a] mx-1" />
+            <div className="w-px h-4 bg-raised mx-1" />
             {(['mean', 'median'] as const).map(s => {
               const active = s === 'mean' ? showMean : showMedian;
               const toggle = s === 'mean' ? () => setShowMean(v => !v) : () => setShowMedian(v => !v);
@@ -415,7 +415,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-[#1c1b1b] border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -432,7 +432,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
             <div className="flex items-center gap-2">
-              <div className="flex bg-[#1c1b1b] border border-white/7 rounded-lg p-0.5">
+              <div className="flex bg-raised border border-white/7 rounded-lg p-0.5">
                 {(['week', 'day'] as const).map(g => (
                   <button
                     key={g}
@@ -449,7 +449,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-[#1c1b1b] border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
+                  className="bg-raised border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (

@@ -232,7 +232,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
-                              <span key={opt} className="flex items-center gap-1 bg-[#2a2a2a] text-white px-2 py-0.5 rounded-full text-[9px] font-mono">
+                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 py-0.5 rounded-full text-[9px] font-mono">
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
@@ -456,7 +456,7 @@ function IndyaImportPanel() {
           <p className="font-mono text-[10px] text-ink-2 animate-pulse">{phase}</p>
           {total > 0 && (
             <>
-              <div className="w-full h-2.5 bg-[#1e1e1e] rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-raised rounded-full overflow-hidden">
                 <div
                   className="h-full bg-data transition-all duration-300 rounded-full"
                   style={{ width: `${pct}%` }}
@@ -608,7 +608,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-[#2a2a2a] text-ink-2 border-[#3a3a3a]'
+                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-[#3a3a3a]'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}

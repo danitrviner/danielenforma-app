@@ -270,8 +270,8 @@ export default function MyDietsScreen({ profile }: Props) {
         {/* Meals */}
         <div className="space-y-3">
           {form.meals.map((meal, mi) => (
-            <div key={meal.id} className="bg-[#201f1f] rounded-xl border border-white/7 overflow-hidden">
-              <div className="px-4 py-3 bg-[#1c1b1b]/80 flex items-center gap-2">
+            <div key={meal.id} className="bg-raised rounded-xl border border-white/7 overflow-hidden">
+              <div className="px-4 py-3 bg-raised/80 flex items-center gap-2">
                 <input
                   type="text"
                   value={meal.name}
@@ -330,8 +330,8 @@ export default function MyDietsScreen({ profile }: Props) {
         {/* Food picker sheet */}
         {pickerMealId && (
           <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
+            <div className="bg-raised border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
+              <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-raised z-10">
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
@@ -340,12 +340,12 @@ export default function MyDietsScreen({ profile }: Props) {
                     </span>
                   )}
                 </div>
-                <button onClick={() => setPickerMealId(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+                <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-sm select-none">close</span>
                 </button>
               </div>
 
-              <div className="px-4 pt-3 bg-[#1c1b1b] flex gap-1 border-b border-white/7">
+              <div className="px-4 pt-3 bg-raised flex gap-1 border-b border-white/7">
                 {(['alimentos', 'recetas'] as const).map(tab => (
                   <button
                     key={tab}
@@ -361,7 +361,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 <div className="px-4 py-2 bg-bg border-b border-white/7 flex gap-2 flex-wrap">
                   {enabledModes.map(mode => (
                     <button key={mode} onClick={() => setActiveDietMode(mode)}
-                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-[#201f1f] text-ink-2 border border-white/7'}`}
+                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-white/7'}`}
                     >{MODE_LABEL[mode]}</button>
                   ))}
                 </div>
@@ -381,7 +381,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
                   ) : filteredFoods.map(food => (
                     <button key={food.id} onClick={() => addItem(food)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
                         <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]}`}>
@@ -399,12 +399,12 @@ export default function MyDietsScreen({ profile }: Props) {
                     </div>
                   ) : filteredRecipes.map(recipe => (
                     <button key={recipe.id} onClick={() => addRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
                         <img src={recipe.photoUrl} alt={recipe.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-[#1c1b1b] border border-white/7 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-ink-2 text-base">skillet</span>
                         </div>
                       )}

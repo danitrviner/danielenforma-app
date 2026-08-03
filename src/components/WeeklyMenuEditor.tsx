@@ -42,7 +42,7 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
 }
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
-  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-[#1c1b1b] border-white/7' };
+  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-white/7' };
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';
@@ -332,13 +332,13 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             {slots.map((sl, i) => (
               <div key={i} className="flex items-center gap-3 bg-surface border border-white/7 rounded-lg px-4 py-3">
                 <span className="font-mono text-xs text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
-                <div className="flex-1 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
                   <div className="h-full bg-accent/50 rounded-full transition-all" style={{ width: `${Math.min(sl.pct, 100)}%` }} />
                 </div>
                 <input
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
-                  className="w-16 text-right bg-[#1e1e1e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-xs">%</span>
               </div>
@@ -553,7 +553,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                       {day.meals.map((meal, mealIdx) => (
                         <div key={meal.id} className="bg-bg border border-white/7 rounded-xl p-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-raised border border-white/7">
                               {meal.recipeImage
                                 ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-lg text-ink-3">skillet</span></div>}
@@ -568,7 +568,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1.5">
                                   {meal.complements.map((c, ci) => (
-                                    <span key={ci} className="text-[9px] font-mono text-ink-2 bg-[#1c1b1b] border border-white/7 px-1.5 py-0.5 rounded">
+                                    <span key={ci} className="text-[9px] font-mono text-ink-2 bg-raised border border-white/7 px-1.5 py-0.5 rounded">
                                       +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                                     </span>
                                   ))}
@@ -606,7 +606,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                     onClick={() => pickCandidate(day.day, mealIdx, c)}
                                     className="w-full flex items-center gap-2.5 px-2 py-1.5 text-left hover:bg-raised rounded-lg transition-colors"
                                   >
-                                    <div className="w-7 h-7 rounded overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
+                                    <div className="w-7 h-7 rounded overflow-hidden flex-shrink-0 bg-raised">
                                       {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -641,7 +641,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handleSaveDraft}
           disabled={saving}
-          className="flex-1 py-3 bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-raised border border-white/7 text-ink-2 hover:text-white font-mono text-sm uppercase rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">save</span>
           Guardar borrador

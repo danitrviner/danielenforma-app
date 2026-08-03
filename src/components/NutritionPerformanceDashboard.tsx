@@ -248,7 +248,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {onEdit && (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-[#3a3a3a] hover:border-accent/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
           >
             <span className="material-symbols-outlined text-sm text-accent">add</span>
             Crear periodización

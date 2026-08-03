@@ -49,7 +49,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>
-            <button onClick={onClose} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
+            <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
               <span className="material-symbols-outlined text-base">close</span>
             </button>
           </div>

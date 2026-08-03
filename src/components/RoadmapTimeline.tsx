@@ -654,7 +654,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={`tick-${i}`}
                 style={{ position: 'absolute', left: m.x, top: HEADER_H, width: 1, height: 3 * LANE_H + (showWeightChart ? WEIGHT_LANE_H : 0) }}
-                className="bg-[#1e1e1e]"
+                className="bg-raised"
               />
             ))}
 

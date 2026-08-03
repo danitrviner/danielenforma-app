@@ -339,13 +339,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
+                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (
                             <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
+                            <div className="w-9 h-9 rounded-lg bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                               <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                             </div>
                           )}
@@ -377,7 +377,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           {(ex.equipment ?? []).length === 0 ? (
                             <span className="font-mono text-[9px] text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-[9px] bg-raised border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
@@ -436,7 +436,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     {ex.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                         <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                       </div>
                     )}
@@ -468,7 +468,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-[9px] bg-raised border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-data/70 flex items-center gap-0.5">

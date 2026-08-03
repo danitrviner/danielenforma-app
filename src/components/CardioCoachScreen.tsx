@@ -29,7 +29,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
-        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
+        <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
@@ -71,7 +71,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-base text-white mb-2">Elige un atleta</h2>
       {athletes.map(a => (
-        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3 hover:border-accent/40 transition-colors">
+        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3 hover:border-accent/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
           <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white text-left truncate">{a.displayName}</p>
           <span className="material-symbols-outlined text-ink-2 text-base">chevron_right</span>
@@ -188,7 +188,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (
-          <div key={t.id} className="bg-[#1e1e1e] border border-white/7 rounded-lg p-3 space-y-2">
+          <div key={t.id} className="bg-raised border border-white/7 rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-[10px] font-mono text-ink-2">{t.date}</span>

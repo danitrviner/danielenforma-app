@@ -305,7 +305,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Header */}
       <header className="pb-4 border-b border-white/60">
         <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs font-mono text-data">
@@ -347,7 +347,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
@@ -410,7 +410,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <button
                     key={a.userId}
                     onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
+                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
                   >
                     <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
                     <span className="text-[10px] font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
@@ -523,7 +523,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-ink-3 border-white/7">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-raised text-ink-3 border-white/7">
                               Sin plan
                             </span>
                           )}
@@ -536,7 +536,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-[#1b1c1c]/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
                       <div>
                         <span className="block text-[8px] text-ink-2 uppercase">INICIAL</span>
                         <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>

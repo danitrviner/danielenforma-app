@@ -188,7 +188,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
@@ -237,7 +237,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-ink-3 hover:text-red-400 hover:border-red-500/30'
+                          : 'bg-raised border border-white/7 text-ink-3 hover:text-red-400 hover:border-red-500/30'
                       }`}
                       title="No me gusta"
                     >
@@ -248,7 +248,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-ink-3 hover:text-amber-400 hover:border-amber-400/30'
+                          : 'bg-raised border border-white/7 text-ink-3 hover:text-amber-400 hover:border-amber-400/30'
                       }`}
                       title="Favorito"
                     >

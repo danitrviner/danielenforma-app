@@ -171,7 +171,7 @@ export default function ClientDietsPanel({
                   {/* Edit button */}
                   <button
                     onClick={() => setDietEditorDiet(dt)}
-                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-raised border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                     title="Editar dieta"
                   >
                     <span className="material-symbols-outlined text-sm">edit</span>
@@ -217,7 +217,7 @@ export default function ClientDietsPanel({
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-[#1c1b1b] border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
+                  className="w-full bg-raised border border-white/7 text-ink-2 text-[9px] font-mono rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-accent/40 hover:border-[#3a3a3a] transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -298,7 +298,7 @@ export default function ClientDietsPanel({
                 </div>
                 <button
                   onClick={() => setMenuEditor(m)}
-                  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
+                  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-raised border border-white/7 text-data hover:border-data/40 font-mono text-[10px] uppercase rounded-lg transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
                   {m.status === 'published' ? 'Revisar' : 'Editar'}
@@ -374,7 +374,7 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-[#1c1b1b] border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-raised border-white/7 text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
                 >
                   <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-[#3a3a3a]'}`}>
                     {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}

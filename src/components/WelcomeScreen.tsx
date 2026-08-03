@@ -172,7 +172,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={inviteEmailInput}
               onChange={e => setInviteEmailInput(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
               autoFocus
             />
@@ -225,7 +225,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="atleta@enforma.com"
-              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -247,7 +247,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
-              className="w-full bg-[#1c1b1b] border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-white/7 rounded p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -263,16 +263,16 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         </form>
 
         <div className="flex items-center justify-center my-6">
-          <div className="h-[1px] bg-[#2a2a2a] flex-1"></div>
+          <div className="h-[1px] bg-raised flex-1"></div>
           <span className="px-3 text-ink-2/50 text-xs font-mono uppercase">O ingresar con</span>
-          <div className="h-[1px] bg-[#2a2a2a] flex-1"></div>
+          <div className="h-[1px] bg-raised flex-1"></div>
         </div>
 
         {/* Google Authentication */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full h-[48px] bg-[#1a1c1c] hover:bg-[#282a2b] text-white font-mono rounded-md border border-white/7 active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
+          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-md border border-white/7 active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
         >
           <img 
             src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 

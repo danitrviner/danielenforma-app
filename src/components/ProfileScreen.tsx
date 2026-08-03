@@ -159,7 +159,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <h3 className="font-sans font-bold text-lg text-white">{profile.displayName}</h3>
                 <p className="font-mono text-[10px] text-ink-2 truncate">{profile.email}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <div className="flex-1 h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
                     <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
                   </div>
                   <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
@@ -184,7 +184,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                   return (
                     <div
                       key={idx}
-                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-[#1e1e1e] border-white/7'}`}
+                      className={`aspect-square rounded border transition-all ${isActive ? 'bg-accent border-transparent shadow-[0_0_6px_rgba(251,203,26,0.3)]' : 'bg-raised border-white/7'}`}
                       title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
                     />
                   );
@@ -196,13 +196,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <div>
               <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                   <span>🏅</span> Primera semana
                 </span>
-                <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                   <span className="text-accent">⚡</span> 10 días de racha
                 </span>
-                <span className="px-3 py-1.5 bg-[#201f1f] text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-white/7 flex items-center gap-1.5">
                   <span className="text-data">⭐</span> Nivel {profile.level}
                 </span>
               </div>
@@ -369,7 +369,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
         </div>
@@ -381,7 +381,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -391,7 +391,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-white/7 rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-accent"
           />
         </div>
 

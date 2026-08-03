@@ -125,7 +125,7 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* Upload bar */}
-      <div className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-raised border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="material-symbols-outlined text-ink-2 text-sm">calendar_today</span>
           <input
@@ -175,7 +175,7 @@ export default function PhotosScreen({ profile }: Props) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {visiblePhotos.map((photo, idx) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-white/7 bg-[#1c1b1b] aspect-[3/4]">
+            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-white/7 bg-raised aspect-[3/4]">
               <img
                 src={photo.url}
                 alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}

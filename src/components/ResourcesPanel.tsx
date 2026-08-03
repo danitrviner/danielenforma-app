@@ -122,7 +122,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       ) : (
         <div className="space-y-2">
           {resources.map(r => (
-            <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+            <div key={r.id} className="flex items-center gap-3 bg-raised border border-white/7 rounded-lg p-3">
               <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white hover:text-accent transition-colors truncate">{r.title}</p>

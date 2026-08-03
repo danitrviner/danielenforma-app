@@ -98,7 +98,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-[#1c1b1b] border border-white/7 ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
+      className={`${colSpan} group relative rounded-2xl overflow-hidden bg-raised border border-white/7 ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all shadow-md`}
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
@@ -143,7 +143,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
   return (
     <article
       onClick={() => onOpen(recipe)}
-      className={`group relative rounded-xl overflow-hidden bg-[#1c1b1b] border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
+      className={`group relative rounded-xl overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
         isFeatured
           ? 'border-amber-400/40 hover:border-amber-400/70'
           : 'border-white/7 hover:border-accent/40'
@@ -151,7 +151,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
-        : <div className="absolute inset-0 bg-gradient-to-br from-[#1e1e1e] to-bg flex items-center justify-center">
+        : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
             <span className="material-symbols-outlined text-5xl text-ink-3">skillet</span>
           </div>
       }
@@ -229,7 +229,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
   return (
     <div className="space-y-5">
       {/* Back bar */}
-      <div className="flex items-center justify-between bg-[#1c1b1b] px-4 py-3 rounded-xl border border-white/7">
+      <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-xl border border-white/7">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-xs uppercase tracking-wider"
@@ -275,7 +275,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       </div>
 
       {/* Photo */}
-      <div className="w-full aspect-[16/7] rounded-2xl overflow-hidden bg-[#1c1b1b] border border-white/7">
+      <div className="w-full aspect-[16/7] rounded-2xl overflow-hidden bg-raised border border-white/7">
         {photo
           ? <img src={photo} alt={recipe.name} className="w-full h-full object-cover" />
           : <RecipePlaceholder />
@@ -326,7 +326,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {(recipe.categoria || recipe.categories.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
-              <span key={c} className="px-2.5 py-0.5 rounded-full bg-[#2a2a2a] text-ink-2 font-mono text-[10px] uppercase tracking-wider">{c}</span>
+              <span key={c} className="px-2.5 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-[10px] uppercase tracking-wider">{c}</span>
             ))}
           </div>
         )}
@@ -335,7 +335,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {isIndya && recipe.intakeTypes && recipe.intakeTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {recipe.intakeTypes.map(t => (
-              <span key={t} className="px-2 py-0.5 rounded-full bg-[#1e1e1e] border border-white/7 text-ink-2 font-mono text-[9px]">
+              <span key={t} className="px-2 py-0.5 rounded-full bg-raised border border-white/7 text-ink-2 font-mono text-[9px]">
                 {INTAKE_LABELS[t] ?? `Tipo ${t}`}
               </span>
             ))}
@@ -355,7 +355,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
         {/* Indya macros breakdown */}
         {isIndya && recipe.macros && (
-          <div className="grid grid-cols-3 gap-2 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+          <div className="grid grid-cols-3 gap-2 bg-raised border border-white/7 rounded-lg p-3">
             {[
               { label: 'Carbos', val: recipe.macros.carb },
               { label: 'Proteína', val: recipe.macros.prot },
@@ -372,7 +372,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Ingredients */}
-        <section className="bg-[#1c1b1b] border border-white/7 rounded-xl p-5 space-y-3">
+        <section className="bg-raised border border-white/7 rounded-xl p-5 space-y-3">
           <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">recipe</span>
             Ingredientes
@@ -407,7 +407,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-1.5">Extras</p>
               <div className="flex flex-wrap gap-1.5">
                 {recipe.extras.map((ex, idx) => (
-                  <span key={idx} className="px-2.5 py-1 rounded-full bg-[#2a2a2a] text-ink-2 font-mono text-[10px]">{ex}</span>
+                  <span key={idx} className="px-2.5 py-1 rounded-full bg-raised text-ink-2 font-mono text-[10px]">{ex}</span>
                 ))}
               </div>
             </div>
@@ -417,7 +417,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {/* Steps */}
         {((isIndya && recipe.stepsText && recipe.stepsText.length > 0) ||
           (!isIndya && recipe.steps.length > 0)) && (
-          <section className="bg-[#1c1b1b] border border-white/7 rounded-xl p-5 space-y-4">
+          <section className="bg-raised border border-white/7 rounded-xl p-5 space-y-4">
             <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">format_list_numbered</span>
               Preparación
@@ -673,7 +673,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                     selectedCat === cat.id
                       ? 'bg-accent text-black shadow-md'
-                      : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
+                      : 'bg-raised border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
                   }`}
                 >{cat.name}</button>
               ))}
@@ -721,7 +721,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 className={`px-4 py-2 rounded-full font-mono text-[10px] font-bold whitespace-nowrap transition-all ${
                   indyaCat === cat
                     ? 'bg-data text-black shadow-md'
-                    : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
+                    : 'bg-raised border border-white/7 text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
               >{cat}</button>
             ))}
@@ -734,8 +734,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             onClick={() => setIndyaIntake(null)}
             className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
               indyaIntake === null
-                ? 'bg-[#2a2a2a] text-accent border border-accent/40'
-                : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
+                ? 'bg-raised text-accent border border-accent/40'
+                : 'bg-raised border border-white/7 text-ink-2 hover:text-white'
             }`}
           >Todos los momentos</button>
           {Object.entries(INTAKE_LABELS).map(([k, label]) => (
@@ -744,8 +744,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               onClick={() => setIndyaIntake(Number(k))}
               className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
-                  ? 'bg-[#2a2a2a] text-accent border border-accent/40'
-                  : 'bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white'
+                  ? 'bg-raised text-accent border border-accent/40'
+                  : 'bg-raised border border-white/7 text-ink-2 hover:text-white'
               }`}
             >{label}</button>
           ))}
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-white/7 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
@@ -782,7 +782,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               onClick={handleLoadMore}
               disabled={indyaLoadingMore}
-              className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-raised border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
                 ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
@@ -883,7 +883,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-[#1c1b1b] border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-white/7 hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>

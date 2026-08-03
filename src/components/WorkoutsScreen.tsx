@@ -482,21 +482,21 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     <span className="font-mono text-[10px] text-accent flex-shrink-0">{selectedIdx.size} seleccionados</span>
                     <span className="w-px h-4 bg-white/10 flex-shrink-0" />
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => adjustBulkSets(-1)} className="w-6 h-6 flex items-center justify-center rounded bg-[#1e1e1e] border border-white/7 text-ink-2 hover:text-white text-xs">−</button>
+                      <button onClick={() => adjustBulkSets(-1)} className="w-6 h-6 flex items-center justify-center rounded bg-raised border border-white/7 text-ink-2 hover:text-white text-xs">−</button>
                       <span className="font-mono text-[9px] text-ink-2 uppercase">series</span>
-                      <button onClick={() => adjustBulkSets(1)} className="w-6 h-6 flex items-center justify-center rounded bg-[#1e1e1e] border border-white/7 text-ink-2 hover:text-white text-xs">+</button>
+                      <button onClick={() => adjustBulkSets(1)} className="w-6 h-6 flex items-center justify-center rounded bg-raised border border-white/7 text-ink-2 hover:text-white text-xs">+</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} max={5} value={bulkRir} onChange={e => setBulkRir(e.target.value)}
-                        className="w-10 bg-[#1e1e1e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
+                        className="w-10 bg-raised border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
                       />
                       <button onClick={applyBulkRir} className="font-mono text-[9px] text-ink-2 hover:text-accent uppercase px-1.5 py-0.5 border border-white/7 rounded">RIR</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} value={bulkRest} onChange={e => setBulkRest(e.target.value)}
-                        className="w-12 bg-[#1e1e1e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
+                        className="w-12 bg-raised border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs"
                       />
                       <button onClick={applyBulkRest} className="font-mono text-[9px] text-ink-2 hover:text-accent uppercase px-1.5 py-0.5 border border-white/7 rounded">Descanso (s)</button>
                     </div>
@@ -520,7 +520,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     {ex?.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-md object-cover border border-white/7 flex-shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-md bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                         <span className="material-symbols-outlined text-xs text-ink-2">fitness_center</span>
                       </div>
                     )}
@@ -667,12 +667,12 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   <button
                     key={ex.id}
                     onClick={() => addExerciseToWorkout(ex)}
-                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#1e1e1e] text-left transition-colors group"
+                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-raised text-left transition-colors group"
                   >
                     {ex.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-raised border border-white/7 flex items-center justify-center flex-shrink-0">
                         <span className="material-symbols-outlined text-base text-ink-2">fitness_center</span>
                       </div>
                     )}

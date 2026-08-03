@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
 const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
   completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-[#2a2a2a] text-ink-2 border border-[#3a3a3a]',
+  skipped:   'bg-raised text-ink-2 border border-[#3a3a3a]',
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
@@ -360,7 +360,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <div className="flex items-center gap-4">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
             a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400'
-            : a.status === 'skipped'  ? 'bg-[#1c1b1b] text-ink-2'
+            : a.status === 'skipped'  ? 'bg-raised text-ink-2'
             : a.status === 'perdido'  ? 'bg-red-500/10 text-red-300'
             : isNext ? 'bg-accent/15 text-accent'
             : 'bg-raised text-ink-2'
@@ -395,7 +395,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <>
               <button
                 onClick={() => handleSkip(a)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono text-[10px] uppercase font-bold rounded-lg active:scale-95 transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono text-[10px] uppercase font-bold rounded-lg active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-sm">skip_next</span>
                 Saltar
@@ -471,7 +471,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         )}
 
         {/* Progress bar */}
-        <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-raised rounded-full overflow-hidden">
           <div
             className="h-full bg-accent rounded-full transition-all duration-300"
             style={{
@@ -781,7 +781,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               setWorkoutNoteInput('');
               setRestTimer(null);
             }}
-            className="flex items-center gap-2 px-5 py-4 bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
+            className="flex items-center gap-2 px-5 py-4 bg-raised border border-white/7 text-ink-2 hover:text-white hover:border-[#3a3a3a] font-mono font-bold text-sm uppercase rounded-2xl active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined">skip_next</span>
             Saltar
@@ -934,7 +934,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
                         {formatWeekLabel(curWeekStart, true)}
                       </span>
-                      <div className="flex-1 h-px bg-[#2a2a2a]" />
+                      <div className="flex-1 h-px bg-raised" />
                       <span className="font-mono text-[10px] text-ink-2">
                         {thisWeekBlock.filter(a => a.status === 'completed').length}/{thisWeekBlock.length}
                       </span>
@@ -948,7 +948,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-red-300">Atrasados</span>
-                      <div className="flex-1 h-px bg-[#2a2a2a]" />
+                      <div className="flex-1 h-px bg-raised" />
                       <span className="font-mono text-[10px] text-ink-2">{overdueBlock.length}</span>
                     </div>
                     {overdueBlock.map(a => renderAssignmentCard(a))}
@@ -984,7 +984,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           <span className={`font-mono text-[10px] uppercase font-bold tracking-widest ${isCurWeek ? 'text-accent' : 'text-ink-2'}`}>
                             {formatWeekLabel(weekStart, isCurWeek)}
                           </span>
-                          <div className="flex-1 h-px bg-[#2a2a2a]" />
+                          <div className="flex-1 h-px bg-raised" />
                           <span className="font-mono text-[10px] text-ink-2">
                             {items.filter(a => a.status === 'completed').length}/{items.length}
                           </span>

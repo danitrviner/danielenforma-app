@@ -150,7 +150,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
             <button
               key={row.key}
               onClick={row.onOpen}
-              className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all group"
+              className="w-full flex items-center gap-3 bg-raised border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all group"
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
               <div className="flex-1 min-w-0">

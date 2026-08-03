@@ -127,7 +127,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => openEditor(q)}
-                  className="p-2 bg-[#1c1b1b] border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
+                  className="p-2 bg-raised border border-white/7 text-data hover:border-data/40 rounded-lg transition-all"
                   title="Editar"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
@@ -135,7 +135,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                 <button
                   onClick={() => handleDelete(q.id)}
                   disabled={deleting === q.id}
-                  className="p-2 bg-[#1c1b1b] border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
+                  className="p-2 bg-raised border border-white/7 text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-lg transition-all"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-sm">{deleting === q.id ? 'progress_activity' : 'delete'}</span>

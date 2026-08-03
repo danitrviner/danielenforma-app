@@ -257,8 +257,8 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
           <div key={phase.id} className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 flex-shrink-0 pt-1">
-                <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded bg-[#2a2a2a] text-white text-xs disabled:opacity-30">↑</button>
-                <button onClick={() => move(phase.id, 1)} disabled={idx === sorted.length - 1} className="w-6 h-6 flex items-center justify-center rounded bg-[#2a2a2a] text-white text-xs disabled:opacity-30">↓</button>
+                <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded bg-raised text-white text-xs disabled:opacity-30">↑</button>
+                <button onClick={() => move(phase.id, 1)} disabled={idx === sorted.length - 1} className="w-6 h-6 flex items-center justify-center rounded bg-raised text-white text-xs disabled:opacity-30">↓</button>
               </div>
 
               <div className="flex-1 space-y-2 min-w-0">

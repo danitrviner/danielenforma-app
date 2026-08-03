@@ -398,7 +398,7 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-accent border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Clientes

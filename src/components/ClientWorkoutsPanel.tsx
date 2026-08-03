@@ -20,7 +20,7 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
 const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
   pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
   completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-[#2a2a2a] text-ink-2 border border-[#3a3a3a]',
+  skipped:   'bg-raised text-ink-2 border border-[#3a3a3a]',
   perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
 };
 
@@ -165,7 +165,7 @@ export default function ClientWorkoutsPanel({
               return (
                 <div
                   key={log.id}
-                  className={`border rounded-lg p-3.5 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-[#1e1e1e] border-white/7'}`}
+                  className={`border rounded-lg p-3.5 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-raised border-white/7'}`}
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-sans text-xs font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>

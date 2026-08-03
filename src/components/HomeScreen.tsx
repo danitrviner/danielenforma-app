@@ -123,7 +123,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
                   <button
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all"
+                    className="w-full flex items-center justify-between bg-raised border border-white/7 hover:border-accent/40 rounded-lg p-3 text-left transition-all"
                   >
                     <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
                     <span className="font-mono text-[10px] text-ink-2 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
@@ -138,7 +138,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
                   <button
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-red-500/20 hover:border-red-500/40 rounded-lg p-3 text-left transition-all"
+                    className="w-full flex items-center justify-between bg-raised border border-red-500/20 hover:border-red-500/40 rounded-lg p-3 text-left transition-all"
                   >
                     <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
                     <span className="font-mono text-[10px] text-red-300 flex-shrink-0 ml-2">{formatDate(a.date)}</span>

@@ -135,7 +135,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               key={t.id}
               onClick={() => handleToggle(t)}
               className={`w-full flex items-center gap-3 border rounded-lg p-3 text-left transition-all ${
-                t.status === 'done' ? 'bg-surface border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7 hover:border-accent/40'
+                t.status === 'done' ? 'bg-surface border-white/50 opacity-60' : 'bg-raised border-white/7 hover:border-accent/40'
               }`}
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>

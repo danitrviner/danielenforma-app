@@ -233,7 +233,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
       ) : (
         <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
+          <div className="p-4 border-b border-white/7 bg-raised flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
@@ -303,7 +303,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-[#1c1b1b] transition-colors"
+                          className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                         >
                           <span className="material-symbols-outlined text-base">account_circle</span>
                         </button>
@@ -373,7 +373,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
@@ -433,7 +433,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-[#1c1b1b] transition-colors"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">account_circle</span>
                       </button>
@@ -483,7 +483,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     value={r}
                     onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                     placeholder="ej. Buen trabajo esta semana, sigue así."
-                    className="flex-1 bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="flex-1 bg-raised border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
