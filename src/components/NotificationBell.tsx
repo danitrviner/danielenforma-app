@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppNotification } from '../types';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../dbService';
+import { Icon, EmptyState } from './ui';
 
 interface Props {
   recipientEmail: string;
@@ -82,7 +83,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
         className="relative p-1 text-accent hover:opacity-80 transition-opacity"
         title="Notificaciones"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>notifications</span>
+        <Icon name="notifications" size="l" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-caption font-mono font-bold rounded-full flex items-center justify-center leading-none">
             {unread > 99 ? '99+' : unread}
@@ -96,7 +97,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
             <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-title-s">notifications</span>
+              <Icon name="notifications" size="m" className="text-accent" />
               Notificaciones
               {unread > 0 && (
                 <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-2 rounded-control font-mono font-bold">
@@ -113,7 +114,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
               )}
               <button type="button" onClick={() => { refetch(); }}
                 className="p-1 text-ink-3 hover:text-ink-2 transition-colors">
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
+                <Icon name="refresh" size="s" />
               </button>
             </div>
           </div>
@@ -123,10 +124,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             {loading ? (
               <p className="text-center py-6 font-mono text-label text-ink-3 animate-pulse">Cargando…</p>
             ) : notifs.length === 0 ? (
-              <div className="py-10 flex flex-col items-center gap-2 text-ink-3">
-                <span className="material-symbols-outlined text-display">notifications_off</span>
-                <p className="font-mono text-label">Sin notificaciones</p>
-              </div>
+              <EmptyState icon="notifications_off" title="Sin notificaciones" />
             ) : (
               notifs.map(n => (
                 <button
@@ -138,14 +136,12 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   }`}
                 >
                   {/* Icon */}
-                  <span
-                    className={`material-symbols-outlined text-title-s flex-shrink-0 ${
-                      !n.read ? 'text-accent' : 'text-ink-3'
-                    }`}
-                    style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}
-                  >
-                    {TYPE_ICON[n.type] ?? 'info'}
-                  </span>
+                  <Icon
+                    name={TYPE_ICON[n.type] ?? 'info'}
+                    size="m"
+                    filled={!n.read}
+                    className={`flex-shrink-0 ${!n.read ? 'text-accent' : 'text-ink-3'}`}
+                  />
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">

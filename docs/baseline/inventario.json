@@ -1,17 +1,17 @@
 {
-  "generado": "2026-08-03T22:17:16.688Z",
-  "commit": "f4d699e",
+  "generado": "2026-08-03T22:20:08.907Z",
+  "commit": "d156f37",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39608
+    "lineasTsx": 39604
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5105,
+    "clasesTokenEnUso": 5104,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 999,
+    "fontMono": 998,
     "fontSans": 1020,
     "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
@@ -450,8 +450,8 @@
       "roundedFull": 2
     },
     "src/components/NotificationBell.tsx": {
-      "clasesTokenEnUso": 20,
-      "fontMono": 6,
+      "clasesTokenEnUso": 19,
+      "fontMono": 5,
       "fontSans": 3,
       "animatePulse": 1,
       "roundedFull": 2
