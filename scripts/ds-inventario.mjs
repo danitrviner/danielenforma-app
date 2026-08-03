@@ -42,6 +42,20 @@ const EXTENSIONES = new Set(['.tsx', '.ts']);
 const EXTENSIONES_CSS = new Set(['.css']);
 const IGNORAR = new Set(['node_modules', 'dist', '.git']);
 
+/**
+ * La capa de primitivas. Algunas métricas cuentan ahí lo contrario de lo que
+ * cuentan fuera: un `fixed inset-0` en `ui/Sheet.tsx` ES el objetivo de la
+ * migración, y el mismo patrón repetido a mano en una pantalla es la deuda que
+ * la fase persigue. Sin esta distinción el instrumento penalizaría escribir la
+ * primitiva, que es justo el trabajo que hay que hacer.
+ *
+ * Solo la usan las métricas que declaran `ambito`. El resto mide `ui/` como
+ * cualquier otro archivo: las primitivas no están exentas de la escala de
+ * espaciado, de los tokens de color ni del suelo tipográfico.
+ */
+const DIR_PRIMITIVAS = 'src/components/ui/';
+const esPrimitiva = (rel) => rel.replaceAll('\\', '/').startsWith(DIR_PRIMITIVAS);
+
 /** Escala de espaciado admitida por el DS, en px (base 4). */
 const ESCALA_ESPACIADO = new Set([0, 4, 8, 12, 16, 20, 24, 32, 40, 56]);
 
@@ -219,9 +233,12 @@ const METRICAS = [
   },
   {
     id: 'modalesArtesanales',
-    etiqueta: 'Overlays "fixed inset-0"',
+    etiqueta: 'Overlays artesanales (no ui/)',
     direccion: 'bajar',
     fase: 'F9',
+    // Los de `ui/` no cuentan: son el destino, no la deuda. Es el mismo
+    // objetivo que el panel de estado ya declara — «0 fuera de ui/».
+    ambito: (rel) => !esPrimitiva(rel),
     medir: (t) => contar(t, /fixed\s+inset-0/g),
   },
   {
@@ -372,7 +389,7 @@ function medir() {
 
     const conteo = {};
     for (const m of METRICAS) {
-      const n = m.medir(texto);
+      const n = m.ambito && !m.ambito(rel) ? 0 : m.medir(texto);
       if (n > 0) {
         metricas[m.id] += n;
         conteo[m.id] = n;
