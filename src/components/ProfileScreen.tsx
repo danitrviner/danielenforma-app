@@ -275,7 +275,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Mi Perfil</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Mi Perfil</h1>
         <p className="text-ink-2 text-body-s mt-1">Tu gamificación, evolución de peso, gráficas y configuración de ficha.</p>
       </div>
 

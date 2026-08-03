@@ -224,7 +224,7 @@ function AppContent() {
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-black text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
@@ -254,7 +254,7 @@ function AppContent() {
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-          <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-black text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>

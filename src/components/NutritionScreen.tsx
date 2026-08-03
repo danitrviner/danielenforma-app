@@ -813,7 +813,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
+        <h1 className="font-sans font-extrabold text-display text-white tracking-tight">Nutrición</h1>
         <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
       </div>
 
@@ -903,7 +903,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
         <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">nutrition</span>
+          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">nutrition</span>
           <p className="text-ink-2 text-body-s font-sans">Aún no tienes ningún menú.</p>
           <p className="text-ink-2 text-label font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
           <button

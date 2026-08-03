@@ -188,7 +188,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     <div className="space-y-6">
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
+          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Revisiones</h1>
           <p className="text-ink-2 text-body-s mt-1">
             Historial cronológico de check-ins y respuestas de cuestionarios.
           </p>
@@ -227,7 +227,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {unifiedItems.length === 0 && !loadingResponses ? (
         <div className="bg-bg border border-dashed border-hairline rounded-surface p-16 text-center text-ink-2">
-          <span className="material-symbols-outlined text-4xl text-accent mb-2 block">verified_user</span>
+          <span className="material-symbols-outlined text-display text-accent mb-2 block">verified_user</span>
           <p className="text-body-s font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-label mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>

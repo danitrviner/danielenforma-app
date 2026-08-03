@@ -73,7 +73,7 @@ const PAGE_SIZE = 24;
 function RecipePlaceholder() {
   return (
     <div className="w-full h-full bg-gradient-to-br from-accent/10 to-transparent flex items-center justify-center">
-      <span className="material-symbols-outlined text-4xl text-ink-2/30">skillet</span>
+      <span className="material-symbols-outlined text-display text-ink-2/30">skillet</span>
     </div>
   );
 }
@@ -152,7 +152,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
-            <span className="material-symbols-outlined text-5xl text-ink-3">skillet</span>
+            <span className="material-symbols-outlined text-display text-ink-3">skillet</span>
           </div>
       }
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
@@ -647,7 +647,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Recetas</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Recetas</h1>
         <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>
       </div>
 

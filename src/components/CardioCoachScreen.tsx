@@ -32,7 +32,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
         <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
+        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Cardio</h1>
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">

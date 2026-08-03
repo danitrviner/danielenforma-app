@@ -124,7 +124,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
               <p className="text-center py-6 font-mono text-label text-ink-3 animate-pulse">Cargando…</p>
             ) : notifs.length === 0 ? (
               <div className="py-10 flex flex-col items-center gap-2 text-ink-3">
-                <span className="material-symbols-outlined text-3xl">notifications_off</span>
+                <span className="material-symbols-outlined text-display">notifications_off</span>
                 <p className="font-mono text-label">Sin notificaciones</p>
               </div>
             ) : (

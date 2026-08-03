@@ -772,7 +772,7 @@ export default function OnboardingForm({
       <div className={isFirstTime ? 'text-center space-y-2 py-4' : 'space-y-1'}>
         {isFirstTime ? (
           <>
-            <span className="material-symbols-outlined text-5xl text-accent">waving_hand</span>
+            <span className="material-symbols-outlined text-display text-accent">waving_hand</span>
             <h2 className="font-sans font-extrabold text-title-l text-white">¡Bienvenido/a!</h2>
             <p className="text-ink-2 text-body-s font-sans max-w-md mx-auto">
               Rellena los datos básicos. Tu entrenador usará esta información para personalizar tu plan.

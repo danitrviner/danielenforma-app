@@ -358,7 +358,7 @@ export default function ClientReviewsPanel({
                 </div>
               ) : viewPhotos.length === 0 ? (
                 <div className="p-10 text-center">
-                  <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">photo_camera</span>
+                  <span className="material-symbols-outlined text-display text-ink-3 block mb-2">photo_camera</span>
                   <p className="font-mono text-label text-ink-2">Sin fotos todavía.</p>
                 </div>
               ) : (
@@ -942,7 +942,7 @@ export default function ClientReviewsPanel({
           if (items.length === 0) {
             return (
               <div className="bg-surface border border-dashed border-hairline rounded-surface p-12 text-center text-ink-2">
-                <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">history_edu</span>
+                <span className="material-symbols-outlined text-display text-ink-3 block mb-2">history_edu</span>
                 <p className="text-body-s font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-label mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
               </div>

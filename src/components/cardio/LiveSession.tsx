@@ -78,7 +78,7 @@ export default function LiveSession({
             <p className="text-caption font-mono uppercase text-white/80">
               Bloque {currentBlockIndex + 1}/{intervalBlocks.length} · {intervalBlocks[currentBlockIndex].label}
             </p>
-            <p className="font-sans font-black text-4xl text-white tabular-nums">{fmtClock(blockRemainingSec ?? 0)}</p>
+            <p className="font-sans font-black text-display text-white tabular-nums">{fmtClock(blockRemainingSec ?? 0)}</p>
             {intervalBlocks[currentBlockIndex + 1] && (
               <p className="text-caption font-mono text-white/60">Siguiente: {intervalBlocks[currentBlockIndex + 1].label}</p>
             )}

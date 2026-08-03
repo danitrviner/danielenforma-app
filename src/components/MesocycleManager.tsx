@@ -349,7 +349,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
   if (groups.length === 0) {
     return (
       <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
-        <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">fitness_center</span>
+        <span className="material-symbols-outlined text-display text-ink-3 block mb-3">fitness_center</span>
         <p className="text-ink-2 text-body-s">Aún no se han generado rutinas para este mesociclo.</p>
         <button
           onClick={onGoToDistribution}
@@ -1124,7 +1124,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       {!athleteEmail && (
         <>
           <div>
-            <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Macrociclo</h1>
+            <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Macrociclo</h1>
             <p className="text-ink-2 text-body-s mt-1">Diseña los mesociclos y genera rutinas reales para el atleta.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -1145,7 +1145,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           </div>
           {!selectedEmail && (
             <div className="text-center py-24 border border-dashed border-hairline rounded-surface">
-              <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">calendar_view_month</span>
+              <span className="material-symbols-outlined text-display text-ink-3 block mb-3">calendar_view_month</span>
               <p className="text-ink-2 text-body-s">Selecciona un atleta para ver o crear sus mesociclos.</p>
             </div>
           )}
@@ -1398,7 +1398,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         </div>
                       ) : (
                         <div className="text-center py-12 border border-dashed border-hairline rounded-surface">
-                          <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">grid_view</span>
+                          <span className="material-symbols-outlined text-display text-ink-3 block mb-2">grid_view</span>
                           <p className="text-ink-2 text-body-s">Pulsa «Distribución Automática» para repartir las series.</p>
                         </div>
                       )}
@@ -1542,7 +1542,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {/* === Assigning progress === */}
                   {genPhase === 'assigning' && (
                     <div className="text-center py-16 space-y-4">
-                      <span className="material-symbols-outlined text-4xl text-accent animate-spin block">refresh</span>
+                      <span className="material-symbols-outlined text-display text-accent animate-spin block">refresh</span>
                       <p className="font-sans font-bold text-white text-body-s">Creando sesiones en Firestore…</p>
                       <div className="max-w-xs mx-auto">
                         <div className="bg-raised rounded-full h-2 overflow-hidden">
@@ -1561,7 +1561,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {/* === Done === */}
                   {genPhase === 'done' && (
                     <div className="text-center py-16 space-y-4">
-                      <span className="material-symbols-outlined text-5xl text-success block">check_circle</span>
+                      <span className="material-symbols-outlined text-display text-success block">check_circle</span>
                       <div>
                         <p className="font-sans font-bold text-white text-body-s">¡Rutinas asignadas!</p>
                         <p className="font-mono text-caption text-ink-2 mt-1">
@@ -1632,7 +1632,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             selectedEmail && !loadingMeso && (
               <div className="flex-1 flex items-center justify-center text-center py-20 border border-dashed border-hairline rounded-surface">
                 <div>
-                  <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">edit_note</span>
+                  <span className="material-symbols-outlined text-display text-ink-3 block mb-3">edit_note</span>
                   <p className="text-ink-2 text-body-s">Selecciona un mesociclo o crea uno nuevo.</p>
                 </div>
               </div>
@@ -1675,7 +1675,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 </div>
               ) : templates.length === 0 ? (
                 <div className="text-center py-10">
-                  <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">library_books</span>
+                  <span className="material-symbols-outlined text-display text-ink-3 block mb-2">library_books</span>
                   <p className="font-mono text-label text-ink-2">
                     Sin plantillas. Crea una en Ejercicios → Plantillas.
                   </p>

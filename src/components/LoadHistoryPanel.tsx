@@ -354,7 +354,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           Historial de carga
         </h3>
         <div className="py-8 text-center border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitoring</span>
+          <span className="material-symbols-outlined text-display text-ink-3 block mb-2">monitoring</span>
           <p className="text-label text-ink-2 font-mono">Sin registros de carga aún.</p>
         </div>
       </div>

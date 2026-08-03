@@ -236,7 +236,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
   if (!program || program.phases.length === 0) {
     return (
       <div className="border border-dashed border-hairline rounded-surface py-10 flex flex-col items-center gap-3">
-        <span className="material-symbols-outlined text-3xl text-ink-3">monitoring</span>
+        <span className="material-symbols-outlined text-display text-ink-3">monitoring</span>
         <p className="font-mono text-label text-ink-2 text-center max-w-xs">
           {onEdit
             ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`

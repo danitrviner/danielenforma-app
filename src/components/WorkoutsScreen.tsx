@@ -261,7 +261,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       <div className="space-y-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
           <div>
-            <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Rutinas</h1>
+            <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Rutinas</h1>
             <p className="text-ink-2 text-body-s mt-1">
               {workouts.length} rutinas creadas
             </p>
@@ -290,7 +290,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
         ) : workouts.length === 0 ? (
           <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-accent/40 block mb-3">format_list_bulleted</span>
+            <span className="material-symbols-outlined text-display text-accent/40 block mb-3">format_list_bulleted</span>
             <p className="text-white font-bold text-body-s">Sin rutinas todavía</p>
             <p className="text-ink-2 text-label mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
             <button
@@ -460,7 +460,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             onClick={openPicker}
             className="bg-surface border border-dashed border-hairline hover:border-accent/30 rounded-surface p-10 text-center cursor-pointer transition-all group"
           >
-            <span className="material-symbols-outlined text-3xl text-accent/30 group-hover:text-accent/60 transition-all block mb-2">add_circle</span>
+            <span className="material-symbols-outlined text-display text-accent/30 group-hover:text-accent/60 transition-all block mb-2">add_circle</span>
             <p className="text-label text-ink-2 group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
           </div>
         ) : (

@@ -30,7 +30,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
             Sincronizado
           </span>
         </div>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Entrenamiento</h1>
+        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Entrenamiento</h1>
       </header>
 
       {/* Sub-tab switcher */}

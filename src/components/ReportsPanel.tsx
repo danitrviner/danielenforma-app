@@ -217,7 +217,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           </div>
         ) : reports.length === 0 ? (
           <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
-            <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">description</span>
+            <span className="material-symbols-outlined text-display text-ink-3 block mb-2">description</span>
             <p className="font-mono text-label text-ink-2">Aún no hay reportes para este atleta.</p>
           </div>
         ) : (

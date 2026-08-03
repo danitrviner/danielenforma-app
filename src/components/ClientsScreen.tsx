@@ -314,7 +314,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </span>
         </div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
+          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Clientes</h1>
           <WeeklyAnalysisButton />
         </div>
       </header>
@@ -333,7 +333,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               <span className="text-caption bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
+              <span className="font-sans font-black text-display text-white tracking-tight">{athletes.length}</span>
               <span className="text-label text-ink-2 font-sans pb-1">deportistas registrados</span>
             </div>
           </div>

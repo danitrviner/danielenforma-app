@@ -364,7 +364,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Check-in Semanal</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Check-in Semanal</h1>
         <p className="text-ink-2 text-body-s mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
       </div>
 

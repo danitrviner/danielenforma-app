@@ -909,7 +909,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         </div>
       ) : templates.length === 0 ? (
         <div className="py-16 text-center border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">library_books</span>
+          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-body-s mb-1">Sin plantillas todavía</p>
           <p className="text-ink-2 text-label font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button

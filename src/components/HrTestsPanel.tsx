@@ -183,7 +183,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (phase === 'done') {
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3 text-center">
-          <span className="material-symbols-outlined text-4xl text-data">check_circle</span>
+          <span className="material-symbols-outlined text-display text-data">check_circle</span>
           <p className="font-sans font-bold text-white">Test completado</p>
           <p className="text-label text-ink-2 font-mono">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
           <button onClick={() => setActiveTest(null)} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Volver</button>
@@ -205,7 +205,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-caption font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
-            <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
+            <p className="font-sans font-black text-display text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-label font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
               <button onClick={finishTest} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Terminar y calcular</button>

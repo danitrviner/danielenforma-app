@@ -49,7 +49,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Inicio</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Inicio</h1>
         <p className="text-ink-2 text-body-s mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
       </div>
 

@@ -61,7 +61,7 @@ export default function AcademyScreen({ profile }: Props) {
   if (!access?.enabled) {
     return (
       <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
-        <span className="material-symbols-outlined text-5xl text-ink-3">lock</span>
+        <span className="material-symbols-outlined text-display text-ink-3">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
         <p className="text-label text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
       </div>
@@ -186,7 +186,7 @@ export default function AcademyScreen({ profile }: Props) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
+        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">TrainingLab</h1>
         <p className="text-label text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
       </header>
 

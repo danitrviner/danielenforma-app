@@ -202,7 +202,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
+          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
           <p className="text-ink-2 text-body-s mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
@@ -312,7 +312,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-accent/40 block mb-3">fitness_center</span>
+          <span className="material-symbols-outlined text-display text-accent/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-body-s">Sin resultados</p>
           <p className="text-ink-2 text-label mt-1">
             {filterMuscleGroup

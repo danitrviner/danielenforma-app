@@ -281,7 +281,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {/* Empty state */}
           {logs.length === 0 && (
             <div className="text-center py-8 border border-dashed border-hairline rounded-surface">
-              <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitor_weight</span>
+              <span className="material-symbols-outlined text-display text-ink-3 block mb-2">monitor_weight</span>
               <p className="font-mono text-label text-ink-2">
                 {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
               </p>

@@ -518,7 +518,7 @@ export default function CardioScreen({ profile }: Props) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
+        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Cardio</h1>
         <p className="text-label text-ink-2 font-mono mt-1">Zonas de FC y dashboard en vivo</p>
       </header>
 

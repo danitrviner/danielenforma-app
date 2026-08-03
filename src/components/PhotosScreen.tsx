@@ -95,7 +95,7 @@ export default function PhotosScreen({ profile }: Props) {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Fotos de Progreso</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Fotos de Progreso</h1>
         <p className="text-ink-2 text-body-s mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
       </div>
 
@@ -160,7 +160,7 @@ export default function PhotosScreen({ profile }: Props) {
       {/* Gallery */}
       {visiblePhotos.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
-          <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">photo_camera</span>
+          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">photo_camera</span>
           <p className="text-ink-2 text-body-s font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
           <p className="text-ink-2 text-label font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
           <button

@@ -289,7 +289,7 @@ export default function MyMenuScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-outlined text-3xl text-accent animate-spin">progress_activity</span>
+        <span className="material-symbols-outlined text-display text-accent animate-spin">progress_activity</span>
       </div>
     );
   }
@@ -297,7 +297,7 @@ export default function MyMenuScreen({ profile }: Props) {
   if (!menu) {
     return (
       <div className="bg-surface border border-hairline rounded-surface p-8 text-center space-y-2">
-        <span className="material-symbols-outlined text-3xl text-ink-3 block">restaurant_menu</span>
+        <span className="material-symbols-outlined text-display text-ink-3 block">restaurant_menu</span>
         <p className="font-sans font-bold text-body-s text-white">Todavía no tienes un menú semanal</p>
         <p className="font-mono text-label text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
       </div>

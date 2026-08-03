@@ -805,7 +805,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
             <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
               <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
-                <span className="material-symbols-outlined text-4xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <span className="material-symbols-outlined text-display text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {celebration.isFirstEver ? 'celebration' : 'bolt'}
                 </span>
               </div>
@@ -856,7 +856,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-3">
         <div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Entrenamiento</h1>
+          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Entrenamiento</h1>
           <p className="text-ink-2 text-body-s mt-1">
             {visiblePendingCount > 0
               ? `${visiblePendingCount} entrenamientos pendientes`
@@ -921,7 +921,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
               <div className="bg-surface border border-dashed border-hairline rounded-surface p-14 text-center">
-                <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
+                <span className="material-symbols-outlined text-display text-accent/30 block mb-3">fitness_center</span>
                 <p className="text-white font-bold text-body-s">Sin entrenamientos pendientes</p>
                 <p className="text-ink-2 text-label mt-1">Tu entrenador asignará sesiones próximamente.</p>
               </div>
@@ -958,7 +958,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             )
           ) : filteredAssignments.length === 0 ? (
             <div className="bg-surface border border-dashed border-hairline rounded-surface p-14 text-center">
-              <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
+              <span className="material-symbols-outlined text-display text-accent/30 block mb-3">fitness_center</span>
               <p className="text-white font-bold text-body-s">Sin entrenamientos {listFilter === 'completed' ? 'completados' : ''}</p>
               <p className="text-ink-2 text-label mt-1">Tu entrenador asignará sesiones próximamente.</p>
             </div>

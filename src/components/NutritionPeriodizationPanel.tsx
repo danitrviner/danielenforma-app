@@ -372,7 +372,7 @@ export default function NutritionPeriodizationPanel({
             </h3>
           </div>
           <div className="border border-dashed border-hairline rounded-surface py-8 flex flex-col items-center gap-3">
-            <span className="material-symbols-outlined text-3xl text-ink-3">timeline</span>
+            <span className="material-symbols-outlined text-display text-ink-3">timeline</span>
             <p className="text-ink-2 text-label font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
