@@ -7,7 +7,7 @@ import {
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import Skeleton from './Skeleton';
-import { Card, Tabs, Button } from './ui';
+import { Card, Tabs, Button, PageHeader } from './ui';
 
 interface Props {
   coachId: string;
@@ -39,12 +39,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
-          Consola de Entrenador
-        </span>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">TrainingLab</h1>
-      </header>
+      <PageHeader eyebrow="Consola de Entrenador" title="TrainingLab" />
 
       <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de TrainingLab" />
 
