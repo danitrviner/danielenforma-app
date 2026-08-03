@@ -283,7 +283,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       <span
                         className="material-symbols-outlined flex-shrink-0 text-lg"
-                        style={{ color: c.approved ? '#fbcb1a' : '#fb923c', fontVariationSettings: "'FILL' 1" }}
+                        style={{ color: c.approved ? 'var(--color-accent)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
                       >rate_review</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -418,7 +418,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     </div>
                     <span
                       className="material-symbols-outlined flex-shrink-0 text-lg"
-                      style={{ color: '#00eefc', fontVariationSettings: "'FILL' 1" }}
+                      style={{ color: 'var(--color-data)', fontVariationSettings: "'FILL' 1" }}
                     >quiz</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

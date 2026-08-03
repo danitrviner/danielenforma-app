@@ -20,7 +20,7 @@ import {
 import Skeleton from './Skeleton';
 
 const DEFAULT_STEP_GOAL = 8000;
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#a78bfa', '#ff8c69'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-chart-3)', 'var(--color-warning)'];
 
 // recharts' ReferenceArea prop types don't declare `key`, even though React
 // accepts it on any element — cast so mapping a dynamic list of phase bands typechecks.
@@ -353,45 +353,45 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {chartRows.length > 0 && projection && (
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={chartRows} margin={{ top: 8, right: 16, bottom: 0, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
               {phaseBands.map((band, i) => (
                 <ReferenceAreaAny key={i} x1={band.from} x2={band.to} strokeOpacity={0} fill={band.color} fillOpacity={0.05} />
               ))}
               <XAxis
                 dataKey="week"
                 tickFormatter={w => `S${w}`}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={{ stroke: '#2a2a2a' }}
+                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
+                axisLine={{ stroke: 'var(--color-raised)' }}
                 tickLine={false}
                 minTickGap={28}
               />
               <YAxis
                 domain={['auto', 'auto']}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
                 axisLine={false}
                 tickLine={false}
                 width={36}
                 tickFormatter={v => `${v}`}
               />
               <Tooltip content={props => <ProjectionTooltip {...props} />} />
-              <ReferenceLine x={projection.currentWeek} stroke="#c6c9ab" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: 'HOY', position: 'insideTopRight', fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }} />
+              <ReferenceLine x={projection.currentWeek} stroke="var(--color-ink-2)" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: 'HOY', position: 'insideTopRight', fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }} />
               {targetWeightKg != null && (
-                <ReferenceLine y={targetWeightKg} stroke="#86efac" strokeDasharray="5 4" strokeOpacity={0.5} label={{ value: `Objetivo ${targetWeightKg}kg`, position: 'insideBottomRight', fill: '#86efac', fontSize: 9, fontFamily: 'monospace' }} />
+                <ReferenceLine y={targetWeightKg} stroke="var(--color-success)" strokeDasharray="5 4" strokeOpacity={0.5} label={{ value: `Objetivo ${targetWeightKg}kg`, position: 'insideBottomRight', fill: 'var(--color-success)', fontSize: 9, fontFamily: 'monospace' }} />
               )}
               {curveMode !== 'adh' && (
-                <Line type="monotone" dataKey="expected100" stroke="#00eefc" strokeWidth={2} dot={false} name="Esperado 100%" connectNulls />
+                <Line type="monotone" dataKey="expected100" stroke="var(--color-data)" strokeWidth={2} dot={false} name="Esperado 100%" connectNulls />
               )}
               {curveMode !== 'exp' && (
-                <Line type="monotone" dataKey="expectedAdherence" stroke="#a78bfa" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Según adherencia" connectNulls />
+                <Line type="monotone" dataKey="expectedAdherence" stroke="var(--color-chart-3)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Según adherencia" connectNulls />
               )}
               <Line
-                type="monotone" dataKey="real" stroke="#fbcb1a" strokeWidth={2.6} name="Real"
-                dot={{ fill: '#fbcb1a', stroke: '#181816', strokeWidth: 2, r: 3 }}
-                activeDot={{ fill: '#fbcb1a', stroke: '#181816', strokeWidth: 2, r: 5 }}
+                type="monotone" dataKey="real" stroke="var(--color-accent)" strokeWidth={2.6} name="Real"
+                dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 3 }}
+                activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 5 }}
                 connectNulls
               />
               <Legend
-                wrapperStyle={{ fontSize: 10, fontFamily: 'monospace', color: '#c6c9ab', paddingTop: 8 }}
+                wrapperStyle={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--color-ink-2)', paddingTop: 8 }}
                 iconType="plainline"
               />
             </ComposedChart>
@@ -416,14 +416,14 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         <StatCard
           label="Desvío vs. plan"
           value={performance?.deviationKg != null ? `${fmtKg(performance.deviationKg, true)} kg` : '—'}
-          valueColor={performance?.deviationKg == null ? undefined : performance.deviationKg > 0 ? '#fdba74' : '#86efac'}
+          valueColor={performance?.deviationKg == null ? undefined : performance.deviationKg > 0 ? 'var(--color-warning)' : 'var(--color-success)'}
           sub={performance?.achievedPct != null ? `${performance.achievedPct}% del objetivo` : 'sin datos suficientes'}
         />
         <StatCard
           label="Mantenimiento real"
           value={performance?.realMaintenanceKcal != null ? `${fmtKcal(performance.realMaintenanceKcal)}` : '—'}
           unit="kcal"
-          valueColor="#00eefc"
+          valueColor="var(--color-data)"
           sub={performance?.maintenanceGapKcal != null
             ? `${performance.maintenanceGapKcal >= 0 ? '+' : ''}${fmtKcal(performance.maintenanceGapKcal)} vs. estimado ${fmtKcal(performance.estimatedMaintenanceKcal)}`
             : 'necesita más semanas de datos'}
@@ -433,14 +433,14 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           value={dietAdherence.daysLogged > 0 ? `${dietAdherence.avgPct}%` : '—'}
           sub={`${dietAdherence.daysLogged} días · últimos ${dietAdherence.windowDays} d`}
           progressPct={dietAdherence.daysLogged > 0 ? dietAdherence.avgPct : undefined}
-          progressColor="#fbcb1a"
+          progressColor="var(--color-accent)"
         />
         <StatCard
           label="Adherencia · pasos"
           value={stepAdherence.daysLogged > 0 ? `${stepAdherence.avgPct}%` : '—'}
           sub={`${stepAdherence.daysLogged} días · meta ${stepGoal.toLocaleString('es-ES')}`}
           progressPct={stepAdherence.daysLogged > 0 ? stepAdherence.avgPct : undefined}
-          progressColor="#fdba74"
+          progressColor="var(--color-warning)"
         />
       </div>
 
@@ -484,7 +484,7 @@ function StatCard({
       </span>
       {progressPct != null && (
         <div className="h-1.5 rounded-full bg-raised overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? '#fbcb1a' }} />
+          <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? 'var(--color-accent)' }} />
         </div>
       )}
       <span className="font-mono text-[9px] text-ink-2">{sub}</span>

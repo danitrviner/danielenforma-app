@@ -14,10 +14,10 @@ const DEFAULT_STEP_GOAL = 8000;
 const DEFAULT_VEG_SERVINGS = 3;
 
 const STATUS_COLOR: Record<MicroStatus, string> = {
-  low:     '#f87171', // red-400
-  ok:      '#34d399', // emerald-400
-  high:    '#fbbf24', // amber-400
-  unknown: '#555',
+  low:     'var(--color-danger)', // red-400
+  ok:      'var(--color-success)', // emerald-400
+  high:    'var(--color-warning)', // amber-400
+  unknown: 'var(--color-ink-3)',
 };
 
 interface Props {

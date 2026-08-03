@@ -12,7 +12,7 @@ interface Props {
 // Tarjeta de métrica del dashboard y de las cabeceras de sección. Densidad tipo
 // Whoop/Oura: etiqueta mono en versalitas, número grande con `tabular-nums`
 // para que las cifras no bailen al actualizarse.
-export default function MetricCard({ icon, label, value, sub, accent = '#fbcb1a', onClick }: Props) {
+export default function MetricCard({ icon, label, value, sub, accent = 'var(--color-accent)', onClick }: Props) {
   const Wrapper = onClick ? 'button' : 'div';
   return (
     <Wrapper

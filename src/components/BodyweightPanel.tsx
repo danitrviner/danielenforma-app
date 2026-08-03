@@ -203,18 +203,18 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {logs.length > 0 && (
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                  axisLine={{ stroke: '#2a2a2a' }}
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
+                  axisLine={{ stroke: 'var(--color-raised)' }}
                   tickLine={false}
                   minTickGap={56}
                 />
                 <YAxis
                   domain={yDomain}
-                  tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
                   axisLine={false}
                   tickLine={false}
                   width={40}
@@ -225,7 +225,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <Line
                   type="monotone"
                   dataKey="avg"
-                  stroke="#00eefc"
+                  stroke="var(--color-data)"
                   strokeWidth={1.5}
                   strokeDasharray="5 3"
                   dot={false}
@@ -235,10 +235,10 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#fbcb1a"
+                  stroke="var(--color-accent)"
                   strokeWidth={2}
-                  dot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 3 }}
-                  activeDot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 5 }}
+                  dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 3 }}
+                  activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>

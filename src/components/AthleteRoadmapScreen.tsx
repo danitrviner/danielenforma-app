@@ -26,7 +26,7 @@ import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
 import { markRoadmapVisited } from './PlanInPreparationCard';
 
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 const COACH_EMAIL = 'danitrviner@gmail.com';
 
@@ -190,14 +190,14 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     const list: Achievement[] = [];
     for (const ch of challengeHistory) {
       if (ch.status === 'conseguido' && ch.resolvedAt) {
-        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: '#fbcb1a', title: ch.title, date: ch.resolvedAt.split('T')[0] });
+        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: 'var(--color-accent)', title: ch.title, date: ch.resolvedAt.split('T')[0] });
       }
     }
     const achievedIds: Record<string, string> = roadmap?.levelLadder?.achievedLevelIds ?? {};
     const levels = (roadmap?.levelLadder ?? DEFAULT_LEVEL_LADDER).levels;
     for (const [levelId, date] of Object.entries(achievedIds)) {
       const lvl = levels.find(l => l.id === levelId);
-      if (lvl) list.push({ id: `lvl-${levelId}`, icon: 'military_tech', color: '#00eefc', title: `Nivel ${lvl.name}`, date });
+      if (lvl) list.push({ id: `lvl-${levelId}`, icon: 'military_tech', color: 'var(--color-data)', title: `Nivel ${lvl.name}`, date });
     }
     for (const phase of roadmap?.planPhases ?? []) {
       if (phase.status === 'completada' && phase.completedAt) {
@@ -206,7 +206,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     }
     for (const item of roadmap?.items ?? []) {
       if (item.status === 'logrado' && item.targetDate) {
-        list.push({ id: `it-${item.id}`, icon: 'star', color: '#a78bfa', title: item.title, date: item.targetDate });
+        list.push({ id: `it-${item.id}`, icon: 'star', color: 'var(--color-chart-3)', title: item.title, date: item.targetDate });
       }
     }
     return list;

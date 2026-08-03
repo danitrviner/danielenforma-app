@@ -32,12 +32,12 @@ export default function HrChart({ data, zones, maxHR, height = 140 }: Props) {
           ))}
           <XAxis dataKey="t" hide />
           <YAxis yAxisId="bpm" domain={['dataMin - 10', 'dataMax + 10']} ticks={boundaryTicks}
-            tick={{ fontSize: 9, fill: '#c6c9ab' }} width={28} axisLine={false} tickLine={false} />
+            tick={{ fontSize: 9, fill: 'var(--color-ink-2)' }} width={28} axisLine={false} tickLine={false} />
           {maxHR && (
             <YAxis yAxisId="pct" orientation="right" domain={['dataMin - 10', 'dataMax + 10']} ticks={boundaryTicks}
-              tickFormatter={v => `${pctOfMaxHR(v, maxHR)}%`} tick={{ fontSize: 9, fill: '#c6c9ab' }} width={28} axisLine={false} tickLine={false} />
+              tickFormatter={v => `${pctOfMaxHR(v, maxHR)}%`} tick={{ fontSize: 9, fill: 'var(--color-ink-2)' }} width={28} axisLine={false} tickLine={false} />
           )}
-          <Tooltip contentStyle={{ background: '#181816', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11 }} />
           <Line yAxisId="bpm" type="monotone" dataKey="bpm" stroke="#ffffff" dot={false} strokeWidth={2} />
         </LineChart>
       </ResponsiveContainer>

@@ -84,7 +84,7 @@ export default function DashboardScreen() {
         <MetricCard
           icon="schedule" label="Pagos pendientes"
           value={pagosSinDato ? '—' : formatEuros(totalPendiente)}
-          accent="#fdba74"
+          accent="var(--color-warning)"
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />
         <MetricCard
@@ -103,13 +103,13 @@ export default function DashboardScreen() {
         <MetricCard
           icon="trending_down" label="Churn"
           value={reunionesSinDato ? '—' : churn !== null ? `${churn}%` : '—'}
-          accent={churn !== null && churn > 0 ? '#fca5a5' : undefined}
+          accent={churn !== null && churn > 0 ? 'var(--color-danger)' : undefined}
           sub={churn === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
         />
         <MetricCard
           icon="person_remove" label="Bajas (30 días)"
           value={clientesSinDato ? '—' : bajasRecientes.length}
-          accent={bajasRecientes.length > 0 ? '#fca5a5' : undefined}
+          accent={bajasRecientes.length > 0 ? 'var(--color-danger)' : undefined}
           onClick={() => navigate('/crm/clientes?estado=baja')}
         />
       </div>

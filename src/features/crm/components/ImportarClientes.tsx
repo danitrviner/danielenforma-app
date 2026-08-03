@@ -182,9 +182,9 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
       <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
 
       <div className="grid grid-cols-3 gap-2">
-        <Resumen icono="check_circle" color="#86efac" numero={listasParaImportar} label="listas" />
-        <Resumen icono="content_copy" color="#fdba74" numero={duplicadosPorFila.size} label="posibles duplicados" />
-        <Resumen icono="error" color="#fca5a5" numero={resultado.conError.length} label="con error" />
+        <Resumen icono="check_circle" color="var(--color-success)" numero={listasParaImportar} label="listas" />
+        <Resumen icono="content_copy" color="var(--color-warning)" numero={duplicadosPorFila.size} label="posibles duplicados" />
+        <Resumen icono="error" color="var(--color-danger)" numero={resultado.conError.length} label="con error" />
       </div>
 
       {resultado.cabecerasNoReconocidas.length > 0 && (

@@ -112,7 +112,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
       >
         <span
           className="material-symbols-outlined text-base"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
 
@@ -162,7 +162,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center z-10"
       >
         <span className="material-symbols-outlined text-sm"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
 
@@ -251,11 +251,11 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
             className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
-            style={{ color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+            style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
           >
             <span
               className="material-symbols-outlined text-xl"
-              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? '#fbcb1a' : '#c6c9ab' }}
+              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
           </button>
@@ -264,7 +264,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             disabled={savingFav}
             title={isDisliked ? 'Quitar el "no me gusta"' : 'No me gusta — que no salga en mis menús'}
             className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
-            style={{ color: isDisliked ? '#f87171' : '#c6c9ab' }}
+            style={{ color: isDisliked ? 'var(--color-danger)' : 'var(--color-ink-2)' }}
           >
             <span
               className="material-symbols-outlined text-xl"

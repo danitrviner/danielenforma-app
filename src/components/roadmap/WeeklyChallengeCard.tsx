@@ -26,12 +26,12 @@ function daysLeft(weekEnd: string): number {
 export default function WeeklyChallengeCard({ challenge, progress }: Props) {
   const achieved = challenge.status === 'conseguido';
   const remaining = daysLeft(challenge.weekEnd);
-  const accent = achieved ? '#8ac926' : '#fbcb1a';
+  const accent = achieved ? 'var(--color-success)' : 'var(--color-accent)';
 
   return (
     <div
       className="rounded-3xl border p-5 flex flex-col gap-3"
-      style={{ backgroundColor: '#121212', borderColor: `${accent}33`, boxShadow: `0 0 24px ${accent}14` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33`, boxShadow: `0 0 24px ${accent}14` }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -85,10 +85,10 @@ export function ChallengePendingCard() {
   return (
     <div
       className="rounded-3xl border p-5 flex flex-col gap-2"
-      style={{ backgroundColor: '#121212', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
     >
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: '#fbcb1a' }}>
+        <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: 'var(--color-accent)' }}>
           hourglass_top
         </span>
         <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Reto de la semana</p>

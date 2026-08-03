@@ -443,7 +443,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           onClick={() => toggleFavorite(meal.recipeId)}
                           title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
                           className="flex items-center transition-colors"
-                          style={{ color: isFav(meal.recipeId) ? '#fbcb1a' : '#6b6f52' }}
+                          style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
                         >
                           <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
                         </button>
@@ -451,7 +451,7 @@ export default function MyMenuScreen({ profile }: Props) {
                           onClick={() => toggleDislike(meal.recipeId, meal)}
                           title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
                           className="flex items-center transition-colors"
-                          style={{ color: isDisliked(meal.recipeId) ? '#f87171' : '#6b6f52' }}
+                          style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
                         >
                           <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
                         </button>

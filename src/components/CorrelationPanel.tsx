@@ -18,7 +18,7 @@ type DataPoint = { date: string; value: number };
 type Series = { id: string; label: string; points: DataPoint[]; unit?: string };
 
 const COLORS = [
-  '#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa', '#86efac', '#fb923c', '#f472b6', '#67e8f9',
+  'var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-chart-3)', 'var(--color-data)',
 ];
 
 function pearson(a: DataPoint[], b: DataPoint[]): number | null {
@@ -347,22 +347,22 @@ export default function CorrelationPanel({
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: '#c6c9ab', fontSize: 10, fontFamily: 'monospace' }}
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 10, fontFamily: 'monospace' }}
                   tickFormatter={fmtDate}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fill: '#c6c9ab', fontSize: 10, fontFamily: 'monospace' }}
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 10, fontFamily: 'monospace' }}
                   unit={multiNorm ? '%' : (selectedSeries[0]?.unit ? ` ${selectedSeries[0].unit}` : '')}
                   width={multiNorm ? 40 : 55}
                   domain={multiNorm ? [0, 100] : (singleDomain ?? ['auto', 'auto'])}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#1e1e1b', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, fontFamily: 'monospace', fontSize: 11 }}
-                  labelStyle={{ color: '#fbcb1a', marginBottom: 4 }}
+                  contentStyle={{ backgroundColor: 'var(--color-raised)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, fontFamily: 'monospace', fontSize: 11 }}
+                  labelStyle={{ color: 'var(--color-accent)', marginBottom: 4 }}
                   labelFormatter={(label) => fmtDate(String(label))}
                   formatter={(value: number, name: string, item: { payload?: Record<string, number> }) => {
                     const s = selectedSeries.find(s => s.id === name);
@@ -379,7 +379,7 @@ export default function CorrelationPanel({
                   <Legend
                     formatter={(value) => {
                       const s = selectedSeries.find(s => s.id === value);
-                      return <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c6c9ab' }}>{s?.label ?? value}</span>;
+                      return <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--color-ink-2)' }}>{s?.label ?? value}</span>;
                     }}
                   />
                 )}
@@ -421,10 +421,10 @@ export default function CorrelationPanel({
                   <div className="flex items-baseline gap-3">
                     <span className="font-mono font-black text-3xl" style={{
                       color: Math.abs(correlationResult.r) > 0.7
-                        ? '#fbcb1a'
+                        ? 'var(--color-accent)'
                         : Math.abs(correlationResult.r) >= 0.4
-                          ? '#fb923c'
-                          : '#c6c9ab',
+                          ? 'var(--color-warning)'
+                          : 'var(--color-ink-2)',
                     }}>
                       r = {correlationResult.r.toFixed(2)}
                     </span>

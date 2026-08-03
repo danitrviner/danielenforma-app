@@ -8,7 +8,7 @@ import { dailyLoadFromSessions, computeTrainingLoad, classifyTlr, TLR_LABEL, tra
 // ya se pedía a Firestore — no dispara ninguna lectura nueva.
 
 const TLR_STATE_COLOR: Record<string, string> = {
-  undertraining: '#4a90d9', optimal: '#22c55e', peaking: '#fbcb1a', overreaching: '#ff8c42', at_risk: '#ff4d4d',
+  undertraining: 'var(--color-info)', optimal: 'var(--color-success)', peaking: 'var(--color-accent)', overreaching: 'var(--color-warning)', at_risk: 'var(--color-danger)',
 };
 
 const RECENT_DAYS = 30;

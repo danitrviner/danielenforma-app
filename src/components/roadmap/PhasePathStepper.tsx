@@ -29,9 +29,9 @@ export default function PhasePathStepper({ phases }: Props) {
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center border-2"
                   style={{
-                    borderColor: isFuture ? '#2a2a2a' : phase.color,
+                    borderColor: isFuture ? 'var(--color-raised)' : phase.color,
                     backgroundColor: isActive ? `${phase.color}22` : 'transparent',
-                    color: isDone ? phase.color : isActive ? phase.color : '#555',
+                    color: isDone ? phase.color : isActive ? phase.color : 'var(--color-ink-3)',
                   }}
                 >
                   <span className="material-symbols-outlined text-base">
@@ -41,14 +41,14 @@ export default function PhasePathStepper({ phases }: Props) {
                 {!isLast && (
                   <div
                     className="w-0.5 flex-1 min-h-[24px] mt-1"
-                    style={{ backgroundColor: isDone ? phase.color : '#2a2a2a' }}
+                    style={{ backgroundColor: isDone ? phase.color : 'var(--color-raised)' }}
                   />
                 )}
               </div>
               <div className={`pb-3 ${isFuture ? 'opacity-70' : ''}`}>
                 <p
                   className="font-sans font-bold text-sm"
-                  style={{ color: isActive ? phase.color : isDone ? '#e2e2e1' : '#c6c9ab' }}
+                  style={{ color: isActive ? phase.color : isDone ? 'var(--color-ink)' : 'var(--color-ink-2)' }}
                 >
                   {phase.name}
                   {isActive && (

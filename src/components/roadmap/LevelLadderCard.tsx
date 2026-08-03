@@ -41,7 +41,7 @@ export default function LevelLadderCard({ status }: Props) {
             <div key={c.criterion.id} className="flex items-center gap-2">
               <span
                 className="material-symbols-outlined text-sm flex-shrink-0"
-                style={{ color: c.done ? '#8ac926' : '#555' }}
+                style={{ color: c.done ? 'var(--color-success)' : 'var(--color-ink-3)' }}
               >
                 {c.done ? 'check_circle' : 'radio_button_unchecked'}
               </span>
@@ -53,7 +53,7 @@ export default function LevelLadderCard({ status }: Props) {
                   <div className="h-1 rounded-full bg-raised overflow-hidden mt-1">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(4, c.pct)}%`, backgroundColor: c.done ? '#8ac926' : '#00eefc' }}
+                      style={{ width: `${Math.max(4, c.pct)}%`, backgroundColor: c.done ? 'var(--color-success)' : 'var(--color-data)' }}
                     />
                   </div>
                 )}

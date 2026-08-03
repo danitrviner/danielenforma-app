@@ -17,7 +17,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
   return (
     <div
       className="rounded-3xl border p-5 flex flex-col gap-4"
-      style={{ backgroundColor: '#121212', borderColor: `${phase.color}33`, boxShadow: `0 0 24px ${phase.color}14` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${phase.color}33`, boxShadow: `0 0 24px ${phase.color}14` }}
     >
       <div className="flex items-center gap-4">
         <div
@@ -46,7 +46,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
               icon={m.done ? 'check_circle' : 'trending_up'}
               label={m.metric.label}
               value={m.metric.kind === 'manual' ? (m.done ? 'Hecho' : 'Pendiente') : `${Math.round(m.pct)}%`}
-              accent={m.done ? '#8ac926' : phase.color}
+              accent={m.done ? 'var(--color-success)' : phase.color}
             />
           ))}
         </div>

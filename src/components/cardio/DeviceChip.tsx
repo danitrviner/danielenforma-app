@@ -8,10 +8,10 @@ import React from 'react';
 export type DeviceChipStatus = 'idle' | 'connecting' | 'ready' | 'lost';
 
 const STATUS_CONFIG: Record<DeviceChipStatus, { icon: string; text: string; color: string }> = {
-  idle: { icon: 'bluetooth', text: 'Banda no conectada', color: '#c6c9ab' },
-  connecting: { icon: 'bluetooth_searching', text: 'Conectando…', color: '#c6c9ab' },
-  ready: { icon: 'bluetooth_connected', text: 'Conectada', color: '#22c55e' },
-  lost: { icon: 'bluetooth_disabled', text: 'Banda desconectada', color: '#f87171' },
+  idle: { icon: 'bluetooth', text: 'Banda no conectada', color: 'var(--color-ink-2)' },
+  connecting: { icon: 'bluetooth_searching', text: 'Conectando…', color: 'var(--color-ink-2)' },
+  ready: { icon: 'bluetooth_connected', text: 'Conectada', color: 'var(--color-success)' },
+  lost: { icon: 'bluetooth_disabled', text: 'Banda desconectada', color: 'var(--color-danger)' },
 };
 
 interface Props {

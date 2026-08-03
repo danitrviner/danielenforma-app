@@ -46,7 +46,7 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
 // ── Heatmap helpers ────────────────────────────────────────────────────────────
 
 function heatmapBg(series: number): string {
-  if (series === 0) return '#1a1a1a';
+  if (series === 0) return 'var(--color-surface)';
   if (series <= 4)  return `rgb(59 130 246 / ${Math.round(18 + ((series - 1) / 3) * 32)}%)`;
   if (series <= 9)  return `rgb(34 197 94 / ${Math.round(20 + ((series - 5) / 4) * 40)}%)`;
   if (series <= 14) return `rgb(249 115 22 / ${Math.round(28 + ((series - 10) / 4) * 42)}%)`;
@@ -54,11 +54,11 @@ function heatmapBg(series: number): string {
 }
 
 function heatmapText(series: number): string {
-  if (series === 0) return '#555';
-  if (series <= 4)  return '#93c5fd';
-  if (series <= 9)  return '#86efac';
-  if (series <= 14) return '#fdba74';
-  return '#fca5a5';
+  if (series === 0) return 'var(--color-ink-3)';
+  if (series <= 4)  return 'var(--color-info)';
+  if (series <= 9)  return 'var(--color-success)';
+  if (series <= 14) return 'var(--color-warning)';
+  return 'var(--color-danger)';
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -452,7 +452,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                           style={{ backgroundColor: heatmapBg(cfg.series) }}
                         >
                           <td className="px-3 py-2.5">
-                            <span className="font-sans text-xs font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : '#c6c9ab' }}>
+                            <span className="font-sans text-xs font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
                               {MUSCLE_LABELS[g]}
                             </span>
                           </td>

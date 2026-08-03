@@ -9,7 +9,7 @@ interface StatTileProps {
 }
 
 // Small reusable stat tile: icon badge + uppercase mono label + bold value.
-export default function StatTile({ icon, label, value, accent = '#fbcb1a' }: StatTileProps) {
+export default function StatTile({ icon, label, value, accent = 'var(--color-accent)' }: StatTileProps) {
   return (
     <div className="bg-raised border border-white/7 rounded-2xl p-3 flex flex-col items-center text-center gap-1.5">
       <span

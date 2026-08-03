@@ -17,7 +17,7 @@ export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; co
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <MetricCard icon="paid" label="Cobrado" value={formatEuros(cobrado)} sub={`${pagos.filter(p => p.estado === 'pagado').length} pagos`} />
-        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(pendiente)} sub={`${pagos.filter(p => p.estado === 'pendiente').length} pagos`} accent="#fdba74" />
+        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(pendiente)} sub={`${pagos.filter(p => p.estado === 'pendiente').length} pagos`} accent="var(--color-warning)" />
       </div>
 
       <div className="flex items-center justify-end">

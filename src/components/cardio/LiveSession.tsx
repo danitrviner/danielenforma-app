@@ -122,8 +122,8 @@ export default function LiveSession({
       </div>
 
       <div className="px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-2 space-y-2.5">
-        <SlideAction label="Desliza para guardar" icon="fiber_manual_record" color="#ff4d4d" onConfirm={onSave} disabled={saving} />
-        <SlideAction label="Deslizar para descartar" icon="delete" color="#e5e7eb" onConfirm={onDiscard} disabled={saving} />
+        <SlideAction label="Desliza para guardar" icon="fiber_manual_record" color="var(--color-danger)" onConfirm={onSave} disabled={saving} />
+        <SlideAction label="Deslizar para descartar" icon="delete" color="var(--color-ink)" onConfirm={onDiscard} disabled={saving} />
       </div>
     </div>
   );

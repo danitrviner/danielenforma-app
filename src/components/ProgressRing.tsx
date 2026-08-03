@@ -8,7 +8,7 @@ interface ProgressRingProps {
 }
 
 // Circular progress ring — plain SVG, no charting lib needed for a single value.
-export default function ProgressRing({ pct, color = '#fbcb1a', label = 'Semana', size = 104 }: ProgressRingProps) {
+export default function ProgressRing({ pct, color = 'var(--color-accent)', label = 'Semana', size = 104 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(100, pct));
   const r = 42;
   const circumference = 2 * Math.PI * r;
@@ -17,7 +17,7 @@ export default function ProgressRing({ pct, color = '#fbcb1a', label = 'Semana',
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#1e1e1b" strokeWidth="9" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-raised)" strokeWidth="9" />
         <circle
           cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="9"
           strokeLinecap="round"

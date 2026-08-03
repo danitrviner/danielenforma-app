@@ -32,7 +32,7 @@ export default function RecentAchievements({ achievements }: Props) {
           <div
             key={a.id}
             className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[84px] rounded-2xl border p-3 text-center"
-            style={{ backgroundColor: '#121212', borderColor: `${a.color}33` }}
+            style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
           >
             <span
               className="material-symbols-outlined text-xl w-9 h-9 rounded-full flex items-center justify-center"

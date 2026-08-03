@@ -41,12 +41,12 @@ interface FormState {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 
 function phaseTextColor(bgColor: string): string {
   // #fbcb1a and #00eefc are light, others are darker
-  if (bgColor === '#fbcb1a') return '#000';
-  if (bgColor === '#00eefc') return '#000';
+  if (bgColor === 'var(--color-accent)') return '#000';
+  if (bgColor === 'var(--color-data)') return '#000';
   return '#fff';
 }
 

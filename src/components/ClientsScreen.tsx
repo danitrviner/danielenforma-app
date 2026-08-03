@@ -502,7 +502,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     title={`Setup ${setupPct}%`}
                     className="absolute right-3 top-3 z-10"
                   >
-                    <ProgressRing pct={setupPct} size={32} color={setupPct >= 100 ? '#34d399' : '#fbcb1a'} />
+                    <ProgressRing pct={setupPct} size={32} color={setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} />
                   </button>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">

@@ -157,8 +157,8 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                   const wVal = (maxWeight - ratio * weightRange).toFixed(1);
                   return (
                     <g key={i}>
-                      <line x1={horizontalPadding} y1={y} x2={chartWidth - horizontalPadding} y2={y} stroke="#2a2a2a" strokeDasharray="3,3" />
-                      <text x={horizontalPadding - 8} y={y + 4} fill="#c6c9ab" fontSize="10" fontFamily="monospace" textAnchor="end">{wVal}</text>
+                      <line x1={horizontalPadding} y1={y} x2={chartWidth - horizontalPadding} y2={y} stroke="var(--color-raised)" strokeDasharray="3,3" />
+                      <text x={horizontalPadding - 8} y={y + 4} fill="var(--color-ink-2)" fontSize="10" fontFamily="monospace" textAnchor="end">{wVal}</text>
                     </g>
                   );
                 })}
@@ -169,8 +169,8 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                     {/* Fill Area Gradient */}
                     <defs>
                       <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#00eefc" stopOpacity="0.18" />
-                        <stop offset="100%" stopColor="#00eefc" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="var(--color-data)" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="var(--color-data)" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
                     <path
@@ -181,7 +181,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                     <path
                       d={pathD}
                       fill="none"
-                      stroke="#00eefc"
+                      stroke="var(--color-data)"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                     />
@@ -197,13 +197,13 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
                         cx={p.x}
                         cy={p.y}
                         r={isLast ? "5" : "4"}
-                        fill={isLast ? "#fbcb1a" : "#00eefc"}
+                        fill={isLast ? "var(--color-accent)" : "var(--color-data)"}
                         className={isLast ? "volt-glow" : ""}
                       />
                       <text x={p.x} y={p.y - 10} fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
                         {p.item.weight}
                       </text>
-                      <text x={p.x} y={chartHeight - 4} fill="#c6c9ab" fontSize="8" fontFamily="monospace" textAnchor="middle">
+                      <text x={p.x} y={chartHeight - 4} fill="var(--color-ink-2)" fontSize="8" fontFamily="monospace" textAnchor="middle">
                         {p.item.dateStr}
                       </text>
                     </g>

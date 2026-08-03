@@ -6,7 +6,7 @@ import { buildPhasesFromPreset } from '../../data/phasePresets';
 import { buildNutritionProgramDraft } from '../../utils/planNutritionBridge';
 import IconPicker from './IconPicker';
 
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const PHASE_ICONS = ['route', 'local_fire_department', 'balance', 'fitness_center', 'star', 'flag', 'bolt', 'favorite'];
 
 const WEIGHT_DIRECTION_LABEL: Record<WeightDirection, string> = {

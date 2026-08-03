@@ -37,7 +37,7 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
 // ─── Heatmap helpers ──────────────────────────────────────────────────────────
 
 function heatmapBg(series: number): string {
-  if (series === 0) return '#1a1a1a';
+  if (series === 0) return 'var(--color-surface)';
   if (series <= 4)  return `rgb(59 130 246 / ${Math.round(18 + ((series - 1) / 3) * 32)}%)`;
   if (series <= 9)  return `rgb(34 197 94 / ${Math.round(20 + ((series - 5) / 4) * 40)}%)`;
   if (series <= 14) return `rgb(249 115 22 / ${Math.round(28 + ((series - 10) / 4) * 42)}%)`;
@@ -45,19 +45,19 @@ function heatmapBg(series: number): string {
 }
 
 function heatmapText(series: number): string {
-  if (series === 0) return '#555';
-  if (series <= 4)  return '#93c5fd';
-  if (series <= 9)  return '#86efac';
-  if (series <= 14) return '#fdba74';
-  return '#fca5a5';
+  if (series === 0) return 'var(--color-ink-3)';
+  if (series <= 4)  return 'var(--color-info)';
+  if (series <= 9)  return 'var(--color-success)';
+  if (series <= 14) return 'var(--color-warning)';
+  return 'var(--color-danger)';
 }
 
 const LEGEND = [
-  { label: 'Sin volumen', range: '0',          bg: '#1a1a1a',               text: '#555'     },
-  { label: 'MEV',         range: '1–4 series', bg: 'rgb(59 130 246 / 35%)', text: '#93c5fd'  },
-  { label: 'Productivo',  range: '5–9 series', bg: 'rgb(34 197 94 / 45%)',  text: '#86efac'  },
-  { label: 'MAV',         range: '10–14',      bg: 'rgb(249 115 22 / 55%)', text: '#fdba74'  },
-  { label: 'MRV',         range: '15+',        bg: 'rgb(239 68 68 / 65%)',  text: '#fca5a5'  },
+  { label: 'Sin volumen', range: '0',          bg: 'var(--color-surface)',               text: 'var(--color-ink-3)'     },
+  { label: 'MEV',         range: '1–4 series', bg: 'rgb(59 130 246 / 35%)', text: 'var(--color-info)'  },
+  { label: 'Productivo',  range: '5–9 series', bg: 'rgb(34 197 94 / 45%)',  text: 'var(--color-success)'  },
+  { label: 'MAV',         range: '10–14',      bg: 'rgb(249 115 22 / 55%)', text: 'var(--color-warning)'  },
+  { label: 'MRV',         range: '15+',        bg: 'rgb(239 68 68 / 65%)',  text: 'var(--color-danger)'  },
 ];
 
 // ─── Distribution engine ──────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ const DayCard: React.FC<{
   const total   = day.totalSeries;
   const optimal = total >= 9 && total <= 12;
   const over    = total > 12;
-  const totalColor = optimal ? '#86efac' : over ? '#fdba74' : '#c6c9ab';
+  const totalColor = optimal ? 'var(--color-success)' : over ? 'var(--color-warning)' : 'var(--color-ink-2)';
   const totalBg    = optimal ? 'rgba(34,197,94,.12)' : over ? 'rgba(249,115,22,.12)' : 'transparent';
   const placedGroups = new Set(day.assignments.map(a => a.group));
   const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);

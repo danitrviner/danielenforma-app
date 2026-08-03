@@ -78,7 +78,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         <MetricCard icon="layers" label="Programas" value={resumen.numProgramas} />
         <MetricCard icon="paid" label="Total pagado" value={formatEuros(resumen.totalPagado)} sub={`${resumen.pagosRealizados} pagos`} />
         <MetricCard icon="event_available" label="Reuniones" value={resumen.reunionesRealizadas} sub="realizadas" />
-        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="#fdba74" />
+        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="var(--color-warning)" />
       </div>
 
       <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>

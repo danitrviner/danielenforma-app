@@ -34,14 +34,14 @@ function fmtMonth(d: Date): string {
 
 // ─── Block color palettes ─────────────────────────────────────────────────────
 
-const MESO_COLORS = ['#fbcb1a', '#d4a800', '#f7ff80'];
-const NUTRI_COLORS = ['#00eefc', '#0cbcce', '#b3f6ff'];
+const MESO_COLORS = ['var(--color-accent)', 'var(--color-accent-press)', 'var(--color-accent)'];
+const NUTRI_COLORS = ['var(--color-data)', 'var(--color-data)', 'var(--color-data)'];
 
 function statusColor(status?: RoadmapItem['status']): string {
-  if (status === 'logrado') return '#86efac';
-  if (status === 'en_progreso') return '#fbcb1a';
-  if (status === 'pendiente') return '#ff8c69';
-  return '#c6c9ab';
+  if (status === 'logrado') return 'var(--color-success)';
+  if (status === 'en_progreso') return 'var(--color-accent)';
+  if (status === 'pendiente') return 'var(--color-warning)';
+  return 'var(--color-ink-2)';
 }
 
 function typeIcon(type: RoadmapItem['type']): string {
@@ -499,13 +499,13 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       />
       <svg style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}>
         {[wDomainMin, (wDomainMin + wDomainMax) / 2, wDomainMax].map(w => (
-          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="#222" strokeWidth={1} />
+          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="var(--color-raised)" strokeWidth={1} />
         ))}
         {projectedWaypoints.length >= 2 && (
           <polyline
             points={projectedWaypoints.map(p => `${xOf(p.date)},${weightToLocalY(p.weight)}`).join(' ')}
             fill="none"
-            stroke="#a78bfa"
+            stroke="var(--color-chart-3)"
             strokeWidth={2}
             strokeDasharray="6 3"
           />
@@ -515,10 +515,10 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           const cy = weightToLocalY(p.weight);
           return (
             <g key={i}>
-              <polygon points={`${cx},${cy - 5} ${cx + 5},${cy} ${cx},${cy + 5} ${cx - 5},${cy}`} fill="#a78bfa">
+              <polygon points={`${cx},${cy - 5} ${cx + 5},${cy} ${cx},${cy + 5} ${cx - 5},${cy}`} fill="var(--color-chart-3)">
                 <title>Meta: {p.weight} kg · {fmtDate(p.date)}</title>
               </polygon>
-              <text x={cx + 8} y={cy + 3} fill="#a78bfa" style={{ fontSize: 8, fontFamily: 'monospace' }}>
+              <text x={cx + 8} y={cy + 3} fill="var(--color-chart-3)" style={{ fontSize: 8, fontFamily: 'monospace' }}>
                 {p.weight.toFixed(1)}
               </text>
             </g>
@@ -528,7 +528,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           const cx = xOf(log.date);
           const cy = weightToLocalY(log.weight);
           return (
-            <circle key={i} cx={cx} cy={cy} r={3.5} fill="#fbcb1a" opacity={0.85}>
+            <circle key={i} cx={cx} cy={cy} r={3.5} fill="var(--color-accent)" opacity={0.85}>
               <title>{log.date}: {log.weight} kg</title>
             </circle>
           );
@@ -748,27 +748,27 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           <span className="font-mono text-[9px] text-ink-2 uppercase">Nutrición</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#ff8c69' }} />
+          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-warning)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Pendiente</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#fbcb1a' }} />
+          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-accent)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">En progreso</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#86efac' }} />
+          <div className="w-3 h-3 rounded-sm" style={{ background: 'var(--color-success)' }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Logrado</span>
         </div>
         {showWeightChart && (
           <>
             <div className="flex items-center gap-1.5">
               <svg width="20" height="10">
-                <line x1="0" y1="5" x2="20" y2="5" stroke="#a78bfa" strokeWidth="2" strokeDasharray="5 2" />
+                <line x1="0" y1="5" x2="20" y2="5" stroke="var(--color-chart-3)" strokeWidth="2" strokeDasharray="5 2" />
               </svg>
               <span className="font-mono text-[9px] text-ink-2 uppercase">Plan peso</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ background: '#fbcb1a' }} />
+              <div className="w-3 h-3 rounded-full" style={{ background: 'var(--color-accent)' }} />
               <span className="font-mono text-[9px] text-ink-2 uppercase">Peso real</span>
             </div>
           </>

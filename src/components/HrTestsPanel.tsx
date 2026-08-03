@@ -230,7 +230,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
               </div>
               <p className="text-[10px] text-ink-2 font-mono mt-1">{t.desc}</p>
               {lastResult && (
-                <p className="text-[10px] font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? '#00eefc' : '#888' }}>
+                <p className="text-[10px] font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? 'var(--color-data)' : 'var(--color-ink-3)' }}>
                   Último: {lastResult.date} {lastResult.approvedByCoach ? '· aprobado' : '· pendiente de revisión'}
                 </p>
               )}

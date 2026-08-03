@@ -26,9 +26,9 @@ const MUSCLE_LABELS: Record<MuscleGroup, string> = {
 };
 
 const PALETTE = [
-  '#fbcb1a', '#00eefc', '#ff6b6b', '#ffa500', '#9d4edd',
-  '#06d6a0', '#ff5e78', '#fb5607', '#8ac926', '#ffbe0b',
-  '#3a86ff', '#f72585', '#43aa8b', '#f8961e',
+  'var(--color-accent)', 'var(--color-data)', 'var(--color-danger)', 'var(--color-warning)', 'var(--color-chart-3)',
+  'var(--color-success)', 'var(--color-danger)', 'var(--color-warning)', 'var(--color-success)', 'var(--color-warning)',
+  'var(--color-info)', 'var(--color-chart-3)', 'var(--color-success)', 'var(--color-warning)',
 ];
 
 const GROUP_COLOR: Record<MuscleGroup, string> = Object.fromEntries(
@@ -39,14 +39,14 @@ const GROUP_COLOR: Record<MuscleGroup, string> = Object.fromEntries(
 
 const TOOLTIP_STYLE = {
   contentStyle: {
-    backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-hairline)',
     borderRadius: '8px', fontFamily: 'monospace', fontSize: '11px', color: '#fff',
   },
-  labelStyle: { color: '#c6c9ab', marginBottom: '4px', fontFamily: 'monospace', fontSize: '10px' },
+  labelStyle: { color: 'var(--color-ink-2)', marginBottom: '4px', fontFamily: 'monospace', fontSize: '10px' },
   itemStyle: { fontFamily: 'monospace', fontSize: '11px' },
 };
 
-const AXIS_TICK = { fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' };
+const AXIS_TICK = { fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' };
 
 // ── Helper: empty chart placeholder ──────────────────────────────────────────
 
@@ -173,11 +173,11 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         <ChartCard title="Series totales programadas" icon="bar_chart">
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={totalSeriesData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
               <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
               <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v} series`, 'Total']} />
-              <Bar dataKey="series" fill="#fbcb1a" radius={[3, 3, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="series" fill="var(--color-accent)" radius={[3, 3, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -189,10 +189,10 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
           ) : (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={adherenceData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
                 <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} domain={[0, 100]} />
-                <ReferenceLine y={100} stroke="#555" strokeDasharray="4 4" />
+                <ReferenceLine y={100} stroke="var(--color-ink-3)" strokeDasharray="4 4" />
                 <Tooltip
                   {...TOOLTIP_STYLE}
                   formatter={(v: number, _: string, props: { payload?: { completed?: number; total?: number } }) => {
@@ -200,7 +200,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                     return [`${v}% (${completed}/${total})`, 'Adherencia'];
                   }}
                 />
-                <Bar dataKey="adherencia" fill="#06d6a0" radius={[3, 3, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="adherencia" fill="var(--color-success)" radius={[3, 3, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -248,7 +248,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
 
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={groupSeriesData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
                 <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
                 <Tooltip
@@ -262,7 +262,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                     dataKey={g}
                     stroke={GROUP_COLOR[g]}
                     strokeWidth={2}
-                    dot={{ fill: GROUP_COLOR[g], stroke: '#121212', strokeWidth: 1.5, r: 3 }}
+                    dot={{ fill: GROUP_COLOR[g], stroke: 'var(--color-bg)', strokeWidth: 1.5, r: 3 }}
                     activeDot={{ r: 4 }}
                     connectNulls
                   />

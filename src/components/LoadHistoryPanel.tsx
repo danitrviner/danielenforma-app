@@ -19,10 +19,10 @@ type Metric = 'tonnage' | 'orm' | 'reps' | 'sets';
 const METRICS: Metric[] = ['tonnage', 'orm', 'reps', 'sets'];
 
 const METRIC_COLOR: Record<Metric, string> = {
-  tonnage: '#fbcb1a',
-  orm:     '#00eefc',
-  reps:    '#ff8c69',
-  sets:    '#a78bfa',
+  tonnage: 'var(--color-accent)',
+  orm:     'var(--color-data)',
+  reps:    'var(--color-warning)',
+  sets:    'var(--color-chart-3)',
 };
 
 const METRIC_LABEL: Record<Metric, string> = {
@@ -516,24 +516,24 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           )}
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -28 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={xTickFormatter}
                 interval={0}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={isMulti ? [0, 100] : ['auto', 'auto']}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 content={<ChartTooltip activeMetrics={activeMetrics} />}
-                cursor={{ stroke: '#3a3a3a', strokeWidth: 1 }}
+                cursor={{ stroke: 'var(--color-raised)', strokeWidth: 1 }}
               />
 
               {METRICS.filter(m => activeMetrics.has(m)).map(m => (
@@ -590,7 +590,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
                 {ormActive && (
-                  <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : '#555' }}>
+                  <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                     {row.orm ? `${row.orm}kg` : '—'}
                   </span>
                 )}
@@ -622,7 +622,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                     {row.tonnage.toLocaleString()} kg
                   </td>
                   {ormActive && (
-                    <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : '#555' }}>
+                    <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                       {row.orm ? `${row.orm} kg` : '—'}
                     </td>
                   )}

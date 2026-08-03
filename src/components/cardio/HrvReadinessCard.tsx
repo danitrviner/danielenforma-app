@@ -8,7 +8,7 @@ import { classifyReadiness, READINESS_LABEL, ReadinessBand } from '../../utils/c
 // análisis — Sleep/Stress/Battery no son alcanzables, no se simulan).
 
 const READINESS_COLOR: Record<ReadinessBand, string> = {
-  poor: '#ff4d4d', low: '#ff8c42', moderate: '#fbcb1a', high: '#00eefc', prime: '#22c55e',
+  poor: 'var(--color-danger)', low: 'var(--color-warning)', moderate: 'var(--color-accent)', high: 'var(--color-data)', prime: 'var(--color-success)',
 };
 
 interface Props {

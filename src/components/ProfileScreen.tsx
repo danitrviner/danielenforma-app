@@ -172,7 +172,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
               <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
               <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
-              <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="#00eefc" />
+              <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="var(--color-data)" />
             </div>
 
             {/* Iron Calendar */}

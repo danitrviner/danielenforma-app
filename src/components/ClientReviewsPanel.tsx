@@ -571,9 +571,9 @@ export default function ClientReviewsPanel({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {([
-                    { label: 'HC',    g: onboardingData.macroGrams.hc,    pct: onboardingData.macroSplit.hc,    ef: 25, color: '#ffa500' },
-                    { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  ef: 25, color: '#00eefc' },
-                    { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: '#ff6b6b' },
+                    { label: 'HC',    g: onboardingData.macroGrams.hc,    pct: onboardingData.macroSplit.hc,    ef: 25, color: 'var(--color-warning)' },
+                    { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  ef: 25, color: 'var(--color-data)' },
+                    { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: 'var(--color-danger)' },
                   ]).map(m => (
                     <div key={m.label} className="bg-raised border border-white/7 rounded-xl px-3 py-1.5 text-center">
                       <p className="font-mono text-[10px] uppercase" style={{ color: m.color }}>{m.label}</p>
@@ -907,7 +907,7 @@ export default function ClientReviewsPanel({
               <p className="font-mono text-[9px] text-ink-2">Sin entrenamientos esta semana</p>
             ) : (
               <div className="flex items-center gap-4">
-                <ProgressRing pct={weekPct} color="#00eefc" />
+                <ProgressRing pct={weekPct} color="var(--color-data)" />
                 <div className="flex-1 font-mono text-[10px]">
                   <span className="text-ink-2 uppercase block mb-1">Entrenamientos</span>
                   <span className="text-white text-sm font-bold">{weekCompleted} / {weekTotal}</span>
@@ -983,7 +983,7 @@ export default function ClientReviewsPanel({
                         >
                           <span
                             className="material-symbols-outlined flex-shrink-0 text-lg"
-                            style={{ color: c.approved ? '#fbcb1a' : '#fb923c', fontVariationSettings: "'FILL' 1" }}
+                            style={{ color: c.approved ? 'var(--color-accent)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
                           >rate_review</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -1143,7 +1143,7 @@ export default function ClientReviewsPanel({
                       >
                         <span
                           className="material-symbols-outlined flex-shrink-0 text-lg"
-                          style={{ color: '#00eefc', fontVariationSettings: "'FILL' 1" }}
+                          style={{ color: 'var(--color-data)', fontVariationSettings: "'FILL' 1" }}
                         >quiz</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">

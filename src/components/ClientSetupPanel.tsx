@@ -182,7 +182,7 @@ export default function ClientSetupPanel({
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
       <div className="bg-surface border border-white/7 rounded-2xl p-5 flex items-center gap-5">
-        <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? '#34d399' : '#fbcb1a'} label="Setup" />
+        <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} label="Setup" />
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
             <>

@@ -1003,9 +1003,9 @@ export default function OnboardingForm({
             </div>
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-data/10">
               {[
-                { label: 'HC',    g: autoCalc.hcG,    pct: autoCalc.hcPct,    ef: 25, color: '#ffa500' },
-                { label: 'PROT',  g: autoCalc.protG,  pct: autoCalc.protPct,  ef: 25, color: '#00eefc' },
-                { label: 'GRASA', g: autoCalc.grasaG, pct: autoCalc.grasaPct, ef: 11, color: '#ff6b6b' },
+                { label: 'HC',    g: autoCalc.hcG,    pct: autoCalc.hcPct,    ef: 25, color: 'var(--color-warning)' },
+                { label: 'PROT',  g: autoCalc.protG,  pct: autoCalc.protPct,  ef: 25, color: 'var(--color-data)' },
+                { label: 'GRASA', g: autoCalc.grasaG, pct: autoCalc.grasaPct, ef: 11, color: 'var(--color-danger)' },
               ].map(m => (
                 <div key={m.label} className="text-center">
                   <p className="font-mono text-[9px] font-bold uppercase" style={{ color: m.color }}>{m.label}</p>
@@ -1043,9 +1043,9 @@ export default function OnboardingForm({
           <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wide">Distribución de macros</p>
           <div className="space-y-2">
             {([
-              { key: 'hcPct'    as const, label: 'HC',    factor: 4 as const, ef: 25, color: '#ffa500', grams: hcG    },
-              { key: 'protPct'  as const, label: 'PROT',  factor: 4 as const, ef: 25, color: '#00eefc', grams: protG  },
-              { key: 'grasaPct' as const, label: 'GRASA', factor: 9 as const, ef: 11, color: '#ff6b6b', grams: grasaG },
+              { key: 'hcPct'    as const, label: 'HC',    factor: 4 as const, ef: 25, color: 'var(--color-warning)', grams: hcG    },
+              { key: 'protPct'  as const, label: 'PROT',  factor: 4 as const, ef: 25, color: 'var(--color-data)', grams: protG  },
+              { key: 'grasaPct' as const, label: 'GRASA', factor: 9 as const, ef: 11, color: 'var(--color-danger)', grams: grasaG },
             ]).map(m => (
               <div key={m.key} className="flex items-center gap-3">
                 <span className="font-mono text-xs font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
