@@ -93,11 +93,11 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
         const atrasado = retraso > UMBRAL_DIAS_AVISO;
         return (
           <div>
-            <span className={`tabular-nums ${atrasado ? 'text-[#fca5a5] font-bold' : ''}`}>
+            <span className={`tabular-nums ${atrasado ? 'text-danger font-bold' : ''}`}>
               {formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}
             </span>
             {atrasado && (
-              <p className="flex items-center gap-0.5 font-mono text-[9px] text-[#fca5a5]">
+              <p className="flex items-center gap-0.5 font-mono text-[9px] text-danger">
                 <span className="material-symbols-outlined text-[11px]">warning</span>
                 {retraso} días de retraso
               </p>
@@ -139,7 +139,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => borrar(p)}
               aria-label="Borrar"
               title="Borrar"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#fca5a5] hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
             >
               <span className="material-symbols-outlined text-base">delete</span>
             </button>

@@ -135,7 +135,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                     <p className="font-sans text-[11px] text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
                     </p>
-                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-[#fca5a5]' : 'text-[#555550]'}`}>
+                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-danger' : 'text-[#555550]'}`}>
                       {formatDia(ev.fecha)} · {tiempoRelativo(ev.fecha)}
                     </p>
                   </div>

@@ -113,7 +113,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-[#fca5a5]/10 border border-[#fca5a5]/25 font-sans text-[10px] text-[#fca5a5]">
+            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-danger/10 border border-danger/25 font-sans text-[10px] text-danger">
               <span className="material-symbols-outlined text-[13px] shrink-0">error</span>
               {errorGeneral}
             </p>
@@ -233,7 +233,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           aria-label={`Incluir a ${fila.nombre}`}
         />
       )}
-      {conError && <span className="material-symbols-outlined text-[13px] text-[#fca5a5] mt-0.5">error</span>}
+      {conError && <span className="material-symbols-outlined text-[13px] text-danger mt-0.5">error</span>}
       <div className="min-w-0 flex-1">
         <p className="font-sans text-[11px] text-ink truncate">
           {fila.nombre || <span className="text-[#555550]">(sin nombre) — fila {fila.fila}</span>}
@@ -244,7 +244,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           </p>
         )}
         {conError && (
-          <p className="font-sans text-[10px] text-[#fca5a5] mt-0.5">{fila.errores.join('. ')}</p>
+          <p className="font-sans text-[10px] text-danger mt-0.5">{fila.errores.join('. ')}</p>
         )}
         {duplicado && (
           <p className="font-sans text-[10px] text-warning mt-0.5">

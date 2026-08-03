@@ -72,7 +72,7 @@ export function Campo({ label, children, hint, error }: {
       <span className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">{label}</span>
       {children}
       {error
-        ? <span className="block font-sans text-[10px] text-[#fca5a5]">{error}</span>
+        ? <span className="block font-sans text-[10px] text-danger">{error}</span>
         : hint ? <span className="block font-sans text-[10px] text-[#555550]">{hint}</span> : null}
     </label>
   );

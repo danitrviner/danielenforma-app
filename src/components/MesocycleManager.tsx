@@ -321,7 +321,7 @@ const PRIORITY_ICON: Record<'alta' | 'media' | 'baja', string> = {
 function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?: boolean }) {
   if (delta === null) return null;
   if (delta > 0) return <span className="font-mono text-[10px] text-success ml-1 tabular-nums">▲+{delta}</span>;
-  if (delta < 0) return <span className="font-mono text-[10px] text-[#fca5a5] ml-1 tabular-nums">▼{delta}</span>;
+  if (delta < 0) return <span className="font-mono text-[10px] text-danger ml-1 tabular-nums">▼{delta}</span>;
   return showEqual ? <span className="font-mono text-[10px] text-[#555] ml-1">=</span> : null;
 }
 
@@ -427,7 +427,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
 
       <div className="flex flex-wrap gap-3 text-[10px] font-mono">
         <span className="text-success">▲ Sube</span>
-        <span className="text-[#fca5a5]">▼ Baja</span>
+        <span className="text-danger">▼ Baja</span>
         <span className="text-[#555]">= Sin cambio</span>
         <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
       </div>

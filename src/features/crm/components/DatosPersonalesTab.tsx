@@ -180,10 +180,10 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       {mostrarCamposBaja && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[#fca5a5]/8 border border-[#fca5a5]/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-danger/8 border border-danger/20">
           <div className="sm:col-span-2 flex items-start gap-1.5">
-            <span className="material-symbols-outlined text-[13px] text-[#fca5a5] shrink-0 mt-0.5">warning</span>
-            <p className="font-sans text-[10px] text-[#fca5a5] leading-relaxed">
+            <span className="material-symbols-outlined text-[13px] text-danger shrink-0 mt-0.5">warning</span>
+            <p className="font-sans text-[10px] text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
               queda incalculable para siempre.
             </p>
