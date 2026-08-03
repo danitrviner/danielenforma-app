@@ -43,6 +43,12 @@ type Props = {
    */
   dot?: boolean;
   className?: string;
+  /**
+   * El repo no tiene `@types/react` instalado, así que TypeScript no sabe
+   * excluir `key` de las props de un componente propio por su cuenta — el
+   * mismo workaround ya vive en `CardProps` de `RecipesScreen.tsx`.
+   */
+  key?: React.Key;
 };
 
 export default function Badge({ children, tone = 'neutral', icon, dot, className = '' }: Props) {
