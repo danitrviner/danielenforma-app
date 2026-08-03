@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Button, Icon, Input, Select,
+  Button, Card, Icon, Input, Select,
   type ButtonSize, type ButtonVariant, type IconSize, type SelectOption,
 } from './index';
 
@@ -100,6 +100,7 @@ export default function Showcase() {
   const [correo, setCorreo] = React.useState('');
   const [peso, setPeso] = React.useState('');
   const [objetivo, setObjetivo] = React.useState('');
+  const [pulsaciones, setPulsaciones] = React.useState(0);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -257,6 +258,45 @@ export default function Showcase() {
           La lista desplegada la dibuja el sistema operativo y no se puede maquillar desde aquí. Un
           selector con iconos, descripciones o búsqueda necesita un menú propio: eso llega en F9,
           cuando exista Sheet.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Card"
+        resumen="Sin sombra: sobre un fondo casi negro la elevación se comunica cambiando de superficie, y el borde ya define el contorno. F6 retiró 67 sombras por esto."
+      >
+        <Card title="Entrenamiento de hoy" subtitle="Empuje · 5 ejercicios">
+          <p className="font-sans text-body-s text-ink-2">
+            El contenido va debajo de la cabecera, con el mismo hueco siempre.
+          </p>
+        </Card>
+
+        <Card
+          variant="raised"
+          title="Con acción a la derecha"
+          subtitle="La zona derecha admite un botón, un dato o una insignia"
+          action={<Button size="s" variant="ghost" icon="more_vert" label="Opciones" />}
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            Variante elevada: cambia de superficie, no proyecta sombra.
+          </p>
+        </Card>
+
+        <Card
+          title="Tarjeta pulsable"
+          subtitle="Es un button de verdad, no un div con onClick"
+          onClick={() => setPulsaciones((n) => n + 1)}
+          action={<Icon name="chevron_right" size="m" />}
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            Pulsada {pulsaciones} {pulsaciones === 1 ? 'vez' : 'veces'}. Con el tabulador se enfoca
+            y el lector de pantalla la anuncia.
+          </p>
+        </Card>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Radio 16 en la tarjeta y 10 en lo que lleva dentro: un hijo baja siempre un escalón. Si
+          iguala al padre, las esquinas se ven descuadradas.
         </p>
       </Seccion>
     </div>

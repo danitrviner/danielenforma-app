@@ -21,3 +21,6 @@ export type { InputType } from './Input';
 
 export { default as Select } from './Select';
 export type { SelectOption } from './Select';
+
+export { default as Card } from './Card';
+export type { CardVariant, CardPadding } from './Card';
