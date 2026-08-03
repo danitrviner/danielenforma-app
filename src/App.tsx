@@ -10,6 +10,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
 import { ToastProvider } from './hooks/useToast';
 import { ScreenSkeleton } from './components/Skeleton';
+import { Icon } from './components/ui';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -347,12 +348,7 @@ function AppContent() {
               onClick={() => goToTab(tab.id)}
               className={`flex items-center gap-4 p-4 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
             >
-              <span
-                className="material-symbols-outlined group-hover:scale-110 transition-transform"
-                style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                {tab.icon}
-              </span>
+              <Icon name={tab.icon} size="l" filled={pathTab === tab.id} className="group-hover:scale-110 transition-transform" />
               <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
               {tab.id === 'reviews' && pendingCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
@@ -365,7 +361,7 @@ function AppContent() {
             onClick={() => goToTab('profile')}
             className={`flex items-center gap-4 p-3 rounded-control text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
           >
-            <span className="material-symbols-outlined">person</span>
+            <Icon name="person" size="l" />
             <span className="font-sans text-label font-bold uppercase tracking-wider">Mi Perfil</span>
           </button>
         )}
@@ -441,12 +437,7 @@ function AppContent() {
             onClick={() => goToTab(tab.id)}
             className={`flex flex-col items-center justify-center py-2 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
-            <span
-              className="material-symbols-outlined text-[22px]"
-              style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
-            >
-              {tab.icon}
-            </span>
+            <Icon name={tab.icon} size="l" filled={pathTab === tab.id} />
             {/* EXCEPCIÓN TEMPORAL AL DESIGN SYSTEM — ver DESIGN_SYSTEM_STATUS.md
                 El suelo del DS son 11 px, pero con SIETE destinos en 375 px las
                 etiquetas se truncan hasta quedar ilegibles ("ACA…", "CAR…"):
