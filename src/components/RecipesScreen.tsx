@@ -10,6 +10,7 @@ import {
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -681,11 +682,14 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
 
           {filteredRecipes.length === 0 ? (
-            <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
-              {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.'
-                : selectedCat === 'MisRecetas' ? 'Aún no has guardado ninguna receta propia.'
-                : 'No hay recetas en esta categoría.'}
-            </div>
+            <EmptyState
+              icon="restaurant_menu"
+              title={
+                selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.'
+                  : selectedCat === 'MisRecetas' ? 'Aún no has guardado ninguna receta propia.'
+                  : 'No hay recetas en esta categoría.'
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
               <RecipeCard recipe={filteredRecipes[0]} isFav={favorites.recipeIds.includes(filteredRecipes[0].id)} large onOpen={openRecipe} onToggleFav={toggleFavorite} />
@@ -791,9 +795,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             </button>
           </div>
         ) : indyaTotalVisible === 0 ? (
-          <div className="text-center py-10 text-ink-2 font-mono text-label uppercase tracking-widest">
-            {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
-          </div>
+          <EmptyState icon="search_off" title={indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-6">
             <p className="font-sans text-caption text-ink-2 uppercase">
