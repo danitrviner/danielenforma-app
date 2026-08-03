@@ -39,7 +39,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-strong rounded-t-surface sm:rounded-surface overflow-hidden"
       >
         <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-hairline shrink-0">
-          <h2 className="font-sans font-black text-sm text-ink">{titulo}</h2>
+          <h2 className="font-sans font-black text-body-s text-ink">{titulo}</h2>
           <button
             type="button"
             onClick={onCerrar}

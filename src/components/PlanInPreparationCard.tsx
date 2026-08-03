@@ -99,14 +99,14 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-ink-2'}`}>
               {item.done ? 'check_circle' : item.icon}
             </span>
-            <span className={`font-sans text-sm flex-1 ${item.done ? 'text-emerald-200 line-through decoration-emerald-500/50' : 'text-white'}`}>
+            <span className={`font-sans text-body-s flex-1 ${item.done ? 'text-emerald-200 line-through decoration-emerald-500/50' : 'text-white'}`}>
               {item.label}
             </span>
           </button>
         ))}
         <div className="flex items-center gap-3 rounded-surface px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
           <span className="material-symbols-outlined text-lg text-ink-2">lock</span>
-          <span className="font-sans text-sm flex-1 text-ink-2">Tu primer entrenamiento</span>
+          <span className="font-sans text-body-s flex-1 text-ink-2">Tu primer entrenamiento</span>
           <span className="font-mono text-caption uppercase text-ink-2">Esperando a tu coach</span>
         </div>
       </div>

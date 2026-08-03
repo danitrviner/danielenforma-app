@@ -99,7 +99,7 @@ export default function ClientWorkoutsPanel({
       {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
         <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
           <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-sm">person_check</span>
+            <span className="material-symbols-outlined text-body-s">person_check</span>
             Preferencias de ejercicio
           </p>
           {onboardingData.favoriteExercises.length > 0 && (
@@ -140,7 +140,7 @@ export default function ClientWorkoutsPanel({
           )}
           {onboardingData.injuries && (
             <p className="font-mono text-caption text-amber-300 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">personal_injury</span>
+              <span className="material-symbols-outlined text-body-s">personal_injury</span>
               {onboardingData.injuries}
             </p>
           )}
@@ -205,7 +205,7 @@ export default function ClientWorkoutsPanel({
             onClick={() => setAssignmentsExpanded(e => !e)}
             className="flex items-center gap-2 text-left group"
           >
-            <span className="material-symbols-outlined text-accent text-sm">fitness_center</span>
+            <span className="material-symbols-outlined text-accent text-body-s">fitness_center</span>
             <h3 className="font-sans font-bold text-base text-white group-hover:text-accent transition-colors">
               Entrenamientos asignados
             </h3>
@@ -225,7 +225,7 @@ export default function ClientWorkoutsPanel({
             onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-body-s">add</span>
             Asignar
           </button>
         </div>
@@ -243,10 +243,10 @@ export default function ClientWorkoutsPanel({
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="material-symbols-outlined text-base text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">
-                      <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
+                      <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-1.5">
                         {wo?.name || <span className="italic text-ink-2">Rutina eliminada</span>}
                         {wo?.exercises.some(e => e.recordVideoSet) && (
-                          <span className="material-symbols-outlined text-accent text-sm flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
+                          <span className="material-symbols-outlined text-accent text-body-s flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
                         )}
                       </p>
                       <p className="font-mono text-caption text-ink-2">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
@@ -257,7 +257,7 @@ export default function ClientWorkoutsPanel({
                       {STATUS_LABEL[a.status]}
                     </span>
                     <button onClick={() => handleDeleteAssignment(a.id)} className="text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors" title="Eliminar">
-                      <span className="material-symbols-outlined text-sm">delete</span>
+                      <span className="material-symbols-outlined text-body-s">delete</span>
                     </button>
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export default function ClientWorkoutsPanel({
               </button>
             </div>
             <p className="text-label text-ink-2 font-mono flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm text-accent">person</span>
+              <span className="material-symbols-outlined text-body-s text-accent">person</span>
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
             <div>
@@ -296,7 +296,7 @@ export default function ClientWorkoutsPanel({
                 <select
                   value={assignWorkoutId}
                   onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   {workouts.map(w => (
                     <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
@@ -310,7 +310,7 @@ export default function ClientWorkoutsPanel({
                 type="date"
                 value={assignDate}
                 onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div className="flex gap-3 pt-1">
@@ -323,9 +323,9 @@ export default function ClientWorkoutsPanel({
                 className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {isAssigning ? (
-                  <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>
+                  <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Asignando...</>
                 ) : (
-                  <><span className="material-symbols-outlined text-sm">event_available</span>Confirmar</>
+                  <><span className="material-symbols-outlined text-body-s">event_available</span>Confirmar</>
                 )}
               </button>
             </div>

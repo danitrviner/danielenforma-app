@@ -69,7 +69,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         onClick={() => navigate('/crm/clientes')}
         className="flex items-center gap-1 font-mono text-caption uppercase tracking-widest text-ink-2 hover:text-ink transition-colors"
       >
-        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        <span className="material-symbols-outlined text-body-s">arrow_back</span>
         Clientes
       </button>
 
@@ -93,7 +93,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
-              <span className="material-symbols-outlined text-sm">chat</span>
+              <span className="material-symbols-outlined text-body-s">chat</span>
               WhatsApp
             </a>
           )}
@@ -105,7 +105,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               onClick={() => navigate(`/clients/${cliente.userId}`)}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
-              <span className="material-symbols-outlined text-sm">fitness_center</span>
+              <span className="material-symbols-outlined text-body-s">fitness_center</span>
               Ficha de entreno
             </button>
           )}
@@ -126,7 +126,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'
             }`}
           >
-            <span className="material-symbols-outlined text-sm">{t.icon}</span>
+            <span className="material-symbols-outlined text-body-s">{t.icon}</span>
             {t.label}
           </button>
         ))}

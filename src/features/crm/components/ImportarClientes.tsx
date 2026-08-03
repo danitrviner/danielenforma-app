@@ -114,7 +114,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
           </label>
           {errorGeneral && (
             <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
-              <span className="material-symbols-outlined text-[13px] shrink-0">error</span>
+              <span className="material-symbols-outlined text-body-s shrink-0">error</span>
               {errorGeneral}
             </p>
           )}
@@ -152,7 +152,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'hecho' && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
           <span className="material-symbols-outlined text-2xl text-success">check_circle</span>
-          <p className="font-sans font-bold text-sm text-ink">
+          <p className="font-sans font-bold text-body-s text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>
           <p className="font-sans text-caption text-ink-2">Ya aparecen en la lista de clientes.</p>
@@ -233,7 +233,7 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           aria-label={`Incluir a ${fila.nombre}`}
         />
       )}
-      {conError && <span className="material-symbols-outlined text-[13px] text-danger mt-0.5">error</span>}
+      {conError && <span className="material-symbols-outlined text-body-s text-danger mt-0.5">error</span>}
       <div className="min-w-0 flex-1">
         <p className="font-sans text-caption text-ink truncate">
           {fila.nombre || <span className="text-ink-3">(sin nombre) — fila {fila.fila}</span>}

@@ -228,7 +228,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             >
               <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
                 <div className="min-w-0">
-                  <p className="text-sm text-white font-sans font-bold truncate">{r.title}</p>
+                  <p className="text-body-s text-white font-sans font-bold truncate">{r.title}</p>
                   <p className="font-mono text-caption text-ink-2 mt-0.5">
                     {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
                   </p>

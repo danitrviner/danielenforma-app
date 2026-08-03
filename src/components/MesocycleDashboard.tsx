@@ -63,7 +63,7 @@ function EmptyChart({ message }: { message: string }) {
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-      <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
+      <p className="font-sans font-semibold text-white text-body-s flex items-center gap-2">
         <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>{icon}</span>
         {title}
       </p>
@@ -145,7 +145,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     return (
       <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
         <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">bar_chart</span>
-        <p className="text-ink-2 text-sm">Sin mesociclos para mostrar.</p>
+        <p className="text-ink-2 text-body-s">Sin mesociclos para mostrar.</p>
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}

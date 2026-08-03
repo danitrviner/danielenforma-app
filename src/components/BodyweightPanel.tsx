@@ -50,7 +50,7 @@ function BwTooltip({ active, payload }: any) {
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-xl">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
-        <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
+        <p className="text-accent font-bold text-body-s">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
         <p className="text-data text-caption mt-0.5">Media 7d: {avgEntry.value} kg</p>
@@ -166,7 +166,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
+  const INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-4">
@@ -338,7 +338,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                       // ── Read row ─────────────────────────────────────────
                       <>
                         <span className="font-mono text-caption text-ink-2 w-20 flex-shrink-0">{fmtDate(b.date)}</span>
-                        <span className="font-mono font-bold text-white text-sm flex-1">{b.weight} kg</span>
+                        <span className="font-mono font-bold text-white text-body-s flex-1">{b.weight} kg</span>
                         {!readOnly && (
                           <div className="flex gap-1 flex-shrink-0">
                             <button

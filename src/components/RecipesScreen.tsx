@@ -161,7 +161,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
         onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center z-10"
       >
-        <span className="material-symbols-outlined text-sm"
+        <span className="material-symbols-outlined text-body-s"
           style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
@@ -234,7 +234,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           onClick={onBack}
           className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-label uppercase tracking-wider"
         >
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          <span className="material-symbols-outlined text-body-s">arrow_back</span>
           Recetas
         </button>
         <div className="flex items-center gap-4">
@@ -363,7 +363,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             ].map(({ label, val }) => (
               <div key={label} className="text-center">
                 <span className="block font-mono text-caption text-ink-2 uppercase">{label}</span>
-                <span className="block font-bold text-white text-sm font-mono">{val}g</span>
+                <span className="block font-bold text-white text-body-s font-mono">{val}g</span>
               </div>
             ))}
           </div>
@@ -373,7 +373,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
-          <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">recipe</span>
             Ingredientes
           </h2>
@@ -418,7 +418,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {((isIndya && recipe.stepsText && recipe.stepsText.length > 0) ||
           (!isIndya && recipe.steps.length > 0)) && (
           <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
-            <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+            <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">format_list_numbered</span>
               Preparación
             </h2>
@@ -648,13 +648,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     <div className="space-y-8">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Recetas</h1>
-        <p className="text-ink-2 text-sm mt-1">Tus recetas y la biblioteca completa de recetas.</p>
+        <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>
       </div>
 
       {/* ── Coach / athlete recipes ─────────────────────────────────────────── */}
       {!loading && recipes.length > 0 && (
         <section className="space-y-4">
-          <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">restaurant_menu</span>
             Recetas del programa
           </h2>
@@ -705,7 +705,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
       {/* ── Biblioteca de recetas (paginated, backed by the Indya dataset — never shown to the user) ──── */}
       <section className="space-y-4">
-        <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+        <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-base">library_books</span>
           Biblioteca de recetas
           <span className="font-mono text-caption text-ink-2 normal-case font-normal">8 850 recetas</span>
@@ -763,7 +763,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
-              <span className="material-symbols-outlined text-sm">close</span>
+              <span className="material-symbols-outlined text-body-s">close</span>
             </button>
           )}
         </div>
@@ -785,8 +785,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
-                ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
-                : <><span className="material-symbols-outlined text-sm">refresh</span>Reintentar</>
+                ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
+                : <><span className="material-symbols-outlined text-body-s">refresh</span>Reintentar</>
               }
             </button>
           </div>
@@ -807,7 +807,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             {indyaFeatured.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-amber-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  <span className="material-symbols-outlined text-amber-400 text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                   <h3 className="font-mono text-caption text-amber-400 uppercase tracking-wider font-bold">
                     Destacadas para ti ({indyaFeatured.length})
                   </h3>
@@ -849,7 +849,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   onClick={() => setShowDislikedSection(v => !v)}
                   className="flex items-center gap-2 w-full text-left group"
                 >
-                  <span className="material-symbols-outlined text-sm text-ink-3 group-hover:text-ink-2 transition-colors">
+                  <span className="material-symbols-outlined text-body-s text-ink-3 group-hover:text-ink-2 transition-colors">
                     {showDislikedSection ? 'expand_less' : 'expand_more'}
                   </span>
                   <span className="font-mono text-caption text-ink-3 group-hover:text-ink-2 uppercase tracking-wider transition-colors">
@@ -886,8 +886,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
-                    ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-sm">expand_more</span>{indyaError ? 'Reintentar' : 'Cargar más recetas'}</>
+                    ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
+                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>{indyaError ? 'Reintentar' : 'Cargar más recetas'}</>
                   }
                 </button>
               </div>

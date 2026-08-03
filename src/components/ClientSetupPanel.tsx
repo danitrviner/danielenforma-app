@@ -187,19 +187,19 @@ export default function ClientSetupPanel({
           {result.nextStep ? (
             <>
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
-              <p className="font-sans font-bold text-sm text-white mb-2">{result.nextStep.title}</p>
+              <p className="font-sans font-bold text-body-s text-white mb-2">{result.nextStep.title}</p>
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
                   className="flex items-center gap-1 font-mono text-caption text-black bg-accent px-3 py-1.5 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
                 >
                   Ir ahora
-                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  <span className="material-symbols-outlined text-body-s">arrow_forward</span>
                 </button>
               )}
             </>
           ) : (
-            <p className="font-sans font-bold text-sm text-emerald-400">Todo configurado</p>
+            <p className="font-sans font-bold text-body-s text-emerald-400">Todo configurado</p>
           )}
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function ClientSetupPanel({
               >
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
-                    <p className="font-sans font-bold text-sm text-white">{phase.title}</p>
+                    <p className="font-sans font-bold text-body-s text-white">{phase.title}</p>
                     {phase.subtitle && <span className="font-mono text-caption text-ink-2">{phase.subtitle}</span>}
                   </div>
                   <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
@@ -298,7 +298,7 @@ export default function ClientSetupPanel({
             onClick={() => setShowExtraForm(v => !v)}
             className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
           >
-            <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
+            <span className="material-symbols-outlined text-body-s">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
           </button>
         </div>
@@ -339,7 +339,7 @@ export default function ClientSetupPanel({
                     {task.done ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                 </button>
-                <p className={`flex-1 min-w-0 font-sans text-sm truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
+                <p className={`flex-1 min-w-0 font-sans text-body-s truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
                 <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
                   <span className="material-symbols-outlined text-base">delete</span>
                 </button>

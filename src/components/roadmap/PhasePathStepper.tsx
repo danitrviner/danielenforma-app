@@ -47,7 +47,7 @@ export default function PhasePathStepper({ phases }: Props) {
               </div>
               <div className={`pb-3 ${isFuture ? 'opacity-70' : ''}`}>
                 <p
-                  className="font-sans font-bold text-sm"
+                  className="font-sans font-bold text-body-s"
                   style={{ color: isActive ? phase.color : isDone ? 'var(--color-ink)' : 'var(--color-ink-2)' }}
                 >
                   {phase.name}

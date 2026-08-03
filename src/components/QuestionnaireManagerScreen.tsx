@@ -86,7 +86,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
           onClick={() => openEditor()}
           className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
-          <span className="material-symbols-outlined text-sm">add</span>Nuevo
+          <span className="material-symbols-outlined text-body-s">add</span>Nuevo
         </button>
       </div>
 
@@ -99,7 +99,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
       ) : questionnaires.length === 0 ? (
         <div className="border border-dashed border-hairline rounded-surface py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">quiz</span>
-          <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
+          <p className="font-sans font-bold text-white text-body-s">Sin cuestionarios todavía</p>
           <p className="text-ink-2 text-label mt-1">Crea plantillas para asignarlas a tus clientes.</p>
         </div>
       ) : (
@@ -111,7 +111,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-sans font-bold text-white text-sm truncate">{q.title}</p>
+                  <p className="font-sans font-bold text-white text-body-s truncate">{q.title}</p>
                   {q.questions.some(qq => qq.graphable) && (
                     <span className="flex items-center gap-0.5 text-caption font-mono text-accent bg-accent/10 px-1.5 py-0.5 rounded-control border border-accent/20">
                       <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
@@ -130,7 +130,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                   title="Editar"
                 >
-                  <span className="material-symbols-outlined text-sm">edit</span>
+                  <span className="material-symbols-outlined text-body-s">edit</span>
                 </button>
                 <button
                   onClick={() => handleDelete(q.id)}
@@ -138,7 +138,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   className="p-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-control transition-all"
                   title="Eliminar"
                 >
-                  <span className="material-symbols-outlined text-sm">{deleting === q.id ? 'progress_activity' : 'delete'}</span>
+                  <span className="material-symbols-outlined text-body-s">{deleting === q.id ? 'progress_activity' : 'delete'}</span>
                 </button>
               </div>
             </div>

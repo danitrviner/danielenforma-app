@@ -264,7 +264,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-        <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Asistente IA</span>
+        <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-[20px]">tune</span>
@@ -325,7 +325,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {chat.messages.length === 0 && (
               <div className="text-center py-10 px-4">
-                <p className="text-ink-2 text-sm mb-3">Pregúntame por tus clientes:</p>
+                <p className="text-ink-2 text-body-s mb-3">Pregúntame por tus clientes:</p>
                 <div className="flex flex-col gap-2 text-left">
                   {['¿Qué clientes necesitan atención?',
                     activeAthleteEmail ? 'Resume la situación de este cliente' : 'Resume la situación de un cliente',
@@ -345,7 +345,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 const text = messageText(msg);
                 if (!text) return null; // mensajes de tool_results — no se pintan
                 return (
-                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-surface rounded-br-control px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-surface rounded-br-control px-3.5 py-2.5 text-body-s whitespace-pre-wrap">
                     {text}
                   </div>
                 );
@@ -355,7 +355,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-surface border border-hairline text-ink rounded-surface rounded-bl-control px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                        <div key={j} className="bg-surface border border-hairline text-ink rounded-surface rounded-bl-control px-3.5 py-2.5 text-body-s whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
@@ -363,7 +363,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     if (block.type === 'tool_use') {
                       return (
                         <div key={j} className="flex items-center gap-1.5 text-caption font-mono text-data/80 px-1">
-                          <span className="material-symbols-outlined text-[14px]">manufacturing</span>
+                          <span className="material-symbols-outlined text-body-s">manufacturing</span>
                           {block.name}
                         </div>
                       );
@@ -479,7 +479,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
@@ -502,7 +502,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent">tune</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
+              <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
               <p className="text-label text-ink-2">
@@ -513,7 +513,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-body-s text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">

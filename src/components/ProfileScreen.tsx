@@ -244,7 +244,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               onClick={() => setEditingFicha(true)}
               className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
             >
-              <span className="material-symbols-outlined text-sm">edit_note</span>
+              <span className="material-symbols-outlined text-body-s">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
             </button>
           </div>
@@ -276,7 +276,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Mi Perfil</h1>
-        <p className="text-ink-2 text-sm mt-1">Tu gamificación, evolución de peso, gráficas y configuración de ficha.</p>
+        <p className="text-ink-2 text-body-s mt-1">Tu gamificación, evolución de peso, gráficas y configuración de ficha.</p>
       </div>
 
       {success && (
@@ -310,9 +310,9 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-base">groups</span>
-              <span className="font-sans font-bold text-sm text-white">Entrenadores</span>
+              <span className="font-sans font-bold text-body-s text-white">Entrenadores</span>
             </div>
-            <span className="material-symbols-outlined text-ink-2 text-sm">chevron_right</span>
+            <span className="material-symbols-outlined text-ink-2 text-body-s">chevron_right</span>
           </button>
         )
       )}
@@ -327,7 +327,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
-          <span className="material-symbols-outlined text-sm">{reorderMode ? 'check' : 'reorder'}</span>
+          <span className="material-symbols-outlined text-body-s">{reorderMode ? 'check' : 'reorder'}</span>
           {reorderMode ? 'Listo' : 'Reordenar bloques'}
         </button>
       </div>
@@ -343,7 +343,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 className="p-1.5 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Subir"
               >
-                <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                <span className="material-symbols-outlined text-body-s">arrow_upward</span>
               </button>
               <button
                 onClick={() => moveBlock(visibleBlocks, id, 1)}
@@ -351,7 +351,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 className="p-1.5 bg-surface border border-hairline rounded-control text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                 title="Bajar"
               >
-                <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                <span className="material-symbols-outlined text-body-s">arrow_downward</span>
               </button>
             </div>
           )}
@@ -410,7 +410,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           onClick={handleSignOut}
           className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-label font-mono font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
         >
-          <span className="material-symbols-outlined text-sm">logout</span>
+          <span className="material-symbols-outlined text-body-s">logout</span>
           Cerrar Sesión Activa
         </button>
       </div>

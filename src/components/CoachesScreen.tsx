@@ -184,7 +184,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         return (
           <div key={section} className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
             <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">{meta.icon}</span>
+              <span className="material-symbols-outlined text-body-s">{meta.icon}</span>
               {meta.label}
               <span className="ml-auto font-mono text-caption text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
             </h4>
@@ -274,7 +274,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
                                                'text-ink-2 border-hairline bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
-                      <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
+                      <span className="flex-1 text-body-s text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-ink-3">sin etiqueta</em>}
                       </span>
                       {q.unit && <span className="text-caption text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
@@ -294,7 +294,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <button type="button" onClick={() => addQ(section)}
               className="flex items-center gap-1.5 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-body-s">add</span>
               Añadir pregunta
             </button>
           </div>
@@ -433,7 +433,7 @@ function IndyaImportPanel() {
     <div className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
       <div>
         <h3 className="font-mono text-label font-bold uppercase tracking-wider text-data flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm">library_books</span>
+          <span className="material-symbols-outlined text-body-s">library_books</span>
           Importar biblioteca Indya
         </h3>
         <p className="font-mono text-caption text-ink-3 mt-1">
@@ -446,7 +446,7 @@ function IndyaImportPanel() {
           onClick={startImport}
           className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-mono text-label uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
         >
-          <span className="material-symbols-outlined text-sm">upload</span>
+          <span className="material-symbols-outlined text-body-s">upload</span>
           Importar / Reimportar
         </button>
       )}
@@ -584,7 +584,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ) : sortedUsers.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">group</span>
-            <p className="text-ink-2 text-sm">Sin usuarios registrados todavía.</p>
+            <p className="text-ink-2 text-body-s">Sin usuarios registrados todavía.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -600,7 +600,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
+                      <span className="font-sans font-semibold text-white text-body-s truncate">{user.displayName}</span>
                       {isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
                       {isSelf && !isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>

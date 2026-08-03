@@ -156,7 +156,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
         {current ? (
           <>
             <div className="flex items-center justify-between">
-              <p className="font-sans font-bold text-white text-sm">{current.title}</p>
+              <p className="font-sans font-bold text-white text-body-s">{current.title}</p>
               <span className={`font-mono text-caption uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
                 current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
@@ -204,7 +204,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           onClick={() => setShowAssign(v => !v)}
           className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
         >
-          <span className="material-symbols-outlined text-sm">{showAssign ? 'close' : 'add'}</span>
+          <span className="material-symbols-outlined text-body-s">{showAssign ? 'close' : 'add'}</span>
           {showAssign ? 'Cancelar' : 'Asignar reto'}
         </button>
 
@@ -344,7 +344,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                   <p className="text-caption text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
                 </div>
                 <button onClick={() => removeTemplate(t.id)} className="text-ink-2 hover:text-red-400">
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>
               </div>
             ))}

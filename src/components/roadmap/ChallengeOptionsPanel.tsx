@@ -117,7 +117,7 @@ export default function ChallengeOptionsPanel({
               style={{ borderColor: opt.isMilestone ? '#fbcb1a55' : 'rgba(255,255,255,0.07)' }}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="font-sans font-bold text-white text-sm">{opt.title}</p>
+                <p className="font-sans font-bold text-white text-body-s">{opt.title}</p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {opt.isMilestone && (
                     <span className="font-mono text-caption uppercase px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>

@@ -350,7 +350,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     return (
       <div className="bg-surface border border-hairline rounded-surface p-5">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-data text-sm">monitoring</span>
+          <span className="material-symbols-outlined text-data text-body-s">monitoring</span>
           Historial de carga
         </h3>
         <div className="py-8 text-center border border-dashed border-hairline rounded-surface">
@@ -364,7 +364,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
       <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-        <span className="material-symbols-outlined text-data text-sm">monitoring</span>
+        <span className="material-symbols-outlined text-data text-body-s">monitoring</span>
         Historial de carga
       </h3>
 

@@ -104,7 +104,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Nueva reunión
         </button>
       </header>

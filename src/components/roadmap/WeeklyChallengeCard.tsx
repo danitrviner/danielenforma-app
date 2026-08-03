@@ -70,7 +70,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
       </div>
 
       {achieved && (
-        <p className="text-sm font-sans font-bold" style={{ color: accent }}>
+        <p className="text-body-s font-sans font-bold" style={{ color: accent }}>
           ¡Reto conseguido! 🏆
         </p>
       )}

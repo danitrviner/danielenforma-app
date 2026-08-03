@@ -235,7 +235,7 @@ export default function MyDietsScreen({ profile }: Props) {
           placeholder="Nombre de la dieta"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-white text-sm focus:outline-none focus:border-accent/50"
+          className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-white text-body-s focus:outline-none focus:border-accent/50"
         />
 
         {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
@@ -276,11 +276,11 @@ export default function MyDietsScreen({ profile }: Props) {
                   type="text"
                   value={meal.name}
                   onChange={e => renameMeal(meal.id, e.target.value)}
-                  className="flex-1 bg-transparent border-none text-white text-sm font-sans font-bold focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-white text-body-s font-sans font-bold focus:outline-none"
                 />
                 {form.meals.length > 1 && (
                   <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
-                    <span className="material-symbols-outlined text-sm select-none">delete</span>
+                    <span className="material-symbols-outlined text-body-s select-none">delete</span>
                   </button>
                 )}
               </div>
@@ -299,7 +299,7 @@ export default function MyDietsScreen({ profile }: Props) {
                       </span>
                     </div>
                     <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5">
-                      <span className="material-symbols-outlined text-sm select-none">close</span>
+                      <span className="material-symbols-outlined text-body-s select-none">close</span>
                     </button>
                   </div>
                 ))}
@@ -324,7 +324,7 @@ export default function MyDietsScreen({ profile }: Props) {
         <button
           onClick={handleSave}
           disabled={!form.name.trim()}
-          className="w-full py-3 rounded-control bg-accent text-black font-sans font-bold text-sm disabled:opacity-40 hover:bg-accent-press transition-all"
+          className="w-full py-3 rounded-control bg-accent text-black font-sans font-bold text-body-s disabled:opacity-40 hover:bg-accent-press transition-all"
         >Guardar dieta</button>
 
         {/* Food picker sheet */}
@@ -341,7 +341,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   )}
                 </div>
                 <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                  <span className="material-symbols-outlined text-body-s select-none">close</span>
                 </button>
               </div>
 
@@ -368,7 +368,7 @@ export default function MyDietsScreen({ profile }: Props) {
               )}
 
               <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-                <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
+                <span className="material-symbols-outlined text-ink-2 text-body-s select-none">search</span>
                 <input type="text" placeholder={pickerTab === 'alimentos' ? 'Buscar alimento...' : 'Buscar receta...'} value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
@@ -426,13 +426,13 @@ export default function MyDietsScreen({ profile }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-sans font-extrabold text-2xl text-white tracking-tight">Mis Dietas</h1>
-          <p className="text-ink-2 text-sm mt-1">Tus dietas propias y las que te asigna tu entrenador — edítalas o duplícalas para partir de una ya creada.</p>
+          <p className="text-ink-2 text-body-s mt-1">Tus dietas propias y las que te asigna tu entrenador — edítalas o duplícalas para partir de una ya creada.</p>
         </div>
         <button
           onClick={openNew}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Nueva
         </button>
       </div>
@@ -440,7 +440,7 @@ export default function MyDietsScreen({ profile }: Props) {
       {diets.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">bookmark</span>
-          <p className="text-ink-2 text-sm font-sans">Aún no tienes ninguna dieta guardada.</p>
+          <p className="text-ink-2 text-body-s font-sans">Aún no tienes ninguna dieta guardada.</p>
           <p className="text-ink-3 text-label font-sans mt-1">Créala aquí con "Nueva", o desde Nutrición → Intercambios para partir de tu día a día.</p>
         </div>
       ) : (
@@ -451,7 +451,7 @@ export default function MyDietsScreen({ profile }: Props) {
               <div key={dt.id} className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="block font-sans font-bold text-sm text-white truncate">{dt.name}</span>
+                    <span className="block font-sans font-bold text-body-s text-white truncate">{dt.name}</span>
                     {!dt.selfManaged && (
                       <span className="flex-shrink-0 text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                         De tu entrenador

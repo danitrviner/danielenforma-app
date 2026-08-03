@@ -40,7 +40,7 @@ export default function LevelLadderCard({ status }: Props) {
           {nextLevelCriteria.map(c => (
             <div key={c.criterion.id} className="flex items-center gap-2">
               <span
-                className="material-symbols-outlined text-sm flex-shrink-0"
+                className="material-symbols-outlined text-body-s flex-shrink-0"
                 style={{ color: c.done ? 'var(--color-success)' : 'var(--color-ink-3)' }}
               >
                 {c.done ? 'check_circle' : 'radio_button_unchecked'}

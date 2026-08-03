@@ -84,20 +84,20 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Primer programa</p>
-          <p className="font-sans font-bold text-sm text-ink mt-1">
+          <p className="font-sans font-bold text-body-s text-ink mt-1">
             {resumen.primerPrograma ? formatDia(resumen.primerPrograma) : '—'}
           </p>
         </div>
         <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Último fin</p>
-          <p className="font-sans font-bold text-sm text-ink mt-1">
+          <p className="font-sans font-bold text-body-s text-ink mt-1">
             {resumen.ultimoFin ? formatDia(resumen.ultimoFin) : '—'}
           </p>
         </div>
         {resumen.conversionContinuidad !== null && (
           <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
             <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Conversión continuidad</p>
-            <p className="font-sans font-bold text-sm text-ink mt-1">{resumen.conversionContinuidad}%</p>
+            <p className="font-sans font-bold text-body-s text-ink mt-1">{resumen.conversionContinuidad}%</p>
           </div>
         )}
       </div>

@@ -30,7 +30,7 @@ export default function DeviceChip({ status, deviceName, bpm }: Props) {
         <span className="text-ink-2"> · {cfg.text}</span>
       </p>
       {status === 'ready' && (
-        <p className="flex items-center gap-1 text-sm font-sans font-bold text-white tabular-nums">
+        <p className="flex items-center gap-1 text-body-s font-sans font-bold text-white tabular-nums">
           <span className="material-symbols-outlined text-danger text-base">favorite</span>
           {bpm ?? '--'}
         </p>

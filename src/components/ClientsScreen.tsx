@@ -381,7 +381,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             {pendingCheckins.length === 0 ? (
               <p className="text-label font-bold text-white">¡Sin revisiones pendientes!</p>
             ) : (
-              <p className="text-sm text-ink-2 font-mono">
+              <p className="text-body-s text-ink-2 font-mono">
                 Ve a <strong className="text-accent">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
               </p>
             )}
@@ -437,7 +437,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-control pl-9 pr-3 py-2.5 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -474,7 +474,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               onClick={() => inviteInputRef.current?.focus()}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
-              <span className="material-symbols-outlined text-sm">person_add</span>
+              <span className="material-symbols-outlined text-body-s">person_add</span>
               Invitar a tu primer atleta
             </button>
           </div>
@@ -569,7 +569,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
                         </span>
-                        <span className={`text-sm font-black ${adh.text}`}>{adherenceScore}</span>
+                        <span className={`text-body-s font-black ${adh.text}`}>{adherenceScore}</span>
                       </div>
                     </div>
                   </div>
@@ -608,14 +608,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"
             disabled={inviting || !inviteEmail.trim()}
             className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
-            <span className="material-symbols-outlined text-sm">mail</span>
+            <span className="material-symbols-outlined text-body-s">mail</span>
             {inviting ? 'Enviando...' : 'Invitar'}
           </button>
         </form>
@@ -630,7 +630,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <div className="space-y-1.5">
               {pendingInvites.map(inv => (
                 <div key={inv.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                  <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
+                  <span className="material-symbols-outlined text-ink-2 text-body-s">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-label text-white truncate">{inv.email}</p>
                     <p className="font-mono text-caption text-ink-3">

@@ -93,7 +93,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={1} max={20}
                 value={we.sets}
                 onChange={e => onChange({ sets: parseInt(e.target.value) || 1 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -103,7 +103,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 value={we.reps}
                 onChange={e => onChange({ reps: e.target.value })}
                 placeholder="8-10"
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -112,7 +112,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0} max={5}
                 value={we.rir}
                 onChange={e => onChange({ rir: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   className="p-1.5 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar bloque"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>
               </div>
             ))}
@@ -180,7 +180,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 onClick={addGroup}
                 className="flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
+                <span className="material-symbols-outlined text-body-s">add</span>
                 Añadir bloque
               </button>
               <span className="font-mono text-caption text-ink-3">
@@ -193,7 +193,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-24 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-24 bg-bg border border-hairline rounded-control px-2 py-1.5 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
-          <span className="material-symbols-outlined text-sm">videocam</span>
+          <span className="material-symbols-outlined text-body-s">videocam</span>
           Grabar con el móvil
         </button>
         {we.recordVideoSet && (
@@ -316,7 +316,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   className="p-1 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>
               </div>
             ))}
@@ -324,7 +324,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               onClick={addManualWarmupSet}
               className="flex items-center gap-1 text-caption font-mono text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-body-s">add</span>
               Añadir serie de aproximación
             </button>
           </div>

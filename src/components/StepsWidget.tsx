@@ -102,7 +102,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+        <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-base">directions_walk</span>
           Pasos de hoy
         </h2>
@@ -128,7 +128,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <button
             onClick={handleSave}
@@ -136,8 +136,8 @@ export default function StepsWidget({ athleteEmail }: Props) {
             className="flex-shrink-0 w-9 h-9 rounded-control bg-accent flex items-center justify-center text-black transition-all hover:bg-accent-press active:scale-95 disabled:opacity-50"
           >
             {saving
-              ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-              : <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+              ? <span className="material-symbols-outlined text-body-s animate-spin">refresh</span>
+              : <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
             }
           </button>
         </div>
@@ -146,15 +146,15 @@ export default function StepsWidget({ athleteEmail }: Props) {
           <div className="grid grid-cols-3 gap-2 mb-2 font-mono text-center">
             <div>
               <span className="block text-caption text-ink-2 uppercase">Realizados</span>
-              <span className="block text-sm font-bold text-white">{steps.toLocaleString('es-ES')}</span>
+              <span className="block text-body-s font-bold text-white">{steps.toLocaleString('es-ES')}</span>
             </div>
             <div>
               <span className="block text-caption text-ink-2 uppercase">Objetivo</span>
-              <span className="block text-sm font-bold text-data">{goal.toLocaleString('es-ES')}</span>
+              <span className="block text-body-s font-bold text-data">{goal.toLocaleString('es-ES')}</span>
             </div>
             <div>
               <span className="block text-caption text-ink-2 uppercase">Restantes</span>
-              <span className="block text-sm font-bold text-accent">{remaining.toLocaleString('es-ES')}</span>
+              <span className="block text-body-s font-bold text-accent">{remaining.toLocaleString('es-ES')}</span>
             </div>
           </div>
           <div className="h-1.5 bg-raised rounded-full overflow-hidden">

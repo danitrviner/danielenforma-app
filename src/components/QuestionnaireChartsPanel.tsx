@@ -74,7 +74,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
       <p className="text-ink-2 mb-0.5">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
-      <p className="text-accent font-bold text-sm">
+      <p className="text-accent font-bold text-body-s">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
@@ -104,7 +104,7 @@ function QuestionChart({
   return (
     <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
-        <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
+        <p className="font-sans font-semibold text-white text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
             <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">

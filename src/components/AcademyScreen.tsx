@@ -121,7 +121,7 @@ export default function AcademyScreen({ profile }: Props) {
           <div className="space-y-1.5">
             {openLesson.resources.map((r, i) => (
               <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-label font-mono text-data hover:underline">
-                <span className="material-symbols-outlined text-sm">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>
+                <span className="material-symbols-outlined text-body-s">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>
                 {r.title}
               </a>
             ))}
@@ -166,7 +166,7 @@ export default function AcademyScreen({ profile }: Props) {
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-semibold text-sm text-white truncate">{i + 1}. {l.title}</p>
+                  <p className="font-sans font-semibold text-body-s text-white truncate">{i + 1}. {l.title}</p>
                   {!unlocked && reason && <p className="text-caption text-ink-3 font-mono">{reason}</p>}
                 </div>
               </button>
@@ -209,7 +209,7 @@ export default function AcademyScreen({ profile }: Props) {
                   className={`text-left bg-surface border border-hairline rounded-control p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-sans font-bold text-sm text-white">{c.title}</p>
+                    <p className="font-sans font-bold text-body-s text-white">{c.title}</p>
                     {!unlocked && <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">lock</span>}
                   </div>
                   <p className="text-label text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>

@@ -35,7 +35,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       </div>
 
       {phase.description && (
-        <p className="text-ink text-sm leading-relaxed">{phase.description}</p>
+        <p className="text-ink text-body-s leading-relaxed">{phase.description}</p>
       )}
 
       {progress.metrics.length > 0 && (
@@ -75,7 +75,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
 
       {phase.exitCriteria && (
         <div className="flex items-start gap-2 pt-2 border-t border-hairline">
-          <span className="material-symbols-outlined text-sm text-ink-2 mt-0.5">flag</span>
+          <span className="material-symbols-outlined text-body-s text-ink-2 mt-0.5">flag</span>
           <p className="text-ink-2 text-label font-mono leading-relaxed">
             <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
           </p>

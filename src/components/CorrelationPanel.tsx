@@ -262,7 +262,7 @@ export default function CorrelationPanel({
     return (
       <div className="py-20 text-center border border-dashed border-hairline rounded-surface px-6">
         <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">insights</span>
-        <p className="font-sans font-bold text-white text-sm mb-1">Sin datos suficientes</p>
+        <p className="font-sans font-bold text-white text-body-s mb-1">Sin datos suficientes</p>
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
             coach sí puede accionar: asignar/pedir lo que falta. */}
@@ -297,7 +297,7 @@ export default function CorrelationPanel({
               <span className="ml-2 text-accent font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
             )}
           </span>
-          <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
+          <span className="material-symbols-outlined text-ink-2 text-body-s transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
             expand_more
           </span>
         </button>
@@ -411,8 +411,8 @@ export default function CorrelationPanel({
                     : 'border-hairline'
             }`}>
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-sm">functions</span>
-                <p className="font-sans font-bold text-sm text-white">Correlación de Pearson</p>
+                <span className="material-symbols-outlined text-accent text-body-s">functions</span>
+                <p className="font-sans font-bold text-body-s text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (
                 <p className="font-mono text-label text-ink-2">{correlationResult.label}</p>

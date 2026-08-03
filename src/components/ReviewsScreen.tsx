@@ -189,7 +189,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
           <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
-          <p className="text-ink-2 text-sm mt-1">
+          <p className="text-ink-2 text-body-s mt-1">
             Historial cronológico de check-ins y respuestas de cuestionarios.
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           {pendingCount > 0 && (
             <>
               <span className="flex items-center gap-1.5 text-caption bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-surface font-sans font-bold uppercase">
-                <span className="material-symbols-outlined text-sm">pending_actions</span>
+                <span className="material-symbols-outlined text-body-s">pending_actions</span>
                 {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
               </span>
               <button
@@ -216,7 +216,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       </header>
 
       {successMsg && (
-        <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-surface text-sm flex items-center gap-2">
+        <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-surface text-body-s flex items-center gap-2">
           <span className="material-symbols-outlined text-accent">check_circle</span>
           <p>{successMsg}</p>
         </div>
@@ -228,13 +228,13 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       {unifiedItems.length === 0 && !loadingResponses ? (
         <div className="bg-bg border border-dashed border-hairline rounded-surface p-16 text-center text-ink-2">
           <span className="material-symbols-outlined text-4xl text-accent mb-2 block">verified_user</span>
-          <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
+          <p className="text-body-s font-bold text-white">¡Sin revisiones todavía!</p>
           <p className="text-label mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
         <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
           <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
+            <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
             <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
@@ -309,7 +309,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         </button>
                       )}
                       <span
-                        className="material-symbols-outlined text-ink-2 text-sm transition-transform flex-shrink-0"
+                        className="material-symbols-outlined text-ink-2 text-body-s transition-transform flex-shrink-0"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                       >expand_more</span>
                     </div>
@@ -335,7 +335,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         )}
                         {successMsg && expandedId === key && (
                           <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-label flex items-center gap-2">
-                            <span className="material-symbols-outlined text-accent text-sm">check_circle</span>
+                            <span className="material-symbols-outlined text-accent text-body-s">check_circle</span>
                             {successMsg}
                           </div>
                         )}
@@ -365,7 +365,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             title="Gestionar plantillas de feedback"
                             className="text-ink-2/60 hover:text-white p-1"
                           >
-                            <span className="material-symbols-outlined text-sm">tune</span>
+                            <span className="material-symbols-outlined text-body-s">tune</span>
                           </button>
                         </div>
                         <form onSubmit={(e) => handleSendFeedback(c.id, e)} className="space-y-2">
@@ -373,7 +373,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-raised border border-hairline rounded-control p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
@@ -381,7 +381,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
-                            <span className="material-symbols-outlined text-sm">{hasNextPending ? 'skip_next' : 'send'}</span>
+                            <span className="material-symbols-outlined text-body-s">{hasNextPending ? 'skip_next' : 'send'}</span>
                           </button>
                         </form>
                       </div>
@@ -439,7 +439,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </button>
                     )}
                     <span
-                      className="material-symbols-outlined text-ink-2 text-sm transition-transform flex-shrink-0"
+                      className="material-symbols-outlined text-ink-2 text-body-s transition-transform flex-shrink-0"
                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     >expand_more</span>
                   </div>
@@ -471,7 +471,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-surface border border-hairline rounded-surface w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
+              <h3 className="font-sans font-bold text-white text-body-s">Plantillas de feedback</h3>
               <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
@@ -497,7 +497,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
                 className="flex items-center gap-1.5 text-label font-mono text-accent hover:text-white"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
+                <span className="material-symbols-outlined text-body-s">add</span>
                 Añadir plantilla
               </button>
             </div>

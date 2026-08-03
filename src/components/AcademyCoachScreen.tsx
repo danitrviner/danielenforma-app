@@ -118,7 +118,7 @@ function CoursesTab() {
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
       </div>
@@ -161,7 +161,7 @@ function CoursesTab() {
           {courses.map(c => (
             <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
+                <p className="font-sans font-semibold text-body-s text-white truncate">{c.title}</p>
                 <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
               <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
@@ -224,7 +224,7 @@ function LessonsTab() {
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
       </div>
@@ -263,7 +263,7 @@ function LessonsTab() {
             <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
+                <p className="font-sans font-semibold text-body-s text-white truncate">{l.title}</p>
                 <p className="text-caption text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
               <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
@@ -334,7 +334,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
             <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>
+              <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
                 className={`text-caption font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}

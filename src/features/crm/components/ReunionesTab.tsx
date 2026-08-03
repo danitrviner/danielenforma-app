@@ -19,7 +19,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
         <span className="material-symbols-outlined text-lg text-accent">flag</span>
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fin de programa</p>
-          <p className="font-sans font-bold text-sm text-ink">
+          <p className="font-sans font-bold text-body-s text-ink">
             {finPrograma ? `${formatDia(finPrograma)} · ${tiempoRelativo(finPrograma)}` : 'Sin fecha de fin definida'}
           </p>
         </div>
@@ -31,7 +31,7 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Nueva reunión
         </button>
       </div>

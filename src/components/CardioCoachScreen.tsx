@@ -73,7 +73,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
       {athletes.map(a => (
         <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-          <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white text-left truncate">{a.displayName}</p>
+          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white text-left truncate">{a.displayName}</p>
           <span className="material-symbols-outlined text-ink-2 text-base">chevron_right</span>
         </button>
       ))}
@@ -190,7 +190,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
         return (
           <div key={t.id} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
+              <p className="font-sans font-semibold text-body-s text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
             <p className="text-label font-mono text-data">{t.type}</p>
@@ -291,12 +291,12 @@ function PrescriptionTab() {
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
-                <span className="material-symbols-outlined text-sm">close</span>
+                <span className="material-symbols-outlined text-body-s">close</span>
               </button>
             </div>
           ))}
           <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-caption font-mono uppercase text-accent hover:text-white transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">add</span> Añadir bloque
+            <span className="material-symbols-outlined text-body-s">add</span> Añadir bloque
           </button>
           {validBlocks.length > 0 && (
             <p className="text-caption font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>

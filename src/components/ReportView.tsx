@@ -23,7 +23,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 function SectionShell({ section, children }: { section: CoachReportSection; children: React.ReactNode }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-      <p className="font-sans font-bold text-sm text-white">{section.title}</p>
+      <p className="font-sans font-bold text-body-s text-white">{section.title}</p>
       {children}
       {section.coachNote && (
         <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
@@ -151,7 +151,7 @@ function BodyweightSection({ section }: { section: CoachReportSection }) {
           <span className={`font-mono text-caption font-bold pb-1.5 flex items-center gap-1 ${
             good === true ? 'text-green-400' : good === false ? 'text-amber-300' : 'text-ink-2'
           }`}>
-            <span className="material-symbols-outlined text-sm">{dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'}</span>
+            <span className="material-symbols-outlined text-body-s">{dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'}</span>
             {d.deltaKg > 0 ? '+' : ''}{d.deltaKg} kg en el periodo
           </span>
         )}
@@ -266,7 +266,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
       </div>
       {report.intro.trim() && (
         <div className="bg-raised border border-hairline rounded-surface p-4">
-          <p className="text-sm text-ink-2 font-sans leading-relaxed whitespace-pre-wrap">{report.intro}</p>
+          <p className="text-body-s text-ink-2 font-sans leading-relaxed whitespace-pre-wrap">{report.intro}</p>
         </div>
       )}
       {included.map(s => <React.Fragment key={s.id}>{renderSection(s)}</React.Fragment>)}

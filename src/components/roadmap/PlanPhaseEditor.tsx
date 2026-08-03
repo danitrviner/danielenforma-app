@@ -221,7 +221,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       {showNutritionModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
           <div className="bg-surface border border-hairline rounded-surface p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
-            <p className="font-sans font-bold text-white text-sm">Ya existe una periodización nutricional</p>
+            <p className="font-sans font-bold text-white text-body-s">Ya existe una periodización nutricional</p>
             <p className="text-label text-ink-2 font-mono leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
             </p>
@@ -267,7 +267,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     value={phase.name}
                     onChange={e => updatePhase(phase.id, { name: e.target.value })}
                     placeholder="Nombre de la fase"
-                    className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
+                    className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-body-s font-bold text-white focus:outline-none focus:border-accent"
                   />
                   <span
                     className={`font-mono text-caption uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 ${
@@ -383,7 +383,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         </label>
                       )}
                       <button onClick={() => removeMetric(phase.id, m.id)} className="text-ink-2 hover:text-red-400">
-                        <span className="material-symbols-outlined text-sm">close</span>
+                        <span className="material-symbols-outlined text-body-s">close</span>
                       </button>
                     </div>
                   ))}

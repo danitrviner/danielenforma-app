@@ -96,7 +96,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar atleta o acción..."
-            className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-ink-2/50"
+            className="flex-1 bg-transparent text-white text-body-s focus:outline-none placeholder-ink-2/50"
           />
           <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-1.5 py-0.5 flex-shrink-0">ESC</span>
         </div>
@@ -117,7 +117,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                 >
                   <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{a.displayName}</p>
+                    <p className="text-body-s text-white truncate">{a.displayName}</p>
                     <p className="text-caption text-ink-2 truncate">{a.email}</p>
                   </div>
                 </button>
@@ -135,7 +135,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
                 >
                   <span className="material-symbols-outlined text-ink-2 text-base">{a.icon}</span>
-                  <span className="text-sm text-white">{a.label}</span>
+                  <span className="text-body-s text-white">{a.label}</span>
                 </button>
               ))}
             </div>

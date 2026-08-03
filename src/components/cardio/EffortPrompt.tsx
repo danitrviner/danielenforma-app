@@ -21,7 +21,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
         <div>
           <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Esfuerzo percibido</p>
           <p className="font-sans font-black text-6xl text-accent tabular-nums mt-2">{pe}</p>
-          <p className="text-sm font-sans font-semibold text-white mt-1">{peLabel(pe)}</p>
+          <p className="text-body-s font-sans font-semibold text-white mt-1">{peLabel(pe)}</p>
         </div>
 
         <input

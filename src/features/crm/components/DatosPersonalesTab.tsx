@@ -182,7 +182,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       {mostrarCamposBaja && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
           <div className="sm:col-span-2 flex items-start gap-1.5">
-            <span className="material-symbols-outlined text-[13px] text-danger shrink-0 mt-0.5">warning</span>
+            <span className="material-symbols-outlined text-body-s text-danger shrink-0 mt-0.5">warning</span>
             <p className="font-sans text-caption text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
               queda incalculable para siempre.

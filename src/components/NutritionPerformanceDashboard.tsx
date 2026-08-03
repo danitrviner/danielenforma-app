@@ -250,7 +250,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             onClick={onEdit}
             className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
           >
-            <span className="material-symbols-outlined text-sm text-accent">add</span>
+            <span className="material-symbols-outlined text-body-s text-accent">add</span>
             Crear periodización
           </button>
         )}

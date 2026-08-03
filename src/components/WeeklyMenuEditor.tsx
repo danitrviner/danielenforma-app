@@ -279,7 +279,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-body-s">arrow_back</span>
           </button>
           <div>
             <h2 className="font-sans font-extrabold text-2xl text-white">Generar menú semanal</h2>
@@ -319,7 +319,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 font-mono"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50 font-mono"
           />
         </div>
 
@@ -338,7 +338,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <input
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
-                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-body-s text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>
               </div>
@@ -355,7 +355,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             {batch && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">
-            <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+            <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
               <span className="material-symbols-outlined text-base text-accent">inventory_2</span>
               Batch cooking
             </span>
@@ -374,7 +374,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               <button
                 key={v}
                 onClick={() => setVariety(v)}
-                className={`flex-1 py-2.5 rounded-control font-mono font-bold text-sm transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-hairline text-ink-2 hover:text-white'}`}
+                className={`flex-1 py-2.5 rounded-control font-mono font-bold text-body-s transition-all ${variety === v ? 'bg-accent text-black' : 'bg-surface border border-hairline text-ink-2 hover:text-white'}`}
               >
                 {v}
               </button>
@@ -421,12 +421,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <button
             onClick={handleGenerate}
             disabled={pctSum !== 100 || scheduledCount === 0}
-            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar menú
           </button>
-          <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-sm rounded-control transition-all">
+          <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-body-s rounded-control transition-all">
             Cancelar
           </button>
         </div>
@@ -440,7 +440,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <span className="material-symbols-outlined text-4xl text-accent animate-spin">progress_activity</span>
-        <p className="font-mono text-sm text-white">{genPhase}</p>
+        <p className="font-mono text-body-s text-white">{genPhase}</p>
         <p className="font-mono text-caption text-ink-3">Repartiendo recetas por comida y ajustando escalas…</p>
       </div>
     );
@@ -454,7 +454,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          <span className="material-symbols-outlined text-body-s">arrow_back</span>
         </button>
         <div className="flex-1 min-w-0">
           <h2 className="font-sans font-extrabold text-2xl text-white truncate flex items-center gap-2">
@@ -477,7 +477,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           onClick={() => setShowPrep(v => !v)}
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors"
         >
-          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
+          <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
             <span className="material-symbols-outlined text-accent text-base">{menu.batchCooking ? 'inventory_2' : 'shopping_cart'}</span>
             {menu.batchCooking ? 'Cocina de la semana + lista de la compra' : 'Lista de la compra'}
           </span>
@@ -529,7 +529,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-ink-2 text-base">{expanded ? 'expand_less' : 'expand_more'}</span>
-                  <span className="font-sans font-bold text-sm text-white">{WEEK_DAY_FULL[day.day]}</span>
+                  <span className="font-sans font-bold text-body-s text-white">{WEEK_DAY_FULL[day.day]}</span>
                   <span className="font-mono text-caption text-ink-3">{day.dietName ?? 'Libre'}</span>
                 </div>
                 <span className={`text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border ${badge.cls}`}>{badge.label}</span>
@@ -546,7 +546,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                           onClick={() => handleRegenerateDay(day.day)}
                           className="flex items-center gap-1.5 text-caption font-mono text-data hover:text-white transition-colors"
                         >
-                          <span className="material-symbols-outlined text-sm">refresh</span>
+                          <span className="material-symbols-outlined text-body-s">refresh</span>
                           Regenerar día completo
                         </button>
                       </div>
@@ -563,7 +563,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                 <span className="font-mono text-caption text-ink-3 uppercase">{meal.name}</span>
                                 {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
                               </div>
-                              <p className="font-sans font-bold text-sm text-white leading-tight truncate">{meal.recipeName}</p>
+                              <p className="font-sans font-bold text-body-s text-white leading-tight truncate">{meal.recipeName}</p>
                               <p className="font-mono text-caption text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1.5">
@@ -581,14 +581,14 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                               onClick={() => openPicker(day.day, meal.id, mealIdx)}
                               className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
                             >
-                              <span className="material-symbols-outlined text-sm">swap_horiz</span>
+                              <span className="material-symbols-outlined text-body-s">swap_horiz</span>
                               Cambiar receta
                             </button>
                             <button
                               onClick={() => handleRegenerateMeal(day.day, mealIdx)}
                               className="flex items-center gap-1 text-caption font-mono text-ink-2 hover:text-white transition-colors"
                             >
-                              <span className="material-symbols-outlined text-sm">refresh</span>
+                              <span className="material-symbols-outlined text-body-s">refresh</span>
                               Regenerar comida
                             </button>
                           </div>
@@ -633,7 +633,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handlePublish}
           disabled={saving}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-sm uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">publish</span>
           {saving ? 'Guardando…' : 'Publicar menú'}
@@ -641,12 +641,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handleSaveDraft}
           disabled={saving}
-          className="flex-1 py-3 bg-raised border border-hairline text-ink-2 hover:text-white font-mono text-sm uppercase rounded-control transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-raised border border-hairline text-ink-2 hover:text-white font-mono text-body-s uppercase rounded-control transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-base">save</span>
           Guardar borrador
         </button>
-        <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-sm rounded-control transition-all">
+        <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-body-s rounded-control transition-all">
           Cancelar
         </button>
       </div>

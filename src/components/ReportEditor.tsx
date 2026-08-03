@@ -62,7 +62,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -73,7 +73,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-2.5 text-body-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
@@ -88,7 +88,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
                         {s.included ? 'check_box' : 'check_box_outline_blank'}
                       </span>
-                      <span className={`text-sm font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
+                      <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
                       <input

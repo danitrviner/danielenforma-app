@@ -35,7 +35,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
           {band && (
             <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
               <p className="text-caption font-mono uppercase" style={{ color: READINESS_COLOR[band] }}>Preparación</p>
-              <p className="font-sans font-bold text-sm" style={{ color: READINESS_COLOR[band] }}>{READINESS_LABEL[band]}</p>
+              <p className="font-sans font-bold text-body-s" style={{ color: READINESS_COLOR[band] }}>{READINESS_LABEL[band]}</p>
             </div>
           )}
         </div>

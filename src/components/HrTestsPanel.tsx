@@ -225,7 +225,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           return (
             <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-sans font-semibold text-sm text-white">{t.title}</p>
+                <p className="font-sans font-semibold text-body-s text-white">{t.title}</p>
                 {t.highEffort && <span className="text-caption font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
               </div>
               <p className="text-caption text-ink-2 font-mono mt-1">{t.desc}</p>

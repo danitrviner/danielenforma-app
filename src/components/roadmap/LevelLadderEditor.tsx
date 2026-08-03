@@ -126,7 +126,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                 value={level.name}
                 onChange={e => updateLevel(level.id, { name: e.target.value })}
                 placeholder="Nombre del nivel"
-                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
+                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-body-s font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
                 <span className="font-mono text-caption text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
@@ -177,7 +177,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     </label>
                   )}
                   <button onClick={() => removeCriterion(level.id, c.id)} className="text-ink-2 hover:text-red-400">
-                    <span className="material-symbols-outlined text-sm">close</span>
+                    <span className="material-symbols-outlined text-body-s">close</span>
                   </button>
                 </div>
               ))}

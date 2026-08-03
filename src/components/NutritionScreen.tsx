@@ -814,11 +814,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     <div className="w-full space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
-        <p className="text-ink-2 text-sm mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
+        <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
       </div>
 
       {flashMsg && (
-        <div className="flex items-center gap-2 bg-accent/10 border border-accent/25 text-white px-4 py-3 rounded-surface text-sm">
+        <div className="flex items-center gap-2 bg-accent/10 border border-accent/25 text-white px-4 py-3 rounded-surface text-body-s">
           <span className="material-symbols-outlined text-accent text-base">check_circle</span>
           {flashMsg}
         </div>
@@ -829,7 +829,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <div className="flex items-center justify-between gap-3 bg-data/10 border border-data/30 rounded-surface px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-lg flex-shrink-0">swap_horiz</span>
-            <p className="font-sans font-bold text-data text-sm">{phaseBanner}</p>
+            <p className="font-sans font-bold text-data text-body-s">{phaseBanner}</p>
           </div>
           <button
             onClick={() => setPhaseBanner(null)}
@@ -843,7 +843,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {/* Pending coach diets banner — different days can carry different diets
           (día A/B/C); this flags the ones still missing food items to hit budget. */}
       {pendingScheduledDiets.length > 0 && (
-        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-surface text-sm">
+        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-surface text-body-s">
           <span className="material-symbols-outlined text-amber-400 text-base flex-shrink-0">pending_actions</span>
           <span>
             Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
@@ -904,13 +904,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       ) : allDietsList.length === 0 && !selectedDiet ? (
         <div className="text-center py-16 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">nutrition</span>
-          <p className="text-ink-2 text-sm font-sans">Aún no tienes ningún menú.</p>
+          <p className="text-ink-2 text-body-s font-sans">Aún no tienes ningún menú.</p>
           <p className="text-ink-2 text-label font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
           <button
             onClick={handleStartBlank}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-body-s">add</span>
             Crear mi primer menú
           </button>
         </div>
@@ -941,7 +941,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </div>
                 </>
               ) : (
-                <span className="block font-sans text-ink-2 text-sm mt-1">Día libre — sin dieta programada.</span>
+                <span className="block font-sans text-ink-2 text-body-s mt-1">Día libre — sin dieta programada.</span>
               )}
             </div>
             <button
@@ -975,7 +975,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 onClick={handleStartBlank}
                 className="flex items-center gap-1 px-3 py-2.5 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-mono text-label font-bold uppercase tracking-wider transition-all"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
+                <span className="material-symbols-outlined text-body-s">add</span>
                 Nuevo
               </button>
             </div>
@@ -1069,7 +1069,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Overall progress bar */}
               <div className="bg-surface border border-hairline p-4 rounded-surface">
                 <div className="flex justify-between items-end mb-2">
-                  <h2 className="font-sans font-bold text-sm text-ink uppercase tracking-wide">Completados hoy</h2>
+                  <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wide">Completados hoy</h2>
                   <span className="font-mono text-label text-accent font-bold">{doneItems} / {totalItems}</span>
                 </div>
                 <div className="h-2 w-full bg-raised rounded-full overflow-hidden">
@@ -1141,7 +1141,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               title="Quitar comida"
                               className="text-ink-2 hover:text-red-400 transition-colors p-1"
                             >
-                              <span className="material-symbols-outlined text-sm select-none">delete</span>
+                              <span className="material-symbols-outlined text-body-s select-none">delete</span>
                             </button>
                           )}
                         </div>
@@ -1168,7 +1168,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             onClick={() => setSavingMealAsRecipeId(null)}
                             className="text-ink-2 hover:text-white p-1"
                           >
-                            <span className="material-symbols-outlined text-sm">close</span>
+                            <span className="material-symbols-outlined text-body-s">close</span>
                           </button>
                         </div>
                       )}
@@ -1214,7 +1214,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               onClick={() => handleOpenAddPicker(meal.id)}
                               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
                             >
-                              <span className="material-symbols-outlined text-sm select-none">add_circle</span>
+                              <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
                               <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
                             </button>
                           </div>
@@ -1230,7 +1230,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 onClick={() => handleToggleDone(meal.id, idx)}
                                 className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
                               >
-                                {st.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
+                                {st.done && <span className="material-symbols-outlined text-body-s font-black">check</span>}
                               </button>
 
                               {/* Category badge */}
@@ -1255,7 +1255,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                   title="Cambiar comida"
                                   className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-1.5 -m-1.5"
                                 >
-                                  <span className="material-symbols-outlined text-sm select-none">skillet</span>
+                                  <span className="material-symbols-outlined text-body-s select-none">skillet</span>
                                 </button>
                               )}
                               {/* Swap button */}
@@ -1264,7 +1264,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 title="Cambiar alimento"
                                 className="text-ink-2 hover:text-data transition-colors flex-shrink-0 p-1.5 -m-1.5"
                               >
-                                <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
+                                <span className="material-symbols-outlined text-body-s select-none">swap_horiz</span>
                               </button>
                               {/* Delete button — only for recipe-added items */}
                               {idx >= (origItemCounts[meal.id] ?? Infinity) && (
@@ -1273,7 +1273,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                   title="Quitar"
                                   className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5"
                                 >
-                                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                                  <span className="material-symbols-outlined text-body-s select-none">close</span>
                                 </button>
                               )}
                             </div>
@@ -1284,7 +1284,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             onClick={() => handleOpenAddPicker(meal.id)}
                             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                           >
-                            <span className="material-symbols-outlined text-sm select-none">add_circle</span>
+                            <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
                             <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
                           </button>
                         )}
@@ -1310,7 +1310,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   disabled={saving}
                   className="flex items-center gap-1.5 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
                 >
-                  <span className="material-symbols-outlined text-sm">save</span>
+                  <span className="material-symbols-outlined text-body-s">save</span>
                   {saving ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
@@ -1342,13 +1342,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   onClick={() => setRecipePickerMealId(null)}
                   className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
                 >
-                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                  <span className="material-symbols-outlined text-body-s select-none">close</span>
                 </button>
               </div>
 
               {/* Search */}
               <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-                <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
+                <span className="material-symbols-outlined text-ink-2 text-body-s select-none">search</span>
                 <input
                   type="text"
                   placeholder="Buscar receta..."
@@ -1412,7 +1412,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           {isFav && (
                             <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
-                          <span className="font-sans font-bold text-sm text-white group-hover:text-accent transition-colors truncate">{recipe.name}</span>
+                          <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{recipe.name}</span>
                         </div>
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
@@ -1453,7 +1453,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 onClick={() => setSwapContext(null)}
                 className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
               >
-                <span className="material-symbols-outlined text-sm select-none">close</span>
+                <span className="material-symbols-outlined text-body-s select-none">close</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
@@ -1475,7 +1475,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="font-sans font-bold text-sm text-white group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
+                    <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
                     <span className="font-mono text-caption text-accent/70">{recipe.kcal} kcal</span>
                   </div>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
@@ -1498,7 +1498,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </span>
               </div>
               <button onClick={() => setPickerItem(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
-                <span className="material-symbols-outlined text-sm select-none">close</span>
+                <span className="material-symbols-outlined text-body-s select-none">close</span>
               </button>
             </div>
 
@@ -1521,7 +1521,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </div>
 
             <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-              <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
+              <span className="material-symbols-outlined text-ink-2 text-body-s select-none">search</span>
               <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
@@ -1564,7 +1564,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-accent text-base">edit</span>
-              <span className="text-sm text-white font-sans">Actualizar esta dieta</span>
+              <span className="text-body-s text-white font-sans">Actualizar esta dieta</span>
             </button>
             <button
               onClick={handleSaveAsNew}
@@ -1572,7 +1572,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               className="w-full flex items-center gap-2 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-data text-base">bookmark_add</span>
-              <span className="text-sm text-white font-sans">Guardar como nueva dieta mía</span>
+              <span className="text-body-s text-white font-sans">Guardar como nueva dieta mía</span>
             </button>
             <button
               onClick={() => setSaveChoiceOpen(false)}
@@ -1599,7 +1599,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   onClick={() => handleChooseDietForRecipe(dt)}
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-sm text-white font-sans truncate">{dt.name}</span>
+                  <span className="text-body-s text-white font-sans truncate">{dt.name}</span>
                   <span className="material-symbols-outlined text-ink-2 text-base flex-shrink-0">add_circle</span>
                 </button>
               ))}
@@ -1607,7 +1607,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 onClick={() => handleChooseDietForRecipe('new')}
                 className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
               >
-                <span className="text-sm text-accent font-sans font-bold">Nueva dieta</span>
+                <span className="text-body-s text-accent font-sans font-bold">Nueva dieta</span>
                 <span className="material-symbols-outlined text-accent text-base flex-shrink-0">add_circle</span>
               </button>
             </div>
@@ -1636,7 +1636,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   onClick={() => { addRecipeToMeal(chooseMealForRecipe, meal.id, selectedDiet); setChooseMealForRecipe(null); }}
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-sm text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
+                  <span className="text-body-s text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
                   <span className="material-symbols-outlined text-ink-2 text-base">add_circle</span>
                 </button>
               ))}

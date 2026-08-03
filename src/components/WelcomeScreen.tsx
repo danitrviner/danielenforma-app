@@ -156,12 +156,12 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Confirma tu invitación</p>
           </div>
 
-          <p className="text-sm text-ink-2 mb-5 text-center">
+          <p className="text-body-s text-ink-2 mb-5 text-center">
             Para completar tu acceso, confirma el correo electrónico al que tu entrenador te envió la invitación.
           </p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-control text-sm mb-5 text-center">
+            <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-control text-body-s mb-5 text-center">
               {error}
             </div>
           )}
@@ -172,14 +172,14 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={inviteEmailInput}
               onChange={e => setInviteEmailInput(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
               required
               autoFocus
             />
             <button
               type="submit"
               disabled={completingInvite}
-              className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-sm tracking-widest disabled:opacity-50"
+              className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-body-s tracking-widest disabled:opacity-50"
             >
               {completingInvite ? 'Verificando...' : 'Continuar'}
             </button>
@@ -206,13 +206,13 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-control text-sm mb-6 text-center">
+          <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-control text-body-s mb-6 text-center">
             {error}
           </div>
         )}
 
         {resetMessage && (
-          <div className="bg-accent/10 border border-accent/35 text-accent p-3 rounded-control text-sm mb-6 text-center">
+          <div className="bg-accent/10 border border-accent/35 text-accent p-3 rounded-control text-body-s mb-6 text-center">
             {resetMessage}
           </div>
         )}
@@ -225,7 +225,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="atleta@enforma.com"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -247,7 +247,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -255,10 +255,10 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-sm tracking-widest flex items-center justify-center gap-2"
+            className="w-full h-[48px] bg-accent text-black font-sans font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all text-body-s tracking-widest flex items-center justify-center gap-2"
           >
             {loading ? 'Procesando...' : 'Ingresar al Portal'}
-            <span className="material-symbols-outlined text-sm">login</span>
+            <span className="material-symbols-outlined text-body-s">login</span>
           </button>
         </form>
 
@@ -272,7 +272,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-control border border-hairline active:scale-95 transition-all text-sm flex items-center justify-center gap-3"
+          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-control border border-hairline active:scale-95 transition-all text-body-s flex items-center justify-center gap-3"
         >
           <img 
             src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 

@@ -599,7 +599,7 @@ export default function CardioScreen({ profile }: Props) {
             <div className="flex items-center justify-between">
               <h3 className="text-caption font-mono uppercase text-data tracking-wider">Historial</h3>
               <button onClick={() => setShowManualAdd(true)} className="text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">add</span> Añadir a mano
+                <span className="material-symbols-outlined text-body-s">add</span> Añadir a mano
               </button>
             </div>
 
@@ -633,7 +633,7 @@ export default function CardioScreen({ profile }: Props) {
                 className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
                 <span className="material-symbols-outlined text-data">favorite</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-semibold text-sm text-white">
+                  <p className="font-sans font-semibold text-body-s text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
                     {s.manual && <span className="ml-1.5 text-caption font-mono text-ink-2 uppercase">manual</span>}
                   </p>

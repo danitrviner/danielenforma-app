@@ -41,7 +41,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
-                <span className="material-symbols-outlined text-sm">{s.icon}</span>
+                <span className="material-symbols-outlined text-body-s">{s.icon}</span>
                 {s.label}
               </button>
             );

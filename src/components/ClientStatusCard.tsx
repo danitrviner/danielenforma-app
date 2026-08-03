@@ -136,7 +136,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-body-s text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
@@ -152,9 +152,9 @@ export default function ClientStatusCard({
         ) : (
           <button onClick={() => { setNoteDraft(note); setEditingNote(true); }} className="flex-1 text-left group">
             {note ? (
-              <p className="text-sm text-white leading-relaxed">{note}</p>
+              <p className="text-body-s text-white leading-relaxed">{note}</p>
             ) : (
-              <p className="text-sm text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
+              <p className="text-body-s text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
             )}
             <span className="text-caption font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
           </button>
@@ -168,7 +168,7 @@ export default function ClientStatusCard({
             <span className="material-symbols-outlined text-label text-accent">flag</span> Fase
           </p>
           {planPhase ? (
-            <p className="text-sm font-bold text-white flex items-center gap-1.5">
+            <p className="text-body-s font-bold text-white flex items-center gap-1.5">
               <span className="material-symbols-outlined text-base" style={{ color: planPhase.color }}>{planPhase.icon}</span>
               {planPhase.name}
             </p>
@@ -194,7 +194,7 @@ export default function ClientStatusCard({
             <span className="material-symbols-outlined text-label text-accent">target</span> Objetivo
           </p>
           {onboardingData?.goalBody ? (
-            <p className="text-sm font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
+            <p className="text-body-s font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
           ) : (
             <p className="text-label text-ink-2/60 italic">Sin objetivo registrado</p>
           )}

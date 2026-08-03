@@ -79,7 +79,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           onClick={() => setShowForm(v => !v)}
           className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
         >
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva tarea'}
         </button>
       </div>
@@ -142,7 +142,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
                 {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`font-sans text-sm truncate ${t.status === 'done' ? 'line-through text-ink-2' : 'text-white'}`}>{t.title}</p>
+                <p className={`font-sans text-body-s truncate ${t.status === 'done' ? 'line-through text-ink-2' : 'text-white'}`}>{t.title}</p>
                 {t.dueDate && <p className="font-mono text-caption text-ink-2 mt-0.5">Vence: {t.dueDate}</p>}
               </div>
             </button>

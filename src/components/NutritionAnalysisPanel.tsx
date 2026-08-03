@@ -143,7 +143,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   };
 
   if (loading) {
-    return <div className="text-center py-10 font-mono text-sm text-ink-2 animate-pulse">Analizando…</div>;
+    return <div className="text-center py-10 font-mono text-body-s text-ink-2 animate-pulse">Analizando…</div>;
   }
   if (!report) {
     return <div className="text-center py-10 font-mono text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
@@ -162,7 +162,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Summary */}
       <div className="bg-surface border border-hairline rounded-surface p-5">
         <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
-        <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
+        <p className="text-body-s text-white font-sans leading-relaxed">{report.summary}</p>
       </div>
 
       {/* Metric cards */}
@@ -184,7 +184,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
             {report.macroDeviation.map(m => (
               <div key={m.category}>
                 <span className="block font-mono text-caption text-ink-2">{m.category}</span>
-                <span className={`block font-mono text-sm font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
+                <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
                 <span className="block font-mono text-caption text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>

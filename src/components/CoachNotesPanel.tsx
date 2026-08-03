@@ -79,7 +79,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           onClick={() => setShowForm(v => !v)}
           className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
         >
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva nota'}
         </button>
       </div>
@@ -150,7 +150,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
                 onClick={() => handleDelete(n.id)}
                 className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1"
               >
-                <span className="material-symbols-outlined text-sm">delete</span>
+                <span className="material-symbols-outlined text-body-s">delete</span>
               </button>
             </div>
           ))}

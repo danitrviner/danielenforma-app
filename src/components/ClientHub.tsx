@@ -400,7 +400,7 @@ export default function ClientHub({
             onClick={guardedBack}
             className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
           </button>
           <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-accent/30 object-cover" />
@@ -414,7 +414,7 @@ export default function ClientHub({
             <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
               <span className={`text-caption font-bold uppercase ${adh.text}`}>{adh.label}</span>
-              <span className={`text-sm font-black ${adh.text}`}>{adherence.score}</span>
+              <span className={`text-body-s font-black ${adh.text}`}>{adherence.score}</span>
             </div>
           </div>
         </div>
@@ -501,7 +501,7 @@ export default function ClientHub({
                       : 'border-transparent text-ink-2 hover:text-white'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-sm">{TAB_META[tab].icon}</span>
+                  <span className="material-symbols-outlined text-body-s">{TAB_META[tab].icon}</span>
                   {TAB_META[tab].label}
                 </button>
               ))}

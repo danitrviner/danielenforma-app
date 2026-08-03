@@ -286,7 +286,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Nueva receta
         </button>
       </div>
@@ -366,7 +366,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
       {/* ── Biblioteca Indya (solo lectura) ─────────────────────────────── */}
       <section className="space-y-4 pt-4 border-t border-hairline">
-        <h2 className="font-sans font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+        <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-base">library_books</span>
           Biblioteca Indya
           <span className="font-mono text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
@@ -450,8 +450,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
-                    ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-sm">expand_more</span>Cargar más recetas</>
+                    ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
+                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>Cargar más recetas</>
                   }
                 </button>
               </div>
@@ -482,7 +482,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Ej. Bowl de pollo y quinoa"
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                className="w-full bg-raised border border-hairline rounded-control px-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
               />
             </div>
 
@@ -550,13 +550,13 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
               <div className="flex gap-2 items-center">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-ink-2">search</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-body-s text-ink-2">search</span>
                   <input
                     type="text"
                     value={ingredientSearch}
                     onChange={e => setIngSearch(e.target.value)}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                    className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-2xl">
@@ -579,7 +579,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 {/* Qty stepper */}
                 <div className="flex items-center gap-1 shrink-0 bg-raised border border-hairline rounded-surface px-1">
                   <button type="button" onClick={() => setIngQty(q => Math.max(0.25, Math.round((q - 0.25) * 4) / 4))} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">-</button>
-                  <span className="w-8 text-center font-mono text-sm text-white select-none">{ingredientQty}</span>
+                  <span className="w-8 text-center font-mono text-body-s text-white select-none">{ingredientQty}</span>
                   <button type="button" onClick={() => setIngQty(q => Math.round((q + 0.25) * 4) / 4)} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">+</button>
                 </div>
               </div>
@@ -596,7 +596,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                         <button type="button" onClick={() => adjustIngQty(idx, 0.25)} className="w-6 h-6 bg-raised rounded-control text-white text-label hover:bg-raised transition-colors">+</button>
                       </div>
                       <button type="button" onClick={() => removeIngredient(idx)} className="text-ink-2 hover:text-red-400 transition-colors">
-                        <span className="material-symbols-outlined text-sm">close</span>
+                        <span className="material-symbols-outlined text-body-s">close</span>
                       </button>
                     </li>
                   ))}
@@ -614,7 +614,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewExtra(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra(); } }}
                   placeholder="Ej. Sal al gusto"
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                 />
                 <button type="button" onClick={addExtra} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-mono text-label uppercase">Añadir</button>
               </div>
@@ -641,7 +641,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewStep(e.target.value)}
                   placeholder="Describe el paso..."
                   rows={2}
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-sm text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
                 />
                 <button type="button" onClick={addStep} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-mono text-label uppercase self-end mb-0">Añadir</button>
               </div>
@@ -652,7 +652,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                       <span className="w-5 h-5 rounded-full bg-raised text-ink-2 font-mono text-caption font-bold flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
                       <p className="text-label text-ink-2 flex-1 leading-relaxed">{step}</p>
                       <button type="button" onClick={() => setForm(f => ({ ...f, steps: f.steps.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors shrink-0">
-                        <span className="material-symbols-outlined text-sm">close</span>
+                        <span className="material-symbols-outlined text-body-s">close</span>
                       </button>
                     </li>
                   ))}

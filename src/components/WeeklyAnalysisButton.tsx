@@ -61,7 +61,7 @@ export default function WeeklyAnalysisButton() {
           <div className="bg-bg border border-hairline rounded-surface w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
+              <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
               <button onClick={() => !busy && setOpen(false)} disabled={busy}
                 className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -78,7 +78,7 @@ export default function WeeklyAnalysisButton() {
                 <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-label">{error}</div>
               )}
               {result && (
-                <div className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{result}</div>
+                <div className="text-body-s text-ink whitespace-pre-wrap leading-relaxed">{result}</div>
               )}
             </div>
             {result && (

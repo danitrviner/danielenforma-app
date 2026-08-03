@@ -64,7 +64,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
             onClick={() => setModalSuscripcion(true)}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-body-s">add</span>
             Nueva suscripción
           </button>
         </div>
@@ -86,14 +86,14 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
             onClick={() => setModalPago(true)}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-body-s">add</span>
             Registrar pago
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-ink-3 pointer-events-none">
+            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-body-s text-ink-3 pointer-events-none">
               search
             </span>
             <input

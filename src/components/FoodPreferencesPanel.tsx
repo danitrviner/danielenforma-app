@@ -75,11 +75,11 @@ export default function FoodPreferencesPanel({
         <div className="flex items-center justify-between">
           <div className="flex gap-3 font-mono text-label">
             <span className="flex items-center gap-1 text-amber-400">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               Favoritos ({totalFav})
             </span>
             <span className="flex items-center gap-1 text-red-400">
-              <span className="material-symbols-outlined text-sm">thumb_down</span>
+              <span className="material-symbols-outlined text-body-s">thumb_down</span>
               No quiero ({totalDislike})
             </span>
           </div>
@@ -88,7 +88,7 @@ export default function FoodPreferencesPanel({
             disabled={saving}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+            <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
           </button>
         </div>
@@ -96,7 +96,7 @@ export default function FoodPreferencesPanel({
         {/* Allergies reminder */}
         {allergies.length > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-surface">
-            <span className="material-symbols-outlined text-sm text-amber-400">warning</span>
+            <span className="material-symbols-outlined text-body-s text-amber-400">warning</span>
             <p className="font-mono text-caption text-amber-300">
               Alergias/intolerancias: {allergies.join(', ')} — gestionadas en la ficha.
             </p>
@@ -175,7 +175,7 @@ export default function FoodPreferencesPanel({
           disabled={saving}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
         >
-          <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+          <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
           {saving ? '…' : saved ? 'OK' : 'Guardar'}
         </button>
       </div>
@@ -195,7 +195,7 @@ export default function FoodPreferencesPanel({
             onClick={() => setSearch('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-white"
           >
-            <span className="material-symbols-outlined text-sm">close</span>
+            <span className="material-symbols-outlined text-body-s">close</span>
           </button>
         )}
       </div>
@@ -241,7 +241,7 @@ export default function FoodPreferencesPanel({
                       }`}
                       title="No me gusta"
                     >
-                      <span className="material-symbols-outlined text-sm">thumb_down</span>
+                      <span className="material-symbols-outlined text-body-s">thumb_down</span>
                     </button>
                     <button
                       onClick={() => toggle(food, 'favorite')}
@@ -253,7 +253,7 @@ export default function FoodPreferencesPanel({
                       title="Favorito"
                     >
                       <span
-                        className="material-symbols-outlined text-sm"
+                        className="material-symbols-outlined text-body-s"
                         style={{ fontVariationSettings: pref === 'favorite' ? "'FILL' 1" : "'FILL' 0" }}
                       >star</span>
                     </button>

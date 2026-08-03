@@ -192,7 +192,7 @@ function QuestionnaireForm({
           className="w-full h-[44px] bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           {saving ? 'Enviando...' : 'Enviar Respuesta'}
-          <span className="material-symbols-outlined text-sm">send</span>
+          <span className="material-symbols-outlined text-body-s">send</span>
         </button>
       </form>
     </div>
@@ -365,7 +365,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     <div className="space-y-6">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Check-in Semanal</h1>
-        <p className="text-ink-2 text-sm mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
+        <p className="text-ink-2 text-body-s mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
@@ -417,7 +417,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+                className="w-24 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
               <span className="font-mono text-label text-ink-3">kg</span>
             </div>
@@ -431,7 +431,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             className="flex-shrink-0 w-9 h-9 rounded-control border border-hairline flex items-center justify-center text-ink-2 hover:text-white hover:border-hairline transition-all"
             title="Editar"
           >
-            <span className="material-symbols-outlined text-sm">edit</span>
+            <span className="material-symbols-outlined text-body-s">edit</span>
           </button>
         ) : (
           <button
@@ -441,8 +441,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             title="Guardar peso"
           >
             {bwSaving
-              ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-              : <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+              ? <span className="material-symbols-outlined text-body-s animate-spin">refresh</span>
+              : <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
             }
           </button>
         )}
@@ -485,7 +485,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-3.5 text-left transition-all group"
                 >
                   <div>
-                    <p className="font-sans font-semibold text-sm text-white group-hover:text-accent transition-colors">{q.title}</p>
+                    <p className="font-sans font-semibold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
                     {q.description && <p className="text-caption text-ink-2 mt-0.5 font-sans">{q.description}</p>}
                     <p className="font-mono text-caption text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
@@ -501,12 +501,12 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
         <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
-            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+            <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Cuestionarios futuros
               <span className="font-mono text-caption text-ink-2">({upcomingAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingAssignments.map(a => {
@@ -536,7 +536,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3.5">
-                <p className="font-sans font-semibold text-sm text-white">
+                <p className="font-sans font-semibold text-body-s text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
                 <p className="font-mono text-caption text-ink-2">Sube las fotos abajo</p>
@@ -550,12 +550,12 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
         <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
-            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
+            <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Fotos futuras
               <span className="font-mono text-caption text-ink-2">({upcomingPhotoAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
@@ -594,7 +594,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-label text-ink-2">{item.dateStr}</span>
-                  <span className="font-mono font-bold text-white text-sm">{item.weight} kg</span>
+                  <span className="font-mono font-bold text-white text-body-s">{item.weight} kg</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.mood}</span>
@@ -620,7 +620,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             </div>
           ))}
           {checkins.length === 0 && (
-            <div className="text-ink-2 text-center italic py-12 text-sm">
+            <div className="text-ink-2 text-center italic py-12 text-body-s">
               Aún no tienes registros de peso. Envía tu primer check-in.
             </div>
           )}

@@ -65,7 +65,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-2.5 rounded-control'} border font-sans text-sm transition-all active:scale-95 ${
+      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-2.5 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
           : 'bg-surface border-hairline text-ink-2 hover:border-strong'
@@ -81,14 +81,14 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
         <h2 className="font-sans font-black text-2xl text-white tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-ink-2 mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-body-s text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
     </div>
   );
 }
 
-const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-body-s text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -213,7 +213,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
                 { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
               ].map(i => (
-                <p key={i.icon} className="flex items-center gap-3 text-sm text-ink">
+                <p key={i.icon} className="flex items-center gap-3 text-body-s text-ink">
                   <span className="material-symbols-outlined text-accent">{i.icon}</span>
                   {i.text}
                 </p>
@@ -388,7 +388,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ].filter(Boolean).map((i, idx) => {
                 const item = i as { icon: string; text: string };
                 return (
-                  <p key={idx} className="flex items-center gap-3 text-sm text-ink">
+                  <p key={idx} className="flex items-center gap-3 text-body-s text-ink">
                     <span className="material-symbols-outlined text-accent text-base">{item.icon}</span>
                     {item.text}
                   </p>
@@ -396,7 +396,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               })}
             </div>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-surface text-sm text-center">{error}</div>
+              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-surface text-body-s text-center">{error}</div>
             )}
           </StepShell>
         )}
@@ -407,7 +407,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
+            className="px-5 py-3.5 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-body-s font-bold uppercase tracking-wide"
           >
             Atrás
           </button>
@@ -416,7 +416,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
           >
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </button>
@@ -424,7 +424,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={finish}
             disabled={saving}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
           >
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
           </button>

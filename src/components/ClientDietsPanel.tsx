@@ -108,7 +108,7 @@ export default function ClientDietsPanel({
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-sm">nutrition</span>
+            <span className="material-symbols-outlined text-accent text-body-s">nutrition</span>
             Dietas disponibles
           </h3>
           <div className="flex gap-2">
@@ -116,7 +116,7 @@ export default function ClientDietsPanel({
               onClick={() => setDietEditorDiet(null)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-body-s">add</span>
               Nueva dieta
             </button>
           </div>
@@ -150,7 +150,7 @@ export default function ClientDietsPanel({
                   {/* Diet info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <p className={`font-sans font-bold text-sm truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
+                      <p className={`font-sans font-bold text-body-s truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
                       {dt.isDraft === true && (
                         <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-control border border-amber-400/20">
                           BORRADOR
@@ -174,7 +174,7 @@ export default function ClientDietsPanel({
                     className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
                     title="Editar dieta"
                   >
-                    <span className="material-symbols-outlined text-sm">edit</span>
+                    <span className="material-symbols-outlined text-body-s">edit</span>
                     Editar
                   </button>
                 </div>
@@ -188,7 +188,7 @@ export default function ClientDietsPanel({
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-sm">calendar_month</span>
+            <span className="material-symbols-outlined text-accent text-body-s">calendar_month</span>
             Programación semanal
           </h3>
           {pendingScheduledDiets.length > 0 && (
@@ -242,14 +242,14 @@ export default function ClientDietsPanel({
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-sm">restaurant_menu</span>
+            <span className="material-symbols-outlined text-accent text-body-s">restaurant_menu</span>
             Menú semanal
           </h3>
           <button
             onClick={() => setMenuEditor('new')}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">auto_awesome</span>
+            <span className="material-symbols-outlined text-body-s">auto_awesome</span>
             Generar menú
           </button>
         </div>
@@ -259,7 +259,7 @@ export default function ClientDietsPanel({
 
         {publishedMenu && menuAdherence.daysLogged > 0 && (
           <div className="flex items-center gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
-            <span className="material-symbols-outlined text-data text-sm">task_alt</span>
+            <span className="material-symbols-outlined text-data text-body-s">task_alt</span>
             <span className="font-mono text-caption text-ink-2">
               Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
             </span>
@@ -277,7 +277,7 @@ export default function ClientDietsPanel({
               <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-surface border bg-surface border-hairline">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    <p className="font-sans font-bold text-sm text-white truncate">{m.name}</p>
+                    <p className="font-sans font-bold text-body-s text-white truncate">{m.name}</p>
                     <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
                       {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                     </span>
@@ -300,7 +300,7 @@ export default function ClientDietsPanel({
                   onClick={() => setMenuEditor(m)}
                   className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
                 >
-                  <span className="material-symbols-outlined text-sm">edit</span>
+                  <span className="material-symbols-outlined text-body-s">edit</span>
                   {m.status === 'published' ? 'Revisar' : 'Editar'}
                 </button>
                 <button
@@ -308,7 +308,7 @@ export default function ClientDietsPanel({
                   className="flex-shrink-0 text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors"
                   title="Eliminar"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>
               </div>
             ))}
@@ -321,7 +321,7 @@ export default function ClientDietsPanel({
               onClick={() => setShowSwapHistory(v => !v)}
               className="flex items-center gap-1.5 text-caption font-mono text-ink-2 hover:text-white transition-colors"
             >
-              <span className="material-symbols-outlined text-sm">{showSwapHistory ? 'expand_less' : 'history'}</span>
+              <span className="material-symbols-outlined text-body-s">{showSwapHistory ? 'expand_less' : 'history'}</span>
               Historial de cambios del atleta
             </button>
             {showSwapHistory && (
@@ -361,7 +361,7 @@ export default function ClientDietsPanel({
       {nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-data text-sm">tune</span>
+            <span className="material-symbols-outlined text-data text-body-s">tune</span>
             Modos de alimentación habilitados
           </h3>
           <p className="text-caption text-ink-2 font-mono">
@@ -391,7 +391,7 @@ export default function ClientDietsPanel({
       {nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-data text-sm">directions_walk</span>
+            <span className="material-symbols-outlined text-data text-body-s">directions_walk</span>
             Objetivo de pasos
           </h3>
           <div className="grid grid-cols-2 gap-3">

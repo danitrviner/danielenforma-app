@@ -73,7 +73,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
         disabled={value <= min}
         className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
       >−</button>
-      <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
+      <span className="w-8 text-center font-mono text-body-s font-bold" style={{ color: heatmapText(value) }}>
         {value}
       </span>
       <button
@@ -168,15 +168,15 @@ const ExerciseRow: React.FC<{
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-sm">arrow_upward</span>
+          <span className="material-symbols-outlined text-body-s">arrow_upward</span>
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-sm">arrow_downward</span>
+          <span className="material-symbols-outlined text-body-s">arrow_downward</span>
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400">
-          <span className="material-symbols-outlined text-sm">close</span>
+          <span className="material-symbols-outlined text-body-s">close</span>
         </button>
       </div>
     </div>
@@ -237,7 +237,7 @@ const DayBlock: React.FC<{
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
+        <span className={`material-symbols-outlined text-body-s text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
         <input
@@ -254,7 +254,7 @@ const DayBlock: React.FC<{
           className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
           title="Eliminar día"
         >
-          <span className="material-symbols-outlined text-sm">delete</span>
+          <span className="material-symbols-outlined text-body-s">delete</span>
         </button>
       </div>
 
@@ -375,7 +375,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Stage header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
+        <span className={`material-symbols-outlined text-body-s text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
         <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
@@ -384,7 +384,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           value={stage.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...stage, name: e.target.value })}
-          className="flex-1 bg-transparent font-sans font-bold text-sm text-white focus:outline-none"
+          className="flex-1 bg-transparent font-sans font-bold text-body-s text-white focus:outline-none"
           placeholder="Nombre del mesociclo"
         />
         <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -402,7 +402,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-colors"
               title="Eliminar mesociclo"
             >
-              <span className="material-symbols-outlined text-sm">delete</span>
+              <span className="material-symbols-outlined text-body-s">delete</span>
             </button>
           )}
         </div>
@@ -490,7 +490,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                   disabled={stage.days.length >= stage.daysPerWeek}
                   className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
-                  <span className="material-symbols-outlined text-sm">add</span>
+                  <span className="material-symbols-outlined text-body-s">add</span>
                   Añadir día
                 </button>
               </div>
@@ -627,7 +627,7 @@ function TemplateEditor({
               value={form.name}
               onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
               placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-body-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
             {nameError && <p className="text-red-400 font-mono text-caption mt-1">{nameError}</p>}
           </div>
@@ -638,7 +638,7 @@ function TemplateEditor({
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Breve descripción de la plantilla"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-body-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
           </div>
         </div>
@@ -656,7 +656,7 @@ function TemplateEditor({
               onClick={addStage}
               className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-body-s">add</span>
               Añadir mesociclo
             </button>
           </div>
@@ -736,7 +736,7 @@ function TemplateCard({
     <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
+          <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>
           {tpl.description && (
             <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{tpl.description}</p>
           )}
@@ -754,14 +754,14 @@ function TemplateCard({
             className="p-1.5 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
-            <span className="material-symbols-outlined text-sm">edit</span>
+            <span className="material-symbols-outlined text-body-s">edit</span>
           </button>
           <button
             onClick={onDelete}
             className="p-1.5 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
-            <span className="material-symbols-outlined text-sm">delete</span>
+            <span className="material-symbols-outlined text-body-s">delete</span>
           </button>
         </div>
       </div>
@@ -895,7 +895,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           onClick={openCreate}
           className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Nueva
         </button>
       </div>
@@ -910,7 +910,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       ) : templates.length === 0 ? (
         <div className="py-16 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">library_books</span>
-          <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
+          <p className="font-sans font-bold text-white text-body-s mb-1">Sin plantillas todavía</p>
           <p className="text-ink-2 text-label font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
@@ -939,7 +939,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         return (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-hairline rounded-surface p-6 max-w-sm w-full space-y-4">
-              <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
+              <p className="font-sans font-bold text-white text-body-s">¿Eliminar plantilla?</p>
               <p className="font-mono text-caption text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
               </p>

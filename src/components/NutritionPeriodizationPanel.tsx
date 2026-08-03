@@ -74,12 +74,12 @@ function Stepper({ value, min, max, onChange }: { value: number; min: number; ma
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-sm"
+        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-body-s"
       >−</button>
-      <span className="w-7 text-center font-mono text-sm text-white">{value}</span>
+      <span className="w-7 text-center font-mono text-body-s text-white">{value}</span>
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-sm"
+        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-body-s"
       >+</button>
     </div>
   );
@@ -367,7 +367,7 @@ export default function NutritionPeriodizationPanel({
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-chart-3 text-sm">timeline</span>
+              <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
               Periodización nutricional
             </h3>
           </div>
@@ -378,7 +378,7 @@ export default function NutritionPeriodizationPanel({
               onClick={handleCreate}
               className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
             >
-              <span className="material-symbols-outlined text-sm text-accent">add</span>
+              <span className="material-symbols-outlined text-body-s text-accent">add</span>
               Crear periodización
             </button>
           </div>
@@ -410,7 +410,7 @@ export default function NutritionPeriodizationPanel({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-chart-3 text-sm">timeline</span>
+          <span className="material-symbols-outlined text-chart-3 text-body-s">timeline</span>
           Periodización nutricional
         </h3>
         <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function NutritionPeriodizationPanel({
           type="date"
           value={form.startDate}
           onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-raised border border-hairline text-white text-sm font-mono rounded-control px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
+          className="bg-raised border border-hairline text-white text-body-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
         />
       </div>
 
@@ -479,14 +479,14 @@ export default function NutritionPeriodizationPanel({
                     disabled={idx === 0}
                     className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                    <span className="material-symbols-outlined text-body-s">arrow_upward</span>
                   </button>
                   <button
                     onClick={() => movePhase(idx, 1)}
                     disabled={idx === form.phases.length - 1}
                     className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                    <span className="material-symbols-outlined text-body-s">arrow_downward</span>
                   </button>
                 </div>
                 <input
@@ -494,13 +494,13 @@ export default function NutritionPeriodizationPanel({
                   value={phase.name}
                   onChange={e => updatePhase(idx, { name: e.target.value })}
                   placeholder="Nombre de la fase"
-                  className="flex-1 bg-raised border border-hairline text-white text-sm font-sans rounded-control px-3 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="flex-1 bg-raised border border-hairline text-white text-body-s font-sans rounded-control px-3 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <button
                   onClick={() => removePhase(idx)}
                   className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>
               </div>
 
@@ -596,7 +596,7 @@ export default function NutritionPeriodizationPanel({
           onClick={addPhase}
           className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-mono rounded-control transition-all"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Añadir fase
         </button>
       </div>

@@ -96,7 +96,7 @@ export default function PhotosScreen({ profile }: Props) {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Fotos de Progreso</h1>
-        <p className="text-ink-2 text-sm mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
+        <p className="text-ink-2 text-body-s mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
       </div>
 
       <Coachmark
@@ -118,7 +118,7 @@ export default function PhotosScreen({ profile }: Props) {
                 : 'text-ink-2 hover:text-white'
             }`}
           >
-            <span className="material-symbols-outlined text-sm">{VIEW_ICONS[v]}</span>
+            <span className="material-symbols-outlined text-body-s">{VIEW_ICONS[v]}</span>
             {VIEW_LABELS[v]}
           </button>
         ))}
@@ -127,12 +127,12 @@ export default function PhotosScreen({ profile }: Props) {
       {/* Upload bar */}
       <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="material-symbols-outlined text-ink-2 text-sm">calendar_today</span>
+          <span className="material-symbols-outlined text-ink-2 text-body-s">calendar_today</span>
           <input
             type="date"
             value={uploadDate}
             onChange={e => setUploadDate(e.target.value)}
-            className="bg-transparent border-none text-white font-mono text-sm focus:outline-none focus:ring-0 min-w-0"
+            className="bg-transparent border-none text-white font-mono text-body-s focus:outline-none focus:ring-0 min-w-0"
           />
         </div>
         <button
@@ -141,8 +141,8 @@ export default function PhotosScreen({ profile }: Props) {
           className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
-            ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
-            : <><span className="material-symbols-outlined text-sm">upload</span> Subir foto ({VIEW_LABELS[selectedView]})</>
+            ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span> Subiendo…</>
+            : <><span className="material-symbols-outlined text-body-s">upload</span> Subir foto ({VIEW_LABELS[selectedView]})</>
           }
         </button>
         <input
@@ -161,14 +161,14 @@ export default function PhotosScreen({ profile }: Props) {
       {visiblePhotos.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">photo_camera</span>
-          <p className="text-ink-2 text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
+          <p className="text-ink-2 text-body-s font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
           <p className="text-ink-2 text-label font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">upload</span>
+            <span className="material-symbols-outlined text-body-s">upload</span>
             Subir foto
           </button>
         </div>
@@ -199,7 +199,7 @@ export default function PhotosScreen({ profile }: Props) {
               >
                 {deleting === photo.id
                   ? <span className="material-symbols-outlined text-label animate-spin">progress_activity</span>
-                  : <span className="material-symbols-outlined text-sm">delete</span>
+                  : <span className="material-symbols-outlined text-body-s">delete</span>
                 }
               </button>
             </div>

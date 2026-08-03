@@ -330,7 +330,7 @@ export default function ClientReviewsPanel({
             <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="p-4 border-b border-hairline flex items-center justify-between bg-raised">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
+                  <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
                   Historial Fotográfico
                   {athletePhotos.length > 0 && (
                     <span className="font-mono text-caption text-ink-2">({athletePhotos.length} fotos)</span>
@@ -396,8 +396,8 @@ export default function ClientReviewsPanel({
 
               {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
               <div className="p-4 border-t border-hairline space-y-4">
-                <h4 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-sm">edit_calendar</span>
+                <h4 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-accent text-body-s">edit_calendar</span>
                   Asignar fotos de check-in
                 </h4>
 
@@ -453,13 +453,13 @@ export default function ClientReviewsPanel({
                       const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
                       return (
                         <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                          <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
+                          <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-sans font-bold text-white text-label truncate">{viewsLabel}</p>
                             <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                           </div>
                           <button onClick={() => handleDeactivatePhoto(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
-                            <span className="material-symbols-outlined text-sm">close</span>
+                            <span className="material-symbols-outlined text-body-s">close</span>
                           </button>
                         </div>
                       );
@@ -510,7 +510,7 @@ export default function ClientReviewsPanel({
                     onClick={() => setEditingOnboarding(true)}
                     className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
                   >
-                    <span className="material-symbols-outlined text-sm">edit</span>Editar
+                    <span className="material-symbols-outlined text-body-s">edit</span>Editar
                   </button>
                 </div>
               )}
@@ -577,7 +577,7 @@ export default function ClientReviewsPanel({
                   ]).map(m => (
                     <div key={m.label} className="bg-raised border border-hairline rounded-surface px-3 py-1.5 text-center">
                       <p className="font-mono text-caption uppercase" style={{ color: m.color }}>{m.label}</p>
-                      <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
+                      <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
                       <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
                     </div>
                   ))}
@@ -846,7 +846,7 @@ export default function ClientReviewsPanel({
           ) : (
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                <p className="font-sans font-bold text-body-s text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-ink-3 text-base">person_check</span>
                   Ficha de iniciación
                 </p>
@@ -856,7 +856,7 @@ export default function ClientReviewsPanel({
                 onClick={() => setEditingOnboarding(true)}
                 className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
               >
-                <span className="material-symbols-outlined text-sm">add</span>Crear ficha
+                <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
               </button>
             </div>
           )}
@@ -900,7 +900,7 @@ export default function ClientReviewsPanel({
           </div>
           <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-data text-sm">assignment_turned_in</span>
+              <span className="material-symbols-outlined text-data text-body-s">assignment_turned_in</span>
               Cumplimiento Semanal
             </h3>
             {weekTotal === 0 ? (
@@ -910,7 +910,7 @@ export default function ClientReviewsPanel({
                 <ProgressRing pct={weekPct} color="var(--color-data)" />
                 <div className="flex-1 font-mono text-caption">
                   <span className="text-ink-2 uppercase block mb-1">Entrenamientos</span>
-                  <span className="text-white text-sm font-bold">{weekCompleted} / {weekTotal}</span>
+                  <span className="text-white text-body-s font-bold">{weekCompleted} / {weekTotal}</span>
                 </div>
               </div>
             )}
@@ -943,7 +943,7 @@ export default function ClientReviewsPanel({
             return (
               <div className="bg-surface border border-dashed border-hairline rounded-surface p-12 text-center text-ink-2">
                 <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">history_edu</span>
-                <p className="text-sm font-bold text-white">Sin revisiones todavía</p>
+                <p className="text-body-s font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-label mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
               </div>
             );
@@ -952,7 +952,7 @@ export default function ClientReviewsPanel({
           return (
             <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
+                <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
                 <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
                 <span className="font-mono text-caption text-ink-2 ml-1">({items.length} entradas)</span>
               </div>
@@ -999,7 +999,7 @@ export default function ClientReviewsPanel({
                               {c.weight} kg · {c.adherence} · {c.mood}
                             </p>
                           </div>
-                          <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                          <span className="material-symbols-outlined text-ink-2 text-body-s transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                         </div>
                         {isExpanded && (
                           <div className="px-4 pb-4 pt-2 bg-bg space-y-3 border-t border-hairline">
@@ -1029,13 +1029,13 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
                                     <input type="number" step="0.1" value={checkinEditForm.weight}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                   <div>
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
                                     <input type="text" value={checkinEditForm.dateStr}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1043,7 +1043,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
                                     <select value={checkinEditForm.adherence}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1051,7 +1051,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
                                     <select value={checkinEditForm.mood}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1060,7 +1060,7 @@ export default function ClientReviewsPanel({
                                   <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
                                   <textarea value={checkinEditForm.notes}
                                     onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-sm text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
+                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-1.5 text-body-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
@@ -1095,7 +1095,7 @@ export default function ClientReviewsPanel({
                             )}
                             {unifiedFeedbackSuccess && expandedReviewId === key && (
                               <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-label flex items-center gap-2">
-                                <span className="material-symbols-outlined text-accent text-sm">check_circle</span>
+                                <span className="material-symbols-outlined text-accent text-body-s">check_circle</span>
                                 {unifiedFeedbackSuccess}
                               </div>
                             )}
@@ -1107,7 +1107,7 @@ export default function ClientReviewsPanel({
                                 value={expandedReviewId === key ? unifiedFeedbackText : (c.coachFeedback || '')}
                                 onChange={e => setUnifiedFeedbackText(e.target.value)}
                                 placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                                className="w-full bg-raised border border-hairline rounded-control p-3 text-sm text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                                className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                               />
                               <button
                                 type="submit"
@@ -1115,7 +1115,7 @@ export default function ClientReviewsPanel({
                                 className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
-                                <span className="material-symbols-outlined text-sm">send</span>
+                                <span className="material-symbols-outlined text-body-s">send</span>
                               </button>
                             </form>
                             </>
@@ -1154,7 +1154,7 @@ export default function ClientReviewsPanel({
                             <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
                           )}
                         </div>
-                        <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
+                        <span className="material-symbols-outlined text-ink-2 text-body-s transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </div>
                       {isExpanded && (
                         <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-2">
@@ -1249,14 +1249,14 @@ export default function ClientReviewsPanel({
             <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-sm">quiz</span>
+                  <span className="material-symbols-outlined text-accent text-body-s">quiz</span>
                   Asignar cuestionario
                 </h3>
                 <button
                   onClick={() => { setNewQForm(blankQForm()); setShowNewQEditor(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-caption uppercase rounded-control hover:border-accent/70 transition-all flex-shrink-0"
                 >
-                  <span className="material-symbols-outlined text-sm">add</span>Crear cuestionario nuevo
+                  <span className="material-symbols-outlined text-body-s">add</span>Crear cuestionario nuevo
                 </button>
               </div>
 
@@ -1294,7 +1294,7 @@ export default function ClientReviewsPanel({
                   <select
                     value={assignQId}
                     onChange={e => setAssignQId(e.target.value)}
-                    className="w-full bg-bg border border-hairline rounded-control px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
                     {coachQuestionnaires.map(q => (
@@ -1334,13 +1334,13 @@ export default function ClientReviewsPanel({
                     const schedLabel = scheduleLabel(a.schedule);
                     return (
                       <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                        <span className="material-symbols-outlined text-accent text-sm">quiz</span>
+                        <span className="material-symbols-outlined text-accent text-body-s">quiz</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-sans font-bold text-white text-label truncate">{tmpl?.title ?? a.questionnaireId}</p>
                           <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                         </div>
                         <button onClick={() => handleDeactivateQ(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
-                          <span className="material-symbols-outlined text-sm">close</span>
+                          <span className="material-symbols-outlined text-body-s">close</span>
                         </button>
                       </div>
                     );
@@ -1368,7 +1368,7 @@ export default function ClientReviewsPanel({
             {athleteQResponses.length > 0 && (
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-data text-sm">assignment_turned_in</span>
+                  <span className="material-symbols-outlined text-data text-body-s">assignment_turned_in</span>
                   Respuestas enviadas
                 </h3>
                 <div className="space-y-3">
@@ -1381,7 +1381,7 @@ export default function ClientReviewsPanel({
                       return (
                         <details key={r.id} className="bg-raised border border-hairline rounded-surface overflow-hidden">
                           <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-raised">
-                            <span className="material-symbols-outlined text-ink-2 text-sm">expand_more</span>
+                            <span className="material-symbols-outlined text-ink-2 text-body-s">expand_more</span>
                             <div className="flex-1 min-w-0">
                               <p className="font-sans font-bold text-white text-label">{tmpl?.title ?? r.questionnaireId}</p>
                               <p className="font-mono text-caption text-ink-2">
