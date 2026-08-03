@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { isLocalBypassActive, setLocalBypassMode } from '../dbService';
+import { Icon } from './ui';
 
 // Aviso persistente cuando dbService ha entrado en modo local (forceLocalOnly):
 // a partir de ese momento las escrituras van SOLO a localStorage y se pierden
@@ -25,7 +26,7 @@ export default function LocalModeBanner() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-e1">
-      <span className="material-symbols-outlined text-title-s">cloud_off</span>
+      <Icon name="cloud_off" size="m" />
       <p className="font-sans text-label font-bold">
         Sin conexión con el servidor — los cambios NO se están guardando.
       </p>

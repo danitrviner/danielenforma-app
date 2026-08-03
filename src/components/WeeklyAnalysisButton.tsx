@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AiChatMessage } from '../types';
 import { runAgentTurn, messageText } from '../ai/aiClient';
 import { createCoachNote, getCoachInstructions } from '../dbService';
+import { Icon, Button } from './ui';
 
 // Fase 5 — Análisis semanal proactivo. Un botón que lanza al mismo agente IA con
 // un prompt enlatado: revisa toda la cartera, señala quién necesita atención y
@@ -52,7 +53,7 @@ export default function WeeklyAnalysisButton() {
         disabled={busy}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-label font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
-        <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <Icon name="smart_toy" size="m" filled />
         Análisis semanal IA
       </button>
 
@@ -60,17 +61,14 @@ export default function WeeklyAnalysisButton() {
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
           <div className="bg-bg border border-hairline rounded-surface w-full max-w-2xl max-h-[80vh] flex flex-col shadow-e2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
-              <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+              <Icon name="smart_toy" size="m" filled className="text-accent" />
               <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Análisis semanal</span>
-              <button onClick={() => !busy && setOpen(false)} disabled={busy}
-                className="p-2 rounded-control text-ink-2 hover:text-white hover:bg-white/5 disabled:opacity-40">
-                <span className="material-symbols-outlined text-title-m">close</span>
-              </button>
+              <Button variant="ghost" size="s" onClick={() => !busy && setOpen(false)} disabled={busy} icon="close" label="Cerrar" />
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {busy && (
                 <div className="flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse">
-                  <span className="material-symbols-outlined text-title-s animate-spin">progress_activity</span>
+                  <Icon name="progress_activity" size="m" className="animate-spin" />
                   {status ?? 'Analizando tu cartera…'}
                 </div>
               )}

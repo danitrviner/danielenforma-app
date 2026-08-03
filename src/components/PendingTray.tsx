@@ -1,5 +1,6 @@
 import React from 'react';
 import { WorkoutLog, Workout, WeightCheckIn, CoachReport, AiProposal } from '../types';
+import { Icon } from './ui';
 
 interface Props {
   athleteLogs: WorkoutLog[];
@@ -91,7 +92,7 @@ export default function PendingTray({
           onClick={item.onClick}
           className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 hover:border-amber-500/50 text-amber-200 px-3 py-2 rounded-control font-mono text-caption font-bold transition-all"
         >
-          <span className="material-symbols-outlined text-title-s">{item.icon}</span>
+          <Icon name={item.icon} size="m" />
           {item.text}
         </button>
       ))}

@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:17:41.947Z",
-  "commit": "2cd41b1",
+  "generado": "2026-08-03T21:48:08.489Z",
+  "commit": "696eee9",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39804
+    "lineasTsx": 39792
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5215,
+    "clasesTokenEnUso": 5212,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 1015,
-    "fontSans": 1060,
+    "fontSans": 1058,
     "pesosProhibidos": 29,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 347,
+    "transitionAll": 346,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -32,7 +32,7 @@
     "rounded3xl": 0,
     "roundedFull": 166,
     "hexDistintos": 14,
-    "tamanosTextoDistintos": 11,
+    "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 21,
     "hexEnTokensCss": 21
   },
@@ -78,7 +78,6 @@
     ],
     "tamanosTexto": [
       "10px",
-      "22px",
       "6xl",
       "7xl",
       "body-s",
@@ -546,9 +545,8 @@
       "roundedFull": 1
     },
     "src/components/PlanInPreparationCard.tsx": {
-      "clasesTokenEnUso": 17,
-      "fontSans": 5,
-      "transitionAll": 1
+      "clasesTokenEnUso": 15,
+      "fontSans": 3
     },
     "src/components/ProfileScreen.tsx": {
       "clasesTokenEnUso": 77,
@@ -692,7 +690,7 @@
       "roundedFull": 1
     },
     "src/components/WeeklyAnalysisButton.tsx": {
-      "clasesTokenEnUso": 17,
+      "clasesTokenEnUso": 16,
       "fontMono": 1,
       "fontSans": 3,
       "modalesArtesanales": 1,

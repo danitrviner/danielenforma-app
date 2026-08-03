@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getProgressPhotos, getBodyweightForAthlete } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { Icon, ListRow } from './ui';
 
 // Marca de "ya visitó el Road map" — mismo patrón que enforma_tour_pending_
 // (App.tsx/AppTour.tsx): una bandera en localStorage, sin colección nueva ni
@@ -71,7 +72,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
     <section className="bg-surface border border-accent/25 rounded-canvas p-5 space-y-4">
       <div className="flex items-start gap-3">
         <div className="w-12 h-12 rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-title-l text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+          <Icon name="schedule" size="l" filled className="text-accent" />
         </div>
         <div>
           <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white">Tu coach está preparando tu plan</h2>
@@ -86,29 +87,23 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
           Mientras tanto ({doneCount}/{items.length})
         </p>
         {items.map(item => (
-          <button
+          <ListRow
             key={item.key}
             onClick={item.onClick}
             disabled={!loaded}
-            className={`w-full flex items-center gap-3 rounded-control px-3 py-3 text-left transition-all border ${
-              item.done
-                ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-raised border-hairline hover:border-accent/40'
-            } disabled:opacity-60`}
-          >
-            <span className={`material-symbols-outlined text-title-m ${item.done ? 'text-emerald-400' : 'text-ink-2'}`}>
-              {item.done ? 'check_circle' : item.icon}
-            </span>
-            <span className={`font-sans text-body-s flex-1 ${item.done ? 'text-emerald-200 line-through decoration-emerald-500/50' : 'text-white'}`}>
-              {item.label}
-            </span>
-          </button>
+            className={`rounded-control border ${item.done ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-raised border-hairline'}`}
+            leading={
+              <Icon name={item.done ? 'check_circle' : item.icon} size="l" className={item.done ? 'text-emerald-400' : 'text-ink-2'} />
+            }
+            title={item.label}
+          />
         ))}
-        <div className="flex items-center gap-3 rounded-surface px-3 py-3 border border-hairline bg-raised/50 opacity-60">
-          <span className="material-symbols-outlined text-title-m text-ink-2">lock</span>
-          <span className="font-sans text-body-s flex-1 text-ink-2">Tu primer entrenamiento</span>
-          <span className="font-sans text-caption uppercase text-ink-2">Esperando a tu coach</span>
-        </div>
+        <ListRow
+          className="rounded-surface border border-hairline bg-raised/50 opacity-60"
+          leading={<Icon name="lock" size="l" className="text-ink-2" />}
+          title="Tu primer entrenamiento"
+          trailing={<span className="font-sans text-caption uppercase text-ink-2">Esperando a tu coach</span>}
+        />
       </div>
     </section>
   );
