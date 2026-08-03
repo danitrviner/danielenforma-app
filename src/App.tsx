@@ -420,12 +420,18 @@ function AppContent() {
             className={`flex flex-col items-center justify-center gap-0.5 py-1.5 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
             <span
-              className="material-symbols-outlined text-title-l"
+              className="material-symbols-outlined text-[22px]"
               style={{ fontVariationSettings: pathTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
             >
               {tab.icon}
             </span>
-            <span className="font-sans text-caption uppercase font-bold leading-none truncate w-full text-center px-0.5">
+            {/* EXCEPCIÓN TEMPORAL AL DESIGN SYSTEM — ver DESIGN_SYSTEM_STATUS.md
+                El suelo del DS son 11 px, pero con SIETE destinos en 375 px las
+                etiquetas se truncan hasta quedar ilegibles ("ACA…", "CAR…"):
+                5 de 7 truncadas frente a 2 antes. Prima la usabilidad sobre la
+                uniformidad. La solución no es tipográfica sino de arquitectura
+                de navegación, y se evalúa en una fase posterior. */}
+            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
               {tab.shortLabel ?? tab.label}
             </span>
             {tab.id === 'reviews' && pendingCount > 0 && (

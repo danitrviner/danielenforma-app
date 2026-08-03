@@ -310,8 +310,16 @@ function medir() {
       const v = hex.toLowerCase();
       if ([4, 5, 7, 9].includes(v.length)) hexDistintos.add(v);
     }
+    // Cuenta escalones de tamaño DISTINTOS en uso, vengan de donde vengan:
+    // valores arbitrarios (`text-[9px]`), pasos de Tailwind (`text-sm`) o
+    // tokens del DS (`text-body-s`). Contar solo los arbitrarios dejaba la
+    // métrica ciega en cuanto F4 los eliminó: marcaba 0 con 8 escalones vivos.
     for (const px of capturas(texto, /text-\[(\d+(?:\.\d+)?)px\]/g)) {
-      tamanosTexto.add(Number(px));
+      tamanosTexto.add(`${px}px`);
+    }
+    for (const paso of capturas(
+      texto, /(?<![\w-])text-(xs|sm|base|lg|xl|[2-9]xl|display|title-l|title-m|title-s|body|body-s|label|caption)(?![\w-])/g)) {
+      tamanosTexto.add(paso);
     }
 
     const conteo = {};
@@ -340,7 +348,7 @@ function medir() {
     listas: {
       hexDistintos: [...hexDistintos].sort(),
       hexEnTokensCss: css.lista,
-      tamanosTexto: [...tamanosTexto].sort((a, b) => a - b),
+      tamanosTexto: [...tamanosTexto].sort(),
       archivosGrandes: archivosGrandes.sort((a, b) => b.lineas - a.lineas),
     },
     porArchivo,
@@ -363,7 +371,7 @@ function commitActual() {
 const DERIVADAS = [
   { id: 'hexDistintos',          etiqueta: 'Hex distintos en componentes', direccion: 'bajar', fase: 'F1' },
   { id: 'hexEnTokensCss',        etiqueta: 'Hex en tokens (index.css)',    direccion: 'info',  fase: 'F1' },
-  { id: 'tamanosTextoDistintos', etiqueta: 'Tamaños de texto distintos',   direccion: 'bajar', fase: 'F4' },
+  { id: 'tamanosTextoDistintos', etiqueta: 'Escalones de tamaño en uso',     direccion: 'bajar', fase: 'F4' },
   { id: 'archivosMas600Lineas',  etiqueta: 'Archivos > 600 líneas',        direccion: 'info',  fase: 'F15' },
 ];
 
