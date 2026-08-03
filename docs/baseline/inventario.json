@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T19:47:46.670Z",
-  "commit": "85258a1",
+  "generado": "2026-08-03T19:53:39.078Z",
+  "commit": "93ac2fb",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39962
+    "lineasTsx": 39926
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5310,
+    "clasesTokenEnUso": 5281,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1022,
-    "fontSans": 1085,
+    "fontMono": 1020,
+    "fontSans": 1082,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 369,
+    "transitionAll": 364,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 171,
+    "roundedFull": 166,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 22,
@@ -120,7 +120,7 @@
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
-        "lineas": 902
+        "lineas": 879
       },
       {
         "archivo": "src/components/RoadmapTimeline.tsx",
@@ -139,12 +139,12 @@
         "lineas": 690
       },
       {
-        "archivo": "src/components/RecipeBuilderScreen.tsx",
-        "lineas": 683
-      },
-      {
         "archivo": "src/components/CardioScreen.tsx",
         "lineas": 675
+      },
+      {
+        "archivo": "src/components/RecipeBuilderScreen.tsx",
+        "lineas": 668
       },
       {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
@@ -593,20 +593,20 @@
       "transitionAll": 3
     },
     "src/components/RecipeBuilderScreen.tsx": {
-      "clasesTokenEnUso": 117,
-      "fontMono": 24,
-      "fontSans": 18,
+      "clasesTokenEnUso": 105,
+      "fontMono": 23,
+      "fontSans": 17,
       "modalesArtesanales": 1,
-      "transitionAll": 11,
-      "roundedFull": 6
+      "transitionAll": 9,
+      "roundedFull": 4
     },
     "src/components/RecipesScreen.tsx": {
-      "clasesTokenEnUso": 101,
-      "fontMono": 23,
-      "fontSans": 23,
+      "clasesTokenEnUso": 84,
+      "fontMono": 22,
+      "fontSans": 21,
       "pesosProhibidos": 1,
-      "transitionAll": 12,
-      "roundedFull": 10
+      "transitionAll": 9,
+      "roundedFull": 7
     },
     "src/components/ReportEditor.tsx": {
       "clasesTokenEnUso": 40,
