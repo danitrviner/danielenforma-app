@@ -5,6 +5,7 @@ import {
   BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
   fmtReportDate,
 } from '../utils/reportBuilder';
+import { Icon, Card, Badge } from './ui';
 
 // Read-only render of a CoachReport, shared by the coach's live preview
 // (ReportEditor) and the athlete's viewer (AthleteReportsScreen) so both see
@@ -22,8 +23,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function SectionShell({ section, children }: { section: CoachReportSection; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-      <p className="font-sans font-bold text-body-s text-white">{section.title}</p>
+    <Card title={section.title}>
       {children}
       {section.coachNote && (
         <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
@@ -31,7 +31,7 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
           <p className="text-label text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -43,7 +43,7 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
       <ul className="space-y-2">
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+            <Icon name="trophy" size="m" filled className="text-accent flex-shrink-0" />
             <span className="text-label text-white font-sans leading-snug">{it}</span>
           </li>
         ))}
@@ -88,7 +88,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2">
                   <span className="text-label text-white font-sans flex items-center gap-2">
                     {r.name}
-                    {r.isPR && <span className="font-mono text-caption font-bold uppercase bg-accent text-black px-1 rounded-control">PR</span>}
+                    {r.isPR && <Badge tone="success">PR</Badge>}
                   </span>
                 </td>
                 <td className="py-2 px-2 font-mono text-label text-ink-2">{r.sets}</td>
@@ -151,7 +151,7 @@ function BodyweightSection({ section }: { section: CoachReportSection }) {
           <span className={`font-mono text-caption font-bold pb-2 flex items-center gap-1 ${
             good === true ? 'text-green-400' : good === false ? 'text-amber-300' : 'text-ink-2'
           }`}>
-            <span className="material-symbols-outlined text-body-s">{dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'}</span>
+            <Icon name={dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'} size="s" />
             {d.deltaKg > 0 ? '+' : ''}{d.deltaKg} kg en el periodo
           </span>
         )}
@@ -226,7 +226,7 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
           const st = CHALLENGE_STYLE[c.status] ?? CHALLENGE_STYLE.activo;
           return (
             <li key={i} className="flex items-center gap-3">
-              <span className={`material-symbols-outlined text-title-s flex-shrink-0 ${st.cls}`} style={{ fontVariationSettings: "'FILL' 1" }}>{st.icon}</span>
+              <Icon name={st.icon} size="m" filled className={`flex-shrink-0 ${st.cls}`} />
               <span className="text-label text-white font-sans flex-1 min-w-0">{c.title}</span>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${st.cls}`}>
                 {st.label}{c.progressValue != null ? ` · ${c.progressValue}/${c.target} ${c.unit}` : ''}

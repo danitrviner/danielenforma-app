@@ -4,6 +4,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Questionnaire, QuestionnaireQuestion, QuestionnaireResponse } from '../types';
+import { Icon, Badge } from './ui';
 
 interface Props {
   questionnaires: Questionnaire[];
@@ -106,15 +107,8 @@ function QuestionChart({
       <div>
         <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 ">
-          {question.unit && (
-            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-2 rounded-control">
-              {question.unit}
-            </span>
-          )}
-          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-2 rounded-control flex items-center ">
-            <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
-            {question.type}
-          </span>
+          {question.unit && <Badge tone="neutral">{question.unit}</Badge>}
+          <Badge tone="data" icon="show_chart">{question.type}</Badge>
           <span className="font-mono text-caption text-ink-2">
             {weekly ? `${toWeekly(raw).length} semanas` : `${raw.length} puntos`}
           </span>
@@ -193,7 +187,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">show_chart</span>
+          <Icon name="show_chart" size="m" className="text-accent" />
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
         <div className="flex bg-surface border border-hairline rounded-surface ">
