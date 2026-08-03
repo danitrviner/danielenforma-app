@@ -519,12 +519,12 @@ export default function CardioScreen({ profile }: Props) {
     <div className="space-y-6">
       <header>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
-        <p className="text-xs text-ink-2 font-mono mt-1">Zonas de FC y dashboard en vivo</p>
+        <p className="text-label text-ink-2 font-mono mt-1">Zonas de FC y dashboard en vivo</p>
       </header>
 
       {!cardioProfile && (
         <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
-          <p className="text-xs text-ink-2 font-mono">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
+          <p className="text-label text-ink-2 font-mono">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
         </div>
       )}
 
@@ -534,20 +534,20 @@ export default function CardioScreen({ profile }: Props) {
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-surface p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
                 <p className="text-caption font-mono uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
-                <p className="text-xs font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
+                <p className="text-label font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
             ))}
           </div>
 
           {state === 'idle' && (
-            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+            <button onClick={handleConnect} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Conectar banda
             </button>
           )}
 
-          {state === 'connecting' && <p className="text-xs text-ink-2 font-mono text-center py-4">Conectando con la banda...</p>}
+          {state === 'connecting' && <p className="text-label text-ink-2 font-mono text-center py-4">Conectando con la banda...</p>}
 
-          {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
+          {error && <p className="text-label text-red-400 font-mono">{error}</p>}
 
           {state === 'ready' && (
             <div className="space-y-3">
@@ -564,14 +564,14 @@ export default function CardioScreen({ profile }: Props) {
               )}
               <div className="flex items-center gap-2">
                 <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-bg border border-hairline rounded-control p-2.5 text-xs text-white focus:outline-none focus:border-accent">
+                  className="bg-bg border border-hairline rounded-control p-2.5 text-label text-white focus:outline-none focus:border-accent">
                   <option value="libre">Libre</option>
                   <option value="zona2">Sesión Zona 2</option>
                   <option value="intervalos" disabled={!intervalAssignment}>
                     {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
                   </option>
                 </select>
-                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+                <button onClick={handleStartSession} className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
                   Empezar entrenamiento
                 </button>
               </div>
@@ -626,7 +626,7 @@ export default function CardioScreen({ profile }: Props) {
               )}
             </div>
 
-            {filtered.length === 0 && <p className="text-xs text-ink-2 font-mono py-3 text-center">Ningún entreno con estos filtros.</p>}
+            {filtered.length === 0 && <p className="text-label text-ink-2 font-mono py-3 text-center">Ningún entreno con estos filtros.</p>}
 
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}

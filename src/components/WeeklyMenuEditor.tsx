@@ -283,7 +283,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </button>
           <div>
             <h2 className="font-sans font-extrabold text-2xl text-white">Generar menú semanal</h2>
-            <p className="text-ink-2 text-xs mt-0.5 font-mono">Las recetas son la base — puntos de intercambios ya pautados por día</p>
+            <p className="text-ink-2 text-label mt-0.5 font-mono">Las recetas son la base — puntos de intercambios ya pautados por día</p>
           </div>
         </div>
 
@@ -331,7 +331,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <div className="space-y-2">
             {slots.map((sl, i) => (
               <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface px-4 py-3">
-                <span className="font-mono text-xs text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
+                <span className="font-mono text-label text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
                 <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
                   <div className="h-full bg-accent/50 rounded-full transition-all" style={{ width: `${Math.min(sl.pct, 100)}%` }} />
                 </div>
@@ -340,7 +340,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
                   className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
                 />
-                <span className="font-mono text-ink-3 text-xs">%</span>
+                <span className="font-mono text-ink-3 text-label">%</span>
               </div>
             ))}
           </div>
@@ -465,7 +465,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               </span>
             )}
           </h2>
-          <p className="text-ink-2 text-xs mt-0.5 font-mono">
+          <p className="text-ink-2 text-label mt-0.5 font-mono">
             {menu.status === 'published' ? 'Publicado — editable por el atleta vía intercambios' : 'Borrador — revisa antes de publicar'}
           </p>
         </div>
@@ -491,7 +491,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <div className="space-y-1.5">
                   {batchPlan.map(e => (
                     <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
-                      <span className="font-sans text-xs text-white truncate">{e.recipeName}</span>
+                      <span className="font-sans text-label text-white truncate">{e.recipeName}</span>
                       <span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'} · ×{e.totalScale}</span>
                     </div>
                   ))}
@@ -538,7 +538,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               {expanded && (
                 <div className="p-4 space-y-3">
                   {day.meals.length === 0 ? (
-                    <p className="font-mono text-xs text-ink-3 text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
+                    <p className="font-mono text-label text-ink-3 text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
                   ) : (
                     <>
                       <div className="flex justify-end">
@@ -610,7 +610,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                       {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-sans text-xs text-white truncate">{c.recipe.name}</p>
+                                      <p className="font-sans text-label text-white truncate">{c.recipe.name}</p>
                                       <p className="font-mono text-caption text-ink-3">×{c.scale} · {fmtExch(c.exch)}</p>
                                     </div>
                                   </button>

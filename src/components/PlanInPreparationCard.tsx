@@ -75,7 +75,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
         </div>
         <div>
           <h2 className="font-sans font-black uppercase tracking-tight text-base text-white">Tu coach está preparando tu plan</h2>
-          <p className="text-xs text-ink-2 mt-1 leading-relaxed">
+          <p className="text-label text-ink-2 mt-1 leading-relaxed">
             Está revisando tu ficha para montarte un plan a medida. Normalmente lo tienes en menos de 48h — te avisamos en cuanto esté.
           </p>
         </div>

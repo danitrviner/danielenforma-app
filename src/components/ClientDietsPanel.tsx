@@ -124,7 +124,7 @@ export default function ClientDietsPanel({
         {athleteDiets.length === 0 ? (
           <div className="py-6 text-center">
             <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">nutrition</span>
-            <p className="text-xs text-ink-2">No hay dietas creadas para este atleta.</p>
+            <p className="text-label text-ink-2">No hay dietas creadas para este atleta.</p>
             <p className="text-caption text-ink-2 mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
           </div>
         ) : (
@@ -269,7 +269,7 @@ export default function ClientDietsPanel({
         {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
           <div className="py-4 text-center">
             <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">restaurant_menu</span>
-            <p className="text-xs text-ink-2">Aún no hay ningún menú generado.</p>
+            <p className="text-label text-ink-2">Aún no hay ningún menú generado.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -374,7 +374,7 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-control font-mono text-xs font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-raised border-hairline text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-control font-mono text-label font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-raised border-hairline text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
                 >
                   <span className={`w-3.5 h-3.5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline'}`}>
                     {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
@@ -406,7 +406,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -420,7 +420,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

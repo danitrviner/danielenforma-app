@@ -221,7 +221,7 @@ export default function ClientSetupPanel({
                 {alert.severity === 'critical' ? 'error' : 'warning'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans text-xs font-bold text-white">{alert.title}</p>
+                <p className="font-sans text-label font-bold text-white">{alert.title}</p>
                 {alert.detail && <p className="font-mono text-caption text-ink-2">{alert.detail}</p>}
               </div>
             </button>
@@ -251,7 +251,7 @@ export default function ClientSetupPanel({
                     />
                   </div>
                 </div>
-                <span className="font-mono text-xs text-ink-2 flex-shrink-0">{phase.donePct}%</span>
+                <span className="font-mono text-label text-ink-2 flex-shrink-0">{phase.donePct}%</span>
                 <span className="material-symbols-outlined text-ink-2 flex-shrink-0">
                   {expanded ? 'expand_less' : 'expand_more'}
                 </span>
@@ -272,7 +272,7 @@ export default function ClientSetupPanel({
                         {STATUS_ICON[item.status]}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-sans text-xs ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
+                        <p className={`font-sans text-label ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
                         {item.detail && <p className="font-mono text-caption text-ink-2 mt-0.5">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
@@ -310,13 +310,13 @@ export default function ClientSetupPanel({
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               required
             />
             <button
               type="submit"
               disabled={savingExtra}
-              className="px-3 py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="px-3 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {savingExtra ? '...' : 'Crear'}
             </button>
@@ -324,7 +324,7 @@ export default function ClientSetupPanel({
         )}
 
         {extraTasks.length === 0 ? (
-          <p className="text-xs text-ink-3 font-mono py-2">Sin tareas extra.</p>
+          <p className="text-label text-ink-3 font-mono py-2">Sin tareas extra.</p>
         ) : (
           <div className="space-y-2">
             {extraTasks.map(task => (

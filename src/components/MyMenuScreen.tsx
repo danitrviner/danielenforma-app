@@ -299,7 +299,7 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="bg-surface border border-hairline rounded-surface p-8 text-center space-y-2">
         <span className="material-symbols-outlined text-3xl text-ink-3 block">restaurant_menu</span>
         <p className="font-sans font-bold text-sm text-white">Todavía no tienes un menú semanal</p>
-        <p className="font-mono text-xs text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
+        <p className="font-mono text-label text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
       </div>
     );
   }
@@ -343,7 +343,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
                   {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
                 </div>
-                <span className="flex-1 font-sans text-xs text-white truncate">{e.recipeName}</span>
+                <span className="flex-1 font-sans text-label text-white truncate">{e.recipeName}</span>
                 <span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>
               </div>
             ))}
@@ -382,13 +382,13 @@ export default function MyMenuScreen({ profile }: Props) {
 
       <div>
         <h2 className="font-sans font-extrabold text-xl text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
-        <p className="font-mono text-xs text-ink-2">{day?.dietName ?? 'Día libre'}</p>
+        <p className="font-mono text-label text-ink-2">{day?.dietName ?? 'Día libre'}</p>
       </div>
 
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
         <div className="bg-surface border border-hairline rounded-surface p-6 text-center">
-          <p className="font-mono text-xs text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
+          <p className="font-mono text-label text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -513,7 +513,7 @@ export default function MyMenuScreen({ profile }: Props) {
               key={v}
               disabled={savingVariety}
               onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-control font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-accent text-black' : 'bg-raised border border-hairline text-ink-2 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-accent text-black' : 'bg-raised border border-hairline text-ink-2 hover:text-white'}`}
             >
               {v}
             </button>
@@ -533,7 +533,7 @@ export default function MyMenuScreen({ profile }: Props) {
             {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">
-            <span className="flex items-center gap-1.5 font-sans font-bold text-xs text-white">
+            <span className="flex items-center gap-1.5 font-sans font-bold text-label text-white">
               <span className="material-symbols-outlined text-sm text-accent">inventory_2</span>
               Prefiero batch cooking
             </span>
@@ -555,9 +555,9 @@ export default function MyMenuScreen({ profile }: Props) {
               </button>
             </div>
             {swapLoading ? (
-              <p className="font-mono text-xs text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
+              <p className="font-mono text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
             ) : swapCandidates.length === 0 ? (
-              <p className="font-mono text-xs text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
+              <p className="font-mono text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
             ) : (
               swapCandidates.map((c, ci) => (
                 <button
@@ -617,7 +617,7 @@ export default function MyMenuScreen({ profile }: Props) {
                         return (
                           <li key={idx} className="py-1 border-b border-hairline last:border-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-sans flex-1 pr-2">
+                              <span className="text-label font-sans flex-1 pr-2">
                                 {swappedTo ? (
                                   <>
                                     <span className="text-ink-2 line-through">{ing.label}</span>{' '}
@@ -672,7 +672,7 @@ export default function MyMenuScreen({ profile }: Props) {
                         ? detailRecipe.stepsText.map(s => s.description)
                         : detailRecipe.steps ?? []
                       ).map((text, idx) => (
-                        <li key={idx} className="text-xs text-ink-2 font-sans leading-relaxed">{text}</li>
+                        <li key={idx} className="text-label text-ink-2 font-sans leading-relaxed">{text}</li>
                       ))}
                     </ol>
                   </div>
@@ -685,7 +685,7 @@ export default function MyMenuScreen({ profile }: Props) {
                     <span className="material-symbols-outlined text-base">close</span>
                   </button>
                 </div>
-                <p className="font-mono text-xs text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
+                <p className="font-mono text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
               </>
             )}
           </div>

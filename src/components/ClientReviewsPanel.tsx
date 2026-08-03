@@ -359,7 +359,7 @@ export default function ClientReviewsPanel({
               ) : viewPhotos.length === 0 ? (
                 <div className="p-10 text-center">
                   <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">photo_camera</span>
-                  <p className="font-mono text-xs text-ink-2">Sin fotos todavía.</p>
+                  <p className="font-mono text-label text-ink-2">Sin fotos todavía.</p>
                 </div>
               ) : (
                 <div className="p-3 bg-bg/90">
@@ -439,7 +439,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignPhotoCheckIn}
                     disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningPhoto ? '…' : 'Asignar'}
                   </button>
@@ -455,7 +455,7 @@ export default function ClientReviewsPanel({
                         <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
                           <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-sans font-bold text-white text-xs truncate">{viewsLabel}</p>
+                            <p className="font-sans font-bold text-white text-label truncate">{viewsLabel}</p>
                             <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                           </div>
                           <button onClick={() => handleDeactivatePhoto(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
@@ -521,7 +521,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.sex || onboardingData.weightKg || onboardingData.heightCm) && (
                 <div className="space-y-2">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Composición corporal</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.sex && (
                       <span className="text-ink-2">Sexo: <span className="text-white font-bold">{onboardingData.sex === 'male' ? 'Hombre' : 'Mujer'}</span></span>
                     )}
@@ -548,7 +548,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.activityLevel || onboardingData.goalBody || onboardingData.goalCapacity) && (
                 <div className="space-y-2">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Actividad y objetivo</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.activityLevel && (
                       <span className="text-ink-2">Actividad: <span className="text-white font-bold">{ACTIVITY_LABELS[onboardingData.activityLevel]}</span></span>
                     )}
@@ -565,7 +565,7 @@ export default function ClientReviewsPanel({
               {/* Nutrition */}
               <div className="space-y-2">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Nutrición</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                   <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span></span>
                   <span className="text-ink-2">Calorías: <span className="text-accent font-bold">{onboardingData.targetCalories} kcal/día</span></span>
                 </div>
@@ -584,7 +584,7 @@ export default function ClientReviewsPanel({
                 </div>
                 {onboardingData.allergies.length > 0 && (
                   <p className="font-mono text-caption text-amber-400 pt-1">
-                    <span className="material-symbols-outlined text-xs align-middle mr-1">warning</span>
+                    <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
                     Alergias: {onboardingData.allergies.join(', ')}
                   </p>
                 )}
@@ -616,7 +616,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.cookingLevel || onboardingData.cookingMaxTime) && (
                 <div className="space-y-1">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Cocina</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.cookingLevel && (
                       <span className="text-ink-2">Nivel: <span className="text-white font-bold">{onboardingData.cookingLevel}/5</span></span>
                     )}
@@ -636,7 +636,7 @@ export default function ClientReviewsPanel({
               {/* Training */}
               <div className="space-y-2">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Entrenamiento</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                   <span className="text-ink-2">Nivel: <span className="text-white font-bold">{EXP_LABELS[onboardingData.experienceLevel]}</span></span>
                 </div>
                 {onboardingData.equipment.length > 0 && (
@@ -658,7 +658,7 @@ export default function ClientReviewsPanel({
                 )}
                 {onboardingData.injuries && (
                   <p className="font-mono text-caption text-amber-300">
-                    <span className="material-symbols-outlined text-xs align-middle mr-1">personal_injury</span>
+                    <span className="material-symbols-outlined text-label align-middle mr-1">personal_injury</span>
                     {onboardingData.injuries}
                   </p>
                 )}
@@ -668,7 +668,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.occupation || onboardingData.referralSource || onboardingData.goalFreeText) && (
                 <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Datos personales</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.occupation && (
                       <span className="text-ink-2">Ocupación: <span className="text-white font-bold">{onboardingData.occupation}</span></span>
                     )}
@@ -690,7 +690,7 @@ export default function ClientReviewsPanel({
                   <div className="space-y-1">
                     {onboardingData.hasCurrentInjury && (
                       <p className="font-mono text-caption text-amber-300">
-                        <span className="material-symbols-outlined text-xs align-middle mr-1">personal_injury</span>
+                        <span className="material-symbols-outlined text-label align-middle mr-1">personal_injury</span>
                         Lesión actual en {onboardingData.currentInjuryLocation || '—'} (intensidad {onboardingData.currentInjuryIntensity ?? '—'}/10)
                         {onboardingData.currentInjuryMovements && ` — duele al: ${onboardingData.currentInjuryMovements}`}
                       </p>
@@ -730,7 +730,7 @@ export default function ClientReviewsPanel({
                 onboardingData.neckCm || onboardingData.waistCm || onboardingData.hipCm) && (
                 <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Nutrición — detalle</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.appetitePeakTime && (
                       <span className="text-ink-2">Más apetito: <span className="text-white font-bold">{onboardingData.appetitePeakTime}</span></span>
                     )}
@@ -765,7 +765,7 @@ export default function ClientReviewsPanel({
                 onboardingData.sittingHoursPerDay || onboardingData.stressReason) && (
                 <div className="space-y-1 pt-3 border-t border-hairline">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Entrenamiento — detalle</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.oneRepMaxTotal && (
                       <span className="text-ink-2">Total 1RM: <span className="text-white font-bold">{onboardingData.oneRepMaxTotal}kg</span></span>
                     )}
@@ -799,7 +799,7 @@ export default function ClientReviewsPanel({
                   {(onboardingData.sleepDeficitCauses?.length ?? 0) > 0 && (
                     <p className="font-mono text-caption text-ink-2"><span className="text-ink-3 mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
                   )}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.sleepRoutineOrScreen && (
                       <span className="text-ink-2">Antes de dormir: <span className="text-white font-bold">{onboardingData.sleepRoutineOrScreen === 'rutina' ? 'Rutina' : 'Pantalla'}</span></span>
                     )}
@@ -850,11 +850,11 @@ export default function ClientReviewsPanel({
                   <span className="material-symbols-outlined text-ink-3 text-base">person_check</span>
                   Ficha de iniciación
                 </p>
-                <p className="font-mono text-xs text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
+                <p className="font-mono text-label text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
               </div>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
               >
                 <span className="material-symbols-outlined text-sm">add</span>Crear ficha
               </button>
@@ -892,7 +892,7 @@ export default function ClientReviewsPanel({
               { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-accent' },
               { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-success' },
             ].map(row => (
-              <div key={row.label} className="flex justify-between items-baseline text-xs font-mono">
+              <div key={row.label} className="flex justify-between items-baseline text-label font-mono">
                 <span className="text-ink-2 uppercase">{row.label}:</span>
                 <span className={`font-bold ${row.color}`}>{row.value}</span>
               </div>
@@ -944,7 +944,7 @@ export default function ClientReviewsPanel({
               <div className="bg-surface border border-dashed border-hairline rounded-surface p-12 text-center text-ink-2">
                 <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">history_edu</span>
                 <p className="text-sm font-bold text-white">Sin revisiones todavía</p>
-                <p className="text-xs mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
+                <p className="text-label mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
               </div>
             );
           }
@@ -987,7 +987,7 @@ export default function ClientReviewsPanel({
                           >rate_review</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-sans font-bold text-white text-xs">Check-in</span>
+                              <span className="font-sans font-bold text-white text-label">Check-in</span>
                               <span className="font-mono text-caption text-ink-2">{c.dateStr}</span>
                               <span className={`text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-surface flex-shrink-0 ${
                                 c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
@@ -1010,14 +1010,14 @@ export default function ClientReviewsPanel({
                                   onClick={() => handleStartEditCheckin(c, key)}
                                   className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                                 >
-                                  <span className="material-symbols-outlined text-xs">edit</span>Editar
+                                  <span className="material-symbols-outlined text-label">edit</span>Editar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCheckin(c.id, key)}
                                   disabled={deletingReviewKey === key}
                                   className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                                 >
-                                  <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
+                                  <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                                 </button>
                               </div>
                             )}
@@ -1065,7 +1065,7 @@ export default function ClientReviewsPanel({
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
-                                    <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
+                                    <span className="material-symbols-outlined text-label">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                   </button>
                                   <button onClick={() => { setEditingReviewKey(null); setCheckinEditForm(null); }}
                                     className="px-3 py-1.5 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
@@ -1075,7 +1075,7 @@ export default function ClientReviewsPanel({
                               </div>
                             ) : (
                             <>
-                            <div className="grid grid-cols-3 gap-3 font-mono text-xs">
+                            <div className="grid grid-cols-3 gap-3 font-mono text-label">
                               {[
                                 { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
                                 { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
@@ -1090,17 +1090,17 @@ export default function ClientReviewsPanel({
                             {c.notes && (
                               <div className="bg-surface p-3 rounded-surface border border-hairline">
                                 <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas del atleta</span>
-                                <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
+                                <p className="text-label text-slate-300 font-sans italic">"{c.notes}"</p>
                               </div>
                             )}
                             {unifiedFeedbackSuccess && expandedReviewId === key && (
-                              <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-xs flex items-center gap-2">
+                              <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-label flex items-center gap-2">
                                 <span className="material-symbols-outlined text-accent text-sm">check_circle</span>
                                 {unifiedFeedbackSuccess}
                               </div>
                             )}
                             {unifiedFeedbackError && expandedReviewId === key && (
-                              <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-xs font-mono">{unifiedFeedbackError}</div>
+                              <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-mono">{unifiedFeedbackError}</div>
                             )}
                             <form onSubmit={(e) => handleUnifiedSendFeedback(c.id, e)} className="space-y-2">
                               <textarea
@@ -1112,7 +1112,7 @@ export default function ClientReviewsPanel({
                               <button
                                 type="submit"
                                 disabled={unifiedSubmitting}
-                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                                className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-1.5 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                               >
                                 {unifiedSubmitting ? 'Guardando...' : 'Enviar y Aprobar'}
                                 <span className="material-symbols-outlined text-sm">send</span>
@@ -1147,7 +1147,7 @@ export default function ClientReviewsPanel({
                         >quiz</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-sans font-bold text-white text-xs">{q?.title ?? 'Cuestionario'}</span>
+                            <span className="font-sans font-bold text-white text-label">{q?.title ?? 'Cuestionario'}</span>
                             <span className="font-mono text-caption text-ink-2">{submittedDate}</span>
                           </div>
                           {previewAnswers && (
@@ -1165,14 +1165,14 @@ export default function ClientReviewsPanel({
                                 onClick={() => handleStartEditResponse(r, key)}
                                 className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
                               >
-                                <span className="material-symbols-outlined text-xs">edit</span>Editar
+                                <span className="material-symbols-outlined text-label">edit</span>Editar
                               </button>
                               <button
                                 onClick={() => handleDeleteResponse(r.id, key)}
                                 disabled={deletingReviewKey === key}
                                 className="flex items-center gap-1 font-mono text-caption uppercase px-2.5 py-1.5 bg-raised border border-hairline text-red-400 hover:border-red-500/40 rounded-control transition-all disabled:opacity-50"
                               >
-                                <span className="material-symbols-outlined text-xs">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
+                                <span className="material-symbols-outlined text-label">{deletingReviewKey === key ? 'progress_activity' : 'delete'}</span>Eliminar
                               </button>
                             </div>
                           )}
@@ -1189,24 +1189,24 @@ export default function ClientReviewsPanel({
                                     {isChoice && question?.options ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-32">
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-32">
                                         {question.options.map(o => <option key={o} value={o}>{o}</option>)}
                                       </select>
                                     ) : isBool ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24">
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-24">
                                         <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                                         <option value="false">{question?.labelFalse ?? 'No'}</option>
                                       </select>
                                     ) : isNum ? (
                                       <input type="number" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: parseFloat(e.target.value) || 0 } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
                                     ) : (
                                       <input type="text" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-xs text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
                                     )}
                                   </div>
                                 );
@@ -1214,7 +1214,7 @@ export default function ClientReviewsPanel({
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleSaveResponseEdit(r.id)} disabled={savingEdit}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 disabled:opacity-50 transition-all">
-                                  <span className="material-symbols-outlined text-xs">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
+                                  <span className="material-symbols-outlined text-label">save</span>{savingEdit ? 'Guardando…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingReviewKey(null); setResponseEditAnswers([]); }}
                                   className="px-3 py-1.5 font-mono text-caption uppercase text-ink-2 border border-hairline rounded-control hover:border-ink-2/40 transition-all">
@@ -1228,7 +1228,7 @@ export default function ClientReviewsPanel({
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
                                   <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">{question?.label ?? ans.questionId}</span>
-                                  <span className="font-mono text-xs text-white font-bold text-right">
+                                  <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                                   </span>
                                 </div>
@@ -1318,7 +1318,7 @@ export default function ClientReviewsPanel({
                   <button
                     onClick={handleAssignQuestionnaire}
                     disabled={!assignQId || assigningQ || (assignSchedType === 'weekdays' && assignWeekdays.length === 0)}
-                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                    className="px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-sm"
                   >
                     {assigningQ ? '…' : 'Asignar'}
                   </button>
@@ -1336,7 +1336,7 @@ export default function ClientReviewsPanel({
                       <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
                         <span className="material-symbols-outlined text-accent text-sm">quiz</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-sans font-bold text-white text-xs truncate">{tmpl?.title ?? a.questionnaireId}</p>
+                          <p className="font-sans font-bold text-white text-label truncate">{tmpl?.title ?? a.questionnaireId}</p>
                           <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                         </div>
                         <button onClick={() => handleDeactivateQ(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
@@ -1383,7 +1383,7 @@ export default function ClientReviewsPanel({
                           <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none hover:bg-raised">
                             <span className="material-symbols-outlined text-ink-2 text-sm">expand_more</span>
                             <div className="flex-1 min-w-0">
-                              <p className="font-sans font-bold text-white text-xs">{tmpl?.title ?? r.questionnaireId}</p>
+                              <p className="font-sans font-bold text-white text-label">{tmpl?.title ?? r.questionnaireId}</p>
                               <p className="font-mono text-caption text-ink-2">
                                 {date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 {' · '}{r.answers.length} respuestas
@@ -1396,7 +1396,7 @@ export default function ClientReviewsPanel({
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
                                   <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">{q?.label ?? ans.questionId}</span>
-                                  <span className="font-mono text-xs text-white font-bold text-right">
+                                  <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{q?.unit ? ` ${q.unit}` : ''}
                                     {q?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}
                                   </span>

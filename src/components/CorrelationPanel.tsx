@@ -266,7 +266,7 @@ export default function CorrelationPanel({
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
             coach sí puede accionar: asignar/pedir lo que falta. */}
-        <p className="text-ink-2 text-xs font-mono max-w-xs mx-auto">
+        <p className="text-ink-2 text-label font-mono max-w-xs mx-auto">
           Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta.
           Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones.
         </p>
@@ -281,7 +281,7 @@ export default function CorrelationPanel({
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
-        <p className="font-mono text-xs text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
+        <p className="font-mono text-label text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
@@ -291,7 +291,7 @@ export default function CorrelationPanel({
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
           onClick={() => setSelectorOpen(v => !v)}
         >
-          <span className="font-mono text-xs text-ink-2 uppercase tracking-wider">
+          <span className="font-mono text-label text-ink-2 uppercase tracking-wider">
             Series disponibles
             {selectedIds.length > 0 && (
               <span className="ml-2 text-accent font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
@@ -311,7 +311,7 @@ export default function CorrelationPanel({
               <button
                 key={s.id}
                 onClick={() => toggleSeries(s.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-xs font-bold border transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
                   active
                     ? 'text-black'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-white'
@@ -332,7 +332,7 @@ export default function CorrelationPanel({
 
       {selectedSeries.length === 0 ? (
         <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
-          <p className="font-mono text-xs text-ink-2">Selecciona una o más series para visualizar.</p>
+          <p className="font-mono text-label text-ink-2">Selecciona una o más series para visualizar.</p>
         </div>
       ) : (
         <>
@@ -415,7 +415,7 @@ export default function CorrelationPanel({
                 <p className="font-sans font-bold text-sm text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (
-                <p className="font-mono text-xs text-ink-2">{correlationResult.label}</p>
+                <p className="font-mono text-label text-ink-2">{correlationResult.label}</p>
               ) : (
                 <>
                   <div className="flex items-baseline gap-3">
@@ -428,7 +428,7 @@ export default function CorrelationPanel({
                     }}>
                       r = {correlationResult.r.toFixed(2)}
                     </span>
-                    <span className="font-mono text-xs text-ink-2">{correlationResult.label}</span>
+                    <span className="font-mono text-label text-ink-2">{correlationResult.label}</span>
                   </div>
                   <p className="font-mono text-caption text-ink-3">Correlación ≠ causalidad</p>
                 </>

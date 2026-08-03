@@ -153,7 +153,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
               <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
             </div>
-            <p className="text-ink-2 text-xs font-mono tracking-widest uppercase">Confirma tu invitación</p>
+            <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Confirma tu invitación</p>
           </div>
 
           <p className="text-sm text-ink-2 mb-5 text-center">
@@ -202,7 +202,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
             <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
             <span className="font-sans font-black text-3xl tracking-tighter uppercase">EN FORMA</span>
           </div>
-          <p className="text-ink-2 text-xs font-mono tracking-widest uppercase">Coaching de alto rendimiento</p>
+          <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Coaching de alto rendimiento</p>
         </div>
 
         {error && (
@@ -219,7 +219,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
 
         <form onSubmit={handleEmailAuth} className="space-y-4">
           <div>
-            <label className="block text-xs font-mono text-ink-2 uppercase tracking-wider mb-2">Correo Electrónico</label>
+            <label className="block text-label font-mono text-ink-2 uppercase tracking-wider mb-2">Correo Electrónico</label>
             <input
               type="email"
               value={email}
@@ -232,7 +232,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-mono text-ink-2 uppercase tracking-wider">Contraseña</label>
+              <label className="block text-label font-mono text-ink-2 uppercase tracking-wider">Contraseña</label>
               <button
                 type="button"
                 onClick={handleForgotPassword}
@@ -264,7 +264,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
 
         <div className="flex items-center justify-center my-6">
           <div className="h-[1px] bg-raised flex-1"></div>
-          <span className="px-3 text-ink-2/50 text-xs font-mono uppercase">O ingresar con</span>
+          <span className="px-3 text-ink-2/50 text-label font-mono uppercase">O ingresar con</span>
           <div className="h-[1px] bg-raised flex-1"></div>
         </div>
 

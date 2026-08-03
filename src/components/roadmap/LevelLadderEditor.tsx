@@ -93,7 +93,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <p className="text-ink-2 text-xs font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
+          <p className="text-ink-2 text-label font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
           <p className="font-mono text-caption text-ink-2 mt-1">
             Nivel actual del atleta: <span className="text-accent font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>
@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-bg border border-hairline rounded-control p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
+            className="bg-bg border border-hairline rounded-control p-2 text-label text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -110,7 +110,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-label transition-colors"
       >
         + Añadir nivel
       </button>

@@ -334,7 +334,7 @@ function PillSelect<T extends string>({
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`px-3 py-1.5 rounded-control font-mono text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-control font-mono text-label font-bold border transition-all ${
               value === o.value
                 ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
@@ -354,7 +354,7 @@ function YesNo({ label, value, onChange }: { label: string; value: boolean; onCh
       <div className="flex gap-2">
         {([{ v: true, l: 'Sí' }, { v: false, l: 'No' }]).map(o => (
           <button key={String(o.v)} type="button" onClick={() => onChange(o.v)}
-            className={`flex-1 py-2 rounded-control font-mono text-xs font-bold border transition-all ${
+            className={`flex-1 py-2 rounded-control font-mono text-label font-bold border transition-all ${
               value === o.v
                 ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
@@ -380,7 +380,7 @@ function CheckboxGroup({
       <div className="flex flex-wrap gap-2">
         {options.map(opt => (
           <button key={opt} type="button" onClick={() => toggle(opt)}
-            className={`px-3 py-1.5 rounded-control font-mono text-xs font-bold border transition-all ${
+            className={`px-3 py-1.5 rounded-control font-mono text-label font-bold border transition-all ${
               values.includes(opt)
                 ? 'bg-accent text-black border-transparent'
                 : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
@@ -444,7 +444,7 @@ function TagInput({
       {helpText && <p className="font-mono text-caption text-ink-3">{helpText}</p>}
       <div className="flex flex-wrap gap-1.5 p-2.5 bg-bg border border-hairline rounded-surface min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
-          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 py-0.5 rounded-full text-xs font-mono">
+          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 py-0.5 rounded-full text-label font-mono">
             {t}
             <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-ink-2 hover:text-red-400 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
@@ -482,11 +482,11 @@ function SupplementsTable({
           {rows.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <input type="text" value={r.name} onChange={e => update(i, { name: e.target.value })}
-                placeholder="Suplemento" className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
+                placeholder="Suplemento" className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <input type="text" value={r.dose} onChange={e => update(i, { dose: e.target.value })}
-                placeholder="Dosis" className="w-20 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
+                placeholder="Dosis" className="w-20 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <input type="text" value={r.frequency} onChange={e => update(i, { frequency: e.target.value })}
-                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
+                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-1.5 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <button type="button" onClick={() => remove(i)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
@@ -506,7 +506,7 @@ function SupplementsTable({
 function Section({ icon, title, children, complete }: { icon: string; title: string; children: React.ReactNode; complete?: boolean }) {
   return (
     <div className={`space-y-4 bg-bg border rounded-surface p-5 transition-colors ${complete ? 'border-accent/25' : 'border-hairline'}`}>
-      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+      <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
         <span className="material-symbols-outlined text-sm">{icon}</span>
         {title}
         {complete && (
@@ -787,7 +787,7 @@ export default function OnboardingForm({
       </div>
 
       {error && (
-        <p className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-surface text-xs font-mono">
+        <p className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-surface text-label font-mono">
           {error}
         </p>
       )}
@@ -892,7 +892,7 @@ export default function OnboardingForm({
                   : 'bg-bg border-hairline hover:border-hairline'
               }`}>
               <div className="flex-1 min-w-0">
-                <p className={`font-mono text-xs font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
+                <p className={`font-mono text-label font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
                 <p className="font-mono text-caption text-ink-3 mt-0.5">{o.desc}</p>
               </div>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-accent' : 'text-ink-3'}`}>{o.factor}</span>
@@ -988,7 +988,7 @@ export default function OnboardingForm({
               <span className="material-symbols-outlined text-data text-base">calculate</span>
               <p className="font-mono text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
-            <div className="space-y-0.5 font-mono text-xs text-ink-3">
+            <div className="space-y-0.5 font-mono text-label text-ink-3">
               <p>BMR: <span className="text-white font-bold">{autoCalc.bmr.toLocaleString()} kcal</span></p>
               <p>
                 TDEE ({form.activityLevel && (
@@ -1022,7 +1022,7 @@ export default function OnboardingForm({
         )}
         {!autoCalc && (
           <p className="font-mono text-caption text-ink-3 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-xs">info</span>
+            <span className="material-symbols-outlined text-label">info</span>
             Completa composición + actividad + objetivo para ver el cálculo automático de kcal y macros.
           </p>
         )}
@@ -1034,7 +1034,7 @@ export default function OnboardingForm({
             <input type="number" min={800} max={8000} step={50} value={form.targetCalories}
               onChange={e => set('targetCalories', e.target.value === '' ? '' : Number(e.target.value))}
               className="w-28 bg-bg border border-hairline rounded-control px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
-            <span className="font-mono text-xs text-ink-2">kcal/día</span>
+            <span className="font-mono text-label text-ink-2">kcal/día</span>
           </div>
         </div>
 
@@ -1048,7 +1048,7 @@ export default function OnboardingForm({
               { key: 'grasaPct' as const, label: 'GRASA', factor: 9 as const, ef: 11, color: 'var(--color-danger)', grams: grasaG },
             ]).map(m => (
               <div key={m.key} className="flex items-center gap-3">
-                <span className="font-mono text-xs font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
+                <span className="font-mono text-label font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
                 <input type="number" min={0} max={100} value={form[m.key]}
                   onChange={e => set(m.key, e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-14 bg-bg border border-hairline rounded-control px-2 py-1 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center shrink-0" />
@@ -1120,7 +1120,7 @@ export default function OnboardingForm({
             {form.meals.map((meal, i) => (
               <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
                 <span className="material-symbols-outlined text-ink-3 text-base">{INTAKE_ICONS[meal.intakeType]}</span>
-                <span className="flex-1 font-mono text-xs text-white">{meal.name}</span>
+                <span className="flex-1 font-mono text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control font-mono text-caption font-bold border transition-all ${
                     meal.needsTupper

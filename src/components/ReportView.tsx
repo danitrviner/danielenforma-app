@@ -28,7 +28,7 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
       {section.coachNote && (
         <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
           <p className="font-mono text-caption text-accent uppercase tracking-wider mb-0.5">Nota del entrenador</p>
-          <p className="text-xs text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
+          <p className="text-label text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
       )}
     </div>
@@ -44,7 +44,7 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
             <span className="material-symbols-outlined text-accent text-base flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
-            <span className="text-xs text-white font-sans leading-snug">{it}</span>
+            <span className="text-label text-white font-sans leading-snug">{it}</span>
           </li>
         ))}
       </ul>
@@ -86,16 +86,16 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
             {d.rows.map(r => (
               <tr key={r.exerciseId} className="border-b border-hairline last:border-0">
                 <td className="py-2 px-2">
-                  <span className="text-xs text-white font-sans flex items-center gap-1.5">
+                  <span className="text-label text-white font-sans flex items-center gap-1.5">
                     {r.name}
                     {r.isPR && <span className="font-mono text-caption font-bold uppercase bg-accent text-black px-1 py-0.5 rounded-control">PR</span>}
                   </span>
                 </td>
-                <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.sets}</td>
-                <td className="py-2 px-2 font-mono text-xs text-ink-2">{r.reps}</td>
-                <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 font-mono text-label text-ink-2">{r.sets}</td>
+                <td className="py-2 px-2 font-mono text-label text-ink-2">{r.reps}</td>
+                <td className="py-2 px-2 font-mono text-label text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2 whitespace-nowrap">
-                  <span className="font-mono text-xs text-data">{r.bestOrm} kg</span>
+                  <span className="font-mono text-label text-data">{r.bestOrm} kg</span>
                   {r.deltaOrmPct != null && <span className="ml-1.5"><DeltaBadge pct={r.deltaOrmPct} /></span>}
                 </td>
               </tr>
@@ -124,10 +124,10 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
           <tbody>
             {d.rows.map(r => (
               <tr key={r.group} className="border-b border-hairline last:border-0">
-                <td className="py-2 px-2 text-xs text-white font-sans whitespace-nowrap">{r.label}</td>
-                <td className="py-2 px-2 font-mono text-xs text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 text-label text-white font-sans whitespace-nowrap">{r.label}</td>
+                <td className="py-2 px-2 font-mono text-label text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.tonnageDeltaPct} /></td>
-                <td className="py-2 px-2 font-mono text-xs text-data">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
+                <td className="py-2 px-2 font-mono text-label text-data">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.ormDeltaPct} /></td>
               </tr>
             ))}
@@ -227,7 +227,7 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
           return (
             <li key={i} className="flex items-center gap-2.5">
               <span className={`material-symbols-outlined text-base flex-shrink-0 ${st.cls}`} style={{ fontVariationSettings: "'FILL' 1" }}>{st.icon}</span>
-              <span className="text-xs text-white font-sans flex-1 min-w-0">{c.title}</span>
+              <span className="text-label text-white font-sans flex-1 min-w-0">{c.title}</span>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${st.cls}`}>
                 {st.label}{c.progressValue != null ? ` · ${c.progressValue}/${c.target} ${c.unit}` : ''}
               </span>

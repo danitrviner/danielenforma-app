@@ -114,7 +114,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
     <div className="space-y-6">
       <div>
         <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Road map del atleta</h2>
-        <p className="text-ink-2 text-xs font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
+        <p className="text-ink-2 text-label font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
       </div>
 
       <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">
@@ -122,7 +122,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
           <button
             key={t.id}
             onClick={() => setSubTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
               subTab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
             }`}
           >
@@ -144,7 +144,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
       )}
       {subTab === 'retos' && (uid
         ? <ChallengeManager athleteEmail={athleteEmail} challengeData={challengeData} roadmap={rm} onSaveRoadmap={handleSave} />
-        : <p className="text-xs text-ink-3 font-mono py-4">No se ha podido cargar el perfil del atleta.</p>
+        : <p className="text-label text-ink-3 font-mono py-4">No se ha podido cargar el perfil del atleta.</p>
       )}
       {subTab === 'niveles' && <LevelLadderEditor roadmap={rm} onSave={handleSave} ladderData={ladderData} />}
       {subTab === 'timeline' && (

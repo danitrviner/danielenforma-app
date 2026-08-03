@@ -114,7 +114,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
         return (
-          <p key={m} className="font-mono text-xs font-bold" style={{ color: METRIC_COLOR[m] }}>
+          <p key={m} className="font-mono text-label font-bold" style={{ color: METRIC_COLOR[m] }}>
             {METRIC_LABEL[m]}: {m === 'tonnage' ? raw.toLocaleString() : raw}{METRIC_UNIT[m]}
           </p>
         );
@@ -355,7 +355,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         </h3>
         <div className="py-8 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitoring</span>
-          <p className="text-xs text-ink-2 font-mono">Sin registros de carga aún.</p>
+          <p className="text-label text-ink-2 font-mono">Sin registros de carga aún.</p>
         </div>
       </div>
     );
@@ -376,7 +376,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               <button
                 key={m}
                 onClick={() => toggleMetric(m)}
-                className={`px-3 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
+                className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
@@ -394,7 +394,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <button
                   key={s}
                   onClick={toggle}
-                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
+                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
                     active ? 'bg-white/10 border-hairline text-white' : 'border-hairline text-ink-3 hover:text-ink-2'
                   }`}
                 >
@@ -484,7 +484,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
           {/* Progression summary */}
           {progression ? (
-            <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+            <div className="flex items-center gap-2 text-label font-mono flex-wrap">
               <span className="text-ink-2">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
               <span className="text-ink-3">→</span>
               <span className="text-ink-2">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>

@@ -78,14 +78,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -96,14 +96,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               required
             />
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Compartir recurso'}
           </button>
@@ -116,7 +116,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : resources.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">
+        <p className="text-label text-ink-3 font-mono py-2">
           {isCoach ? 'Todavía no compartiste ningún recurso.' : 'Tu entrenador no compartió recursos todavía.'}
         </p>
       ) : (

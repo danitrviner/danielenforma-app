@@ -47,7 +47,7 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-xs font-mono shadow-xl">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-xl">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
         <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
@@ -271,7 +271,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               <button
                 onClick={handleAdd}
                 disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
               >
                 {adding ? '…' : 'Añadir'}
               </button>
@@ -282,7 +282,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {logs.length === 0 && (
             <div className="text-center py-8 border border-dashed border-hairline rounded-surface">
               <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitor_weight</span>
-              <p className="font-mono text-xs text-ink-2">
+              <p className="font-mono text-label text-ink-2">
                 {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
               </p>
             </div>
@@ -308,14 +308,14 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           value={editDate}
                           onChange={e => setEditDate(e.target.value)}
                           max={todayStr()}
-                          className={`${INPUT_CLS} text-xs py-1`}
+                          className={`${INPUT_CLS} text-label py-1`}
                         />
                         <input
                           type="number"
                           value={editWeight}
                           onChange={e => setEditWeight(e.target.value)}
                           step="0.1"
-                          className={`w-20 ${INPUT_CLS} text-xs py-1`}
+                          className={`w-20 ${INPUT_CLS} text-label py-1`}
                         />
                         <span className="font-mono text-caption text-ink-2">kg</span>
                         <div className="flex gap-1 ml-auto">

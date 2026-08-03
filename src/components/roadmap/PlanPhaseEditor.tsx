@@ -191,27 +191,27 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-ink-2 text-xs font-mono flex-1 min-w-[200px]">
+        <p className="text-ink-2 text-label font-mono flex-1 min-w-[200px]">
           Fases del plan por progresión, no por tiempo. El cliente ve la actual destacada y las siguientes como "lo que le queda por delante".
         </p>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
           <button
             onClick={useStandardPreset}
-            className="py-2 px-3 border border-hairline text-ink-2 font-sans font-bold text-xs uppercase rounded-control hover:text-white hover:border-strong transition-all"
+            className="py-2 px-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-white hover:border-strong transition-all"
           >
             Usar plan estándar (6 fases)
           </button>
           <button
             onClick={onGenerateClick}
             disabled={generatingNutrition || phases.length === 0}
-            className="py-2 px-3 border border-data/40 text-data font-sans font-bold text-xs uppercase rounded-control hover:bg-data/10 transition-all disabled:opacity-40"
+            className="py-2 px-3 border border-data/40 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 transition-all disabled:opacity-40"
           >
             {generatingNutrition ? 'Generando...' : 'Generar periodización nutricional'}
           </button>
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="py-2 px-4 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+            className="py-2 px-4 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -222,27 +222,27 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
           <div className="bg-surface border border-hairline rounded-surface p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
             <p className="font-sans font-bold text-white text-sm">Ya existe una periodización nutricional</p>
-            <p className="text-xs text-ink-2 font-mono leading-relaxed">
+            <p className="text-label text-ink-2 font-mono leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
             </p>
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={() => generateNutritionProgram('futuras')}
                 disabled={generatingNutrition}
-                className="py-2 bg-data text-black font-sans font-bold text-xs uppercase rounded-control hover:opacity-90 disabled:opacity-50"
+                className="py-2 bg-data text-black font-sans font-bold text-label uppercase rounded-control hover:opacity-90 disabled:opacity-50"
               >
                 Regenerar solo fases futuras
               </button>
               <button
                 onClick={() => generateNutritionProgram('full')}
                 disabled={generatingNutrition}
-                className="py-2 border border-red-500/40 text-red-400 font-sans font-bold text-xs uppercase rounded-control hover:bg-red-500/10 disabled:opacity-50"
+                className="py-2 border border-red-500/40 text-red-400 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/10 disabled:opacity-50"
               >
                 Regenerar todo (sobrescribe)
               </button>
               <button
                 onClick={() => setShowNutritionModal(false)}
-                className="py-2 text-ink-2 font-mono text-xs hover:text-white"
+                className="py-2 text-ink-2 font-mono text-label hover:text-white"
               >
                 Cancelar
               </button>
@@ -257,8 +257,8 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
           <div key={phase.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 flex-shrink-0 pt-1">
-                <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white text-xs disabled:opacity-30">↑</button>
-                <button onClick={() => move(phase.id, 1)} disabled={idx === sorted.length - 1} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white text-xs disabled:opacity-30">↓</button>
+                <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white text-label disabled:opacity-30">↑</button>
+                <button onClick={() => move(phase.id, 1)} disabled={idx === sorted.length - 1} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white text-label disabled:opacity-30">↓</button>
               </div>
 
               <div className="flex-1 space-y-2 min-w-0">
@@ -287,7 +287,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   value={phase.motto ?? ''}
                   onChange={e => updatePhase(phase.id, { motto: e.target.value })}
                   placeholder="Frase motivadora (opcional)"
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                  className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
                 />
 
                 <textarea
@@ -295,7 +295,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { description: e.target.value })}
                   placeholder="Descripción de la fase"
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex flex-wrap gap-2 items-start">
@@ -401,7 +401,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { exitCriteria: e.target.value })}
                   placeholder="Criterios para pasar a la siguiente fase"
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex items-center gap-2 pt-1">
@@ -427,7 +427,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       <button
         onClick={addPhase}
-        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-xs transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-label transition-colors"
       >
         + Añadir fase
       </button>

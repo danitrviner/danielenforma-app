@@ -39,7 +39,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'}`}>
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'}`}>
               <span className="material-symbols-outlined text-base">{t.icon}</span>
               {t.label}
             </button>
@@ -108,33 +108,33 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white">
+      <button onClick={onBack} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white">
         <span className="material-symbols-outlined text-base">arrow_back</span> Atletas
       </button>
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
           <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
         </div>
         <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-caption font-mono uppercase rounded-control hover:text-white">Recalcular</button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
           <div key={z} className="flex items-center gap-2">
-            <span className="text-xs font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
+            <span className="text-label font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-label text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-label text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
-      <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
+      <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
         {saving ? 'Guardando...' : 'Guardar zonas'}
       </button>
     </section>
@@ -184,7 +184,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-base text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">No hay tests pendientes.</p>
+        <p className="text-label text-ink-3 font-mono py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (
@@ -193,7 +193,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
-            <p className="text-xs font-mono text-data">{t.type}</p>
+            <p className="text-label font-mono text-data">{t.type}</p>
             <p className="text-caption font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}
@@ -259,21 +259,21 @@ function PrescriptionTab() {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-base text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+        className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
       <div className="flex gap-2">
         <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
           <option value="intervalos">Intervalos</option>
         </select>
         {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
         )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
       </div>
 
       {type === 'intervalos' && (
@@ -305,7 +305,7 @@ function PrescriptionTab() {
       )}
 
       <button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)}
-        className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
+        className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press disabled:opacity-50">
         {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
       </button>
     </section>

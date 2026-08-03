@@ -121,11 +121,11 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
           {/* List */}
           <div className="max-h-[420px] overflow-y-auto divide-y divide-hairline">
             {loading ? (
-              <p className="text-center py-6 font-mono text-xs text-ink-3 animate-pulse">Cargando…</p>
+              <p className="text-center py-6 font-mono text-label text-ink-3 animate-pulse">Cargando…</p>
             ) : notifs.length === 0 ? (
               <div className="py-10 flex flex-col items-center gap-2 text-ink-3">
                 <span className="material-symbols-outlined text-3xl">notifications_off</span>
-                <p className="font-mono text-xs">Sin notificaciones</p>
+                <p className="font-mono text-label">Sin notificaciones</p>
               </div>
             ) : (
               notifs.map(n => (
@@ -149,7 +149,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
+                    <p className={`text-label font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
                     <p className="text-caption font-mono text-ink-3 mt-0.5 truncate">{n.body}</p>

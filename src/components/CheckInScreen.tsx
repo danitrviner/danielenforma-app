@@ -75,11 +75,11 @@ function QuestionnaireForm({
       </div>
 
       {questionnaire.description && (
-        <p className="text-xs text-ink-2 mb-4 font-sans">{questionnaire.description}</p>
+        <p className="text-label text-ink-2 mb-4 font-sans">{questionnaire.description}</p>
       )}
 
       {err && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-xs mb-4">{err}</div>
+        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label mb-4">{err}</div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -96,7 +96,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-raised border-0 border-b border-hairline text-ink text-xs p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-raised border-0 border-b border-hairline text-ink text-label p-2.5 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -120,7 +120,7 @@ function QuestionnaireForm({
                       key={v}
                       type="button"
                       onClick={() => setAnswer(q.id, v)}
-                      className={`w-9 h-9 rounded-control font-mono text-xs font-bold transition-all ${
+                      className={`w-9 h-9 rounded-control font-mono text-label font-bold transition-all ${
                         answers[q.id] === v
                           ? 'bg-accent text-black'
                           : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
@@ -144,7 +144,7 @@ function QuestionnaireForm({
                     key={String(v)}
                     type="button"
                     onClick={() => setAnswer(q.id, v)}
-                    className={`flex-1 py-3 font-mono text-xs rounded-control border transition-all min-h-[44px] ${
+                    className={`flex-1 py-3 font-mono text-label rounded-control border transition-all min-h-[44px] ${
                       answers[q.id] === v
                         ? 'bg-accent text-black font-bold border-transparent'
                         : 'bg-raised text-ink border-hairline'
@@ -173,7 +173,7 @@ function QuestionnaireForm({
                         setAnswer(q.id, opt);
                       }
                     }}
-                    className={`w-full py-2.5 px-3 text-xs font-mono rounded-control border text-left transition-all min-h-[44px] ${
+                    className={`w-full py-2.5 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
                       isSelected
                         ? 'bg-accent text-black border-transparent font-bold'
                         : 'bg-raised text-ink border-hairline'
@@ -189,7 +189,7 @@ function QuestionnaireForm({
         <button
           type="submit"
           disabled={saving}
-          className="w-full h-[44px] bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full h-[44px] bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           {saving ? 'Enviando...' : 'Enviar Respuesta'}
           <span className="material-symbols-outlined text-sm">send</span>
@@ -403,7 +403,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           </p>
           {!bwEditing && bwToday ? (
             <p className="font-mono text-lg font-bold text-white leading-tight">
-              {bwToday.weight} <span className="text-xs text-ink-2 font-normal">kg</span>
+              {bwToday.weight} <span className="text-label text-ink-2 font-normal">kg</span>
             </p>
           ) : (
             <div className="flex items-center gap-2 mt-1">
@@ -419,7 +419,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
                 className="w-24 bg-raised border border-hairline rounded-control px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
-              <span className="font-mono text-xs text-ink-3">kg</span>
+              <span className="font-mono text-label text-ink-3">kg</span>
             </div>
           )}
           {bwError && <p className="font-mono text-caption text-red-400 mt-1">{bwError}</p>}
@@ -514,7 +514,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               if (!q) return null;
               return (
                 <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
-                  <p className="font-sans text-xs text-ink-2">{q.title}</p>
+                  <p className="font-sans text-label text-ink-2">{q.title}</p>
                   <span className="font-mono text-caption text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                   </span>
@@ -560,7 +560,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
-                <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
+                <p className="font-sans text-label text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
                 <span className="font-mono text-caption text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
@@ -593,7 +593,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-ink-2">{item.dateStr}</span>
+                  <span className="font-mono text-label text-ink-2">{item.dateStr}</span>
                   <span className="font-mono font-bold text-white text-sm">{item.weight} kg</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -604,16 +604,16 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
               </div>
               {item.notes && (
-                <p className="text-xs text-ink-2 font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
+                <p className="text-label text-ink-2 font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
               )}
               {item.coachFeedback ? (
-                <div className="text-xs border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r-control p-2">
+                <div className="text-label border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r-control p-2">
                   <span className="font-mono font-semibold text-accent block mb-1">Nota del Entrenador:</span>
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (
                 <div className="text-caption text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs animate-spin text-accent">sync</span>
+                  <span className="material-symbols-outlined text-label animate-spin text-accent">sync</span>
                   Pendiente de revisión del Entrenador
                 </div>
               )}

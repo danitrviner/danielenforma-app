@@ -117,7 +117,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <button
             key={m.id}
             onClick={() => setFilterMode(m.id)}
-            className={`px-4 py-2 rounded-control font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               filterMode === m.id
                 ? 'bg-accent text-black shadow-md'
                 : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
@@ -163,12 +163,12 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar alimento..."
-              className="bg-transparent text-white text-xs focus:outline-none w-full placeholder-ink-2/40"
+              className="bg-transparent text-white text-label focus:outline-none w-full placeholder-ink-2/40"
             />
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap shadow-md"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir
@@ -212,7 +212,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             </div>
           ))}
           {filtered.length === 0 && !loading && (
-            <div className="text-center py-12 text-ink-2 font-mono text-xs italic">
+            <div className="text-center py-12 text-ink-2 font-mono text-label italic">
               Ningún alimento coincide.
             </div>
           )}
@@ -266,13 +266,13 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all">
+              <button onClick={() => setShowModal(false)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.label.trim()}
-                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {saving ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</> : <><span className="material-symbols-outlined text-sm">save</span>Guardar</>}
               </button>
@@ -287,8 +287,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-2xl space-y-4">
             <h3 className="font-sans font-bold text-lg text-white">¿Eliminar alimento?</h3>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-xs uppercase rounded-control">Cancelar</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-xs uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
+              <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
             </div>
           </div>
         </div>

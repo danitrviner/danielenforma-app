@@ -35,7 +35,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
         </div>
 
         <button onClick={() => onConfirm(pe)} disabled={saving}
-          className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar sesión'}
         </button>
       </div>

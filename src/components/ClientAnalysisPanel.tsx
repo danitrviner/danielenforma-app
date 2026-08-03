@@ -37,7 +37,7 @@ export default function ClientAnalysisPanel({
           <button
             key={t.id}
             onClick={() => onAnalisisTabChange(t.id)}
-            className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
               analisisTab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
             }`}
           >

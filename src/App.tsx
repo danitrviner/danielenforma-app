@@ -226,7 +226,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
-        <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
+        <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
     );
   }
@@ -256,7 +256,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
-        <p className="font-mono text-xs text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
+        <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
     );
   }
@@ -293,7 +293,7 @@ function AppContent() {
             <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
               <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
-              <span className="text-xs font-mono font-medium text-white">{profile.displayName}</span>
+              <span className="text-label font-mono font-medium text-white">{profile.displayName}</span>
             </div>
           </div>
         </div>
@@ -331,7 +331,7 @@ function AppContent() {
               >
                 {tab.icon}
               </span>
-              <span className="font-sans text-xs uppercase tracking-wider font-bold flex-1">{tab.label}</span>
+              <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
               {tab.id === 'reviews' && pendingCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
               )}
@@ -344,7 +344,7 @@ function AppContent() {
             className={`flex items-center gap-4 p-3 rounded-control text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
           >
             <span className="material-symbols-outlined">person</span>
-            <span className="font-sans text-xs font-bold uppercase tracking-wider">Mi Perfil</span>
+            <span className="font-sans text-label font-bold uppercase tracking-wider">Mi Perfil</span>
           </button>
         )}
       </nav>

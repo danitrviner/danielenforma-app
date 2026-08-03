@@ -196,13 +196,13 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             <div>
               <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
                   <span>🏅</span> Primera semana
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
                   <span className="text-accent">⚡</span> 10 días de racha
                 </span>
-                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
+                <span className="px-3 py-1.5 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-1.5">
                   <span className="text-data">⭐</span> Nivel {profile.level}
                 </span>
               </div>
@@ -242,7 +242,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             </div>
             <button
               onClick={() => setEditingFicha(true)}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">edit_note</span>
               {onboarding ? 'Editar' : 'Completar'}
@@ -280,7 +280,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       </div>
 
       {success && (
-        <div className="bg-accent/10 border border-accent/30 text-white p-3.5 rounded-surface text-xs font-bold text-center">
+        <div className="bg-accent/10 border border-accent/30 text-white p-3.5 rounded-surface text-label font-bold text-center">
           {success}
         </div>
       )}
@@ -398,7 +398,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-semibold text-xs font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
+          className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-semibold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
         >
           {loading ? 'Sincronizando...' : 'Guardar Cambios Deportivos'}
         </button>
@@ -408,7 +408,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       <div className="pt-2">
         <button
           onClick={handleSignOut}
-          className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-xs font-mono font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
+          className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-label font-mono font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">logout</span>
           Cerrar Sesión Activa

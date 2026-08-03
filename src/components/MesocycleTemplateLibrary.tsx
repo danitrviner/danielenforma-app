@@ -71,7 +71,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
       >−</button>
       <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
         {value}
@@ -79,7 +79,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
       >+</button>
     </div>
   );
@@ -99,7 +99,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`px-2 py-0.5 rounded-control text-xs font-mono transition-all ${
+          className={`px-2 py-0.5 rounded-control text-label font-mono transition-all ${
             value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -133,7 +133,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
@@ -142,7 +142,7 @@ const ExerciseRow: React.FC<{
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
@@ -152,7 +152,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
@@ -161,7 +161,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
@@ -245,7 +245,7 @@ const DayBlock: React.FC<{
           value={day.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...day, name: e.target.value })}
-          className="flex-1 bg-transparent font-mono text-xs text-white focus:outline-none"
+          className="flex-1 bg-transparent font-mono text-label text-white focus:outline-none"
           placeholder="Nombre del día"
         />
         <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
@@ -288,7 +288,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-accent/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-1.5 text-white font-mono text-label focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-xs rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -417,7 +417,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
+                className={`px-4 py-2 font-mono text-label uppercase tracking-wider transition-colors ${
                   tab === t ? 'text-accent border-b-2 border-accent' : 'text-ink-3 hover:text-ink-2'
                 }`}
               >
@@ -452,7 +452,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                           style={{ backgroundColor: heatmapBg(cfg.series) }}
                         >
                           <td className="px-3 py-2.5">
-                            <span className="font-sans text-xs font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
+                            <span className="font-sans text-label font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
                               {MUSCLE_LABELS[g]}
                             </span>
                           </td>
@@ -680,13 +680,13 @@ function TemplateEditor({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-mono text-xs font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
+            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-mono text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
           >
             Cancelar
           </button>
@@ -911,7 +911,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         <div className="py-16 text-center border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">library_books</span>
           <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
-          <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
+          <p className="text-ink-2 text-label font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
             className="mt-4 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all"
@@ -946,13 +946,13 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 py-2 bg-red-500 text-white font-mono text-xs font-bold uppercase rounded-control hover:bg-red-600 transition-all"
+                  className="flex-1 py-2 bg-red-500 text-white font-mono text-label font-bold uppercase rounded-control hover:bg-red-600 transition-all"
                 >
                   Eliminar
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-xs font-bold uppercase rounded-control hover:text-white transition-all"
+                  className="flex-1 py-2 bg-raised text-ink-2 font-mono text-label font-bold uppercase rounded-control hover:text-white transition-all"
                 >
                   Cancelar
                 </button>

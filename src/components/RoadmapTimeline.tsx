@@ -204,21 +204,21 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           {!isNew && onDelete && (
             <button
               onClick={onDelete}
-              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-xs uppercase rounded-control transition-all"
+              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-label uppercase rounded-control transition-all"
             >
               Eliminar
             </button>
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
+            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? (
               <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -715,7 +715,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border border-hairline text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border border-hairline text-label font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >
@@ -733,7 +733,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {roadmap.items.length === 0 && mesocycles.length === 0 && !nutritionProgram && (
         <div className="text-center py-12">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">map</span>
-          <p className="text-ink-2 text-xs font-mono">No hay datos de planificación todavía.</p>
+          <p className="text-ink-2 text-label font-mono">No hay datos de planificación todavía.</p>
         </div>
       )}
 

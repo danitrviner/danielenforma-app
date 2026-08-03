@@ -51,7 +51,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
                 tab === t.id ? 'bg-accent text-black shadow-lg shadow-accent/10' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -126,16 +126,16 @@ function CoursesTab() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2 flex-wrap">
             <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)}
-              className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
               {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </select>
             <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])}
-              className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
               <option value="immediate">Desbloqueo inmediato</option>
               <option value="daysSinceJoin">Días desde el alta</option>
               <option value="level">Nivel mínimo</option>
@@ -143,10 +143,10 @@ function CoursesTab() {
             </select>
             {unlockType !== 'immediate' && (
               <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder={unlockType === 'prerequisite' ? 'ID de curso' : 'Número'}
-                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
             )}
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear curso'}
           </button>
         </form>
@@ -155,7 +155,7 @@ function CoursesTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
       ) : courses.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">Todavía no hay cursos.</p>
+        <p className="text-label text-ink-3 font-mono py-2">Todavía no hay cursos.</p>
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
@@ -232,22 +232,22 @@ function LessonsTab() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <select value={courseId} onChange={e => setCourseId(e.target.value)} required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
             <option value="">Selecciona curso...</option>
             {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2">
             <select value={videoProvider} onChange={e => setVideoProvider(e.target.value as 'youtube' | 'vimeo')}
-              className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
               <option value="youtube">YouTube</option>
               <option value="vimeo">Vimeo</option>
             </select>
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
             {saving ? 'Guardando...' : 'Crear lección'}
           </button>
         </form>
@@ -256,7 +256,7 @@ function LessonsTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
       ) : lessons.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">Todavía no hay lecciones.</p>
+        <p className="text-label text-ink-3 font-mono py-2">Todavía no hay lecciones.</p>
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (

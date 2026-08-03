@@ -112,7 +112,7 @@ export default function PhotosScreen({ profile }: Props) {
           <button
             key={v}
             onClick={() => setSelectedView(v)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               selectedView === v
                 ? 'bg-accent text-black shadow-md'
                 : 'text-ink-2 hover:text-white'
@@ -138,7 +138,7 @@ export default function PhotosScreen({ profile }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
         >
           {uploading
             ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
@@ -153,7 +153,7 @@ export default function PhotosScreen({ profile }: Props) {
           onChange={handleFileChange}
         />
         {uploadError && (
-          <p className="w-full font-mono text-xs text-red-400">{uploadError}</p>
+          <p className="w-full font-mono text-label text-red-400">{uploadError}</p>
         )}
       </div>
 
@@ -162,11 +162,11 @@ export default function PhotosScreen({ profile }: Props) {
         <div className="text-center py-20 border border-dashed border-hairline rounded-surface">
           <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">photo_camera</span>
           <p className="text-ink-2 text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
-          <p className="text-ink-2 text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
+          <p className="text-ink-2 text-label font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press disabled:opacity-50 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">upload</span>
             Subir foto
@@ -198,7 +198,7 @@ export default function PhotosScreen({ profile }: Props) {
                 className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-ink-2 hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
               >
                 {deleting === photo.id
-                  ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                  ? <span className="material-symbols-outlined text-label animate-spin">progress_activity</span>
                   : <span className="material-symbols-outlined text-sm">delete</span>
                 }
               </button>

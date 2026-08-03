@@ -212,7 +212,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
+          className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir ejercicio
@@ -246,7 +246,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterMuscleGroup}
             onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los grupos</option>
             {MACRO_MUSCLE_GROUPS.map(g => (
@@ -257,7 +257,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los tipos</option>
             {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
@@ -266,7 +266,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEndurance}
             onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todos los perfiles de resistencia</option>
             {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
@@ -275,7 +275,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <select
             value={filterEquipment}
             onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="bg-raised border border-hairline rounded-control px-3 py-2.5 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="">Todo el material</option>
             {EQUIPMENT_OPTIONS.map(e => (
@@ -286,7 +286,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           {hasFilters && (
             <button
               onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-ink-2 hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-hairline rounded-control hover:border-hairline transition-all"
+              className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1 px-3 py-2.5 border border-hairline rounded-control hover:border-hairline transition-all"
             >
               <span className="material-symbols-outlined text-sm">close</span>
               Limpiar
@@ -314,7 +314,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
           <span className="material-symbols-outlined text-4xl text-accent/40 block mb-3">fitness_center</span>
           <p className="text-white font-bold text-sm">Sin resultados</p>
-          <p className="text-ink-2 text-xs mt-1">
+          <p className="text-ink-2 text-label mt-1">
             {filterMuscleGroup
               ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo muscular en el editor.`
               : 'Ajusta los filtros o añade un nuevo ejercicio.'}
@@ -363,12 +363,12 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         <div className="space-y-0.5">
                           {ex.muscleGroup ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-xs text-accent bg-accent/8 border border-accent/20 px-1.5 py-0.5 rounded-control">
+                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-1.5 py-0.5 rounded-control">
                               <span className="material-symbols-outlined text-caption">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
                           ) : (
-                            <span className="font-mono text-xs text-ink-2">{ex.primaryFocus}</span>
+                            <span className="font-mono text-label text-ink-2">{ex.primaryFocus}</span>
                           )}
                         </div>
                       </td>
@@ -472,7 +472,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   ))}
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-mono text-data/70 flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-xs">play_circle</span>
+                      <span className="material-symbols-outlined text-label">play_circle</span>
                       Video
                     </a>
                   )}
@@ -495,13 +495,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
+                className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-xs uppercase rounded-control transition-all"
+                className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all"
               >
                 Eliminar
               </button>
@@ -659,14 +659,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
+                  className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving || !form.name.trim()}
-                  className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <>

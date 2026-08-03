@@ -159,7 +159,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
           Reportes
         </h2>
-        <p className="font-mono text-xs text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
+        <p className="font-mono text-label text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
       </div>
 
       {/* Generator */}
@@ -171,7 +171,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             <select
               value={periodMode}
               onChange={e => setPeriodMode(e.target.value as PeriodMode)}
-              className="bg-raised border border-hairline text-white text-xs font-mono rounded-control px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+              className="bg-raised border border-hairline text-white text-label font-mono rounded-control px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
             >
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
@@ -184,7 +184,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <select
                 value={compareWeeks}
                 onChange={e => setCompareWeeks(Number(e.target.value))}
-                className="bg-raised border border-hairline text-white text-xs font-mono rounded-control px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+                className="bg-raised border border-hairline text-white text-label font-mono rounded-control px-2.5 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
               >
                 {compareWeekOptions.map(w => (
                   <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>
@@ -199,7 +199,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           )}
           <button
             onClick={handleGenerate}
-            className="px-4 py-2 bg-accent text-black font-sans text-xs font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-base">auto_awesome</span>
             Generar
@@ -218,7 +218,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
         ) : reports.length === 0 ? (
           <div className="py-10 text-center border border-dashed border-hairline rounded-surface">
             <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">description</span>
-            <p className="font-mono text-xs text-ink-2">Aún no hay reportes para este atleta.</p>
+            <p className="font-mono text-label text-ink-2">Aún no hay reportes para este atleta.</p>
           </div>
         ) : (
           reports.map(r => (

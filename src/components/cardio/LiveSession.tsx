@@ -58,7 +58,7 @@ export default function LiveSession({
         <span className="material-symbols-outlined text-white/80 text-lg">
           {deviceStatus === 'connected' ? 'bluetooth_connected' : deviceStatus === 'reconnecting' ? 'bluetooth_searching' : 'bluetooth_disabled'}
         </span>
-        <p className="text-xs font-mono text-white/80 tabular-nums">{fmtClock(elapsedSec)}</p>
+        <p className="text-label font-mono text-white/80 tabular-nums">{fmtClock(elapsedSec)}</p>
       </div>
 
       {deviceStatus === 'reconnecting' && (
@@ -70,7 +70,7 @@ export default function LiveSession({
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <div className="text-center pt-2">
           <p className="font-sans font-black text-7xl text-white tabular-nums leading-none drop-shadow-sm">{bpm ?? '--'}</p>
-          <p className="text-xs font-mono uppercase text-white/90 mt-1.5 tracking-wider">{zoneLabel}</p>
+          <p className="text-label font-mono uppercase text-white/90 mt-1.5 tracking-wider">{zoneLabel}</p>
         </div>
 
         {intervalBlocks && currentBlockIndex !== undefined && (

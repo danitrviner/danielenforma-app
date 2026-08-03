@@ -63,7 +63,7 @@ export default function AcademyScreen({ profile }: Props) {
       <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
         <span className="material-symbols-outlined text-5xl text-ink-3">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
-        <p className="text-xs text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
+        <p className="text-label text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export default function AcademyScreen({ profile }: Props) {
     const done = !!progressSafe.completed[openLesson.id];
     return (
       <div className="space-y-4">
-        <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white transition-colors">
+        <button onClick={() => setOpenLessonId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span> {openCourse.title}
         </button>
         <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
@@ -115,12 +115,12 @@ export default function AcademyScreen({ profile }: Props) {
         </div>
         <div>
           <h2 className="font-sans font-bold text-lg text-white">{openLesson.title}</h2>
-          {openLesson.description && <p className="text-xs text-ink-2 font-mono mt-1">{openLesson.description}</p>}
+          {openLesson.description && <p className="text-label text-ink-2 font-mono mt-1">{openLesson.description}</p>}
         </div>
         {openLesson.resources && openLesson.resources.length > 0 && (
           <div className="space-y-1.5">
             {openLesson.resources.map((r, i) => (
-              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-mono text-data hover:underline">
+              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-label font-mono text-data hover:underline">
                 <span className="material-symbols-outlined text-sm">{r.kind === 'pdf' ? 'picture_as_pdf' : 'link'}</span>
                 {r.title}
               </a>
@@ -130,7 +130,7 @@ export default function AcademyScreen({ profile }: Props) {
         <button
           onClick={() => handleCompleteLesson(openLesson)}
           disabled={done}
-          className={`w-full py-3 rounded-control font-sans font-bold text-xs uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
+          className={`w-full py-3 rounded-control font-sans font-bold text-label uppercase transition-all ${done ? 'bg-white/7 text-ink-2' : 'bg-accent text-black hover:bg-accent-press active:scale-95'}`}
         >
           {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
         </button>
@@ -142,13 +142,13 @@ export default function AcademyScreen({ profile }: Props) {
   if (openCourse) {
     return (
       <div className="space-y-4">
-        <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-xs font-mono text-ink-2 hover:text-white transition-colors">
+        <button onClick={() => setOpenCourseId(null)} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white transition-colors">
           <span className="material-symbols-outlined text-base">arrow_back</span> Academia
         </button>
         <div>
           <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-black text-2xl text-white">{openCourse.title}</h2>
-          <p className="text-xs text-ink-2 font-mono mt-1">{openCourse.description}</p>
+          <p className="text-label text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">
           {courseLessons.map((l, i) => {
@@ -187,11 +187,11 @@ export default function AcademyScreen({ profile }: Props) {
     <div className="space-y-6">
       <header>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
-        <p className="text-xs text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
+        <p className="text-label text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
       </header>
 
       {publishedCourses.length === 0 && (
-        <p className="text-xs text-ink-3 font-mono py-6 text-center">Todavía no hay cursos publicados.</p>
+        <p className="text-label text-ink-3 font-mono py-6 text-center">Todavía no hay cursos publicados.</p>
       )}
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
@@ -212,7 +212,7 @@ export default function AcademyScreen({ profile }: Props) {
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>
                     {!unlocked && <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">lock</span>}
                   </div>
-                  <p className="text-xs text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
+                  <p className="text-label text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
                     <div className="mt-3 h-1.5 bg-white/7 rounded-full overflow-hidden">
                       <div className="h-full bg-accent" style={{ width: `${pct}%` }} />

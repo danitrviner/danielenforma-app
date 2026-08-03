@@ -91,14 +91,14 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -108,13 +108,13 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             />
           </div>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
           </button>
@@ -127,7 +127,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : tasks.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">Sin tareas asignadas.</p>
+        <p className="text-label text-ink-3 font-mono py-2">Sin tareas asignadas.</p>
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(t => (

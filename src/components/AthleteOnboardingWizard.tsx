@@ -256,7 +256,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                     <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-accent' : 'text-ink-2'}`}>{g.icon}</span>
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
-                      <span className="block text-xs text-ink-2">{g.desc}</span>
+                      <span className="block text-label text-ink-2">{g.desc}</span>
                     </span>
                   </span>
                 </Chip>
@@ -284,7 +284,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {EXPERIENCE.map(x => (
                 <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
                   <span className="block font-bold text-white">{x.label}</span>
-                  <span className="block text-xs text-ink-2">{x.desc}</span>
+                  <span className="block text-label text-ink-2">{x.desc}</span>
                 </Chip>
               ))}
             </div>
@@ -370,7 +370,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {ACTIVITY.map(a => (
                 <Chip key={a.id} big selected={activityLevel === a.id} onClick={() => setActivityLevel(a.id)}>
                   <span className="block font-bold text-white">{a.label}</span>
-                  <span className="block text-xs text-ink-2">{a.desc}</span>
+                  <span className="block text-label text-ink-2">{a.desc}</span>
                 </Chip>
               ))}
             </div>

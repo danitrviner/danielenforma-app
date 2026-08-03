@@ -103,7 +103,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
 
         <div className="max-h-96 overflow-y-auto">
           {loadingAthletes && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-2 animate-pulse">Cargando atletas...</p>
+            <p className="px-4 py-6 text-center font-mono text-label text-ink-2 animate-pulse">Cargando atletas...</p>
           )}
 
           {!loadingAthletes && matchedAthletes.length > 0 && (
@@ -142,7 +142,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
           )}
 
           {!loadingAthletes && matchedAthletes.length === 0 && matchedActions.length === 0 && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-3">Sin resultados.</p>
+            <p className="px-4 py-6 text-center font-mono text-label text-ink-3">Sin resultados.</p>
           )}
         </div>
       </div>

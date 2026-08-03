@@ -44,7 +44,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-caption font-mono text-ink-2">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
-          <p className="text-xs font-sans font-bold" style={{ color: TLR_STATE_COLOR[tlrState] }}>{TLR_LABEL[tlrState]} · TLR {today.tlr.toFixed(2)}</p>
+          <p className="text-label font-sans font-bold" style={{ color: TLR_STATE_COLOR[tlrState] }}>{TLR_LABEL[tlrState]} · TLR {today.tlr.toFixed(2)}</p>
         </div>
         {/* Escala fija 0–2.0 con los 5 estados en franjas iguales (§5.4) y un
             marcador en la posición real del TLR de hoy — no una escala a

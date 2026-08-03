@@ -120,7 +120,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
               className="flex items-center justify-between px-3 py-2.5 rounded-surface relative"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold font-sans truncate">{phase.name}</p>
+                <p className="text-label font-bold font-sans truncate">{phase.name}</p>
                 {diet && <p className="text-caption font-mono opacity-75 truncate">{diet.name}</p>}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -373,10 +373,10 @@ export default function NutritionPeriodizationPanel({
           </div>
           <div className="border border-dashed border-hairline rounded-surface py-8 flex flex-col items-center gap-3">
             <span className="material-symbols-outlined text-3xl text-ink-3">timeline</span>
-            <p className="text-ink-2 text-xs font-mono text-center">Sin periodización nutricional.</p>
+            <p className="text-ink-2 text-label font-mono text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-xs font-mono font-bold rounded-control transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
             >
               <span className="material-symbols-outlined text-sm text-accent">add</span>
               Crear periodización
@@ -452,7 +452,7 @@ export default function NutritionPeriodizationPanel({
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-ink-2 text-xs font-mono text-center py-4 border border-dashed border-hairline rounded-surface">
+          <p className="text-ink-2 text-label font-mono text-center py-4 border border-dashed border-hairline rounded-surface">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -515,7 +515,7 @@ export default function NutritionPeriodizationPanel({
                   <select
                     value={phase.dietId}
                     onChange={e => updatePhase(idx, { dietId: e.target.value })}
-                    className="flex-1 min-w-0 bg-raised border border-hairline text-white text-xs font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                    className="flex-1 min-w-0 bg-raised border border-hairline text-white text-label font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                   >
                     <option value="">Sin dieta</option>
                     {diets.map(d => (
@@ -534,7 +534,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetWeight ?? ''}
                   onChange={e => updatePhase(idx, { targetWeight: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder="—"
-                  className="w-20 bg-raised border border-hairline text-white text-xs font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="w-20 bg-raised border border-hairline text-white text-label font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-caption font-mono text-ink-2">kg</span>
               </div>
@@ -549,7 +549,7 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetKcal ?? ''}
                   onChange={e => updatePhase(idx, { targetKcal: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
-                  className="w-24 bg-raised border border-hairline text-white text-xs font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  className="w-24 bg-raised border border-hairline text-white text-label font-mono rounded-control px-2 py-1.5 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-caption font-mono text-ink-2">
                   kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-xs font-mono rounded-control transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-mono rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Añadir fase

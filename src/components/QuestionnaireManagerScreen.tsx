@@ -100,7 +100,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <div className="border border-dashed border-hairline rounded-surface py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
-          <p className="text-ink-2 text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
+          <p className="text-ink-2 text-label mt-1">Crea plantillas para asignarlas a tus clientes.</p>
         </div>
       ) : (
         <div className="space-y-3">

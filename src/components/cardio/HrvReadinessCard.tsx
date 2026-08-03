@@ -30,7 +30,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-caption font-mono text-ink-2">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
-            <p className="font-sans font-black text-3xl text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-xs font-mono text-ink-2">ms</span></p>
+            <p className="font-sans font-black text-3xl text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-label font-mono text-ink-2">ms</span></p>
           </div>
           {band && (
             <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
@@ -40,10 +40,10 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
           )}
         </div>
       ) : (
-        <p className="text-xs text-ink-2 font-mono">Mide 3 min al despertar para ver tu preparación diaria.</p>
+        <p className="text-label text-ink-2 font-mono">Mide 3 min al despertar para ver tu preparación diaria.</p>
       )}
 
-      <button onClick={onMeasure} className="w-full py-2.5 bg-bg border border-data/30 text-data font-sans font-bold text-xs uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
+      <button onClick={onMeasure} className="w-full py-2.5 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
         {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
       </button>
     </section>

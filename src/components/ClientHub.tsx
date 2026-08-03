@@ -398,7 +398,7 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-xs font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Clientes
@@ -425,12 +425,12 @@ export default function ClientHub({
             type="date"
             value={planStart}
             onChange={e => setPlanStart(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -477,7 +477,7 @@ export default function ClientHub({
             <button
               key={zone}
               onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-control font-sans text-xs font-bold uppercase tracking-wide transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
                 activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
               }`}
             >

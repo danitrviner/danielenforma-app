@@ -179,7 +179,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
       ) : null}
 
       <div className="relative z-10 p-3 space-y-1">
-        <p className="font-sans font-bold text-white text-xs leading-tight line-clamp-2">{recipe.name}</p>
+        <p className="font-sans font-bold text-white text-label leading-tight line-clamp-2">{recipe.name}</p>
         {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
           <p className="font-mono text-caption text-accent/75">
             {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
@@ -232,7 +232,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-xs uppercase tracking-wider"
+          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-label uppercase tracking-wider"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Recetas
@@ -241,7 +241,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {onAddToIntercambios && (
             <button
               onClick={() => onAddToIntercambios(recipe)}
-              className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
+              className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
             >
               <span className="material-symbols-outlined text-xl">playlist_add</span>
               Añadir a Intercambios
@@ -250,7 +250,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           <button
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
-            className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
             style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
           >
             <span
@@ -263,7 +263,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             onClick={() => onToggleDislike(recipe.id)}
             disabled={savingFav}
             title={isDisliked ? 'Quitar el "no me gusta"' : 'No me gusta — que no salga en mis menús'}
-            className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
             style={{ color: isDisliked ? 'var(--color-danger)' : 'var(--color-ink-2)' }}
           >
             <span
@@ -347,7 +347,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           {(Object.entries(exch) as [FoodCategory, number][])
             .filter(([, v]) => v > 0)
             .map(([cat, val]) => (
-              <span key={cat} className={`px-2.5 py-1 rounded-surface border font-mono text-xs font-bold ${CAT_COLORS[cat]}`}>
+              <span key={cat} className={`px-2.5 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
                 {val} {CAT_LABELS[cat]}
               </span>
             ))}
@@ -382,7 +382,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             <ul className="space-y-1.5">
               {recipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
-                  <span className="text-xs text-white font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
+                  <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
                 </li>
               ))}
@@ -391,7 +391,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
             <ul className="space-y-1.5">
               {visibleIngredients.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-1.5 border-b border-hairline last:border-0">
-                  <span className="text-xs text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
+                  <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
                   <span className={`font-mono text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>
                     ×{ing.quantity}
                   </span>
@@ -399,7 +399,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               ))}
             </ul>
           ) : (
-            <p className="font-mono text-xs text-ink-2 italic">Sin ingredientes disponibles.</p>
+            <p className="font-mono text-label text-ink-2 italic">Sin ingredientes disponibles.</p>
           )}
 
           {!isIndya && recipe.extras.length > 0 && (
@@ -436,10 +436,10 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
                   >
                     <div className="flex flex-col items-center shrink-0">
                       <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-caption font-bold transition-all ${done ? 'bg-accent border-accent text-black' : 'border-hairline text-ink-2 group-hover:border-accent/50'}`}>
-                        {done ? <span className="material-symbols-outlined text-xs font-bold">check</span> : idx + 1}
+                        {done ? <span className="material-symbols-outlined text-label font-bold">check</span> : idx + 1}
                       </div>
                     </div>
-                    <p className={`text-xs font-sans leading-relaxed pt-1 pb-3 transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
+                    <p className={`text-label font-sans leading-relaxed pt-1 pb-3 transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
                       {text}
                     </p>
                   </div>
@@ -681,7 +681,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
 
           {filteredRecipes.length === 0 ? (
-            <div className="text-center py-12 text-ink-2 font-mono text-xs uppercase tracking-widest">
+            <div className="text-center py-12 text-ink-2 font-mono text-label uppercase tracking-widest">
               {selectedCat === 'Favoritas' ? 'Aún no tienes favoritas.'
                 : selectedCat === 'MisRecetas' ? 'Aún no has guardado ninguna receta propia.'
                 : 'No hay recetas en esta categoría.'}
@@ -759,7 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-xs text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2.5 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
@@ -778,11 +778,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
           <div className="flex flex-col items-center gap-3 py-16">
-            <p className="font-mono text-xs text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
+            <p className="font-mono text-label text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
             <button
               onClick={handleLoadMore}
               disabled={indyaLoadingMore}
-              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
                 ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>
@@ -791,7 +791,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             </button>
           </div>
         ) : indyaTotalVisible === 0 ? (
-          <div className="text-center py-16 text-ink-2 font-mono text-xs uppercase tracking-widest">
+          <div className="text-center py-16 text-ink-2 font-mono text-label uppercase tracking-widest">
             {indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'}
           </div>
         ) : (
@@ -883,7 +883,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-xs uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Cargando…</>

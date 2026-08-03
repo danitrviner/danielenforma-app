@@ -50,7 +50,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
       </div>
 
       <h3 className="font-sans font-black text-lg text-white leading-tight">{challenge.title}</h3>
-      <p className="text-ink-2 text-xs font-mono leading-relaxed">{challenge.description}</p>
+      <p className="text-ink-2 text-label font-mono leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
         <div className="flex items-center justify-between mb-1.5">
@@ -94,7 +94,7 @@ export function ChallengePendingCard() {
         <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
       <h3 className="font-sans font-black text-lg text-white leading-tight">Tu entrenador está preparando tu reto</h3>
-      <p className="text-ink-2 text-xs font-mono leading-relaxed">
+      <p className="text-ink-2 text-label font-mono leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>
     </div>

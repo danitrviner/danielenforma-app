@@ -53,7 +53,7 @@ const AXIS_TICK = { fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monosp
 function EmptyChart({ message }: { message: string }) {
   return (
     <div className="h-36 flex items-center justify-center border border-dashed border-hairline rounded-surface">
-      <p className="font-mono text-xs text-ink-2">{message}</p>
+      <p className="font-mono text-label text-ink-2">{message}</p>
     </div>
   );
 }
@@ -149,7 +149,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         {/* Este dashboard vive arriba del todo en la pestaña Entrenamientos; la
             creación de mesociclos está más abajo (MesocycleManager) — sin esta
             pista el estado vacío no dice qué hacer ni dónde ir. */}
-        <p className="text-ink-3 text-xs font-mono mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
+        <p className="text-ink-3 text-label font-mono mt-1.5">Créalo más abajo, en la sección de macrociclos.</p>
       </div>
     );
   }

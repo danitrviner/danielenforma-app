@@ -47,7 +47,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             <span className="material-symbols-outlined text-accent text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
           </div>
-          <p className="text-xs text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
+          <p className="text-label text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
           {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (
             <ul className="mt-2 space-y-1">
               {nutritionConfig.sharedReportSnapshot.flags.map((f, i) => (
@@ -63,7 +63,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-xs font-bold tracking-wider uppercase transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
               activeSubTab === tab.id
                 ? 'bg-accent text-black shadow-lg shadow-accent/10'
                 : 'text-ink-2 hover:text-white'

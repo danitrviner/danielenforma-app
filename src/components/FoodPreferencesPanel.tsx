@@ -73,7 +73,7 @@ export default function FoodPreferencesPanel({
       <div className="space-y-4">
         {/* Global counter */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-3 font-mono text-xs">
+          <div className="flex gap-3 font-mono text-label">
             <span className="flex items-center gap-1 text-amber-400">
               <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               Favoritos ({totalFav})
@@ -188,7 +188,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-hairline rounded-control pl-9 pr-4 py-2 text-label text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
@@ -203,7 +203,7 @@ export default function FoodPreferencesPanel({
       {/* Food list */}
       <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
         {filteredFoods.length === 0 ? (
-          <p className="py-6 text-center font-mono text-xs text-ink-3">Sin resultados</p>
+          <p className="py-6 text-center font-mono text-label text-ink-3">Sin resultados</p>
         ) : (
           filteredFoods.map(food => {
             const pref    = prefs[food] ?? 'neutral';
@@ -219,7 +219,7 @@ export default function FoodPreferencesPanel({
                   pref === 'dislike'  ? 'bg-red-500/5' : 'bg-surface'
                 }`}
               >
-                <span className={`flex-1 font-mono text-xs ${
+                <span className={`flex-1 font-mono text-label ${
                   isAllergen ? 'text-amber-400 line-through' :
                   pref === 'favorite' ? 'text-white' :
                   pref === 'dislike'  ? 'text-ink-3' : 'text-ink-2'

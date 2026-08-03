@@ -142,7 +142,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   }
 
   if (loading) {
-    return <p className="text-xs text-ink-2 font-mono animate-pulse py-4">Cargando retos...</p>;
+    return <p className="text-label text-ink-2 font-mono animate-pulse py-4">Cargando retos...</p>;
   }
 
   const currentProgress = current ? evaluateChallengeProgress(current, challengeData, today) : null;
@@ -161,7 +161,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
             </div>
-            <p className="text-xs text-ink-2 font-mono mt-1">{current.description}</p>
+            <p className="text-label text-ink-2 font-mono mt-1">{current.description}</p>
             {currentProgress && (
               <div className="mt-2">
                 <div className="h-2 rounded-full bg-bg overflow-hidden">
@@ -174,7 +174,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             )}
           </>
         ) : (
-          <p className="text-xs text-ink-3 font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
+          <p className="text-label text-ink-3 font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
           <p className="font-mono text-caption text-ink-2 mt-3 pt-3 border-t border-hairline">
@@ -214,7 +214,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <select
                 value={form.target}
                 onChange={e => setForm(f => ({ ...f, target: e.target.value as AssignForm['target'] }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               >
                 <option value="esta">Esta semana</option>
                 <option value="siguiente">Semana que viene</option>
@@ -222,7 +222,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <select
                 value={form.templateId}
                 onChange={e => applyTemplate(e.target.value)}
-                className="flex-1 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               >
                 <option value="">Custom (sin plantilla)</option>
                 {templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
@@ -232,20 +232,20 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título del reto"
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={form.kind}
                 onChange={e => setForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -253,14 +253,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={form.unit}
                 onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad (kg, pasos...)"
-                className="w-32 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-32 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={form.target_}
                 onChange={e => setForm(f => ({ ...f, target_: Number(e.target.value) }))}
                 placeholder="objetivo"
-                className="w-24 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               />
             </div>
             {overwritingAuto && (
@@ -271,7 +271,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             <button
               onClick={assign}
               disabled={saving || !form.title.trim()}
-              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               {saving ? 'Asignando...' : 'Asignar reto'}
             </button>
@@ -293,20 +293,20 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               value={tplForm.title}
               onChange={e => setTplForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título"
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={tplForm.description}
               onChange={e => setTplForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={tplForm.kind}
                 onChange={e => setTplForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -314,33 +314,33 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={tplForm.unit}
                 onChange={e => setTplForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad"
-                className="w-24 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={tplForm.defaultTarget}
                 onChange={e => setTplForm(f => ({ ...f, defaultTarget: Number(e.target.value) }))}
                 placeholder="objetivo por defecto"
-                className="w-28 bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+                className="w-28 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               />
             </div>
             <button
               onClick={saveTemplate}
               disabled={saving || !tplForm.title.trim()}
-              className="w-full py-2 bg-data text-black font-sans font-bold text-xs uppercase rounded-control hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2 bg-data text-black font-sans font-bold text-label uppercase rounded-control hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
             >
               Guardar plantilla
             </button>
           </div>
         )}
         {templates.length === 0 ? (
-          <p className="text-xs text-ink-3 font-mono">Sin plantillas todavía.</p>
+          <p className="text-label text-ink-3 font-mono">Sin plantillas todavía.</p>
         ) : (
           <div className="space-y-1.5">
             {templates.map(t => (
               <div key={t.id} className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-2.5">
                 <div>
-                  <p className="text-xs text-white font-sans font-bold">{t.title}</p>
+                  <p className="text-label text-white font-sans font-bold">{t.title}</p>
                   <p className="text-caption text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
                 </div>
                 <button onClick={() => removeTemplate(t.id)} className="text-ink-2 hover:text-red-400">
@@ -360,7 +360,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             {history.slice(0, 20).map(h => (
               <div key={h.id} className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-2.5">
                 <div className="min-w-0">
-                  <p className="text-xs text-white font-sans truncate">{h.title}</p>
+                  <p className="text-label text-white font-sans truncate">{h.title}</p>
                   <p className="text-caption text-ink-2 font-mono">{h.isoWeek}</p>
                 </div>
                 <span className={`font-mono text-caption uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${

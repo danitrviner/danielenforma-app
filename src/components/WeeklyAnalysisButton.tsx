@@ -50,7 +50,7 @@ export default function WeeklyAnalysisButton() {
       <button
         onClick={run}
         disabled={busy}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-label font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
         <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
         Análisis semanal IA
@@ -69,13 +69,13 @@ export default function WeeklyAnalysisButton() {
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {busy && (
-                <div className="flex items-center gap-2 text-xs font-mono text-ink-2 animate-pulse">
+                <div className="flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse">
                   <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                   {status ?? 'Analizando tu cartera…'}
                 </div>
               )}
               {error && (
-                <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-xs">{error}</div>
+                <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-label">{error}</div>
               )}
               {result && (
                 <div className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{result}</div>

@@ -47,7 +47,7 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
 };
 
 const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent';
-const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-1.5 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
         </button>
@@ -166,7 +166,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               <select
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
-                className="bg-raised border border-hairline rounded-control px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
@@ -323,14 +323,14 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex gap-3">
         <button
           onClick={onCancel}
-          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
+          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
         >
           Cancelar
         </button>
         <button
           onClick={onSave}
           disabled={saving || !form.title.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? 'Guardando…' : isNew ? 'Crear cuestionario' : 'Guardar cambios'}
         </button>

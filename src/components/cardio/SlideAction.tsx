@@ -58,7 +58,7 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
       className="relative h-14 rounded-full overflow-hidden select-none"
       style={{ backgroundColor: `${color}1f`, border: `1px solid ${color}40`, opacity: disabled ? 0.4 : 1 }}
     >
-      <p className="absolute inset-0 flex items-center justify-center text-xs font-mono uppercase pointer-events-none" style={{ color }}>
+      <p className="absolute inset-0 flex items-center justify-center text-label font-mono uppercase pointer-events-none" style={{ color }}>
         {label}
       </p>
       <div

@@ -119,8 +119,8 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
               <span className="material-symbols-outlined text-data text-5xl mt-3 block">bedtime</span>
               <p className="text-sm text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
-            {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
-            <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+            {error && <p className="text-label text-red-400 font-mono">{error}</p>}
+            <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Empezar
             </button>
             <button onClick={onClose} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
@@ -129,7 +129,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
           </>
         )}
 
-        {phase === 'connecting' && <p className="text-xs text-ink-2 font-mono">Conectando con la banda...</p>}
+        {phase === 'connecting' && <p className="text-label text-ink-2 font-mono">Conectando con la banda...</p>}
 
         {phase === 'measuring' && (
           <>
@@ -139,14 +139,14 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
               <span className="material-symbols-outlined text-danger text-lg">favorite</span>
               <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
-            {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
+            {error && <p className="text-label text-red-400 font-mono">{error}</p>}
             <button onClick={cancel} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>
         )}
 
-        {phase === 'saving' && <p className="text-xs text-ink-2 font-mono">Guardando...</p>}
+        {phase === 'saving' && <p className="text-label text-ink-2 font-mono">Guardando...</p>}
       </div>
     </div>
   );

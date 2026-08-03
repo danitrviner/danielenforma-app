@@ -165,7 +165,7 @@ export default function ClientStatusCard({
         {/* Fase */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-accent">flag</span> Fase
+            <span className="material-symbols-outlined text-label text-accent">flag</span> Fase
           </p>
           {planPhase ? (
             <p className="text-sm font-bold text-white flex items-center gap-1.5">
@@ -173,7 +173,7 @@ export default function ClientStatusCard({
               {planPhase.name}
             </p>
           ) : (
-            <p className="text-xs text-ink-2/60 italic">Sin fase de plan definida</p>
+            <p className="text-label text-ink-2/60 italic">Sin fase de plan definida</p>
           )}
           {activeMeso && (
             <p className="font-mono text-caption text-ink-2">
@@ -191,12 +191,12 @@ export default function ClientStatusCard({
         {/* Objetivo */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-accent">target</span> Objetivo
+            <span className="material-symbols-outlined text-label text-accent">target</span> Objetivo
           </p>
           {onboardingData?.goalBody ? (
             <p className="text-sm font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
           ) : (
-            <p className="text-xs text-ink-2/60 italic">Sin objetivo registrado</p>
+            <p className="text-label text-ink-2/60 italic">Sin objetivo registrado</p>
           )}
           {onboardingData?.goalFreeText && (
             <p className="text-caption text-ink-2 leading-snug">"{onboardingData.goalFreeText}"</p>
@@ -212,15 +212,15 @@ export default function ClientStatusCard({
         {/* Últimos cambios */}
         <div className="space-y-1.5 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs text-accent">history</span> Últimos cambios
+            <span className="material-symbols-outlined text-label text-accent">history</span> Últimos cambios
           </p>
           {recentChanges.length === 0 ? (
-            <p className="text-xs text-ink-2/60 italic">Sin actividad registrada aún</p>
+            <p className="text-label text-ink-2/60 italic">Sin actividad registrada aún</p>
           ) : (
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
                 <li key={i} className="flex items-center gap-1.5 text-caption text-ink">
-                  <span className="material-symbols-outlined text-xs text-ink-2">{e.icon}</span>
+                  <span className="material-symbols-outlined text-label text-ink-2">{e.icon}</span>
                   <span className="flex-1 truncate">{e.text}</span>
                   <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
                 </li>

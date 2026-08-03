@@ -107,7 +107,7 @@ export default function ChallengeOptionsPanel({
       )}
 
       {options.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono">Sin datos suficientes todavía para proponer opciones.</p>
+        <p className="text-label text-ink-3 font-mono">Sin datos suficientes todavía para proponer opciones.</p>
       ) : (
         <div className="space-y-2">
           {options.map(opt => (
@@ -125,12 +125,12 @@ export default function ChallengeOptionsPanel({
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>
               </div>
-              <p className="text-xs text-ink-2 font-mono leading-relaxed">{opt.description}</p>
+              <p className="text-label text-ink-2 font-mono leading-relaxed">{opt.description}</p>
               <p className="text-caption text-ink-3 font-mono">Por qué: {opt.reason}</p>
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
-                className="w-full py-2 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                className="w-full py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
               >
                 {assigning === opt.kind ? 'Enviando...' : 'Enviar'}
               </button>
@@ -150,11 +150,11 @@ export default function ChallengeOptionsPanel({
         {showEligible && (
           <div className="mt-2 space-y-2">
             {candidateExercises.length === 0 ? (
-              <p className="text-xs text-ink-3 font-mono">Aún no hay ejercicios con series registradas.</p>
+              <p className="text-label text-ink-3 font-mono">Aún no hay ejercicios con series registradas.</p>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {candidateExercises.map(ex => (
-                  <label key={ex.id} className="flex items-center gap-2 text-xs text-ink-2 font-mono">
+                  <label key={ex.id} className="flex items-center gap-2 text-label text-ink-2 font-mono">
                     <input type="checkbox" checked={selectedIds.has(ex.id)} onChange={() => toggleExercise(ex.id)} />
                     {ex.name}
                   </label>

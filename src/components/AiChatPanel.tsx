@@ -299,7 +299,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {showList ? (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
           {chats.length === 0 && (
-            <p className="text-ink-2 font-mono text-xs text-center py-8">Sin chats guardados todavía.</p>
+            <p className="text-ink-2 font-mono text-label text-center py-8">Sin chats guardados todavía.</p>
           )}
           {chats.map(c => (
             <div key={c.id}
@@ -307,7 +307,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               onClick={() => openChat(c)}
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-white truncate">{c.title || 'Chat sin título'}</p>
+                <p className="text-label text-white truncate">{c.title || 'Chat sin título'}</p>
                 <p className="text-caption font-mono text-ink-2">
                   {c.updatedAt.slice(0, 10)}{c.athleteId ? ` · ${c.athleteId}` : ''}
                 </p>
@@ -332,7 +332,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-ink-2 hover:text-white bg-surface border border-hairline hover:border-accent/40 rounded-control px-3 py-2 transition-colors">
+                      className="text-left text-label text-ink-2 hover:text-white bg-surface border border-hairline hover:border-accent/40 rounded-control px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -375,13 +375,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             })}
 
             {busy && (
-              <div className="self-start flex items-center gap-2 text-xs font-mono text-ink-2 animate-pulse px-1">
+              <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse px-1">
                 <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                 {toolStatus ?? 'Pensando…'}
               </div>
             )}
             {error && (
-              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-xs">
+              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-3.5 py-2.5 text-label">
                 {error}
               </div>
             )}
@@ -401,7 +401,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   : [];
                 return (
                 <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
-                  <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
+                  <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
                     <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-2.5">
@@ -465,7 +465,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div className="p-3 border-t border-hairline">
             {chatFull ? (
               <button onClick={startNew}
-                className="w-full py-2.5 rounded-control bg-accent/10 border border-accent/30 text-accent text-xs font-bold uppercase tracking-wider">
+                className="w-full py-2.5 rounded-control bg-accent/10 border border-accent/30 text-accent text-label font-bold uppercase tracking-wider">
                 Chat largo — empezar chat nuevo
               </button>
             ) : (
@@ -505,7 +505,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
-              <p className="text-xs text-ink-2">
+              <p className="text-label text-ink-2">
                 Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
               </p>
               <textarea
@@ -518,11 +518,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             </div>
             <div className="flex gap-2 p-4 pt-0">
               <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                className="flex-1 py-2.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-label font-bold uppercase tracking-wide disabled:opacity-40">
                 Cancelar
               </button>
               <button onClick={saveInstructions} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-control bg-accent text-black text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                className="flex-1 py-2.5 rounded-control bg-accent text-black text-label font-bold uppercase tracking-wide disabled:opacity-40">
                 {savingInstructions ? 'Guardando…' : 'Guardar'}
               </button>
             </div>

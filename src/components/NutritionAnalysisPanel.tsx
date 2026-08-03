@@ -146,7 +146,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
     return <div className="text-center py-10 font-mono text-sm text-ink-2 animate-pulse">Analizando…</div>;
   }
   if (!report) {
-    return <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
+    return <div className="text-center py-10 font-mono text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
   }
 
   return (
@@ -156,7 +156,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
           Análisis nutricional
         </h2>
-        <p className="font-mono text-xs text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
+        <p className="font-mono text-label text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
       </div>
 
       {/* Summary */}
@@ -202,7 +202,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
             <span className="font-mono text-caption text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
               <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">−</button>
-              <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
+              <span className="font-mono text-label text-white w-5 text-center">{vegServings}</span>
               <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface p-5 space-y-1.5">
           <p className="font-mono text-caption text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
           {report.flags.map((f, i) => (
-            <p key={i} className="text-xs text-amber-200 font-sans">{f}</p>
+            <p key={i} className="text-label text-amber-200 font-sans">{f}</p>
           ))}
         </div>
       )}
@@ -253,7 +253,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Share */}
       <div className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-4 gap-3 flex-wrap">
         <div>
-          <p className="text-xs text-white font-sans font-bold">
+          <p className="text-label text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
           </p>
           <p className="text-caption text-ink-2 font-mono mt-0.5">

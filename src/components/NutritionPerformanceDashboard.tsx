@@ -80,7 +80,7 @@ function ProjectionTooltip({ active, payload }: any) {
   if (!row) return null;
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
-    <div className="bg-raised border border-hairline rounded-surface px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2.5 text-label font-mono shadow-xl min-w-[170px]">
       <p className="text-ink-2 mb-1.5 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
@@ -237,7 +237,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     return (
       <div className="border border-dashed border-hairline rounded-surface py-10 flex flex-col items-center gap-3">
         <span className="material-symbols-outlined text-3xl text-ink-3">monitoring</span>
-        <p className="font-mono text-xs text-ink-2 text-center max-w-xs">
+        <p className="font-mono text-label text-ink-2 text-center max-w-xs">
           {onEdit
             ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
             // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
@@ -248,7 +248,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {onEdit && (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-xs font-mono font-bold rounded-control transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-sm text-accent">add</span>
             Crear periodización
@@ -283,7 +283,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </div>
 
           {(activeResolved?.kcal != null || activeBalance?.dailyDeficit != null) && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 font-mono text-xs">
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 font-mono text-label">
               {activeResolved?.kcal != null && (
                 <span className="text-ink-2">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
               )}
@@ -323,7 +323,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>
-        <p className="font-mono text-xs text-ink-2 mt-1">
+        <p className="font-mono text-label text-ink-2 mt-1">
           Proyección de peso por tramos, contrastada con la evolución real{athleteName ? ` de ${athleteName}` : ''}.
         </p>
       </div>
@@ -399,7 +399,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         )}
 
         {performance?.deviationKg != null && (
-          <p className="font-sans text-xs text-ink-2 leading-relaxed pt-1 border-t border-hairline">
+          <p className="font-sans text-label text-ink-2 leading-relaxed pt-1 border-t border-hairline">
             A semana {performance.currentWeek}, el peso real (<b className="text-white">{fmtKg(performance.realToDate)} kg</b>) va{' '}
             <b className={performance.deviationKg > 0 ? 'text-warning' : 'text-success'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
@@ -450,7 +450,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-label">
             <span className="text-ink-2">Objetivo: <b className="text-accent">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
             <span className="text-ink-2">Mantenimiento: <b className="text-data">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
             <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
@@ -480,7 +480,7 @@ function StatCard({
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
       <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
-        {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}
+        {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (
         <div className="h-1.5 rounded-full bg-raised overflow-hidden">

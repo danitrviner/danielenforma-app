@@ -50,7 +50,7 @@ export default function ScheduleFields({
                 <button
                   key={label}
                   onClick={() => onWeekdaysChange(active ? weekdays.filter(d => d !== dayNum) : [...weekdays, dayNum])}
-                  className={`w-9 h-9 rounded-control font-mono text-xs font-bold border transition-all ${
+                  className={`w-9 h-9 rounded-control font-mono text-label font-bold border transition-all ${
                     active
                       ? 'bg-accent border-accent text-black'
                       : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
@@ -64,7 +64,7 @@ export default function ScheduleFields({
 
       {schedType === 'interval' && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-ink-2">Cada</span>
+          <span className="font-mono text-label text-ink-2">Cada</span>
           <input
             type="number"
             value={intervalDays}
@@ -72,13 +72,13 @@ export default function ScheduleFields({
             onChange={e => onIntervalDaysChange(Math.max(1, Number(e.target.value)))}
             className="w-20 bg-bg border border-hairline rounded-control px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-ink-2">días</span>
+          <span className="font-mono text-label text-ink-2">días</span>
         </div>
       )}
 
       {schedType === 'monthly' && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-ink-2">Día</span>
+          <span className="font-mono text-label text-ink-2">Día</span>
           <input
             type="number"
             value={dayOfMonth}
@@ -86,7 +86,7 @@ export default function ScheduleFields({
             onChange={e => onDayOfMonthChange(Math.min(28, Math.max(1, Number(e.target.value))))}
             className="w-20 bg-bg border border-hairline rounded-control px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-ink-2">de cada mes</span>
+          <span className="font-mono text-label text-ink-2">de cada mes</span>
         </div>
       )}
 
@@ -96,7 +96,7 @@ export default function ScheduleFields({
           type="date"
           value={startDate}
           onChange={e => onStartDateChange(e.target.value)}
-          className="bg-bg border border-hairline rounded-control px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
+          className="bg-bg border border-hairline rounded-control px-2 py-1.5 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
         />
       </div>
     </div>

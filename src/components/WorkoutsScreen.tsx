@@ -268,7 +268,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </div>
           <button
             onClick={() => openEditor()}
-            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
+            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md shadow-accent/10 self-start md:self-auto"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Nueva rutina
@@ -292,10 +292,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <div className="bg-surface border border-dashed border-hairline rounded-surface p-16 text-center">
             <span className="material-symbols-outlined text-4xl text-accent/40 block mb-3">format_list_bulleted</span>
             <p className="text-white font-bold text-sm">Sin rutinas todavía</p>
-            <p className="text-ink-2 text-xs mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
+            <p className="text-ink-2 text-label mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
             <button
               onClick={() => openEditor()}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/30 text-accent font-mono text-xs uppercase rounded-control hover:bg-accent/20 transition-all"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/30 text-accent font-mono text-label uppercase rounded-control hover:bg-accent/20 transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Crear primera rutina
@@ -326,7 +326,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     {w.exercises.slice(0, 4).map((we, i) => {
                       const ex = getExerciseInfo(we.exerciseId);
                       return (
-                        <div key={i} className="flex items-center gap-2 text-xs font-mono text-ink-2">
+                        <div key={i} className="flex items-center gap-2 text-label font-mono text-ink-2">
                           <span className="text-ink-3 font-bold w-4 text-center">{i + 1}</span>
                           <span className="truncate">{ex?.name || (we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : '—')}</span>
                           {we.recordVideoSet && (
@@ -389,10 +389,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               </div>
               <p className="text-sm text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all">
+                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
                   Cancelar
                 </button>
-                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-xs uppercase rounded-control transition-all">
+                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all">
                   Eliminar
                 </button>
               </div>
@@ -410,7 +410,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       <header className="flex items-center gap-4 pb-4 border-b border-hairline">
         <button
           onClick={() => setView('list')}
-          className="flex items-center gap-1.5 text-xs font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all"
+          className="flex items-center gap-1.5 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Volver
@@ -448,7 +448,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           </h2>
           <button
             onClick={openPicker}
-            className="flex items-center gap-1.5 text-xs font-mono text-accent hover:text-white border border-accent/30 hover:border-accent px-3 py-1.5 rounded-control transition-all"
+            className="flex items-center gap-1.5 text-label font-mono text-accent hover:text-white border border-accent/30 hover:border-accent px-3 py-1.5 rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Añadir ejercicio
@@ -461,7 +461,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             className="bg-surface border border-dashed border-hairline hover:border-accent/30 rounded-surface p-10 text-center cursor-pointer transition-all group"
           >
             <span className="material-symbols-outlined text-3xl text-accent/30 group-hover:text-accent/60 transition-all block mb-2">add_circle</span>
-            <p className="text-xs text-ink-2 group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
+            <p className="text-label text-ink-2 group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -482,21 +482,21 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     <span className="font-mono text-caption text-accent flex-shrink-0">{selectedIdx.size} seleccionados</span>
                     <span className="w-px h-4 bg-white/10 flex-shrink-0" />
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => adjustBulkSets(-1)} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised border border-hairline text-ink-2 hover:text-white text-xs">−</button>
+                      <button onClick={() => adjustBulkSets(-1)} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised border border-hairline text-ink-2 hover:text-white text-label">−</button>
                       <span className="font-mono text-caption text-ink-2 uppercase">series</span>
-                      <button onClick={() => adjustBulkSets(1)} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised border border-hairline text-ink-2 hover:text-white text-xs">+</button>
+                      <button onClick={() => adjustBulkSets(1)} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised border border-hairline text-ink-2 hover:text-white text-label">+</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} max={5} value={bulkRir} onChange={e => setBulkRir(e.target.value)}
-                        className="w-10 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-xs"
+                        className="w-10 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-label"
                       />
                       <button onClick={applyBulkRir} className="font-mono text-caption text-ink-2 hover:text-accent uppercase px-1.5 py-0.5 border border-hairline rounded-control">RIR</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} value={bulkRest} onChange={e => setBulkRest(e.target.value)}
-                        className="w-12 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-xs"
+                        className="w-12 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-label"
                       />
                       <button onClick={applyBulkRest} className="font-mono text-caption text-ink-2 hover:text-accent uppercase px-1.5 py-0.5 border border-hairline rounded-control">Descanso (s)</button>
                     </div>
@@ -521,7 +521,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-control object-cover border border-hairline flex-shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-xs text-ink-2">fitness_center</span>
+                        <span className="material-symbols-outlined text-label text-ink-2">fitness_center</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -581,7 +581,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             {/* Add more */}
             <button
               onClick={openPicker}
-              className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-accent/40 text-ink-2 hover:text-accent rounded-control font-mono text-xs uppercase transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-accent/40 text-ink-2 hover:text-accent rounded-control font-mono text-label uppercase transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir ejercicio
@@ -594,14 +594,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       <div className="flex gap-3 pt-2 border-t border-hairline">
         <button
           onClick={() => setView('list')}
-          className="flex-1 md:flex-none md:px-8 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all"
+          className="flex-1 md:flex-none md:px-8 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
         >
           Cancelar
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving || !editorName.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-accent/10"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md shadow-accent/10"
         >
           {isSaving ? (
             <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -640,7 +640,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 <select
                   value={pickerFocus}
                   onChange={e => setPickerFocus(e.target.value)}
-                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los músculos</option>
                   {FOCUS_OPTIONS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
@@ -648,7 +648,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 <select
                   value={pickerType}
                   onChange={e => setPickerType(e.target.value)}
-                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-label font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los tipos</option>
                   {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}

@@ -399,12 +399,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {selectedEmail && (
           <div className="flex items-center justify-between">
-            <p className="text-xs text-ink-2 font-mono">
+            <p className="text-label text-ink-2 font-mono">
               {diets.length} dieta{diets.length !== 1 ? 's' : ''} para {selectedAthlete?.displayName}
             </p>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all shadow-md"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Crear dieta
@@ -480,8 +480,8 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <h3 className="font-sans font-bold text-lg text-white">¿Eliminar dieta?</h3>
               <p className="text-sm text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-xs uppercase rounded-control">Cancelar</button>
-                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-xs uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
+                <button onClick={() => setDeleteId(null)} className="flex-1 py-2.5 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
+                <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
               </div>
             </div>
           </div>
@@ -498,7 +498,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       <div className="flex items-center gap-3">
         <button
           onClick={handleBack}
-          className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-xs font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
+          className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-mono rounded-control flex items-center gap-1 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>Volver
         </button>
@@ -560,7 +560,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
       {/* Metadata */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-        <h3 className="font-mono text-xs text-ink-2 uppercase tracking-wider">Datos generales</h3>
+        <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">Datos generales</h3>
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Nombre *</label>
           <input
@@ -595,7 +595,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           </div>
 
           {/* Macros */}
-          <div className="flex flex-wrap gap-3 text-xs font-mono">
+          <div className="flex flex-wrap gap-3 text-label font-mono">
             <span className="text-ink-2">
               {onboardingData.dietType === 'omnivoro' ? 'Omnívoro' : onboardingData.dietType === 'vegano' ? 'Vegano' : onboardingData.dietType === 'vegetariano' ? 'Vegetariano' : 'Otro'}
               {' · '}<span className="text-white font-bold">{onboardingData.targetCalories} kcal</span>
@@ -624,7 +624,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           )}
           {onboardingData.allergies.length > 0 && (
             <p className="font-mono text-caption text-amber-400">
-              <span className="material-symbols-outlined text-xs align-middle mr-1">warning</span>
+              <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
               Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
             </p>
           )}
@@ -634,7 +634,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {/* Budget */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-mono text-xs text-ink-2 uppercase tracking-wider">
+          <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">
             Presupuesto diario (intercambios por categoría)
           </h3>
           {onboardingData && (
@@ -676,7 +676,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {/* Meals */}
       <div className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-mono text-xs text-ink-2 uppercase tracking-wider">
+          <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">
             Comidas ({form.meals.length})
           </h3>
           <div className="flex gap-2">
@@ -702,7 +702,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-raised/60 border-b border-hairline">
-              <span className="w-6 h-6 rounded-full bg-accent text-black font-sans text-xs font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-accent text-black font-sans text-label font-bold flex items-center justify-center flex-shrink-0">
                 {mi + 1}
               </span>
               <input
@@ -739,12 +739,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                           <div className="flex items-center bg-raised rounded-control border border-hairline">
                             <button
                               onClick={() => setMealTarget(meal.id, cat, -0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-xs font-bold"
+                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-label font-bold"
                             >−</button>
                             <span className="w-7 text-center font-mono text-caption text-white">{fmtQty(tgt)}</span>
                             <button
                               onClick={() => setMealTarget(meal.id, cat, 0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-xs font-bold"
+                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-label font-bold"
                             >+</button>
                           </div>
                           {tgt > 0 && (
@@ -769,7 +769,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                     {item.category.replace('_', ' ')}
                   </span>
                   {/* Label */}
-                  <span className="flex-1 text-xs text-white font-sans truncate min-w-0">
+                  <span className="flex-1 text-label text-white font-sans truncate min-w-0">
                     {item.foodLabel}
                   </span>
                   {/* Qty stepper */}
@@ -778,7 +778,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                       onClick={() => updateQuantity(meal.id, idx, -0.25)}
                       className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-white font-bold text-sm"
                     >−</button>
-                    <span className="w-8 text-center font-mono text-xs text-white">{fmtQty(item.quantity)}</span>
+                    <span className="w-8 text-center font-mono text-label text-white">{fmtQty(item.quantity)}</span>
                     <button
                       onClick={() => updateQuantity(meal.id, idx, 0.25)}
                       className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-white font-bold text-sm"
@@ -853,13 +853,13 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
       {/* Save */}
       <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-bg">
-        <button onClick={handleBack} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-xs uppercase rounded-control transition-all">
+        <button onClick={handleBack} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
           Cancelar
         </button>
         <button
           onClick={handleSave}
           disabled={saving || !form.name.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
+          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(251,203,26,0.2)]"
         >
           {saving
             ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
@@ -904,18 +904,18 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
+                <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
                   className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
-                  <span className="block font-sans text-xs text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                  <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>
                 </button>
               ))}

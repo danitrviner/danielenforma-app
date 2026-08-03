@@ -94,14 +94,14 @@ export default function CoachNotesPanel({ athletes }: Props) {
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Escribe la nota..."
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
             required
             autoFocus
           />
           <select
             value={relatedEmail}
             onChange={e => setRelatedEmail(e.target.value)}
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
           >
             <option value="">— Sin cliente asociado —</option>
             {athletes.map(a => (
@@ -111,7 +111,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 shadow-sm"
           >
             {saving ? 'Guardando...' : 'Guardar nota'}
           </button>
@@ -124,7 +124,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : notes.length === 0 ? (
-        <p className="text-xs text-ink-3 font-mono py-2">Sin notas.</p>
+        <p className="text-label text-ink-3 font-mono py-2">Sin notas.</p>
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(n => (
@@ -141,7 +141,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
                 {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
               </button>
               <div className="flex-1 min-w-0">
-                <p className={`font-sans text-xs text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
+                <p className={`font-sans text-label text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
                 {n.relatedAthleteName && (
                   <p className="font-mono text-caption text-data mt-0.5">{n.relatedAthleteName}</p>
                 )}
