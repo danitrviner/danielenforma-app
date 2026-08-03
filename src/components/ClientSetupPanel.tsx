@@ -43,7 +43,7 @@ const STATUS_COLOR: Record<SetupItem['status'], string> = {
   done: 'text-emerald-400',
   attention: 'text-orange-400',
   pending: 'text-ink-2',
-  na: 'text-[#4a4a4a]',
+  na: 'text-ink-3',
 };
 
 function todayISO(): string {
@@ -276,7 +276,7 @@ export default function ClientSetupPanel({
                         {item.detail && <p className="font-mono text-[10px] text-ink-2 mt-0.5">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
-                        <span className="material-symbols-outlined text-[#4a4a4a] text-base flex-shrink-0">chevron_right</span>
+                        <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">chevron_right</span>
                       )}
                     </button>
                   ))}
@@ -324,7 +324,7 @@ export default function ClientSetupPanel({
         )}
 
         {extraTasks.length === 0 ? (
-          <p className="text-xs text-[#555] font-mono py-2">Sin tareas extra.</p>
+          <p className="text-xs text-ink-3 font-mono py-2">Sin tareas extra.</p>
         ) : (
           <div className="space-y-2">
             {extraTasks.map(task => (
@@ -340,7 +340,7 @@ export default function ClientSetupPanel({
                   </span>
                 </button>
                 <p className={`flex-1 min-w-0 font-sans text-sm truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
-                <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-[#4a4a4a] hover:text-red-400 transition-colors">
+                <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
                   <span className="material-symbols-outlined text-base">delete</span>
                 </button>
               </div>

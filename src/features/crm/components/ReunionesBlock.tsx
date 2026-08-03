@@ -77,7 +77,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
       render: r => (
         <div>
           <p className="tabular-nums">{formatDia(r.fecha)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{tiempoRelativo(r.fecha)}</p>
+          <p className="font-mono text-[9px] text-ink-3">{tiempoRelativo(r.fecha)}</p>
         </div>
       ),
     },

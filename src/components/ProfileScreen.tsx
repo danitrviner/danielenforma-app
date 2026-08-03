@@ -234,7 +234,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <span className="material-symbols-outlined text-accent text-base">assignment_ind</span>
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
-              <p className="font-mono text-[10px] text-[#555] mt-1">
+              <p className="font-mono text-[10px] text-ink-3 mt-1">
                 {onboarding
                   ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
                   : 'Completa tu ficha para que tu entrenador personalice tu plan.'}

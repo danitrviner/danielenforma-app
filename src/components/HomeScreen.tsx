@@ -113,7 +113,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             <Skeleton className="h-11 w-full rounded-lg" />
           </div>
         ) : thisWeekPending.length === 0 && overdue.length === 0 ? (
-          <p className="text-xs text-[#555] font-mono py-2">Sin entrenamientos pendientes esta semana.</p>
+          <p className="text-xs text-ink-3 font-mono py-2">Sin entrenamientos pendientes esta semana.</p>
         ) : (
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (

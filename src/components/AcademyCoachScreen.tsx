@@ -155,7 +155,7 @@ function CoursesTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
       ) : courses.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todavía no hay cursos.</p>
+        <p className="text-xs text-ink-3 font-mono py-2">Todavía no hay cursos.</p>
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
@@ -164,7 +164,7 @@ function CoursesTab() {
                 <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
                 <p className="text-[10px] text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
-              <button onClick={() => togglePublished(c)} className={`text-[10px] font-mono font-bold uppercase px-2 py-1 rounded ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-[#888]'}`}>
+              <button onClick={() => togglePublished(c)} className={`text-[10px] font-mono font-bold uppercase px-2 py-1 rounded ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
                 {c.published ? 'Publicado' : 'Borrador'}
               </button>
               <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
@@ -256,7 +256,7 @@ function LessonsTab() {
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
       ) : lessons.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todavía no hay lecciones.</p>
+        <p className="text-xs text-ink-3 font-mono py-2">Todavía no hay lecciones.</p>
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (
@@ -337,7 +337,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
               <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
-                className={`text-[10px] font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-[#888]'}`}
+                className={`text-[10px] font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
               >
                 {enabled ? 'Acceso activo' : 'Sin acceso'}
               </button>

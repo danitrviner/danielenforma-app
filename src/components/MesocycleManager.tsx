@@ -263,7 +263,7 @@ const DayCard: React.FC<{
       </div>
       <div className="space-y-1.5 min-h-[60px]">
         {day.assignments.length === 0 ? (
-          <p className="text-[10px] text-[#555] font-mono italic">Descanso</p>
+          <p className="text-[10px] text-ink-3 font-mono italic">Descanso</p>
         ) : (
           day.assignments.map((a, i) => (
             <div key={i} className="flex items-center gap-1.5">
@@ -285,7 +285,7 @@ const DayCard: React.FC<{
                   {otherDays.map(d => <option key={d} value={d}>Día {d + 1}</option>)}
                 </select>
               )}
-              <button onClick={() => onRemove(i)} className="text-[#555] hover:text-red-400 transition-colors flex-shrink-0">
+              <button onClick={() => onRemove(i)} className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
             </div>
@@ -322,7 +322,7 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
   if (delta === null) return null;
   if (delta > 0) return <span className="font-mono text-[10px] text-success ml-1 tabular-nums">▲+{delta}</span>;
   if (delta < 0) return <span className="font-mono text-[10px] text-danger ml-1 tabular-nums">▼{delta}</span>;
-  return showEqual ? <span className="font-mono text-[10px] text-[#555] ml-1">=</span> : null;
+  return showEqual ? <span className="font-mono text-[10px] text-ink-3 ml-1">=</span> : null;
 }
 
 // Shows what "Generar rutinas" (in Distribución) actually produced for this mesocycle —
@@ -349,7 +349,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
   if (groups.length === 0) {
     return (
       <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
-        <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">fitness_center</span>
+        <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">fitness_center</span>
         <p className="text-ink-2 text-sm">Aún no se han generado rutinas para este mesociclo.</p>
         <button
           onClick={onGoToDistribution}
@@ -378,7 +378,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
             </div>
             <div className="p-3 space-y-2">
               {group.exercises.length === 0 ? (
-                <p className="text-xs text-[#555] font-mono px-1 py-2">Sin ejercicios en este día.</p>
+                <p className="text-xs text-ink-3 font-mono px-1 py-2">Sin ejercicios en este día.</p>
               ) : (
                 group.exercises.map((we, exIdx) => {
                   const ex = allExercises.find(e => e.id === we.exerciseId);
@@ -428,7 +428,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
       <div className="flex flex-wrap gap-3 text-[10px] font-mono">
         <span className="text-success">▲ Sube</span>
         <span className="text-danger">▼ Baja</span>
-        <span className="text-[#555]">= Sin cambio</span>
+        <span className="text-ink-3">= Sin cambio</span>
         <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
       </div>
 
@@ -447,7 +447,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                       {isCurrent ? `Meso #${m.number} (actual)` : `Meso #${m.number}`}
                     </span>
                     <span className="font-mono text-[9px] text-ink-2 block mt-0.5">{m.startDate}</span>
-                    <span className="font-mono text-[9px] text-[#555] block">{m.daysPerWeek}d · {m.weeks} sem</span>
+                    <span className="font-mono text-[9px] text-ink-3 block">{m.daysPerWeek}d · {m.weeks} sem</span>
                     {m.objective && (
                       <span className="block mt-1 text-[9px] text-ink-2 font-sans font-medium max-w-[120px] mx-auto leading-tight"
                         style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
@@ -490,7 +490,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                       style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
                     >
                       {cfg.series === 0 ? (
-                        <span className="font-mono text-[10px] text-[#333]">—</span>
+                        <span className="font-mono text-[10px] text-ink-3">—</span>
                       ) : (
                         <div className="flex items-center justify-center gap-1 flex-wrap">
                           <span className="font-mono text-xs font-bold tabular-nums" style={{ color: heatmapText(cfg.series) }}>
@@ -561,7 +561,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
         <span className="font-mono font-black text-xl text-white">{currentTotal}</span>
       </div>
 
-      <p className="font-mono text-[9px] text-[#555]">
+      <p className="font-mono text-[9px] text-ink-3">
         {history.length > 0 ? `${columns.length} mesociclos · ` : ''}La columna «actual» es editable — el resto es historial de solo lectura.
       </p>
     </div>
@@ -1145,7 +1145,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           </div>
           {!selectedEmail && (
             <div className="text-center py-24 border border-dashed border-white/7 rounded-2xl">
-              <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">calendar_view_month</span>
+              <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">calendar_view_month</span>
               <p className="text-ink-2 text-sm">Selecciona un atleta para ver o crear sus mesociclos.</p>
             </div>
           )}
@@ -1270,7 +1270,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
                     value={editing.objective}
                     onChange={e => updateField('objective', e.target.value)}
-                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-accent"
+                    className="w-full bg-[#1c1b1b] border border-white/7 rounded px-3 py-2 text-sm text-white placeholder-ink-3 focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -1391,14 +1391,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                 </span>
                               </div>
                             </div>
-                            <span className="font-mono text-[9px] text-[#555]">
+                            <span className="font-mono text-[9px] text-ink-3">
                               Generado {new Date(editing.distribution.generatedAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                         </div>
                       ) : (
                         <div className="text-center py-12 border border-dashed border-white/7 rounded-2xl">
-                          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">grid_view</span>
+                          <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">grid_view</span>
                           <p className="text-ink-2 text-sm">Pulsa «Distribución Automática» para repartir las series.</p>
                         </div>
                       )}
@@ -1419,7 +1419,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                 <><span className="material-symbols-outlined text-sm">auto_fix_high</span>Generar rutinas</>
                               )}
                             </button>
-                            <span className="font-mono text-[10px] text-[#555]">
+                            <span className="font-mono text-[10px] text-ink-3">
                               Creará {editing.weeks} × {editing.daysPerWeek} = {editing.weeks * editing.daysPerWeek} sesiones
                             </span>
                           </div>
@@ -1427,7 +1427,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       )}
 
                       {editing.distribution && isStale(editing, editing.distribution) && (
-                        <p className="font-mono text-[10px] text-[#555] pt-2">Recalcula la distribución antes de generar rutinas.</p>
+                        <p className="font-mono text-[10px] text-ink-3 pt-2">Recalcula la distribución antes de generar rutinas.</p>
                       )}
                     </>
                   )}
@@ -1503,7 +1503,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                     </div>
                                     <button
                                       onClick={() => removePEx(dayIdx, peIdx)}
-                                      className="text-[#555] hover:text-red-400 transition-colors flex-shrink-0 p-0.5"
+                                      className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0 p-0.5"
                                     >
                                       <span className="material-symbols-outlined text-sm">close</span>
                                     </button>
@@ -1532,7 +1532,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         ))}
                       </div>
 
-                      <p className="font-mono text-[10px] text-[#555]">
+                      <p className="font-mono text-[10px] text-ink-3">
                         Los cambios en sets/reps/RIR se aplican igual en todas las semanas.
                         Después de asignar, edita semanas concretas en la vista de entrenamientos del atleta.
                       </p>
@@ -1632,7 +1632,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             selectedEmail && !loadingMeso && (
               <div className="flex-1 flex items-center justify-center text-center py-20 border border-dashed border-white/7 rounded-2xl">
                 <div>
-                  <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">edit_note</span>
+                  <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">edit_note</span>
                   <p className="text-ink-2 text-sm">Selecciona un mesociclo o crea uno nuevo.</p>
                 </div>
               </div>
@@ -1675,7 +1675,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 </div>
               ) : templates.length === 0 ? (
                 <div className="text-center py-10">
-                  <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">library_books</span>
+                  <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">library_books</span>
                   <p className="font-mono text-xs text-ink-2">
                     Sin plantillas. Crea una en Ejercicios → Plantillas.
                   </p>

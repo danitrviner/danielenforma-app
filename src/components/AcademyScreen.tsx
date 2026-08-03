@@ -61,7 +61,7 @@ export default function AcademyScreen({ profile }: Props) {
   if (!access?.enabled) {
     return (
       <div className="flex flex-col items-center justify-center text-center gap-3 py-20">
-        <span className="material-symbols-outlined text-5xl text-[#555]">lock</span>
+        <span className="material-symbols-outlined text-5xl text-ink-3">lock</span>
         <p className="font-sans font-bold text-white">Academia aún no disponible</p>
         <p className="text-xs text-ink-2 font-mono max-w-xs">Tu entrenador todavía no te ha dado acceso a TrainingLab.</p>
       </div>
@@ -167,7 +167,7 @@ export default function AcademyScreen({ profile }: Props) {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white truncate">{i + 1}. {l.title}</p>
-                  {!unlocked && reason && <p className="text-[10px] text-[#888] font-mono">{reason}</p>}
+                  {!unlocked && reason && <p className="text-[10px] text-ink-3 font-mono">{reason}</p>}
                 </div>
               </button>
             );
@@ -191,7 +191,7 @@ export default function AcademyScreen({ profile }: Props) {
       </header>
 
       {publishedCourses.length === 0 && (
-        <p className="text-xs text-[#555] font-mono py-6 text-center">Todavía no hay cursos publicados.</p>
+        <p className="text-xs text-ink-3 font-mono py-6 text-center">Todavía no hay cursos publicados.</p>
       )}
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
@@ -210,7 +210,7 @@ export default function AcademyScreen({ profile }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>
-                    {!unlocked && <span className="material-symbols-outlined text-[#888] text-base flex-shrink-0">lock</span>}
+                    {!unlocked && <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">lock</span>}
                   </div>
                   <p className="text-xs text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
@@ -218,7 +218,7 @@ export default function AcademyScreen({ profile }: Props) {
                       <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
                     </div>
                   ) : (
-                    <p className="text-[10px] text-[#888] font-mono mt-3">{reason}</p>
+                    <p className="text-[10px] text-ink-3 font-mono mt-3">{reason}</p>
                   )}
                 </button>
               );

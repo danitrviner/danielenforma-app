@@ -73,7 +73,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-[#555]"
+                  className="w-full bg-surface border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
@@ -85,17 +85,17 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-2.5 text-left"
                     >
-                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-accent' : 'text-[#555]'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
+                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
                         {s.included ? 'check_box' : 'check_box_outline_blank'}
                       </span>
-                      <span className={`text-sm font-sans font-bold ${s.included ? 'text-white' : 'text-[#555]'}`}>{s.title}</span>
+                      <span className={`text-sm font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
                       <input
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-raised border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-[#555]"
+                        className="w-full bg-raised border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>

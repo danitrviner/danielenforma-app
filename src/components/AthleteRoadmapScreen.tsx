@@ -223,10 +223,10 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   if (!roadmap) {
     return (
       <div className="text-center py-24">
-        <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">map</span>
+        <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">map</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Road map</p>
         <p className="text-ink-2 text-xs font-mono">No hay planificación disponible todavía.</p>
-        <p className="text-[#555] text-xs font-mono mt-1">Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure.</p>
+        <p className="text-ink-3 text-xs font-mono mt-1">Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure.</p>
       </div>
     );
   }

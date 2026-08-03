@@ -358,7 +358,7 @@ export default function ClientReviewsPanel({
                 </div>
               ) : viewPhotos.length === 0 ? (
                 <div className="p-10 text-center">
-                  <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">photo_camera</span>
+                  <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">photo_camera</span>
                   <p className="font-mono text-xs text-ink-2">Sin fotos todavía.</p>
                 </div>
               ) : (
@@ -492,7 +492,7 @@ export default function ClientReviewsPanel({
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 min-w-0">
                   <span className="material-symbols-outlined text-accent text-base flex-shrink-0">person_check</span>
                   <span className="truncate">Ficha de iniciación</span>
-                  <span className="font-mono text-[10px] text-[#555] font-normal normal-case truncate">
+                  <span className="font-mono text-[10px] text-ink-3 font-normal normal-case truncate">
                     {[
                       onboardingData.sex && (onboardingData.sex === 'male' ? 'Hombre' : 'Mujer'),
                       onboardingData.birthDate && `${displayAge(onboardingData.birthDate)} años`,
@@ -578,7 +578,7 @@ export default function ClientReviewsPanel({
                     <div key={m.label} className="bg-raised border border-white/7 rounded-xl px-3 py-1.5 text-center">
                       <p className="font-mono text-[10px] uppercase" style={{ color: m.color }}>{m.label}</p>
                       <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
-                      <p className="font-mono text-[9px] text-[#555]">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
+                      <p className="font-mono text-[9px] text-ink-3">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
                     </div>
                   ))}
                 </div>
@@ -588,10 +588,10 @@ export default function ClientReviewsPanel({
                     Alergias: {onboardingData.allergies.join(', ')}
                   </p>
                 )}
-                <div className="flex items-center gap-3 pt-1 font-mono text-[10px] text-[#555]">
+                <div className="flex items-center gap-3 pt-1 font-mono text-[10px] text-ink-3">
                   <span className="text-amber-400">⭐ {onboardingData.likedFoods.length} favoritos</span>
                   <span className="text-red-400">➖ {onboardingData.dislikedFoods.length} no quiero</span>
-                  <span className="text-[#3a3a3a]">· editar abajo</span>
+                  <span className="text-ink-3">· editar abajo</span>
                 </div>
               </div>
 
@@ -648,12 +648,12 @@ export default function ClientReviewsPanel({
                 )}
                 {onboardingData.favoriteExercises.length > 0 && (
                   <p className="font-mono text-[10px] text-ink-2">
-                    <span className="text-[#555] mr-1">Favoritos:</span>{onboardingData.favoriteExercises.join(', ')}
+                    <span className="text-ink-3 mr-1">Favoritos:</span>{onboardingData.favoriteExercises.join(', ')}
                   </p>
                 )}
                 {onboardingData.hatedExercises.length > 0 && (
                   <p className="font-mono text-[10px] text-ink-2">
-                    <span className="text-[#555] mr-1">Evita:</span>{onboardingData.hatedExercises.join(', ')}
+                    <span className="text-ink-3 mr-1">Evita:</span>{onboardingData.hatedExercises.join(', ')}
                   </p>
                 )}
                 {onboardingData.injuries && (
@@ -697,27 +697,27 @@ export default function ClientReviewsPanel({
                     )}
                     {onboardingData.hadPastInjuries && (
                       <p className="font-mono text-[10px] text-ink-2">
-                        <span className="text-[#555] mr-1">Lesiones anteriores:</span>{onboardingData.pastInjuriesDetail || '—'}
+                        <span className="text-ink-3 mr-1">Lesiones anteriores:</span>{onboardingData.pastInjuriesDetail || '—'}
                       </p>
                     )}
                     {onboardingData.takesMedication && (
                       <p className="font-mono text-[10px] text-ink-2">
-                        <span className="text-[#555] mr-1">Medicación:</span>{onboardingData.medicationDetail || '—'}
+                        <span className="text-ink-3 mr-1">Medicación:</span>{onboardingData.medicationDetail || '—'}
                       </p>
                     )}
                     {onboardingData.recentSurgery && (
                       <p className="font-mono text-[10px] text-ink-2">
-                        <span className="text-[#555] mr-1">Cirugía reciente:</span>{onboardingData.recentSurgeryDetail || '—'}
+                        <span className="text-ink-3 mr-1">Cirugía reciente:</span>{onboardingData.recentSurgeryDetail || '—'}
                       </p>
                     )}
                     {onboardingData.smokesAlcoholSubstances && (
                       <p className="font-mono text-[10px] text-ink-2">
-                        <span className="text-[#555] mr-1">Tabaco/alcohol/otras sustancias:</span>{onboardingData.smokesAlcoholSubstances}
+                        <span className="text-ink-3 mr-1">Tabaco/alcohol/otras sustancias:</span>{onboardingData.smokesAlcoholSubstances}
                       </p>
                     )}
                     {onboardingData.sunExposureWeekly && (
                       <p className="font-mono text-[10px] text-ink-2">
-                        <span className="text-[#555] mr-1">Exposición al sol:</span>{onboardingData.sunExposureWeekly}
+                        <span className="text-ink-3 mr-1">Exposición al sol:</span>{onboardingData.sunExposureWeekly}
                       </p>
                     )}
                   </div>
@@ -746,11 +746,11 @@ export default function ClientReviewsPanel({
                     {onboardingData.hipCm && <span className="text-ink-2">Cadera: <span className="text-white font-bold">{onboardingData.hipCm}cm</span></span>}
                   </div>
                   {onboardingData.weightTendency && (
-                    <p className="font-mono text-[10px] text-ink-2"><span className="text-[#555] mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
+                    <p className="font-mono text-[10px] text-ink-2"><span className="text-ink-3 mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
                   )}
                   {(onboardingData.supplements?.length ?? 0) > 0 && (
                     <div className="pt-1">
-                      <p className="font-mono text-[9px] text-[#555] mb-1">Suplementación</p>
+                      <p className="font-mono text-[9px] text-ink-3 mb-1">Suplementación</p>
                       {onboardingData.supplements!.map((s, i) => (
                         <p key={i} className="font-mono text-[10px] text-ink-2">{s.name} — {s.dose} — {s.frequency}</p>
                       ))}
@@ -784,10 +784,10 @@ export default function ClientReviewsPanel({
                     {onboardingData.restDayActive && <span className="text-ink-2">Activo en descanso{onboardingData.restDayActiveDetail ? ` (${onboardingData.restDayActiveDetail})` : ''}</span>}
                   </div>
                   {onboardingData.muscleGroupsToImprove && (
-                    <p className="font-mono text-[10px] text-ink-2"><span className="text-[#555] mr-1">A mejorar:</span>{onboardingData.muscleGroupsToImprove}</p>
+                    <p className="font-mono text-[10px] text-ink-2"><span className="text-ink-3 mr-1">A mejorar:</span>{onboardingData.muscleGroupsToImprove}</p>
                   )}
                   {onboardingData.stressReason && (
-                    <p className="font-mono text-[10px] text-ink-2"><span className="text-[#555] mr-1">Motivo de estrés:</span>{onboardingData.stressReason}</p>
+                    <p className="font-mono text-[10px] text-ink-2"><span className="text-ink-3 mr-1">Motivo de estrés:</span>{onboardingData.stressReason}</p>
                   )}
                 </div>
               )}
@@ -797,7 +797,7 @@ export default function ClientReviewsPanel({
                 <div className="space-y-1 pt-3 border-t border-white/40">
                   <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Descanso — detalle</p>
                   {(onboardingData.sleepDeficitCauses?.length ?? 0) > 0 && (
-                    <p className="font-mono text-[10px] text-ink-2"><span className="text-[#555] mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
+                    <p className="font-mono text-[10px] text-ink-2"><span className="text-ink-3 mr-1">Causas del déficit:</span>{onboardingData.sleepDeficitCauses!.join(', ')}</p>
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
                     {onboardingData.sleepRoutineOrScreen && (
@@ -830,7 +830,7 @@ export default function ClientReviewsPanel({
                             : `${val}${q.unit ? ` ${q.unit}` : ''}`;
                           return (
                             <p key={q.id} className="font-mono text-[10px] text-ink-2">
-                              <span className="text-[#555] mr-1">{q.label}:</span>
+                              <span className="text-ink-3 mr-1">{q.label}:</span>
                               <span className="text-white font-bold">{display}</span>
                             </p>
                           );
@@ -847,7 +847,7 @@ export default function ClientReviewsPanel({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-sans font-bold text-sm text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#555] text-base">person_check</span>
+                  <span className="material-symbols-outlined text-ink-3 text-base">person_check</span>
                   Ficha de iniciación
                 </p>
                 <p className="font-mono text-xs text-ink-2 mt-1">El atleta no ha completado su ficha todavía.</p>
@@ -942,7 +942,7 @@ export default function ClientReviewsPanel({
           if (items.length === 0) {
             return (
               <div className="bg-surface border border-dashed border-white/7 rounded-2xl p-12 text-center text-ink-2">
-                <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">history_edu</span>
+                <span className="material-symbols-outlined text-4xl text-ink-3 block mb-2">history_edu</span>
                 <p className="text-sm font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-xs mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
               </div>

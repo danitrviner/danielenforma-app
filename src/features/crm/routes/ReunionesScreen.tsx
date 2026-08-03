@@ -95,7 +95,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-black text-xl text-ink">Reuniones</h1>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                     <p className="font-sans text-[11px] text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
                     </p>
-                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-danger' : 'text-[#555550]'}`}>
+                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-danger' : 'text-ink-3'}`}>
                       {formatDia(ev.fecha)} · {tiempoRelativo(ev.fecha)}
                     </p>
                   </div>

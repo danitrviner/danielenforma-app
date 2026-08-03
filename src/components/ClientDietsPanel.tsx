@@ -123,7 +123,7 @@ export default function ClientDietsPanel({
         </div>
         {athleteDiets.length === 0 ? (
           <div className="py-6 text-center">
-            <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">nutrition</span>
+            <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">nutrition</span>
             <p className="text-xs text-ink-2">No hay dietas creadas para este atleta.</p>
             <p className="text-[10px] text-ink-2 mt-1 font-mono">Pulsa "Nueva dieta" para crear la primera.</p>
           </div>
@@ -268,7 +268,7 @@ export default function ClientDietsPanel({
 
         {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
           <div className="py-4 text-center">
-            <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">restaurant_menu</span>
+            <span className="material-symbols-outlined text-2xl text-ink-3 block mb-2">restaurant_menu</span>
             <p className="text-xs text-ink-2">Aún no hay ningún menú generado.</p>
           </div>
         ) : (
@@ -329,7 +329,7 @@ export default function ClientDietsPanel({
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
                     <div key={i} className="font-mono text-[10px] text-ink-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
-                      <span className="text-[#555]">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-accent">{s.toRecipeName}</span>
+                      <span className="text-ink-3">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-accent">{s.toRecipeName}</span>
                     </div>
                   ))}
               </div>

@@ -93,7 +93,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-[#555550] pointer-events-none">
+            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-ink-3 pointer-events-none">
               search
             </span>
             <input
@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
+              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">

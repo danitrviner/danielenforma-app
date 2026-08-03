@@ -223,7 +223,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
                   {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
                 </span>
                 <span className="font-mono text-[10px] font-bold text-white">
-                  {m.intake}{m.unit} <span className="text-[#555]">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
+                  {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-raised overflow-hidden">
@@ -233,7 +233,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           ))}
         </div>
 
-        <p className="font-mono text-[9px] text-[#444] leading-relaxed">
+        <p className="font-mono text-[9px] text-ink-3 leading-relaxed">
           {micros.note}
           {micros.unmatched.length > 0 && ` · ${micros.unmatched.length} alimento(s) sin estimación.`}
           {!activeDiet && ' · Sin dieta activa: sólo cuenta la línea base de verdura.'}

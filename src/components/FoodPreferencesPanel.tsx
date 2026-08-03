@@ -120,7 +120,7 @@ export default function FoodPreferencesPanel({
                     : 'bg-surface border-white/7 hover:border-[#3a3a3a]'
                 }`}
               >
-                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-[#555]'}`}>
+                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
                 <span className="font-mono text-[9px] text-ink-2 text-center leading-tight">{g.name}</span>
@@ -188,12 +188,12 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555] hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-white"
           >
             <span className="material-symbols-outlined text-sm">close</span>
           </button>
@@ -203,7 +203,7 @@ export default function FoodPreferencesPanel({
       {/* Food list */}
       <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
         {filteredFoods.length === 0 ? (
-          <p className="py-6 text-center font-mono text-xs text-[#555]">Sin resultados</p>
+          <p className="py-6 text-center font-mono text-xs text-ink-3">Sin resultados</p>
         ) : (
           filteredFoods.map(food => {
             const pref    = prefs[food] ?? 'neutral';
@@ -222,7 +222,7 @@ export default function FoodPreferencesPanel({
                 <span className={`flex-1 font-mono text-xs ${
                   isAllergen ? 'text-amber-400 line-through' :
                   pref === 'favorite' ? 'text-white' :
-                  pref === 'dislike'  ? 'text-[#888]' : 'text-ink-2'
+                  pref === 'dislike'  ? 'text-ink-3' : 'text-ink-2'
                 }`}>
                   {food}
                   {isAllergen && (
@@ -237,7 +237,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-red-400 hover:border-red-500/30'
+                          : 'bg-[#1c1b1b] border border-white/7 text-ink-3 hover:text-red-400 hover:border-red-500/30'
                       }`}
                       title="No me gusta"
                     >
@@ -248,7 +248,7 @@ export default function FoodPreferencesPanel({
                       className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-amber-400 hover:border-amber-400/30'
+                          : 'bg-[#1c1b1b] border border-white/7 text-ink-3 hover:text-amber-400 hover:border-amber-400/30'
                       }`}
                       title="Favorito"
                     >

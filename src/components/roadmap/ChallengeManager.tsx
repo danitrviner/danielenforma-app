@@ -174,7 +174,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             )}
           </>
         ) : (
-          <p className="text-xs text-[#555] font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
+          <p className="text-xs text-ink-3 font-mono">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
           <p className="font-mono text-[9px] text-ink-2 mt-3 pt-3 border-t border-white/7">
@@ -334,7 +334,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           </div>
         )}
         {templates.length === 0 ? (
-          <p className="text-xs text-[#555] font-mono">Sin plantillas todavía.</p>
+          <p className="text-xs text-ink-3 font-mono">Sin plantillas todavía.</p>
         ) : (
           <div className="space-y-1.5">
             {templates.map(t => (

@@ -143,7 +143,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
       </h2>
 
       {rows.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todo al día — sin tareas pendientes.</p>
+        <p className="text-xs text-ink-3 font-mono py-2">Todo al día — sin tareas pendientes.</p>
       ) : (
         <div className="space-y-2">
           {rows.map(row => (

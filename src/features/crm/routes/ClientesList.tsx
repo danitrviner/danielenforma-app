@@ -88,13 +88,13 @@ export default function ClientesList() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <p className="font-bold truncate">{c.nombre}</p>
-            <p className="font-mono text-[9px] text-[#555550] truncate">
+            <p className="font-mono text-[9px] text-ink-3 truncate">
               {c.dni ? formatDni(c.dni) : c.email ?? '—'}
             </p>
           </div>
           {!c.userId && (
             <span
-              className="material-symbols-outlined text-[13px] text-[#555550] shrink-0"
+              className="material-symbols-outlined text-[13px] text-ink-3 shrink-0"
               title="Contacto sin cuenta en la app"
             >
               person_off
@@ -108,11 +108,11 @@ export default function ClientesList() {
       header: 'Servicio actual',
       render: c => {
         const actual = servicioActual(serviciosPorCliente.get(c.id) ?? []);
-        if (!actual) return <span className="text-[#555550]">—</span>;
+        if (!actual) return <span className="text-ink-3">—</span>;
         return (
           <div className="min-w-0">
             <p className="truncate">{actual.nombre}</p>
-            <p className="font-mono text-[9px] text-[#555550] tabular-nums">
+            <p className="font-mono text-[9px] text-ink-3 tabular-nums">
               {formatEurosCompacto(actual.importeCents)} · {actual.periodicidad}
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function ClientesList() {
       width: '44px',
       align: 'right',
       render: () => (
-        <span className="material-symbols-outlined text-base text-[#555550]">chevron_right</span>
+        <span className="material-symbols-outlined text-base text-ink-3">chevron_right</span>
       ),
     },
   ];
@@ -141,7 +141,7 @@ export default function ClientesList() {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-black text-xl text-ink">Clientes</h1>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550] tabular-nums">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3 tabular-nums">
             {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
           </p>
         </div>
@@ -167,7 +167,7 @@ export default function ClientesList() {
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
-          <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-[#555550] pointer-events-none">
+          <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-ink-3 pointer-events-none">
             search
           </span>
           <input
@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">

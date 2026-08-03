@@ -73,13 +73,13 @@ export function Campo({ label, children, hint, error }: {
       {children}
       {error
         ? <span className="block font-sans text-[10px] text-danger">{error}</span>
-        : hint ? <span className="block font-sans text-[10px] text-[#555550]">{hint}</span> : null}
+        : hint ? <span className="block font-sans text-[10px] text-ink-3">{hint}</span> : null}
     </label>
   );
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-[#555550] focus:outline-none focus:border-accent/40';
+  'w-full px-2.5 py-1.5 rounded-lg bg-field border border-white/7 text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';

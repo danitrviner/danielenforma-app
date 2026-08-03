@@ -183,7 +183,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 <span className="material-symbols-outlined text-sm">add</span>
                 Añadir bloque
               </button>
-              <span className="font-mono text-[9px] text-[#555]">
+              <span className="font-mono text-[9px] text-ink-3">
                 Total: {we.sets} series · {we.reps}
               </span>
             </div>

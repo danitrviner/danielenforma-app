@@ -160,8 +160,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="font-mono text-[10px] text-[#555] uppercase tracking-widest">Plantilla de ficha de iniciación</p>
-          <p className="font-mono text-[9px] text-[#444] mt-0.5">
+          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
+          <p className="font-mono text-[9px] text-ink-3 mt-0.5">
             Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
           </p>
         </div>
@@ -186,11 +186,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
-              <span className="ml-auto font-mono text-[9px] text-[#555] normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
+              <span className="ml-auto font-mono text-[9px] text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
             </h4>
 
             {qs.length === 0 && (
-              <p className="font-mono text-[9px] text-[#555] italic">Sin preguntas en esta sección.</p>
+              <p className="font-mono text-[9px] text-ink-3 italic">Sin preguntas en esta sección.</p>
             )}
 
             <div className="space-y-3">
@@ -275,15 +275,15 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                                                'text-ink-2 border-[#3a3a3a] bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
-                        {q.label || <em className="text-[#555]">sin etiqueta</em>}
+                        {q.label || <em className="text-ink-3">sin etiqueta</em>}
                       </span>
-                      {q.unit && <span className="text-[9px] text-[#555] font-mono flex-shrink-0">{q.unit}</span>}
+                      {q.unit && <span className="text-[9px] text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
                       <button type="button" onClick={() => { setEditingId(q.id); setOptionInput(''); }}
                         className="p-1 text-ink-2 hover:text-data transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       </button>
                       <button type="button" onClick={() => deleteQ(q.id)}
-                        className="p-1 text-[#3a3a3a] hover:text-red-400 transition-colors flex-shrink-0">
+                        className="p-1 text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
                       </button>
                     </div>
@@ -436,7 +436,7 @@ function IndyaImportPanel() {
           <span className="material-symbols-outlined text-sm">library_books</span>
           Importar biblioteca Indya
         </h3>
-        <p className="font-mono text-[9px] text-[#555] mt-1">
+        <p className="font-mono text-[9px] text-ink-3 mt-1">
           8 850 recetas · idempotente · lotes de {IMPORT_BATCH} · UPSERT por UUID
         </p>
       </div>
@@ -462,7 +462,7 @@ function IndyaImportPanel() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex justify-between font-mono text-[9px] text-[#555]">
+              <div className="flex justify-between font-mono text-[9px] text-ink-3">
                 <span>{done.toLocaleString('es')} / {total.toLocaleString('es')} recetas</span>
                 <span>{pct}%</span>
               </div>
@@ -583,7 +583,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           </div>
         ) : sortedUsers.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
-            <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">group</span>
+            <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">group</span>
             <p className="text-ink-2 text-sm">Sin usuarios registrados todavía.</p>
           </div>
         ) : (

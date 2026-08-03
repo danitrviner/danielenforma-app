@@ -144,7 +144,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
       )}
       {subTab === 'retos' && (uid
         ? <ChallengeManager athleteEmail={athleteEmail} challengeData={challengeData} roadmap={rm} onSaveRoadmap={handleSave} />
-        : <p className="text-xs text-[#555] font-mono py-4">No se ha podido cargar el perfil del atleta.</p>
+        : <p className="text-xs text-ink-3 font-mono py-4">No se ha podido cargar el perfil del atleta.</p>
       )}
       {subTab === 'niveles' && <LevelLadderEditor roadmap={rm} onSave={handleSave} ladderData={ladderData} />}
       {subTab === 'timeline' && (

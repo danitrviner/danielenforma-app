@@ -417,9 +417,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-[#444]"
+                className="w-24 bg-raised border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
-              <span className="font-mono text-xs text-[#555]">kg</span>
+              <span className="font-mono text-xs text-ink-3">kg</span>
             </div>
           )}
           {bwError && <p className="font-mono text-[10px] text-red-400 mt-1">{bwError}</p>}
@@ -515,7 +515,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               return (
                 <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
                   <p className="font-sans text-xs text-ink-2">{q.title}</p>
-                  <span className="font-mono text-[9px] text-[#555] uppercase">
+                  <span className="font-mono text-[9px] text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                   </span>
                 </div>
@@ -561,7 +561,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             {upcomingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
                 <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
-                <span className="font-mono text-[9px] text-[#555] uppercase">
+                <span className="font-mono text-[9px] text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
               </div>

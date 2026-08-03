@@ -327,7 +327,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       const ex = getExerciseInfo(we.exerciseId);
                       return (
                         <div key={i} className="flex items-center gap-2 text-xs font-mono text-ink-2">
-                          <span className="text-[#2a2a2a] font-bold w-4 text-center">{i + 1}</span>
+                          <span className="text-ink-3 font-bold w-4 text-center">{i + 1}</span>
                           <span className="truncate">{ex?.name || (we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : '—')}</span>
                           {we.recordVideoSet && (
                             <span className="material-symbols-outlined text-accent text-[13px] flex-shrink-0" title="Recordatorio de vídeo activo">videocam</span>

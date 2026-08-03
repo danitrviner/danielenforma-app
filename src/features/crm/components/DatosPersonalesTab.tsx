@@ -211,7 +211,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       )}
 
       {cliente.email && (
-        <p className="font-mono text-[9px] text-[#555550]">
+        <p className="font-mono text-[9px] text-ink-3">
           Email: {cliente.email}
           {cliente.fuente === 'perfil' && ' · lo gestiona el propio cliente desde su cuenta'}
         </p>

@@ -128,7 +128,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
             <span className="text-xs font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
               className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
-            <span className="text-[#555]">–</span>
+            <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
               className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
           </div>
@@ -184,7 +184,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
       <h2 className="font-sans font-bold text-base text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">No hay tests pendientes.</p>
+        <p className="text-xs text-ink-3 font-mono py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (

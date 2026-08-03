@@ -63,10 +63,10 @@ export default function ClienteSelector({ value, onChange }: Props) {
       {abierto && (
         <div className="absolute z-10 mt-1 w-full max-h-[200px] overflow-y-auto custom-scrollbar rounded-lg bg-raised border border-white/12 shadow-xl">
           {isPending && (
-            <p className="px-2.5 py-2 font-sans text-[10px] text-[#555550]">Cargando…</p>
+            <p className="px-2.5 py-2 font-sans text-[10px] text-ink-3">Cargando…</p>
           )}
           {!isPending && resultados.length === 0 && (
-            <p className="px-2.5 py-2 font-sans text-[10px] text-[#555550]">Sin resultados</p>
+            <p className="px-2.5 py-2 font-sans text-[10px] text-ink-3">Sin resultados</p>
           )}
           {resultados.map(c => (
             <button
@@ -79,7 +79,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
               className="w-full text-left px-2.5 py-2 hover:bg-white/6 transition-colors"
             >
               <p className="font-sans text-[11px] text-ink truncate">{c.nombre}</p>
-              <p className="font-mono text-[9px] text-[#555550] truncate">{c.email ?? c.dni ?? ''}</p>
+              <p className="font-mono text-[9px] text-ink-3 truncate">{c.email ?? c.dni ?? ''}</p>
             </button>
           ))}
         </div>

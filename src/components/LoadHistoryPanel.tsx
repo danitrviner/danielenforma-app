@@ -354,7 +354,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           Historial de carga
         </h3>
         <div className="py-8 text-center border border-dashed border-white/7 rounded-xl">
-          <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitoring</span>
+          <span className="material-symbols-outlined text-3xl text-ink-3 block mb-2">monitoring</span>
           <p className="text-xs text-ink-2 font-mono">Sin registros de carga aún.</p>
         </div>
       </div>
@@ -395,7 +395,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={s}
                   onClick={toggle}
                   className={`px-2.5 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
-                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-ink-2'
+                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-ink-3 hover:text-ink-2'
                   }`}
                 >
                   {s === 'mean' ? 'Media' : 'Mediana'}
@@ -438,7 +438,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                     key={g}
                     onClick={() => setGranularity(g)}
                     className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-all ${
-                      granularity === g ? 'bg-data/15 text-data' : 'text-[#555] hover:text-ink-2'
+                      granularity === g ? 'bg-data/15 text-data' : 'text-ink-3 hover:text-ink-2'
                     }`}
                   >
                     {g === 'week' ? 'Semana' : 'Día'}
@@ -472,7 +472,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   className={`min-w-[44px] min-h-[44px] px-2 rounded-lg font-mono text-[10px] font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
                     included
                       ? 'bg-data/10 border-data/40 text-data'
-                      : 'bg-transparent border-white/7 text-[#555] opacity-50'
+                      : 'bg-transparent border-white/7 text-ink-3 opacity-50'
                   }`}
                 >
                   <span>{b.label}</span>
@@ -486,16 +486,16 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           {progression ? (
             <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
               <span className="text-ink-2">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
-              <span className="text-[#555]">→</span>
+              <span className="text-ink-3">→</span>
               <span className="text-ink-2">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
               <span className={`font-bold ${progression.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 ({progression.delta >= 0 ? '+' : ''}{progression.delta}kg · {progression.pct >= 0 ? '+' : ''}{progression.pct}%)
               </span>
             </div>
           ) : (
-            <p className="font-mono text-[10px] text-[#555]">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
+            <p className="font-mono text-[10px] text-ink-3">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
           )}
-          <p className="font-mono text-[9px] text-[#444]">
+          <p className="font-mono text-[9px] text-ink-3">
             Destilda {granularity === 'week' ? 'las semanas' : 'los días'} de adaptación que no quieres que cuenten (ej. las primeras del bloque).
             {granularity === 'week' && ' "~" = semana sin registro, estimada a partir de semanas cercanas.'}
           </p>
@@ -505,12 +505,12 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Chart ── */}
       {activeMetrics.size === 0 ? (
         <div className="py-6 text-center border border-dashed border-white/7 rounded-xl">
-          <p className="font-mono text-[10px] text-[#555]">Selecciona al menos una métrica.</p>
+          <p className="font-mono text-[10px] text-ink-3">Selecciona al menos una métrica.</p>
         </div>
       ) : (
         <div>
           {isMulti && (
-            <p className="font-mono text-[8px] text-[#555] uppercase tracking-wider mb-1 text-right">
+            <p className="font-mono text-[8px] text-ink-3 uppercase tracking-wider mb-1 text-right">
               % del máximo
             </p>
           )}

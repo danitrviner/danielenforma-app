@@ -342,8 +342,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 ))}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="font-mono text-[9px] text-[#666]">Repetitivo, sencillo</span>
-                <span className="font-mono text-[9px] text-[#666]">Muy variado</span>
+                <span className="font-mono text-[9px] text-ink-3">Repetitivo, sencillo</span>
+                <span className="font-mono text-[9px] text-ink-3">Muy variado</span>
               </div>
             </div>
             <div>

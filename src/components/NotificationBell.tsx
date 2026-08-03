@@ -112,7 +112,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                 </button>
               )}
               <button type="button" onClick={() => { refetch(); }}
-                className="p-1 text-[#555] hover:text-ink-2 transition-colors">
+                className="p-1 text-ink-3 hover:text-ink-2 transition-colors">
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
               </button>
             </div>
@@ -121,9 +121,9 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
           {/* List */}
           <div className="max-h-[420px] overflow-y-auto divide-y divide-[#1e1e1e]">
             {loading ? (
-              <p className="text-center py-6 font-mono text-xs text-[#555] animate-pulse">Cargando…</p>
+              <p className="text-center py-6 font-mono text-xs text-ink-3 animate-pulse">Cargando…</p>
             ) : notifs.length === 0 ? (
-              <div className="py-10 flex flex-col items-center gap-2 text-[#555]">
+              <div className="py-10 flex flex-col items-center gap-2 text-ink-3">
                 <span className="material-symbols-outlined text-3xl">notifications_off</span>
                 <p className="font-mono text-xs">Sin notificaciones</p>
               </div>
@@ -140,7 +140,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                   {/* Icon */}
                   <span
                     className={`material-symbols-outlined text-base mt-0.5 flex-shrink-0 ${
-                      !n.read ? 'text-accent' : 'text-[#555]'
+                      !n.read ? 'text-accent' : 'text-ink-3'
                     }`}
                     style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}
                   >
@@ -152,8 +152,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                     <p className={`text-xs font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
-                    <p className="text-[10px] font-mono text-[#555] mt-0.5 truncate">{n.body}</p>
-                    <p className="text-[9px] font-mono text-[#3a3a3a] mt-0.5">{timeAgo(n.createdAt)}</p>
+                    <p className="text-[10px] font-mono text-ink-3 mt-0.5 truncate">{n.body}</p>
+                    <p className="text-[9px] font-mono text-ink-3 mt-0.5">{timeAgo(n.createdAt)}</p>
                   </div>
 
                   {/* Unread dot */}

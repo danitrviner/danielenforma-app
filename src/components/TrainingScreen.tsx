@@ -605,7 +605,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Peso (kg)</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Reps</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">RIR</th>
-                      <th className="px-3 py-2 font-mono text-[9px] text-[#444] uppercase">Anterior</th>
+                      <th className="px-3 py-2 font-mono text-[9px] text-ink-3 uppercase">Anterior</th>
                       <th className="px-4 py-2 font-mono text-[9px] text-ink-2 uppercase text-center">Hecha</th>
                     </tr>
                   </thead>
@@ -685,11 +685,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           </td>
                           <td className="px-3 py-2">
                             {prev ? (
-                              <span className="font-mono text-[10px] text-[#444] whitespace-nowrap">
+                              <span className="font-mono text-[10px] text-ink-3 whitespace-nowrap">
                                 {prev.weight > 0 ? `${prev.weight}kg` : '—'} × {prev.repsDone > 0 ? `${prev.repsDone}r` : '—'}
                               </span>
                             ) : (
-                              <span className="font-mono text-[10px] text-[#333]">—</span>
+                              <span className="font-mono text-[10px] text-ink-3">—</span>
                             )}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -707,7 +707,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               className={`w-11 h-11 rounded-lg border flex items-center justify-center mx-auto transition-all ${
                                 setInput.done
                                   ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                  : 'border-white/7 text-[#2a2a2a] hover:border-accent/50 hover:text-accent/50'
+                                  : 'border-white/7 text-ink-3 hover:border-accent/50 hover:text-accent/50'
                               }`}
                             >
                               <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -742,7 +742,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {ex?.instructions && (
                 <div className="px-4 py-2 bg-[#111111] border-t border-white/30">
-                  <p className="font-mono text-[9px] text-[#555] uppercase mb-0.5">Descripción</p>
+                  <p className="font-mono text-[9px] text-ink-3 uppercase mb-0.5">Descripción</p>
                   <p className="text-xs text-ink-2">{ex.instructions}</p>
                 </div>
               )}

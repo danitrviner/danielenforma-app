@@ -83,7 +83,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           {showForm ? 'Cancelar' : 'Nueva nota'}
         </button>
       </div>
-      <p className="font-mono text-[9px] text-[#555] mb-3">
+      <p className="font-mono text-[9px] text-ink-3 mb-3">
         Privadas — solo tú las ves. Ej: "Enviar mensaje a Ana sobre la dieta", "Cambiar rutina a Marcos".
       </p>
 
@@ -124,7 +124,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : notes.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Sin notas.</p>
+        <p className="text-xs text-ink-3 font-mono py-2">Sin notas.</p>
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(n => (

@@ -45,13 +45,29 @@ const IGNORAR = new Set(['node_modules', 'dist', '.git']);
 /** Escala de espaciado admitida por el DS, en px (base 4). */
 const ESCALA_ESPACIADO = new Set([0, 4, 8, 12, 16, 20, 24, 32, 40, 56]);
 
-/** Tokens que el bloque @theme expone hoy como clases de Tailwind. */
-const CLASES_TOKEN = [
-  'bg-bg-base', 'bg-bg-card', 'bg-bg-elevated', 'bg-bg-input',
-  'text-text-primary', 'text-text-secondary', 'text-text-muted',
-  'border-border', 'border-border-strong',
-  'text-accent', 'bg-accent', 'text-cyan', 'text-success', 'text-danger', 'text-warning',
+/**
+ * Tokens del Design System, tal como se llaman en el bloque @theme. Se cuenta
+ * cualquier utilidad que los consuma (`bg-surface`, `text-ink-2`,
+ * `border-hairline`, `hover:bg-raised`, `text-ink-2/60`…), no una lista
+ * cerrada de clases: los prefijos de Tailwind son demasiados para enumerarlos
+ * y lo que interesa medir es la adopción del token, no la utilidad concreta.
+ */
+const TOKENS_DS = [
+  'bg', 'surface', 'raised', 'field',
+  'ink', 'ink-2', 'ink-3', 'on-accent',
+  'hairline', 'strong', 'accent-line',
+  'accent', 'accent-press',
+  'data',
+  'success', 'warning', 'danger', 'info',
+  'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5',
 ];
+
+/** Prefijos de utilidad de Tailwind que aceptan un color. */
+const PREFIJOS_COLOR = [
+  'bg', 'text', 'border', 'border-[xytblrse]', 'divide', 'divide-[xy]',
+  'ring', 'outline', 'placeholder', 'caret', 'accent', 'decoration',
+  'shadow', 'fill', 'stroke', 'from', 'via', 'to',
+].join('|');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilidades de conteo
@@ -88,11 +104,12 @@ const METRICAS = [
   },
   {
     id: 'clasesTokenEnUso',
-    etiqueta: 'Clases de token @theme en uso',
+    etiqueta: 'Tokens del DS en uso',
     direccion: 'subir',
     fase: 'F1',
-    medir: (t) => CLASES_TOKEN.reduce(
-      (n, c) => n + contar(t, new RegExp(`(?<![\\w-])${c}(?![\\w-])`, 'g')), 0),
+    medir: (t) => TOKENS_DS.reduce(
+      (n, tok) => n + contar(
+        t, new RegExp(`(?:${PREFIJOS_COLOR})-${tok}(?![\\w-])`, 'g')), 0),
   },
   {
     id: 'importsThemeTs',

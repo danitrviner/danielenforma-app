@@ -340,7 +340,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className="mt-6 pt-4 border-t border-white/60">
             <span className="block text-[8px] text-ink-2 uppercase font-mono mb-2">Próximos a finalizar planificación</span>
             {athletesFinishingSoon.length === 0 ? (
-              <p className="text-xs text-[#555] font-mono">Ninguno por ahora.</p>
+              <p className="text-xs text-ink-3 font-mono">Ninguno por ahora.</p>
             ) : (
               <div className="space-y-1.5">
                 {athletesFinishingSoon.slice(0, 3).map(a => (
@@ -403,7 +403,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               )}
             </div>
             {totalPendingNotes === 0 ? (
-              <p className="text-xs text-[#555] font-mono">Sin notas nuevas de ejercicios o entrenamientos.</p>
+              <p className="text-xs text-ink-3 font-mono">Sin notas nuevas de ejercicios o entrenamientos.</p>
             ) : (
               <div className="space-y-1.5">
                 {enrichedAthletes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
@@ -523,7 +523,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-[#4a4a4a] border-white/7">
+                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-ink-3 border-white/7">
                               Sin plan
                             </span>
                           )}
@@ -633,7 +633,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <span className="material-symbols-outlined text-ink-2 text-sm">mail</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-xs text-white truncate">{inv.email}</p>
-                    <p className="font-mono text-[9px] text-[#555]">
+                    <p className="font-mono text-[9px] text-ink-3">
                       Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>

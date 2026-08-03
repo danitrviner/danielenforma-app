@@ -45,8 +45,8 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       header: 'Servicio',
       render: s => (
         <div className="min-w-0">
-          <p className={`font-bold truncate ${s.archivado ? 'text-[#555550] line-through' : ''}`}>{s.nombre}</p>
-          {s.descripcion && <p className="font-mono text-[9px] text-[#555550] truncate">{s.descripcion}</p>}
+          <p className={`font-bold truncate ${s.archivado ? 'text-ink-3 line-through' : ''}`}>{s.nombre}</p>
+          {s.descripcion && <p className="font-mono text-[9px] text-ink-3 truncate">{s.descripcion}</p>}
         </div>
       ),
     },
@@ -58,7 +58,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="font-bold">{formatEuros(s.importeCents)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{s.periodicidad}</p>
+          <p className="font-mono text-[9px] text-ink-3">{s.periodicidad}</p>
         </div>
       ),
     },
@@ -69,7 +69,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="tabular-nums">{formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}</p>
-          <p className="font-mono text-[9px] text-[#555550]">
+          <p className="font-mono text-[9px] text-ink-3">
             {s.fechaFin
               ? (s.fechaFin < hoy ? 'finalizado' : `acaba ${tiempoRelativo(s.fechaFin)}`)
               : 'sin fecha de fin'}

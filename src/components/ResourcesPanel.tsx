@@ -116,7 +116,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : resources.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">
+        <p className="text-xs text-ink-3 font-mono py-2">
           {isCoach ? 'Todavía no compartiste ningún recurso.' : 'Tu entrenador no compartió recursos todavía.'}
         </p>
       ) : (

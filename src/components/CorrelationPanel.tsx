@@ -261,7 +261,7 @@ export default function CorrelationPanel({
   if (!hasData) {
     return (
       <div className="py-20 text-center border border-dashed border-white/7 rounded-2xl px-6">
-        <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">insights</span>
+        <span className="material-symbols-outlined text-5xl text-ink-3 block mb-3">insights</span>
         <p className="font-sans font-bold text-white text-sm mb-1">Sin datos suficientes</p>
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
@@ -430,7 +430,7 @@ export default function CorrelationPanel({
                     </span>
                     <span className="font-mono text-xs text-ink-2">{correlationResult.label}</span>
                   </div>
-                  <p className="font-mono text-[10px] text-[#555]">Correlación ≠ causalidad</p>
+                  <p className="font-mono text-[10px] text-ink-3">Correlación ≠ causalidad</p>
                 </>
               )}
             </div>

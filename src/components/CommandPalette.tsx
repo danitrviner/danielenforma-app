@@ -142,7 +142,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
           )}
 
           {!loadingAthletes && matchedAthletes.length === 0 && matchedActions.length === 0 && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-[#555]">Sin resultados.</p>
+            <p className="px-4 py-6 text-center font-mono text-xs text-ink-3">Sin resultados.</p>
           )}
         </div>
       </div>

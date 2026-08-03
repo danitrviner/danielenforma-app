@@ -375,7 +375,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
                           {(ex.equipment ?? []).length === 0 ? (
-                            <span className="font-mono text-[9px] text-[#333]">—</span>
+                            <span className="font-mono text-[9px] text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
                             <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-ink-2 px-1.5 py-0.5 rounded capitalize">{eq}</span>
                           ))}
@@ -388,7 +388,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         {ex.enduranceProfile ? (
                           <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                         ) : (
-                          <span className="font-mono text-[9px] text-[#333]">—</span>
+                          <span className="font-mono text-[9px] text-ink-3">—</span>
                         )}
                       </td>
                       <td className="p-4">
@@ -417,7 +417,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[#2a2a2a] font-mono text-[10px] uppercase">—</span>
+                          <span className="text-ink-3 font-mono text-[10px] uppercase">—</span>
                         )}
                       </td>
                     </tr>
@@ -541,7 +541,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <div>
                 <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Grupo muscular
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
                 </label>
                 <select
                   value={form.muscleGroup ?? ''}
@@ -587,7 +587,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <div>
                 <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Material necesario
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {EQUIPMENT_OPTIONS.map(eq => {
@@ -643,7 +643,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <div>
                 <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
                   Descripción global
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
                 </label>
                 <textarea
                   value={form.instructions}

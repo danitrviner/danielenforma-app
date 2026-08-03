@@ -236,7 +236,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
   if (!program || program.phases.length === 0) {
     return (
       <div className="border border-dashed border-white/7 rounded-2xl py-10 flex flex-col items-center gap-3">
-        <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">monitoring</span>
+        <span className="material-symbols-outlined text-3xl text-ink-3">monitoring</span>
         <p className="font-mono text-xs text-ink-2 text-center max-w-xs">
           {onEdit
             ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
@@ -303,9 +303,9 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-ink-2 mt-3.5 pt-3 border-t border-white/7">
             <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
-            <span className="text-[#3a3a3a]">·</span>
+            <span className="text-ink-3">·</span>
             <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
-            <span className="text-[#3a3a3a]">·</span>
+            <span className="text-ink-3">·</span>
             <span><b className="text-white font-bold">{totalWeeks}</b> semanas totales</span>
           </div>
         </div>

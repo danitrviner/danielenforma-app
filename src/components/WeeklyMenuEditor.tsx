@@ -42,7 +42,7 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
 }
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
-  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-[#555] bg-[#1c1b1b] border-white/7' };
+  if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-[#1c1b1b] border-white/7' };
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';
@@ -296,7 +296,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </div>
         ) : (
           <div className="bg-surface border border-white/7 rounded-2xl p-4">
-            <p className="font-mono text-[10px] text-[#555] uppercase mb-3">Programación semanal (fuente de los puntos)</p>
+            <p className="font-mono text-[10px] text-ink-3 uppercase mb-3">Programación semanal (fuente de los puntos)</p>
             <div className="grid grid-cols-7 gap-1.5">
               {WEEK_DAYS.map(day => {
                 const dietId = schedule[day];
@@ -304,7 +304,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 return (
                   <div key={day} className="text-center">
                     <span className="block font-mono text-[9px] text-ink-2 uppercase">{WEEK_DAY_FULL[day].slice(0, 3)}</span>
-                    <span className={`block font-mono text-[9px] mt-1 ${diet ? 'text-accent' : 'text-[#555]'}`}>
+                    <span className={`block font-mono text-[9px] mt-1 ${diet ? 'text-accent' : 'text-ink-3'}`}>
                       {diet ? diet.name : 'Libre'}
                     </span>
                   </div>
@@ -340,7 +340,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
                   className="w-16 text-right bg-[#1e1e1e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:border-accent/50"
                 />
-                <span className="font-mono text-[#555] text-xs">%</span>
+                <span className="font-mono text-ink-3 text-xs">%</span>
               </div>
             ))}
           </div>
@@ -381,15 +381,15 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             ))}
           </div>
           <div className="flex justify-between mt-1">
-            <span className="font-mono text-[9px] text-[#555]">{batch ? 'En batch cooking se minimizan las recetas' : 'Monótono (repite)'}</span>
-            <span className="font-mono text-[9px] text-[#555]">Máxima variedad</span>
+            <span className="font-mono text-[9px] text-ink-3">{batch ? 'En batch cooking se minimizan las recetas' : 'Monótono (repite)'}</span>
+            <span className="font-mono text-[9px] text-ink-3">Máxima variedad</span>
           </div>
         </div>
 
         {/* Dish-type filter — prefilled from the athlete's preference */}
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Tipos de plato</label>
-          <p className="font-mono text-[9px] text-[#555] mb-2">
+          <p className="font-mono text-[9px] text-ink-3 mb-2">
             Prellenado con lo que eligió el atleta. Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">excluir</span>.
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -441,7 +441,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <span className="material-symbols-outlined text-4xl text-accent animate-spin">progress_activity</span>
         <p className="font-mono text-sm text-white">{genPhase}</p>
-        <p className="font-mono text-[10px] text-[#555]">Repartiendo recetas por comida y ajustando escalas…</p>
+        <p className="font-mono text-[10px] text-ink-3">Repartiendo recetas por comida y ajustando escalas…</p>
       </div>
     );
   }
@@ -487,7 +487,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <div className="px-4 pb-4 space-y-4">
             {menu.batchCooking && batchPlan.length > 0 && (
               <div>
-                <p className="font-mono text-[10px] text-[#555] uppercase mb-2">Cocina de una vez</p>
+                <p className="font-mono text-[10px] text-ink-3 uppercase mb-2">Cocina de una vez</p>
                 <div className="space-y-1.5">
                   {batchPlan.map(e => (
                     <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
@@ -499,9 +499,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               </div>
             )}
             <div>
-              <p className="font-mono text-[10px] text-[#555] uppercase mb-2">Ingredientes de la semana</p>
+              <p className="font-mono text-[10px] text-ink-3 uppercase mb-2">Ingredientes de la semana</p>
               {shoppingList.length === 0 ? (
-                <p className="font-mono text-[10px] text-[#555]">Regenera el menú para calcular los ingredientes.</p>
+                <p className="font-mono text-[10px] text-ink-3">Regenera el menú para calcular los ingredientes.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   {shoppingList.map((item, i) => (
@@ -530,7 +530,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-ink-2 text-base">{expanded ? 'expand_less' : 'expand_more'}</span>
                   <span className="font-sans font-bold text-sm text-white">{WEEK_DAY_FULL[day.day]}</span>
-                  <span className="font-mono text-[10px] text-[#555]">{day.dietName ?? 'Libre'}</span>
+                  <span className="font-mono text-[10px] text-ink-3">{day.dietName ?? 'Libre'}</span>
                 </div>
                 <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
               </button>
@@ -538,7 +538,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               {expanded && (
                 <div className="p-4 space-y-3">
                   {day.meals.length === 0 ? (
-                    <p className="font-mono text-xs text-[#555] text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
+                    <p className="font-mono text-xs text-ink-3 text-center py-4">Día libre — sin dieta asignada, sin comidas generadas.</p>
                   ) : (
                     <>
                       <div className="flex justify-end">
@@ -556,11 +556,11 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                             <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7">
                               {meal.recipeImage
                                 ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-lg text-[#2a2a2a]">skillet</span></div>}
+                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-lg text-ink-3">skillet</span></div>}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-[9px] text-[#555] uppercase">{meal.name}</span>
+                                <span className="font-mono text-[9px] text-ink-3 uppercase">{meal.name}</span>
                                 {meal.scale !== 1 && <span className="font-mono text-[9px] text-accent">×{meal.scale}</span>}
                               </div>
                               <p className="font-sans font-bold text-sm text-white leading-tight truncate">{meal.recipeName}</p>
@@ -596,9 +596,9 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                           {pickerFor?.day === day.day && pickerFor.mealId === meal.id && (
                             <div className="mt-3 border-t border-white/7 pt-2 max-h-56 overflow-y-auto space-y-1">
                               {pickerLoading ? (
-                                <p className="font-mono text-[10px] text-[#555] text-center py-3">Buscando candidatas…</p>
+                                <p className="font-mono text-[10px] text-ink-3 text-center py-3">Buscando candidatas…</p>
                               ) : pickerCandidates.length === 0 ? (
-                                <p className="font-mono text-[10px] text-[#555] text-center py-3">Sin alternativas disponibles para esta ingesta.</p>
+                                <p className="font-mono text-[10px] text-ink-3 text-center py-3">Sin alternativas disponibles para esta ingesta.</p>
                               ) : (
                                 pickerCandidates.map((c, ci) => (
                                   <button
@@ -611,7 +611,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-sans text-xs text-white truncate">{c.recipe.name}</p>
-                                      <p className="font-mono text-[9px] text-[#555]">×{c.scale} · {fmtExch(c.exch)}</p>
+                                      <p className="font-mono text-[9px] text-ink-3">×{c.scale} · {fmtExch(c.exch)}</p>
                                     </div>
                                   </button>
                                 ))

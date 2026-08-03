@@ -98,7 +98,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         </div>
       ) : questionnaires.length === 0 ? (
         <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
-          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">quiz</span>
+          <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
           <p className="text-ink-2 text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
         </div>

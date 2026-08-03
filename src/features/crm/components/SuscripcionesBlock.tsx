@@ -68,7 +68,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
       render: s => (
         <div>
           <p className="font-bold">{formatEuros(s.importeCents)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{s.periodicidad}</p>
+          <p className="font-mono text-[9px] text-ink-3">{s.periodicidad}</p>
         </div>
       ),
     },
@@ -79,7 +79,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
       render: s => (
         <div>
           <p className="tabular-nums">{formatDia(s.proximoCobro)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{tiempoRelativo(s.proximoCobro)}</p>
+          <p className="font-mono text-[9px] text-ink-3">{tiempoRelativo(s.proximoCobro)}</p>
         </div>
       ),
     },

@@ -107,7 +107,7 @@ export default function ChallengeOptionsPanel({
       )}
 
       {options.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono">Sin datos suficientes todavía para proponer opciones.</p>
+        <p className="text-xs text-ink-3 font-mono">Sin datos suficientes todavía para proponer opciones.</p>
       ) : (
         <div className="space-y-2">
           {options.map(opt => (
@@ -126,7 +126,7 @@ export default function ChallengeOptionsPanel({
                 </div>
               </div>
               <p className="text-xs text-ink-2 font-mono leading-relaxed">{opt.description}</p>
-              <p className="text-[10px] text-[#555] font-mono">Por qué: {opt.reason}</p>
+              <p className="text-[10px] text-ink-3 font-mono">Por qué: {opt.reason}</p>
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
@@ -139,7 +139,7 @@ export default function ChallengeOptionsPanel({
         </div>
       )}
 
-      <p className="text-[10px] text-[#555] font-mono">
+      <p className="text-[10px] text-ink-3 font-mono">
         Si no eliges ninguna antes del martes, se enviará automáticamente la de mayor puntuación.
       </p>
 
@@ -150,7 +150,7 @@ export default function ChallengeOptionsPanel({
         {showEligible && (
           <div className="mt-2 space-y-2">
             {candidateExercises.length === 0 ? (
-              <p className="text-xs text-[#555] font-mono">Aún no hay ejercicios con series registradas.</p>
+              <p className="text-xs text-ink-3 font-mono">Aún no hay ejercicios con series registradas.</p>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {candidateExercises.map(ex => (

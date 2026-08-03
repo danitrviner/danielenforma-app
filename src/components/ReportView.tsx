@@ -11,7 +11,7 @@ import {
 // exactly the same thing. Renders only sections flagged `included`.
 
 function DeltaBadge({ pct }: { pct: number | null }) {
-  if (pct == null) return <span className="font-mono text-[10px] text-[#555]">—</span>;
+  if (pct == null) return <span className="font-mono text-[10px] text-ink-3">—</span>;
   const up = pct >= 0;
   return (
     <span className={`font-mono text-[10px] font-bold ${up ? 'text-green-400' : 'text-red-400'}`}>
@@ -60,7 +60,7 @@ function TonnageSection({ section }: { section: CoachReportSection }) {
         <span className="font-mono font-black text-3xl text-white">{d.current.toLocaleString('es-ES')}<span className="text-base text-ink-2 font-bold"> kg</span></span>
         <div className="flex items-center gap-2 pb-1">
           <DeltaBadge pct={d.deltaPct} />
-          {d.previous != null && <span className="font-mono text-[10px] text-[#555]">{d.comparisonLabel} ({d.previous.toLocaleString('es-ES')} kg)</span>}
+          {d.previous != null && <span className="font-mono text-[10px] text-ink-3">{d.comparisonLabel} ({d.previous.toLocaleString('es-ES')} kg)</span>}
         </div>
       </div>
       <p className="font-mono text-[10px] text-ink-2">{d.sessions} {d.sessions === 1 ? 'sesión' : 'sesiones'} en el periodo</p>

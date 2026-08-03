@@ -126,7 +126,7 @@ export default function DashboardScreen() {
               proximasReuniones.map(r => (
                 <div key={r.id} className="flex items-center justify-between gap-2 p-3">
                   <p className="font-sans text-[11px] text-ink truncate">{r.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-[#555550] shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
+                  <p className="font-mono text-[9px] text-ink-3 shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
                 </div>
               ))
             )}

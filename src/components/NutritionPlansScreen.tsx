@@ -414,7 +414,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {!selectedEmail ? (
           <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
-            <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">person_search</span>
+            <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">person_search</span>
             <p className="text-ink-2 text-sm">Selecciona un atleta para ver y crear sus dietas.</p>
           </div>
         ) : loadingDiets ? (
@@ -424,7 +424,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           </div>
         ) : diets.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
-            <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
+            <span className="material-symbols-outlined text-4xl text-ink-3 block mb-3">nutrition</span>
             <p className="text-ink-2 text-sm">Sin dietas. Crea la primera para este atleta.</p>
           </div>
         ) : (
@@ -579,7 +579,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-3 text-sm text-white placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
@@ -610,7 +610,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <div key={m.label} className={`border rounded-lg px-3 py-1.5 text-center ${m.bg}`}>
                 <p className={`font-mono text-[10px] uppercase font-bold ${m.color}`}>{m.label}</p>
                 <p className="font-mono font-bold text-white text-sm">{m.g}g</p>
-                <p className="font-mono text-[9px] text-[#555]">{m.pct}%</p>
+                <p className="font-mono text-[9px] text-ink-3">{m.pct}%</p>
               </div>
             ))}
           </div>
@@ -618,7 +618,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           {/* Warnings */}
           {onboardingData.dislikedFoods.length > 0 && (
             <p className="font-mono text-[10px] text-ink-2">
-              <span className="text-[#555] mr-1">No le gusta:</span>
+              <span className="text-ink-3 mr-1">No le gusta:</span>
               {onboardingData.dislikedFoods.join(', ')}
             </p>
           )}
@@ -815,10 +815,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#111] transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#555] text-sm">visibility</span>
-            <span className="font-mono text-[10px] text-[#555] uppercase tracking-wide">Vista previa del atleta</span>
+            <span className="material-symbols-outlined text-ink-3 text-sm">visibility</span>
+            <span className="font-mono text-[10px] text-ink-3 uppercase tracking-wide">Vista previa del atleta</span>
           </div>
-          <span className={`material-symbols-outlined text-[#555] text-sm transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
+          <span className={`material-symbols-outlined text-ink-3 text-sm transition-transform ${showPreview ? 'rotate-180' : ''}`}>expand_more</span>
         </button>
         {showPreview && (
           <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e] pt-3">
@@ -827,7 +827,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <div key={meal.id} className="bg-surface border border-white/7 rounded-2xl px-4 py-3">
                   <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
                   {meal.items.length === 0 ? (
-                    <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
+                    <p className="font-mono text-[10px] text-ink-3 italic">Sin alimentos</p>
                   ) : (
                     <div className="space-y-1">
                       {meal.items.map((it, idx) => (
@@ -838,7 +838,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                             'bg-orange-500/10 border-orange-500/20 text-orange-300'
                           }`}>{it.category.replace('_', ' ')}</span>
                           <span>{it.foodLabel}</span>
-                          <span className="text-[#444]">×{it.quantity}</span>
+                          <span className="text-ink-3">×{it.quantity}</span>
                         </div>
                       ))}
                     </div>
