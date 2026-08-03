@@ -181,7 +181,7 @@ export default function ClientSetupPanel({
   return (
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 flex items-center gap-5">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 flex items-center gap-5">
         <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? '#34d399' : '#fbcb1a'} label="Setup" />
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
@@ -234,7 +234,7 @@ export default function ClientSetupPanel({
         {result.phases.map(phase => {
           const expanded = expandedPhase === phase.id;
           return (
-            <div key={phase.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div key={phase.id} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedPhase(expanded ? null : phase.id)}
                 className="w-full flex items-center gap-3 p-4"
@@ -288,7 +288,7 @@ export default function ClientSetupPanel({
       </div>
 
       {/* Tareas extra */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-base">playlist_add_check</span>

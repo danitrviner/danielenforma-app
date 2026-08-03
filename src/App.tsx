@@ -283,7 +283,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-[#181816] border border-white/7 text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
+          <span className="text-[10px] bg-surface border border-white/7 text-ink-2 px-2 py-0.5 rounded font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>

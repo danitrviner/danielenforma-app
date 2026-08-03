@@ -289,7 +289,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <Skeleton className="h-32 w-full rounded-2xl" />
           </div>
         ) : workouts.length === 0 ? (
-          <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-16 text-center">
+          <div className="bg-surface border border-dashed border-white/7 rounded-2xl p-16 text-center">
             <span className="material-symbols-outlined text-4xl text-accent/40 block mb-3">format_list_bulleted</span>
             <p className="text-white font-bold text-sm">Sin rutinas todavía</p>
             <p className="text-ink-2 text-xs mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
@@ -308,7 +308,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               return (
               <div
                 key={w.id}
-                className="bg-[#181816] border border-white/7 rounded-3xl p-5 hover:border-accent/30 hover:shadow-[0_0_30px_-10px_rgba(251,203,26,0.35)] transition-all group relative overflow-hidden"
+                className="bg-surface border border-white/7 rounded-3xl p-5 hover:border-accent/30 hover:shadow-[0_0_30px_-10px_rgba(251,203,26,0.35)] transition-all group relative overflow-hidden"
               >
                 <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
 
@@ -458,7 +458,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
         {editorExercises.length === 0 ? (
           <div
             onClick={openPicker}
-            className="bg-[#181816] border border-dashed border-white/7 hover:border-accent/30 rounded-2xl p-10 text-center cursor-pointer transition-all group"
+            className="bg-surface border border-dashed border-white/7 hover:border-accent/30 rounded-2xl p-10 text-center cursor-pointer transition-all group"
           >
             <span className="material-symbols-outlined text-3xl text-accent/30 group-hover:text-accent/60 transition-all block mb-2">add_circle</span>
             <p className="text-xs text-ink-2 group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
@@ -468,7 +468,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             {/* Barra de edición en bloque — progresar varios ejercicios a la vez
                 ("todos los básicos a RIR 1 esta semana") en vez de abrir cada uno. */}
             {editorExercises.length > 1 && (
-              <div className="flex items-center gap-2 flex-wrap bg-[#181816] border border-white/7 rounded-xl px-3 py-2">
+              <div className="flex items-center gap-2 flex-wrap bg-surface border border-white/7 rounded-xl px-3 py-2">
                 <button
                   onClick={() => setSelectedIdx(prev =>
                     prev.size === editorExercises.length ? new Set() : new Set(editorExercises.map((_, i) => i))
@@ -507,7 +507,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             {editorExercises.map((we, idx) => {
               const ex = getExerciseInfo(we.exerciseId);
               return (
-                <div key={`${we.exerciseId}-${idx}`} className={`bg-[#181816] border rounded-2xl overflow-hidden ${selectedIdx.has(idx) ? 'border-accent/50' : 'border-white/7'}`}>
+                <div key={`${we.exerciseId}-${idx}`} className={`bg-surface border rounded-2xl overflow-hidden ${selectedIdx.has(idx) ? 'border-accent/50' : 'border-white/7'}`}>
                   {/* Exercise info bar */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-[#161616] border-b border-white/50">
                     <input
@@ -633,14 +633,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   placeholder="Buscar por nombre..."
                   value={pickerSearch}
                   onChange={e => setPickerSearch(e.target.value)}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full bg-surface border border-white/7 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={pickerFocus}
                   onChange={e => setPickerFocus(e.target.value)}
-                  className="flex-1 bg-[#181816] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-white/7 rounded-lg px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los músculos</option>
                   {FOCUS_OPTIONS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
@@ -648,7 +648,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 <select
                   value={pickerType}
                   onChange={e => setPickerType(e.target.value)}
-                  className="flex-1 bg-[#181816] border border-white/7 rounded-lg px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-white/7 rounded-lg px-3 py-2 text-xs font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los tipos</option>
                   {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}

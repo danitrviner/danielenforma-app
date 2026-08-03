@@ -120,7 +120,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
       {sorted.map(level => {
         const achieved = ladder.achievedLevelIds?.[level.id];
         return (
-          <div key={level.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2.5">
+          <div key={level.id} className="bg-surface border border-white/7 rounded-2xl p-4 space-y-2.5">
             <div className="flex flex-wrap items-start gap-2">
               <input
                 value={level.name}

@@ -262,7 +262,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     <div className="space-y-5">
       {/* Hero: current phase */}
       {activePhase ? (
-        <div className="relative bg-[#181816] border border-white/7 rounded-2xl overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), #181816` }}>
+        <div className="relative bg-surface border border-white/7 rounded-2xl overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), #181816` }}>
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -329,7 +329,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       </div>
 
       {/* Chart */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
           <div className="inline-flex bg-[#141413] border border-white/7 rounded-lg p-0.5 gap-0.5">
@@ -446,7 +446,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
       {/* Energy balance of the active phase */}
       {activePhase && activeBalance && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
           <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
@@ -477,7 +477,7 @@ function StatCard({
   valueColor?: string; progressPct?: number; progressColor?: string;
 }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex flex-col gap-2">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 flex flex-col gap-2">
       <span className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
         {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}

@@ -105,7 +105,7 @@ export default function ClientDietsPanel({
     /* ── Diet list + config ── */
     <div className="space-y-6">
       {/* Diets */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">nutrition</span>
@@ -134,7 +134,7 @@ export default function ClientDietsPanel({
               return (
                 <div
                   key={dt.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-[#1a1c12] border-accent/40' : 'bg-[#181816] border-white/7'}`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${active ? 'bg-[#1a1c12] border-accent/40' : 'bg-surface border-white/7'}`}
                 >
                   {/* Toggle checkbox */}
                   <button
@@ -185,7 +185,7 @@ export default function ClientDietsPanel({
       </div>
 
       {/* Weekly schedule grid */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">calendar_month</span>
@@ -239,7 +239,7 @@ export default function ClientDietsPanel({
 
       {/* Menú semanal — generador automático basado en recetas. Lee sus
           puntos de las dietas de tipo de día programadas arriba. */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">restaurant_menu</span>
@@ -274,7 +274,7 @@ export default function ClientDietsPanel({
         ) : (
           <div className="space-y-2">
             {weeklyMenus.filter(m => m.status !== 'archived').map(m => (
-              <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-[#181816] border-white/7">
+              <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-surface border-white/7">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
                     <p className="font-sans font-bold text-sm text-white truncate">{m.name}</p>
@@ -359,7 +359,7 @@ export default function ClientDietsPanel({
 
       {/* Nutrition mode config */}
       {nutritionConfig && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-[#00eefc] text-sm">tune</span>
             Modos de alimentación habilitados
@@ -389,7 +389,7 @@ export default function ClientDietsPanel({
 
       {/* Step goal config */}
       {nutritionConfig && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-[#00eefc] text-sm">directions_walk</span>
             Objetivo de pasos

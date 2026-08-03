@@ -93,14 +93,14 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-4">
         <Skeleton className="h-16 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-base">directions_walk</span>

@@ -327,7 +327,7 @@ export default function ClientReviewsPanel({
             new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
 
           return (
-            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 flex items-center justify-between bg-[#1c1b1b]">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-sm">photo_camera</span>
@@ -474,7 +474,7 @@ export default function ClientReviewsPanel({
         <ExercisePersonalNotesPanel athleteEmail={athlete.email} programExerciseIds={programExerciseIds} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+        <div className="bg-surface border border-white/7 rounded-2xl p-5">
           {editingOnboarding ? (
             <OnboardingForm
               athleteEmail={athlete.email}
@@ -864,7 +864,7 @@ export default function ClientReviewsPanel({
 
         {/* ── Preferencias alimentarias ────────────────────────────────── */}
         {onboardingData && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+          <div className="bg-surface border border-white/7 rounded-2xl p-5">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-accent text-base">restaurant</span>
               Preferencias alimentarias
@@ -883,7 +883,7 @@ export default function ClientReviewsPanel({
 
         {/* ── Quick stats + weekly compliance ────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+          <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
             {[
               { label: 'Correo',     value: athlete.email,                                        color: 'text-white'     },
               { label: 'Racha',      value: `${athlete.currentStreak || 0} Semanas`,              color: 'text-orange-400'},
@@ -898,7 +898,7 @@ export default function ClientReviewsPanel({
               </div>
             ))}
           </div>
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+          <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
               Cumplimiento Semanal
@@ -941,7 +941,7 @@ export default function ClientReviewsPanel({
 
           if (items.length === 0) {
             return (
-              <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-12 text-center text-ink-2">
+              <div className="bg-surface border border-dashed border-white/7 rounded-2xl p-12 text-center text-ink-2">
                 <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">history_edu</span>
                 <p className="text-sm font-bold text-white">Sin revisiones todavía</p>
                 <p className="text-xs mt-1">Los check-ins y respuestas del atleta aparecerán aquí.</p>
@@ -950,7 +950,7 @@ export default function ClientReviewsPanel({
           }
 
           return (
-            <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
                 <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
@@ -1246,7 +1246,7 @@ export default function ClientReviewsPanel({
         })()}
 
         {/* ── Asignar cuestionario ───────────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+            <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-sm">quiz</span>
@@ -1350,13 +1350,13 @@ export default function ClientReviewsPanel({
             </div>
 
             {/* ── Peso corporal (coach view) ────────────────────────────── */}
-            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+            <div className="bg-surface border border-white/7 rounded-2xl p-5">
               <BodyweightPanel athleteEmail={athlete.email} readOnly />
             </div>
 
             {/* ── Gráficas de evolución ──────────────────────────────────── */}
             {athleteQResponses.length > 0 && coachQuestionnaires.length > 0 && (
-              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+              <div className="bg-surface border border-white/7 rounded-2xl p-5">
                 <QuestionnaireChartsPanel
                   questionnaires={coachQuestionnaires}
                   responses={athleteQResponses}
@@ -1366,7 +1366,7 @@ export default function ClientReviewsPanel({
 
             {/* ── Respuestas del atleta ──────────────────────────────────── */}
             {athleteQResponses.length > 0 && (
-              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+              <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00eefc] text-sm">assignment_turned_in</span>
                   Respuestas enviadas

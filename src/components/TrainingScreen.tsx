@@ -354,7 +354,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
             ? 'rounded-3xl bg-[#1a1c12] border-accent/50 shadow-[0_0_30px_-8px_rgba(251,203,26,0.4)]'
-            : 'rounded-2xl bg-[#181816] border-white/7'
+            : 'rounded-2xl bg-surface border-white/7'
         }`}
       >
         <div className="flex items-center gap-4">
@@ -448,7 +448,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-[#181816] border border-accent/40 rounded-2xl pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
+          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-2xl pl-3.5 pr-2 py-2 shadow-xl shadow-black/40 flex items-center gap-2.5">
             <span
               className={`material-symbols-outlined text-accent text-lg ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
@@ -516,7 +516,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           return (
             <div
               key={`${we.exerciseId}-${exIdx}`}
-              className={`bg-[#181816] border rounded-2xl overflow-hidden ${
+              className={`bg-surface border rounded-2xl overflow-hidden ${
                 we.recordVideoSet ? 'border-accent/50 shadow-[0_0_0_1px_rgba(251,203,26,0.15)]' : 'border-white/7'
               }`}
             >
@@ -758,7 +758,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         })}
 
         {/* Nota del entrenamiento completo */}
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
+        <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-2">
           <label className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
           <textarea
             value={workoutNoteInput}
@@ -803,7 +803,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
         {celebration && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-[#181816] border border-accent/30 rounded-3xl w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
+            <div className="bg-surface border border-accent/30 rounded-3xl w-full max-w-sm p-7 space-y-5 shadow-2xl text-center">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center">
                 <span className="material-symbols-outlined text-4xl text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {celebration.isFirstEver ? 'celebration' : 'bolt'}
@@ -864,7 +864,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </p>
         </div>
         {/* Week summary chip */}
-        <div className="flex items-center gap-2 bg-[#181816] border border-white/7 px-4 py-2 rounded-2xl">
+        <div className="flex items-center gap-2 bg-surface border border-white/7 px-4 py-2 rounded-2xl">
           <span className="material-symbols-outlined text-accent text-sm">calendar_today</span>
           <span className="font-mono text-xs text-ink-2">Esta semana:</span>
           <span className="font-mono text-sm font-black text-white">{weekCompleted}/{weekAssignments.length}</span>
@@ -873,7 +873,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       </header>
 
       {/* Main tabs */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-full sm:w-fit">
+      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-full sm:w-fit">
         <button
           onClick={() => setMainTab('programa')}
           className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black shadow-lg' : 'text-ink-2 hover:text-white'}`}
@@ -920,7 +920,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             </div>
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
-              <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
+              <div className="bg-surface border border-dashed border-white/7 rounded-2xl p-14 text-center">
                 <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
                 <p className="text-white font-bold text-sm">Sin entrenamientos pendientes</p>
                 <p className="text-ink-2 text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>
@@ -957,7 +957,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
             )
           ) : filteredAssignments.length === 0 ? (
-            <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-14 text-center">
+            <div className="bg-surface border border-dashed border-white/7 rounded-2xl p-14 text-center">
               <span className="material-symbols-outlined text-4xl text-accent/30 block mb-3">fitness_center</span>
               <p className="text-white font-bold text-sm">Sin entrenamientos {listFilter === 'completed' ? 'completados' : ''}</p>
               <p className="text-ink-2 text-xs mt-1">Tu entrenador asignará sesiones próximamente.</p>

@@ -117,7 +117,7 @@ export default function FoodPreferencesPanel({
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
                   hasAny
                     ? 'bg-[#1a1c12] border-accent/30 hover:border-accent/60'
-                    : 'bg-[#181816] border-white/7 hover:border-[#3a3a3a]'
+                    : 'bg-surface border-white/7 hover:border-[#3a3a3a]'
                 }`}
               >
                 <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-[#555]'}`}>
@@ -216,7 +216,7 @@ export default function FoodPreferencesPanel({
                 key={food}
                 className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                   pref === 'favorite' ? 'bg-amber-400/5' :
-                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-[#181816]'
+                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-surface'
                 }`}
               >
                 <span className={`flex-1 font-mono text-xs ${

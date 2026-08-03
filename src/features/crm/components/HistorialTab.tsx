@@ -82,20 +82,20 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
+        <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Primer programa</p>
           <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">
             {resumen.primerPrograma ? formatDia(resumen.primerPrograma) : '—'}
           </p>
         </div>
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
+        <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
           <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Último fin</p>
           <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">
             {resumen.ultimoFin ? formatDia(resumen.ultimoFin) : '—'}
           </p>
         </div>
         {resumen.conversionContinuidad !== null && (
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
+          <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
             <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Conversión continuidad</p>
             <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">{resumen.conversionContinuidad}%</p>
           </div>
@@ -107,7 +107,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         {resumen.timeline.length === 0 ? (
           <EmptyState icon="history" titulo="Sin programas todavía" descripcion="La línea de tiempo aparecerá cuando el cliente tenga al menos un servicio." />
         ) : (
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
             {resumen.timeline.map(s => {
               const enCurso = !s.fechaFin || s.fechaFin >= hoy;
               return (

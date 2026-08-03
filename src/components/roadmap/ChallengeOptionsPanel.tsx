@@ -113,7 +113,7 @@ export default function ChallengeOptionsPanel({
           {options.map(opt => (
             <div
               key={opt.kind}
-              className="bg-[#181816] border rounded-xl p-3 space-y-1.5"
+              className="bg-surface border rounded-xl p-3 space-y-1.5"
               style={{ borderColor: opt.isMilestone ? '#fbcb1a55' : 'rgba(255,255,255,0.07)' }}
             >
               <div className="flex items-start justify-between gap-2">
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-1.5 px-3 bg-[#181816] border border-white/7 text-ink-2 font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
+              className="py-1.5 px-3 bg-surface border border-white/7 text-ink-2 font-mono text-[10px] rounded hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

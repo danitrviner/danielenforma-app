@@ -63,7 +63,7 @@ function QuestionnaireForm({
   };
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-6">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-6">
       <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
         <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
@@ -369,7 +369,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 space-y-3">
+      <div className="bg-surface border border-white/7 rounded-2xl px-4 py-3 space-y-3">
         {/* Modo: día a día vs. media semanal ya calculada por el atleta */}
         <div className="flex items-center gap-1.5">
           <button
@@ -468,7 +468,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending questionnaires list */}
       {!activeAssignment && !loadingQ && pendingAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-accent/20 rounded-2xl p-4 sm:p-6">
+        <section className="bg-surface border border-accent/20 rounded-2xl p-4 sm:p-6">
           <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
@@ -499,7 +499,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring questionnaires */}
       {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
-        <details className="group bg-[#181816] border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-white/7 rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
@@ -527,7 +527,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending photo check-ins */}
       {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-accent/20 rounded-2xl p-4 sm:p-6">
+        <section className="bg-surface border border-accent/20 rounded-2xl p-4 sm:p-6">
           <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
@@ -548,7 +548,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring photo check-ins */}
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
-        <details className="group bg-[#181816] border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-white/7 rounded-2xl">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
@@ -571,7 +571,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-6">
+      <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-6">
         <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-accent">photo_camera</span>
           Fotografías de Progreso
@@ -580,7 +580,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </section>
 
       {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <section className="bg-surface border border-white/7 rounded-2xl p-5">
         <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">history</span>
           Historial de Revisiones

@@ -232,7 +232,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+        <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
@@ -469,7 +469,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {showQuickReplyManager && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
+          <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between">
               <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
               <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">

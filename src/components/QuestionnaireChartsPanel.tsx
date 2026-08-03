@@ -102,7 +102,7 @@ function QuestionChart({
   if (raw.length === 0) return null;
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 space-y-3">
+    <div className="bg-surface border border-white/7 rounded-3xl p-4 space-y-3">
       <div>
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -196,7 +196,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
           <span className="material-symbols-outlined text-accent text-base">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
-        <div className="flex bg-[#181816] border border-white/7 rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-surface border border-white/7 rounded-lg p-0.5 gap-0.5">
           {(['Puntos', 'Media semanal'] as const).map((label, i) => (
             <button
               key={label}

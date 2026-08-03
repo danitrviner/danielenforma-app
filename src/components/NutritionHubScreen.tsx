@@ -42,7 +42,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   return (
     <div className="space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+        <div className="bg-surface border border-white/7 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="material-symbols-outlined text-accent text-base">insights</span>
             <p className="font-sans font-bold text-sm text-white">Análisis de tu entrenador</p>
@@ -58,7 +58,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         </div>
       )}
 
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit">
+      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -83,7 +83,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
             onConsumedPendingRecipe={() => setPendingRecipe(null)}
           />
           {/* Config al final, tras el contenido del día (visual arriba, ajustes abajo) */}
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+          <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
             <div>
               <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-base">eco</span>

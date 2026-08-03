@@ -154,7 +154,7 @@ export default function ClientWorkoutsPanel({
           .sort((a, b) => b.date.localeCompare(a.date));
         if (logsWithNotes.length === 0) return null;
         return (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+          <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-amber-300 text-base">sticky_note_2</span>
               Notas del atleta
@@ -199,7 +199,7 @@ export default function ClientWorkoutsPanel({
 
       {/* Workout assignments — plegado por defecto: la lista puede ser larga
           y lo habitual es venir a asignar, no a repasarla entera */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setAssignmentsExpanded(e => !e)}
@@ -239,7 +239,7 @@ export default function ClientWorkoutsPanel({
             {[...assignments].sort((a, b) => a.date.localeCompare(b.date)).map(a => {
               const wo = workouts.find(w => w.id === a.workoutId);
               return (
-                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-[#181816] border border-white/50 rounded-lg">
+                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-white/50 rounded-lg">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="material-symbols-outlined text-base text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">
@@ -296,7 +296,7 @@ export default function ClientWorkoutsPanel({
                 <select
                   value={assignWorkoutId}
                   onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="w-full bg-surface border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   {workouts.map(w => (
                     <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
@@ -310,7 +310,7 @@ export default function ClientWorkoutsPanel({
                 type="date"
                 value={assignDate}
                 onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-surface border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div className="flex gap-3 pt-1">

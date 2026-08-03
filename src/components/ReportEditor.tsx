@@ -62,7 +62,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -73,14 +73,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-[#555]"
+                  className="w-full bg-surface border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 resize-y placeholder-[#555]"
                 />
               </div>
 
               <div className="space-y-2.5">
                 <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
-                  <div key={s.id} className="bg-[#181816] border border-white/7 rounded-xl p-3 space-y-2">
+                  <div key={s.id} className="bg-surface border border-white/7 rounded-xl p-3 space-y-2">
                     <button
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-2.5 text-left"
@@ -122,7 +122,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <div className="flex-1" />
             <button
               onClick={handleCopy}
-              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#00eefc]/50 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 bg-surface border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#00eefc]/50 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
               {copied ? '¡Copiado!' : 'Copiar texto'}
@@ -130,7 +130,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('save', () => onSaveDraft(draft))}
               disabled={busy !== null}
-              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-accent/50 transition-all disabled:opacity-40"
+              className="px-4 py-2.5 bg-surface border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-accent/50 transition-all disabled:opacity-40"
             >
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
             </button>

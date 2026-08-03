@@ -163,7 +163,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
       </div>
 
       {/* Generator */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
+      <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
         <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Nuevo reporte</p>
         <div className="flex flex-wrap gap-3 items-end">
           <div>
@@ -224,7 +224,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           reports.map(r => (
             <div
               key={r.id}
-              className="w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3.5 hover:border-accent/40 transition-all"
+              className="w-full flex items-center gap-3 bg-surface border border-white/7 rounded-xl p-3.5 hover:border-accent/40 transition-all"
             >
               <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
                 <div className="min-w-0">

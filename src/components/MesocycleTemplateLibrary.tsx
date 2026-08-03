@@ -236,7 +236,7 @@ const DayBlock: React.FC<{
   return (
     <div className="border border-white/7 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#181816] cursor-pointer group" onClick={() => setOpen(o => !o)}>
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
         <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
@@ -374,7 +374,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
   return (
     <div className="border border-white/7 rounded-xl overflow-hidden">
       {/* Stage header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-[#181816] cursor-pointer" onClick={() => setOpen(o => !o)}>
+      <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
         <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
@@ -605,7 +605,7 @@ function TemplateEditor({
   const totalWeeks = form.stages.reduce((s, st) => s + st.weeks, 0);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+    <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/7">
         <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
@@ -733,7 +733,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
+    <div className="bg-surface border border-white/7 rounded-3xl p-4 hover:border-accent/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>

@@ -36,7 +36,7 @@ export default function Modal({ titulo, onCerrar, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-[#181816] border border-white/12 rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-white/12 rounded-t-2xl sm:rounded-2xl overflow-hidden"
       >
         <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/7 shrink-0">
           <h2 className="font-sans font-black text-sm text-[#f5f5f0]">{titulo}</h2>

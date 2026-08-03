@@ -123,7 +123,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
           cta={{ label: 'Nueva reunión', onClick: () => setModalAbierto(true) }}
         />
       ) : (
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+        <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
           {eventos.map(ev => {
             const whatsapp = enlaceWhatsApp(telefonoPorClientId.get(ev.clientId));
             const pasada = ev.fecha < hoy;

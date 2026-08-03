@@ -46,7 +46,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
+        <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -114,7 +114,7 @@ function CoursesTab() {
   };
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800]">
@@ -220,7 +220,7 @@ function LessonsTab() {
   };
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-[#d4a800]">
@@ -318,7 +318,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   }
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
+    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Acceso por atleta</h2>
         {selected.size > 0 && (

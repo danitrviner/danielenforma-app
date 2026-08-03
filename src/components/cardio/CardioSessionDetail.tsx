@@ -71,7 +71,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         />
 
         {comparison.count > 0 && (
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-3">
+          <div className="bg-surface border border-white/7 rounded-xl p-3">
             <p className="text-[9px] font-mono uppercase text-ink-2 mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
             <div className="flex gap-4 text-xs font-mono">
               {pctDelta(session.durationSec, comparison.durationSec) && (
@@ -102,13 +102,13 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         </div>
 
         {chartData.length > 1 && zones && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-3">
+          <div className="bg-surface border border-white/7 rounded-2xl p-3">
             <HrChart data={chartData} zones={zones} />
           </div>
         )}
 
         {zones && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-3">
+          <div className="bg-surface border border-white/7 rounded-2xl p-3">
             <ZoneBars timeInZone={session.timeInZoneSec} belowZoneSec={0} elapsedSec={session.durationSec} />
           </div>
         )}
@@ -117,7 +117,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-[10px] font-mono uppercase text-ink-2">Etiquetas</p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map(t => (
-              <span key={t} className="flex items-center gap-1 bg-[#181816] border border-white/10 rounded-full px-2.5 py-1 text-[10px] font-mono text-white">
+              <span key={t} className="flex items-center gap-1 bg-surface border border-white/10 rounded-full px-2.5 py-1 text-[10px] font-mono text-white">
                 {t}
                 <button onClick={() => setTags(tags.filter(x => x !== t))} className="text-ink-2 hover:text-white">×</button>
               </span>
@@ -134,7 +134,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-[10px] font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-[#181816] border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
+            className="w-full bg-surface border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>
@@ -150,7 +150,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-2.5 text-center">
+    <div className="bg-surface border border-white/7 rounded-xl p-2.5 text-center">
       <p className="text-[8px] font-mono uppercase text-ink-2">{label}</p>
       <p className="text-sm font-sans font-bold text-white mt-0.5">{value}</p>
     </div>

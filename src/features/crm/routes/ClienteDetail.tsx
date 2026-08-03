@@ -73,7 +73,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         Clientes
       </button>
 
-      <header className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 flex flex-wrap items-start justify-between gap-3">
+      <header className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-sans font-black text-xl text-[#f5f5f0] truncate">{cliente.nombre}</h1>

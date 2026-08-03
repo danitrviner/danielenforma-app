@@ -22,7 +22,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 
 function SectionShell({ section, children }: { section: CoachReportSection; children: React.ReactNode }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
       <p className="font-sans font-bold text-sm text-white">{section.title}</p>
       {children}
       {section.coachNote && (

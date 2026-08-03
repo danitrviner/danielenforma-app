@@ -220,7 +220,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       {showNutritionModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
-          <div className="bg-[#181816] border border-white/15 rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface border border-white/15 rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
             <p className="font-sans font-bold text-white text-sm">Ya existe una periodización nutricional</p>
             <p className="text-xs text-ink-2 font-mono leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
@@ -254,7 +254,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       {sorted.map((phase, idx) => {
         const progress = computePhaseProgress(phase, phaseData);
         return (
-          <div key={phase.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
+          <div key={phase.id} className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 flex-shrink-0 pt-1">
                 <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded bg-[#2a2a2a] text-white text-xs disabled:opacity-30">↑</button>

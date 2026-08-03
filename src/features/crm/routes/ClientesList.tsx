@@ -198,7 +198,7 @@ export default function ClientesList() {
         </div>
       </div>
 
-      <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={filas}

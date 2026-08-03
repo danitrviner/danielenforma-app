@@ -107,7 +107,7 @@ export default function PhotosScreen({ profile }: Props) {
       />
 
       {/* View selector */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-fit">
+      <div className="flex bg-surface border border-white/7 p-1 rounded-2xl gap-1 w-fit">
         {(['front', 'side', 'back'] as PhotoView[]).map(v => (
           <button
             key={v}

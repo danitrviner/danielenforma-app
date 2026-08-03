@@ -118,7 +118,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Section A: Visual Summary Weight & Core Chart */}
-        <section className="lg:col-span-8 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
+        <section className="lg:col-span-8 bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_-12px_rgba(251,203,26,0.3)]">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="flex flex-col">
               <span className="font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-1">ACTUAL</span>
@@ -226,7 +226,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section B: New Check-in Form */}
-        <section className="lg:col-span-4 bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-accent">edit_note</span>
@@ -310,7 +310,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Section C: Gamification, Streak & Iron Calendar */}
-        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
+        <section className="bg-surface border border-white/7 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
           
           <div>
@@ -379,7 +379,7 @@ export default function MetricsScreen({ profile, checkins, onCheckInAdded, onRef
         </section>
 
         {/* Section D: Historial weight & coach directives logs */}
-        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
+        <section className="bg-surface border border-white/7 rounded-3xl p-5 flex flex-col justify-between">
           <div>
             <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#00eefc]">history</span>

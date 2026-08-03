@@ -38,7 +38,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
   const focus = trainingFocus(recentZoneTotals);
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
+    <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
       <h3 className="text-[10px] font-mono uppercase text-[#00eefc] tracking-wider">Carga de entrenamiento</h3>
 
       <div>

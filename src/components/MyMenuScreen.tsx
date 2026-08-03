@@ -296,7 +296,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
   if (!menu) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-8 text-center space-y-2">
+      <div className="bg-surface border border-white/7 rounded-2xl p-8 text-center space-y-2">
         <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block">restaurant_menu</span>
         <p className="font-sans font-bold text-sm text-white">Todavía no tienes un menú semanal</p>
         <p className="font-mono text-xs text-ink-2">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
@@ -317,7 +317,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-[#181816] border-white/7 text-ink-2 hover:border-white/20'}`}
+              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-white/7 text-ink-2 hover:border-white/20'}`}
             >
               <span className="font-mono text-[10px] font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
               {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-accent'}`} />}
@@ -352,7 +352,7 @@ export default function MyMenuScreen({ profile }: Props) {
       )}
 
       {/* Shopping list — available for any menu */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
         <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
             <span className="material-symbols-outlined text-[#00eefc] text-base">shopping_cart</span>
@@ -387,7 +387,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-6 text-center">
+        <div className="bg-surface border border-white/7 rounded-2xl p-6 text-center">
           <p className="font-mono text-xs text-ink-2">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
         </div>
       ) : (
@@ -395,7 +395,7 @@ export default function MyMenuScreen({ profile }: Props) {
           {day.meals.map(meal => {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
-              <div key={meal.id} className={`bg-[#181816] border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
+              <div key={meal.id} className={`bg-surface border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
                 <button
                   onClick={() => toggleDone(meal.id)}
                   className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-[#3a3a3a] hover:border-ink-2'}`}
@@ -466,7 +466,7 @@ export default function MyMenuScreen({ profile }: Props) {
       )}
 
       {/* Dish-type preferences (tri-state) */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
         <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
             <span className="material-symbols-outlined text-accent text-base">tune</span>
@@ -505,7 +505,7 @@ export default function MyMenuScreen({ profile }: Props) {
       </div>
 
       {/* Variety preference */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
+      <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-2">
         <p className="font-mono text-[10px] text-ink-2 uppercase">¿Cómo prefieres tu menú?</p>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map(v => (
@@ -547,7 +547,7 @@ export default function MyMenuScreen({ profile }: Props) {
       {/* Swap sheet */}
       {swapFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setSwapFor(null)}>
-          <div onClick={e => e.stopPropagation()} className="bg-[#181816] border border-white/7 rounded-2xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2">
+          <div onClick={e => e.stopPropagation()} className="bg-surface border border-white/7 rounded-2xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-sans font-bold text-sm text-white">Elige una alternativa</h3>
               <button onClick={() => setSwapFor(null)} className="text-ink-2 hover:text-white">
@@ -582,7 +582,7 @@ export default function MyMenuScreen({ profile }: Props) {
       {/* Recipe detail */}
       {detailOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={closeDetail}>
-          <div onClick={e => e.stopPropagation()} className="bg-[#181816] border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
+          <div onClick={e => e.stopPropagation()} className="bg-surface border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
                 <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>

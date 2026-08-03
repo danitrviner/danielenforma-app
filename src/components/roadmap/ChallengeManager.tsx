@@ -151,7 +151,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   return (
     <div className="space-y-5">
       {/* Reto actual */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-4">
         <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
         {current ? (
           <>
@@ -338,7 +338,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
         ) : (
           <div className="space-y-1.5">
             {templates.map(t => (
-              <div key={t.id} className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-lg p-2.5">
+              <div key={t.id} className="flex items-center justify-between bg-surface border border-white/7 rounded-lg p-2.5">
                 <div>
                   <p className="text-xs text-white font-sans font-bold">{t.title}</p>
                   <p className="text-[10px] text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
@@ -358,7 +358,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-2">Historial</p>
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {history.slice(0, 20).map(h => (
-              <div key={h.id} className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-lg p-2.5">
+              <div key={h.id} className="flex items-center justify-between bg-surface border border-white/7 rounded-lg p-2.5">
                 <div className="min-w-0">
                   <p className="text-xs text-white font-sans truncate">{h.title}</p>
                   <p className="text-[10px] text-ink-2 font-mono">{h.isoWeek}</p>

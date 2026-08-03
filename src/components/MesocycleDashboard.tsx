@@ -62,7 +62,7 @@ function EmptyChart({ message }: { message: string }) {
 
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
       <p className="font-sans font-semibold text-white text-sm flex items-center gap-2">
         <span className="material-symbols-outlined text-accent" style={{ fontSize: '16px' }}>{icon}</span>
         {title}

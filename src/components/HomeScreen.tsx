@@ -63,7 +63,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
       {!loadingTraining && weekAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
+        <section className="bg-surface border border-white/7 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
           <h2 className="font-sans font-black uppercase tracking-tight text-lg text-white mb-4">Resumen de hoy</h2>
           <div className="flex items-center gap-5">
             <ProgressRing pct={weekPct} />
@@ -95,7 +95,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           "sin entrenamientos pendientes" justo debajo sería contradecir el
           tono de "tu coach lo está preparando". */}
       {(loadingTraining || assignments.length > 0) && (
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
+      <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5">
         <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
           Entrenamiento
@@ -156,7 +156,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => onNavigate('academy')}
-          className="bg-[#181816] border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          className="bg-surface border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
           <span className="material-symbols-outlined text-accent text-2xl">school</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Academia</span>
@@ -164,7 +164,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         </button>
         <button
           onClick={() => onNavigate('cardio')}
-          className="bg-[#181816] border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
+          className="bg-surface border border-white/7 hover:border-accent/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
           <span className="material-symbols-outlined text-accent text-2xl">favorite</span>
           <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Cardio</span>

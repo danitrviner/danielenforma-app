@@ -363,7 +363,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             onClick={onOpenReviews}
             disabled={!onOpenReviews}
-            className="bg-[#181816] border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-[#00eefc]/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
+            className="bg-surface border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-[#00eefc]/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </button>
 
           {/* Pending notes */}
-          <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl shadow-lg">
+          <div className="bg-surface border border-white/7 p-5 rounded-2xl shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
@@ -429,7 +429,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
+        <div className="bg-surface border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-base pointer-events-none">search</span>
             <input
@@ -596,7 +596,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       </div>
 
       {/* Invite a new client by email */}
-      <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
+      <div className="bg-surface border border-white/7 p-5 rounded-2xl">
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-accent text-xl">person_add</span>
           <h2 className="font-sans font-extrabold text-ink-2 text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>

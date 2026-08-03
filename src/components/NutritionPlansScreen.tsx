@@ -380,7 +380,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       <div className="space-y-5">
         {/* Athlete selector — hidden in embedded mode */}
         {!isEmbedded && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+          <div className="bg-surface border border-white/7 rounded-2xl p-4">
             <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-2">
               Atleta
             </label>
@@ -432,7 +432,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             {diets.map(dt => {
               const dtPlaced = computePlaced(dt.meals);
               return (
-                <div key={dt.id} className="bg-[#181816] border border-white/7 rounded-2xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
+                <div key={dt.id} className="bg-surface border border-white/7 rounded-2xl p-5 hover:border-[#3a3a3a] transition-colors flex flex-col gap-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-sans font-bold text-white text-lg leading-tight">{dt.name}</h3>
@@ -559,7 +559,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       </div>
 
       {/* Metadata */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <h3 className="font-mono text-xs text-ink-2 uppercase tracking-wider">Datos generales</h3>
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Nombre *</label>
@@ -632,7 +632,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       )}
 
       {/* Budget */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-mono text-xs text-ink-2 uppercase tracking-wider">
             Presupuesto diario (intercambios por categoría)
@@ -699,7 +699,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         </div>
 
         {form.meals.map((meal, mi) => (
-          <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+          <div key={meal.id} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-[#1c1b1b]/60 border-b border-white/7">
               <span className="w-6 h-6 rounded-full bg-accent text-black font-sans text-xs font-bold flex items-center justify-center flex-shrink-0">
@@ -824,7 +824,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e1e] pt-3">
             <div className="space-y-2">
               {form.meals.map((meal, mi) => (
-                <div key={meal.id} className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3">
+                <div key={meal.id} className="bg-surface border border-white/7 rounded-2xl px-4 py-3">
                   <p className="font-sans font-bold text-white text-sm mb-1.5">{meal.name || `Comida ${mi + 1}`}</p>
                   {meal.items.length === 0 ? (
                     <p className="font-mono text-[10px] text-[#444] italic">Sin alimentos</p>
@@ -892,7 +892,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               </div>
             )}
 
-            <div className="p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap">
+            <div className="p-3 bg-surface border-b border-white/7 flex gap-1.5 flex-wrap">
               {CATS.map(cat => (
                 <button key={cat} onClick={() => setPickerCategory(cat)}
                   className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat ? 'bg-accent text-black shadow-md' : 'bg-[#201f1f] text-ink-2 border border-transparent hover:border-white/7'}`}
@@ -900,7 +900,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               ))}
             </div>
 
-            <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
+            <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-white/7">
               <span className="material-symbols-outlined text-ink-2 text-sm select-none">search</span>
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -913,7 +913,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 <div className="text-center py-10 font-mono text-xs text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
+                  className="w-full flex items-center justify-between p-3.5 bg-surface hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-accent/40 text-left transition-all group"
                 >
                   <span className="block font-sans text-xs text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-base flex-shrink-0 ml-3">add_circle</span>

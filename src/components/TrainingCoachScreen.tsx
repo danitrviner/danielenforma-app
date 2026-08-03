@@ -35,7 +35,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
 
       {/* Sub-tab switcher */}
       <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-0.5">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
+        <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit min-w-full sm:min-w-0">
           {tabs.map(tab => (
             <button
               key={tab.id}

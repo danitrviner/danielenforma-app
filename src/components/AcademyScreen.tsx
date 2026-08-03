@@ -160,7 +160,7 @@ export default function AcademyScreen({ profile }: Props) {
                 key={l.id}
                 onClick={() => unlocked && setOpenLessonId(l.id)}
                 disabled={!unlocked}
-                className={`w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
+                className={`w-full flex items-center gap-3 bg-surface border border-white/7 rounded-xl p-3 text-left transition-colors ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
               >
                 <span className={`material-symbols-outlined ${done ? 'text-accent' : 'text-ink-2'}`}>
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
@@ -206,7 +206,7 @@ export default function AcademyScreen({ profile }: Props) {
                   key={c.id}
                   onClick={() => unlocked && setOpenCourseId(c.id)}
                   disabled={!unlocked}
-                  className={`text-left bg-[#181816] border border-white/7 rounded-2xl p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
+                  className={`text-left bg-surface border border-white/7 rounded-2xl p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-sans font-bold text-sm text-white">{c.title}</p>

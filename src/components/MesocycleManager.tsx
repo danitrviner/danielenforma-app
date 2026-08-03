@@ -256,7 +256,7 @@ const DayCard: React.FC<{
   const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[200px] max-w-[260px]">
+    <div className="bg-surface border border-white/7 rounded-2xl p-4 flex-1 min-w-[200px] max-w-[260px]">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
         <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Día {dayNumber}</span>
         {over && <span className="material-symbols-outlined text-sm text-orange-400" title=">12 series">warning</span>}
@@ -369,7 +369,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map(group => (
-          <div key={group.name} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+          <div key={group.name} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 bg-[#0e0e0e] border-b border-white/7">
               <p className="font-sans font-bold text-sm text-white">{group.name}</p>
               <span className="font-mono text-[10px] text-ink-2">
@@ -556,7 +556,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
         </table>
       </div>
 
-      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex items-center justify-between">
+      <div className="bg-surface border border-white/7 rounded-2xl px-4 py-3 flex items-center justify-between">
         <span className="font-mono text-xs text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
         <span className="font-mono font-black text-xl text-white">{currentTotal}</span>
       </div>
@@ -1190,7 +1190,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 className={`w-full text-left p-3 rounded-xl border transition-all ${
                   editing?.id === m.id
                     ? 'border-accent/60 bg-accent/5'
-                    : 'border-white/7 bg-[#181816] hover:border-[#3a3a3a]'
+                    : 'border-white/7 bg-surface hover:border-[#3a3a3a]'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1215,7 +1215,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <div className="flex-1 min-w-0 space-y-4">
 
               {/* Mesocycle header */}
-              <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+              <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-white text-base">Mesociclo #{editing.number}</h2>
                   <span className={`font-mono text-xs uppercase tracking-wider transition-colors ${
@@ -1277,7 +1277,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
               {/* Tab bar */}
               <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-                <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
+                <div className="flex bg-surface border border-white/7 p-1 rounded-2xl gap-1 min-w-max">
                   {([
                     { id: 'progression',  label: 'Progresión y volumen', icon: 'trending_up' },
                     { id: 'distribution', label: 'Distribución',        icon: 'grid_view'   },
@@ -1376,7 +1376,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             ))}
                           </div>
 
-                          <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+                          <div className="bg-surface border border-white/7 rounded-2xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div>
                                 <span className="font-mono text-[10px] text-ink-2 uppercase block">Series totales</span>
@@ -1463,7 +1463,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                       <div className="flex flex-wrap gap-3">
                         {previewDays.map((pd, dayIdx) => (
-                          <div key={dayIdx} className="bg-[#181816] border border-white/7 rounded-2xl p-4 flex-1 min-w-[260px]">
+                          <div key={dayIdx} className="bg-surface border border-white/7 rounded-2xl p-4 flex-1 min-w-[260px]">
                             {/* Day header */}
                             <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
                               <span className="font-mono text-xs font-bold text-accent uppercase">Día {dayIdx + 1}</span>
@@ -1684,7 +1684,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
                 return (
                   <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} disabled={applyingTemplate}
-                    className="w-full text-left p-4 bg-[#181816] border border-white/7 rounded-2xl hover:border-accent/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
+                    className="w-full text-left p-4 bg-surface border border-white/7 rounded-2xl hover:border-accent/40 hover:bg-[#1a1c12] transition-all disabled:opacity-50 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-white text-sm group-hover:text-accent transition-colors">{tpl.name}</p>

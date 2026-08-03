@@ -523,13 +523,13 @@ export default function CardioScreen({ profile }: Props) {
       </header>
 
       {!cardioProfile && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 text-center">
+        <div className="bg-surface border border-white/7 rounded-2xl p-4 text-center">
           <p className="text-xs text-ink-2 font-mono">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
         </div>
       )}
 
       {cardioProfile && (
-        <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
+        <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap gap-2">
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-xl p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
@@ -630,7 +630,7 @@ export default function CardioScreen({ profile }: Props) {
 
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}
-                className="w-full flex items-center gap-3 bg-[#181816] border border-white/7 rounded-xl p-3 text-left hover:border-white/20 transition-colors">
+                className="w-full flex items-center gap-3 bg-surface border border-white/7 rounded-xl p-3 text-left hover:border-white/20 transition-colors">
                 <span className="material-symbols-outlined text-[#00eefc]">favorite</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white">

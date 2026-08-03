@@ -86,7 +86,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
       onClick={() => setOpen(false)}
     >
       <div
-        className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+        className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">

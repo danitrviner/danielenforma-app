@@ -348,7 +348,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
   if (logs.length === 0) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
           Historial de carga
@@ -362,7 +362,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
+    <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-5">
       <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
         <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
         Historial de carga

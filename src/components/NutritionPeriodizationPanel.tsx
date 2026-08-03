@@ -348,7 +348,7 @@ export default function NutritionPeriodizationPanel({
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5">
         <Skeleton className="h-32 w-full" />
       </div>
     );
@@ -364,7 +364,7 @@ export default function NutritionPeriodizationPanel({
   if (form === null) {
     if (program === null) {
       return (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
@@ -406,7 +406,7 @@ export default function NutritionPeriodizationPanel({
   };
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
+    <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
@@ -574,7 +574,7 @@ export default function NutritionPeriodizationPanel({
 
               {/* Resolved energy balance */}
               {resolved.kcal != null && maintenanceKcal != null && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-ink-2 bg-[#181816] rounded-lg px-3 py-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-ink-2 bg-surface rounded-lg px-3 py-2">
                   <span>Mantenimiento: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
                   <span>+ Pasos: <b className="text-white">{fmtKcal(stepsKcal)}</b></span>
                   <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>

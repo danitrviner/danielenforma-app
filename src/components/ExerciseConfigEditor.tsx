@@ -136,7 +136,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     value={g.label || ''}
                     onChange={e => updateGroup(gIdx, 'label', e.target.value)}
                     placeholder="Top set, Back-off..."
-                    className="w-full bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-surface border border-white/7 rounded-md px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -145,7 +145,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={1} max={20}
                     value={g.sets}
                     onChange={e => updateGroup(gIdx, 'sets', parseInt(e.target.value) || 1)}
-                    className="w-16 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-16 bg-surface border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -154,7 +154,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="text"
                     value={g.reps}
                     onChange={e => updateGroup(gIdx, 'reps', e.target.value)}
-                    className="w-20 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-20 bg-surface border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
@@ -163,7 +163,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                     type="number" min={0} max={5}
                     value={g.rir}
                     onChange={e => updateGroup(gIdx, 'rir', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-14 bg-surface border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <button

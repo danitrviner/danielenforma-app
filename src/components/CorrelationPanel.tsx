@@ -285,7 +285,7 @@ export default function CorrelationPanel({
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
+      <div className="bg-surface border border-white/7 rounded-2xl overflow-hidden sm:bg-transparent sm:border-0 sm:rounded-none sm:overflow-visible">
         {/* Mobile accordion header */}
         <button
           className="sm:hidden w-full flex items-center justify-between px-4 py-3 min-h-[44px]"
@@ -337,7 +337,7 @@ export default function CorrelationPanel({
       ) : (
         <>
           {/* Chart */}
-          <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
+          <div className="bg-surface border border-white/7 rounded-3xl p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
               <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
                 {multiNorm
@@ -401,7 +401,7 @@ export default function CorrelationPanel({
 
           {/* Pearson result */}
           {correlationResult && (
-            <div className={`bg-[#181816] border rounded-3xl p-5 space-y-2 ${
+            <div className={`bg-surface border rounded-3xl p-5 space-y-2 ${
               correlationResult.r === null
                 ? 'border-white/7'
                 : Math.abs(correlationResult.r) > 0.7

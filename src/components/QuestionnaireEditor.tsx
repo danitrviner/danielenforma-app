@@ -106,7 +106,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       </div>
 
       {/* Title + description */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-white/7 rounded-2xl p-5 space-y-4">
         <div>
           <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Título *</label>
           <input
@@ -142,7 +142,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         </div>
 
         {form.questions.map((q, idx) => (
-          <div key={q.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
+          <div key={q.id} className="bg-surface border border-white/7 rounded-2xl p-4 space-y-3">
 
             {/* Main row */}
             <div className="flex items-start gap-2">

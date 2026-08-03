@@ -66,7 +66,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
   const done = notes.filter(n => n.done);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+    <div className="bg-surface border border-white/7 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-base">edit_note</span>

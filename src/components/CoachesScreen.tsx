@@ -545,7 +545,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
+      <div className="flex bg-surface border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
         {([
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
@@ -595,7 +595,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-[#181816] border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-white/7'}`}>
+                  className={`bg-surface border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-white/7'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
                     className="w-10 h-10 rounded-full object-cover border border-white/7 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -628,7 +628,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             })}
           </div>
         )}
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-1">
+        <div className="bg-surface border border-white/7 rounded-2xl p-4 space-y-1">
           <p className="font-mono text-xs text-ink-2">
             <span className="text-accent font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}

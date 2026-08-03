@@ -68,7 +68,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
-          : 'bg-[#181816] border-white/10 text-ink-2 hover:border-white/30'
+          : 'bg-surface border-white/10 text-ink-2 hover:border-white/30'
       }`}
     >
       {children}
@@ -207,7 +207,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
                 <video src="..." controls poster="..." className="rounded-2xl w-full" /> */}
-            <div className="bg-[#181816] border border-white/10 rounded-2xl p-5 space-y-3">
+            <div className="bg-surface border border-white/10 rounded-2xl p-5 space-y-3">
               {[
                 { icon: 'person', text: 'Cuéntanos sobre ti y tu objetivo' },
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
@@ -379,7 +379,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
         {step === 6 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
-            <div className="bg-[#181816] border border-accent/25 rounded-2xl p-5 space-y-2.5">
+            <div className="bg-surface border border-accent/25 rounded-2xl p-5 space-y-2.5">
               {[
                 goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },
