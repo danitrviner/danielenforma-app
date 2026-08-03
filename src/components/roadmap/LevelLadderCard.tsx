@@ -30,7 +30,7 @@ export default function LevelLadderCard({ status }: Props) {
         <div>
           <p className="font-sans font-bold text-title-m text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>
           {nextLevel && (
-            <p className="text-ink-2 text-label font-mono">Siguiente: {nextLevel.name}</p>
+            <p className="text-ink-2 text-label font-sans">Siguiente: {nextLevel.name}</p>
           )}
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function LevelLadderCard({ status }: Props) {
                 {c.done ? 'check_circle' : 'radio_button_unchecked'}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`text-label font-mono ${c.done ? 'text-success' : 'text-ink-2'}`}>
+                <p className={`text-label font-sans ${c.done ? 'text-success' : 'text-ink-2'}`}>
                   {c.criterion.label}
                 </p>
                 {c.criterion.kind !== 'manual' && (

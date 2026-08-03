@@ -199,7 +199,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
             <span className="material-symbols-outlined text-title-s">close</span>
           </button>
         </div>
-        {error && <p className="text-label text-red-400 font-mono">{error}</p>}
+        {error && <p className="text-label text-red-400 font-sans">{error}</p>}
         {!monitorRef.current ? (
           <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Conectar banda y empezar</button>
         ) : (

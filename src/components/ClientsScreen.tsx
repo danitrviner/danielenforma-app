@@ -564,7 +564,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <strong className="text-data">Lvl {athlete.level || 1}</strong>
                       </div>
                       {/* Adherence score */}
-                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-surface border font-mono ${adh.bg}`}>
+                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-surface border font-sans ${adh.bg}`}>
                         <span className={`text-caption uppercase font-bold flex items-center gap-1 ${adh.text}`}>
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
@@ -619,7 +619,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             {inviting ? 'Enviando...' : 'Invitar'}
           </button>
         </form>
-        {inviteError && <p className="font-mono text-caption text-red-400 mt-1.5">{inviteError}</p>}
+        {inviteError && <p className="font-sans text-caption text-red-400 mt-1.5">{inviteError}</p>}
         {inviteSuccess && <p className="font-mono text-caption text-accent mt-1.5">{inviteSuccess}</p>}
 
         {pendingInvites.length > 0 && (

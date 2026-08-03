@@ -109,7 +109,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   if (!point) return null;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 shadow-xl">
-      <p className="font-mono text-caption text-ink-2 mb-1.5">{point.label}</p>
+      <p className="font-sans text-caption text-ink-2 mb-1.5">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
@@ -376,7 +376,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               <button
                 key={m}
                 onClick={() => toggleMetric(m)}
-                className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
+                className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
@@ -469,7 +469,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={b.id}
                   onClick={() => toggleBucket(b.id)}
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
-                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-mono text-caption font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
                     included
                       ? 'bg-data/10 border-data/40 text-data'
                       : 'bg-transparent border-hairline text-ink-3 opacity-50'
@@ -584,7 +584,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center justify-between gap-2">
-              <span className="font-mono text-caption text-ink-2 flex-shrink-0">{row.label}</span>
+              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
                 <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
                 <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
@@ -615,7 +615,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-2.5 font-mono text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-2.5 font-sans text-caption text-ink-2">{row.label}</td>
                   <td className="px-3 py-2.5 font-mono text-caption text-white font-bold">{row.sets}</td>
                   <td className="px-3 py-2.5 font-mono text-caption text-white">{row.reps}</td>
                   <td className="px-3 py-2.5 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>

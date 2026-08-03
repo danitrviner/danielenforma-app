@@ -50,7 +50,7 @@ export default function ScheduleFields({
                 <button
                   key={label}
                   onClick={() => onWeekdaysChange(active ? weekdays.filter(d => d !== dayNum) : [...weekdays, dayNum])}
-                  className={`w-9 h-9 rounded-control font-mono text-label font-bold border transition-all ${
+                  className={`w-9 h-9 rounded-control font-sans text-label font-bold border transition-all ${
                     active
                       ? 'bg-accent border-accent text-black'
                       : 'bg-raised border-hairline text-ink-2 hover:border-hairline'

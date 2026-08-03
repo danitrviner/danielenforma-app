@@ -246,7 +246,7 @@ export default function MyDietsScreen({ profile }: Props) {
           <div className="grid grid-cols-3 gap-3">
             {BUDGET_CATS.map(cat => (
               <div key={cat}>
-                <label className="block font-mono text-caption text-ink-2 mb-1">{CAT_LABEL[cat]}</label>
+                <label className="block font-sans text-caption text-ink-2 mb-1">{CAT_LABEL[cat]}</label>
                 {form.selfManaged ? (
                   <input
                     type="number"
@@ -317,7 +317,7 @@ export default function MyDietsScreen({ profile }: Props) {
           ))}
           <button
             onClick={addMeal}
-            className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-mono text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+            className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
           >+ Añadir comida</button>
         </div>
 

@@ -151,7 +151,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-2.5 text-center">
-      <p className="text-caption font-mono uppercase text-ink-2">{label}</p>
+      <p className="text-caption font-sans uppercase text-ink-2">{label}</p>
       <p className="text-body-s font-sans font-bold text-white mt-0.5">{value}</p>
     </div>
   );

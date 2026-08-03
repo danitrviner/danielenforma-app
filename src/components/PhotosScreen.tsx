@@ -153,7 +153,7 @@ export default function PhotosScreen({ profile }: Props) {
           onChange={handleFileChange}
         />
         {uploadError && (
-          <p className="w-full font-mono text-label text-red-400">{uploadError}</p>
+          <p className="w-full font-sans text-label text-red-400">{uploadError}</p>
         )}
       </div>
 

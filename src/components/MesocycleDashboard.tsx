@@ -53,7 +53,7 @@ const AXIS_TICK = { fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monosp
 function EmptyChart({ message }: { message: string }) {
   return (
     <div className="h-36 flex items-center justify-center border border-dashed border-hairline rounded-surface">
-      <p className="font-mono text-label text-ink-2">{message}</p>
+      <p className="font-sans text-label text-ink-2">{message}</p>
     </div>
   );
 }
@@ -225,7 +225,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       if (next.has(g)) next.delete(g); else next.add(g);
                       return next;
                     })}
-                    className={`px-2 py-0.5 rounded-control font-mono text-caption uppercase font-bold border transition-all ${
+                    className={`px-2 py-0.5 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
                       hidden
                         ? 'bg-transparent border-hairline text-ink-3'
                         : 'border-transparent text-black'

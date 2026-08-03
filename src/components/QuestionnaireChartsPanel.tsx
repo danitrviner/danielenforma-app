@@ -201,7 +201,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
             <button
               key={label}
               onClick={() => setWeekly(i === 1)}
-              className={`px-3 min-h-[44px] rounded-control font-mono text-caption uppercase font-bold transition-all ${
+              className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
                 weekly === (i === 1)
                   ? 'bg-accent text-black shadow'
                   : 'text-ink-2 hover:text-white'
@@ -215,7 +215,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {graphable.map(({ question, qTitle }) => (
           <div key={question.id}>
-            <p className="font-mono text-caption text-ink-2/60 uppercase tracking-wider mb-1.5 px-1">
+            <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-1.5 px-1">
               {qTitle}
             </p>
             <QuestionChart question={question} responses={responses} weekly={weekly} />

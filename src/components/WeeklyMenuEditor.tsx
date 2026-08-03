@@ -304,7 +304,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 return (
                   <div key={day} className="text-center">
                     <span className="block font-mono text-caption text-ink-2 uppercase">{WEEK_DAY_FULL[day].slice(0, 3)}</span>
-                    <span className={`block font-mono text-caption mt-1 ${diet ? 'text-accent' : 'text-ink-3'}`}>
+                    <span className={`block font-sans text-caption mt-1 ${diet ? 'text-accent' : 'text-ink-3'}`}>
                       {diet ? diet.name : 'Libre'}
                     </span>
                   </div>
@@ -331,7 +331,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <div className="space-y-2">
             {slots.map((sl, i) => (
               <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface px-4 py-3">
-                <span className="font-mono text-label text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
+                <span className="font-sans text-label text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
                 <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
                   <div className="h-full bg-accent/50 rounded-full transition-all" style={{ width: `${Math.min(sl.pct, 100)}%` }} />
                 </div>
@@ -426,7 +426,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             <span className="material-symbols-outlined text-title-s">auto_awesome</span>
             Generar menú
           </button>
-          <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-body-s rounded-control transition-all">
+          <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-body-s rounded-control transition-all">
             Cancelar
           </button>
         </div>
@@ -532,7 +532,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                   <span className="font-sans font-bold text-body-s text-white">{WEEK_DAY_FULL[day.day]}</span>
                   <span className="font-mono text-caption text-ink-3">{day.dietName ?? 'Libre'}</span>
                 </div>
-                <span className={`text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border ${badge.cls}`}>{badge.label}</span>
+                <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border ${badge.cls}`}>{badge.label}</span>
               </button>
 
               {expanded && (
@@ -560,7 +560,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-caption text-ink-3 uppercase">{meal.name}</span>
+                                <span className="font-sans text-caption text-ink-3 uppercase">{meal.name}</span>
                                 {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
                               </div>
                               <p className="font-sans font-bold text-body-s text-white leading-tight truncate">{meal.recipeName}</p>
@@ -641,12 +641,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
         <button
           onClick={handleSaveDraft}
           disabled={saving}
-          className="flex-1 py-3 bg-raised border border-hairline text-ink-2 hover:text-white font-mono text-body-s uppercase rounded-control transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-raised border border-hairline text-ink-2 hover:text-white font-sans text-body-s uppercase rounded-control transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-title-s">save</span>
           Guardar borrador
         </button>
-        <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-body-s rounded-control transition-all">
+        <button onClick={onCancel} className="px-5 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-body-s rounded-control transition-all">
           Cancelar
         </button>
       </div>

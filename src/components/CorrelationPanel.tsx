@@ -415,7 +415,7 @@ export default function CorrelationPanel({
                 <p className="font-sans font-bold text-body-s text-white">Correlación de Pearson</p>
               </div>
               {correlationResult.r === null ? (
-                <p className="font-mono text-label text-ink-2">{correlationResult.label}</p>
+                <p className="font-sans text-label text-ink-2">{correlationResult.label}</p>
               ) : (
                 <>
                   <div className="flex items-baseline gap-3">
@@ -428,7 +428,7 @@ export default function CorrelationPanel({
                     }}>
                       r = {correlationResult.r.toFixed(2)}
                     </span>
-                    <span className="font-mono text-label text-ink-2">{correlationResult.label}</span>
+                    <span className="font-sans text-label text-ink-2">{correlationResult.label}</span>
                   </div>
                   <p className="font-mono text-caption text-ink-3">Correlación ≠ causalidad</p>
                 </>

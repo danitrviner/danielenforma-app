@@ -415,7 +415,7 @@ export default function MyMenuScreen({ profile }: Props) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-caption text-ink-3 uppercase">{meal.name}</span>
+                    <span className="font-sans text-caption text-ink-3 uppercase">{meal.name}</span>
                     {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
                   </div>
                   <p className={`font-sans font-bold text-body-s leading-tight ${done ? 'text-ink-2 line-through' : 'text-white'}`}>{meal.recipeName}</p>

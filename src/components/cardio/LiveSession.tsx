@@ -70,7 +70,7 @@ export default function LiveSession({
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <div className="text-center pt-2">
           <p className="font-sans font-bold text-7xl text-white tabular-nums leading-none drop-shadow-sm">{bpm ?? '--'}</p>
-          <p className="text-label font-mono uppercase text-white/90 mt-1.5 tracking-wider">{zoneLabel}</p>
+          <p className="text-label font-sans uppercase text-white/90 mt-1.5 tracking-wider">{zoneLabel}</p>
         </div>
 
         {intervalBlocks && currentBlockIndex !== undefined && (
@@ -80,7 +80,7 @@ export default function LiveSession({
             </p>
             <p className="font-sans font-extrabold text-display text-white tabular-nums">{fmtClock(blockRemainingSec ?? 0)}</p>
             {intervalBlocks[currentBlockIndex + 1] && (
-              <p className="text-caption font-mono text-white/60">Siguiente: {intervalBlocks[currentBlockIndex + 1].label}</p>
+              <p className="text-caption font-sans text-white/60">Siguiente: {intervalBlocks[currentBlockIndex + 1].label}</p>
             )}
           </div>
         )}

@@ -427,7 +427,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
       <button
         onClick={addPhase}
-        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-label transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-sans text-label transition-colors"
       >
         + Añadir fase
       </button>

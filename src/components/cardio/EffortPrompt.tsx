@@ -29,7 +29,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
           onChange={e => setPe(Number(e.target.value))}
           className="w-full accent-accent"
         />
-        <div className="flex justify-between text-caption font-mono text-ink-2 px-1">
+        <div className="flex justify-between text-caption font-sans text-ink-2 px-1">
           <span>{PE_LABELS[0]}</span>
           <span>{PE_LABELS[9]}</span>
         </div>

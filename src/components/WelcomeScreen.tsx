@@ -272,7 +272,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-mono rounded-control border border-hairline active:scale-95 transition-all text-body-s flex items-center justify-center gap-3"
+          className="w-full h-[48px] bg-raised hover:bg-raised text-white font-sans rounded-control border border-hairline active:scale-95 transition-all text-body-s flex items-center justify-center gap-3"
         >
           <img 
             src="https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/google_g_color_28dp.png" 

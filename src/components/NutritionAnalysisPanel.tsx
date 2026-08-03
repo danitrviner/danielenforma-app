@@ -146,7 +146,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
     return <div className="text-center py-10 font-mono text-body-s text-ink-2 animate-pulse">Analizando…</div>;
   }
   if (!report) {
-    return <div className="text-center py-10 font-mono text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
+    return <div className="text-center py-10 font-sans text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
   }
 
   return (
@@ -183,7 +183,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
               <div key={m.category}>
-                <span className="block font-mono text-caption text-ink-2">{m.category}</span>
+                <span className="block font-sans text-caption text-ink-2">{m.category}</span>
                 <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
@@ -217,7 +217,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           {micros.perMicro.map(m => (
             <div key={m.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-caption text-ink-2">
+                <span className="font-sans text-caption text-ink-2">
                   {m.label}
                   {m.status === 'low' && <span className="ml-1.5 text-red-400">déficit</span>}
                   {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
@@ -264,7 +264,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
           <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-mono text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
@@ -279,7 +279,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
-      <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
+      <span className="block font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-title-m text-white mt-1">{value}</span>
       <span className="block font-mono text-caption text-ink-2 mt-0.5">{sub}</span>
     </div>

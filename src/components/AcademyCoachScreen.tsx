@@ -264,7 +264,7 @@ function LessonsTab() {
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-bold text-body-s text-white truncate">{l.title}</p>
-                <p className="text-caption text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
+                <p className="text-caption text-ink-2 font-sans">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
               <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
                 <span className="material-symbols-outlined text-title-s">delete</span>
@@ -322,7 +322,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-title-s text-white">Acceso por atleta</h2>
         {selected.size > 0 && (
-          <button onClick={grantSelected} className="text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
+          <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent hover:text-accent-press">
             Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
           </button>
         )}

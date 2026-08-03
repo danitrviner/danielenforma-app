@@ -167,7 +167,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
+            className="px-3 py-1.5 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
@@ -206,7 +206,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase border transition-all ${
+                            className={`px-2.5 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
                               q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
@@ -268,7 +268,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-caption font-mono uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
+                      <span className={`text-caption font-sans uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
@@ -444,7 +444,7 @@ function IndyaImportPanel() {
       {status === 'idle' && (
         <button
           onClick={startImport}
-          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-mono text-label uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
+          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-sans text-label uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-body-s">upload</span>
           Importar / Reimportar
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-caption uppercase rounded-control transition-all"
+            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-sans text-caption uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -488,12 +488,12 @@ function IndyaImportPanel() {
 
       {status === 'error' && (
         <div className="space-y-3">
-          <p className="font-mono text-caption text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
+          <p className="font-sans text-caption text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
             {error}
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-caption uppercase rounded-control transition-all"
+            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-all"
           >
             Reintentar
           </button>

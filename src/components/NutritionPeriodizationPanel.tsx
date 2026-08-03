@@ -121,7 +121,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-label font-bold font-sans truncate">{phase.name}</p>
-                {diet && <p className="text-caption font-mono opacity-75 truncate">{diet.name}</p>}
+                {diet && <p className="text-caption font-sans opacity-75 truncate">{diet.name}</p>}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                 <span className="text-caption font-mono opacity-75">{fmtDate(startDate)}–{fmtDate(endDate)}</span>
@@ -376,7 +376,7 @@ export default function NutritionPeriodizationPanel({
             <p className="text-ink-2 text-label font-sans text-center">Sin periodización nutricional.</p>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
             >
               <span className="material-symbols-outlined text-body-s text-accent">add</span>
               Crear periodización
@@ -418,13 +418,13 @@ export default function NutritionPeriodizationPanel({
             <button
               onClick={handleDelete}
               disabled={saving}
-              className="text-caption font-mono font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider disabled:opacity-50"
+              className="text-caption font-sans font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider disabled:opacity-50"
             >Eliminar</button>
           )}
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="text-caption font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
+            className="text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
           >Cancelar</button>
           <button
             onClick={handleSave}
@@ -594,7 +594,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-mono rounded-control transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-sans rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-body-s">add</span>
           Añadir fase

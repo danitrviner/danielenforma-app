@@ -126,7 +126,7 @@ const ExerciseRow: React.FC<{
   return (
     <div className="flex items-center gap-2 py-1.5 border-b border-hairline last:border-0 group">
       {/* Name */}
-      <span className="font-mono text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
+      <span className="font-sans text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
       <div className="flex items-center gap-0.5">
         <span className="font-mono text-caption text-ink-3">sets</span>
@@ -298,7 +298,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              className="px-3 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -629,7 +629,7 @@ function TemplateEditor({
               placeholder="Ej: Powerbuilding 12 semanas"
               className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-body-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
-            {nameError && <p className="text-red-400 font-mono text-caption mt-1">{nameError}</p>}
+            {nameError && <p className="text-red-400 font-sans text-caption mt-1">{nameError}</p>}
           </div>
           <div>
             <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
@@ -654,7 +654,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir mesociclo
@@ -686,7 +686,7 @@ function TemplateEditor({
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-mono text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
+            className="px-4 py-2.5 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider rounded-control hover:text-white transition-all"
           >
             Cancelar
           </button>
@@ -738,7 +738,7 @@ function TemplateCard({
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>
           {tpl.description && (
-            <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{tpl.description}</p>
+            <p className="font-sans text-caption text-ink-2 mt-0.5 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-mono text-caption px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-sans text-caption px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -940,7 +940,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-hairline rounded-surface p-6 max-w-sm w-full space-y-4">
               <p className="font-sans font-bold text-white text-body-s">¿Eliminar plantilla?</p>
-              <p className="font-mono text-caption text-ink-2">
+              <p className="font-sans text-caption text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
               </p>
               <div className="flex gap-3">

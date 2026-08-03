@@ -858,7 +858,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <div className="flex gap-2 flex-wrap">
           {enabledModes.map(mode => (
             <button key={mode} onClick={() => setActiveDietMode(mode)}
-              className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
+              className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
                 activeDietMode === mode
                   ? 'bg-accent text-black shadow-md'
                   : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
@@ -973,7 +973,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ))}
               <button
                 onClick={handleStartBlank}
-                className="flex items-center gap-1 px-3 py-2.5 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-mono text-label font-bold uppercase tracking-wider transition-all"
+                className="flex items-center gap-1 px-3 py-2.5 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-sans text-label font-bold uppercase tracking-wider transition-all"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>
                 Nuevo
@@ -1014,7 +1014,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <div className="grid grid-cols-3 gap-3">
                   {BUDGET_CATS.map(cat => (
                     <div key={cat}>
-                      <label className={`block font-mono text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
+                      <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
                       {selectedDiet.selfManaged ? (
                         <input
                           type="number"
@@ -1294,7 +1294,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 })}
                 <button
                   onClick={addMeal}
-                  className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-mono text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
+                  className="w-full py-2.5 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
                 >
                   + Añadir comida
                 </button>
@@ -1365,7 +1365,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <button
                       key={cat.id}
                       onClick={() => setRecipeCatFilter(cat.id)}
-                      className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                      className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                         recipeCatFilter === cat.id
                           ? 'bg-accent text-black shadow-md'
                           : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'

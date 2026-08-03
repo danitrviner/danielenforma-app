@@ -401,7 +401,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             <button
               key={k}
               onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-1.5 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
+              className={`px-3 py-1.5 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
                   ? 'bg-raised text-accent border border-accent/40'
                   : 'bg-raised border border-hairline text-ink-2 hover:text-white'
@@ -447,7 +447,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 <button
                   onClick={handleIndyaLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
@@ -568,7 +568,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                           className="w-full text-left px-4 py-2.5 hover:bg-raised transition-colors flex items-center justify-between"
                         >
                           <span className="text-label text-white font-sans truncate pr-2">{item.label}</span>
-                          <span className={`font-mono text-caption font-bold shrink-0 ${CAT_COLORS[item.category].split(' ')[0]}`}>
+                          <span className={`font-sans text-caption font-bold shrink-0 ${CAT_COLORS[item.category].split(' ')[0]}`}>
                             {CAT_LABELS[item.category]}
                           </span>
                         </button>
@@ -589,7 +589,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {form.ingredients.map((ing, idx) => (
                     <li key={idx} className="flex items-center gap-2 px-3 py-2 bg-raised rounded-surface border border-hairline">
                       <span className="text-label text-white font-sans flex-1 truncate">{ing.foodLabel}</span>
-                      <span className={`font-mono text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>{CAT_LABELS[ing.category]}</span>
+                      <span className={`font-sans text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>{CAT_LABELS[ing.category]}</span>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => adjustIngQty(idx, -0.25)} className="w-6 h-6 bg-raised rounded-control text-white text-label hover:bg-raised transition-colors">-</button>
                         <span className="w-8 text-center font-mono text-label text-white select-none">{ing.quantity}</span>
@@ -616,7 +616,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   placeholder="Ej. Sal al gusto"
                   className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                 />
-                <button type="button" onClick={addExtra} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-mono text-label uppercase">Añadir</button>
+                <button type="button" onClick={addExtra} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-sans text-label uppercase">Añadir</button>
               </div>
               {form.extras.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -643,7 +643,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   rows={2}
                   className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
                 />
-                <button type="button" onClick={addStep} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-mono text-label uppercase self-end mb-0">Añadir</button>
+                <button type="button" onClick={addStep} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-sans text-label uppercase self-end mb-0">Añadir</button>
               </div>
               {form.steps.length > 0 && (
                 <ol className="space-y-2">

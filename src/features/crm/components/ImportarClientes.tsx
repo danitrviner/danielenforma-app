@@ -179,7 +179,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
   return (
     <div className="space-y-3">
-      <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
+      <p className="font-sans text-caption uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
 
       <div className="grid grid-cols-3 gap-2">
         <Resumen icono="check_circle" color="var(--color-success)" numero={listasParaImportar} label="listas" />
@@ -213,7 +213,7 @@ function Resumen({ icono, color, numero, label }: { icono: string; color: string
     <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
       <span className="material-symbols-outlined text-title-s" style={{ color }}>{icono}</span>
       <span className="font-sans font-bold text-title-s text-ink tabular-nums">{numero}</span>
-      <span className="font-mono text-caption uppercase tracking-widest text-ink-3">{label}</span>
+      <span className="font-sans text-caption uppercase tracking-widest text-ink-3">{label}</span>
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function ZoneBars({ timeInZone, belowZoneSec, elapsedSec }: Props
         return (
           <div key={row.key} className="flex items-center gap-2 rounded-full px-3 py-1.5"
             style={{ backgroundColor: `${row.color}1a`, border: `1px solid ${row.color}40` }}>
-            <p className="flex-1 min-w-0 text-caption font-mono uppercase truncate" style={{ color: row.color }}>{row.label}</p>
+            <p className="flex-1 min-w-0 text-caption font-sans uppercase truncate" style={{ color: row.color }}>{row.label}</p>
             <p className="text-caption font-mono text-white tabular-nums">{fmt(row.sec)}</p>
             <p className="text-caption font-mono tabular-nums w-9 text-right" style={{ color: row.color }}>{pct}%</p>
           </div>

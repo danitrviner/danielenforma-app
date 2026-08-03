@@ -187,7 +187,7 @@ export default function ClientWorkoutsPanel({
                   )}
                   {log.entries.filter(e => e.note).map(e => (
                     <p key={e.exerciseId} className="text-label text-ink-2">
-                      <span className="font-mono text-caption text-accent">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
+                      <span className="font-sans text-caption text-accent">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
                     </p>
                   ))}
                 </div>

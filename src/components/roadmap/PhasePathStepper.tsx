@@ -58,7 +58,7 @@ export default function PhasePathStepper({ phases }: Props) {
                   )}
                 </p>
                 {(phase.motto || phase.description) && (
-                  <p className="text-ink-2 text-label font-mono mt-0.5 leading-relaxed">
+                  <p className="text-ink-2 text-label font-sans mt-0.5 leading-relaxed">
                     {phase.motto || phase.description}
                   </p>
                 )}

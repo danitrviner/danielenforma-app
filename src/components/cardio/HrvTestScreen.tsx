@@ -119,11 +119,11 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
               <span className="material-symbols-outlined text-data text-display mt-3 block">bedtime</span>
               <p className="text-body-s text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
-            {error && <p className="text-label text-red-400 font-mono">{error}</p>}
+            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
             <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Empezar
             </button>
-            <button onClick={onClose} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
+            <button onClick={onClose} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>
@@ -139,8 +139,8 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
               <span className="material-symbols-outlined text-danger text-title-m">favorite</span>
               <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
-            {error && <p className="text-label text-red-400 font-mono">{error}</p>}
-            <button onClick={cancel} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
+            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
+            <button onClick={cancel} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>

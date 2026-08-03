@@ -115,7 +115,7 @@ export default function AcademyScreen({ profile }: Props) {
         </div>
         <div>
           <h2 className="font-sans font-bold text-title-m text-white">{openLesson.title}</h2>
-          {openLesson.description && <p className="text-label text-ink-2 font-mono mt-1">{openLesson.description}</p>}
+          {openLesson.description && <p className="text-label text-ink-2 font-sans mt-1">{openLesson.description}</p>}
         </div>
         {openLesson.resources && openLesson.resources.length > 0 && (
           <div className="space-y-1.5">
@@ -146,9 +146,9 @@ export default function AcademyScreen({ profile }: Props) {
           <span className="material-symbols-outlined text-title-s">arrow_back</span> Academia
         </button>
         <div>
-          <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
+          <span className="text-caption font-sans uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-bold text-title-l text-white">{openCourse.title}</h2>
-          <p className="text-label text-ink-2 font-mono mt-1">{openCourse.description}</p>
+          <p className="text-label text-ink-2 font-sans mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">
           {courseLessons.map((l, i) => {
@@ -196,7 +196,7 @@ export default function AcademyScreen({ profile }: Props) {
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
         <div key={cat} className="space-y-2">
-          <h3 className="text-caption font-mono uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
+          <h3 className="text-caption font-sans uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {byCategory[cat].map(c => {
               const { unlocked, reason } = evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);
@@ -212,7 +212,7 @@ export default function AcademyScreen({ profile }: Props) {
                     <p className="font-sans font-bold text-body-s text-white">{c.title}</p>
                     {!unlocked && <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">lock</span>}
                   </div>
-                  <p className="text-label text-ink-2 font-mono mt-1 line-clamp-2">{c.description}</p>
+                  <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
                     <div className="mt-3 h-1.5 bg-white/7 rounded-full overflow-hidden">
                       <div className="h-full bg-accent" style={{ width: `${pct}%` }} />

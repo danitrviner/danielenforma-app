@@ -232,7 +232,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
       <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-mono text-label uppercase tracking-wider"
+          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-sans text-label uppercase tracking-wider"
         >
           <span className="material-symbols-outlined text-body-s">arrow_back</span>
           Recetas
@@ -362,7 +362,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               { label: 'Grasa', val: recipe.macros.fat },
             ].map(({ label, val }) => (
               <div key={label} className="text-center">
-                <span className="block font-mono text-caption text-ink-2 uppercase">{label}</span>
+                <span className="block font-sans text-caption text-ink-2 uppercase">{label}</span>
                 <span className="block font-bold text-white text-body-s font-mono">{val}g</span>
               </div>
             ))}
@@ -670,7 +670,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCat(cat.id)}
-                  className={`px-4 py-2 rounded-full font-mono text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                  className={`px-4 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                     selectedCat === cat.id
                       ? 'bg-accent text-black shadow-md'
                       : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
@@ -742,7 +742,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               key={k}
               onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-1.5 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
+              className={`px-3 py-1.5 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
                 indyaIntake === Number(k)
                   ? 'bg-raised text-accent border border-accent/40'
                   : 'bg-raised border border-hairline text-ink-2 hover:text-white'
@@ -778,11 +778,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
         ) : indyaTotalVisible === 0 && indyaError ? (
           <div className="flex flex-col items-center gap-3 py-16">
-            <p className="font-mono text-label text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
+            <p className="font-sans text-label text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
             <button
               onClick={handleLoadMore}
               disabled={indyaLoadingMore}
-              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {indyaLoadingMore
                 ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
@@ -874,7 +874,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
             {indyaError && (
               <div className="flex flex-col items-center gap-2 pt-2">
-                <p className="font-mono text-caption text-red-300 uppercase tracking-wide">{indyaError}</p>
+                <p className="font-sans text-caption text-red-300 uppercase tracking-wide">{indyaError}</p>
               </div>
             )}
 
@@ -883,7 +883,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={indyaLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-mono text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {indyaLoadingMore
                     ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>

@@ -204,14 +204,14 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           {!isNew && onDelete && (
             <button
               onClick={onDelete}
-              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-label uppercase rounded-control transition-all"
+              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-sans text-label uppercase rounded-control transition-all"
             >
               Eliminar
             </button>
           )}
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
+            className="flex-1 py-2.5 border border-hairline text-ink-2 hover:text-white font-sans text-label uppercase rounded-control transition-all"
           >
             Cancelar
           </button>
@@ -544,7 +544,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div className="rounded-surface border border-hairline bg-field overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-hairline flex items-center gap-1.5">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
-          <span className="font-mono text-caption uppercase text-ink-2 tracking-widest">{label}</span>
+          <span className="font-sans text-caption uppercase text-ink-2 tracking-widest">{label}</span>
         </div>
         <div className="overflow-x-auto">
           <div style={{ position: 'relative', width: containerWidth, height }}>
@@ -554,7 +554,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: MOBILE_HEADER_H }}
                 className="flex items-end pb-1 pl-1"
               >
-                <span className="font-mono text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-sans text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
             <div
@@ -619,7 +619,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               style={{ height: LANE_H }}
               className="flex items-center justify-end pr-3 border-b border-hairline"
             >
-              <span className="font-mono text-caption uppercase text-ink-2 tracking-widest">{label}</span>
+              <span className="font-sans text-caption uppercase text-ink-2 tracking-widest">{label}</span>
             </div>
           ))}
           {showWeightChart && (
@@ -645,7 +645,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: HEADER_H }}
                 className="flex items-end pb-1.5 pl-1.5"
               >
-                <span className="font-mono text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-sans text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
 
@@ -715,7 +715,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border border-hairline text-label font-mono ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-control border border-hairline text-label font-sans ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >

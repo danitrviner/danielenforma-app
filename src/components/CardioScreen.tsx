@@ -533,7 +533,7 @@ export default function CardioScreen({ profile }: Props) {
           <div className="flex flex-wrap gap-2">
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-surface p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
-                <p className="text-caption font-mono uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
+                <p className="text-caption font-sans uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
                 <p className="text-label font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
             ))}
@@ -547,7 +547,7 @@ export default function CardioScreen({ profile }: Props) {
 
           {state === 'connecting' && <p className="text-label text-ink-2 font-sans text-center py-4">Conectando con la banda...</p>}
 
-          {error && <p className="text-label text-red-400 font-mono">{error}</p>}
+          {error && <p className="text-label text-red-400 font-sans">{error}</p>}
 
           {state === 'ready' && (
             <div className="space-y-3">
@@ -575,7 +575,7 @@ export default function CardioScreen({ profile }: Props) {
                   Empezar entrenamiento
                 </button>
               </div>
-              <button onClick={handleCancelReady} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
+              <button onClick={handleCancelReady} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
                 Desconectar
               </button>
             </div>

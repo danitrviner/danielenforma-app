@@ -237,7 +237,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     return (
       <div className="border border-dashed border-hairline rounded-surface py-10 flex flex-col items-center gap-3">
         <span className="material-symbols-outlined text-display text-ink-3">monitoring</span>
-        <p className="font-mono text-label text-ink-2 text-center max-w-xs">
+        <p className="font-sans text-label text-ink-2 text-center max-w-xs">
           {onEdit
             ? `${athleteName ? `${athleteName} no tiene` : 'Aún no hay'} una periodización nutricional configurada.`
             // Vista del atleta: no puede configurarla él mismo (onEdit ausente),
@@ -248,7 +248,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         {onEdit && (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-mono font-bold rounded-control transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-raised border border-hairline hover:border-accent/40 text-white text-label font-sans font-bold rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-body-s text-accent">add</span>
             Crear periodización
@@ -271,13 +271,13 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               </span>
               <h2 className="font-sans font-bold text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
               {activeDiet && (
-                <p className="font-mono text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
+                <p className="font-sans text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
             </div>
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-caption font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-control"
+                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-control"
               >Editar</button>
             )}
           </div>
@@ -313,7 +313,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         <div className="flex items-center justify-end">
           <button
             onClick={onEdit}
-            className="text-caption font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
+            className="text-caption font-sans font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
           >Editar periodización</button>
         </div>
       )}
@@ -323,7 +323,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>
-        <p className="font-mono text-label text-ink-2 mt-1">
+        <p className="font-sans text-label text-ink-2 mt-1">
           Proyección de peso por tramos, contrastada con la evolución real{athleteName ? ` de ${athleteName}` : ''}.
         </p>
       </div>
@@ -342,7 +342,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 key={opt.id}
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
-                className={`font-mono text-caption px-2.5 py-1.5 rounded-control transition-colors ${
+                className={`font-sans text-caption px-2.5 py-1.5 rounded-control transition-colors ${
                   curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>
@@ -478,7 +478,7 @@ function StatCard({
 }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
-      <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
+      <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-title-m" style={{ color: valueColor ?? '#fff' }}>
         {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>

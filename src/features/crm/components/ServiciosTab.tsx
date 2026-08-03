@@ -46,7 +46,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div className="min-w-0">
           <p className={`font-bold truncate ${s.archivado ? 'text-ink-3 line-through' : ''}`}>{s.nombre}</p>
-          {s.descripcion && <p className="font-mono text-caption text-ink-3 truncate">{s.descripcion}</p>}
+          {s.descripcion && <p className="font-sans text-caption text-ink-3 truncate">{s.descripcion}</p>}
         </div>
       ),
     },

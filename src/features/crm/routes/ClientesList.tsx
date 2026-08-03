@@ -186,7 +186,7 @@ export default function ClientesList() {
               type="button"
               onClick={() => setParam('estado', f.id === 'todos' ? '' : f.id)}
               aria-pressed={filtro === f.id}
-              className={`px-2.5 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
+              className={`px-2.5 py-1.5 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
                 filtro === f.id
                   ? 'bg-accent/15 text-accent border border-accent/30'
                   : 'bg-field text-ink-2 border border-hairline hover:border-strong'

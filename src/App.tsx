@@ -293,7 +293,7 @@ function AppContent() {
             <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
               <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
-              <span className="text-label font-mono font-medium text-white">{profile.displayName}</span>
+              <span className="text-label font-sans font-medium text-white">{profile.displayName}</span>
             </div>
           </div>
         </div>

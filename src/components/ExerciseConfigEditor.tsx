@@ -178,7 +178,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             <div className="flex items-center justify-between">
               <button
                 onClick={addGroup}
-                className="flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
+                className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-body-s">add</span>
                 Añadir bloque
@@ -278,7 +278,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               key={mode}
               type="button"
               onClick={() => setWarmupMode(mode)}
-              className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`px-2.5 py-1 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
                 (we.warmupMode || 'none') === mode
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -322,7 +322,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             ))}
             <button
               onClick={addManualWarmupSet}
-              className="flex items-center gap-1 text-caption font-mono text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
+              className="flex items-center gap-1 text-caption font-sans text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir serie de aproximación

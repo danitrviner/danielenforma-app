@@ -125,7 +125,7 @@ export default function ChallengeOptionsPanel({
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>
               </div>
-              <p className="text-label text-ink-2 font-mono leading-relaxed">{opt.description}</p>
+              <p className="text-label text-ink-2 font-sans leading-relaxed">{opt.description}</p>
               <p className="text-caption text-ink-3 font-mono">Por qué: {opt.reason}</p>
               <button
                 onClick={() => assignOption(opt)}

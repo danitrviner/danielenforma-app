@@ -328,7 +328,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-hairline text-ink-2 font-mono text-caption uppercase rounded-control transition-all hover:text-white"
+                            className="px-2 py-1 border border-hairline text-ink-2 font-sans text-caption uppercase rounded-control transition-all hover:text-white"
                           >
                             ✕
                           </button>

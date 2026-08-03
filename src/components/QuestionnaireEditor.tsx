@@ -96,7 +96,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex items-center gap-3">
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-2 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 text-label font-sans text-ink-2 hover:text-white border border-hairline hover:border-hairline rounded-control transition-all"
         >
           <span className="material-symbols-outlined text-body-s">arrow_back</span>Volver
         </button>
@@ -135,7 +135,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-caption uppercase rounded-control hover:border-accent/70 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>Añadir pregunta
           </button>
@@ -323,7 +323,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       <div className="flex gap-3">
         <button
           onClick={onCancel}
-          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
+          className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-sans text-label uppercase rounded-control transition-all"
         >
           Cancelar
         </button>

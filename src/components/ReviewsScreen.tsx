@@ -222,7 +222,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-surface text-label font-mono">{errorMsg}</div>
+        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-surface text-label font-sans">{errorMsg}</div>
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
@@ -340,7 +340,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           </div>
                         )}
                         {errorMsg && expandedId === key && (
-                          <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-mono">{errorMsg}</div>
+                          <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-sans">{errorMsg}</div>
                         )}
                         {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
                           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
@@ -449,7 +449,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">
+                            <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">
                               {question?.label ?? ans.questionId}
                             </span>
                             <span className="font-mono text-label text-white font-bold text-right">

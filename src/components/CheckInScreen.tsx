@@ -144,7 +144,7 @@ function QuestionnaireForm({
                     key={String(v)}
                     type="button"
                     onClick={() => setAnswer(q.id, v)}
-                    className={`flex-1 py-3 font-mono text-label rounded-control border transition-all min-h-[44px] ${
+                    className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[44px] ${
                       answers[q.id] === v
                         ? 'bg-accent text-black font-bold border-transparent'
                         : 'bg-raised text-ink border-hairline'
@@ -422,7 +422,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               <span className="font-mono text-label text-ink-3">kg</span>
             </div>
           )}
-          {bwError && <p className="font-mono text-caption text-red-400 mt-1">{bwError}</p>}
+          {bwError && <p className="font-sans text-caption text-red-400 mt-1">{bwError}</p>}
         </div>
 
         {!bwEditing && bwToday ? (

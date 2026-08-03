@@ -161,7 +161,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
             </div>
-            <p className="text-label text-ink-2 font-mono mt-1">{current.description}</p>
+            <p className="text-label text-ink-2 font-sans mt-1">{current.description}</p>
             {currentProgress && (
               <div className="mt-2">
                 <div className="h-2 rounded-full bg-bg overflow-hidden">
@@ -177,7 +177,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <p className="text-label text-ink-3 font-sans">Sin reto todavía — se generará uno automático cuando el atleta abra su Roadmap.</p>
         )}
         {next && (
-          <p className="font-mono text-caption text-ink-2 mt-3 pt-3 border-t border-hairline">
+          <p className="font-sans text-caption text-ink-2 mt-3 pt-3 border-t border-hairline">
             Semana que viene: <span className="text-white">{next.title}</span> ({next.origin === 'coach' ? 'asignado' : 'automático'})
           </p>
         )}
@@ -341,7 +341,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <div key={t.id} className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-2.5">
                 <div>
                   <p className="text-label text-white font-sans font-bold">{t.title}</p>
-                  <p className="text-caption text-ink-2 font-mono">{KIND_LABEL[t.kind]}</p>
+                  <p className="text-caption text-ink-2 font-sans">{KIND_LABEL[t.kind]}</p>
                 </div>
                 <button onClick={() => removeTemplate(t.id)} className="text-ink-2 hover:text-red-400">
                   <span className="material-symbols-outlined text-body-s">delete</span>

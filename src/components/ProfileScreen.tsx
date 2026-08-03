@@ -408,7 +408,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       <div className="pt-2">
         <button
           onClick={handleSignOut}
-          className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-label font-mono font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
+          className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/35 text-red-200 text-label font-sans font-bold tracking-widest uppercase rounded-control flex items-center justify-center gap-2 active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-body-s">logout</span>
           Cerrar Sesión Activa

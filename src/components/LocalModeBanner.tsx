@@ -31,7 +31,7 @@ export default function LocalModeBanner() {
       </p>
       <button
         onClick={retry}
-        className="font-mono text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-control transition-colors"
+        className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-control transition-colors"
       >
         Reintentar
       </button>

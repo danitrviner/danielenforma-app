@@ -353,7 +353,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
         <p className="text-ink-2 text-body-s">Aún no se han generado rutinas para este mesociclo.</p>
         <button
           onClick={onGoToDistribution}
-          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-mono text-label uppercase rounded-control hover:bg-accent/20 transition-all"
+          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-accent/10 border border-accent/30 text-accent font-sans text-label uppercase rounded-control hover:bg-accent/20 transition-all"
         >
           <span className="material-symbols-outlined text-body-s">grid_view</span>
           Ir a Distribución para generarlas
@@ -386,7 +386,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                     <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-2.5 space-y-2">
                       <p className="text-label font-sans font-bold text-white truncate">
                         {ex?.name || we.exerciseId}
-                        {we.muscleGroup && <span className="text-caption font-mono text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                        {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
                       </p>
                       <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
                     </div>
@@ -419,7 +419,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
       <div className="flex flex-wrap gap-2">
         {LEGEND.map(l => (
           <div key={l.label} className="flex items-center gap-2 px-2.5 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
-            <span className="font-mono text-caption font-bold" style={{ color: l.text }}>{l.label}</span>
+            <span className="font-sans text-caption font-bold" style={{ color: l.text }}>{l.label}</span>
             <span className="font-mono text-caption opacity-70" style={{ color: l.text }}>{l.range}</span>
           </div>
         ))}
@@ -1167,7 +1167,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             </button>
             <button
               onClick={handleOpenTemplatePicker}
-              className="w-full flex items-center justify-center gap-2 py-2 border border-hairline text-ink-2 font-mono text-caption font-bold uppercase tracking-wider rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="w-full flex items-center justify-center gap-2 py-2 border border-hairline text-ink-2 font-sans text-caption font-bold uppercase tracking-wider rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-body-s">library_books</span>
               Usar plantilla
@@ -1218,7 +1218,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-white text-title-s">Mesociclo #{editing.number}</h2>
-                  <span className={`font-mono text-label uppercase tracking-wider transition-colors ${
+                  <span className={`font-sans text-label uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-red-400' :
                     saveState === 'saving' ? 'text-accent animate-pulse' : 'text-ink-2'
@@ -1492,7 +1492,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                     <div className="min-w-0">
                                       <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <p className="text-caption font-mono text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
+                                        <p className="text-caption font-sans text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
                                         {pe.equipmentMismatch && (
                                           <span className="inline-flex items-center gap-0.5 text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded-control" title="Material no disponible según onboarding">
                                             <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>warning</span>
@@ -1582,7 +1582,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <div className="space-y-3">
                       <div className="flex items-start gap-3 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-surface">
                         <span className="material-symbols-outlined text-red-400 mt-0.5">error</span>
-                        <p className="font-mono text-label text-red-300">{genError}</p>
+                        <p className="font-sans text-label text-red-300">{genError}</p>
                       </div>
                       <button
                         onClick={() => setGenPhase('idle')}
@@ -1618,7 +1618,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   <div className="flex items-center gap-3">
                     <span className="font-sans text-label text-red-400">¿Eliminar este mesociclo?</span>
                     <button onClick={handleDelete}
-                      className="px-3 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-label rounded-control hover:bg-red-500/30 transition-all"
+                      className="px-3 py-1.5 bg-red-500/20 border border-red-500/40 text-red-400 font-sans text-label rounded-control hover:bg-red-500/30 transition-all"
                     >Confirmar</button>
                     <button onClick={() => setConfirmDelete(false)}
                       className="px-3 py-1.5 bg-raised text-ink-2 font-mono text-label rounded-control hover:bg-raised transition-all"
@@ -1688,7 +1688,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-white text-body-s group-hover:text-accent transition-colors">{tpl.name}</p>
-                        {tpl.description && <p className="font-mono text-caption text-ink-2 mt-0.5">{tpl.description}</p>}
+                        {tpl.description && <p className="font-sans text-caption text-ink-2 mt-0.5">{tpl.description}</p>}
                       </div>
                       <span className="font-mono text-caption text-accent font-bold flex-shrink-0 bg-accent/10 px-2 py-0.5 rounded-control">Usar →</span>
                     </div>

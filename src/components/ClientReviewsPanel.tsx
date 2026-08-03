@@ -413,7 +413,7 @@ export default function ClientReviewsPanel({
                         <button
                           key={v.id}
                           onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
-                          className={`px-3 py-1.5 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                          className={`px-3 py-1.5 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
                             active
                               ? 'bg-accent border-accent text-black'
                               : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
@@ -548,7 +548,7 @@ export default function ClientReviewsPanel({
               {(onboardingData.activityLevel || onboardingData.goalBody || onboardingData.goalCapacity) && (
                 <div className="space-y-2">
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Actividad y objetivo</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
                     {onboardingData.activityLevel && (
                       <span className="text-ink-2">Actividad: <span className="text-white font-bold">{ACTIVITY_LABELS[onboardingData.activityLevel]}</span></span>
                     )}
@@ -565,7 +565,7 @@ export default function ClientReviewsPanel({
               {/* Nutrition */}
               <div className="space-y-2">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Nutrición</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
                   <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span></span>
                   <span className="text-ink-2">Calorías: <span className="text-accent font-bold">{onboardingData.targetCalories} kcal/día</span></span>
                 </div>
@@ -576,7 +576,7 @@ export default function ClientReviewsPanel({
                     { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, ef: 11, color: 'var(--color-danger)' },
                   ]).map(m => (
                     <div key={m.label} className="bg-raised border border-hairline rounded-surface px-3 py-1.5 text-center">
-                      <p className="font-mono text-caption uppercase" style={{ color: m.color }}>{m.label}</p>
+                      <p className="font-sans text-caption uppercase" style={{ color: m.color }}>{m.label}</p>
                       <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
                       <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
                     </div>
@@ -602,7 +602,7 @@ export default function ClientReviewsPanel({
                   <div className="flex flex-wrap gap-1.5">
                     {onboardingData.meals.map(m => (
                       <div key={m.intakeType} className="flex items-center gap-1.5 bg-raised border border-hairline rounded-surface px-2.5 py-1.5">
-                        <span className="font-mono text-caption text-ink-2">{m.name}</span>
+                        <span className="font-sans text-caption text-ink-2">{m.name}</span>
                         {m.needsTupper && (
                           <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-1.5 py-0.5">tupper</span>
                         )}
@@ -636,7 +636,7 @@ export default function ClientReviewsPanel({
               {/* Training */}
               <div className="space-y-2">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Entrenamiento</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
                   <span className="text-ink-2">Nivel: <span className="text-white font-bold">{EXP_LABELS[onboardingData.experienceLevel]}</span></span>
                 </div>
                 {onboardingData.equipment.length > 0 && (
@@ -677,7 +677,7 @@ export default function ClientReviewsPanel({
                     )}
                   </div>
                   {onboardingData.goalFreeText && (
-                    <p className="font-mono text-caption text-ink-2 italic">"{onboardingData.goalFreeText}"</p>
+                    <p className="font-sans text-caption text-ink-2 italic">"{onboardingData.goalFreeText}"</p>
                   )}
                 </div>
               )}
@@ -829,7 +829,7 @@ export default function ClientReviewsPanel({
                             ? `${val} / ${q.scaleMax ?? 10}`
                             : `${val}${q.unit ? ` ${q.unit}` : ''}`;
                           return (
-                            <p key={q.id} className="font-mono text-caption text-ink-2">
+                            <p key={q.id} className="font-sans text-caption text-ink-2">
                               <span className="text-ink-3 mr-1">{q.label}:</span>
                               <span className="text-white font-bold">{display}</span>
                             </p>
@@ -892,7 +892,7 @@ export default function ClientReviewsPanel({
               { label: 'Peso actual',value: `${athlete.actualWeight || athlete.initialWeight} kg`,color: 'text-accent' },
               { label: 'Meta',       value: `${athlete.targetWeight} kg`,                         color: 'text-success' },
             ].map(row => (
-              <div key={row.label} className="flex justify-between items-baseline text-label font-mono">
+              <div key={row.label} className="flex justify-between items-baseline text-label font-sans">
                 <span className="text-ink-2 uppercase">{row.label}:</span>
                 <span className={`font-bold ${row.color}`}>{row.value}</span>
               </div>
@@ -1100,7 +1100,7 @@ export default function ClientReviewsPanel({
                               </div>
                             )}
                             {unifiedFeedbackError && expandedReviewId === key && (
-                              <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-mono">{unifiedFeedbackError}</div>
+                              <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-sans">{unifiedFeedbackError}</div>
                             )}
                             <form onSubmit={(e) => handleUnifiedSendFeedback(c.id, e)} className="space-y-2">
                               <textarea
@@ -1185,7 +1185,7 @@ export default function ClientReviewsPanel({
                                 const isChoice = question?.type === 'choice';
                                 return (
                                   <div key={ans.questionId} className="flex items-center gap-3">
-                                    <span className="font-mono text-caption text-ink-2 flex-1">{question?.label ?? ans.questionId}</span>
+                                    <span className="font-sans text-caption text-ink-2 flex-1">{question?.label ?? ans.questionId}</span>
                                     {isChoice && question?.options ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
@@ -1195,7 +1195,7 @@ export default function ClientReviewsPanel({
                                     ) : isBool ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-24">
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-sans w-24">
                                         <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                                         <option value="false">{question?.labelFalse ?? 'No'}</option>
                                       </select>
@@ -1227,7 +1227,7 @@ export default function ClientReviewsPanel({
                               const question = q?.questions.find(qq => qq.id === ans.questionId);
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
-                                  <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">{question?.label ?? ans.questionId}</span>
+                                  <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">{question?.label ?? ans.questionId}</span>
                                   <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                                   </span>
@@ -1395,7 +1395,7 @@ export default function ClientReviewsPanel({
                               const q = tmpl?.questions.find(q => q.id === ans.questionId);
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
-                                  <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">{q?.label ?? ans.questionId}</span>
+                                  <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">{q?.label ?? ans.questionId}</span>
                                   <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{q?.unit ? ` ${q.unit}` : ''}
                                     {q?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}

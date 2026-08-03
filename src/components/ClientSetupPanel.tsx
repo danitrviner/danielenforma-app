@@ -242,7 +242,7 @@ export default function ClientSetupPanel({
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-sans font-bold text-body-s text-white">{phase.title}</p>
-                    {phase.subtitle && <span className="font-mono text-caption text-ink-2">{phase.subtitle}</span>}
+                    {phase.subtitle && <span className="font-sans text-caption text-ink-2">{phase.subtitle}</span>}
                   </div>
                   <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div

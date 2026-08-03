@@ -107,7 +107,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-caption font-mono text-ink-2 hover:text-accent transition-colors uppercase">
+                  className="text-caption font-sans text-ink-2 hover:text-accent transition-colors uppercase">
                   Leer todas
                 </button>
               )}

@@ -94,7 +94,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <p className="text-ink-2 text-label font-sans">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
-          <p className="font-mono text-caption text-ink-2 mt-1">
+          <p className="font-sans text-caption text-ink-2 mt-1">
             Nivel actual del atleta: <span className="text-accent font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>
         </div>
@@ -195,7 +195,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
       <button
         onClick={addLevel}
-        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-mono text-label transition-colors"
+        className="w-full py-3 border border-dashed border-hairline rounded-control text-ink-2 hover:text-accent hover:border-accent/40 font-sans text-label transition-colors"
       >
         + Añadir nivel
       </button>

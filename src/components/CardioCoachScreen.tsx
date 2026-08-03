@@ -108,7 +108,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-label font-mono text-ink-2 hover:text-white">
+      <button onClick={onBack} className="flex items-center gap-1 text-label font-sans text-ink-2 hover:text-white">
         <span className="material-symbols-outlined text-title-s">arrow_back</span> Atletas
       </button>
       <div className="flex gap-2">
@@ -120,12 +120,12 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
           <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
         </div>
-        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-caption font-mono uppercase rounded-control hover:text-white">Recalcular</button>
+        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-caption font-sans uppercase rounded-control hover:text-white">Recalcular</button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
           <div key={z} className="flex items-center gap-2">
-            <span className="text-label font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
+            <span className="text-label font-sans text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
               className="w-20 bg-bg border border-hairline rounded-control p-1.5 text-label text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
@@ -193,7 +193,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
               <p className="font-sans font-bold text-body-s text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
-            <p className="text-label font-mono text-data">{t.type}</p>
+            <p className="text-label font-sans text-data">{t.type}</p>
             <p className="text-caption font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}

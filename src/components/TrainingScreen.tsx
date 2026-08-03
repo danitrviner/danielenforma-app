@@ -388,7 +388,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <span className={`text-caption font-mono font-bold uppercase px-2.5 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
+          <span className={`text-caption font-sans font-bold uppercase px-2.5 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
             {STATUS_LABEL[a.status]}
           </span>
           {canAct && (
@@ -546,7 +546,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
                     {ex?.type && (
-                      <span className={`text-caption font-mono px-1.5 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                      <span className={`text-caption font-sans px-1.5 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
                     {warmup.readiness && (
                       <span
@@ -646,7 +646,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               )}
                             </span>
                             {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                              <span className="block font-mono text-caption text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
+                              <span className="block font-sans text-caption text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -736,7 +736,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {we.notes && (
                 <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-mono text-caption text-ink-2 italic">📌 {we.notes}</p>
+                  <p className="font-sans text-caption text-ink-2 italic">📌 {we.notes}</p>
                 </div>
               )}
 

@@ -50,7 +50,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
       </div>
 
       <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>
-      <p className="text-ink-2 text-label font-mono leading-relaxed">{challenge.description}</p>
+      <p className="text-ink-2 text-label font-sans leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
         <div className="flex items-center justify-between mb-1.5">

@@ -123,7 +123,7 @@ export default function FoodPreferencesPanel({
                 <span className={`material-symbols-outlined text-title-l ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
-                <span className="font-mono text-caption text-ink-2 text-center leading-tight">{g.name}</span>
+                <span className="font-sans text-caption text-ink-2 text-center leading-tight">{g.name}</span>
                 {hasAny && (
                   <div className="flex gap-1.5">
                     {gFav > 0 && (

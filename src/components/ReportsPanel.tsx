@@ -159,7 +159,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
           Reportes
         </h2>
-        <p className="font-mono text-label text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
       </div>
 
       {/* Generator */}
