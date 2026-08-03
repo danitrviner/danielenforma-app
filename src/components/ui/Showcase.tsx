@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Icon, Input, ListRow, PageHeader, Select, Tabs,
+  Badge, Button, Card, Chip, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
   type SelectOption, type TabItem,
 } from './index';
@@ -134,6 +134,7 @@ export default function Showcase() {
   const [tags, setTags] = React.useState(['Sin gluten', 'Vegetariano', 'Rápido']);
   const [filaPulsada, setFilaPulsada] = React.useState('');
   const [vecesAtras, setVecesAtras] = React.useState(0);
+  const [sheetAbierto, setSheetAbierto] = React.useState(false);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
   return (
@@ -497,6 +498,45 @@ export default function Showcase() {
           Veces que se pulsó volver: {vecesAtras}. La ceja usa borde de acento translúcido, no oro
           sólido: es contexto, no la acción de la pantalla — el oro se reserva para el botón que sí
           hace algo.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Sheet"
+        resumen="El panel que sube desde abajo. Plantilla de lo que a los 39 overlays artesanales de la app les falta hoy: foco atrapado, Escape, y el bloqueo de scroll sin el bug clásico de esta migración (R4)."
+      >
+        <Button variant="secondary" icon="tune" onClick={() => setSheetAbierto(true)}>
+          Abrir Sheet
+        </Button>
+
+        <Sheet
+          open={sheetAbierto}
+          onClose={() => setSheetAbierto(false)}
+          title="Filtrar ejercicios"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setSheetAbierto(false)}>Cancelar</Button>
+              <Button variant="primary" onClick={() => setSheetAbierto(false)}>Aplicar</Button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <Select
+              label="Grupo muscular"
+              value=""
+              onChange={() => {}}
+              options={OPCIONES_OBJETIVO}
+              placeholder="Cualquiera"
+            />
+            <p className="font-sans text-body-s text-ink-3">
+              Prueba el tabulador: el foco no sale de este panel. Prueba Escape, o toca fuera.
+            </p>
+          </div>
+        </Sheet>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Se monta en un portal a document.body: el z-index de la escala declarada en F2 es la
+          autoridad real y no compite con overflow o position de un contenedor intermedio.
         </p>
       </Seccion>
     </div>
