@@ -6,6 +6,7 @@ import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
+import { EmptyState } from './ui';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
@@ -620,9 +621,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             </div>
           ))}
           {checkins.length === 0 && (
-            <div className="text-ink-2 text-center italic py-10 text-body-s">
-              Aún no tienes registros de peso. Envía tu primer check-in.
-            </div>
+            <EmptyState icon="monitor_weight" title="Aún no tienes registros de peso. Envía tu primer check-in." />
           )}
         </div>
       </section>
