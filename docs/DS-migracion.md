@@ -120,4 +120,75 @@ entre ambos puntos solo se tocó `index.css`.
 
 ### F1 · Tokens reales en `@theme`
 
-_Pendiente._
+**Fecha:** 3 de agosto de 2026 · **Base:** `5b5e313` · **Commits:** 24, uno por token
+
+**Resultado**
+
+| Métrica | Antes | Después |
+|---|--:|--:|
+| Hex distintos en componentes | 101 | **15** |
+| Hex literales en componentes | 4.638 | **29** |
+| Tokens del DS en uso | 0 | **4.279** |
+| Imports de `theme.ts` | 0 | archivo borrado |
+
+El objetivo del plan era ≤ 22 hex distintos. Quedan 15, y ninguno es un duplicado de la
+paleta: son blanco y negro puros, cadenas compuestas y los módulos que el plan excluye.
+
+**Decisiones tomadas**
+
+1. **Nombres `ink` / `ink-2` / `ink-3`** para la escala de texto, no `text` / `text-2` / `text-3`
+   como en el DS. En Tailwind el nombre del token genera la clase, y `text-text-2` se lee mal y
+   se teclea peor. El plan de migración ya usaba `ink` en todos sus ejemplos. Aprobado antes de
+   escribir el bloque, porque afecta a 1.317 usos.
+2. **`accent-line`** en vez de `accent` para el borde de acento del DS: `--color-accent` ya es el
+   oro sólido y ambos generarían la misma clase `border-accent`.
+3. **`ink-3` vale `#8a8d7b`**, el valor del DS, no el `≈#8a8f85` que cita el plan. El DS es
+   normativo en valores.
+4. **`@theme static`**. Sin él, Tailwind solo emite las variables que alguna clase consume, y un
+   `var(--color-x)` en un estilo en línea o en un atributo SVG quedaría sin definir: sin error de
+   compilación, sin aviso en consola, con el color desaparecido. Es la misma clase de fallo
+   silencioso que frenó `theme.ts`.
+5. **Sustitución según el prefijo.** `#2a2a2a` y `#3a3a3a` eran fondo en un sitio, texto en otro
+   y borde en un tercero. Colapsarlos a un solo token habría convertido bordes en color de texto.
+   Van a `raised`, `ink-3` y `hairline` según el prefijo de la utilidad.
+6. **Se añaden los 5 tokens de serie de gráfica**, que el plan asignaba a F10, para que ningún hex
+   sobreviva en los paneles. F10 los consumirá; aquí solo se declaran.
+
+**Cambios visuales esperados** — y son los únicos admisibles
+
+- **Texto secundario más legible.** 299 usos de `#555`, `#444`, `#888`, `#333`… pasan a `ink-3`.
+  `#555` daba 2,38:1 y `#444` 1,83:1, frente al 4,5:1 de WCAG AA. El caso peor era `#2a2a2a`
+  —el color de los bordes— usado como color de texto en la numeración de ejercicios de Rutinas:
+  ≈1,1:1, invisible en la práctica.
+- **Grises de fondo colapsados.** ~30 grises casi idénticos pasan a 4 superficies.
+- **Bordes grises sólidos → `hairline`.** Translúcido en vez de calibrado para un solo fondo.
+- **Estado seleccionado algo más cálido.** `#1a1c12` y `#1a1710` pasan a `accent-bg`.
+- **Un botón dorado dejaba de serlo al pasar el ratón.** `hover:bg-[#cde600]` era el verde volt
+  anterior al rebranding: pasa a `accent-press`.
+
+**Verificado**
+
+- `tsc --noEmit` limpio y 263 pruebas en verde tras cada tanda.
+- Las 24 variables se emiten en el CSS compilado y resuelven en runtime con el valor correcto.
+- **Recharts con `var()`**, que era el riesgo real de esta fase: comprobado en el navegador que
+  `stroke="var(--color-warning)"` resuelve a `rgb(253,186,116)`, exactamente `#fdba74`.
+- Barrido de 11 rutas a 375 px: 0 errores de consola, 0 desbordamiento horizontal.
+- El inventario no mueve ni una métrica de otras fases: la migración tocó solo color.
+
+**Qué se dejó fuera, y por qué**
+
+| Qué | Cuánto | Por qué |
+|---|--:|---|
+| `src/utils/cardioZones.ts` | 6 | Regla dura del plan: `utils/` está fuera de alcance y tiene tests |
+| `src/data/phasePresets.ts` | 6 | Son datos, no presentación |
+| Blanco y negro puros | ~10 | No son duplicados de la paleta; el DS solo define `on-accent` |
+| `shadow-[0_0_10px_#fbcb1a]` | 2 | Cadena compuesta; la elevación y el glow son F6 |
+| Hex de 8 dígitos con alfa | 3 | `#fbcb1a33`, `#fbcb1a55` |
+
+**Deuda detectada, no resuelta**
+
+| Hallazgo | A qué fase pertenece |
+|---|---|
+| Los tokens antiguos siguen en `@theme` (0 usos, marcados «en retirada») | Borrar cuando el contador esté estable |
+| Los botones de la barra inferior aparecen **sin nombre** en el árbol de accesibilidad — confirmado en el navegador, no solo por lectura de código | F14 |
+| `MetricsScreen.tsx` sigue vivo y se ha migrado, aunque no lo enruta nadie | F2 lo borra |
