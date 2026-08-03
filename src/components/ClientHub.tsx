@@ -36,7 +36,7 @@ import ClientReviewsPanel from './ClientReviewsPanel';
 import ClientSetupPanel from './ClientSetupPanel';
 import PendingTray from './PendingTray';
 import ClientStatusCard from './ClientStatusCard';
-import { Badge } from './ui';
+import { Badge, Tabs } from './ui';
 
 export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
 export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
@@ -469,41 +469,21 @@ export default function ClientHub({
 
       {/* Nav de zonas (nivel 1) */}
       <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 ">
-        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1">
-          {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
-            <button
-              key={zone}
-              onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 min-h-[44px] rounded-control font-sans text-label font-bold uppercase tracking-wide transition-all ${
-                activeZone === zone ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-title-s">{ZONE_META[zone].icon}</span>
-              {ZONE_META[zone].label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          items={(Object.keys(ZONE_TABS) as Zone[]).map(zone => ({ id: zone, label: ZONE_META[zone].label, icon: ZONE_META[zone].icon }))}
+          value={activeZone}
+          onChange={id => goToZone(id as Zone)}
+          label="Zonas del cliente"
+        />
 
         {/* Sub-tabs de la zona activa (solo si tiene más de una) */}
         {ZONE_TABS[activeZone].length > 1 && (
-          <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1">
-            <div className="flex gap-1 min-w-max">
-              {ZONE_TABS[activeZone].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => guardedTabChange(tab)}
-                  className={`snap-start flex items-center gap-2 px-3 py-2 min-h-[36px] rounded-control font-mono text-caption font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
-                    activeTab === tab
-                      ? 'bg-accent/10 border-accent/40 text-accent'
-                      : 'border-transparent text-ink-2 hover:text-white'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-body-s">{TAB_META[tab].icon}</span>
-                  {TAB_META[tab].label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Tabs
+            items={ZONE_TABS[activeZone].map(tab => ({ id: tab, label: TAB_META[tab].label, icon: TAB_META[tab].icon }))}
+            value={activeTab}
+            onChange={id => guardedTabChange(id as HubTab)}
+            label="Secciones de la zona"
+          />
         )}
       </div>
 
