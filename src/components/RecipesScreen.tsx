@@ -10,7 +10,7 @@ import {
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge } from './ui';
+import { EmptyState, Badge, Chip } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -668,15 +668,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 ...(recipes.some(r => r.ownerId === profile.userId) ? [{ id: 'MisRecetas', name: 'Mis recetas' }] : []),
                 ...availableCategories.map(c => ({ id: c, name: c })),
               ].map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCat(cat.id)}
-                  className={`px-4 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
-                    selectedCat === cat.id
-                      ? 'bg-accent text-black'
-                      : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
-                  }`}
-                >{cat.name}</button>
+                <Chip key={cat.id} selected={selectedCat === cat.id} onClick={() => setSelectedCat(cat.id)}>{cat.name}</Chip>
               ))}
             </div>
           </div>
@@ -734,24 +726,9 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
         {/* Intake type filter */}
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setIndyaIntake(null)}
-            className={`px-3 py-2 rounded-full font-mono text-caption uppercase tracking-wide transition-all ${
-              indyaIntake === null
-                ? 'bg-raised text-accent border border-accent/40'
-                : 'bg-raised border border-hairline text-ink-2 hover:text-white'
-            }`}
-          >Todos los momentos</button>
+          <Chip selected={indyaIntake === null} onClick={() => setIndyaIntake(null)}>Todos los momentos</Chip>
           {Object.entries(INTAKE_LABELS).map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setIndyaIntake(Number(k))}
-              className={`px-3 py-2 rounded-full font-sans text-caption uppercase tracking-wide transition-all ${
-                indyaIntake === Number(k)
-                  ? 'bg-raised text-accent border border-accent/40'
-                  : 'bg-raised border border-hairline text-ink-2 hover:text-white'
-              }`}
-            >{label}</button>
+            <Chip key={k} selected={indyaIntake === Number(k)} onClick={() => setIndyaIntake(Number(k))}>{label}</Chip>
           ))}
         </div>
 
