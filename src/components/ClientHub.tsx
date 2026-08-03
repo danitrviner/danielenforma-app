@@ -36,6 +36,7 @@ import ClientReviewsPanel from './ClientReviewsPanel';
 import ClientSetupPanel from './ClientSetupPanel';
 import PendingTray from './PendingTray';
 import ClientStatusCard from './ClientStatusCard';
+import { Badge } from './ui';
 
 export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
 export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
@@ -381,13 +382,9 @@ export default function ClientHub({
 
   const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
   const planBadge = daysLeft !== null ? (
-    <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface border flex-shrink-0 ${
-      daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-      daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
-                       'bg-red-500/10     text-red-300     border-red-500/20'
-    }`}>
+    <Badge tone={daysLeft > 30 ? 'success' : daysLeft >= 0 ? 'warning' : 'danger'}>
       {daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`}
-    </span>
+    </Badge>
   ) : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────

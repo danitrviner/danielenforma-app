@@ -14,7 +14,7 @@ import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Badge } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
@@ -512,23 +512,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         {/* Plan badge */}
                         <div className="flex flex-wrap gap-1 ">
                           {planDaysLeft !== null ? (
-                            <span className={`text-caption font-sans font-bold uppercase px-2 rounded-control border ${
-                              planDaysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-                              planDaysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
-                                                   'bg-red-500/10     text-red-400     border-red-500/20'
-                            }`}>
+                            <Badge tone={planDaysLeft > 30 ? 'success' : planDaysLeft >= 0 ? 'warning' : 'danger'}>
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="text-caption font-sans font-bold uppercase px-2 rounded-control border bg-raised text-ink-3 border-hairline">
-                              Sin plan
-                            </span>
+                            <Badge tone="neutral">Sin plan</Badge>
                           )}
                           {/* Check-in atrasado badge */}
                           {checkinLate && (
-                            <span className="text-caption font-sans font-bold uppercase px-2 rounded-control border bg-orange-500/10 text-orange-300 border-orange-500/20">
+                            <Badge tone="warning">
                               {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
