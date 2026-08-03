@@ -8,6 +8,7 @@ import MyMenuScreen from './MyMenuScreen';
 import MyDietsScreen from './MyDietsScreen';
 import RecipesScreen from './RecipesScreen';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
+import { Tabs } from './ui';
 
 interface NutritionHubScreenProps {
   profile: UserProfile;
@@ -58,22 +59,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
         </div>
       )}
 
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
-              activeSubTab === tab.id
-                ? 'bg-accent text-black'
-                : 'text-ink-2 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-title-s">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs items={TABS} value={activeSubTab} onChange={id => setActiveSubTab(id as NutritionTab)} label="Secciones de Nutrición" />
 
       {activeSubTab === 'intercambios' && (
         <>
