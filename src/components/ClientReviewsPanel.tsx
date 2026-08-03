@@ -23,6 +23,7 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm } from './QuestionnaireEditor';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
+import { Badge } from './ui';
 
 const DIET_LABELS: Record<string, string> = {
   omnivoro: 'Omnívoro', vegetariano: 'Vegetariano', vegano: 'Vegano', otro: 'Otro',
@@ -989,11 +990,9 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-sans font-bold text-white text-label">Check-in</span>
                               <span className="font-mono text-caption text-ink-2">{c.dateStr}</span>
-                              <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface flex-shrink-0 ${
-                                c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
-                              }`}>
+                              <Badge tone={c.approved ? 'success' : 'warning'}>
                                 {c.approved ? 'Revisado' : 'Pendiente'}
-                              </span>
+                              </Badge>
                             </div>
                             <p className="font-mono text-caption text-ink-2 ">
                               {c.weight} kg · {c.adherence} · {c.mood}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
+import { Badge } from './ui';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -196,10 +197,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
             <>
-              <span className="flex items-center gap-2 text-caption bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-2 rounded-surface font-sans font-bold uppercase">
-                <span className="material-symbols-outlined text-body-s">pending_actions</span>
+              <Badge tone="warning" icon="pending_actions">
                 {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
-              </span>
+              </Badge>
               <button
                 onClick={startReviewing}
                 className="flex items-center gap-2 text-label bg-accent text-black px-4 py-2 rounded-control font-sans font-bold uppercase tracking-wide hover:bg-accent-press active:scale-95 transition-all"
@@ -289,11 +289,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-sans font-bold text-white text-label">{athleteName}</span>
                           <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
-                          <span className={`text-caption font-mono font-bold uppercase px-2 rounded-control flex-shrink-0 ${
-                            c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
-                          }`}>
+                          <Badge tone={c.approved ? 'success' : 'warning'}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
-                          </span>
+                          </Badge>
                         </div>
                         <p className="font-mono text-caption text-ink-2 ">
                           {c.weight} kg · {c.adherence} · {c.mood}
