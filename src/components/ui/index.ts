@@ -24,3 +24,6 @@ export type { SelectOption } from './Select';
 
 export { default as Card } from './Card';
 export type { CardVariant, CardPadding } from './Card';
+
+export { default as Badge } from './Badge';
+export type { BadgeTone } from './Badge';

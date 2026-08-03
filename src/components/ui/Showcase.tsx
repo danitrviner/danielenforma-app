@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-  Button, Card, Icon, Input, Select,
-  type ButtonSize, type ButtonVariant, type IconSize, type SelectOption,
+  Badge, Button, Card, Icon, Input, Select,
+  type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize, type SelectOption,
 } from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -78,6 +78,15 @@ const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
   { size: 's', pie: 's · 36' },
   { size: 'm', pie: 'm · 44' },
   { size: 'l', pie: 'l · 48' },
+];
+
+const TONOS_BADGE: { tone: BadgeTone; texto: string; icon: string }[] = [
+  { tone: 'neutral', texto: 'Borrador', icon: 'edit_note' },
+  { tone: 'success', texto: 'Completado', icon: 'check' },
+  { tone: 'warning', texto: 'Pendiente', icon: 'schedule' },
+  { tone: 'danger', texto: 'Atrasado', icon: 'priority_high' },
+  { tone: 'info', texto: 'Enviado', icon: 'send' },
+  { tone: 'data', texto: 'Nuevo', icon: 'star' },
 ];
 
 const OPCIONES_OBJETIVO: SelectOption[] = [
@@ -297,6 +306,37 @@ export default function Showcase() {
         <p className="font-sans text-body-s text-ink-3">
           Radio 16 en la tarjeta y 10 en lo que lleva dentro: un hijo baja siempre un escalón. Si
           iguala al padre, las esquinas se ven descuadradas.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Badge"
+        resumen="Estado, no acción: no se pulsa. El color sale de la fórmula del DS —texto al 100 %, fondo al 10 %, borde al 25 %— y no de una elección por tarjeta."
+      >
+        {/* El `key` va en el envoltorio, como en el resto del escaparate: sin
+            `@types/react` un componente con props tipadas lo rechaza. */}
+        <div className="flex flex-wrap gap-2">
+          {TONOS_BADGE.map(({ tone, texto, icon }) => (
+            <span key={tone}><Badge tone={tone} icon={icon}>{texto}</Badge></span>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {TONOS_BADGE.map(({ tone, texto }) => (
+            <span key={tone}><Badge tone={tone} dot>{texto}</Badge></span>
+          ))}
+        </div>
+
+        <Card title="Dentro de una tarjeta" action={<Badge tone="success" icon="check">Al día</Badge>}>
+          <p className="font-sans text-body-s text-ink-2">
+            Es el sitio donde más aparece: la esquina derecha de una cabecera.
+          </p>
+        </Card>
+
+        <p className="font-sans text-body-s text-ink-3">
+          No hay tono dorado a propósito. El oro significa «lo siguiente que tienes que hacer», y un
+          estado no es una acción: marcar Pendiente en oro es lo que hace que el oro deje de
+          significar algo.
         </p>
       </Seccion>
     </div>
