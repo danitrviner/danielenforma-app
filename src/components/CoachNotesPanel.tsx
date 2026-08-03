@@ -4,6 +4,7 @@ import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
+import { ListRow } from './ui';
 
 interface Props {
   athletes: UserProfile[];
@@ -128,31 +129,28 @@ export default function CoachNotesPanel({ athletes }: Props) {
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(n => (
-            <div
+            <ListRow
               key={n.id}
-              className={`flex items-center gap-3 border rounded-surface p-3 transition-all ${
-                n.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
-              }`}
-            >
-              <button
-                onClick={() => handleToggle(n)}
-                className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-hairline'}`}
-              >
-                {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`font-sans text-label text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
-                {n.relatedAthleteName && (
-                  <p className="font-sans text-caption text-data ">{n.relatedAthleteName}</p>
-                )}
-              </div>
-              <button
-                onClick={() => handleDelete(n.id)}
-                className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1"
-              >
-                <span className="material-symbols-outlined text-body-s">delete</span>
-              </button>
-            </div>
+              className={`border rounded-surface ${n.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'}`}
+              leading={
+                <button
+                  onClick={() => handleToggle(n)}
+                  className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-hairline'}`}
+                >
+                  {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+                </button>
+              }
+              title={n.text}
+              subtitle={n.relatedAthleteName}
+              trailing={
+                <button
+                  onClick={() => handleDelete(n.id)}
+                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1"
+                >
+                  <span className="material-symbols-outlined text-body-s">delete</span>
+                </button>
+              }
+            />
           ))}
         </div>
       )}
