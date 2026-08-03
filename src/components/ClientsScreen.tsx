@@ -14,6 +14,7 @@ import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
@@ -468,18 +469,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : athletes.length === 0 ? (
-          <div className="text-center py-10 flex flex-col items-center gap-3">
-            <p className="text-ink-2 font-sans text-label">No hay atletas registrados todavía.</p>
-            <button
-              onClick={() => inviteInputRef.current?.focus()}
-              className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s">person_add</span>
-              Invitar a tu primer atleta
-            </button>
-          </div>
+          <EmptyState
+            icon="group"
+            title="No hay atletas registrados todavía."
+            actionLabel="Invitar a tu primer atleta"
+            onAction={() => inviteInputRef.current?.focus()}
+          />
         ) : filteredAthletes.length === 0 ? (
-          <div className="text-center py-10 text-ink-2 font-mono text-label">Ningún atleta coincide con "{search}".</div>
+          <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
         ) : (
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {
