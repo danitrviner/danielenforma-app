@@ -8,6 +8,7 @@ import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -173,7 +174,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">monitor_weight</span>
+          <Icon name="monitor_weight" size="m" className="text-accent" />
           Peso corporal
           {logs.length > 0 && (
             <span className="font-mono text-caption text-ink-2 font-normal">
@@ -268,23 +269,16 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 />
                 <span className="font-mono text-caption text-ink-2">kg</span>
               </div>
-              <button
-                onClick={handleAdd}
-                disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-3 min-h-[44px] bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-              >
+              <Button onClick={handleAdd} disabled={adding || !newWeight || !newDate} className="w-full sm:w-auto">
                 {adding ? '…' : 'Añadir'}
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Empty state */}
           {logs.length === 0 && (
-            <div className="text-center py-8 border border-dashed border-hairline rounded-surface">
-              <span className="material-symbols-outlined text-display text-ink-3 block mb-2">monitor_weight</span>
-              <p className="font-mono text-label text-ink-2">
-                {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
-              </p>
+            <div className="border border-dashed border-hairline rounded-surface">
+              <EmptyState icon="monitor_weight" title={readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'} />
             </div>
           )}
 
@@ -346,7 +340,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                               className="p-1 text-ink-2 hover:text-data transition-colors"
                               title="Editar"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
+                              <Icon name="edit" size="s" />
                             </button>
                             <button
                               onClick={() => handleDelete(b.id)}
@@ -354,9 +348,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                               className="p-1 text-ink-2 hover:text-red-400 transition-colors disabled:opacity-40"
                               title="Eliminar"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                                {deletingId === b.id ? 'progress_activity' : 'delete'}
-                              </span>
+                              <Icon name={deletingId === b.id ? 'progress_activity' : 'delete'} size="s" className={deletingId === b.id ? 'animate-spin' : ''} />
                             </button>
                           </div>
                         )}

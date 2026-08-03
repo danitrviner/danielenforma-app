@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T22:14:51.977Z",
-  "commit": "dcdd5f3",
+  "generado": "2026-08-03T22:17:16.688Z",
+  "commit": "f4d699e",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39616
+    "lineasTsx": 39608
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5109,
+    "clasesTokenEnUso": 5105,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1000,
-    "fontSans": 1021,
+    "fontMono": 999,
+    "fontSans": 1020,
     "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 323,
+    "transitionAll": 322,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -227,10 +227,10 @@
       "fontSans": 5
     },
     "src/components/BodyweightPanel.tsx": {
-      "clasesTokenEnUso": 32,
-      "fontMono": 11,
-      "fontSans": 5,
-      "transitionAll": 3
+      "clasesTokenEnUso": 28,
+      "fontMono": 10,
+      "fontSans": 4,
+      "transitionAll": 2
     },
     "src/components/CardioCoachScreen.tsx": {
       "clasesTokenEnUso": 78,
