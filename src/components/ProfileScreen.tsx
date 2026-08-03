@@ -369,7 +369,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-base text-white focus:outline-none focus:border-accent"
             required
           />
         </div>
@@ -381,7 +381,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             step="0.1"
             value={targetWeight}
             onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-base text-white focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -391,7 +391,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded p-2.5 text-xs text-mono text-white focus:outline-none focus:border-accent"
+            className="w-full bg-raised border border-hairline rounded p-2.5 text-base text-mono text-white focus:outline-none focus:border-accent"
           />
         </div>
 
