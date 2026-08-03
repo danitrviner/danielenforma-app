@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T23:02:23.082Z",
-  "commit": "0d59c96",
+  "generado": "2026-08-03T23:05:28.317Z",
+  "commit": "1c9fd7b",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39442
+    "lineasTsx": 39430
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4991,
+    "clasesTokenEnUso": 4987,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 993,
-    "fontSans": 975,
+    "fontSans": 972,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 303,
+    "transitionAll": 301,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -204,10 +204,10 @@
       "roundedFull": 1
     },
     "src/components/AthleteOnboardingWizard.tsx": {
-      "clasesTokenEnUso": 48,
+      "clasesTokenEnUso": 44,
       "fontMono": 5,
-      "fontSans": 16,
-      "transitionAll": 4,
+      "fontSans": 13,
+      "transitionAll": 2,
       "roundedFull": 4
     },
     "src/components/AthleteReportsPanel.tsx": {

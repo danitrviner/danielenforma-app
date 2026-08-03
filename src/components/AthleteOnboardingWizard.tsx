@@ -4,6 +4,7 @@ import {
   ActivityLevel, DietType,
 } from '../types';
 import { saveOnboarding } from '../dbService';
+import { Icon, Button } from './ui';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
 // bloquea la app hasta completarse (gating en App.tsx). Recoge lo esencial del
@@ -214,7 +215,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
               ].map(i => (
                 <p key={i.icon} className="flex items-center gap-3 text-body-s text-ink">
-                  <span className="material-symbols-outlined text-accent">{i.icon}</span>
+                  <Icon name={i.icon} size="m" className="text-accent" />
                   {i.text}
                 </p>
               ))}
@@ -253,7 +254,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
-                    <span className={`material-symbols-outlined text-title-l ${goalBody === g.id ? 'text-accent' : 'text-ink-2'}`}>{g.icon}</span>
+                    <Icon name={g.icon} size="l" className={goalBody === g.id ? 'text-accent' : 'text-ink-2'} />
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
                       <span className="block text-label text-ink-2">{g.desc}</span>
@@ -320,7 +321,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               {DIET_TYPES.map(d => (
                 <Chip key={d.id} selected={dietType === d.id} onClick={() => setDietType(d.id)}>
                   <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-title-s">{d.icon}</span>
+                    <Icon name={d.icon} size="m" />
                     {d.label}
                   </span>
                 </Chip>
@@ -389,7 +390,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 const item = i as { icon: string; text: string };
                 return (
                   <p key={idx} className="flex items-center gap-3 text-body-s text-ink">
-                    <span className="material-symbols-outlined text-accent text-title-s">{item.icon}</span>
+                    <Icon name={item.icon} size="m" className="text-accent" />
                     {item.text}
                   </p>
                 );
@@ -405,29 +406,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       {/* Navegación */}
       <div className="w-full max-w-lg mx-auto px-6 pb-10 flex gap-3">
         {step > 0 && step < TOTAL_STEPS - 1 && (
-          <button
-            onClick={() => setStep(s => s - 1)}
-            className="px-5 py-4 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-body-s font-bold uppercase tracking-wide"
-          >
-            Atrás
-          </button>
+          <Button variant="secondary" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <button
-            onClick={() => setStep(s => s + 1)}
-            disabled={!stepValid()}
-            className="flex-1 py-4 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
-          >
+          <Button size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
             {step === 0 ? 'Empezar' : 'Siguiente'}
-          </button>
+          </Button>
         ) : (
-          <button
-            onClick={finish}
-            disabled={saving}
-            className="flex-1 py-4 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
-          >
+          <Button size="l" onClick={finish} disabled={saving} className="flex-1">
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
-          </button>
+          </Button>
         )}
       </div>
     </div>
