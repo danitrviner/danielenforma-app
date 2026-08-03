@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, type IconSize } from './index';
+import { Button, Icon, type ButtonSize, type ButtonVariant, type IconSize } from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escaparate de primitivas — ruta `/ui`, solo en desarrollo
@@ -64,6 +64,19 @@ function Muestra({
   );
 }
 
+const VARIANTES_BOTON: { variant: ButtonVariant; texto: string }[] = [
+  { variant: 'primary', texto: 'Empezar entreno' },
+  { variant: 'secondary', texto: 'Ver detalle' },
+  { variant: 'ghost', texto: 'Cancelar' },
+  { variant: 'danger', texto: 'Eliminar' },
+];
+
+const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
+  { size: 's', pie: 's · 36' },
+  { size: 'm', pie: 'm · 44' },
+  { size: 'l', pie: 'l · 48' },
+];
+
 const TAMANOS_ICONO: { size: IconSize; pie: string }[] = [
   { size: 's', pie: 's · 16' },
   { size: 'm', pie: 'm · 20' },
@@ -118,6 +131,49 @@ export default function Showcase() {
           El color se hereda del contenedor: la primitiva no lo decide. Sin la prop label el icono
           es decoración y queda oculto al lector de pantalla — con ella, se anuncia como imagen con
           nombre.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Button"
+        resumen="Cuatro variantes y tres tamaños. El dorado es la acción siguiente y va uno por pantalla; el tamaño por defecto mide 44 px, que es el mínimo táctil."
+      >
+        <div className="flex flex-col gap-3">
+          {VARIANTES_BOTON.map(({ variant, texto }) => (
+            <div key={variant} className="flex items-center gap-3">
+              <Button variant={variant} icon="bolt">{texto}</Button>
+              <span className="font-sans text-caption uppercase tracking-widest text-ink-3">
+                {variant}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* El `key` va en el envoltorio y no en el Button: sin `@types/react`
+              instalado, un componente con props tipadas a mano lo rechaza como
+              propiedad de más (ver la nota en Muestra). */}
+          {TAMANOS_BOTON.map(({ size, pie }) => (
+            <div key={size}>
+              <Button size={size} variant="secondary">{pie}</Button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="primary" loading>Guardando</Button>
+          <Button variant="secondary" disabled icon="lock">Bloqueado</Button>
+          <Button variant="secondary" iconTrailing="chevron_right">Siguiente</Button>
+          <Button variant="ghost" icon="close" label="Cerrar" />
+          <Button variant="secondary" icon="more_vert" label="Más opciones" />
+        </div>
+
+        <Button variant="primary" fullWidth icon="check">Ancho completo</Button>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Sin texto, el botón se vuelve cuadrado para no perder objetivo táctil y exige la prop
+          label. Con el tabulador se ve el anillo de foco: hoy no hay ni un focus-visible en toda
+          la app, y una primitiva nueva no puede nacer con esa deuda.
         </p>
       </Seccion>
     </div>
