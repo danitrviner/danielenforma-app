@@ -123,7 +123,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             className={`flex items-center gap-1 px-3 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
               tab === t.id
                 ? 'bg-accent/15 text-accent border border-accent/30'
-                : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
+                : 'bg-field text-ink-2 border border-hairline hover:border-strong'
             }`}
           >
             <span className="material-symbols-outlined text-sm">{t.icon}</span>

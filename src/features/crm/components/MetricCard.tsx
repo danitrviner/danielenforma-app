@@ -18,7 +18,7 @@ export default function MetricCard({ icon, label, value, sub, accent = 'var(--co
     <Wrapper
       {...(onClick ? { type: 'button' as const, onClick } : {})}
       className={`w-full text-left bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3 flex flex-col gap-1.5 ${
-        onClick ? 'hover:border-white/12 transition-colors cursor-pointer' : ''
+        onClick ? 'hover:border-strong transition-colors cursor-pointer' : ''
       }`}
     >
       <div className="flex items-center gap-2">

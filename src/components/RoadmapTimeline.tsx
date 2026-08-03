@@ -474,7 +474,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={item.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-surface overflow-hidden border border-white/10 transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
+        className={`rounded-surface overflow-hidden border border-hairline transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
         title={`${item.title}${item.description ? ' — ' + item.description : ''}${item.targetDate ? ' · ' + fmtDate(item.targetDate) : ''}`}
         onClick={() => !readonly && openEdit(item)}
       >
@@ -541,7 +541,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-surface border border-white/5 bg-field overflow-hidden shadow-xl">
+      <div className="rounded-surface border border-hairline bg-field overflow-hidden shadow-xl">
         <div className="px-3 py-2 border-b border-hairline flex items-center gap-1.5">
           <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
           <span className="font-mono text-[10px] uppercase text-ink-2 tracking-widest">{label}</span>
@@ -605,12 +605,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-white/5 rounded-surface bg-field overflow-hidden shadow-2xl">
+      <div className="hidden sm:flex border border-hairline rounded-surface bg-field overflow-hidden shadow-2xl">
 
         {/* Sidebar — never scrolls */}
         <div
           style={{ width: LANE_HEADER_W, flexShrink: 0, height: totalHeight }}
-          className="bg-field border-r border-white/10 relative z-10"
+          className="bg-field border-r border-hairline relative z-10"
         >
           <div style={{ height: HEADER_H }} />
           {(['Entrenamiento', 'Nutrición', 'Objetivos'] as const).map((label, i) => (
@@ -738,7 +738,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-white/5">
+      <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-hairline">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-control" style={{ background: MESO_COLORS[0] }} />
           <span className="font-mono text-[9px] text-ink-2 uppercase">Mesociclo</span>

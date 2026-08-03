@@ -11,7 +11,7 @@ type Tono = 'ok' | 'aviso' | 'apagado' | 'peligro';
 const TONO_CLASS: Record<Tono, string> = {
   ok:       'bg-success/12 text-success border-success/25',
   aviso:    'bg-warning/12 text-warning border-warning/25',
-  apagado:  'bg-white/5 text-ink-2 border-white/10',
+  apagado:  'bg-white/5 text-ink-2 border-hairline',
   peligro:  'bg-danger/12 text-danger border-danger/25',
 };
 

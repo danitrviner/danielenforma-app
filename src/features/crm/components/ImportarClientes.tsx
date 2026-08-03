@@ -102,7 +102,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
     >
       {paso === 'elegir' && (
         <div className="space-y-3">
-          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-white/12 hover:border-accent/40 cursor-pointer transition-colors">
+          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-strong hover:border-accent/40 cursor-pointer transition-colors">
             <span className="material-symbols-outlined text-2xl text-ink-3">upload_file</span>
             <span className="font-sans text-[11px] text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input

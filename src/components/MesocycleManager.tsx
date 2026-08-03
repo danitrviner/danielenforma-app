@@ -292,7 +292,7 @@ const DayCard: React.FC<{
           ))
         )}
       </div>
-      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between rounded-control"
+      <div className="mt-3 pt-2 border-t border-hairline flex items-center justify-between rounded-control"
         style={{ backgroundColor: totalBg }}
       >
         <span className="font-mono text-[10px] text-ink-2 uppercase">Total</span>
@@ -418,7 +418,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {LEGEND.map(l => (
-          <div key={l.label} className="flex items-center gap-2 px-2.5 py-1 rounded-surface border border-white/5" style={{ backgroundColor: l.bg }}>
+          <div key={l.label} className="flex items-center gap-2 px-2.5 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
             <span className="font-mono text-[10px] font-bold" style={{ color: l.text }}>{l.label}</span>
             <span className="font-mono text-[9px] opacity-70" style={{ color: l.text }}>{l.range}</span>
           </div>

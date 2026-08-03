@@ -260,7 +260,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-white/10 flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
@@ -426,7 +426,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-2.5">
                       <div className="flex gap-1.5 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded-control px-1.5 py-0.5 text-ink">
+                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-hairline rounded-control px-1.5 py-0.5 text-ink">
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
@@ -479,11 +479,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`p-2.5 rounded-control border transition-colors disabled:opacity-30 ${listening ? 'bg-danger/15 border-danger/40 text-danger animate-pulse' : 'bg-white/5 border-white/10 text-ink-2 hover:text-white'}`}>
+                    className={`p-2.5 rounded-control border transition-colors disabled:opacity-30 ${listening ? 'bg-danger/15 border-danger/40 text-danger animate-pulse' : 'bg-white/5 border-hairline text-ink-2 hover:text-white'}`}>
                     <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
                   </button>
                 )}
@@ -499,7 +499,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
       {editingInstructions && (
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
-          <div className="bg-bg border border-white/10 rounded-surface w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent">tune</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
@@ -513,12 +513,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3.5 py-2.5 text-sm text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
             <div className="flex gap-2 p-4 pt-0">
               <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-control bg-white/5 border border-white/10 text-ink-2 text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+                className="flex-1 py-2.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-xs font-bold uppercase tracking-wide disabled:opacity-40">
                 Cancelar
               </button>
               <button onClick={saveInstructions} disabled={savingInstructions}

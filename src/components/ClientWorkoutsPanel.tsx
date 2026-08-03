@@ -210,7 +210,7 @@ export default function ClientWorkoutsPanel({
               Entrenamientos asignados
             </h3>
             {assignments.length > 0 && (
-              <span className="font-mono text-[10px] text-ink-2 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+              <span className="font-mono text-[10px] text-ink-2 bg-white/5 border border-hairline rounded-full px-2 py-0.5">
                 {assignments.length}
               </span>
             )}

@@ -89,7 +89,7 @@ export default function DataTable<T>({
                       },
                     }
                   : {})}
-                className={`border-b border-white/4 ${
+                className={`border-b border-hairline ${
                   clicable
                     ? 'cursor-pointer hover:bg-white/4 focus:bg-white/6 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-accent/40'
                     : ''

@@ -68,7 +68,7 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-2.5 rounded-control'} border font-sans text-sm transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white shadow-lg shadow-accent/10'
-          : 'bg-surface border-white/10 text-ink-2 hover:border-strong'
+          : 'bg-surface border-hairline text-ink-2 hover:border-strong'
       }`}
     >
       {children}
@@ -88,7 +88,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-const inputCls = 'w-full bg-surface border border-white/10 focus:border-accent/60 rounded-surface px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-sm text-white placeholder-ink-2/40 outline-none transition-colors';
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
   const [step, setStep] = useState(0);
@@ -207,7 +207,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
                 <video src="..." controls poster="..." className="rounded-surface w-full" /> */}
-            <div className="bg-surface border border-white/10 rounded-surface p-5 space-y-3">
+            <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
               {[
                 { icon: 'person', text: 'Cuéntanos sobre ti y tu objetivo' },
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
@@ -407,7 +407,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-control bg-white/5 border border-white/10 text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
+            className="px-5 py-3.5 rounded-control bg-white/5 border border-hairline text-ink-2 font-sans text-sm font-bold uppercase tracking-wide"
           >
             Atrás
           </button>

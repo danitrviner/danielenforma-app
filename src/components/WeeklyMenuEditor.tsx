@@ -505,7 +505,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   {shoppingList.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
+                    <div key={i} className="flex items-center justify-between gap-2 border-b border-hairline py-1">
                       <span className="font-sans text-[11px] text-ink-2 truncate">{item.name}</span>
                       <span className="font-mono text-[10px] text-white flex-shrink-0">{item.display}</span>
                     </div>

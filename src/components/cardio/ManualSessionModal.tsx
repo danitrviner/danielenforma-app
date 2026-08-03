@@ -42,7 +42,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
 
   return (
     <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-surface border border-white/10 rounded-surface p-5 space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-sm bg-surface border border-hairline rounded-surface p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <h3 className="font-sans font-bold text-base text-white">Añadir sesión a mano</h3>
         <p className="text-[10px] font-mono text-ink-2">Sin banda de por medio — no suma XP ni puntos.</p>
 

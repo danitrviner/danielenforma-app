@@ -23,7 +23,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
   return (
     <div className="space-y-3">
       {SECCIONES.length > 1 && (
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
           {SECCIONES.map(s => {
             // "Resumen" (path exacto '/crm') necesita coincidencia exacta —
             // si no, `startsWith('/crm')` también sería verdad en
@@ -35,10 +35,10 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                 key={s.path}
                 type="button"
                 onClick={() => navigate(s.path)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                className={`flex shrink-0 items-center gap-1 px-3 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   activo
                     ? 'bg-accent/15 text-accent border border-accent/30'
-                    : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">{s.icon}</span>

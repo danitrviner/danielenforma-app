@@ -67,7 +67,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
         <input
           value={title} onChange={e => setTitle(e.target.value)} placeholder={SESSION_TYPE_LABEL[session.type] ?? 'Título'}
-          className="w-full bg-transparent font-sans font-black text-2xl text-white placeholder:text-white/30 focus:outline-none border-b border-white/10 pb-2"
+          className="w-full bg-transparent font-sans font-black text-2xl text-white placeholder:text-white/30 focus:outline-none border-b border-hairline pb-2"
         />
 
         {comparison.count > 0 && (
@@ -117,7 +117,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-[10px] font-mono uppercase text-ink-2">Etiquetas</p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map(t => (
-              <span key={t} className="flex items-center gap-1 bg-surface border border-white/10 rounded-full px-2.5 py-1 text-[10px] font-mono text-white">
+              <span key={t} className="flex items-center gap-1 bg-surface border border-hairline rounded-full px-2.5 py-1 text-[10px] font-mono text-white">
                 {t}
                 <button onClick={() => setTags(tags.filter(x => x !== t))} className="text-ink-2 hover:text-white">×</button>
               </span>

@@ -54,7 +54,7 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
             type="button"
             onClick={() => elegir('no_continua')}
             disabled={actualizar.isPending}
-            className="flex items-center gap-2 p-3 rounded-control bg-white/5 border border-white/10 hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
+            className="flex items-center gap-2 p-3 rounded-control bg-white/5 border border-hairline hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
           >
             <span className="material-symbols-outlined text-lg text-ink-2">flag</span>
             <div>

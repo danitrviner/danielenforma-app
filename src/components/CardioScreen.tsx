@@ -606,12 +606,12 @@ export default function CardioScreen({ profile }: Props) {
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
                 <button key={r} onClick={() => setHistoryRange(r)}
-                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-white/10 hover:text-white'}`}>
+                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
                   {{ all: 'Todo', week: 'Semana', month: 'Mes', year: 'Año' }[r]}
                 </button>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
-                className="bg-bg border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
                 <option value="">Cualquier tipo</option>
                 <option value="libre">Libre</option>
                 <option value="zona2">Zona 2</option>
@@ -619,7 +619,7 @@ export default function CardioScreen({ profile }: Props) {
               </select>
               {tags.length > 0 && (
                 <select value={historyTag} onChange={e => setHistoryTag(e.target.value)}
-                  className="bg-bg border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                  className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
                   <option value="">Cualquier etiqueta</option>
                   {tags.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>

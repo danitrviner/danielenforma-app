@@ -354,7 +354,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-white/10 px-2 py-1 rounded-control transition-all"
+                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
                             >
                               {r}
                             </button>
@@ -469,7 +469,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {showQuickReplyManager && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface border border-white/10 rounded-surface w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
+          <div className="bg-surface border border-hairline rounded-surface w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between">
               <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
               <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">
@@ -483,7 +483,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     value={r}
                     onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                     placeholder="ej. Buen trabajo esta semana, sigue así."
-                    className="flex-1 bg-raised border border-white/10 rounded-control px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}

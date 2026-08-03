@@ -136,7 +136,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-surface border border-white/10 focus:border-accent/50 rounded-control px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-sm text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
@@ -144,7 +144,7 @@ export default function ClientStatusCard({
                 {savingNote ? 'Guardando…' : 'Guardar'}
               </button>
               <button onClick={() => setEditingNote(false)} disabled={savingNote}
-                className="px-3 py-1.5 rounded-control bg-white/5 border border-white/10 text-ink-2 text-[10px] font-bold uppercase tracking-wide">
+                className="px-3 py-1.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-[10px] font-bold uppercase tracking-wide">
                 Cancelar
               </button>
             </div>

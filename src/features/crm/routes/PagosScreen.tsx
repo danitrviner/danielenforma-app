@@ -115,7 +115,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 className={`px-2.5 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
-                    : 'bg-field text-ink-2 border border-hairline hover:border-white/12'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
                 {f === 'todos' ? 'Todos' : f === 'pendiente' ? 'Pendientes' : 'Pagados'}
