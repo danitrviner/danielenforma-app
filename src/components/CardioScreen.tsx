@@ -564,7 +564,7 @@ export default function CardioScreen({ profile }: Props) {
               )}
               <div className="flex items-center gap-2">
                 <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-[#0e0e0e] border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent">
+                  className="bg-bg border border-white/7 rounded p-2.5 text-xs text-white focus:outline-none focus:border-accent">
                   <option value="libre">Libre</option>
                   <option value="zona2">Sesión Zona 2</option>
                   <option value="intervalos" disabled={!intervalAssignment}>
@@ -611,7 +611,7 @@ export default function CardioScreen({ profile }: Props) {
                 </button>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
-                className="bg-[#0e0e0e] border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                className="bg-bg border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
                 <option value="">Cualquier tipo</option>
                 <option value="libre">Libre</option>
                 <option value="zona2">Zona 2</option>
@@ -619,7 +619,7 @@ export default function CardioScreen({ profile }: Props) {
               </select>
               {tags.length > 0 && (
                 <select value={historyTag} onChange={e => setHistoryTag(e.target.value)}
-                  className="bg-[#0e0e0e] border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                  className="bg-bg border border-white/10 rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
                   <option value="">Cualquier etiqueta</option>
                   {tags.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>

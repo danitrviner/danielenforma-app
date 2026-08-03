@@ -166,7 +166,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
+  const INPUT_CLS = 'bg-bg border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-4">

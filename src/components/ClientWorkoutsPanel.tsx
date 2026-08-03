@@ -97,7 +97,7 @@ export default function ClientWorkoutsPanel({
 
       {/* Onboarding exercise reference */}
       {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
-        <div className="bg-[#0e0e0e] border border-accent/15 rounded-xl p-4 space-y-3">
+        <div className="bg-bg border border-accent/15 rounded-xl p-4 space-y-3">
           <p className="font-mono text-[10px] text-accent uppercase tracking-wider flex items-center gap-1.5">
             <span className="material-symbols-outlined text-sm">person_check</span>
             Preferencias de ejercicio

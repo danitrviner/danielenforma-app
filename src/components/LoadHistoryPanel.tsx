@@ -426,7 +426,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Progresión semanal/diaria (qué tramos cuentan para el cálculo) ── */}
       {ormActive && progressBuckets.length > 0 && (
-        <div className="bg-[#111] border border-white/7 rounded-xl p-4 space-y-3">
+        <div className="bg-bg border border-white/7 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-mono text-[10px] uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
@@ -583,7 +583,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
-            <div key={row.date} className="bg-[#111] border border-white/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+            <div key={row.date} className="bg-bg border border-white/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
               <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-[11px]">
                 <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
@@ -603,7 +603,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         <div className="hidden sm:block overflow-x-auto rounded-lg border border-white/50">
           <table className="w-full text-left" style={{ minWidth: ormActive ? 460 : 360 }}>
             <thead>
-              <tr className="bg-[#111] border-b border-white/40">
+              <tr className="bg-bg border-b border-white/40">
                 {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
                   <th key={h} className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase tracking-wider">{h}</th>
                 ))}
@@ -613,7 +613,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               {[...sessionRows].reverse().map((row, i) => (
                 <tr
                   key={row.date}
-                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-raised transition-colors`}
+                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
                   <td className="px-3 py-2.5 font-mono text-[11px] text-ink-2">{row.label}</td>
                   <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>

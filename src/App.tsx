@@ -241,7 +241,7 @@ function AppContent() {
   if (!isCoach && onboardingGate !== 'done') {
     if (onboardingGate === 'missing') {
       return (
-        <Suspense fallback={<div className="min-h-screen bg-[#0e0e0e]" />}>
+        <Suspense fallback={<div className="min-h-screen bg-bg" />}>
           <AthleteOnboardingWizard
             profile={profile}
             onComplete={() => setOnboardingGate('done')}

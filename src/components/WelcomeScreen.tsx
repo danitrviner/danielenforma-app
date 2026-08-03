@@ -143,7 +143,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   // Show a minimal "confirm your email" step instead of the full login UI.
   if (awaitingInviteEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-bg relative overflow-hidden">
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>
 
@@ -190,7 +190,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0e0e0e] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-bg relative overflow-hidden">
       {/* Background glow designs */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full"></div>

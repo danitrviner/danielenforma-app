@@ -258,7 +258,7 @@ export default function ClientDietsPanel({
         </p>
 
         {publishedMenu && menuAdherence.daysLogged > 0 && (
-          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 bg-bg border border-white/7 rounded-lg px-3 py-2">
             <span className="material-symbols-outlined text-data text-sm">task_alt</span>
             <span className="font-mono text-[10px] text-ink-2">
               Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
@@ -328,7 +328,7 @@ export default function ClientDietsPanel({
               <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
-                    <div key={i} className="font-mono text-[10px] text-ink-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                    <div key={i} className="font-mono text-[10px] text-ink-2 bg-bg border border-white/7 rounded-lg px-3 py-2">
                       <span className="text-ink-3">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-accent">{s.toRecipeName}</span>
                     </div>
                   ))}

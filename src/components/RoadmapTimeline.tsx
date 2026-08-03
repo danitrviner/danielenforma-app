@@ -495,7 +495,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
     <>
       <div
         style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}
-        className="bg-[#0c0c0c] border-b border-[#1e1e1e]"
+        className="bg-bg border-b border-[#1e1e1e]"
       />
       <svg style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}>
         {[wDomainMin, (wDomainMin + wDomainMax) / 2, wDomainMax].map(w => (
@@ -663,7 +663,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={i}
                 style={{ position: 'absolute', left: 0, top: HEADER_H + i * LANE_H, width: containerWidth, height: LANE_H }}
-                className={`border-b border-[#1e1e1e] ${i % 2 === 0 ? 'bg-[#111111]' : 'bg-[#0e0e0e]'}`}
+                className={`border-b border-[#1e1e1e] ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}
               />
             ))}
 

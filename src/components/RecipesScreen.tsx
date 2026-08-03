@@ -151,7 +151,7 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
     >
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
-        : <div className="absolute inset-0 bg-gradient-to-br from-[#1e1e1e] to-[#121212] flex items-center justify-center">
+        : <div className="absolute inset-0 bg-gradient-to-br from-[#1e1e1e] to-bg flex items-center justify-center">
             <span className="material-symbols-outlined text-5xl text-ink-3">skillet</span>
           </div>
       }

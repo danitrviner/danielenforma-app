@@ -16,7 +16,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
   const [pe, setPe] = useState(suggested);
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
+    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
           <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Esfuerzo percibido</p>

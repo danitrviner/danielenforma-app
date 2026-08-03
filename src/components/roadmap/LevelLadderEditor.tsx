@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-[#0e0e0e] border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
+            className="bg-bg border border-white/15 rounded-lg p-2 text-xs text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -126,7 +126,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                 value={level.name}
                 onChange={e => updateLevel(level.id, { name: e.target.value })}
                 placeholder="Nombre del nivel"
-                className="flex-1 min-w-[140px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
+                className="flex-1 min-w-[140px] bg-bg border border-white/7 rounded p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
                 <span className="font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
@@ -136,7 +136,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
 
             <div className="space-y-1.5">
               {level.criteria.map(c => (
-                <div key={c.id} className="flex flex-wrap items-center gap-1.5 bg-[#0e0e0e] border border-white/7 rounded-lg p-2">
+                <div key={c.id} className="flex flex-wrap items-center gap-1.5 bg-bg border border-white/7 rounded-lg p-2">
                   <select
                     value={c.kind}
                     onChange={e => updateCriterion(level.id, c.id, { kind: e.target.value as LevelCriterionKind })}

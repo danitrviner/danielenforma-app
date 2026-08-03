@@ -46,8 +46,8 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   boolean: 'Sí / No',
 };
 
-const INPUT_CLS      = 'bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent';
-const MINI_INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const INPUT_CLS      = 'bg-bg border border-white/7 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const MINI_INPUT_CLS = 'bg-bg border border-white/7 rounded px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 

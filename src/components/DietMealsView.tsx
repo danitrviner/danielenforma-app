@@ -99,7 +99,7 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       })}
 
       {/* Day totals */}
-      <div className="bg-[#0e0e0e] border border-accent/20 rounded-xl overflow-hidden">
+      <div className="bg-bg border border-accent/20 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e]">
           <span className="font-mono text-[10px] text-accent uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">

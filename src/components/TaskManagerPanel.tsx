@@ -91,14 +91,14 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -108,7 +108,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             />
           </div>
           <button

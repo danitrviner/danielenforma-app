@@ -78,14 +78,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -96,7 +96,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
           </div>

@@ -600,7 +600,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[480px]">
                   <thead>
-                    <tr className="bg-[#111111] border-b border-white/40">
+                    <tr className="bg-bg border-b border-white/40">
                       <th className="px-4 py-2 font-mono text-[9px] text-ink-2 uppercase w-12">Serie</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Peso (kg)</th>
                       <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Reps</th>
@@ -658,7 +658,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-20 bg-bg border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -669,7 +669,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-16 bg-bg border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -680,7 +680,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className="w-14 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-14 bg-bg border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -723,25 +723,25 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
 
               {/* Athlete's note for this exercise */}
-              <div className="px-4 py-3 bg-[#111111] border-t border-white/30">
+              <div className="px-4 py-3 bg-bg border-t border-white/30">
                 <label className="font-mono text-[9px] text-ink-2 uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
                 <textarea
                   value={exerciseNoteInputs[exIdx] || ''}
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
                   placeholder="ej. Molestia leve en el hombro derecho..."
                   rows={2}
-                  className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-2.5 text-xs text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-bg border border-white/7 rounded-lg p-2.5 text-xs text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
 
               {we.notes && (
-                <div className="px-4 py-2 bg-[#111111] border-t border-white/30">
+                <div className="px-4 py-2 bg-bg border-t border-white/30">
                   <p className="font-mono text-[10px] text-ink-2 italic">📌 {we.notes}</p>
                 </div>
               )}
 
               {ex?.instructions && (
-                <div className="px-4 py-2 bg-[#111111] border-t border-white/30">
+                <div className="px-4 py-2 bg-bg border-t border-white/30">
                   <p className="font-mono text-[9px] text-ink-3 uppercase mb-0.5">Descripción</p>
                   <p className="text-xs text-ink-2">{ex.instructions}</p>
                 </div>
@@ -765,7 +765,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             onChange={e => setWorkoutNoteInput(e.target.value)}
             placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
             rows={2}
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg p-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-white/7 rounded-lg p-3 text-sm text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 

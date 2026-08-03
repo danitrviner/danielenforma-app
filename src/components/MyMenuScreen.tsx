@@ -339,7 +339,7 @@ export default function MyMenuScreen({ profile }: Props) {
           </div>
           <div className="space-y-1.5">
             {batchPlan.map(e => (
-              <div key={e.recipeId} className="flex items-center gap-3 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+              <div key={e.recipeId} className="flex items-center gap-3 bg-bg border border-white/7 rounded-lg px-3 py-2">
                 <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
                   {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
                 </div>
@@ -563,7 +563,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 <button
                   key={ci}
                   onClick={() => confirmSwap(c)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-[#0e0e0e] border border-white/7 hover:border-accent/40 rounded-xl transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-bg border border-white/7 hover:border-accent/40 rounded-xl transition-all"
                 >
                   <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
                     {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}

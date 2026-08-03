@@ -1002,7 +1002,7 @@ export default function ClientReviewsPanel({
                           <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                         </div>
                         {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 bg-[#111111] space-y-3 border-t border-white/40">
+                          <div className="px-4 pb-4 pt-2 bg-bg space-y-3 border-t border-white/40">
                             {/* R7 action bar */}
                             {editingReviewKey !== key && (
                               <div className="flex items-center gap-2 pb-1">
@@ -1157,7 +1157,7 @@ export default function ClientReviewsPanel({
                         <span className="material-symbols-outlined text-ink-2 text-sm transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
                       </div>
                       {isExpanded && (
-                        <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-2">
+                        <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-2">
                           {/* R7 action bar */}
                           {editingReviewKey !== key && (
                             <div className="flex items-center gap-2 pb-1">
@@ -1263,7 +1263,7 @@ export default function ClientReviewsPanel({
               {/* Inline new-questionnaire editor modal — bottom-sheet on mobile, centered dialog on desktop */}
               {showNewQEditor && (
                 <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center sm:p-4">
-                  <div className="relative w-full sm:max-w-2xl bg-[#0d0d0d] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+                  <div className="relative w-full sm:max-w-2xl bg-bg border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
                     <button
                       onClick={() => setShowNewQEditor(false)}
                       className="absolute top-4 right-4 p-1.5 text-ink-2 hover:text-white transition-colors"
@@ -1294,7 +1294,7 @@ export default function ClientReviewsPanel({
                   <select
                     value={assignQId}
                     onChange={e => setAssignQId(e.target.value)}
-                    className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-bg border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
                     {coachQuestionnaires.map(q => (

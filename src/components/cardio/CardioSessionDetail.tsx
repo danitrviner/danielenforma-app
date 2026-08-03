@@ -55,7 +55,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-[#0e0e0e] overflow-y-auto">
+    <div className="fixed inset-0 z-[90] bg-bg overflow-y-auto">
       <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-ink-2 hover:text-white transition-colors">

@@ -272,14 +272,14 @@ const DayCard: React.FC<{
                 type="number" min={0} max={25}
                 value={a.series}
                 onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
-                className="w-11 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs focus:outline-none focus:border-accent"
+                className="w-11 bg-bg border border-white/7 rounded px-1 py-0.5 text-center text-white font-mono text-xs focus:outline-none focus:border-accent"
               />
               {otherDays.length > 0 && (
                 <select
                   value=""
                   onChange={e => { if (e.target.value) onMove(i, parseInt(e.target.value)); }}
                   title="Mover a otro día"
-                  className="bg-[#0e0e0e] border border-white/7 rounded text-[9px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                  className="bg-bg border border-white/7 rounded text-[9px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                 >
                   <option value="">→</option>
                   {otherDays.map(d => <option key={d} value={d}>Día {d + 1}</option>)}
@@ -301,7 +301,7 @@ const DayCard: React.FC<{
       <select
         value=""
         onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-        className="mt-2 w-full bg-[#0e0e0e] border border-dashed border-white/20 rounded-lg px-2 py-1 text-[10px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+        className="mt-2 w-full bg-bg border border-dashed border-white/20 rounded-lg px-2 py-1 text-[10px] font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
       >
         <option value="">+ Añadir grupo…</option>
         {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (
@@ -370,7 +370,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map(group => (
           <div key={group.name} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-[#0e0e0e] border-b border-white/7">
+            <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-white/7">
               <p className="font-sans font-bold text-sm text-white">{group.name}</p>
               <span className="font-mono text-[10px] text-ink-2">
                 {group.exercises.reduce((s, e) => s + e.sets, 0)} series · {group.exercises.length} ejercicios
@@ -435,8 +435,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
       <div className="overflow-x-auto rounded-xl border border-white/7">
         <table className="w-full border-collapse text-sm" style={{ minWidth: `${130 + columns.length * 140}px` }}>
           <thead>
-            <tr className="bg-[#0e0e0e]">
-              <th className="sticky left-0 z-10 bg-[#0e0e0e] text-left px-4 py-3 font-mono text-[10px] text-ink-2 uppercase tracking-wider border-b border-r border-white/7 w-[130px]">
+            <tr className="bg-bg">
+              <th className="sticky left-0 z-10 bg-bg text-left px-4 py-3 font-mono text-[10px] text-ink-2 uppercase tracking-wider border-b border-r border-white/7 w-[130px]">
                 Grupo muscular
               </th>
               {columns.map(m => {
@@ -460,8 +460,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           </thead>
           <tbody>
             {MUSCLE_GROUPS.map((group, rowIdx) => (
-              <tr key={group} className={rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}>
-                <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-white/7 font-sans text-xs text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-[#111]' : 'bg-[#0e0e0e]'}`}>
+              <tr key={group} className={rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}>
+                <td className={`sticky left-0 z-10 px-4 py-2.5 border-r border-white/7 font-sans text-xs text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
                   {MUSCLE_LABELS[group]}
                 </td>
                 {columns.map((m, mIdx) => {
@@ -508,8 +508,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           </tbody>
           <tfoot>
             <tr><td colSpan={columns.length + 1} className="h-px bg-[#2a2a2a] p-0" /></tr>
-            <tr className="bg-[#0e0e0e]">
-              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
+            <tr className="bg-bg">
+              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
               {columns.map((m, mIdx) => {
                 const total = totals[mIdx];
                 const delta = mIdx > 0 ? total - totals[mIdx - 1] : null;
@@ -524,8 +524,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                 );
               })}
             </tr>
-            <tr className="bg-[#111]">
-              <td className="sticky left-0 z-10 bg-[#111] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
+            <tr className="bg-bg">
+              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.daysPerWeek - columns[mIdx - 1].daysPerWeek : null;
                 return (
@@ -538,8 +538,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                 );
               })}
             </tr>
-            <tr className="bg-[#0e0e0e]">
-              <td className="sticky left-0 z-10 bg-[#0e0e0e] px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
+            <tr className="bg-bg">
+              <td className="sticky left-0 z-10 bg-bg px-4 py-2.5 border-r border-t border-white/7 font-mono text-[10px] text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.weeks - columns[mIdx - 1].weeks : null;
                 return (

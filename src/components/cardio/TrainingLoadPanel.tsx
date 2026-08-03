@@ -62,7 +62,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
       {(focus.lowAerobicPct + focus.highAerobicPct + focus.anaerobicPct) > 0 && (
         <div className="space-y-1.5">
           <p className="text-[9px] font-mono uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
-          <div className="flex h-2 rounded-full overflow-hidden bg-[#0e0e0e]">
+          <div className="flex h-2 rounded-full overflow-hidden bg-bg">
             <div className="h-full bg-data" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />
             <div className="h-full bg-[#ff8c42]" style={{ width: `${focus.highAerobicPct}%` }} title="Aeróbico alto (Z4)" />
             <div className="h-full bg-[#ff4d4d]" style={{ width: `${focus.anaerobicPct}%` }} title="Anaeróbico (Z5)" />

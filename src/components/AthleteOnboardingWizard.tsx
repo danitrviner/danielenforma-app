@@ -184,7 +184,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const pct = Math.round((step / (TOTAL_STEPS - 1)) * 100);
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-bg flex flex-col relative overflow-hidden">
       <style>{`@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }`}</style>
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full pointer-events-none"></div>

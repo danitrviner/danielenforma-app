@@ -110,7 +110,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
+    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         {phase === 'intro' && (
           <>

@@ -314,7 +314,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       >expand_more</span>
                     </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-3">
+                      <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-3">
                         <div className="grid grid-cols-3 gap-2 font-mono text-xs">
                           {[
                             { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
@@ -444,7 +444,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     >expand_more</span>
                   </div>
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-2">
+                    <div className="px-4 pb-4 pt-2 bg-bg border-t border-white/40 space-y-2">
                       {r.answers.map(ans => {
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (

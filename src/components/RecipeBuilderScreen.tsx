@@ -27,7 +27,7 @@ function IndyaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
     <article className="relative rounded-xl overflow-hidden bg-[#1c1b1b] border border-white/7 aspect-[4/5] flex flex-col justify-end">
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" />
-        : <div className="absolute inset-0 bg-gradient-to-br from-[#1e1e1e] to-[#121212] flex items-center justify-center">
+        : <div className="absolute inset-0 bg-gradient-to-br from-[#1e1e1e] to-bg flex items-center justify-center">
             <span className="material-symbols-outlined text-5xl text-ink-3">skillet</span>
           </div>
       }

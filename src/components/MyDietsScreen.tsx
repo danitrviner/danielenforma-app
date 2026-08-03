@@ -358,7 +358,7 @@ export default function MyDietsScreen({ profile }: Props) {
               </div>
 
               {pickerTab === 'alimentos' && enabledModes.length > 1 && (
-                <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
+                <div className="px-4 py-2 bg-bg border-b border-white/7 flex gap-2 flex-wrap">
                   {enabledModes.map(mode => (
                     <button key={mode} onClick={() => setActiveDietMode(mode)}
                       className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-[#201f1f] text-ink-2 border border-white/7'}`}

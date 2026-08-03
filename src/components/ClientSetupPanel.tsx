@@ -244,7 +244,7 @@ export default function ClientSetupPanel({
                     <p className="font-sans font-bold text-sm text-white">{phase.title}</p>
                     {phase.subtitle && <span className="font-mono text-[9px] text-ink-2">{phase.subtitle}</span>}
                   </div>
-                  <div className="w-full h-1.5 bg-[#0e0e0e] rounded-full mt-2 overflow-hidden">
+                  <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-emerald-400' : 'bg-accent'}`}
                       style={{ width: `${phase.donePct}%` }}
@@ -310,7 +310,7 @@ export default function ClientSetupPanel({
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
               required
             />
             <button

@@ -67,7 +67,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
+const MINI = 'bg-bg border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -182,7 +182,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const meta = SECTION_META[section];
         const qs   = questions.filter(q => q.section === section);
         return (
-          <div key={section} className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
+          <div key={section} className="bg-bg border border-white/7 rounded-xl p-5 space-y-4">
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
@@ -195,7 +195,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-accent/30 bg-[#111]' : 'border-[#1e1e1e] bg-[#0a0a0a]'}`}>
+                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-[#1e1e1e] bg-bg'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
@@ -222,10 +222,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
@@ -430,7 +430,7 @@ function IndyaImportPanel() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
+    <div className="bg-bg border border-white/7 rounded-xl p-5 space-y-4">
       <div>
         <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-data flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">library_books</span>

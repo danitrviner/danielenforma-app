@@ -114,11 +114,11 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-[10px] font-mono uppercase text-ink-2">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
           <label className="text-[10px] font-mono uppercase text-ink-2">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
         <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-[10px] font-mono uppercase rounded hover:text-white">Recalcular</button>
       </div>
@@ -127,10 +127,10 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <div key={z} className="flex items-center gap-2">
             <span className="text-xs font-mono text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
@@ -259,25 +259,25 @@ function PrescriptionTab() {
     <section className="bg-surface border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-base text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+        className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
       <div className="flex gap-2">
         <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
+          className="flex-1 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
           <option value="intervalos">Intervalos</option>
         </select>
         {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
         )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
+        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent" />
       </div>
 
       {type === 'intervalos' && (
-        <div className="space-y-2 bg-[#0e0e0e] border border-white/7 rounded-xl p-3">
+        <div className="space-y-2 bg-bg border border-white/7 rounded-xl p-3">
           <p className="text-[9px] font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-1.5 items-center">

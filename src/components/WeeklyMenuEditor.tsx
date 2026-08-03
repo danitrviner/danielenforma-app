@@ -490,7 +490,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <p className="font-mono text-[10px] text-ink-3 uppercase mb-2">Cocina de una vez</p>
                 <div className="space-y-1.5">
                   {batchPlan.map(e => (
-                    <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
+                    <div key={e.recipeId} className="flex items-center justify-between gap-2 bg-bg border border-white/7 rounded-lg px-3 py-2">
                       <span className="font-sans text-xs text-white truncate">{e.recipeName}</span>
                       <span className="font-mono text-[10px] text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'} · ×{e.totalScale}</span>
                     </div>
@@ -525,7 +525,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             <div key={day.day} className="bg-surface border border-white/7 rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedDay(expanded ? null : day.day)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-[#0e0e0e] hover:bg-[#141414] transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 bg-bg hover:bg-[#141414] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-ink-2 text-base">{expanded ? 'expand_less' : 'expand_more'}</span>
@@ -551,7 +551,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                         </button>
                       </div>
                       {day.meals.map((meal, mealIdx) => (
-                        <div key={meal.id} className="bg-[#0e0e0e] border border-white/7 rounded-xl p-3">
+                        <div key={meal.id} className="bg-bg border border-white/7 rounded-xl p-3">
                           <div className="flex items-start gap-3">
                             <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7">
                               {meal.recipeImage

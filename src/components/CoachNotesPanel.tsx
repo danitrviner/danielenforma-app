@@ -94,14 +94,14 @@ export default function CoachNotesPanel({ athletes }: Props) {
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Escribe la nota..."
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
             required
             autoFocus
           />
           <select
             value={relatedEmail}
             onChange={e => setRelatedEmail(e.target.value)}
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-accent"
           >
             <option value="">— Sin cliente asociado —</option>
             {athletes.map(a => (

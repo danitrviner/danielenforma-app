@@ -124,7 +124,7 @@ export default function ClientStatusCard({
     : athlete.actualWeight || null;
 
   return (
-    <div className="bg-gradient-to-br from-[#16150f] to-[#121212] border border-accent/20 rounded-2xl p-5 space-y-4">
+    <div className="bg-gradient-to-br from-[#16150f] to-bg border border-accent/20 rounded-2xl p-5 space-y-4">
       {/* Nota del coach — editable, lo más visible del panel */}
       <div className="flex items-start gap-3">
         <span className="material-symbols-outlined text-accent mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
