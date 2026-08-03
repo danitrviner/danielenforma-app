@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-03T20:55:14.628Z",
-  "commit": "9f2769c",
+  "generado": "2026-08-03T21:01:05.480Z",
+  "commit": "8682ffd",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39922
+    "lineasTsx": 39926
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5272,
+    "clasesTokenEnUso": 5266,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 1018,
-    "fontSans": 1078,
+    "fontSans": 1075,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -192,9 +192,9 @@
       "roundedFull": 4
     },
     "src/components/AcademyCoachScreen.tsx": {
-      "clasesTokenEnUso": 75,
+      "clasesTokenEnUso": 69,
       "fontMono": 5,
-      "fontSans": 15,
+      "fontSans": 12,
       "pesosProhibidos": 1,
       "transitionAll": 3,
       "roundedFull": 2
