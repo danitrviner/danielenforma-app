@@ -365,7 +365,7 @@ export default function ClientReviewsPanel({
                 <div className="p-3 bg-bg/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-black shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -379,7 +379,7 @@ export default function ClientReviewsPanel({
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
                       <div className="relative rounded-surface overflow-hidden border border-accent/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-black shadow-md">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-2.5 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />

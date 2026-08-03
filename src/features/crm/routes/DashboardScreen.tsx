@@ -66,7 +66,7 @@ export default function DashboardScreen() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-title-m text-ink">Resumen</h1>
+        <h1 className="font-sans font-bold text-title-m text-ink">Resumen</h1>
       </header>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

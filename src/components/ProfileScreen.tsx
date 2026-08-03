@@ -398,7 +398,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-semibold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
+          className="w-full py-2.5 bg-white hover:bg-opacity-95 text-black font-bold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
         >
           {loading ? 'Sincronizando...' : 'Guardar Cambios Deportivos'}
         </button>

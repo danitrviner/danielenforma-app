@@ -187,7 +187,7 @@ export default function PhotosScreen({ profile }: Props) {
               </div>
               {/* Latest badge */}
               {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-accent px-2 py-0.5 rounded-control font-mono text-caption font-black text-black">
+                <div className="absolute top-2 right-2 bg-accent px-2 py-0.5 rounded-control font-mono text-caption font-bold text-black">
                   ACTUAL
                 </div>
               )}

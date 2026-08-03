@@ -42,7 +42,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
         <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
-        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">TrainingLab</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">TrainingLab</h1>
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
@@ -161,7 +161,7 @@ function CoursesTab() {
           {courses.map(c => (
             <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-body-s text-white truncate">{c.title}</p>
+                <p className="font-sans font-bold text-body-s text-white truncate">{c.title}</p>
                 <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
               <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
@@ -263,7 +263,7 @@ function LessonsTab() {
             <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-body-s text-white truncate">{l.title}</p>
+                <p className="font-sans font-bold text-body-s text-white truncate">{l.title}</p>
                 <p className="text-caption text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
               <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
@@ -334,7 +334,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
             <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white truncate">{a.displayName}</p>
+              <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
                 className={`text-caption font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}

@@ -67,7 +67,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
         <input
           value={title} onChange={e => setTitle(e.target.value)} placeholder={SESSION_TYPE_LABEL[session.type] ?? 'Título'}
-          className="w-full bg-transparent font-sans font-black text-title-l text-white placeholder:text-white/30 focus:outline-none border-b border-hairline pb-2"
+          className="w-full bg-transparent font-sans font-bold text-title-l text-white placeholder:text-white/30 focus:outline-none border-b border-hairline pb-2"
         />
 
         {comparison.count > 0 && (

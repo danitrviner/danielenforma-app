@@ -104,7 +104,7 @@ function QuestionChart({
   return (
     <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
-        <p className="font-sans font-semibold text-white text-body-s leading-tight">{question.label}</p>
+        <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
             <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">

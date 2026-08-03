@@ -414,7 +414,7 @@ export default function ClientHub({
             <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
               <span className={`text-caption font-bold uppercase ${adh.text}`}>{adh.label}</span>
-              <span className={`text-body-s font-black ${adh.text}`}>{adherence.score}</span>
+              <span className={`text-body-s font-bold ${adh.text}`}>{adherence.score}</span>
             </div>
           </div>
         </div>

@@ -518,7 +518,7 @@ export default function CardioScreen({ profile }: Props) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Cardio</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
         <p className="text-label text-ink-2 font-mono mt-1">Zonas de FC y dashboard en vivo</p>
       </header>
 
@@ -633,7 +633,7 @@ export default function CardioScreen({ profile }: Props) {
                 className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
                 <span className="material-symbols-outlined text-data">favorite</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-semibold text-body-s text-white">
+                  <p className="font-sans font-bold text-body-s text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
                     {s.manual && <span className="ml-1.5 text-caption font-mono text-ink-2 uppercase">manual</span>}
                   </p>

@@ -188,7 +188,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     <div className="space-y-6">
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
-          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Revisiones</h1>
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Revisiones</h1>
           <p className="text-ink-2 text-body-s mt-1">
             Historial cronológico de check-ins y respuestas de cuestionarios.
           </p>

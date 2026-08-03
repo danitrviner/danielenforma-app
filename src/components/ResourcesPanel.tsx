@@ -125,7 +125,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             <div key={r.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-body-s text-white hover:text-accent transition-colors truncate">{r.title}</p>
+                <p className="font-sans font-bold text-body-s text-white hover:text-accent transition-colors truncate">{r.title}</p>
                 <p className="font-mono text-caption text-ink-2">{KIND_LABEL[r.kind]}</p>
               </a>
               {isCoach && (

@@ -485,7 +485,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-3.5 text-left transition-all group"
                 >
                   <div>
-                    <p className="font-sans font-semibold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
+                    <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
                     {q.description && <p className="text-caption text-ink-2 mt-0.5 font-sans">{q.description}</p>}
                     <p className="font-mono text-caption text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
@@ -536,7 +536,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3.5">
-                <p className="font-sans font-semibold text-body-s text-white">
+                <p className="font-sans font-bold text-body-s text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
                 <p className="font-mono text-caption text-ink-2">Sube las fotos abajo</p>
@@ -608,7 +608,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               )}
               {item.coachFeedback ? (
                 <div className="text-label border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r-control p-2">
-                  <span className="font-mono font-semibold text-accent block mb-1">Nota del Entrenador:</span>
+                  <span className="font-mono font-bold text-accent block mb-1">Nota del Entrenador:</span>
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (

@@ -296,7 +296,7 @@ const DayCard: React.FC<{
         style={{ backgroundColor: totalBg }}
       >
         <span className="font-mono text-caption text-ink-2 uppercase">Total</span>
-        <span className="font-mono text-body-s font-black" style={{ color: totalColor }}>{total}</span>
+        <span className="font-mono text-body-s font-bold" style={{ color: totalColor }}>{total}</span>
       </div>
       <select
         value=""
@@ -384,7 +384,7 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   return (
                     <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-2.5 space-y-2">
-                      <p className="text-label font-sans font-semibold text-white truncate">
+                      <p className="text-label font-sans font-bold text-white truncate">
                         {ex?.name || we.exerciseId}
                         {we.muscleGroup && <span className="text-caption font-mono text-ink-2 ml-1.5">{MUSCLE_LABELS[we.muscleGroup]}</span>}
                       </p>
@@ -517,7 +517,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                 return (
                   <td key={m.id} className={`px-3 py-2.5 border-r border-t border-hairline last:border-r-0 text-center ${isCurrent ? 'bg-accent/5' : ''}`}>
                     <div className="flex items-center justify-center">
-                      <span className="font-mono text-body-s font-black text-white tabular-nums">{total}</span>
+                      <span className="font-mono text-body-s font-bold text-white tabular-nums">{total}</span>
                       <Delta delta={delta} showEqual />
                     </div>
                   </td>
@@ -558,7 +558,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
 
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between">
         <span className="font-mono text-label text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
-        <span className="font-mono font-black text-title-m text-white">{currentTotal}</span>
+        <span className="font-mono font-bold text-title-m text-white">{currentTotal}</span>
       </div>
 
       <p className="font-mono text-caption text-ink-3">
@@ -1197,7 +1197,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Meso #{m.number}</span>
                   <span className="font-mono text-caption text-ink-2">{m.weeks}sem · {m.daysPerWeek}d/sem</span>
                 </div>
-                <p className="text-white text-label font-sans font-semibold truncate">{m.objective || '(sin objetivo)'}</p>
+                <p className="text-white text-label font-sans font-bold truncate">{m.objective || '(sin objetivo)'}</p>
                 <p className="text-ink-2 text-caption font-mono mt-0.5">{m.startDate}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {m.distribution && (
@@ -1380,13 +1380,13 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                             <div className="flex items-center gap-4">
                               <div>
                                 <span className="font-mono text-caption text-ink-2 uppercase block">Series totales</span>
-                                <span className="font-mono font-black text-title-m text-white">
+                                <span className="font-mono font-bold text-title-m text-white">
                                   {editing.distribution.days.reduce((s, d) => s + d.totalSeries, 0)}
                                 </span>
                               </div>
                               <div>
                                 <span className="font-mono text-caption text-ink-2 uppercase block">Sesiones activas</span>
-                                <span className="font-mono font-black text-title-m text-white">
+                                <span className="font-mono font-bold text-title-m text-white">
                                   {editing.distribution.days.filter(d => d.assignments.length > 0).length}/{editing.daysPerWeek}
                                 </span>
                               </div>
@@ -1490,7 +1490,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                 <div key={peIdx} className="bg-raised rounded-surface p-2.5 space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
-                                      <p className="text-label font-sans font-semibold text-white truncate">{pe.name}</p>
+                                      <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <p className="text-caption font-mono text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
                                         {pe.equipmentMismatch && (

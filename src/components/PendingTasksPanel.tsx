@@ -154,7 +154,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
             >
               <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-body-s text-white group-hover:text-accent transition-colors truncate">{row.title}</p>
+                <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{row.title}</p>
                 {row.dueDate && (
                   <p className="font-mono text-caption text-ink-2 mt-0.5">Vence: {row.dueDate}</p>
                 )}

@@ -269,7 +269,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               <span className="font-mono text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
-              <h2 className="font-sans font-black text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
+              <h2 className="font-sans font-bold text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
               {activeDiet && (
                 <p className="font-mono text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
@@ -319,7 +319,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       )}
 
       <div>
-        <h2 className="font-sans font-black text-title-m tracking-tight text-white uppercase flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Rendimiento de la periodización
         </h2>

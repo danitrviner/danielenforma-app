@@ -264,7 +264,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-        <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
+        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
           className="p-1.5 rounded-control text-ink-2 hover:text-white hover:bg-white/5">
           <span className="material-symbols-outlined text-title-m">tune</span>
@@ -502,7 +502,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
               <span className="material-symbols-outlined text-accent">tune</span>
-              <span className="font-sans font-black text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
+              <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
             </div>
             <div className="p-4 flex flex-col gap-2">
               <p className="text-label text-ink-2">

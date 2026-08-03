@@ -80,7 +80,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   return (
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
-        <h2 className="font-sans font-black text-title-l text-white tracking-tight">{title}</h2>
+        <h2 className="font-sans font-bold text-title-l text-white tracking-tight">{title}</h2>
         {subtitle && <p className="text-body-s text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
@@ -193,7 +193,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       <div className="w-full max-w-lg mx-auto px-6 pt-8">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-control" />
-          <span className="font-sans font-black text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
           <span className="ml-auto font-mono text-caption text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -416,7 +416,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
           >
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </button>
@@ -424,7 +424,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <button
             onClick={finish}
             disabled={saving}
-            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
+            className="flex-1 py-3.5 rounded-control bg-accent text-black font-sans text-body-s font-bold uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
           >
             {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
           </button>

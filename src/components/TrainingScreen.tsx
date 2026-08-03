@@ -437,7 +437,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             Volver
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-sans font-black text-title-m text-white truncate">{activeWorkout.name}</h1>
+            <h1 className="font-sans font-bold text-title-m text-white truncate">{activeWorkout.name}</h1>
             <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
           </div>
           <div className="flex-shrink-0 text-right">
@@ -453,7 +453,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
             >timer</span>
             <div className="leading-none">
-              <p className="font-mono text-title-m font-black text-white tabular-nums">
+              <p className="font-mono text-title-m font-bold text-white tabular-nums">
                 {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
               </p>
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mt-0.5">
@@ -789,7 +789,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <button
             onClick={handleFinish}
             disabled={!canFinish || isFinishing || !!celebration}
-            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-black text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-accent/20 disabled:shadow-none"
+            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-accent/20 disabled:shadow-none"
           >
             {isFinishing ? (
               <><span className="material-symbols-outlined animate-spin">refresh</span>Guardando...</>
@@ -810,7 +810,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </span>
               </div>
               <div>
-                <h2 className="font-sans font-black text-title-m text-white">
+                <h2 className="font-sans font-bold text-title-m text-white">
                   {celebration.isFirstEver ? '¡Primera sesión registrada! 💪' : '¡Entreno completado! 💪'}
                 </h2>
                 <p className="text-body-s text-ink-2 mt-1">
@@ -819,11 +819,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-title-l font-black text-white tabular-nums">{celebration.totalSets}</p>
+                  <p className="font-mono text-title-l font-bold text-white tabular-nums">{celebration.totalSets}</p>
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
                 </div>
                 <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-title-l font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
+                  <p className="font-mono text-title-l font-bold text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
                   <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
                 </div>
               </div>
@@ -839,7 +839,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               )}
               <button
                 onClick={dismissCelebration}
-                className="w-full py-3 rounded-control bg-accent text-black font-sans font-black text-body-s uppercase tracking-widest active:scale-95 transition-all"
+                className="w-full py-3 rounded-control bg-accent text-black font-sans font-bold text-body-s uppercase tracking-widest active:scale-95 transition-all"
               >
                 Genial
               </button>
@@ -856,7 +856,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-3">
         <div>
-          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Entrenamiento</h1>
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Entrenamiento</h1>
           <p className="text-ink-2 text-body-s mt-1">
             {visiblePendingCount > 0
               ? `${visiblePendingCount} entrenamientos pendientes`
@@ -867,7 +867,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <div className="flex items-center gap-2 bg-surface border border-hairline px-4 py-2 rounded-surface">
           <span className="material-symbols-outlined text-accent text-body-s">calendar_today</span>
           <span className="font-mono text-label text-ink-2">Esta semana:</span>
-          <span className="font-mono text-body-s font-black text-white">{weekCompleted}/{weekAssignments.length}</span>
+          <span className="font-mono text-body-s font-bold text-white">{weekCompleted}/{weekAssignments.length}</span>
           <span className="font-mono text-label text-ink-2">completados</span>
         </div>
       </header>

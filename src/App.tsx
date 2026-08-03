@@ -224,7 +224,7 @@ function AppContent() {
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-          <span className="font-sans font-black text-display tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
       </div>
@@ -254,7 +254,7 @@ function AppContent() {
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-          <span className="font-sans font-black text-display tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
         </div>
         <p className="font-mono text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
@@ -282,7 +282,7 @@ function AppContent() {
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
-          <span className="font-sans font-black text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded-control font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
@@ -303,7 +303,7 @@ function AppContent() {
       <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
-          <span className="font-sans font-black text-title-m tracking-tighter uppercase">EN FORMA</span>
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>
           <span className="text-caption bg-white/7 text-ink-2 px-1.5 py-0.5 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>

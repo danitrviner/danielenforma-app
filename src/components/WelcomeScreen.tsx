@@ -151,7 +151,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           <div className="flex flex-col items-center mb-6">
             <div className="flex items-center gap-2 text-accent mb-2">
               <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-              <span className="font-sans font-black text-display tracking-tighter uppercase">EN FORMA</span>
+              <span className="font-sans font-extrabold text-display tracking-tighter uppercase">EN FORMA</span>
             </div>
             <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Confirma tu invitación</p>
           </div>
@@ -200,7 +200,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 text-accent mb-2 animate-pulse">
             <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-control" />
-            <span className="font-sans font-black text-display tracking-tighter uppercase">EN FORMA</span>
+            <span className="font-sans font-extrabold text-display tracking-tighter uppercase">EN FORMA</span>
           </div>
           <p className="text-ink-2 text-label font-mono tracking-widest uppercase">Coaching de alto rendimiento</p>
         </div>

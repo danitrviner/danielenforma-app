@@ -212,7 +212,7 @@ function Resumen({ icono, color, numero, label }: { icono: string; color: string
   return (
     <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
       <span className="material-symbols-outlined text-title-s" style={{ color }}>{icono}</span>
-      <span className="font-sans font-black text-title-s text-ink tabular-nums">{numero}</span>
+      <span className="font-sans font-bold text-title-s text-ink tabular-nums">{numero}</span>
       <span className="font-mono text-caption uppercase tracking-widest text-ink-3">{label}</span>
     </div>
   );

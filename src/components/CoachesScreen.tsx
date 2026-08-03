@@ -600,7 +600,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-sans font-semibold text-white text-body-s truncate">{user.displayName}</span>
+                      <span className="font-sans font-bold text-white text-body-s truncate">{user.displayName}</span>
                       {isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
                       {isSelf && !isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>

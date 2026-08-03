@@ -202,7 +202,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
-          <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
           <p className="text-ink-2 text-body-s mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
@@ -515,7 +515,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-hairline rounded-surface p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
+              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
               </h2>
               <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white p-1 rounded-control transition-colors">

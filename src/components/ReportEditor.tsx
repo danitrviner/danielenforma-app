@@ -42,7 +42,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
           {/* Header */}
           <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
+              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
               <p className="font-mono text-caption text-ink-2 mt-0.5">

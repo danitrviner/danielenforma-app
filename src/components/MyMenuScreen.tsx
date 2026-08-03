@@ -381,7 +381,7 @@ export default function MyMenuScreen({ profile }: Props) {
       </div>
 
       <div>
-        <h2 className="font-sans font-extrabold text-title-m text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
+        <h2 className="font-sans font-bold text-title-m text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
         <p className="font-mono text-label text-ink-2">{day?.dietName ?? 'Día libre'}</p>
       </div>
 

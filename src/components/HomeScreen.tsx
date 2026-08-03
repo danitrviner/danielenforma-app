@@ -64,7 +64,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
       {!loadingTraining && weekAssignments.length > 0 && (
         <section className="bg-surface border border-hairline rounded-canvas p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
-          <h2 className="font-sans font-black uppercase tracking-tight text-title-m text-white mb-4">Resumen de hoy</h2>
+          <h2 className="font-sans font-bold uppercase tracking-tight text-title-m text-white mb-4">Resumen de hoy</h2>
           <div className="flex items-center gap-5">
             <ProgressRing pct={weekPct} />
             <div className="flex-1 flex flex-col gap-3">
@@ -96,7 +96,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           tono de "tu coach lo está preparando". */}
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-        <h2 className="font-sans font-black uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+        <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
           <span className="material-symbols-outlined text-data">fitness_center</span>
           Entrenamiento
           <button
@@ -159,7 +159,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
           <span className="material-symbols-outlined text-accent text-title-l">school</span>
-          <span className="font-sans font-black text-body-s text-white uppercase tracking-tight">Academia</span>
+          <span className="font-sans font-bold text-body-s text-white uppercase tracking-tight">Academia</span>
           <span className="text-caption text-ink-2 font-mono">Cursos y formación</span>
         </button>
         <button
@@ -167,7 +167,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           className="bg-surface border border-hairline hover:border-accent/40 rounded-control p-4 flex flex-col items-start gap-2 text-left transition-all"
         >
           <span className="material-symbols-outlined text-accent text-title-l">favorite</span>
-          <span className="font-sans font-black text-body-s text-white uppercase tracking-tight">Cardio</span>
+          <span className="font-sans font-bold text-body-s text-white uppercase tracking-tight">Cardio</span>
           <span className="text-caption text-ink-2 font-mono">Zonas y FC en directo</span>
         </button>
       </div>

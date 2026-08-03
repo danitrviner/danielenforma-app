@@ -30,7 +30,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
             Sincronizado
           </span>
         </div>
-        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Nutrición</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Nutrición</h1>
       </header>
 
       <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-fit flex-wrap">

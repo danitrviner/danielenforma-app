@@ -28,7 +28,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fase actual</p>
-          <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight truncate">{phase.name}</h2>
+          <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight truncate">{phase.name}</h2>
           {phase.motto && <p className="text-ink-2 text-label font-mono mt-0.5">{phase.motto}</p>}
         </div>
         <ProgressRing pct={progress.overallPct} color={phase.color} label="Fase" />

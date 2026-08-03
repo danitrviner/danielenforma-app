@@ -76,7 +76,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       <header className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-sans font-black text-title-m text-ink truncate">{cliente.nombre}</h1>
+            <h1 className="font-sans font-bold text-title-m text-ink truncate">{cliente.nombre}</h1>
             <EstadoClientePill estado={cliente.estadoCrm} />
           </div>
           <p className="font-mono text-caption text-ink-3 mt-0.5">

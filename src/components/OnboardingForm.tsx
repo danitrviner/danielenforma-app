@@ -773,7 +773,7 @@ export default function OnboardingForm({
         {isFirstTime ? (
           <>
             <span className="material-symbols-outlined text-display text-accent">waving_hand</span>
-            <h2 className="font-sans font-extrabold text-title-l text-white">¡Bienvenido/a!</h2>
+            <h2 className="font-sans font-bold text-title-l text-white">¡Bienvenido/a!</h2>
             <p className="text-ink-2 text-body-s font-sans max-w-md mx-auto">
               Rellena los datos básicos. Tu entrenador usará esta información para personalizar tu plan.
             </p>

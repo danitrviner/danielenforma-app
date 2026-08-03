@@ -47,7 +47,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-title-m text-ink">Pagos</h1>
+        <h1 className="font-sans font-bold text-title-m text-ink">Pagos</h1>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

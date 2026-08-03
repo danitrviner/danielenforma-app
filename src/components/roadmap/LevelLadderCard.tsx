@@ -28,7 +28,7 @@ export default function LevelLadderCard({ status }: Props) {
           <span className="material-symbols-outlined text-title-l">{currentLevel?.icon || 'military_tech'}</span>
         </div>
         <div>
-          <p className="font-sans font-black text-title-m text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>
+          <p className="font-sans font-bold text-title-m text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>
           {nextLevel && (
             <p className="text-ink-2 text-label font-mono">Siguiente: {nextLevel.name}</p>
           )}

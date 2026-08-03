@@ -224,7 +224,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-raised border border-hairline rounded-surface p-6 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-title-m text-white uppercase tracking-tight">
+              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {editingId ? 'Editar alimento' : 'Nuevo alimento'}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-ink-2 hover:text-white">

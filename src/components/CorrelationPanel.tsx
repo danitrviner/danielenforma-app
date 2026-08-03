@@ -277,7 +277,7 @@ export default function CorrelationPanel({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans font-black text-title-m tracking-tight text-white uppercase flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
           <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
           Análisis de correlaciones
         </h2>
@@ -419,7 +419,7 @@ export default function CorrelationPanel({
               ) : (
                 <>
                   <div className="flex items-baseline gap-3">
-                    <span className="font-mono font-black text-display" style={{
+                    <span className="font-mono font-extrabold text-display" style={{
                       color: Math.abs(correlationResult.r) > 0.7
                         ? 'var(--color-accent)'
                         : Math.abs(correlationResult.r) >= 0.4

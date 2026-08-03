@@ -147,7 +147,7 @@ export default function AcademyScreen({ profile }: Props) {
         </button>
         <div>
           <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
-          <h2 className="font-sans font-black text-title-l text-white">{openCourse.title}</h2>
+          <h2 className="font-sans font-bold text-title-l text-white">{openCourse.title}</h2>
           <p className="text-label text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">
@@ -166,7 +166,7 @@ export default function AcademyScreen({ profile }: Props) {
                   {!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-semibold text-body-s text-white truncate">{i + 1}. {l.title}</p>
+                  <p className="font-sans font-bold text-body-s text-white truncate">{i + 1}. {l.title}</p>
                   {!unlocked && reason && <p className="text-caption text-ink-3 font-mono">{reason}</p>}
                 </div>
               </button>
@@ -186,7 +186,7 @@ export default function AcademyScreen({ profile }: Props) {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">TrainingLab</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">TrainingLab</h1>
         <p className="text-label text-ink-2 font-mono mt-1">Academia de formación — entrenamiento, nutrición y más</p>
       </header>
 

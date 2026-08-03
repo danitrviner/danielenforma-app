@@ -261,7 +261,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
       <div className="space-y-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
           <div>
-            <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Rutinas</h1>
+            <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Rutinas</h1>
             <p className="text-ink-2 text-body-s mt-1">
               {workouts.length} rutinas creadas
             </p>
@@ -312,7 +312,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               >
                 <div className="absolute right-0 top-0 w-14 h-14 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
 
-                <h3 className="font-sans font-black text-white text-title-s mb-3 group-hover:text-accent transition-colors pr-4">
+                <h3 className="font-sans font-bold text-white text-title-s mb-3 group-hover:text-accent transition-colors pr-4">
                   {w.name}
                 </h3>
 
@@ -415,7 +415,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <span className="material-symbols-outlined text-body-s">arrow_back</span>
           Volver
         </button>
-        <h1 className="font-sans font-black text-title-l tracking-tight text-white uppercase">
+        <h1 className="font-sans font-bold text-title-l tracking-tight text-white uppercase">
           {editingId ? 'Editar rutina' : 'Nueva rutina'}
         </h1>
       </header>

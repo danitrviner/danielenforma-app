@@ -19,7 +19,7 @@ export default function StatTile({ icon, label, value, accent = 'var(--color-acc
         {icon}
       </span>
       <span className="font-mono text-caption uppercase tracking-widest text-ink-2">{label}</span>
-      <span className="font-sans font-black text-title-m text-white leading-none">{value}</span>
+      <span className="font-sans font-bold text-title-m text-white leading-none">{value}</span>
     </div>
   );
 }

@@ -205,7 +205,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-caption font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
-            <p className="font-sans font-black text-display text-white tabular-nums">{bpm ?? '--'}</p>
+            <p className="font-sans font-extrabold text-display text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-label font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
               <button onClick={finishTest} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press">Terminar y calcular</button>
@@ -225,7 +225,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           return (
             <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-sans font-semibold text-body-s text-white">{t.title}</p>
+                <p className="font-sans font-bold text-body-s text-white">{t.title}</p>
                 {t.highEffort && <span className="text-caption font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
               </div>
               <p className="text-caption text-ink-2 font-mono mt-1">{t.desc}</p>

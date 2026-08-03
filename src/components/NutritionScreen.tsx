@@ -1230,7 +1230,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 onClick={() => handleToggleDone(meal.id, idx)}
                                 className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
                               >
-                                {st.done && <span className="material-symbols-outlined text-body-s font-black">check</span>}
+                                {st.done && <span className="material-symbols-outlined text-body-s font-bold">check</span>}
                               </button>
 
                               {/* Category badge */}

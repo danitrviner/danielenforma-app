@@ -32,7 +32,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
         <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
-        <h1 className="font-sans font-black text-display tracking-tight text-white uppercase">Cardio</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
       </header>
 
       <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
@@ -73,7 +73,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
       {athletes.map(a => (
         <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-raised border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
           <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white text-left truncate">{a.displayName}</p>
+          <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white text-left truncate">{a.displayName}</p>
           <span className="material-symbols-outlined text-ink-2 text-title-s">chevron_right</span>
         </button>
       ))}
@@ -190,7 +190,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
         return (
           <div key={t.id} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="font-sans font-semibold text-body-s text-white">{athlete?.displayName ?? t.athleteId}</p>
+              <p className="font-sans font-bold text-body-s text-white">{athlete?.displayName ?? t.athleteId}</p>
               <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
             <p className="text-label font-mono text-data">{t.type}</p>

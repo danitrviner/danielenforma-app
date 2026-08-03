@@ -30,7 +30,7 @@ export default function MetricCard({ icon, label, value, sub, accent = 'var(--co
         </span>
         <span className="font-mono text-caption uppercase tracking-widest text-ink-2 leading-tight">{label}</span>
       </div>
-      <span className="font-sans font-black text-title-l text-ink leading-none tabular-nums">{value}</span>
+      <span className="font-sans font-bold text-title-l text-ink leading-none tabular-nums">{value}</span>
       {sub && <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">{sub}</span>}
     </Wrapper>
   );

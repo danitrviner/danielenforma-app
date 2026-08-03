@@ -94,7 +94,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
     <div className="space-y-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="font-sans font-black text-title-m text-ink">Reuniones</h1>
+          <h1 className="font-sans font-bold text-title-m text-ink">Reuniones</h1>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-3">
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
