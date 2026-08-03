@@ -79,7 +79,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <h1 className="font-sans font-bold text-title-m text-ink truncate">{cliente.nombre}</h1>
             <EstadoClientePill estado={cliente.estadoCrm} />
           </div>
-          <p className="font-mono text-caption text-ink-3 mt-0.5">
+          <p className="font-mono text-caption text-ink-3 ">
             {cliente.email ?? 'Sin email'}
             {cliente.telefono?.numero && ` · ${formatTelefono(cliente.telefono)}`}
           </p>

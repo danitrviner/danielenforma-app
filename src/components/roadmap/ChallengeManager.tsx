@@ -157,7 +157,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <>
             <div className="flex items-center justify-between">
               <p className="font-sans font-bold text-white text-body-s">{current.title}</p>
-              <span className={`font-mono text-caption uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
+              <span className={`font-mono text-caption uppercase px-2 rounded-full flex-shrink-0 ${
                 current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
               }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
             </div>
@@ -363,7 +363,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                   <p className="text-label text-white font-sans truncate">{h.title}</p>
                   <p className="text-caption text-ink-2 font-mono">{h.isoWeek}</p>
                 </div>
-                <span className={`font-mono text-caption uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
+                <span className={`font-mono text-caption uppercase px-2 rounded-full flex-shrink-0 ${
                   h.status === 'conseguido' ? 'bg-emerald-500/15 text-emerald-400' : h.status === 'fallido' ? 'bg-red-500/15 text-red-400' : 'bg-white/5 text-ink-2'
                 }`}>{h.status}</span>
               </div>

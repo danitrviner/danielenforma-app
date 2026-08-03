@@ -138,7 +138,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
         <span className="material-symbols-outlined text-accent">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (
-          <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{rows.length}</span>
+          <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{rows.length}</span>
         )}
       </h2>
 
@@ -156,7 +156,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{row.title}</p>
                 {row.dueDate && (
-                  <p className="font-mono text-caption text-ink-2 mt-0.5">Vence: {row.dueDate}</p>
+                  <p className="font-mono text-caption text-ink-2 ">Vence: {row.dueDate}</p>
                 )}
               </div>
               <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0">chevron_right</span>

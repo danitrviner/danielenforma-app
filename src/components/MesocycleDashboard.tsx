@@ -225,7 +225,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       if (next.has(g)) next.delete(g); else next.add(g);
                       return next;
                     })}
-                    className={`px-2 py-0.5 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
+                    className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
                       hidden
                         ? 'bg-transparent border-hairline text-ink-3'
                         : 'border-transparent text-black'
@@ -239,7 +239,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               {hiddenGroups.size > 0 && (
                 <button
                   onClick={() => setHiddenGroups(new Set())}
-                  className="px-2 py-0.5 rounded-control font-mono text-caption text-ink-2 hover:text-white border border-hairline transition-colors"
+                  className="px-2 rounded-control font-mono text-caption text-ink-2 hover:text-white border border-hairline transition-colors"
                 >
                   Mostrar todos
                 </button>

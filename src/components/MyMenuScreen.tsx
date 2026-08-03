@@ -317,7 +317,7 @@ export default function MyMenuScreen({ profile }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center gap-0.5 py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
+              className={`flex flex-col items-center py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
             >
               <span className="font-mono text-caption font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
               {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-accent'}`} />}
@@ -419,11 +419,11 @@ export default function MyMenuScreen({ profile }: Props) {
                     {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
                   </div>
                   <p className={`font-sans font-bold text-body-s leading-tight ${done ? 'text-ink-2 line-through' : 'text-white'}`}>{meal.recipeName}</p>
-                  <p className="font-mono text-caption text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                  <p className="font-mono text-caption text-ink-2 ">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                   {meal.complements.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
+                        <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 rounded-control">
                           +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                         </span>
                       ))}
@@ -537,7 +537,7 @@ export default function MyMenuScreen({ profile }: Props) {
               <span className="material-symbols-outlined text-body-s text-accent">inventory_2</span>
               Prefiero batch cooking
             </span>
-            <span className="block font-sans text-caption text-ink-2 mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
+            <span className="block font-sans text-caption text-ink-2 ">Cocinar todo de una vez y repartirlo por días.</span>
           </span>
         </button>
 
@@ -606,7 +606,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
-                    <ul className="space-y-0.5">
+                    <ul className="">
                       {(detailRecipe.ingredientsText?.length
                         ? detailRecipe.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
                         : (detailRecipe.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
@@ -643,14 +643,14 @@ export default function MyMenuScreen({ profile }: Props) {
                                 {swappedTo && (
                                   <button
                                     onClick={() => applySubstitution(ing.label, ing.label)}
-                                    className="px-2 py-0.5 rounded-control bg-raised border border-hairline text-ink-2 font-mono text-caption hover:text-white"
+                                    className="px-2 rounded-control bg-raised border border-hairline text-ink-2 font-mono text-caption hover:text-white"
                                   >↩ original</button>
                                 )}
                                 {subs.map(s => (
                                   <button
                                     key={s}
                                     onClick={() => applySubstitution(ing.label, s)}
-                                    className="px-2 py-0.5 rounded-control bg-raised border border-hairline text-white font-mono text-caption hover:border-accent/50 hover:text-accent"
+                                    className="px-2 rounded-control bg-raised border border-hairline text-white font-mono text-caption hover:border-accent/50 hover:text-accent"
                                   >{s}</button>
                                 ))}
                               </div>

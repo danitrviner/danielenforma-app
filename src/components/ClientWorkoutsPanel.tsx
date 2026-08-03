@@ -210,7 +210,7 @@ export default function ClientWorkoutsPanel({
               Entrenamientos asignados
             </h3>
             {assignments.length > 0 && (
-              <span className="font-mono text-caption text-ink-2 bg-white/5 border border-hairline rounded-full px-2 py-0.5">
+              <span className="font-mono text-caption text-ink-2 bg-white/5 border border-hairline rounded-full px-2 ">
                 {assignments.length}
               </span>
             )}
@@ -253,7 +253,7 @@ export default function ClientWorkoutsPanel({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-surface ${STATUS_STYLE[a.status]}`}>
+                    <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface ${STATUS_STYLE[a.status]}`}>
                       {STATUS_LABEL[a.status]}
                     </span>
                     <button onClick={() => handleDeleteAssignment(a.id)} className="text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors" title="Eliminar">

@@ -352,7 +352,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div>
                             <span className="font-sans font-bold text-body-s text-white block">{ex.name}</span>
                             {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 hover:text-data flex items-center gap-0.5 transition-colors">
+                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 hover:text-data flex items-center transition-colors">
                                 <span className="material-symbols-outlined text-caption">play_circle</span>
                                 Ver video
                               </a>
@@ -361,9 +361,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="space-y-0.5">
+                        <div className="">
                           {ex.muscleGroup ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-2 py-0.5 rounded-control">
+                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-2 rounded-control">
                               <span className="material-symbols-outlined text-caption">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
@@ -377,23 +377,23 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           {(ex.equipment ?? []).length === 0 ? (
                             <span className="font-mono text-caption text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 py-0.5 rounded-control capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 rounded-control capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
+                        <span className={`px-2 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                       </td>
                       <td className="p-4">
                         {ex.enduranceProfile ? (
-                          <span className={`px-2 py-0.5 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                          <span className={`px-2 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                         ) : (
                           <span className="font-mono text-caption text-ink-3">—</span>
                         )}
                       </td>
                       <td className="p-4">
                         {ex.isCustom ? (
-                          <span className="text-caption font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 py-0.5 rounded-control uppercase">Personalizado</span>
+                          <span className="text-caption font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 rounded-control uppercase">Personalizado</span>
                         ) : (
                           <span className="text-caption font-mono text-ink-2/60 uppercase">Sistema</span>
                         )}
@@ -444,7 +444,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <p className="font-sans font-bold text-body-s text-white">{ex.name}</p>
                       <p className="font-sans text-caption text-ink-2">{muscleLabel(ex)}</p>
                       {ex.muscleGroup && (
-                        <span className="inline-flex items-center gap-0.5 text-caption font-mono text-accent/80">
+                        <span className="inline-flex items-center text-caption font-mono text-accent/80">
                           <span className="material-symbols-outlined text-caption">link</span>
                           Macro
                         </span>
@@ -463,15 +463,15 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
+                  <span className={`px-2 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                   {ex.enduranceProfile && (
-                    <span className={`px-2 py-0.5 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                    <span className={`px-2 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 py-0.5 rounded-control capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 rounded-control capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 flex items-center gap-0.5">
+                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 flex items-center ">
                       <span className="material-symbols-outlined text-label">play_circle</span>
                       Video
                     </a>

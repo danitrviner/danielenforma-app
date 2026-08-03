@@ -29,7 +29,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
         <div className="flex-1 min-w-0">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fase actual</p>
           <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight truncate">{phase.name}</h2>
-          {phase.motto && <p className="text-ink-2 text-label font-mono mt-0.5">{phase.motto}</p>}
+          {phase.motto && <p className="text-ink-2 text-label font-mono ">{phase.motto}</p>}
         </div>
         <ProgressRing pct={progress.overallPct} color={phase.color} label="Fase" />
       </div>
@@ -75,7 +75,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
 
       {phase.exitCriteria && (
         <div className="flex items-start gap-2 pt-2 border-t border-hairline">
-          <span className="material-symbols-outlined text-body-s text-ink-2 mt-0.5">flag</span>
+          <span className="material-symbols-outlined text-body-s text-ink-2 ">flag</span>
           <p className="text-ink-2 text-label font-sans leading-relaxed">
             <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
           </p>

@@ -534,7 +534,7 @@ export default function CardioScreen({ profile }: Props) {
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-surface p-3 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
                 <p className="text-caption font-sans uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
-                <p className="text-label font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
+                <p className="text-label font-bold text-white ">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
             ))}
           </div>
@@ -639,7 +639,7 @@ export default function CardioScreen({ profile }: Props) {
                   </p>
                   <p className="text-caption text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
                   {(s.caloriesActiveKcal || s.caloriesKcal || s.fitivPoints || s.trimp) && (
-                    <p className="text-caption text-accent font-mono mt-0.5">
+                    <p className="text-caption text-accent font-mono ">
                       {(s.caloriesActiveKcal ?? s.caloriesKcal) !== undefined && `${Math.round(s.caloriesActiveKcal ?? s.caloriesKcal!)} kcal · `}
                       {s.fitivPoints !== undefined && `${s.fitivPoints} pts · `}
                       {s.trimp !== undefined && `TRIMP ${Math.round(s.trimp)}`}
@@ -648,7 +648,7 @@ export default function CardioScreen({ profile }: Props) {
                     </p>
                   )}
                   {s.tags && s.tags.length > 0 && (
-                    <p className="text-caption text-ink-2 font-mono mt-0.5">{s.tags.join(' · ')}</p>
+                    <p className="text-caption text-ink-2 font-mono ">{s.tags.join(' · ')}</p>
                   )}
                 </div>
                 <span className="material-symbols-outlined text-ink-2 text-title-m">chevron_right</span>

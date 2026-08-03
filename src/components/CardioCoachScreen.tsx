@@ -29,13 +29,13 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
+        <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Cardio</h1>
       </header>
 
-      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+      <div className="overflow-x-auto -mx-1 px-1 ">
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max sm:w-fit">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}

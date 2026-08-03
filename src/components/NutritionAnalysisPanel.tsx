@@ -256,7 +256,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <p className="text-label text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
           </p>
-          <p className="text-caption text-ink-2 font-mono mt-0.5">
+          <p className="text-caption text-ink-2 font-mono ">
             {nutritionConfig?.sharedReportSnapshot
               ? `Compartido el ${new Date(nutritionConfig.sharedReportSnapshot.generatedAt).toLocaleDateString('es-ES')}`
               : 'El atleta no ve este análisis hasta que lo compartas.'}
@@ -281,7 +281,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub: 
     <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
       <span className="block font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-title-m text-white mt-1">{value}</span>
-      <span className="block font-mono text-caption text-ink-2 mt-0.5">{sub}</span>
+      <span className="block font-mono text-caption text-ink-2 ">{sub}</span>
     </div>
   );
 }

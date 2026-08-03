@@ -269,7 +269,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               <span className="font-sans text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
-              <h2 className="font-sans font-bold text-title-l text-white tracking-tight mt-0.5">{activePhase.name}</h2>
+              <h2 className="font-sans font-bold text-title-l text-white tracking-tight ">{activePhase.name}</h2>
               {activeDiet && (
                 <p className="font-sans text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
@@ -332,7 +332,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
-          <div className="inline-flex bg-field border border-hairline rounded-surface p-0.5 gap-0.5">
+          <div className="inline-flex bg-field border border-hairline rounded-surface ">
             {([
               { id: 'both', label: 'Ambas' },
               { id: 'exp', label: 'Esperado 100%' },

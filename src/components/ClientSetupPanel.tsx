@@ -273,7 +273,7 @@ export default function ClientSetupPanel({
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className={`font-sans text-label ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
-                        {item.detail && <p className="font-mono text-caption text-ink-2 mt-0.5">{item.detail}</p>}
+                        {item.detail && <p className="font-mono text-caption text-ink-2 ">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
                         <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">chevron_right</span>

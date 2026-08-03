@@ -127,7 +127,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
                 <span className="text-caption font-mono opacity-75">{fmtDate(startDate)}–{fmtDate(endDate)}</span>
                 <span className="text-caption font-mono font-bold">{phase.weeks}s</span>
                 {isActive && (
-                  <span className="text-caption font-mono font-bold px-2 py-0.5 rounded-control" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>HOY</span>
+                  <span className="text-caption font-mono font-bold px-2 rounded-control" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>HOY</span>
                 )}
               </div>
             </div>
@@ -473,7 +473,7 @@ export default function NutritionPeriodizationPanel({
             >
               {/* Phase header */}
               <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col ">
                   <button
                     onClick={() => movePhase(idx, -1)}
                     disabled={idx === 0}

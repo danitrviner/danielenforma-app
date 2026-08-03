@@ -118,7 +118,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
                       {formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}
                     </p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full font-mono text-caption uppercase tracking-widest border ${
+                  <span className={`shrink-0 px-2 rounded-full font-mono text-caption uppercase tracking-widest border ${
                     enCurso
                       ? 'bg-success/12 text-success border-success/25'
                       : 'bg-white/5 text-ink-2 border-hairline'

@@ -45,7 +45,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
-              <p className="font-mono text-caption text-ink-2 mt-0.5">
+              <p className="font-mono text-caption text-ink-2 ">
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>

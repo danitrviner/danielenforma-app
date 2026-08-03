@@ -444,7 +444,7 @@ function TagInput({
       {helpText && <p className="font-sans text-caption text-ink-3">{helpText}</p>}
       <div className="flex flex-wrap gap-2 p-3 bg-bg border border-hairline rounded-surface min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
-          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 py-0.5 rounded-full text-label font-mono">
+          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 rounded-full text-label font-mono">
             {t}
             <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-ink-2 hover:text-red-400 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
@@ -893,7 +893,7 @@ export default function OnboardingForm({
               }`}>
               <div className="flex-1 min-w-0">
                 <p className={`font-sans text-label font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
-                <p className="font-mono text-caption text-ink-3 mt-0.5">{o.desc}</p>
+                <p className="font-mono text-caption text-ink-3 ">{o.desc}</p>
               </div>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-accent' : 'text-ink-3'}`}>{o.factor}</span>
             </button>
@@ -988,7 +988,7 @@ export default function OnboardingForm({
               <span className="material-symbols-outlined text-data text-title-s">calculate</span>
               <p className="font-sans text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
-            <div className="space-y-0.5 font-mono text-label text-ink-3">
+            <div className="font-mono text-label text-ink-3">
               <p>BMR: <span className="text-white font-bold">{autoCalc.bmr.toLocaleString()} kcal</span></p>
               <p>
                 TDEE ({form.activityLevel && (

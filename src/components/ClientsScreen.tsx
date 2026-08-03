@@ -305,7 +305,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Header */}
       <header className="pb-4 border-b border-hairline">
         <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
           <span className="inline-flex items-center gap-2 text-label font-mono text-data">
@@ -330,7 +330,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <span className="material-symbols-outlined text-accent text-title-m">group</span>
                 <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Atletas del Entrenador</h2>
               </div>
-              <span className="text-caption bg-teal-500/15 text-data px-2 py-0.5 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
+              <span className="text-caption bg-teal-500/15 text-data px-2 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-sans font-extrabold text-display text-white tracking-tight">{athletes.length}</span>
@@ -371,11 +371,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Revisiones Pendientes</h2>
               </div>
               {pendingCheckins.length > 0 ? (
-                <span className="text-caption bg-red-500/10 text-rose-400 px-3 py-0.5 border border-red-500/25 rounded-control font-sans uppercase font-bold animate-pulse">
+                <span className="text-caption bg-red-500/10 text-rose-400 px-3 border border-red-500/25 rounded-control font-sans uppercase font-bold animate-pulse">
                   {pendingCheckins.length} por evaluar
                 </span>
               ) : (
-                <span className="text-caption bg-accent/10 text-accent px-3 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+                <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {pendingCheckins.length === 0 ? (
@@ -395,11 +395,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Notas Pendientes</h2>
               </div>
               {totalPendingNotes > 0 ? (
-                <span className="text-caption bg-amber-500/10 text-amber-300 px-3 py-0.5 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
+                <span className="text-caption bg-amber-500/10 text-amber-300 px-3 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
                   {totalPendingNotes} por leer
                 </span>
               ) : (
-                <span className="text-caption bg-accent/10 text-accent px-3 py-0.5 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+                <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
               )}
             </div>
             {totalPendingNotes === 0 ? (
@@ -513,9 +513,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <h3 className="font-sans font-bold text-white text-title-s leading-snug group-hover:text-accent transition-colors">{athlete.displayName}</h3>
                         <p className="font-mono text-caption text-ink-2 truncate">{athlete.email}</p>
                         {/* Plan badge */}
-                        <div className="flex flex-wrap gap-1 mt-0.5">
+                        <div className="flex flex-wrap gap-1 ">
                           {planDaysLeft !== null ? (
-                            <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border ${
+                            <span className={`text-caption font-sans font-bold uppercase px-2 rounded-control border ${
                               planDaysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
                               planDaysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                                                    'bg-red-500/10     text-red-400     border-red-500/20'
@@ -523,13 +523,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
                             </span>
                           ) : (
-                            <span className="text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border bg-raised text-ink-3 border-hairline">
+                            <span className="text-caption font-sans font-bold uppercase px-2 rounded-control border bg-raised text-ink-3 border-hairline">
                               Sin plan
                             </span>
                           )}
                           {/* Check-in atrasado badge */}
                           {checkinLate && (
-                            <span className="text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border bg-orange-500/10 text-orange-300 border-orange-500/20">
+                            <span className="text-caption font-sans font-bold uppercase px-2 rounded-control border bg-orange-500/10 text-orange-300 border-orange-500/20">
                               {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
                             </span>
                           )}
@@ -577,7 +577,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                     <div className="flex items-center gap-2">
                       <span className="text-ink-2">{totalCheckCount} Reportes</span>
                       {pendingCount > 0 && (
-                        <span className="text-caption bg-red-500/15 text-rose-400 border border-red-500/25 px-2 py-0.5 rounded-control font-sans uppercase">
+                        <span className="text-caption bg-red-500/15 text-rose-400 border border-red-500/25 px-2 rounded-control font-sans uppercase">
                           {pendingCount} pend.
                         </span>
                       )}

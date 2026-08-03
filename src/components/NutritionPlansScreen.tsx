@@ -443,7 +443,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                     {/* Budget summary */}
                     <div className="flex flex-wrap gap-2 mb-2">
                       {CATS.filter(c => dt.budget[c] > 0).map(c => (
-                        <span key={c} className={`text-caption font-mono px-2 py-0.5 rounded-control border ${CAT_BG[c]}`}>
+                        <span key={c} className={`text-caption font-mono px-2 rounded-control border ${CAT_BG[c]}`}>
                           {c.replace('_', ' ')} {fmtQty(dtPlaced[c])}/{fmtQty(dt.budget[c])}
                         </span>
                       ))}
@@ -546,7 +546,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
         {targetMismatches.length > 0 && (
           <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-surface px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="font-sans text-caption text-amber-400 uppercase tracking-wider w-full mb-0.5">
+            <span className="font-sans text-caption text-amber-400 uppercase tracking-wider w-full ">
               ⚠ Objetivos por comida no cuadran con el presupuesto
             </span>
             {targetMismatches.map(({ cat, sum, budget: b }) => (
@@ -765,7 +765,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               {meal.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
                   {/* Category */}
-                  <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
+                  <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                     {item.category.replace('_', ' ')}
                   </span>
                   {/* Label */}
@@ -832,7 +832,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                     <div className="space-y-1">
                       {meal.items.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2 font-mono text-caption text-ink-2">
-                          <span className={`text-caption font-bold px-2 py-0.5 rounded-control border ${
+                          <span className={`text-caption font-bold px-2 rounded-control border ${
                             it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
                             it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
                             'bg-orange-500/10 border-orange-500/20 text-orange-300'

@@ -97,7 +97,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               {formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}
             </span>
             {atrasado && (
-              <p className="flex items-center gap-0.5 font-mono text-caption text-danger">
+              <p className="flex items-center font-mono text-caption text-danger">
                 <span className="material-symbols-outlined text-caption">warning</span>
                 {retraso} días de retraso
               </p>

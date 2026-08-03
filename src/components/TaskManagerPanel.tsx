@@ -143,7 +143,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               </span>
               <div className="flex-1 min-w-0">
                 <p className={`font-sans text-body-s truncate ${t.status === 'done' ? 'line-through text-ink-2' : 'text-white'}`}>{t.title}</p>
-                {t.dueDate && <p className="font-mono text-caption text-ink-2 mt-0.5">Vence: {t.dueDate}</p>}
+                {t.dueDate && <p className="font-mono text-caption text-ink-2 ">Vence: {t.dueDate}</p>}
               </div>
             </button>
           ))}

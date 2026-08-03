@@ -151,7 +151,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             type="checkbox"
             checked={generarPago}
             onChange={e => setGenerarPago(e.target.checked)}
-            className="mt-0.5 accent-accent"
+            className="accent-accent"
           />
           <span className="font-sans text-caption text-ink leading-relaxed">
             Generar el cobro pendiente al crear el servicio

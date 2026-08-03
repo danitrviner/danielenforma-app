@@ -265,7 +265,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           ))}
         </div>
         {we.technique && (
-          <p className="font-sans text-caption text-ink-2 leading-relaxed pt-0.5">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+          <p className="font-sans text-caption text-ink-2 leading-relaxed ">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
         )}
       </div>
 
@@ -287,7 +287,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           ))}
         </div>
         {we.warmupMode === 'auto' && (
-          <p className="font-sans text-caption text-ink-2 leading-relaxed pt-0.5">
+          <p className="font-sans text-caption text-ink-2 leading-relaxed ">
             🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
           </p>
         )}
@@ -322,7 +322,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             ))}
             <button
               onClick={addManualWarmupSet}
-              className="flex items-center gap-1 text-caption font-sans text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
+              className="flex items-center gap-1 text-caption font-sans text-orange-300 hover:text-orange-200 transition-colors "
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir serie de aproximación

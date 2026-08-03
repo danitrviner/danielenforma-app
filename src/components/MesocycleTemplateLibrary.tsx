@@ -99,7 +99,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`px-2 py-0.5 rounded-control text-label font-mono transition-all ${
+          className={`px-2 rounded-control text-label font-mono transition-all ${
             value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -128,44 +128,44 @@ const ExerciseRow: React.FC<{
       {/* Name */}
       <span className="font-sans text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center ">
         <span className="font-mono text-caption text-ink-3">sets</span>
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center ">
         <span className="font-mono text-caption text-ink-3">reps</span>
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
       {/* RIR */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center ">
         <span className="font-mono text-caption text-ink-3">rir</span>
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center ">
         <span className="font-mono text-caption text-ink-3">rest</span>
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
           className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
           <span className="material-symbols-outlined text-body-s">arrow_upward</span>
@@ -738,7 +738,7 @@ function TemplateCard({
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>
           {tpl.description && (
-            <p className="font-sans text-caption text-ink-2 mt-0.5 truncate">{tpl.description}</p>
+            <p className="font-sans text-caption text-ink-2 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-sans text-caption px-2 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-sans text-caption px-2 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -785,7 +785,7 @@ function TemplateCard({
         {tpl.stages.map(st => (
           <span
             key={st.id}
-            className="font-mono text-caption px-2 py-0.5 rounded-full bg-raised border border-hairline text-ink-2"
+            className="font-mono text-caption px-2 rounded-full bg-raised border border-hairline text-ink-2"
           >
             {st.name} · {st.weeks}sem
           </span>
@@ -887,7 +887,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-sans font-bold text-title-m text-white">Plantillas de mesociclo</h2>
-          <p className="font-sans text-caption text-ink-2 mt-0.5">
+          <p className="font-sans text-caption text-ink-2 ">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>

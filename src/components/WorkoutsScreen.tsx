@@ -489,16 +489,16 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} max={5} value={bulkRir} onChange={e => setBulkRir(e.target.value)}
-                        className="w-10 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-label"
+                        className="w-10 bg-raised border border-hairline rounded-control px-1 text-center text-white font-mono text-label"
                       />
-                      <button onClick={applyBulkRir} className="font-sans text-caption text-ink-2 hover:text-accent uppercase px-2 py-0.5 border border-hairline rounded-control">RIR</button>
+                      <button onClick={applyBulkRir} className="font-sans text-caption text-ink-2 hover:text-accent uppercase px-2 border border-hairline rounded-control">RIR</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} value={bulkRest} onChange={e => setBulkRest(e.target.value)}
-                        className="w-12 bg-raised border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-label"
+                        className="w-12 bg-raised border border-hairline rounded-control px-1 text-center text-white font-mono text-label"
                       />
-                      <button onClick={applyBulkRest} className="font-sans text-caption text-ink-2 hover:text-accent uppercase px-2 py-0.5 border border-hairline rounded-control">Descanso (s)</button>
+                      <button onClick={applyBulkRest} className="font-sans text-caption text-ink-2 hover:text-accent uppercase px-2 border border-hairline rounded-control">Descanso (s)</button>
                     </div>
                   </>
                 )}
@@ -528,15 +528,15 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
                         {ex?.name || we.exerciseId}
                         {we.technique && (
-                          <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border ${TECHNIQUE_COLOR[we.technique]}`}>
+                          <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border ${TECHNIQUE_COLOR[we.technique]}`}>
                             {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
                           </span>
                         )}
                       </p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 ">
                         <span className="font-mono text-caption text-ink-2 capitalize">{ex?.primaryFocus}</span>
                         {ex?.type && (
-                          <span className={`text-caption font-sans px-2 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                          <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                         )}
                       </div>
                     </div>
@@ -678,9 +678,9 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{ex.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 ">
                         <span className="font-mono text-caption text-ink-2 capitalize">{ex.primaryFocus}</span>
-                        <span className={`text-caption font-sans px-2 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                        <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                       </div>
                     </div>
                     <span className="material-symbols-outlined text-accent/50 group-hover:text-accent transition-colors flex-shrink-0">add_circle</span>

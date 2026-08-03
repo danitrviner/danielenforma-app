@@ -313,7 +313,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <label className="flex flex-col gap-0.5">
+                  <label className="flex flex-col ">
                     <span className="font-mono text-caption uppercase text-ink-2">Semanas sugeridas</span>
                     <input
                       type="number"
@@ -323,7 +323,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       className="w-24 bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
                     />
                   </label>
-                  <label className="flex flex-col gap-0.5">
+                  <label className="flex flex-col ">
                     <span className="font-mono text-caption uppercase text-ink-2">Dirección de peso</span>
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
@@ -335,7 +335,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       ))}
                     </select>
                   </label>
-                  <label className="flex flex-col gap-0.5">
+                  <label className="flex flex-col ">
                     <span className="font-mono text-caption uppercase text-ink-2">Kg por semana</span>
                     <input
                       type="number"

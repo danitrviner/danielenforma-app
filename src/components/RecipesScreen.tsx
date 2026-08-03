@@ -120,7 +120,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.map(c => (
-              <span key={c} className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-ink-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
+              <span key={c} className="px-2 rounded-full bg-black/60 backdrop-blur-sm text-ink-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
             ))}
           </div>
         )}
@@ -168,12 +168,12 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
 
       {/* kcal or featured badge */}
       {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-2 py-0.5 font-mono text-caption text-black font-bold z-10 flex items-center gap-0.5">
+        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-2 font-mono text-caption text-black font-bold z-10 flex items-center ">
           <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
           Para ti
         </div>
       ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 py-0.5 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -186,9 +186,9 @@ function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Card
               .filter(Boolean).join(' · ')}
           </p>
         )}
-        <div className="flex flex-wrap gap-1 pt-0.5">
+        <div className="flex flex-wrap gap-1 ">
           {recipe.cookingTime && (
-            <span className="flex items-center gap-0.5 font-mono text-caption text-ink-2">
+            <span className="flex items-center font-mono text-caption text-ink-2">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>schedule</span>
               {recipe.cookingTime}min
             </span>
@@ -326,7 +326,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {(recipe.categoria || recipe.categories.length > 0) && (
           <div className="flex flex-wrap gap-2">
             {(recipe.categoria ? [recipe.categoria] : recipe.categories).map(c => (
-              <span key={c} className="px-3 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
+              <span key={c} className="px-3 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
             ))}
           </div>
         )}
@@ -335,7 +335,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
         {isIndya && recipe.intakeTypes && recipe.intakeTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {recipe.intakeTypes.map(t => (
-              <span key={t} className="px-2 py-0.5 rounded-full bg-raised border border-hairline text-ink-2 font-mono text-caption">
+              <span key={t} className="px-2 rounded-full bg-raised border border-hairline text-ink-2 font-mono text-caption">
                 {INTAKE_LABELS[t] ?? `Tipo ${t}`}
               </span>
             ))}

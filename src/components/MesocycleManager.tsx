@@ -225,7 +225,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 py-0.5 rounded-control text-title-s sm:text-label font-mono transition-all flex items-center justify-center ${
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 rounded-control text-title-s sm:text-label font-mono transition-all flex items-center justify-center ${
             value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -272,7 +272,7 @@ const DayCard: React.FC<{
                 type="number" min={0} max={25}
                 value={a.series}
                 onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
-                className="w-11 bg-bg border border-hairline rounded-control px-1 py-0.5 text-center text-white font-mono text-label focus:outline-none focus:border-accent"
+                className="w-11 bg-bg border border-hairline rounded-control px-1 text-center text-white font-mono text-label focus:outline-none focus:border-accent"
               />
               {otherDays.length > 0 && (
                 <select
@@ -446,7 +446,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                     <span className="font-sans text-caption text-accent uppercase tracking-wider block">
                       {isCurrent ? `Meso #${m.number} (actual)` : `Meso #${m.number}`}
                     </span>
-                    <span className="font-mono text-caption text-ink-2 block mt-0.5">{m.startDate}</span>
+                    <span className="font-mono text-caption text-ink-2 block ">{m.startDate}</span>
                     <span className="font-mono text-caption text-ink-3 block">{m.daysPerWeek}d · {m.weeks} sem</span>
                     {m.objective && (
                       <span className="block mt-1 text-caption text-ink-2 font-sans font-medium max-w-[120px] mx-auto leading-tight"
@@ -1198,10 +1198,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   <span className="font-mono text-caption text-ink-2">{m.weeks}sem · {m.daysPerWeek}d/sem</span>
                 </div>
                 <p className="text-white text-label font-sans font-bold truncate">{m.objective || '(sin objetivo)'}</p>
-                <p className="text-ink-2 text-caption font-mono mt-0.5">{m.startDate}</p>
+                <p className="text-ink-2 text-caption font-mono ">{m.startDate}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {m.distribution && (
-                    <span className="inline-flex items-center gap-0.5 text-caption font-mono text-success">
+                    <span className="inline-flex items-center text-caption font-mono text-success">
                       <span className="material-symbols-outlined text-caption">grid_view</span>Distribución
                     </span>
                   )}
@@ -1276,7 +1276,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               </div>
 
               {/* Tab bar */}
-              <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+              <div className="overflow-x-auto -mx-1 px-1 ">
                 <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 min-w-max">
                   {([
                     { id: 'progression',  label: 'Progresión y volumen', icon: 'trending_up' },
@@ -1341,9 +1341,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       {/* Overload alert */}
                       {editing.distribution?.overloadAlert && (
                         <div className="flex items-start gap-3 px-4 py-3 bg-orange-500/10 border border-orange-500/30 rounded-surface">
-                          <span className="material-symbols-outlined text-orange-400 mt-0.5">warning</span>
+                          <span className="material-symbols-outlined text-orange-400 ">warning</span>
                           <div>
-                            <p className="font-mono text-label font-bold text-orange-300 uppercase mb-0.5">Sobrevolumen</p>
+                            <p className="font-mono text-label font-bold text-orange-300 uppercase ">Sobrevolumen</p>
                             <p className="font-mono text-label text-orange-300/80">
                               El volumen total supera el límite de {editing.daysPerWeek} días × 12 series.
                             </p>
@@ -1438,7 +1438,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div className="flex items-center justify-between flex-wrap gap-3">
                         <div>
                           <p className="font-sans font-bold text-white text-body-s">Vista previa de rutinas</p>
-                          <p className="font-mono text-caption text-ink-2 mt-0.5">
+                          <p className="font-mono text-caption text-ink-2 ">
                             Meso #{editing.number} · {editing.weeks} semanas × {editing.daysPerWeek} días =&nbsp;
                             <span className="text-accent">{editing.weeks * editing.daysPerWeek} sesiones</span>
                           </p>
@@ -1474,7 +1474,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                             {/* Warnings */}
                             {pd.warnings.length > 0 && (
-                              <div className="mb-2 space-y-0.5">
+                              <div className="mb-2 ">
                                 {pd.warnings.map((w, wi) => (
                                   <p key={wi} className="text-caption font-mono text-orange-400 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-caption">warning</span>
@@ -1494,7 +1494,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <p className="text-caption font-sans text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
                                         {pe.equipmentMismatch && (
-                                          <span className="inline-flex items-center gap-0.5 text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded-control" title="Material no disponible según onboarding">
+                                          <span className="inline-flex items-center text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 rounded-control" title="Material no disponible según onboarding">
                                             <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>warning</span>
                                             sin material
                                           </span>
@@ -1503,7 +1503,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                     </div>
                                     <button
                                       onClick={() => removePEx(dayIdx, peIdx)}
-                                      className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0 p-0.5"
+                                      className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0 "
                                     >
                                       <span className="material-symbols-outlined text-body-s">close</span>
                                     </button>
@@ -1581,7 +1581,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {genPhase === 'error' && (
                     <div className="space-y-3">
                       <div className="flex items-start gap-3 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-surface">
-                        <span className="material-symbols-outlined text-red-400 mt-0.5">error</span>
+                        <span className="material-symbols-outlined text-red-400 ">error</span>
                         <p className="font-sans text-label text-red-300">{genError}</p>
                       </div>
                       <button
@@ -1653,7 +1653,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   <span className="material-symbols-outlined text-accent text-title-s">library_books</span>
                   Usar plantilla
                 </h3>
-                <p className="font-mono text-caption text-ink-2 mt-0.5">
+                <p className="font-mono text-caption text-ink-2 ">
                   Se clonarán todos los mesociclos del programa para {selectedEmail}.
                 </p>
               </div>
@@ -1688,9 +1688,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-white text-body-s group-hover:text-accent transition-colors">{tpl.name}</p>
-                        {tpl.description && <p className="font-sans text-caption text-ink-2 mt-0.5">{tpl.description}</p>}
+                        {tpl.description && <p className="font-sans text-caption text-ink-2 ">{tpl.description}</p>}
                       </div>
-                      <span className="font-mono text-caption text-accent font-bold flex-shrink-0 bg-accent/10 px-2 py-0.5 rounded-control">Usar →</span>
+                      <span className="font-mono text-caption text-accent font-bold flex-shrink-0 bg-accent/10 px-2 rounded-control">Usar →</span>
                     </div>
                     <div className="flex gap-3 flex-wrap">
                       <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
@@ -1698,7 +1698,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     </div>
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {tpl.stages.map((st) => (
-                        <span key={st.id} className="font-mono text-caption bg-raised border border-hairline px-2 py-0.5 rounded-control text-ink-2">
+                        <span key={st.id} className="font-mono text-caption bg-raised border border-hairline px-2 rounded-control text-ink-2">
                           {st.name} · {st.weeks}sem
                         </span>
                       ))}

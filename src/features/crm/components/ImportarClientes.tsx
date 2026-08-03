@@ -229,11 +229,11 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           type="checkbox"
           checked={!excluida}
           onChange={onToggle}
-          className="mt-0.5 accent-accent"
+          className="accent-accent"
           aria-label={`Incluir a ${fila.nombre}`}
         />
       )}
-      {conError && <span className="material-symbols-outlined text-body-s text-danger mt-0.5">error</span>}
+      {conError && <span className="material-symbols-outlined text-body-s text-danger ">error</span>}
       <div className="min-w-0 flex-1">
         <p className="font-sans text-caption text-ink truncate">
           {fila.nombre || <span className="text-ink-3">(sin nombre) — fila {fila.fila}</span>}
@@ -244,10 +244,10 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
           </p>
         )}
         {conError && (
-          <p className="font-sans text-caption text-danger mt-0.5">{fila.errores.join('. ')}</p>
+          <p className="font-sans text-caption text-danger ">{fila.errores.join('. ')}</p>
         )}
         {duplicado && (
-          <p className="font-sans text-caption text-warning mt-0.5">
+          <p className="font-sans text-caption text-warning ">
             Ya existe {duplicado.clienteExistente.nombre || 'un cliente'} con el mismo {duplicado.motivo === 'dni' ? 'DNI' : 'email'}
             {excluida ? ' — excluido' : ' — se importará igualmente'}
           </p>

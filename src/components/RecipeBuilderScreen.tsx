@@ -33,7 +33,7 @@ function IndyaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
       }
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
       {recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 py-0.5 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -311,7 +311,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {recipe.categories.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {recipe.categories.map(c => (
-                        <span key={c} className="px-2 py-0.5 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
+                        <span key={c} className="px-2 rounded-full bg-raised text-ink-2 font-mono text-caption uppercase tracking-wider">{c}</span>
                       ))}
                     </div>
                   )}
@@ -649,7 +649,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 <ol className="space-y-2">
                   {form.steps.map((step, idx) => (
                     <li key={idx} className="flex items-start gap-3 px-3 py-3 bg-raised rounded-surface border border-hairline">
-                      <span className="w-5 h-5 rounded-full bg-raised text-ink-2 font-mono text-caption font-bold flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+                      <span className="w-5 h-5 rounded-full bg-raised text-ink-2 font-mono text-caption font-bold flex items-center justify-center shrink-0 ">{idx + 1}</span>
                       <p className="text-label text-ink-2 flex-1 leading-relaxed">{step}</p>
                       <button type="button" onClick={() => setForm(f => ({ ...f, steps: f.steps.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors shrink-0">
                         <span className="material-symbols-outlined text-body-s">close</span>

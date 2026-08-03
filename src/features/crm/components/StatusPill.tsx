@@ -35,7 +35,7 @@ const ESTADO_SUSCRIPCION: Record<EstadoSuscripcion, { label: string; tono: Tono 
 
 function Pill({ label, tono }: { label: string; tono: Tono }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border font-sans text-caption uppercase tracking-widest whitespace-nowrap ${TONO_CLASS[tono]}`}>
+    <span className={`inline-flex items-center px-2 rounded-full border font-sans text-caption uppercase tracking-widest whitespace-nowrap ${TONO_CLASS[tono]}`}>
       {label}
     </span>
   );

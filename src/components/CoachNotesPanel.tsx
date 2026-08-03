@@ -72,7 +72,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
           Mis notas
           {pending.length > 0 && (
-            <span className="bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
+            <span className="bg-accent text-black text-caption font-bold px-2 rounded-full">{pending.length}</span>
           )}
         </h3>
         <button
@@ -143,7 +143,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
               <div className="flex-1 min-w-0">
                 <p className={`font-sans text-label text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
                 {n.relatedAthleteName && (
-                  <p className="font-sans text-caption text-data mt-0.5">{n.relatedAthleteName}</p>
+                  <p className="font-sans text-caption text-data ">{n.relatedAthleteName}</p>
                 )}
               </div>
               <button

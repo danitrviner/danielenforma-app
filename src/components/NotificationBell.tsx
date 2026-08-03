@@ -99,7 +99,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
               <span className="material-symbols-outlined text-accent text-title-s">notifications</span>
               Notificaciones
               {unread > 0 && (
-                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-control font-mono font-bold">
+                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-2 rounded-control font-mono font-bold">
                   {unread} nueva{unread !== 1 ? 's' : ''}
                 </span>
               )}
@@ -139,7 +139,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                 >
                   {/* Icon */}
                   <span
-                    className={`material-symbols-outlined text-title-s mt-0.5 flex-shrink-0 ${
+                    className={`material-symbols-outlined text-title-s flex-shrink-0 ${
                       !n.read ? 'text-accent' : 'text-ink-3'
                     }`}
                     style={{ fontVariationSettings: !n.read ? "'FILL' 1" : "'FILL' 0" }}
@@ -152,8 +152,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                     <p className={`text-label font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
-                    <p className="text-caption font-mono text-ink-3 mt-0.5 truncate">{n.body}</p>
-                    <p className="text-caption font-mono text-ink-3 mt-0.5">{timeAgo(n.createdAt)}</p>
+                    <p className="text-caption font-mono text-ink-3 truncate">{n.body}</p>
+                    <p className="text-caption font-mono text-ink-3 ">{timeAgo(n.createdAt)}</p>
                   </div>
 
                   {/* Unread dot */}

@@ -472,7 +472,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
-            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{pendingAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingAssignments.map(a => {
@@ -486,7 +486,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 >
                   <div>
                     <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
-                    {q.description && <p className="text-caption text-ink-2 mt-0.5 font-sans">{q.description}</p>}
+                    {q.description && <p className="text-caption text-ink-2 font-sans">{q.description}</p>}
                     <p className="font-mono text-caption text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0 ml-3">chevron_right</span>
@@ -531,7 +531,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
-            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{pendingPhotoAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
@@ -598,7 +598,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-title-s">{item.mood}</span>
-                  <span className={`text-caption px-2 py-0.5 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
+                  <span className={`text-caption px-2 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
                     {item.adherence}
                   </span>
                 </div>

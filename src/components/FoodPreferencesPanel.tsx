@@ -127,13 +127,13 @@ export default function FoodPreferencesPanel({
                 {hasAny && (
                   <div className="flex gap-2">
                     {gFav > 0 && (
-                      <span className="font-mono text-caption text-amber-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-amber-400 flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
                         {gFav}
                       </span>
                     )}
                     {gDislike > 0 && (
-                      <span className="font-mono text-caption text-red-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-red-400 flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>thumb_down</span>
                         {gDislike}
                       </span>
@@ -165,7 +165,7 @@ export default function FoodPreferencesPanel({
             <span className="material-symbols-outlined text-accent text-title-s">{activeGroup.icon}</span>
             <h3 className="font-sans font-bold text-title-s text-white">{activeGroup.name}</h3>
           </div>
-          <div className="flex gap-3 font-mono text-caption mt-0.5">
+          <div className="flex gap-3 font-mono text-caption ">
             <span className="text-amber-400">⭐ {totalFav}</span>
             <span className="text-red-400">➖ {totalDislike}</span>
           </div>

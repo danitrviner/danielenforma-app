@@ -376,13 +376,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-sans font-bold text-white text-title-s">{wo?.name || 'Rutina'}</p>
               {isNext && a.status === 'pending' && (
-                <span className="text-caption font-mono bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-control uppercase font-bold">Siguiente</span>
+                <span className="text-caption font-mono bg-accent/15 text-accent border border-accent/30 px-2 rounded-control uppercase font-bold">Siguiente</span>
               )}
               {!isNext && isPast && a.status === 'pending' && (
-                <span className="text-caption font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 py-0.5 rounded-control uppercase font-bold">Atrasado</span>
+                <span className="text-caption font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 rounded-control uppercase font-bold">Atrasado</span>
               )}
             </div>
-            <p className="font-mono text-label text-ink-2 mt-0.5">
+            <p className="font-mono text-label text-ink-2 ">
               {formatDate(a.date)} · {wo ? `${wo.exercises.length} ejercicio${wo.exercises.length !== 1 ? 's' : ''}` : '—'}
             </p>
           </div>
@@ -456,7 +456,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <p className="font-mono text-title-m font-bold text-white tabular-nums">
                 {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
               </p>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mt-0.5">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide ">
                 {restTimer.secondsLeft > 0 ? 'Descanso' : '¡Listo!'}
               </p>
             </div>
@@ -534,24 +534,24 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
                     {ex?.name || we.exerciseId}
                     {we.technique && (
-                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
+                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
                         {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
                       </span>
                     )}
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-caption text-ink-2">
                       Prescripción: {we.setGroups && we.setGroups.length > 0
                         ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
                     {ex?.type && (
-                      <span className={`text-caption font-sans px-2 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                      <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
                     {warmup.readiness && (
                       <span
                         title={warmup.readiness.message}
-                        className={`text-caption font-mono px-2 py-0.5 rounded-control border ${
+                        className={`text-caption font-mono px-2 rounded-control border ${
                           warmup.readiness.score >= 75 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
                           : warmup.readiness.score >= 45 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
                           : 'text-red-300 border-red-500/30 bg-red-500/10'
@@ -568,7 +568,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                     </span>
                   ) : (
-                    <span className="font-mono text-caption font-bold px-2 py-0.5 rounded-control bg-white/7 text-ink-2">
+                    <span className="font-mono text-caption font-bold px-2 rounded-control bg-white/7 text-ink-2">
                       {doneSets}/{totalSets}
                     </span>
                   )}
@@ -646,7 +646,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               )}
                             </span>
                             {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                              <span className="block font-sans text-caption text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
+                              <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -742,14 +742,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {ex?.instructions && (
                 <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-mono text-caption text-ink-3 uppercase mb-0.5">Descripción</p>
+                  <p className="font-mono text-caption text-ink-3 uppercase ">Descripción</p>
                   <p className="text-label text-ink-2">{ex.instructions}</p>
                 </div>
               )}
 
               {getPersonalNote(we.exerciseId) && (
                 <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
-                  <p className="font-sans text-caption text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
+                  <p className="font-sans text-caption text-accent/70 uppercase ">Nota de tu entrenador para ti</p>
                   <p className="text-label text-accent">{getPersonalNote(we.exerciseId)}</p>
                 </div>
               )}

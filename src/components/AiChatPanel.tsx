@@ -412,7 +412,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                         <span>·</span>
                         <span>{mesoTrained.reduce((s, g) => s + meso.groups[g].series, 0)} series/sem</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                      <div className="grid grid-cols-2 gap-x-3 ">
                         {mesoTrained.map(g => (
                           <div key={g} className="flex justify-between text-caption">
                             <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
@@ -426,13 +426,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
                       <div className="flex gap-2 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-2 py-0.5 text-ink">
+                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-2 text-ink">
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
                         <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
                       </div>
-                      <ul className="text-caption text-ink-2 flex flex-col gap-0.5">
+                      <ul className="text-caption text-ink-2 flex flex-col ">
                         {diet.meals.map(m => (
                           <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
                         ))}

@@ -84,10 +84,10 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
                 return (
                   <div key={cat} className="py-3 px-2 text-center">
                     <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                    <span className={`block font-mono font-bold text-body-s mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                    <span className={`block font-mono font-bold text-body-s ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
                       {fmtQ(v)}{tgt > 0 ? `/${fmtQ(tgt)}` : ''}
                     </span>
-                    <span className={`block font-mono text-caption mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                    <span className={`block font-mono text-caption ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
                       {isOk ? '✓ ok' : isOver ? `+${fmtQ(round2(v - tgt))}` : 'int'}
                     </span>
                   </div>
@@ -121,10 +121,10 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             return (
               <div key={cat} className="py-3 px-2 text-center">
                 <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                <span className={`block font-mono font-bold text-title-s mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                <span className={`block font-mono font-bold text-title-s ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
                   {fmtQ(v)}{b > 0 ? `/${fmtQ(b)}` : ''}
                 </span>
-                <span className={`block font-mono text-caption mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                <span className={`block font-mono text-caption ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
                   {isOk ? '✓' : isOver ? `+${fmtQ(delta)}` : b > 0 ? `${fmtQ(delta)}` : 'int'}
                 </span>
               </div>

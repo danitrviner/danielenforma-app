@@ -44,9 +44,9 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               <div className="min-w-0">
                 <p className="font-sans text-body-s text-white truncate flex items-center gap-2">
                   {r.title}
-                  {i === 0 && <span className="font-sans text-caption font-bold uppercase bg-accent text-black px-2 py-0.5 rounded-control flex-shrink-0">Nuevo</span>}
+                  {i === 0 && <span className="font-sans text-caption font-bold uppercase bg-accent text-black px-2 rounded-control flex-shrink-0">Nuevo</span>}
                 </p>
-                <p className="font-mono text-caption text-ink-2 mt-0.5">
+                <p className="font-mono text-caption text-ink-2 ">
                   {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)}
                   {r.sentAt && ` · ${new Date(r.sentAt).toLocaleDateString('es-ES')}`}
                 </p>

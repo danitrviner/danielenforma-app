@@ -153,7 +153,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden shadow-lg">
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>

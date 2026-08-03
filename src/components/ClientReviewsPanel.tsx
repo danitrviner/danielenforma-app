@@ -336,7 +336,7 @@ export default function ClientReviewsPanel({
                     <span className="font-mono text-caption text-ink-2">({athletePhotos.length} fotos)</span>
                   )}
                 </h3>
-                <div className="flex bg-raised rounded-control p-0.5">
+                <div className="flex bg-raised rounded-control ">
                   {([
                     { id: 'front', label: 'Frente'   },
                     { id: 'side',  label: 'Lateral'  },
@@ -365,7 +365,7 @@ export default function ClientReviewsPanel({
                 <div className="p-3 bg-bg/90">
                   {viewPhotos.length === 1 ? (
                     <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold shadow-md">
                         Actual · {fmtDate(latest.date)}
                       </div>
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -373,13 +373,13 @@ export default function ClientReviewsPanel({
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="relative rounded-surface overflow-hidden border border-hairline group">
-                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-hairline px-3 py-0.5 rounded-control text-white font-mono text-caption">
+                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-hairline px-3 rounded-control text-white font-mono text-caption">
                           Baseline · {fmtDate(baseline.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
                       </div>
                       <div className="relative rounded-surface overflow-hidden border border-accent/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 py-0.5 rounded-control font-sans text-caption font-bold shadow-md">
+                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold shadow-md">
                           Actual · {fmtDate(latest.date)}
                         </div>
                         <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -604,7 +604,7 @@ export default function ClientReviewsPanel({
                       <div key={m.intakeType} className="flex items-center gap-2 bg-raised border border-hairline rounded-surface px-3 py-2">
                         <span className="font-sans text-caption text-ink-2">{m.name}</span>
                         {m.needsTupper && (
-                          <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-2 py-0.5">tupper</span>
+                          <span className="font-mono text-caption bg-data/10 border border-data/30 text-data rounded-control px-2 ">tupper</span>
                         )}
                       </div>
                     ))}
@@ -642,7 +642,7 @@ export default function ClientReviewsPanel({
                 {onboardingData.equipment.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {onboardingData.equipment.map(e => (
-                      <span key={e} className="bg-raised border border-hairline text-ink-2 px-2 py-0.5 rounded-full text-caption font-mono">{e}</span>
+                      <span key={e} className="bg-raised border border-hairline text-ink-2 px-2 rounded-full text-caption font-mono">{e}</span>
                     ))}
                   </div>
                 )}
@@ -989,13 +989,13 @@ export default function ClientReviewsPanel({
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-sans font-bold text-white text-label">Check-in</span>
                               <span className="font-mono text-caption text-ink-2">{c.dateStr}</span>
-                              <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-surface flex-shrink-0 ${
+                              <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface flex-shrink-0 ${
                                 c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                               }`}>
                                 {c.approved ? 'Revisado' : 'Pendiente'}
                               </span>
                             </div>
-                            <p className="font-mono text-caption text-ink-2 mt-0.5">
+                            <p className="font-mono text-caption text-ink-2 ">
                               {c.weight} kg · {c.adherence} · {c.mood}
                             </p>
                           </div>
@@ -1151,7 +1151,7 @@ export default function ClientReviewsPanel({
                             <span className="font-mono text-caption text-ink-2">{submittedDate}</span>
                           </div>
                           {previewAnswers && (
-                            <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
+                            <p className="font-mono text-caption text-ink-2 truncate">{previewAnswers}</p>
                           )}
                         </div>
                         <span className="material-symbols-outlined text-ink-2 text-body-s transition-transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
@@ -1227,7 +1227,7 @@ export default function ClientReviewsPanel({
                               const question = q?.questions.find(qq => qq.id === ans.questionId);
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
-                                  <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">{question?.label ?? ans.questionId}</span>
+                                  <span className="font-sans text-caption text-ink-2 flex-1 ">{question?.label ?? ans.questionId}</span>
                                   <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                                   </span>
@@ -1395,7 +1395,7 @@ export default function ClientReviewsPanel({
                               const q = tmpl?.questions.find(q => q.id === ans.questionId);
                               return (
                                 <div key={ans.questionId} className="flex items-start gap-3">
-                                  <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">{q?.label ?? ans.questionId}</span>
+                                  <span className="font-sans text-caption text-ink-2 flex-1 ">{q?.label ?? ans.questionId}</span>
                                   <span className="font-mono text-label text-white font-bold text-right">
                                     {String(ans.value)}{q?.unit ? ` ${q.unit}` : ''}
                                     {q?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}

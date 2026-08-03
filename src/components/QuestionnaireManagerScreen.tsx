@@ -113,7 +113,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-sans font-bold text-white text-body-s truncate">{q.title}</p>
                   {q.questions.some(qq => qq.graphable) && (
-                    <span className="flex items-center gap-0.5 text-caption font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-control border border-accent/20">
+                    <span className="flex items-center text-caption font-mono text-accent bg-accent/10 px-2 rounded-control border border-accent/20">
                       <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
                       Graficable
                     </span>

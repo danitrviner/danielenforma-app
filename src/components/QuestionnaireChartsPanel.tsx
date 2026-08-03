@@ -71,14 +71,14 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const count = (p as WeekPoint).count;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-xl">
-      <p className="text-ink-2 mb-0.5">
+      <p className="text-ink-2 ">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
       <p className="text-accent font-bold text-body-s">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
-        <p className="text-ink-2 mt-0.5">Media de {count} registros</p>
+        <p className="text-ink-2 ">Media de {count} registros</p>
       )}
     </div>
   );
@@ -105,13 +105,13 @@ function QuestionChart({
     <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
         <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 ">
           {question.unit && (
-            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
+            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-2 rounded-control">
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-control flex items-center gap-0.5">
+          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-2 rounded-control flex items-center ">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
@@ -196,7 +196,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
           <span className="material-symbols-outlined text-accent text-title-s">show_chart</span>
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
-        <div className="flex bg-surface border border-hairline rounded-surface p-0.5 gap-0.5">
+        <div className="flex bg-surface border border-hairline rounded-surface ">
           {(['Puntos', 'Media semanal'] as const).map((label, i) => (
             <button
               key={label}

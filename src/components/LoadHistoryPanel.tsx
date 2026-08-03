@@ -432,7 +432,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
             <div className="flex items-center gap-2">
-              <div className="flex bg-raised border border-hairline rounded-surface p-0.5">
+              <div className="flex bg-raised border border-hairline rounded-surface ">
                 {(['week', 'day'] as const).map(g => (
                   <button
                     key={g}
@@ -469,7 +469,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={b.id}
                   onClick={() => toggleBucket(b.id)}
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
-                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-all flex flex-col items-center justify-center ${
                     included
                       ? 'bg-data/10 border-data/40 text-data'
                       : 'bg-transparent border-hairline text-ink-3 opacity-50'

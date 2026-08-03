@@ -289,13 +289,13 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-sans font-bold text-white text-label">{athleteName}</span>
                           <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
-                          <span className={`text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control flex-shrink-0 ${
+                          <span className={`text-caption font-mono font-bold uppercase px-2 rounded-control flex-shrink-0 ${
                             c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                           }`}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
                           </span>
                         </div>
-                        <p className="font-mono text-caption text-ink-2 mt-0.5">
+                        <p className="font-mono text-caption text-ink-2 ">
                           {c.weight} kg · {c.adherence} · {c.mood}
                         </p>
                       </div>
@@ -426,7 +426,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <span className="font-mono text-caption text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
                       </div>
                       {previewAnswers && (
-                        <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
+                        <p className="font-mono text-caption text-ink-2 truncate">{previewAnswers}</p>
                       )}
                     </div>
                     {athleteProfile && (
@@ -449,7 +449,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-sans text-caption text-ink-2 flex-1 pt-0.5">
+                            <span className="font-sans text-caption text-ink-2 flex-1 ">
                               {question?.label ?? ans.questionId}
                             </span>
                             <span className="font-mono text-label text-white font-bold text-right">

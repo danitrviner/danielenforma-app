@@ -283,7 +283,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </button>
           <div>
             <h2 className="font-sans font-bold text-title-l text-white">Generar menú semanal</h2>
-            <p className="text-ink-2 text-label mt-0.5 font-sans">Las recetas son la base — puntos de intercambios ya pautados por día</p>
+            <p className="text-ink-2 text-label font-sans">Las recetas son la base — puntos de intercambios ya pautados por día</p>
           </div>
         </div>
 
@@ -359,7 +359,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
               <span className="material-symbols-outlined text-title-s text-accent">inventory_2</span>
               Batch cooking
             </span>
-            <span className="block font-sans text-caption text-ink-2 mt-0.5">
+            <span className="block font-sans text-caption text-ink-2 ">
               Una sola receta por comida para toda la semana, portada por día. El atleta cocina de golpe y se lo reparte.
             </span>
           </span>
@@ -460,12 +460,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <h2 className="font-sans font-bold text-title-l text-white truncate flex items-center gap-2">
             {menu.name}
             {menu.batchCooking && (
-              <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 py-0.5 rounded-control">
+              <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 rounded-control">
                 <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>inventory_2</span>batch
               </span>
             )}
           </h2>
-          <p className="text-ink-2 text-label mt-0.5 font-mono">
+          <p className="text-ink-2 text-label font-mono">
             {menu.status === 'published' ? 'Publicado — editable por el atleta vía intercambios' : 'Borrador — revisa antes de publicar'}
           </p>
         </div>
@@ -532,7 +532,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                   <span className="font-sans font-bold text-body-s text-white">{WEEK_DAY_FULL[day.day]}</span>
                   <span className="font-mono text-caption text-ink-3">{day.dietName ?? 'Libre'}</span>
                 </div>
-                <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-control border ${badge.cls}`}>{badge.label}</span>
+                <span className={`text-caption font-sans font-bold uppercase px-2 rounded-control border ${badge.cls}`}>{badge.label}</span>
               </button>
 
               {expanded && (
@@ -564,11 +564,11 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                 {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
                               </div>
                               <p className="font-sans font-bold text-body-s text-white leading-tight truncate">{meal.recipeName}</p>
-                              <p className="font-mono text-caption text-ink-2 mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                              <p className="font-mono text-caption text-ink-2 ">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {meal.complements.map((c, ci) => (
-                                    <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 py-0.5 rounded-control">
+                                    <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 rounded-control">
                                       +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
                                     </span>
                                   ))}

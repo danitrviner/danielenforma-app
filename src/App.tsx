@@ -283,7 +283,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded-control font-mono uppercase ml-2 select-none">
+          <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 rounded-control font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
@@ -304,7 +304,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-caption bg-white/7 text-ink-2 px-2 py-0.5 rounded-control font-bold uppercase select-none">
+          <span className="text-caption bg-white/7 text-ink-2 px-2 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
@@ -417,7 +417,7 @@ function AppContent() {
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-2 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
+            className={`flex flex-col items-center justify-center py-2 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"
@@ -431,7 +431,7 @@ function AppContent() {
                 5 de 7 truncadas frente a 2 antes. Prima la usabilidad sobre la
                 uniformidad. La solución no es tipográfica sino de arquitectura
                 de navegación, y se evalúa en una fase posterior. */}
-            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
+            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center ">
               {tab.shortLabel ?? tab.label}
             </span>
             {tab.id === 'reviews' && pendingCount > 0 && (

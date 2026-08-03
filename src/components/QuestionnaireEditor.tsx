@@ -146,13 +146,13 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
 
             {/* Main row */}
             <div className="flex items-start gap-2">
-              <div className="flex flex-col gap-0.5 flex-shrink-0 mt-1">
+              <div className="flex flex-col flex-shrink-0 mt-1">
                 <button onClick={() => moveQ(idx, -1)} disabled={idx === 0}
-                  className="p-0.5 text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Subir">
+                  className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Subir">
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>keyboard_arrow_up</span>
                 </button>
                 <button onClick={() => moveQ(idx, 1)} disabled={idx === form.questions.length - 1}
-                  className="p-0.5 text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Bajar">
+                  className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Bajar">
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>keyboard_arrow_down</span>
                 </button>
               </div>
@@ -187,11 +187,11 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
               <button onClick={() => duplicateQ(idx)}
-                className="flex-shrink-0 mt-0.5 p-2 text-ink-2 hover:text-data transition-colors" title="Duplicar">
+                className="flex-shrink-0 p-2 text-ink-2 hover:text-data transition-colors" title="Duplicar">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
               </button>
               <button onClick={() => removeQ(idx)} disabled={form.questions.length === 1}
-                className="flex-shrink-0 mt-0.5 p-2 text-ink-2 hover:text-red-400 disabled:opacity-20 transition-colors" title="Eliminar">
+                className="flex-shrink-0 p-2 text-ink-2 hover:text-red-400 disabled:opacity-20 transition-colors" title="Eliminar">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
               </button>
             </div>

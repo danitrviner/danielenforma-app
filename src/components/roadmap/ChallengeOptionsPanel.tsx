@@ -120,7 +120,7 @@ export default function ChallengeOptionsPanel({
                 <p className="font-sans font-bold text-white text-body-s">{opt.title}</p>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {opt.isMilestone && (
-                    <span className="font-mono text-caption uppercase px-2 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
+                    <span className="font-mono text-caption uppercase px-2 rounded-full bg-accent/15 text-accent">HITO</span>
                   )}
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>

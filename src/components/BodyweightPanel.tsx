@@ -53,7 +53,7 @@ function BwTooltip({ active, payload }: any) {
         <p className="text-accent font-bold text-body-s">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
-        <p className="text-data text-caption mt-0.5">Media 7d: {avgEntry.value} kg</p>
+        <p className="text-data text-caption ">Media 7d: {avgEntry.value} kg</p>
       )}
     </div>
   );

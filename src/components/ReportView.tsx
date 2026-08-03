@@ -27,7 +27,7 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
       {children}
       {section.coachNote && (
         <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
-          <p className="font-mono text-caption text-accent uppercase tracking-wider mb-0.5">Nota del entrenador</p>
+          <p className="font-mono text-caption text-accent uppercase tracking-wider ">Nota del entrenador</p>
           <p className="text-label text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
       )}
@@ -88,7 +88,7 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
                 <td className="py-2 px-2">
                   <span className="text-label text-white font-sans flex items-center gap-2">
                     {r.name}
-                    {r.isPR && <span className="font-mono text-caption font-bold uppercase bg-accent text-black px-1 py-0.5 rounded-control">PR</span>}
+                    {r.isPR && <span className="font-mono text-caption font-bold uppercase bg-accent text-black px-1 rounded-control">PR</span>}
                   </span>
                 </td>
                 <td className="py-2 px-2 font-mono text-label text-ink-2">{r.sets}</td>
@@ -259,7 +259,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
     <div className="space-y-4">
       <div>
         <h3 className="font-sans font-bold text-title-m text-white">{report.title}</h3>
-        <p className="font-mono text-caption text-ink-2 mt-0.5">
+        <p className="font-mono text-caption text-ink-2 ">
           {fmtReportDate(report.periodStart)} – {fmtReportDate(report.periodEnd)}
           {report.sentAt && ` · enviado el ${new Date(report.sentAt).toLocaleDateString('es-ES')}`}
         </p>

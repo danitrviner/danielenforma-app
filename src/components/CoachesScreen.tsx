@@ -161,7 +161,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <p className="font-sans text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
-          <p className="font-sans text-caption text-ink-3 mt-0.5">
+          <p className="font-sans text-caption text-ink-3 ">
             Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
           </p>
         </div>
@@ -232,7 +232,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
-                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 py-0.5 rounded-full text-caption font-mono">
+                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 rounded-full text-caption font-mono">
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
@@ -268,7 +268,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-caption font-sans uppercase px-2 py-0.5 rounded-control border flex-shrink-0 ${
+                      <span className={`text-caption font-sans uppercase px-2 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
@@ -601,13 +601,13 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-bold text-white text-body-s truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-caption font-mono px-2 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-caption font-mono px-2 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
+                      {isOwner && <span className="text-caption font-mono px-2 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      {isSelf && !isOwner && <span className="text-caption font-mono px-2 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-label text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`text-caption font-mono px-2 py-0.5 rounded-control uppercase font-bold border ${
+                    <span className={`text-caption font-mono px-2 rounded-control uppercase font-bold border ${
                       isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (

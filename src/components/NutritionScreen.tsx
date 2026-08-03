@@ -879,7 +879,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <button
                 key={day}
                 onClick={() => setViewDay(day)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-3 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`flex-1 flex flex-col items-center py-3 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                   isViewing
                     ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
@@ -985,7 +985,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <React.Fragment key={selectedDiet.id}>
               {/* Diet header */}
               <div className="bg-raised rounded-surface p-4 border border-hairline">
-                <div className="flex items-center justify-between mb-0.5">
+                <div className="flex items-center justify-between ">
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
                     {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
                   </span>
@@ -1234,7 +1234,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               </button>
 
                               {/* Category badge */}
-                              <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
+                              <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
                                 {item.category.replace('_', ' ')}
                               </span>
 
@@ -1243,7 +1243,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 <span className={`block text-label font-sans leading-snug ${st.done ? 'line-through text-ink-2' : 'text-white'}`}>
                                   {st.foodLabel}
                                 </span>
-                                <span className="block font-mono text-caption text-ink-2 mt-0.5">
+                                <span className="block font-mono text-caption text-ink-2 ">
                                   ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
                                 </span>
                               </div>
@@ -1408,7 +1408,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 ">
                           {isFav && (
                             <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
@@ -1417,7 +1417,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
                             {recipe.categories.slice(0, 3).map(c => (
-                              <span key={c} className="px-2 py-0.5 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
+                              <span key={c} className="px-2 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
                             ))}
                           </div>
                         )}
@@ -1536,7 +1536,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   {isSearchingFoods && (
-                    <span className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                    <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
                       {food.category.replace('_', ' ')}
                     </span>
                   )}

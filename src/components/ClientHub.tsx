@@ -381,7 +381,7 @@ export default function ClientHub({
 
   const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
   const planBadge = daysLeft !== null ? (
-    <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-surface border flex-shrink-0 ${
+    <span className={`text-caption font-sans font-bold uppercase px-2 rounded-surface border flex-shrink-0 ${
       daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
       daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                        'bg-red-500/10     text-red-300     border-red-500/20'
@@ -471,7 +471,7 @@ export default function ClientHub({
       />
 
       {/* Nav de zonas (nivel 1) */}
-      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 pb-0.5">
+      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 ">
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1">
           {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button
