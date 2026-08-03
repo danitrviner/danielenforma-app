@@ -3,8 +3,8 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprints 1 y 2 completados** · rama
-> `ds/f0-linea-base` · 41 commits sin pushear
+> **Última actualización:** 3 de agosto de 2026 · **Sprints 1, 2 y 3 completados** · rama
+> `ds/f0-linea-base` · 57 commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
 refleja el presente. [`docs/DS-migracion.md`](docs/DS-migracion.md) es la *bitácora*: histórico por
@@ -18,7 +18,7 @@ en la auditoría UX/UI, el Design System y el plan de migración, que son extern
 ```
 Sprint 1  ████████████████████  F0 F1        COMPLETADO
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
-Sprint 3  ░░░░░░░░░░░░░░░░░░░░  F4 F5        pendiente
+Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ░░░░░░░░░░░░░░░░░░░░  F6 F7        pendiente
 Sprint 5  ░░░░░░░░░░░░░░░░░░░░  F8 F9 F10    pendiente
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
@@ -26,7 +26,7 @@ Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12     
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**4 de 16 fases completadas.**
+**6 de 16 fases completadas.**
 
 ## Fases
 
@@ -36,8 +36,8 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 1 | **F1** | Tokens reales en `@theme` | ✅ Completada | 2026-08-03 | Medio |
 | 2 | **F2** | Defectos objetivos | ✅ Completada | 2026-08-03 | Bajo |
 | 2 | **F3** | Radios — fase aislada | ✅ Completada | 2026-08-03 | **Crítico** |
-| 3 | **F4** | Escala tipográfica y suelo de tamaño | ⬜ Pendiente | — | Medio |
-| 3 | **F5** | Mono → Sans | ⬜ Pendiente | — | Medio |
+| 3 | **F4** | Escala tipográfica y suelo de tamaño | ✅ Completada | 2026-08-03 | Medio |
+| 3 | **F5** | Mono → Sans | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ⬜ Pendiente | — | Medio |
 | 4 | **F7** | Primitivas en `src/components/ui/` | ⬜ Pendiente | — | Bajo |
 | 5 | **F8** | Adopción de bajo riesgo | ⬜ Pendiente | — | Bajo |
@@ -60,11 +60,11 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | Tokens del DS en uso | ↑ | 0 | **5.224** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
-| Textos por debajo de 11 px | ↓ | 1.151 | 1.145 | 0 | F4 |
-| Tamaños de texto distintos | ↓ | 12 | 12 | ≤ 8 | F4 |
-| `font-black` / `font-extrabold` | ↓ | 117 | 114 | ~0 | F4 |
-| `font-mono` | ↓ | 1.527 | 1.508 | < 500 | F5 |
-| `font-sans` | ↑ | 590 | 579 | > mono | F5 |
+| Textos por debajo de 11 px | ↓ | 1.151 | **0** | 0 | F4 ✅ |
+| Escalones de tamaño en uso | ↓ | 16 | **8 + 2 excep.** | ≤ 8 | F4 ✅ |
+| Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
+| `font-mono` | ↓ | 1.527 | **1.030** | mono < sans | F5 ✅ |
+| `font-sans` | ↑ | 590 | **1.057** | > mono | F5 ✅ |
 | Espaciado fuera de escala | ↓ | 1.170 | 1.157 | 0 | F6 |
 | Overlays `fixed inset-0` | ↓ | 39 | 39 | 0 fuera de `ui/` | F9 |
 | `transition-all` | ↓ | 377 | 372 | 0 | F13 |
@@ -118,6 +118,32 @@ La revisión visual que el plan declara obligatoria se resolvió extrayendo del 
 `border-radius` **computado** de cada elemento antes y después en cinco pantallas: los totales
 coinciden elemento a elemento, ninguno perdió ni ganó radio.
 
+### Sprint 3 — Tipografía · 2026-08-03
+
+**F4 · Escala y suelo de tamaño.** 12 commits, 2.981 declaraciones migradas. De 16 tamaños
+renderizados a 8 pasos, y **de 1.145 textos por debajo de 11 px a cero**. Los pesos bajan de 6 a 4
+y la petición de Inter a Google Fonts, de 6 pesos a 4.
+
+**F5 · Mono → Sans.** 478 migraciones en tres tandas. `font-mono` 1.508 → 1.030 y `font-sans`
+579 → 1.057: **la proporción se invierte**, que era el objetivo de la fase. El 72 % de tipografía
+monoespaciada era el origen real de la sensación «terminal» del producto.
+
+El criterio fue deliberadamente estrecho: de las 1.504 apariciones, 478 se migraron por evidencia
+inequívoca, 902 se quedan en mono porque el DS las quiere ahí (etiquetas en versalitas y datos) y
+**286 quedan sin tocar por ambiguas** — adivinar es peor que no tocar.
+
+**Limpieza aprobada:** 12 tokens muertos del `@theme` y `.cyan-glow`, con 0 referencias verificadas
+sobre 297 archivos.
+
+## Excepciones explícitas al Design System
+
+Aprobadas caso por caso. **Prima la usabilidad sobre la uniformidad del sistema.**
+
+| Excepción | Por qué | Revisar en |
+|---|---|---|
+| **Barra inferior a 10 px**, por debajo del suelo de 11 | A 11 px, 5 de los 7 destinos se truncan hasta quedar ilegibles («ACA…», «CAR…»). La solución no es tipográfica sino de arquitectura de navegación. | Incidencia abierta, fase por decidir |
+| **Cardio en directo a 60 y 72 px**, por encima de `display` (32) | Pulsación, cuentas atrás y RPE se leen a distancia de brazo durante el esfuerzo. Reducirlas a 32 px degradaría la legibilidad justo donde el contexto es más exigente. | Propuesta de extensión del DS pendiente |
+
 ## Reglas que la migración ha dejado sentadas
 
 Valen para todo el código nuevo, no solo para las fases que quedan.
@@ -146,6 +172,7 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
 | R8 | **238 campos de formulario por debajo de 16 px** provocan zoom automático en iOS al enfocarlos, y el zoom no revierte solo. La auditoría contaba 5. | F4 | **Abierto — mayor de lo estimado** |
+| R10 | **La barra inferior tiene 7 destinos donde el DS fija 5.** Es lo que impide cumplir el suelo de 11 px sin truncar. Incidencia abierta: la solución pasa por reorganizar destinos, reducir pestañas visibles, iconografía más eficiente o navegación adaptativa. | Por decidir | **Abierto — incidencia** |
 | R9 | **El estado caliente de HMR miente.** Una verificación de layout sobre CSS recargado en caliente dio un falso negativo: las clases `md:` parecían no aplicarse. Toda verificación de layout exige recarga completa. | Método | Vigente |
 
 ## Deuda técnica del Design System
@@ -158,11 +185,12 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Escala de z-index elegida por orden de aparición~~ | ~~11~~ | ✅ F2 — declarada; los overlays la adoptan en F9 |
 | ~~`sticky top-[65px]` contra una cabecera de 78 px~~ | ~~1~~ | ✅ F2 |
 | ~~`MetricsScreen.tsx`, código muerto~~ | ~~441 líneas~~ | ✅ F2 — borrado |
-| Campos de formulario por debajo de 16 px (Perfil resuelto; **238 en el resto de la app**) | 238 | F4 |
+| Campos de formulario por debajo de 16 px → zoom en iOS | 238 | **sigue abierto** |
 | ~~Radios: 6 valores renderizados con dos colisiones~~ | ~~1.310~~ | ✅ F3 |
-| Textos por debajo de 11 px | 1.150 | F4 |
-| El 72 % de la tipografía es monoespaciada, párrafos incluidos | 1.527 | F5 |
-| Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | F5 |
+| ~~Textos por debajo de 11 px~~ | ~~1.145~~ | ✅ F4 |
+| Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | F5 parcial → F11 |
+| Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | **sigue abierto** |
+| 590 iconos Material Symbols dimensionados con tokens de TEXTO; falta una primitiva `Icon` | 590 | F7 |
 | Espaciado fuera de la escala de 4 px | 1.170 | F6 |
 | Glow en cuatro tarjetas donde no señala nada | 4 | F6 |
 | Overlays artesanales sin foco atrapado ni Escape | 39 | F9 |
