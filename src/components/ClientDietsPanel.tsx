@@ -11,6 +11,7 @@ import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete } from '
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
+import { EmptyState } from './ui';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -122,11 +123,11 @@ export default function ClientDietsPanel({
           </div>
         </div>
         {athleteDiets.length === 0 ? (
-          <div className="py-6 text-center">
-            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">nutrition</span>
-            <p className="text-label text-ink-2">No hay dietas creadas para este atleta.</p>
-            <p className="text-caption text-ink-2 mt-1 font-sans">Pulsa "Nueva dieta" para crear la primera.</p>
-          </div>
+          <EmptyState
+            icon="nutrition"
+            title="No hay dietas creadas para este atleta."
+            description='Pulsa "Nueva dieta" para crear la primera.'
+          />
         ) : (
           <div className="space-y-2">
             {athleteDiets.map(dt => {
@@ -267,10 +268,7 @@ export default function ClientDietsPanel({
         )}
 
         {weeklyMenus.filter(m => m.status !== 'archived').length === 0 ? (
-          <div className="py-4 text-center">
-            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">restaurant_menu</span>
-            <p className="text-label text-ink-2">Aún no hay ningún menú generado.</p>
-          </div>
+          <EmptyState icon="restaurant_menu" title="Aún no hay ningún menú generado." />
         ) : (
           <div className="space-y-2">
             {weeklyMenus.filter(m => m.status !== 'archived').map(m => (
