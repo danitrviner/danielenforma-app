@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T17:43:10.561Z",
-  "commit": "00027a0",
+  "generado": "2026-08-03T18:52:36.717Z",
+  "commit": "f4e4dd2",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39977
+    "lineasTsx": 39972
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5362,
+    "clasesTokenEnUso": 5326,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1030,
-    "fontSans": 1108,
+    "fontMono": 1025,
+    "fontSans": 1094,
     "pesosProhibidos": 31,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 372,
+    "transitionAll": 369,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -92,11 +92,11 @@
     "archivosGrandes": [
       {
         "archivo": "src/components/MesocycleManager.tsx",
-        "lineas": 1715
+        "lineas": 1713
       },
       {
         "archivo": "src/components/NutritionScreen.tsx",
-        "lineas": 1655
+        "lineas": 1653
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
@@ -120,7 +120,7 @@
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
-        "lineas": 900
+        "lineas": 902
       },
       {
         "archivo": "src/components/RoadmapTimeline.tsx",
@@ -136,11 +136,11 @@
       },
       {
         "archivo": "src/components/ExerciseLibraryScreen.tsx",
-        "lineas": 687
+        "lineas": 690
       },
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
-        "lineas": 686
+        "lineas": 683
       },
       {
         "archivo": "src/components/CardioScreen.tsx",
@@ -152,7 +152,7 @@
       },
       {
         "archivo": "src/components/ClientsScreen.tsx",
-        "lineas": 654
+        "lineas": 651
       },
       {
         "archivo": "src/components/CoachesScreen.tsx",
@@ -163,12 +163,12 @@
         "lineas": 637
       },
       {
-        "archivo": "src/components/CheckInScreen.tsx",
+        "archivo": "src/components/ui/Showcase.tsx",
         "lineas": 631
       },
       {
-        "archivo": "src/components/ui/Showcase.tsx",
-        "lineas": 631
+        "archivo": "src/components/CheckInScreen.tsx",
+        "lineas": 630
       },
       {
         "archivo": "src/components/ClientHub.tsx",
@@ -258,7 +258,7 @@
       "roundedFull": 3
     },
     "src/components/CheckInScreen.tsx": {
-      "clasesTokenEnUso": 120,
+      "clasesTokenEnUso": 119,
       "fontMono": 15,
       "fontSans": 26,
       "pesosProhibidos": 1,
@@ -271,9 +271,9 @@
       "transitionAll": 1
     },
     "src/components/ClientDietsPanel.tsx": {
-      "clasesTokenEnUso": 91,
+      "clasesTokenEnUso": 86,
       "fontMono": 21,
-      "fontSans": 14,
+      "fontSans": 13,
       "transitionAll": 6
     },
     "src/components/ClientHub.tsx": {
@@ -312,11 +312,11 @@
       "roundedFull": 4
     },
     "src/components/ClientsScreen.tsx": {
-      "clasesTokenEnUso": 96,
-      "fontMono": 13,
-      "fontSans": 33,
+      "clasesTokenEnUso": 92,
+      "fontMono": 12,
+      "fontSans": 31,
       "pesosProhibidos": 2,
-      "transitionAll": 5,
+      "transitionAll": 4,
       "animatePulse": 2,
       "roundedFull": 2
     },
@@ -353,9 +353,9 @@
       "roundedFull": 1
     },
     "src/components/CorrelationPanel.tsx": {
-      "clasesTokenEnUso": 27,
+      "clasesTokenEnUso": 25,
       "fontMono": 3,
-      "fontSans": 10,
+      "fontSans": 8,
       "pesosProhibidos": 1,
       "transitionAll": 1,
       "roundedFull": 2
@@ -377,7 +377,7 @@
       "transitionAll": 5
     },
     "src/components/ExerciseLibraryScreen.tsx": {
-      "clasesTokenEnUso": 147,
+      "clasesTokenEnUso": 145,
       "fontMono": 27,
       "fontSans": 25,
       "pesosProhibidos": 1,
@@ -390,16 +390,16 @@
       "transitionAll": 1
     },
     "src/components/FoodLibraryScreen.tsx": {
-      "clasesTokenEnUso": 51,
+      "clasesTokenEnUso": 50,
       "fontMono": 9,
-      "fontSans": 8,
+      "fontSans": 7,
       "modalesArtesanales": 2,
       "transitionAll": 6,
       "roundedFull": 2
     },
     "src/components/FoodPreferencesPanel.tsx": {
-      "clasesTokenEnUso": 33,
-      "fontMono": 9,
+      "clasesTokenEnUso": 32,
+      "fontMono": 8,
       "fontSans": 4,
       "transitionAll": 5
     },
@@ -435,12 +435,12 @@
       "animatePulse": 1
     },
     "src/components/MesocycleManager.tsx": {
-      "clasesTokenEnUso": 236,
+      "clasesTokenEnUso": 230,
       "fontMono": 69,
-      "fontSans": 39,
+      "fontSans": 38,
       "pesosProhibidos": 1,
       "modalesArtesanales": 1,
-      "transitionAll": 16,
+      "transitionAll": 15,
       "animatePulse": 1,
       "roundedFull": 3
     },
@@ -453,9 +453,9 @@
       "roundedFull": 1
     },
     "src/components/MyDietsScreen.tsx": {
-      "clasesTokenEnUso": 96,
+      "clasesTokenEnUso": 93,
       "fontMono": 10,
-      "fontSans": 20,
+      "fontSans": 18,
       "modalesArtesanales": 1,
       "transitionAll": 8,
       "roundedFull": 3
@@ -522,12 +522,12 @@
       "roundedFull": 6
     },
     "src/components/NutritionScreen.tsx": {
-      "clasesTokenEnUso": 262,
+      "clasesTokenEnUso": 257,
       "fontMono": 32,
-      "fontSans": 41,
+      "fontSans": 38,
       "pesosProhibidos": 1,
       "modalesArtesanales": 6,
-      "transitionAll": 31,
+      "transitionAll": 30,
       "roundedFull": 15
     },
     "src/components/OnboardingForm.tsx": {
@@ -593,16 +593,16 @@
       "transitionAll": 3
     },
     "src/components/RecipeBuilderScreen.tsx": {
-      "clasesTokenEnUso": 121,
-      "fontMono": 26,
-      "fontSans": 19,
+      "clasesTokenEnUso": 119,
+      "fontMono": 25,
+      "fontSans": 18,
       "modalesArtesanales": 1,
       "transitionAll": 11,
       "roundedFull": 7
     },
     "src/components/RecipesScreen.tsx": {
-      "clasesTokenEnUso": 105,
-      "fontMono": 26,
+      "clasesTokenEnUso": 103,
+      "fontMono": 24,
       "fontSans": 23,
       "pesosProhibidos": 1,
       "transitionAll": 12,
@@ -624,9 +624,9 @@
       "roundedFull": 4
     },
     "src/components/ReportsPanel.tsx": {
-      "clasesTokenEnUso": 31,
+      "clasesTokenEnUso": 29,
       "fontMono": 8,
-      "fontSans": 6,
+      "fontSans": 5,
       "transitionAll": 2,
       "roundedFull": 1
     },
