@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog } from '../types';
 import { epley } from '../utils/oneRepMax';
+import { EmptyState } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -260,16 +261,15 @@ export default function CorrelationPanel({
 
   if (!hasData) {
     return (
-      <div className="py-10 text-center border border-dashed border-hairline rounded-surface px-6">
-        <span className="material-symbols-outlined text-display text-ink-3 block mb-3">insights</span>
-        <p className="font-sans font-bold text-white text-body-s mb-1">Sin datos suficientes</p>
+      <div className="border border-dashed border-hairline rounded-surface">
         {/* El texto anterior decía "completa más registros", una instrucción
             dirigida al atleta pero mostrada al coach — se cambia a algo que el
             coach sí puede accionar: asignar/pedir lo que falta. */}
-        <p className="text-ink-2 text-label font-sans max-w-xs mx-auto">
-          Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta.
-          Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones.
-        </p>
+        <EmptyState
+          icon="insights"
+          title="Sin datos suficientes"
+          description="Aún no hay suficientes entrenamientos, pesos o respuestas de cuestionario registrados de este atleta. Asígnale un cuestionario periódico o pídele que registre peso/entrenos para poder calcular correlaciones."
+        />
       </div>
     );
   }
