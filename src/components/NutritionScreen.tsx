@@ -1206,7 +1206,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       })()}
 
                       {/* Item list */}
-                      <div className="p-3 border-t border-white/60 bg-[#111110]/40 space-y-2">
+                      <div className="p-3 border-t border-white/60 bg-bg/40 space-y-2">
                         {meal.items.length === 0 ? (
                           <div className="text-center py-4">
                             <p className="font-mono text-[10px] text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>

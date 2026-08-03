@@ -852,7 +852,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       </div>
 
       {/* Save */}
-      <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-[#111110]">
+      <div className="flex gap-3 pt-2 sticky bottom-0 pb-4 bg-bg">
         <button onClick={handleBack} className="flex-1 py-3 border border-white/7 text-ink-2 hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
           Cancelar
         </button>

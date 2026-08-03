@@ -221,7 +221,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
+      <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
@@ -251,7 +251,7 @@ function AppContent() {
     }
     // 'checking' — misma splash que la carga de sesión
     return (
-      <div className="min-h-screen bg-[#111110] flex items-center justify-center flex-col gap-4">
+      <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
         <div className="flex items-center gap-2 text-accent animate-pulse">
           <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 rounded-md" />
           <span className="font-sans font-black text-3xl tracking-tighter uppercase text-accent">EN FORMA</span>
@@ -274,12 +274,12 @@ function AppContent() {
   const activeAthleteEmail = clientRouteMatch ? decodeURIComponent(clientRouteMatch[1]) : undefined;
 
   return (
-    <div className="min-h-screen text-[#e5e2e1] bg-[#111110] flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen text-[#e5e2e1] bg-bg flex flex-col md:flex-row pb-24 md:pb-0">
 
       <LocalModeBanner />
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-[#111110] fixed top-0 left-0 border-b border-white/7 z-40">
+      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-bg fixed top-0 left-0 border-b border-white/7 z-40">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
@@ -300,7 +300,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-[#111110] border-b border-white/7 sticky top-0 z-40">
+      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-bg border-b border-white/7 sticky top-0 z-40">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
@@ -317,7 +317,7 @@ function AppContent() {
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[280px] bg-[#111110] h-screen fixed left-0 top-[65px] border-r border-white/7 p-6 justify-between select-none">
+      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[65px] border-r border-white/7 p-6 justify-between select-none">
         <div className="flex flex-col gap-3">
           {mainTabs.map((tab) => (
             <button
@@ -412,7 +412,7 @@ function AppContent() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-[#111110] border-t border-white/7 select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
+      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-bg border-t border-white/7 select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}

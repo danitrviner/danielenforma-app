@@ -437,11 +437,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-[#111110] border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex bg-[#111110] border border-white/7 p-1 rounded-lg gap-1">
+            <div className="flex bg-bg border border-white/7 p-1 rounded-lg gap-1">
               {([2, 3, 4] as const).map(n => (
                 <button
                   key={n}
@@ -492,7 +492,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-[#111110] border rounded-2xl p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  className={`bg-bg border rounded-2xl p-5 hover:border-accent/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
                     needsAttention ? 'border-orange-500/30' : 'border-white/7'
                   }`}
                 >
@@ -608,7 +608,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-[#111110] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"

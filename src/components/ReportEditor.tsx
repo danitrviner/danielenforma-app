@@ -38,9 +38,9 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center sm:p-4">
-        <div className="bg-[#111110] border border-white/7 sm:rounded-2xl w-full sm:max-w-4xl shadow-2xl">
+        <div className="bg-bg border border-white/7 sm:rounded-2xl w-full sm:max-w-4xl shadow-2xl">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-[#111110] border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-10 bg-bg border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
@@ -111,7 +111,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
           </div>
 
           {/* Footer actions */}
-          <div className="sticky bottom-0 bg-[#111110] border-t border-white/7 px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="sticky bottom-0 bg-bg border-t border-white/7 px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}

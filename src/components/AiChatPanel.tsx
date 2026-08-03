@@ -260,7 +260,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-[#111110] border-l border-white/10 flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-white/10 flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
         <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
@@ -404,7 +404,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-[11px] text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
-                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
+                    <div className="flex flex-col gap-1.5 bg-bg border border-white/7 rounded-lg p-2.5">
                       <div className="flex gap-2 flex-wrap text-[10px] font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
@@ -423,7 +423,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     </div>
                   )}
                   {diet && (
-                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
+                    <div className="flex flex-col gap-1.5 bg-bg border border-white/7 rounded-lg p-2.5">
                       <div className="flex gap-1.5 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
                           <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-[#e5e2e1]">
@@ -499,7 +499,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
       {editingInstructions && (
         <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
-          <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
               <span className="material-symbols-outlined text-accent">tune</span>
               <span className="font-sans font-black text-sm uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>

@@ -28,7 +28,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#111110] p-6">
+        <div className="min-h-screen flex items-center justify-center bg-bg p-6">
           <div className="max-w-lg w-full bg-surface border border-red-500/30 rounded-2xl p-6 space-y-4">
             <h1 className="font-sans font-bold text-lg text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-red-400">error</span>

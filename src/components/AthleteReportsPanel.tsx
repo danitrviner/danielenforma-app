@@ -60,8 +60,8 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
       {open && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
           <div className="min-h-full flex items-start justify-center sm:p-4">
-            <div className="bg-[#111110] border border-white/7 sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl">
-              <div className="sticky top-0 z-10 bg-[#111110] border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="bg-bg border border-white/7 sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl">
+              <div className="sticky top-0 z-10 bg-bg border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between">
                 <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-base">close</span>
