@@ -15,6 +15,7 @@ import { isoWeekKey } from '../utils/challengeOptions';
 import ProgressRing from './ProgressRing';
 import Skeleton from './Skeleton';
 import { HubTab, AnalisisTab } from './ClientHub';
+import { Icon, Button, ListRow } from './ui';
 
 interface Props {
   athlete: UserProfile;
@@ -189,13 +190,7 @@ export default function ClientSetupPanel({
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
               <p className="font-sans font-bold text-body-s text-white mb-2">{result.nextStep.title}</p>
               {result.nextStep.link && (
-                <button
-                  onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-caption text-black bg-accent px-3 py-2 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
-                >
-                  Ir ahora
-                  <span className="material-symbols-outlined text-body-s">arrow_forward</span>
-                </button>
+                <Button size="s" onClick={() => goToItem(result.nextStep!)} iconTrailing="arrow_forward">Ir ahora</Button>
               )}
             </>
           ) : (
@@ -208,23 +203,18 @@ export default function ClientSetupPanel({
       {result.alerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {result.alerts.map(alert => (
-            <button
+            <ListRow
               key={alert.id}
               onClick={() => alert.link && onGoToTab(alert.link.tab)}
-              className={`flex items-center gap-2 text-left border rounded-control p-3 transition-all ${
-                alert.severity === 'critical'
-                  ? 'bg-red-500/10 border-red-500/20 hover:border-red-500/40'
-                  : 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/40'
+              className={`rounded-control border ${
+                alert.severity === 'critical' ? 'bg-red-500/10 border-red-500/20' : 'bg-orange-500/10 border-orange-500/20'
               }`}
-            >
-              <span className={`material-symbols-outlined text-title-s ${alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'}`}>
-                {alert.severity === 'critical' ? 'error' : 'warning'}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-label font-bold text-white">{alert.title}</p>
-                {alert.detail && <p className="font-mono text-caption text-ink-2">{alert.detail}</p>}
-              </div>
-            </button>
+              leading={
+                <Icon name={alert.severity === 'critical' ? 'error' : 'warning'} size="m" className={alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'} />
+              }
+              title={alert.title}
+              subtitle={alert.detail}
+            />
           ))}
         </div>
       )}
@@ -252,33 +242,21 @@ export default function ClientSetupPanel({
                   </div>
                 </div>
                 <span className="font-mono text-label text-ink-2 flex-shrink-0">{phase.donePct}%</span>
-                <span className="material-symbols-outlined text-ink-2 flex-shrink-0">
-                  {expanded ? 'expand_less' : 'expand_more'}
-                </span>
+                <Icon name={expanded ? 'expand_less' : 'expand_more'} size="l" className="text-ink-2 flex-shrink-0" />
               </button>
 
               {expanded && (
                 <div className="border-t border-hairline divide-y divide-white/7">
                   {phase.items.map(item => (
-                    <button
+                    <ListRow
                       key={item.id}
                       onClick={() => item.manual ? toggleManual(item) : goToItem(item)}
                       disabled={item.status === 'na'}
-                      className={`w-full flex items-center gap-3 p-3 text-left transition-all ${
-                        item.status === 'na' ? 'opacity-40 cursor-default' : 'hover:bg-white/5'
-                      }`}
-                    >
-                      <span className={`material-symbols-outlined flex-shrink-0 text-title-s ${STATUS_COLOR[item.status]}`}>
-                        {STATUS_ICON[item.status]}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-sans text-label ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
-                        {item.detail && <p className="font-mono text-caption text-ink-2 ">{item.detail}</p>}
-                      </div>
-                      {item.link && item.status !== 'na' && (
-                        <span className="material-symbols-outlined text-ink-3 text-title-s flex-shrink-0">chevron_right</span>
-                      )}
-                    </button>
+                      leading={<Icon name={STATUS_ICON[item.status]} size="m" className={`flex-shrink-0 ${STATUS_COLOR[item.status]}`} />}
+                      title={item.title}
+                      subtitle={item.detail}
+                      chevron={!!item.link && item.status !== 'na'}
+                    />
                   ))}
                 </div>
               )}
@@ -291,16 +269,12 @@ export default function ClientSetupPanel({
       <div className="bg-surface border border-hairline rounded-surface p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">playlist_add_check</span>
+            <Icon name="playlist_add_check" size="m" className="text-accent" />
             Tareas extra
           </h3>
-          <button
-            onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
-          >
-            <span className="material-symbols-outlined text-body-s">{showExtraForm ? 'close' : 'add'}</span>
+          <Button variant="secondary" size="s" onClick={() => setShowExtraForm(v => !v)} icon={showExtraForm ? 'close' : 'add'}>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
-          </button>
+          </Button>
         </div>
 
         {showExtraForm && (
@@ -313,13 +287,7 @@ export default function ClientSetupPanel({
               className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
               required
             />
-            <button
-              type="submit"
-              disabled={savingExtra}
-              className="px-3 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-            >
-              {savingExtra ? '...' : 'Crear'}
-            </button>
+            <Button type="submit" size="s" disabled={savingExtra}>{savingExtra ? '...' : 'Crear'}</Button>
           </form>
         )}
 
@@ -328,22 +296,21 @@ export default function ClientSetupPanel({
         ) : (
           <div className="space-y-2">
             {extraTasks.map(task => (
-              <div
+              <ListRow
                 key={task.id}
-                className={`w-full flex items-center gap-3 border rounded-surface p-3 transition-all ${
-                  task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
-                }`}
-              >
-                <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
-                  <span className={`material-symbols-outlined ${task.done ? 'text-emerald-400' : 'text-ink-2'}`}>
-                    {task.done ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                </button>
-                <p className={`flex-1 min-w-0 font-sans text-body-s truncate ${task.done ? 'line-through text-ink-2' : 'text-white'}`}>{task.title}</p>
-                <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
-                  <span className="material-symbols-outlined text-title-s">delete</span>
-                </button>
-              </div>
+                className={`rounded-surface border ${task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'}`}
+                leading={
+                  <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
+                    <Icon name={task.done ? 'check_circle' : 'radio_button_unchecked'} size="l" className={task.done ? 'text-emerald-400' : 'text-ink-2'} />
+                  </button>
+                }
+                title={task.title}
+                trailing={
+                  <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
+                    <Icon name="delete" size="m" />
+                  </button>
+                }
+              />
             ))}
           </div>
         )}

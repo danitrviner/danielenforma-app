@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:56:39.062Z",
-  "commit": "050269e",
+  "generado": "2026-08-03T21:59:26.427Z",
+  "commit": "0b0060b",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39751
+    "lineasTsx": 39718
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5175,
+    "clasesTokenEnUso": 5163,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1012,
-    "fontSans": 1043,
+    "fontMono": 1008,
+    "fontSans": 1039,
     "pesosProhibidos": 29,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 339,
+    "transitionAll": 334,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -280,10 +280,9 @@
       "roundedFull": 1
     },
     "src/components/ClientSetupPanel.tsx": {
-      "clasesTokenEnUso": 40,
-      "fontMono": 6,
-      "fontSans": 10,
-      "transitionAll": 5,
+      "clasesTokenEnUso": 28,
+      "fontMono": 2,
+      "fontSans": 6,
       "roundedFull": 2
     },
     "src/components/ClientStatusCard.tsx": {
