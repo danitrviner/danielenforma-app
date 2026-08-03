@@ -111,6 +111,50 @@
   --radius-xl: 1.25rem;  /* 20 px — por defecto en Tailwind: 12 px */
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   GEOMETRÍA DEL MARCO
+   Alturas de la cabecera y de la barra inferior. Los propios elementos toman
+   su altura de aquí, así que la variable no puede quedarse desfasada respecto
+   a lo que se renderiza — que es justo lo que había pasado: el código asumía
+   65 px en cuatro sitios mientras la cabecera de escritorio medía 78 y la de
+   móvil 70, y por eso el contenido se metía debajo.
+
+   Todo lo que se posiciona contra el marco —barras sticky, el relleno inferior
+   de la página, el botón flotante, el toast— consume estas variables. Nunca un
+   número a mano.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --header-h: 70px;
+  /* 59 px de contenido + la safe area del iPhone, que en escritorio son 20 px */
+  --nav-h: calc(59px + max(20px, env(safe-area-inset-bottom, 20px)));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --header-h: 78px;
+    --nav-h: 0px; /* en escritorio la navegación es lateral, no inferior */
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAPAS
+   Los valores son EXACTAMENTE los que ya había: esto le pone nombre al orden
+   existente, no lo reordena. Así ningún elemento cambia de capa al adoptarlo.
+
+   A partir de ahora, un elemento nuevo elige una capa por su significado, no
+   mirando el número del vecino — que es como se llegó a tener once valores
+   sueltos entre z-10 y z-[200].
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --z-sticky:   10;  /* barras sticky dentro de una pantalla                  */
+  --z-header:   40;  /* cabecera de la aplicación                             */
+  --z-nav:      50;  /* barra de navegación inferior                          */
+  --z-fab:      60;  /* botón flotante                                        */
+  --z-overlay:  90;  /* fondo oscurecido de un modal                          */
+  --z-modal:   100;  /* modal, bottom sheet, popover, menú                    */
+  --z-toast:   200;  /* avisos: siempre por encima de todo                    */
+}
+
 @layer utilities {
   .volt-glow {
     box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);

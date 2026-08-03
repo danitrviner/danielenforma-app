@@ -471,7 +471,7 @@ export default function ClientHub({
       />
 
       {/* Nav de zonas (nivel 1) */}
-      <div className="sticky top-0 z-20 bg-field/95 backdrop-blur-sm space-y-1.5 pb-0.5">
+      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-1.5 pb-0.5">
         <div className="flex bg-surface border border-hairline p-1 rounded-2xl gap-1">
           {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
             <button

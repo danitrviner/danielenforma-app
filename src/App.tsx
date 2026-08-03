@@ -274,12 +274,12 @@ function AppContent() {
   const activeAthleteEmail = clientRouteMatch ? decodeURIComponent(clientRouteMatch[1]) : undefined;
 
   return (
-    <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[calc(var(--nav-h)+1rem)] md:pb-0">
 
       <LocalModeBanner />
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-5 bg-bg fixed top-0 left-0 border-b border-hairline z-40">
+      <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
@@ -300,7 +300,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 py-4 bg-bg border-b border-hairline sticky top-0 z-40">
+      <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
@@ -317,7 +317,7 @@ function AppContent() {
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[65px] border-r border-hairline p-6 justify-between select-none">
+      <nav className="hidden md:flex flex-col w-[280px] bg-bg h-screen fixed left-0 top-[var(--header-h)] border-r border-hairline p-6 justify-between select-none">
         <div className="flex flex-col gap-3">
           {mainTabs.map((tab) => (
             <button
@@ -349,7 +349,7 @@ function AppContent() {
         )}
       </nav>
 
-      <main className="flex-1 mt-0 md:mt-[65px] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[280px] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
       <Suspense fallback={<ScreenFallback />}>
         <Routes>
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
@@ -412,7 +412,7 @@ function AppContent() {
       </main>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
+      <nav className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-2xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
         {mainTabs.map((tab) => (
           <button
             key={tab.id}
