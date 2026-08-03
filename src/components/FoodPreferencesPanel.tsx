@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FOOD_GROUPS, FoodGroup } from '../data/alimentos_anamnesis';
 import { updateOnboardingFoods } from '../dbService';
+import { EmptyState } from './ui';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -203,7 +204,7 @@ export default function FoodPreferencesPanel({
       {/* Food list */}
       <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
         {filteredFoods.length === 0 ? (
-          <p className="py-6 text-center font-mono text-label text-ink-3">Sin resultados</p>
+          <EmptyState icon="search_off" title="Sin resultados" />
         ) : (
           filteredFoods.map(food => {
             const pref    = prefs[food] ?? 'neutral';
