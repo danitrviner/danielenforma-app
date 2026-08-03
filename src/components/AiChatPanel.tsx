@@ -290,7 +290,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       </div>
 
       {syncMsg && (
-        <div className="px-4 py-2 text-[11px] font-mono text-data border-b border-hairline bg-data/5">
+        <div className="px-4 py-2 text-caption font-mono text-data border-b border-hairline bg-data/5">
           {syncMsg}
         </div>
       )}
@@ -308,7 +308,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white truncate">{c.title || 'Chat sin título'}</p>
-                <p className="text-[10px] font-mono text-ink-2">
+                <p className="text-caption font-mono text-ink-2">
                   {c.updatedAt.slice(0, 10)}{c.athleteId ? ` · ${c.athleteId}` : ''}
                 </p>
               </div>
@@ -362,7 +362,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     }
                     if (block.type === 'tool_use') {
                       return (
-                        <div key={j} className="flex items-center gap-1.5 text-[10px] font-mono text-data/80 px-1">
+                        <div key={j} className="flex items-center gap-1.5 text-caption font-mono text-data/80 px-1">
                           <span className="material-symbols-outlined text-[14px]">manufacturing</span>
                           {block.name}
                         </div>
@@ -390,7 +390,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           {/* Propuestas pendientes del cliente activo — la IA propone, Dani aprueba */}
           {proposals.length > 0 && (
             <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300/80">
+              <p className="text-caption font-mono font-bold uppercase tracking-wider text-amber-300/80">
                 {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
               </p>
               {proposals.map(p => {
@@ -402,10 +402,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 return (
                 <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
                   <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
-                  {p.rationale && <p className="text-[11px] text-ink-2 italic">{p.rationale}</p>}
+                  {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
                     <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-2.5">
-                      <div className="flex gap-2 flex-wrap text-[10px] font-mono text-ink-2">
+                      <div className="flex gap-2 flex-wrap text-caption font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
                         <span>{meso.daysPerWeek} días/sem</span>
@@ -414,7 +414,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {mesoTrained.map(g => (
-                          <div key={g} className="flex justify-between text-[11px]">
+                          <div key={g} className="flex justify-between text-caption">
                             <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
                             <span className="text-ink font-mono">{meso.groups[g].series}</span>
                           </div>
@@ -426,13 +426,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <div className="flex flex-col gap-1.5 bg-bg border border-hairline rounded-surface p-2.5">
                       <div className="flex gap-1.5 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-hairline rounded-control px-1.5 py-0.5 text-ink">
+                          <span key={cat} className="text-caption font-mono font-bold bg-white/5 border border-hairline rounded-control px-1.5 py-0.5 text-ink">
                             {cat} {diet.budget[cat]}
                           </span>
                         ))}
-                        <span className="text-[10px] font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
+                        <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
                       </div>
-                      <ul className="text-[11px] text-ink-2 flex flex-col gap-0.5">
+                      <ul className="text-caption text-ink-2 flex flex-col gap-0.5">
                         {diet.meals.map(m => (
                           <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
                         ))}
@@ -443,14 +443,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <button
                       onClick={() => approveProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-control bg-success/15 border border-success/40 text-success text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-1.5 rounded-control bg-success/15 border border-success/40 text-success text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Aprobar
                     </button>
                     <button
                       onClick={() => rejectProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-control bg-danger/10 border border-danger/30 text-danger text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-1.5 rounded-control bg-danger/10 border border-danger/30 text-danger text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Rechazar
                     </button>

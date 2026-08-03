@@ -26,7 +26,7 @@ export default function RecentAchievements({ achievements }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 px-1">Logros recientes</p>
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-2 px-1">Logros recientes</p>
       <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
         {sorted.map(a => (
           <div
@@ -40,8 +40,8 @@ export default function RecentAchievements({ achievements }: Props) {
             >
               {a.icon}
             </span>
-            <p className="text-white text-[10px] font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
-            <p className="text-ink-2 text-[8px] font-mono">{fmtDate(a.date)}</p>
+            <p className="text-white text-caption font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
+            <p className="text-ink-2 text-caption font-mono">{fmtDate(a.date)}</p>
           </div>
         ))}
       </div>

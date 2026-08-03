@@ -108,7 +108,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       {/* Title + description */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div>
-          <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Título *</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Título *</label>
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -117,7 +117,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           />
         </div>
         <div>
-          <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Descripción (opcional)</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Descripción (opcional)</label>
           <input
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -130,12 +130,12 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       {/* Questions */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
+          <h3 className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             Preguntas ({form.questions.length})
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-[10px] uppercase rounded-control hover:border-accent/70 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-raised border border-accent/40 text-accent font-mono text-caption uppercase rounded-control hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-sm">add</span>Añadir pregunta
           </button>
@@ -156,7 +156,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>keyboard_arrow_down</span>
                 </button>
               </div>
-              <span className="font-mono text-[10px] text-ink-2/50 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
+              <span className="font-mono text-caption text-ink-2/50 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
               <input
                 value={q.label}
                 onChange={e => setQ(idx, { label: e.target.value })}
@@ -184,7 +184,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 >
                   {q.required && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
                 </span>
-                <span className="font-mono text-[9px] text-ink-2 hidden sm:inline">Oblig.</span>
+                <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
               <button onClick={() => duplicateQ(idx)}
                 className="flex-shrink-0 mt-0.5 p-1.5 text-ink-2 hover:text-data transition-colors" title="Duplicar">
@@ -202,7 +202,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 value={q.helpText ?? ''}
                 onChange={e => setQ(idx, { helpText: e.target.value || undefined })}
                 placeholder="Texto de ayuda para el atleta (opcional)"
-                className={`w-full ${MINI_INPUT_CLS} text-[11px]`}
+                className={`w-full ${MINI_INPUT_CLS} text-caption`}
               />
             </div>
 
@@ -211,24 +211,24 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'numeric' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Unidad</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Unidad</label>
                     <input value={q.unit ?? ''} onChange={e => setQ(idx, { unit: e.target.value || undefined })}
                       placeholder="kg, cm, %…" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Mínimo</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Mínimo</label>
                     <input type="number" value={q.min ?? ''}
                       onChange={e => setQ(idx, { min: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="—" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Máximo</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Máximo</label>
                     <input type="number" value={q.max ?? ''}
                       onChange={e => setQ(idx, { max: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="—" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Decimales</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Decimales</label>
                     <input type="number" value={q.decimals ?? ''} min={0} max={4}
                       onChange={e => setQ(idx, { decimals: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="0" className={`w-full ${MINI_INPUT_CLS}`} />
@@ -239,13 +239,13 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Desde</label>
+                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Desde</label>
                       <input type="number" value={q.scaleMin ?? 1} min={0}
                         onChange={e => setQ(idx, { scaleMin: Number(e.target.value) })}
                         className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
                     <div>
-                      <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Hasta</label>
+                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Hasta</label>
                       <input type="number" value={q.scaleMax ?? 10} min={1}
                         onChange={e => setQ(idx, { scaleMax: Number(e.target.value) })}
                         className={`w-full ${MINI_INPUT_CLS}`} />
@@ -253,13 +253,13 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Etiqueta inicio</label>
+                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta inicio</label>
                       <input value={q.scaleMinLabel ?? ''}
                         onChange={e => setQ(idx, { scaleMinLabel: e.target.value || undefined })}
                         placeholder="Ej: Nada" className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
                     <div>
-                      <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Etiqueta fin</label>
+                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta fin</label>
                       <input value={q.scaleMaxLabel ?? ''}
                         onChange={e => setQ(idx, { scaleMaxLabel: e.target.value || undefined })}
                         placeholder="Ej: Muchísimo" className={`w-full ${MINI_INPUT_CLS}`} />
@@ -276,10 +276,10 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     >
                       {q.multiSelect && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
                     </span>
-                    <span className="font-mono text-[10px] text-ink-2">Selección múltiple</span>
+                    <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1.5">Opciones (una por línea)</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Opciones (una por línea)</label>
                     <textarea
                       value={(q.options ?? []).join('\n')}
                       onChange={e => setQ(idx, { options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
@@ -292,7 +292,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'text' && (
                 <div className="w-40">
-                  <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Máx. caracteres</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Máx. caracteres</label>
                   <input type="number" value={q.maxChars ?? ''} min={1}
                     onChange={e => setQ(idx, { maxChars: e.target.value === '' ? undefined : Number(e.target.value) })}
                     placeholder="Sin límite" className={`w-full ${MINI_INPUT_CLS}`} />
@@ -301,13 +301,13 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'boolean' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Etiqueta Sí</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta Sí</label>
                     <input value={q.labelTrue ?? ''}
                       onChange={e => setQ(idx, { labelTrue: e.target.value || undefined })}
                       placeholder="Sí" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Etiqueta No</label>
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta No</label>
                     <input value={q.labelFalse ?? ''}
                       onChange={e => setQ(idx, { labelFalse: e.target.value || undefined })}
                       placeholder="No" className={`w-full ${MINI_INPUT_CLS}`} />

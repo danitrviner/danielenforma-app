@@ -237,7 +237,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="text-[10px] text-accent hover:underline transition-colors font-mono disabled:opacity-50"
+                className="text-caption text-accent hover:underline transition-colors font-mono disabled:opacity-50"
               >
                 {resetting ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
               </button>

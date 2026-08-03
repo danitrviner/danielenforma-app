@@ -86,7 +86,7 @@ export default function FoodPreferencesPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -97,7 +97,7 @@ export default function FoodPreferencesPanel({
         {allergies.length > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-surface">
             <span className="material-symbols-outlined text-sm text-amber-400">warning</span>
-            <p className="font-mono text-[10px] text-amber-300">
+            <p className="font-mono text-caption text-amber-300">
               Alergias/intolerancias: {allergies.join(', ')} — gestionadas en la ficha.
             </p>
           </div>
@@ -123,17 +123,17 @@ export default function FoodPreferencesPanel({
                 <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
-                <span className="font-mono text-[9px] text-ink-2 text-center leading-tight">{g.name}</span>
+                <span className="font-mono text-caption text-ink-2 text-center leading-tight">{g.name}</span>
                 {hasAny && (
                   <div className="flex gap-1.5">
                     {gFav > 0 && (
-                      <span className="font-mono text-[8px] text-amber-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-amber-400 flex items-center gap-0.5">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
                         {gFav}
                       </span>
                     )}
                     {gDislike > 0 && (
-                      <span className="font-mono text-[8px] text-red-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-red-400 flex items-center gap-0.5">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>thumb_down</span>
                         {gDislike}
                       </span>
@@ -165,7 +165,7 @@ export default function FoodPreferencesPanel({
             <span className="material-symbols-outlined text-accent text-base">{activeGroup.icon}</span>
             <h3 className="font-sans font-bold text-base text-white">{activeGroup.name}</h3>
           </div>
-          <div className="flex gap-3 font-mono text-[10px] mt-0.5">
+          <div className="flex gap-3 font-mono text-caption mt-0.5">
             <span className="text-amber-400">⭐ {totalFav}</span>
             <span className="text-red-400">➖ {totalDislike}</span>
           </div>
@@ -173,7 +173,7 @@ export default function FoodPreferencesPanel({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
           {saving ? '…' : saved ? 'OK' : 'Guardar'}
@@ -226,7 +226,7 @@ export default function FoodPreferencesPanel({
                 }`}>
                   {food}
                   {isAllergen && (
-                    <span className="ml-1.5 font-mono text-[9px] text-amber-400 no-underline not-italic">⚠ alergia</span>
+                    <span className="ml-1.5 font-mono text-caption text-amber-400 no-underline not-italic">⚠ alergia</span>
                   )}
                 </span>
 

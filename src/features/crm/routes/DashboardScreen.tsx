@@ -116,7 +116,7 @@ export default function DashboardScreen() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <section className="space-y-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Próximas reuniones</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Próximas reuniones</h2>
           <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {errorReuniones ? (
               <ErrorState />
@@ -125,8 +125,8 @@ export default function DashboardScreen() {
             ) : (
               proximasReuniones.map(r => (
                 <div key={r.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-ink truncate">{r.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-ink-3 shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
+                  <p className="font-sans text-caption text-ink truncate">{r.clientNombre}</p>
+                  <p className="font-mono text-caption text-ink-3 shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
                 </div>
               ))
             )}
@@ -134,7 +134,7 @@ export default function DashboardScreen() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Pagos pendientes</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos pendientes</h2>
           <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {errorPagos ? (
               <ErrorState />
@@ -143,8 +143,8 @@ export default function DashboardScreen() {
             ) : (
               pagosPendientes.map(p => (
                 <div key={p.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-ink truncate">{p.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-warning shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
+                  <p className="font-sans text-caption text-ink truncate">{p.clientNombre}</p>
+                  <p className="font-mono text-caption text-warning shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
                 </div>
               ))
             )}

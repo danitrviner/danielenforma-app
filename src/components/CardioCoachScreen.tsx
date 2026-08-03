@@ -29,7 +29,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
@@ -113,14 +113,14 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
       </button>
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-ink-2">FC reposo</label>
+          <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
           <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-ink-2">FCmax</label>
+          <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
           <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-xs text-white focus:outline-none focus:border-accent" />
         </div>
-        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-[10px] font-mono uppercase rounded-control hover:text-white">Recalcular</button>
+        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-ink-2 text-caption font-mono uppercase rounded-control hover:text-white">Recalcular</button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
@@ -191,17 +191,17 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
           <div key={t.id} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
-              <span className="text-[10px] font-mono text-ink-2">{t.date}</span>
+              <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
             <p className="text-xs font-mono text-data">{t.type}</p>
-            <p className="text-[10px] font-mono text-ink-2">
+            <p className="text-caption font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}
               {t.result.lthr && `LTHR: ${t.result.lthr} `}
               {t.result.z2Ceiling && `Techo Z2: ${t.result.z2Ceiling} `}
               {t.result.decouplingPct !== undefined && `Desacople: ${t.result.decouplingPct}% `}
             </p>
-            <button onClick={() => approve(t)} className="w-full py-2 bg-accent text-black font-sans font-bold text-[10px] uppercase rounded-control hover:bg-accent-press">Aprobar y aplicar a zonas</button>
+            <button onClick={() => approve(t)} className="w-full py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press">Aprobar y aplicar a zonas</button>
           </div>
         );
       })}
@@ -278,16 +278,16 @@ function PrescriptionTab() {
 
       {type === 'intervalos' && (
         <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
-          <p className="text-[9px] font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
+          <p className="text-caption font-mono uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-1.5 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent" />
               <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-surface border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none focus:border-accent" />
-              <span className="text-[9px] text-ink-2 font-mono">s</span>
+                className="w-14 bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent" />
+              <span className="text-caption text-ink-2 font-mono">s</span>
               <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-surface border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none focus:border-accent">
+                className="bg-surface border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent">
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
@@ -295,11 +295,11 @@ function PrescriptionTab() {
               </button>
             </div>
           ))}
-          <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-[10px] font-mono uppercase text-accent hover:text-white transition-colors flex items-center gap-1">
+          <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-caption font-mono uppercase text-accent hover:text-white transition-colors flex items-center gap-1">
             <span className="material-symbols-outlined text-sm">add</span> Añadir bloque
           </button>
           {validBlocks.length > 0 && (
-            <p className="text-[9px] font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
+            <p className="text-caption font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
           )}
         </div>
       )}

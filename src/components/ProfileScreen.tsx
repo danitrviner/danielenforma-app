@@ -153,16 +153,16 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden shadow-lg">
                   <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-1.5 py-0.5 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-sans font-bold text-lg text-white">{profile.displayName}</h3>
-                <p className="font-mono text-[10px] text-ink-2 truncate">{profile.email}</p>
+                <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
                     <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
                   </div>
-                  <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
+                  <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
             {/* Iron Calendar */}
             <div>
-              <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
+              <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
               <div className="grid grid-cols-7 gap-2">
                 {Array.from({ length: 14 }).map((_, idx) => {
                   const isActive = idx < Math.min(14, streakDays % 14 || 6);
@@ -194,7 +194,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
             {/* Badges */}
             <div>
-              <span className="font-mono text-[10px] text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
+              <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
               <div className="flex flex-wrap gap-2">
                 <span className="px-3 py-1.5 bg-raised text-white rounded-full text-xs border border-hairline flex items-center gap-1.5">
                   <span>🏅</span> Primera semana
@@ -234,7 +234,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
                 <span className="material-symbols-outlined text-accent text-base">assignment_ind</span>
                 {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
               </h3>
-              <p className="font-mono text-[10px] text-ink-3 mt-1">
+              <p className="font-mono text-caption text-ink-3 mt-1">
                 {onboarding
                   ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
                   : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
@@ -321,7 +321,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       <div className="flex items-center justify-end">
         <button
           onClick={() => setReorderMode(v => !v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
             reorderMode
               ? 'bg-accent/10 border-accent/40 text-accent'
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -364,7 +364,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         <h3 className="font-sans font-bold text-base text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
 
         <div>
-          <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1">Nombre deportivo</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre deportivo</label>
           <input
             type="text"
             value={displayName}
@@ -375,7 +375,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
           <input
             type="number"
             step="0.1"
@@ -386,7 +386,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
 
         <div>
-          <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1">Avatar Imagen URL</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Avatar Imagen URL</label>
           <input
             type="url"
             value={avatarUrl}

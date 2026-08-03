@@ -39,11 +39,11 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">Carga de entrenamiento</h3>
+      <h3 className="text-caption font-mono uppercase text-data tracking-wider">Carga de entrenamiento</h3>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-mono text-ink-2">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
+          <p className="text-caption font-mono text-ink-2">ATL {today.atl.toFixed(1)} · CTL {today.ctl.toFixed(1)}</p>
           <p className="text-xs font-sans font-bold" style={{ color: TLR_STATE_COLOR[tlrState] }}>{TLR_LABEL[tlrState]} · TLR {today.tlr.toFixed(2)}</p>
         </div>
         {/* Escala fija 0–2.0 con los 5 estados en franjas iguales (§5.4) y un
@@ -61,13 +61,13 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
       {(focus.lowAerobicPct + focus.highAerobicPct + focus.anaerobicPct) > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-mono uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
+          <p className="text-caption font-mono uppercase text-ink-2">Reparto últimos {RECENT_DAYS} días · objetivo Z2-Z3 70-80%</p>
           <div className="flex h-2 rounded-full overflow-hidden bg-bg">
             <div className="h-full bg-data" style={{ width: `${focus.lowAerobicPct}%` }} title="Aeróbico bajo (Z2-Z3)" />
             <div className="h-full bg-warning" style={{ width: `${focus.highAerobicPct}%` }} title="Aeróbico alto (Z4)" />
             <div className="h-full bg-danger" style={{ width: `${focus.anaerobicPct}%` }} title="Anaeróbico (Z5)" />
           </div>
-          <div className="flex gap-3 text-[9px] font-mono text-ink-2">
+          <div className="flex gap-3 text-caption font-mono text-ink-2">
             <span className="text-data">Z2-Z3 {focus.lowAerobicPct}%</span>
             <span className="text-warning">Z4 {focus.highAerobicPct}%</span>
             <span className="text-danger">Z5 {focus.anaerobicPct}%</span>

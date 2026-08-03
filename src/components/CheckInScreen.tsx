@@ -85,10 +85,10 @@ function QuestionnaireForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         {questionnaire.questions.map((q: QuestionnaireQuestion) => (
           <div key={q.id}>
-            <label className="block font-mono text-[11px] text-ink-2 uppercase tracking-wider mb-2">
+            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">
               {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
             </label>
-            {q.helpText && <p className="text-[11px] text-ink-2/70 mb-2">{q.helpText}</p>}
+            {q.helpText && <p className="text-caption text-ink-2/70 mb-2">{q.helpText}</p>}
 
             {q.type === 'text' && (
               <textarea
@@ -129,7 +129,7 @@ function QuestionnaireForm({
                   ))}
                 </div>
                 {(q.scaleMinLabel || q.scaleMaxLabel) && (
-                  <div className="flex justify-between text-[10px] font-mono text-ink-2">
+                  <div className="flex justify-between text-caption font-mono text-ink-2">
                     <span>{q.scaleMin ?? 1} – {q.scaleMinLabel}</span>
                     <span>{q.scaleMaxLabel} – {q.scaleMax ?? 10}</span>
                   </div>
@@ -375,7 +375,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
-            className={`px-2.5 py-1 rounded-control font-mono text-[10px] uppercase tracking-wide border transition-all ${
+            className={`px-2.5 py-1 rounded-control font-mono text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -384,7 +384,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
-            className={`px-2.5 py-1 rounded-control font-mono text-[10px] uppercase tracking-wide border transition-all ${
+            className={`px-2.5 py-1 rounded-control font-mono text-caption uppercase tracking-wide border transition-all ${
               bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
@@ -398,7 +398,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             {bwMode === 'weekly_avg' ? 'Media semanal' : 'Peso de hoy'}
           </p>
           {!bwEditing && bwToday ? (
@@ -422,7 +422,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               <span className="font-mono text-xs text-ink-3">kg</span>
             </div>
           )}
-          {bwError && <p className="font-mono text-[10px] text-red-400 mt-1">{bwError}</p>}
+          {bwError && <p className="font-mono text-caption text-red-400 mt-1">{bwError}</p>}
         </div>
 
         {!bwEditing && bwToday ? (
@@ -449,7 +449,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         {bwMode === 'weekly_avg' && (
-          <p className="font-mono text-[10px] text-ink-2/70 -mt-1">
+          <p className="font-mono text-caption text-ink-2/70 -mt-1">
             Pon un único valor con la media que ya llevas calculada de la semana — no hace falta que te peses aquí a diario.
           </p>
         )}
@@ -472,7 +472,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
-            <span className="ml-auto bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingAssignments.map(a => {
@@ -486,8 +486,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 >
                   <div>
                     <p className="font-sans font-semibold text-sm text-white group-hover:text-accent transition-colors">{q.title}</p>
-                    {q.description && <p className="text-[11px] text-ink-2 mt-0.5 font-sans">{q.description}</p>}
-                    <p className="font-mono text-[10px] text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
+                    {q.description && <p className="text-caption text-ink-2 mt-0.5 font-sans">{q.description}</p>}
+                    <p className="font-mono text-caption text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
                   </div>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
@@ -504,7 +504,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Cuestionarios futuros
-              <span className="font-mono text-[10px] text-ink-2">({upcomingAssignments.length})</span>
+              <span className="font-mono text-caption text-ink-2">({upcomingAssignments.length})</span>
             </h2>
             <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
@@ -515,7 +515,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               return (
                 <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
                   <p className="font-sans text-xs text-ink-2">{q.title}</p>
-                  <span className="font-mono text-[9px] text-ink-3 uppercase">
+                  <span className="font-mono text-caption text-ink-3 uppercase">
                     {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                   </span>
                 </div>
@@ -531,7 +531,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
             <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
-            <span className="ml-auto bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
@@ -539,7 +539,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <p className="font-sans font-semibold text-sm text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
-                <p className="font-mono text-[10px] text-ink-2">Sube las fotos abajo</p>
+                <p className="font-mono text-caption text-ink-2">Sube las fotos abajo</p>
               </div>
             ))}
           </div>
@@ -553,7 +553,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-ink-2 text-base">event_upcoming</span>
               Fotos futuras
-              <span className="font-mono text-[10px] text-ink-2">({upcomingPhotoAssignments.length})</span>
+              <span className="font-mono text-caption text-ink-2">({upcomingPhotoAssignments.length})</span>
             </h2>
             <span className="material-symbols-outlined text-ink-2 text-sm group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
@@ -561,7 +561,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             {upcomingPhotoAssignments.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
                 <p className="font-sans text-xs text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
-                <span className="font-mono text-[9px] text-ink-3 uppercase">
+                <span className="font-mono text-caption text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
               </div>
@@ -598,7 +598,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.mood}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
+                  <span className={`text-caption px-2 py-0.5 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
                     {item.adherence}
                   </span>
                 </div>
@@ -612,7 +612,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   <p className="text-white leading-relaxed">{item.coachFeedback}</p>
                 </div>
               ) : (
-                <div className="text-[11px] text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
+                <div className="text-caption text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
                   <span className="material-symbols-outlined text-xs animate-spin text-accent">sync</span>
                   Pendiente de revisión del Entrenador
                 </div>

@@ -44,9 +44,9 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               <div className="min-w-0">
                 <p className="font-sans text-sm text-white truncate flex items-center gap-2">
                   {r.title}
-                  {i === 0 && <span className="font-sans text-[8px] font-bold uppercase bg-accent text-black px-1.5 py-0.5 rounded-control flex-shrink-0">Nuevo</span>}
+                  {i === 0 && <span className="font-sans text-caption font-bold uppercase bg-accent text-black px-1.5 py-0.5 rounded-control flex-shrink-0">Nuevo</span>}
                 </p>
-                <p className="font-mono text-[10px] text-ink-2 mt-0.5">
+                <p className="font-mono text-caption text-ink-2 mt-0.5">
                   {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)}
                   {r.sentAt && ` · ${new Date(r.sentAt).toLocaleDateString('es-ES')}`}
                 </p>
@@ -62,7 +62,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
           <div className="min-h-full flex items-start justify-center sm:p-4">
             <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-2xl shadow-2xl">
               <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between">
-                <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Reporte</p>
+                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-raised hover:bg-raised p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
                   <span className="material-symbols-outlined text-base">close</span>
                 </button>

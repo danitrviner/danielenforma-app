@@ -58,11 +58,11 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Suscripciones</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Suscripciones</h2>
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Nueva suscripción
@@ -80,11 +80,11 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Pagos</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos</h2>
           <button
             type="button"
             onClick={() => setModalPago(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Registrar pago
@@ -102,7 +102,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+              className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -112,7 +112,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="button"
                 onClick={() => setParam('estado', f === 'todos' ? '' : f)}
                 aria-pressed={filtro === f}
-                className={`px-2.5 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                className={`px-2.5 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'

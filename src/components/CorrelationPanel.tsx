@@ -339,7 +339,7 @@ export default function CorrelationPanel({
           {/* Chart */}
           <div className="bg-surface border border-hairline rounded-canvas p-4 shadow-[0_0_30px_-14px_rgba(251,203,26,0.3)]">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                 {multiNorm
                   ? '% relativo por serie (mín=0 % · máx=100 %)'
                   : (selectedSeries[0].unit ? `Valor en ${selectedSeries[0].unit}` : 'Valor')}
@@ -430,7 +430,7 @@ export default function CorrelationPanel({
                     </span>
                     <span className="font-mono text-xs text-ink-2">{correlationResult.label}</span>
                   </div>
-                  <p className="font-mono text-[10px] text-ink-3">Correlación ≠ causalidad</p>
+                  <p className="font-mono text-caption text-ink-3">Correlación ≠ causalidad</p>
                 </>
               )}
             </div>

@@ -53,7 +53,7 @@ function BwTooltip({ active, payload }: any) {
         <p className="text-accent font-bold text-sm">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
-        <p className="text-data text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
+        <p className="text-data text-caption mt-0.5">Media 7d: {avgEntry.value} kg</p>
       )}
     </div>
   );
@@ -176,18 +176,18 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           <span className="material-symbols-outlined text-accent text-base">monitor_weight</span>
           Peso corporal
           {logs.length > 0 && (
-            <span className="font-mono text-[10px] text-ink-2 font-normal">
+            <span className="font-mono text-caption text-ink-2 font-normal">
               {asc.at(-1)?.weight} kg · {fmtDate(asc.at(-1)!.date)}
             </span>
           )}
         </h3>
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
+            <span className="flex items-center gap-1.5 font-mono text-caption text-ink-2">
               <span className="inline-block w-4 h-px bg-accent" />
               Diario
             </span>
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-ink-2">
+            <span className="flex items-center gap-1.5 font-mono text-caption text-ink-2">
               <span className="inline-block w-4 border-t border-dashed border-data" />
               Media 7d
             </span>
@@ -266,7 +266,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                   max="300"
                   className={`flex-1 sm:w-24 sm:flex-none ${INPUT_CLS}`}
                 />
-                <span className="font-mono text-[10px] text-ink-2">kg</span>
+                <span className="font-mono text-caption text-ink-2">kg</span>
               </div>
               <button
                 onClick={handleAdd}
@@ -291,7 +291,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           {/* List */}
           {logs.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                 Historial{logs.length > 20 && !showAll ? ` · mostrando 20 de ${logs.length}` : ` · ${logs.length} registros`}
               </p>
               <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
@@ -317,18 +317,18 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           step="0.1"
                           className={`w-20 ${INPUT_CLS} text-xs py-1`}
                         />
-                        <span className="font-mono text-[10px] text-ink-2">kg</span>
+                        <span className="font-mono text-caption text-ink-2">kg</span>
                         <div className="flex gap-1 ml-auto">
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
-                            className="px-2 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-control transition-all disabled:opacity-50"
+                            className="px-2 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control transition-all disabled:opacity-50"
                           >
                             {saving ? '…' : 'OK'}
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-hairline text-ink-2 font-mono text-[10px] uppercase rounded-control transition-all hover:text-white"
+                            className="px-2 py-1 border border-hairline text-ink-2 font-mono text-caption uppercase rounded-control transition-all hover:text-white"
                           >
                             ✕
                           </button>
@@ -337,7 +337,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                     ) : (
                       // ── Read row ─────────────────────────────────────────
                       <>
-                        <span className="font-mono text-[10px] text-ink-2 w-20 flex-shrink-0">{fmtDate(b.date)}</span>
+                        <span className="font-mono text-caption text-ink-2 w-20 flex-shrink-0">{fmtDate(b.date)}</span>
                         <span className="font-mono font-bold text-white text-sm flex-1">{b.weight} kg</span>
                         {!readOnly && (
                           <div className="flex gap-1 flex-shrink-0">
@@ -368,7 +368,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               {logs.length > 20 && !showAll && (
                 <button
                   onClick={() => setShowAll(true)}
-                  className="text-[10px] font-mono text-ink-2 hover:text-white underline transition-colors"
+                  className="text-caption font-mono text-ink-2 hover:text-white underline transition-colors"
                 >
                   Ver todos ({logs.length})
                 </button>

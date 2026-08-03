@@ -51,7 +51,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
           {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (
             <ul className="mt-2 space-y-1">
               {nutritionConfig.sharedReportSnapshot.flags.map((f, i) => (
-                <li key={i} className="text-[11px] text-amber-300 font-mono">• {f}</li>
+                <li key={i} className="text-caption text-amber-300 font-mono">• {f}</li>
               ))}
             </ul>
           )}
@@ -89,7 +89,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
                 <span className="material-symbols-outlined text-accent text-base">eco</span>
                 Tus verduras habituales
               </h3>
-              <p className="font-mono text-[10px] text-ink-2 mt-1">
+              <p className="font-mono text-caption text-ink-2 mt-1">
                 Marca las verduras que sueles comer en tu día a día — así tu entrenador afina la estimación de vitaminas y minerales.
               </p>
             </div>

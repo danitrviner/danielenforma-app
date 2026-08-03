@@ -41,7 +41,7 @@ export default function ScheduleFields({
 
       {schedType === 'weekdays' && (
         <div className="space-y-1">
-          <p className="font-mono text-[9px] text-ink-2 uppercase">Días activos</p>
+          <p className="font-mono text-caption text-ink-2 uppercase">Días activos</p>
           <div className="flex gap-1.5 flex-wrap">
             {(['L', 'M', 'X', 'J', 'V', 'S', 'D'] as const).map((label, i) => {
               const dayNum = i === 6 ? 0 : i + 1; // Mon=1..Sat=6, Sun=0
@@ -91,7 +91,7 @@ export default function ScheduleFields({
       )}
 
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[10px] text-ink-2">Desde</span>
+        <span className="font-mono text-caption text-ink-2">Desde</span>
         <input
           type="date"
           value={startDate}

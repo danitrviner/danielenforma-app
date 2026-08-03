@@ -25,7 +25,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
-          <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Vuelta a la calma</p>
+          <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Vuelta a la calma</p>
           <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
           <p className="text-xs font-mono text-ink-2 mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
         </div>

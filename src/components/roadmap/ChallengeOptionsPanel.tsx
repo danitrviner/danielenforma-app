@@ -89,11 +89,11 @@ export default function ChallengeOptionsPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Opciones de reto</p>
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Opciones de reto</p>
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none focus:border-accent"
+          className="bg-bg border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -101,7 +101,7 @@ export default function ChallengeOptionsPanel({
       </div>
 
       {overwriting && (
-        <p className="font-mono text-[10px] text-orange-400">
+        <p className="font-mono text-caption text-orange-400">
           Ya hay un reto automático en curso con progreso — enviar una opción lo sobrescribirá.
         </p>
       )}
@@ -120,13 +120,13 @@ export default function ChallengeOptionsPanel({
                 <p className="font-sans font-bold text-white text-sm">{opt.title}</p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {opt.isMilestone && (
-                    <span className="font-mono text-[8px] uppercase px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
+                    <span className="font-mono text-caption uppercase px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">HITO</span>
                   )}
-                  <span className="font-mono text-[9px] text-ink-2">{opt.score}</span>
+                  <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>
               </div>
               <p className="text-xs text-ink-2 font-mono leading-relaxed">{opt.description}</p>
-              <p className="text-[10px] text-ink-3 font-mono">Por qué: {opt.reason}</p>
+              <p className="text-caption text-ink-3 font-mono">Por qué: {opt.reason}</p>
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
@@ -139,12 +139,12 @@ export default function ChallengeOptionsPanel({
         </div>
       )}
 
-      <p className="text-[10px] text-ink-3 font-mono">
+      <p className="text-caption text-ink-3 font-mono">
         Si no eliges ninguna antes del martes, se enviará automáticamente la de mayor puntuación.
       </p>
 
       <div className="pt-2 border-t border-hairline">
-        <button onClick={() => setShowEligible(v => !v)} className="font-mono text-[10px] text-data hover:underline">
+        <button onClick={() => setShowEligible(v => !v)} className="font-mono text-caption text-data hover:underline">
           {showEligible ? 'Ocultar' : 'Ver'} ejercicios elegibles para retos de carga
         </button>
         {showEligible && (
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-1.5 px-3 bg-surface border border-hairline text-ink-2 font-mono text-[10px] rounded-control hover:text-white disabled:opacity-50"
+              className="py-1.5 px-3 bg-surface border border-hairline text-ink-2 font-mono text-caption rounded-control hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

@@ -98,7 +98,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             placeholder="Buscar atleta o acción..."
             className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-ink-2/50"
           />
-          <span className="font-mono text-[9px] text-ink-2/50 border border-hairline rounded-control px-1.5 py-0.5 flex-shrink-0">ESC</span>
+          <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-1.5 py-0.5 flex-shrink-0">ESC</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -108,7 +108,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
 
           {!loadingAthletes && matchedAthletes.length > 0 && (
             <div className="py-2">
-              <p className="px-4 py-1 font-mono text-[9px] text-ink-2 uppercase tracking-wider">Atletas</p>
+              <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Atletas</p>
               {matchedAthletes.map(a => (
                 <button
                   key={a.userId}
@@ -118,7 +118,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                   <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{a.displayName}</p>
-                    <p className="text-[10px] text-ink-2 truncate">{a.email}</p>
+                    <p className="text-caption text-ink-2 truncate">{a.email}</p>
                   </div>
                 </button>
               ))}
@@ -127,7 +127,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
 
           {matchedActions.length > 0 && (
             <div className="py-2 border-t border-hairline">
-              <p className="px-4 py-1 font-mono text-[9px] text-ink-2 uppercase tracking-wider">Acciones</p>
+              <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Acciones</p>
               {matchedActions.map(a => (
                 <button
                   key={a.id}

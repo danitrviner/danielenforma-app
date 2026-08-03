@@ -204,7 +204,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           <button onClick={startRecording} className="w-full py-2.5 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press">Conectar banda y empezar</button>
         ) : (
           <div className="space-y-3 text-center">
-            <p className="text-[10px] font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
+            <p className="text-caption font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
             <p className="font-sans font-black text-5xl text-white tabular-nums">{bpm ?? '--'}</p>
             <p className="text-xs font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
@@ -218,7 +218,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
 
   return (
     <section className="space-y-2">
-      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">Tests de FC</h3>
+      <h3 className="text-caption font-mono uppercase text-data tracking-wider">Tests de FC</h3>
       <div className="space-y-2">
         {TESTS.map(t => {
           const lastResult = [...tests].filter(x => x.type === t.type).sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -226,11 +226,11 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
             <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-semibold text-sm text-white">{t.title}</p>
-                {t.highEffort && <span className="text-[9px] font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
+                {t.highEffort && <span className="text-caption font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
               </div>
-              <p className="text-[10px] text-ink-2 font-mono mt-1">{t.desc}</p>
+              <p className="text-caption text-ink-2 font-mono mt-1">{t.desc}</p>
               {lastResult && (
-                <p className="text-[10px] font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? 'var(--color-data)' : 'var(--color-ink-3)' }}>
+                <p className="text-caption font-mono mt-1.5" style={{ color: lastResult.approvedByCoach ? 'var(--color-data)' : 'var(--color-ink-3)' }}>
                   Último: {lastResult.date} {lastResult.approvedByCoach ? '· aprobado' : '· pendiente de revisión'}
                 </p>
               )}

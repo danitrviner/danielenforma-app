@@ -95,14 +95,14 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-black text-xl text-ink">Reuniones</h1>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-3">
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
         </div>
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva reunión
@@ -132,10 +132,10 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-warning' : 'bg-accent'}`} />
                   <div className="min-w-0">
-                    <p className="font-sans text-[11px] text-ink truncate">
+                    <p className="font-sans text-caption text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
                     </p>
-                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-danger' : 'text-ink-3'}`}>
+                    <p className={`font-mono text-caption tabular-nums ${pasada ? 'text-danger' : 'text-ink-3'}`}>
                       {formatDia(ev.fecha)} · {tiempoRelativo(ev.fecha)}
                     </p>
                   </div>
@@ -164,7 +164,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => marcarRealizada(ev.reunion!)}
                         disabled={actualizar.isPending && actualizar.variables?.id === ev.reunion!.id}
-                        className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
+                        className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-caption uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
                       >
                         Realizada
                       </button>

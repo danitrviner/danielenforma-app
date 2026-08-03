@@ -107,15 +107,15 @@ function QuestionChart({
         <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {question.unit && (
-            <span className="font-mono text-[9px] text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
+            <span className="font-mono text-caption text-ink-2 bg-raised border border-hairline px-1.5 py-0.5 rounded-control">
               {question.unit}
             </span>
           )}
-          <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-control flex items-center gap-0.5">
+          <span className="font-mono text-caption text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-control flex items-center gap-0.5">
             <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
             {question.type}
           </span>
-          <span className="font-mono text-[9px] text-ink-2">
+          <span className="font-mono text-caption text-ink-2">
             {weekly ? `${toWeekly(raw).length} semanas` : `${raw.length} puntos`}
           </span>
         </div>
@@ -158,8 +158,8 @@ function QuestionChart({
       {/* Scale end labels */}
       {question.type === 'scale' && (question.scaleMinLabel || question.scaleMaxLabel) && (
         <div className="flex justify-between px-9">
-          <span className="font-mono text-[9px] text-ink-2">{yMin} – {question.scaleMinLabel}</span>
-          <span className="font-mono text-[9px] text-ink-2">{question.scaleMaxLabel} – {yMax}</span>
+          <span className="font-mono text-caption text-ink-2">{yMin} – {question.scaleMinLabel}</span>
+          <span className="font-mono text-caption text-ink-2">{question.scaleMaxLabel} – {yMax}</span>
         </div>
       )}
     </div>
@@ -201,7 +201,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
             <button
               key={label}
               onClick={() => setWeekly(i === 1)}
-              className={`px-3 min-h-[44px] rounded-control font-mono text-[10px] uppercase font-bold transition-all ${
+              className={`px-3 min-h-[44px] rounded-control font-mono text-caption uppercase font-bold transition-all ${
                 weekly === (i === 1)
                   ? 'bg-accent text-black shadow'
                   : 'text-ink-2 hover:text-white'
@@ -215,7 +215,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {graphable.map(({ question, qTitle }) => (
           <div key={question.id}>
-            <p className="font-mono text-[9px] text-ink-2/60 uppercase tracking-wider mb-1.5 px-1">
+            <p className="font-mono text-caption text-ink-2/60 uppercase tracking-wider mb-1.5 px-1">
               {qTitle}
             </p>
             <QuestionChart question={question} responses={responses} weekly={weekly} />

@@ -75,11 +75,11 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       {/* Series / Reps / Descanso / RIR — uniforme o por bloques */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block font-mono text-[9px] text-ink-2 uppercase">Series</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase">Series</label>
           <button
             type="button"
             onClick={hasGroups ? disableGroups : enableGroups}
-            className="font-mono text-[9px] text-accent hover:text-white transition-colors"
+            className="font-mono text-caption text-accent hover:text-white transition-colors"
           >
             {hasGroups ? '← Volver a series uniformes' : 'Dividir en bloques (top set / back-off)'}
           </button>
@@ -88,7 +88,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         {!hasGroups ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Series</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
               <input
                 type="number" min={1} max={20}
                 value={we.sets}
@@ -97,7 +97,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Reps</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
               <input
                 type="text"
                 value={we.reps}
@@ -107,7 +107,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Descanso (s)</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Descanso (s)</label>
               <input
                 type="number" min={0}
                 value={we.restSeconds}
@@ -116,7 +116,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">RIR</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
               <input
                 type="number" min={0} max={5}
                 value={we.rir}
@@ -130,7 +130,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             {(we.setGroups || []).map((g, gIdx) => (
               <div key={gIdx} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end bg-bg border border-hairline rounded-surface p-2">
                 <div>
-                  <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Etiqueta</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta</label>
                   <input
                     type="text"
                     value={g.label || ''}
@@ -140,7 +140,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Series</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
                   <input
                     type="number" min={1} max={20}
                     value={g.sets}
@@ -149,7 +149,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Reps</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
                   <input
                     type="text"
                     value={g.reps}
@@ -158,7 +158,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">RIR</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
                   <input
                     type="number" min={0} max={5}
                     value={g.rir}
@@ -178,17 +178,17 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             <div className="flex items-center justify-between">
               <button
                 onClick={addGroup}
-                className="flex items-center gap-1 text-[10px] font-mono text-accent hover:text-white transition-colors"
+                className="flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
                 Añadir bloque
               </button>
-              <span className="font-mono text-[9px] text-ink-3">
+              <span className="font-mono text-caption text-ink-3">
                 Total: {we.sets} series · {we.reps}
               </span>
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
               <input
                 type="number" min={0}
                 value={we.restSeconds}
@@ -214,7 +214,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         <button
           type="button"
           onClick={toggleRecordVideo}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
             we.recordVideoSet
               ? 'bg-accent/10 border-accent/40 text-accent'
               : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -239,12 +239,12 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
 
       {/* Técnica de alta intensidad */}
       <div className="space-y-1.5">
-        <label className="block font-mono text-[9px] text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
+        <label className="block font-mono text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
             onClick={() => setTechnique(undefined)}
-            className={`px-2.5 py-1 rounded-control font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+            className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
               !we.technique
                 ? 'bg-white/10 border-hairline text-white'
                 : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -256,7 +256,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               type="button"
               onClick={() => setTechnique(we.technique === t ? undefined : t)}
               title={TECHNIQUE_DESCRIPTION[t]}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-control font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                 we.technique === t
                   ? TECHNIQUE_COLOR[t]
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -265,20 +265,20 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           ))}
         </div>
         {we.technique && (
-          <p className="font-sans text-[10px] text-ink-2 leading-relaxed pt-0.5">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+          <p className="font-sans text-caption text-ink-2 leading-relaxed pt-0.5">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
         )}
       </div>
 
       {/* Warm-up (series de aproximación) */}
       <div className="space-y-2 border-t border-hairline pt-3">
-        <label className="block font-mono text-[9px] text-ink-2 uppercase">Series de aproximación (warm-up)</label>
+        <label className="block font-mono text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
         <div className="flex items-center gap-1.5 flex-wrap">
           {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
             <button
               key={mode}
               type="button"
               onClick={() => setWarmupMode(mode)}
-              className={`px-2.5 py-1 rounded-control font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                 (we.warmupMode || 'none') === mode
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -287,7 +287,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           ))}
         </div>
         {we.warmupMode === 'auto' && (
-          <p className="font-sans text-[10px] text-ink-2 leading-relaxed pt-0.5">
+          <p className="font-sans text-caption text-ink-2 leading-relaxed pt-0.5">
             🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
           </p>
         )}
@@ -295,7 +295,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <div className="space-y-1.5 pt-1">
             {(we.manualWarmupSets || []).map((s, wIdx) => (
               <div key={wIdx} className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-orange-300 w-8">W{wIdx + 1}</span>
+                <span className="font-mono text-caption text-orange-300 w-8">W{wIdx + 1}</span>
                 <input
                   type="number" min={0} step={0.5}
                   value={s.weight}
@@ -322,7 +322,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             ))}
             <button
               onClick={addManualWarmupSet}
-              className="flex items-center gap-1 text-[10px] font-mono text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
+              className="flex items-center gap-1 text-caption font-mono text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir serie de aproximación

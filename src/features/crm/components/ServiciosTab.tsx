@@ -46,7 +46,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div className="min-w-0">
           <p className={`font-bold truncate ${s.archivado ? 'text-ink-3 line-through' : ''}`}>{s.nombre}</p>
-          {s.descripcion && <p className="font-mono text-[9px] text-ink-3 truncate">{s.descripcion}</p>}
+          {s.descripcion && <p className="font-mono text-caption text-ink-3 truncate">{s.descripcion}</p>}
         </div>
       ),
     },
@@ -58,7 +58,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="font-bold">{formatEuros(s.importeCents)}</p>
-          <p className="font-mono text-[9px] text-ink-3">{s.periodicidad}</p>
+          <p className="font-mono text-caption text-ink-3">{s.periodicidad}</p>
         </div>
       ),
     },
@@ -69,7 +69,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="tabular-nums">{formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}</p>
-          <p className="font-mono text-[9px] text-ink-3">
+          <p className="font-mono text-caption text-ink-3">
             {s.fechaFin
               ? (s.fechaFin < hoy ? 'finalizado' : `acaba ${tiempoRelativo(s.fechaFin)}`)
               : 'sin fecha de fin'}
@@ -107,7 +107,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-ink-2 cursor-pointer">
+        <label className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-widest text-ink-2 cursor-pointer">
           <input
             type="checkbox"
             checked={verArchivados}
@@ -119,7 +119,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nuevo servicio

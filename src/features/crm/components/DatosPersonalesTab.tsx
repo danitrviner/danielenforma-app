@@ -183,7 +183,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
           <div className="sm:col-span-2 flex items-start gap-1.5">
             <span className="material-symbols-outlined text-[13px] text-danger shrink-0 mt-0.5">warning</span>
-            <p className="font-sans text-[10px] text-danger leading-relaxed">
+            <p className="font-sans text-caption text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
               queda incalculable para siempre.
             </p>
@@ -211,7 +211,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       )}
 
       {cliente.email && (
-        <p className="font-mono text-[9px] text-ink-3">
+        <p className="font-mono text-caption text-ink-3">
           Email: {cliente.email}
           {cliente.fuente === 'perfil' && ' · lo gestiona el propio cliente desde su cuenta'}
         </p>
@@ -219,7 +219,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {sucio && !bajaIncompleta && (
-          <span className="font-mono text-[9px] uppercase tracking-widest text-warning">Sin guardar</span>
+          <span className="font-mono text-caption uppercase tracking-widest text-warning">Sin guardar</span>
         )}
         <BotonPrimario onClick={onGuardar} disabled={!sucio || bajaIncompleta || guardar.isPending}>
           {guardar.isPending ? 'Guardando…' : 'Guardar cambios'}

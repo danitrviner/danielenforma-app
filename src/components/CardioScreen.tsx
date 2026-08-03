@@ -533,7 +533,7 @@ export default function CardioScreen({ profile }: Props) {
           <div className="flex flex-wrap gap-2">
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-surface p-2.5 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
-                <p className="text-[9px] font-mono uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
+                <p className="text-caption font-mono uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
                 <p className="text-xs font-bold text-white mt-0.5">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
             ))}
@@ -553,12 +553,12 @@ export default function CardioScreen({ profile }: Props) {
             <div className="space-y-3">
               <DeviceChip status="ready" bpm={bpm} />
               {zona2Assignment && sessionType === 'zona2' && (
-                <p className="text-[10px] font-mono text-ink-2 text-center">
+                <p className="text-caption font-mono text-ink-2 text-center">
                   Prescrito por tu entrenador: Zona 2{zona2Assignment.targetDurationSec ? ` · ${Math.round(zona2Assignment.targetDurationSec / 60)} min` : ''}
                 </p>
               )}
               {intervalAssignment && sessionType === 'intervalos' && (
-                <p className="text-[10px] font-mono text-ink-2 text-center">
+                <p className="text-caption font-mono text-ink-2 text-center">
                   Prescrito por tu entrenador: {intervalAssignment.intervals?.length} bloques de intervalos
                 </p>
               )}
@@ -575,7 +575,7 @@ export default function CardioScreen({ profile }: Props) {
                   Empezar entrenamiento
                 </button>
               </div>
-              <button onClick={handleCancelReady} className="w-full py-2 text-[10px] font-mono uppercase text-ink-2 hover:text-white transition-colors">
+              <button onClick={handleCancelReady} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
                 Desconectar
               </button>
             </div>
@@ -597,8 +597,8 @@ export default function CardioScreen({ profile }: Props) {
         return (
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">Historial</h3>
-              <button onClick={() => setShowManualAdd(true)} className="text-[10px] font-mono uppercase text-ink-2 hover:text-white transition-colors flex items-center gap-1">
+              <h3 className="text-caption font-mono uppercase text-data tracking-wider">Historial</h3>
+              <button onClick={() => setShowManualAdd(true)} className="text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">add</span> Añadir a mano
               </button>
             </div>
@@ -606,12 +606,12 @@ export default function CardioScreen({ profile }: Props) {
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'week', 'month', 'year'] as const).map(r => (
                 <button key={r} onClick={() => setHistoryRange(r)}
-                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
+                  className={`px-2.5 py-1 rounded-full text-caption font-mono uppercase border transition-all ${historyRange === r ? 'bg-accent text-black border-accent' : 'text-ink-2 border-hairline hover:text-white'}`}>
                   {{ all: 'Todo', week: 'Semana', month: 'Mes', year: 'Año' }[r]}
                 </button>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
-                className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
                 <option value="">Cualquier tipo</option>
                 <option value="libre">Libre</option>
                 <option value="zona2">Zona 2</option>
@@ -619,7 +619,7 @@ export default function CardioScreen({ profile }: Props) {
               </select>
               {tags.length > 0 && (
                 <select value={historyTag} onChange={e => setHistoryTag(e.target.value)}
-                  className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-[9px] font-mono uppercase text-ink-2 focus:outline-none">
+                  className="bg-bg border border-hairline rounded-full px-2.5 py-1 text-caption font-mono uppercase text-ink-2 focus:outline-none">
                   <option value="">Cualquier etiqueta</option>
                   {tags.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -635,11 +635,11 @@ export default function CardioScreen({ profile }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
-                    {s.manual && <span className="ml-1.5 text-[9px] font-mono text-ink-2 uppercase">manual</span>}
+                    {s.manual && <span className="ml-1.5 text-caption font-mono text-ink-2 uppercase">manual</span>}
                   </p>
-                  <p className="text-[10px] text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
+                  <p className="text-caption text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
                   {(s.caloriesActiveKcal || s.caloriesKcal || s.fitivPoints || s.trimp) && (
-                    <p className="text-[10px] text-accent font-mono mt-0.5">
+                    <p className="text-caption text-accent font-mono mt-0.5">
                       {(s.caloriesActiveKcal ?? s.caloriesKcal) !== undefined && `${Math.round(s.caloriesActiveKcal ?? s.caloriesKcal!)} kcal · `}
                       {s.fitivPoints !== undefined && `${s.fitivPoints} pts · `}
                       {s.trimp !== undefined && `TRIMP ${Math.round(s.trimp)}`}
@@ -648,7 +648,7 @@ export default function CardioScreen({ profile }: Props) {
                     </p>
                   )}
                   {s.tags && s.tags.length > 0 && (
-                    <p className="text-[9px] text-ink-2 font-mono mt-0.5">{s.tags.join(' · ')}</p>
+                    <p className="text-caption text-ink-2 font-mono mt-0.5">{s.tags.join(' · ')}</p>
                   )}
                 </div>
                 <span className="material-symbols-outlined text-ink-2 text-lg">chevron_right</span>

@@ -27,7 +27,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           <span className="material-symbols-outlined text-2xl">{phase.icon || 'route'}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Fase actual</p>
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fase actual</p>
           <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight truncate">{phase.name}</h2>
           {phase.motto && <p className="text-ink-2 text-xs font-mono mt-0.5">{phase.motto}</p>}
         </div>
@@ -55,9 +55,9 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
       {weightStatus && (
         <div className="pt-2 border-t border-hairline">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Peso en esta fase</span>
+            <span className="font-mono text-caption uppercase tracking-widest text-ink-2">Peso en esta fase</span>
             {weightStatus.targetKg != null && (
-              <span className="font-mono text-[9px] text-ink-2">objetivo {weightStatus.targetKg} kg</span>
+              <span className="font-mono text-caption text-ink-2">objetivo {weightStatus.targetKg} kg</span>
             )}
           </div>
           <div className="h-2 rounded-full bg-raised overflow-hidden">
@@ -66,7 +66,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
               style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: phase.color }}
             />
           </div>
-          <p className="font-mono text-[9px] text-ink-2 mt-1">
+          <p className="font-mono text-caption text-ink-2 mt-1">
             {weightStatus.currentKg != null ? `${weightStatus.currentKg} kg` : 'sin pesaje'}
             {weightStatus.projectedKg != null && ` · proyección ${weightStatus.projectedKg} kg`}
           </p>

@@ -109,7 +109,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   if (!point) return null;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 shadow-xl">
-      <p className="font-mono text-[10px] text-ink-2 mb-1.5">{point.label}</p>
+      <p className="font-mono text-caption text-ink-2 mb-1.5">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
@@ -409,13 +409,13 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Exercise selector (only when 1RM metric is active) ── */}
       {ormActive && loggedExercises.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
+          <span className="font-mono text-caption uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
             Ejercicio (1RM):
           </span>
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-[11px] font-mono rounded-control px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-2.5 py-1.5 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -428,7 +428,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {ormActive && progressBuckets.length > 0 && (
         <div className="bg-bg border border-hairline rounded-surface p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="font-mono text-[10px] uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
+            <p className="font-mono text-caption uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
             <div className="flex items-center gap-2">
@@ -437,7 +437,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   <button
                     key={g}
                     onClick={() => setGranularity(g)}
-                    className={`px-2.5 py-1 rounded-control font-mono text-[10px] font-bold transition-all ${
+                    className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold transition-all ${
                       granularity === g ? 'bg-data/15 text-data' : 'text-ink-3 hover:text-ink-2'
                     }`}
                   >
@@ -449,7 +449,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-raised border border-hairline text-white text-[10px] font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
+                  className="bg-raised border border-hairline text-white text-caption font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (
@@ -469,14 +469,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={b.id}
                   onClick={() => toggleBucket(b.id)}
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
-                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-mono text-[10px] font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-mono text-caption font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
                     included
                       ? 'bg-data/10 border-data/40 text-data'
                       : 'bg-transparent border-hairline text-ink-3 opacity-50'
                   }`}
                 >
                   <span>{b.label}</span>
-                  {b.isFilled && <span className="text-[8px] opacity-70">~</span>}
+                  {b.isFilled && <span className="text-caption opacity-70">~</span>}
                 </button>
               );
             })}
@@ -493,9 +493,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               </span>
             </div>
           ) : (
-            <p className="font-mono text-[10px] text-ink-3">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
+            <p className="font-mono text-caption text-ink-3">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
           )}
-          <p className="font-mono text-[9px] text-ink-3">
+          <p className="font-mono text-caption text-ink-3">
             Destilda {granularity === 'week' ? 'las semanas' : 'los días'} de adaptación que no quieres que cuenten (ej. las primeras del bloque).
             {granularity === 'week' && ' "~" = semana sin registro, estimada a partir de semanas cercanas.'}
           </p>
@@ -505,12 +505,12 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Chart ── */}
       {activeMetrics.size === 0 ? (
         <div className="py-6 text-center border border-dashed border-hairline rounded-surface">
-          <p className="font-mono text-[10px] text-ink-3">Selecciona al menos una métrica.</p>
+          <p className="font-mono text-caption text-ink-3">Selecciona al menos una métrica.</p>
         </div>
       ) : (
         <div>
           {isMulti && (
-            <p className="font-mono text-[8px] text-ink-3 uppercase tracking-wider mb-1 text-right">
+            <p className="font-mono text-caption text-ink-3 uppercase tracking-wider mb-1 text-right">
               % del máximo
             </p>
           )}
@@ -578,14 +578,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Session table (desktop) / cards (mobile) ── */}
       <div className="space-y-1.5">
-        <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Sesiones</p>
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Sesiones</p>
 
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center justify-between gap-2">
-              <span className="font-mono text-[11px] text-ink-2 flex-shrink-0">{row.label}</span>
-              <div className="flex items-center gap-3 flex-shrink-0 font-mono text-[11px]">
+              <span className="font-mono text-caption text-ink-2 flex-shrink-0">{row.label}</span>
+              <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
                 <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
                 <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
@@ -605,7 +605,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             <thead>
               <tr className="bg-bg border-b border-hairline">
                 {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
-                  <th key={h} className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-3 py-2 font-mono text-caption text-ink-2 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -615,14 +615,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-ink-2">{row.label}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-white">{row.reps}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: METRIC_COLOR.tonnage }}>
+                  <td className="px-3 py-2.5 font-mono text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-2.5 font-mono text-caption text-white font-bold">{row.sets}</td>
+                  <td className="px-3 py-2.5 font-mono text-caption text-white">{row.reps}</td>
+                  <td className="px-3 py-2.5 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
                     {row.tonnage.toLocaleString()} kg
                   </td>
                   {ormActive && (
-                    <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
+                    <td className="px-3 py-2.5 font-mono text-caption font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                       {row.orm ? `${row.orm} kg` : '—'}
                     </td>
                   )}

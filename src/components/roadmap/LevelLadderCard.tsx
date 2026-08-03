@@ -21,7 +21,7 @@ export default function LevelLadderCard({ status }: Props) {
 
   return (
     <div className="rounded-canvas border border-hairline bg-bg p-5 flex flex-col gap-4">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Tu nivel</p>
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
@@ -59,7 +59,7 @@ export default function LevelLadderCard({ status }: Props) {
                 )}
               </div>
               {c.criterion.kind !== 'manual' && c.currentValue != null && (
-                <span className="font-mono text-[9px] text-ink-2 flex-shrink-0">
+                <span className="font-mono text-caption text-ink-2 flex-shrink-0">
                   {fmtCriterionValue(c.criterion.kind, c.currentValue)}
                 </span>
               )}

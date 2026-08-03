@@ -45,7 +45,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
-              <p className="font-mono text-[10px] text-ink-2 mt-0.5">
+              <p className="font-mono text-caption text-ink-2 mt-0.5">
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>
@@ -58,7 +58,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             {/* ── Left: editing controls ── */}
             <div className="space-y-4">
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Título</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Título</label>
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
@@ -67,7 +67,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
                 <textarea
                   value={draft.intro}
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
@@ -78,7 +78,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div className="space-y-2.5">
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
                   <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
@@ -105,7 +105,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
 
             {/* ── Right: live preview ── */}
             <div className="lg:border-l lg:border-hairline lg:pl-5">
-              <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
               <ReportView report={draft} />
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-3.5 py-2.5 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-[10px] font-bold uppercase rounded-control transition-all disabled:opacity-40"
+              className="px-3.5 py-2.5 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>

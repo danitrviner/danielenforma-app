@@ -257,7 +257,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       <RecentAchievements achievements={achievements} />
 
       <div>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2 mb-3 px-1">Planificación completa</p>
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-3 px-1">Planificación completa</p>
         <RoadmapTimeline
           mesocycles={mesocycles}
           nutritionProgram={nutritionProgram}

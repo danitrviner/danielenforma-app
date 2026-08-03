@@ -61,7 +61,7 @@ export default function DataTable<T>({
                 key={c.id}
                 scope="col"
                 style={c.width ? { width: c.width } : undefined}
-                className={`px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-ink-3 font-normal ${
+                className={`px-3 py-2 font-mono text-caption uppercase tracking-widest text-ink-3 font-normal ${
                   c.align === 'right' ? 'text-right' : 'text-left'
                 }`}
               >
@@ -98,7 +98,7 @@ export default function DataTable<T>({
                 {columnas.map(c => (
                   <td
                     key={c.id}
-                    className={`px-3 py-2.5 font-sans text-[11px] text-ink align-middle ${
+                    className={`px-3 py-2.5 font-sans text-caption text-ink align-middle ${
                       c.align === 'right' ? 'text-right tabular-nums' : 'text-left'
                     }`}
                   >

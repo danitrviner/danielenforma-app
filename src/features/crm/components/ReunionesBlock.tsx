@@ -77,7 +77,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
       render: r => (
         <div>
           <p className="tabular-nums">{formatDia(r.fecha)}</p>
-          <p className="font-mono text-[9px] text-ink-3">{tiempoRelativo(r.fecha)}</p>
+          <p className="font-mono text-caption text-ink-3">{tiempoRelativo(r.fecha)}</p>
         </div>
       ),
     },
@@ -116,7 +116,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               type="button"
               onClick={() => marcarRealizada(r)}
               disabled={actualizar.isPending && actualizar.variables?.id === r.id}
-              className={`px-2 py-1 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${
+              className={`px-2 py-1 rounded-control font-mono text-caption uppercase tracking-widest transition-colors disabled:opacity-40 ${
                 r.realizada
                   ? 'bg-white/6 text-ink-2 hover:bg-white/10'
                   : 'bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25'

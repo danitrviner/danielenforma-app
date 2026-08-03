@@ -72,18 +72,18 @@ export default function CoachNotesPanel({ athletes }: Props) {
           <span className="material-symbols-outlined text-accent text-base">edit_note</span>
           Mis notas
           {pending.length > 0 && (
-            <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
+            <span className="bg-accent text-black text-caption font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
           )}
         </h3>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
+          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
         >
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva nota'}
         </button>
       </div>
-      <p className="font-mono text-[9px] text-ink-3 mb-3">
+      <p className="font-mono text-caption text-ink-3 mb-3">
         Privadas — solo tú las ves. Ej: "Enviar mensaje a Ana sobre la dieta", "Cambiar rutina a Marcos".
       </p>
 
@@ -143,7 +143,7 @@ export default function CoachNotesPanel({ athletes }: Props) {
               <div className="flex-1 min-w-0">
                 <p className={`font-sans text-xs text-white ${n.done ? 'line-through' : ''}`}>{n.text}</p>
                 {n.relatedAthleteName && (
-                  <p className="font-mono text-[9px] text-data mt-0.5">{n.relatedAthleteName}</p>
+                  <p className="font-mono text-caption text-data mt-0.5">{n.relatedAthleteName}</p>
                 )}
               </div>
               <button

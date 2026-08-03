@@ -182,12 +182,12 @@ export default function PhotosScreen({ profile }: Props) {
                 className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
               />
               {/* Date badge */}
-              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-control text-white font-mono text-[9px]">
+              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-control text-white font-mono text-caption">
                 {formatDate(photo.date)}
               </div>
               {/* Latest badge */}
               {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-accent px-2 py-0.5 rounded-control font-mono text-[9px] font-black text-black">
+                <div className="absolute top-2 right-2 bg-accent px-2 py-0.5 rounded-control font-mono text-caption font-black text-black">
                   ACTUAL
                 </div>
               )}

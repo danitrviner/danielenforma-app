@@ -84,7 +84,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
       >
         <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>notifications</span>
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-mono font-bold rounded-full flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-caption font-mono font-bold rounded-full flex items-center justify-center leading-none">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -99,7 +99,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
               <span className="material-symbols-outlined text-accent text-base">notifications</span>
               Notificaciones
               {unread > 0 && (
-                <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-control font-mono font-bold">
+                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-control font-mono font-bold">
                   {unread} nueva{unread !== 1 ? 's' : ''}
                 </span>
               )}
@@ -107,7 +107,7 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-[9px] font-mono text-ink-2 hover:text-accent transition-colors uppercase">
+                  className="text-caption font-mono text-ink-2 hover:text-accent transition-colors uppercase">
                   Leer todas
                 </button>
               )}
@@ -152,8 +152,8 @@ export default function NotificationBell({ recipientEmail, onNavigate }: Props) 
                     <p className={`text-xs font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
-                    <p className="text-[10px] font-mono text-ink-3 mt-0.5 truncate">{n.body}</p>
-                    <p className="text-[9px] font-mono text-ink-3 mt-0.5">{timeAgo(n.createdAt)}</p>
+                    <p className="text-caption font-mono text-ink-3 mt-0.5 truncate">{n.body}</p>
+                    <p className="text-caption font-mono text-ink-3 mt-0.5">{timeAgo(n.createdAt)}</p>
                   </div>
 
                   {/* Unread dot */}

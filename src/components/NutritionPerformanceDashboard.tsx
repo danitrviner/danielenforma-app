@@ -81,7 +81,7 @@ function ProjectionTooltip({ active, payload }: any) {
   const dev = (row.real != null && row.expected100 != null) ? row.real - row.expected100 : null;
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2.5 text-xs font-mono shadow-xl min-w-[170px]">
-      <p className="text-ink-2 mb-1.5 uppercase text-[10px] tracking-wider">{row.label} · {fmtDate(row.date)}</p>
+      <p className="text-ink-2 mb-1.5 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-data">Esperado 100%</span>
@@ -266,18 +266,18 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <span className="font-mono text-[9px] uppercase tracking-widest" style={{ color: activePhaseColor }}>
+              <span className="font-mono text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
               <h2 className="font-sans font-black text-2xl text-white tracking-tight mt-0.5">{activePhase.name}</h2>
               {activeDiet && (
-                <p className="font-mono text-[10px] text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
+                <p className="font-mono text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
             </div>
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-[10px] font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-control"
+                className="flex-shrink-0 text-caption font-mono font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-2.5 py-1.5 rounded-control"
               >Editar</button>
             )}
           </div>
@@ -301,7 +301,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-ink-2 mt-3.5 pt-3 border-t border-hairline">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-caption text-ink-2 mt-3.5 pt-3 border-t border-hairline">
             <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
             <span className="text-ink-3">·</span>
             <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
@@ -313,7 +313,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         <div className="flex items-center justify-end">
           <button
             onClick={onEdit}
-            className="text-[10px] font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
+            className="text-caption font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
           >Editar periodización</button>
         </div>
       )}
@@ -331,7 +331,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Chart */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
           <div className="inline-flex bg-field border border-hairline rounded-surface p-0.5 gap-0.5">
             {([
               { id: 'both', label: 'Ambas' },
@@ -342,7 +342,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 key={opt.id}
                 onClick={() => setCurveMode(opt.id)}
                 aria-pressed={curveMode === opt.id}
-                className={`font-mono text-[9px] px-2.5 py-1.5 rounded-control transition-colors ${
+                className={`font-mono text-caption px-2.5 py-1.5 rounded-control transition-colors ${
                   curveMode === opt.id ? 'bg-raised text-white shadow-inner' : 'text-ink-2 hover:text-white'
                 }`}
               >{opt.label}</button>
@@ -447,7 +447,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       {/* Energy balance of the active phase */}
       {activePhase && activeBalance && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             Balance energético · tramo activo «{activePhase.name}»
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs">
@@ -478,7 +478,7 @@ function StatCard({
 }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
-      <span className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
+      <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="font-mono font-bold text-xl" style={{ color: valueColor ?? '#fff' }}>
         {value}{unit && <span className="text-xs text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
@@ -487,7 +487,7 @@ function StatCard({
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? 'var(--color-accent)' }} />
         </div>
       )}
-      <span className="font-mono text-[9px] text-ink-2">{sub}</span>
+      <span className="font-mono text-caption text-ink-2">{sub}</span>
     </div>
   );
 }

@@ -69,17 +69,17 @@ export function Campo({ label, children, hint, error }: {
 }) {
   return (
     <label className="block space-y-1">
-      <span className="font-mono text-[9px] uppercase tracking-widest text-ink-2">{label}</span>
+      <span className="font-mono text-caption uppercase tracking-widest text-ink-2">{label}</span>
       {children}
       {error
-        ? <span className="block font-sans text-[10px] text-danger">{error}</span>
-        : hint ? <span className="block font-sans text-[10px] text-ink-3">{hint}</span> : null}
+        ? <span className="block font-sans text-caption text-danger">{error}</span>
+        : hint ? <span className="block font-sans text-caption text-ink-3">{hint}</span> : null}
     </label>
   );
 }
 
 export const inputClass =
-  'w-full px-2.5 py-1.5 rounded-surface bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-2.5 py-1.5 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
@@ -89,7 +89,7 @@ export function BotonPrimario({ children, disabled, onClick, type = 'button' }: 
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>
@@ -101,7 +101,7 @@ export function BotonSecundario({ children, onClick }: { children: React.ReactNo
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+      className="px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
     >
       {children}
     </button>

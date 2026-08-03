@@ -38,12 +38,12 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
           <span className="material-symbols-outlined text-lg" style={{ color: accent }}>
             {achieved ? 'emoji_events' : 'flag'}
           </span>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-2">
             Reto de la semana · de tu entrenador
           </p>
         </div>
         {!achieved && (
-          <span className="font-mono text-[9px] text-ink-2">
+          <span className="font-mono text-caption text-ink-2">
             {remaining === 0 ? 'último día' : `${remaining}d restantes`}
           </span>
         )}
@@ -54,10 +54,10 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
 
       <div className="mt-1">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="font-mono text-[10px] text-white font-bold">
+          <span className="font-mono text-caption text-white font-bold">
             {fmtMetric(progress.progressValue, challenge.metric.unit)}
           </span>
-          <span className="font-mono text-[10px] text-ink-2">
+          <span className="font-mono text-caption text-ink-2">
             objetivo {fmtMetric(challenge.metric.target, challenge.metric.unit)}
           </span>
         </div>
@@ -91,7 +91,7 @@ export function ChallengePendingCard() {
         <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: 'var(--color-accent)' }}>
           hourglass_top
         </span>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-ink-2">Reto de la semana</p>
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
       <h3 className="font-sans font-black text-lg text-white leading-tight">Tu entrenador está preparando tu reto</h3>
       <p className="text-ink-2 text-xs font-mono leading-relaxed">

@@ -104,7 +104,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
         <div className="space-y-3">
           <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-strong hover:border-accent/40 cursor-pointer transition-colors">
             <span className="material-symbols-outlined text-2xl text-ink-3">upload_file</span>
-            <span className="font-sans text-[11px] text-ink-2">Arrastra o elige un .xlsx o .csv</span>
+            <span className="font-sans text-caption text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input
               type="file"
               accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -113,12 +113,12 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-[10px] text-danger">
+            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
               <span className="material-symbols-outlined text-[13px] shrink-0">error</span>
               {errorGeneral}
             </p>
           )}
-          <p className="font-mono text-[9px] text-ink-3 leading-relaxed">
+          <p className="font-mono text-caption text-ink-3 leading-relaxed">
             Columnas reconocidas: nombre (obligatoria), email, dni/nif, teléfono, dirección.
             El nombre exacto de la cabecera no importa mientras sea razonable.
           </p>
@@ -128,7 +128,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
           <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-ink-2">Leyendo {nombreArchivo}…</p>
+          <p className="font-sans text-caption text-ink-2">Leyendo {nombreArchivo}…</p>
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
           <span className="material-symbols-outlined text-2xl text-accent animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-ink-2">Importando {aImportar.length} clientes…</p>
+          <p className="font-sans text-caption text-ink-2">Importando {aImportar.length} clientes…</p>
         </div>
       )}
 
@@ -155,7 +155,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
           <p className="font-sans font-bold text-sm text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>
-          <p className="font-sans text-[11px] text-ink-2">Ya aparecen en la lista de clientes.</p>
+          <p className="font-sans text-caption text-ink-2">Ya aparecen en la lista de clientes.</p>
         </div>
       )}
     </Modal>
@@ -179,7 +179,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
   return (
     <div className="space-y-3">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
 
       <div className="grid grid-cols-3 gap-2">
         <Resumen icono="check_circle" color="var(--color-success)" numero={listasParaImportar} label="listas" />
@@ -188,7 +188,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
       </div>
 
       {resultado.cabecerasNoReconocidas.length > 0 && (
-        <p className="font-mono text-[9px] text-ink-3">
+        <p className="font-mono text-caption text-ink-3">
           Columnas ignoradas (no reconocidas): {resultado.cabecerasNoReconocidas.join(', ')}
         </p>
       )}
@@ -213,7 +213,7 @@ function Resumen({ icono, color, numero, label }: { icono: string; color: string
     <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
       <span className="material-symbols-outlined text-base" style={{ color }}>{icono}</span>
       <span className="font-sans font-black text-base text-ink tabular-nums">{numero}</span>
-      <span className="font-mono text-[8px] uppercase tracking-widest text-ink-3">{label}</span>
+      <span className="font-mono text-caption uppercase tracking-widest text-ink-3">{label}</span>
     </div>
   );
 }
@@ -235,19 +235,19 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
       )}
       {conError && <span className="material-symbols-outlined text-[13px] text-danger mt-0.5">error</span>}
       <div className="min-w-0 flex-1">
-        <p className="font-sans text-[11px] text-ink truncate">
+        <p className="font-sans text-caption text-ink truncate">
           {fila.nombre || <span className="text-ink-3">(sin nombre) — fila {fila.fila}</span>}
         </p>
         {(fila.email || fila.dni) && (
-          <p className="font-mono text-[9px] text-ink-3 truncate">
+          <p className="font-mono text-caption text-ink-3 truncate">
             {[fila.email, fila.dni].filter(Boolean).join(' · ')}
           </p>
         )}
         {conError && (
-          <p className="font-sans text-[10px] text-danger mt-0.5">{fila.errores.join('. ')}</p>
+          <p className="font-sans text-caption text-danger mt-0.5">{fila.errores.join('. ')}</p>
         )}
         {duplicado && (
-          <p className="font-sans text-[10px] text-warning mt-0.5">
+          <p className="font-sans text-caption text-warning mt-0.5">
             Ya existe {duplicado.clienteExistente.nombre || 'un cliente'} con el mismo {duplicado.motivo === 'dni' ? 'DNI' : 'email'}
             {excluida ? ' — excluido' : ' — se importará igualmente'}
           </p>

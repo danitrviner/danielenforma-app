@@ -146,7 +146,7 @@ export default function AcademyScreen({ profile }: Props) {
           <span className="material-symbols-outlined text-base">arrow_back</span> Academia
         </button>
         <div>
-          <span className="text-[10px] font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
+          <span className="text-caption font-mono uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-black text-2xl text-white">{openCourse.title}</h2>
           <p className="text-xs text-ink-2 font-mono mt-1">{openCourse.description}</p>
         </div>
@@ -167,7 +167,7 @@ export default function AcademyScreen({ profile }: Props) {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-semibold text-sm text-white truncate">{i + 1}. {l.title}</p>
-                  {!unlocked && reason && <p className="text-[10px] text-ink-3 font-mono">{reason}</p>}
+                  {!unlocked && reason && <p className="text-caption text-ink-3 font-mono">{reason}</p>}
                 </div>
               </button>
             );
@@ -196,7 +196,7 @@ export default function AcademyScreen({ profile }: Props) {
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
         <div key={cat} className="space-y-2">
-          <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
+          <h3 className="text-caption font-mono uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {byCategory[cat].map(c => {
               const { unlocked, reason } = evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);
@@ -218,7 +218,7 @@ export default function AcademyScreen({ profile }: Props) {
                       <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
                     </div>
                   ) : (
-                    <p className="text-[10px] text-ink-3 font-mono mt-3">{reason}</p>
+                    <p className="text-caption text-ink-3 font-mono mt-3">{reason}</p>
                   )}
                 </button>
               );

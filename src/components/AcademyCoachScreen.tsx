@@ -39,7 +39,7 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-[10px] font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider w-fit">
           Consola de Entrenador
         </span>
         <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
@@ -117,7 +117,7 @@ function CoursesTab() {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
@@ -162,9 +162,9 @@ function CoursesTab() {
             <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
-                <p className="text-[10px] text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
+                <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
-              <button onClick={() => togglePublished(c)} className={`text-[10px] font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
+              <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
                 {c.published ? 'Publicado' : 'Borrador'}
               </button>
               <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
@@ -223,7 +223,7 @@ function LessonsTab() {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
           <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
@@ -264,7 +264,7 @@ function LessonsTab() {
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
-                <p className="text-[10px] text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
+                <p className="text-caption text-ink-2 font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
               <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
                 <span className="material-symbols-outlined text-base">delete</span>
@@ -322,7 +322,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-base text-white">Acceso por atleta</h2>
         {selected.size > 0 && (
-          <button onClick={grantSelected} className="text-[10px] font-mono font-bold uppercase text-accent hover:text-accent-press">
+          <button onClick={grantSelected} className="text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
             Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
           </button>
         )}
@@ -337,7 +337,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
               <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
-                className={`text-[10px] font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
+                className={`text-caption font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
               >
                 {enabled ? 'Acceso activo' : 'Sin acceso'}
               </button>

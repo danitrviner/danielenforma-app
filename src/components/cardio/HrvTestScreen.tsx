@@ -115,7 +115,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
         {phase === 'intro' && (
           <>
             <div>
-              <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">HRV matinal</p>
+              <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">HRV matinal</p>
               <span className="material-symbols-outlined text-data text-5xl mt-3 block">bedtime</span>
               <p className="text-sm text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
@@ -123,7 +123,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
             <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-xs uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Empezar
             </button>
-            <button onClick={onClose} className="w-full py-2 text-[10px] font-mono uppercase text-ink-2 hover:text-white transition-colors">
+            <button onClick={onClose} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>
@@ -133,14 +133,14 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
 
         {phase === 'measuring' && (
           <>
-            <p className="text-[10px] font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
+            <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
             <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
               <span className="material-symbols-outlined text-danger text-lg">favorite</span>
               <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
             {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
-            <button onClick={cancel} className="w-full py-2 text-[10px] font-mono uppercase text-ink-2 hover:text-white transition-colors">
+            <button onClick={cancel} className="w-full py-2 text-caption font-mono uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>

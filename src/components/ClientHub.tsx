@@ -381,7 +381,7 @@ export default function ClientHub({
 
   const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
   const planBadge = daysLeft !== null ? (
-    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-surface border flex-shrink-0 ${
+    <span className={`text-caption font-sans font-bold uppercase px-2 py-0.5 rounded-surface border flex-shrink-0 ${
       daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
       daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
                        'bg-red-500/10     text-red-300     border-red-500/20'
@@ -409,18 +409,18 @@ export default function ClientHub({
               <h1 className="font-sans font-bold text-white text-xl leading-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
-            <p className="font-mono text-[10px] text-ink-2">{athlete.email}</p>
+            <p className="font-mono text-caption text-ink-2">{athlete.email}</p>
             {/* Adherence score badge */}
             <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
-              <span className={`text-[9px] font-bold uppercase ${adh.text}`}>{adh.label}</span>
+              <span className={`text-caption font-bold uppercase ${adh.text}`}>{adh.label}</span>
               <span className={`text-sm font-black ${adh.text}`}>{adherence.score}</span>
             </div>
           </div>
         </div>
         {/* Plan duration config */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[10px] text-ink-2 uppercase">Plan:</span>
+          <span className="font-mono text-caption text-ink-2 uppercase">Plan:</span>
           <input
             type="date"
             value={planStart}
@@ -439,7 +439,7 @@ export default function ClientHub({
           <button
             onClick={handleSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -495,7 +495,7 @@ export default function ClientHub({
                 <button
                   key={tab}
                   onClick={() => guardedTabChange(tab)}
-                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-control font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
+                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-control font-mono text-caption font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
                     activeTab === tab
                       ? 'bg-accent/10 border-accent/40 text-accent'
                       : 'border-transparent text-ink-2 hover:text-white'

@@ -82,7 +82,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
       </div>
 
       <div className="border-t border-hairline pt-4 space-y-2">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-2">
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2">
           Mientras tanto ({doneCount}/{items.length})
         </p>
         {items.map(item => (
@@ -107,7 +107,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
         <div className="flex items-center gap-3 rounded-surface px-3 py-2.5 border border-hairline bg-raised/50 opacity-60">
           <span className="material-symbols-outlined text-lg text-ink-2">lock</span>
           <span className="font-sans text-sm flex-1 text-ink-2">Tu primer entrenamiento</span>
-          <span className="font-mono text-[9px] uppercase text-ink-2">Esperando a tu coach</span>
+          <span className="font-mono text-caption uppercase text-ink-2">Esperando a tu coach</span>
         </div>
       </div>
     </section>

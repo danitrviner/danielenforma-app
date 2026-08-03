@@ -51,7 +51,7 @@ export default function IconPicker({ value, onChange, accent = 'var(--color-acce
             <span className="material-symbols-outlined text-lg" style={{ color: selected ? accent : 'var(--color-ink-2)' }}>
               {opt.icon}
             </span>
-            <span className="font-mono text-[7px] text-ink-2 leading-none text-center">{opt.label}</span>
+            <span className="font-mono text-caption text-ink-2 leading-none text-center">{opt.label}</span>
           </button>
         );
       })}

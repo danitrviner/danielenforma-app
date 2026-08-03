@@ -136,7 +136,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => setFilterCat('all')}
-            className={`px-2.5 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-all tracking-wider ${
+            className={`px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
               filterCat === 'all' ? 'bg-raised text-white' : 'text-ink-2 hover:text-white'
             }`}
           >
@@ -146,7 +146,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             <button
               key={cat.id}
               onClick={() => setFilterCat(cat.id)}
-              className={`px-2.5 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-all tracking-wider ${
+              className={`px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
                 filterCat === cat.id ? CAT_COLOR[cat.id] + ' shadow-sm' : 'text-ink-2 hover:text-white'
               }`}
             >
@@ -176,7 +176,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         </div>
       </div>
 
-      <p className="text-[10px] text-ink-2 font-mono">
+      <p className="text-caption text-ink-2 font-mono">
         Mostrando {filtered.length} de {items.filter(f => f.mode === filterMode).length} alimentos en modo {MODES.find(m => m.id === filterMode)?.label}
       </p>
 
@@ -194,7 +194,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           {filtered.map(item => (
             <div key={item.id} className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between gap-3 hover:border-hairline transition-colors group">
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-control flex-shrink-0 ${CAT_COLOR[item.category]}`}>
+                <span className={`text-caption font-mono font-bold uppercase px-2 py-0.5 rounded-control flex-shrink-0 ${CAT_COLOR[item.category]}`}>
                   {item.category.replace('_', ' ')}
                 </span>
                 <p className="text-sm text-white font-sans truncate">{item.label}</p>
@@ -234,7 +234,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Modo *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Modo *</label>
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
@@ -244,7 +244,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Categoría *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Categoría *</label>
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
@@ -255,7 +255,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 </div>
               </div>
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase mb-1.5">Descripción (1 intercambio = ...) *</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase mb-1.5">Descripción (1 intercambio = ...) *</label>
                 <textarea
                   value={form.label}
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}

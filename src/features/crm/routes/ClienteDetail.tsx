@@ -67,7 +67,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       <button
         type="button"
         onClick={() => navigate('/crm/clientes')}
-        className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-ink-2 hover:text-ink transition-colors"
+        className="flex items-center gap-1 font-mono text-caption uppercase tracking-widest text-ink-2 hover:text-ink transition-colors"
       >
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         Clientes
@@ -79,7 +79,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <h1 className="font-sans font-black text-xl text-ink truncate">{cliente.nombre}</h1>
             <EstadoClientePill estado={cliente.estadoCrm} />
           </div>
-          <p className="font-mono text-[9px] text-ink-3 mt-0.5">
+          <p className="font-mono text-caption text-ink-3 mt-0.5">
             {cliente.email ?? 'Sin email'}
             {cliente.telefono?.numero && ` · ${formatTelefono(cliente.telefono)}`}
           </p>
@@ -91,7 +91,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">chat</span>
               WhatsApp
@@ -103,7 +103,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <button
               type="button"
               onClick={() => navigate(`/clients/${cliente.userId}`)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">fitness_center</span>
               Ficha de entreno
@@ -120,7 +120,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => irATab(t.id)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
               tab === t.id
                 ? 'bg-accent/15 text-accent border border-accent/30'
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'

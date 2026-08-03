@@ -16,13 +16,13 @@ export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
       <span className="material-symbols-outlined text-3xl text-ink-3">{icon}</span>
       <p className="font-sans font-bold text-sm text-ink">{titulo}</p>
       {descripcion && (
-        <p className="font-sans text-[11px] text-ink-2 max-w-[320px] leading-relaxed">{descripcion}</p>
+        <p className="font-sans text-caption text-ink-2 max-w-[320px] leading-relaxed">{descripcion}</p>
       )}
       {cta && (
         <button
           type="button"
           onClick={cta.onClick}
-          className="mt-2 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+          className="mt-2 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
           {cta.label}
         </button>

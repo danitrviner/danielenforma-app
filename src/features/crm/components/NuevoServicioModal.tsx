@@ -136,7 +136,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <button
             type="button"
             onClick={sugerirFin}
-            className="font-mono text-[9px] uppercase tracking-widest text-accent hover:underline"
+            className="font-mono text-caption uppercase tracking-widest text-accent hover:underline"
           >
             Calcular fin desde la periodicidad
           </button>
@@ -153,7 +153,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             onChange={e => setGenerarPago(e.target.checked)}
             className="mt-0.5 accent-accent"
           />
-          <span className="font-sans text-[10px] text-ink leading-relaxed">
+          <span className="font-sans text-caption text-ink leading-relaxed">
             Generar el cobro pendiente al crear el servicio
             <span className="block text-ink-2">
               Se escriben todos los documentos en la misma transacción: o entran todos, o ninguno.
@@ -180,7 +180,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
                 value={cuotas}
                 onChange={e => setCuotas(Math.min(12, Math.max(1, Number(e.target.value) || 1)))}
               />
-              <span className="font-sans text-[10px] text-ink-2">
+              <span className="font-sans text-caption text-ink-2">
                 {cuotas === 1 ? 'cuota' : 'cuotas mensuales'}
               </span>
             </div>

@@ -220,12 +220,12 @@ export default function MyDietsScreen({ profile }: Props) {
           <div className="flex items-center gap-2">
             <h2 className="font-sans font-bold text-lg text-white">{editingId ? 'Editar dieta' : 'Nueva dieta'}</h2>
             {editingId && !form.selfManaged && (
-              <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
+              <span className="text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                 De tu entrenador
               </span>
             )}
           </div>
-          <button onClick={() => setView('list')} className="font-mono text-[10px] text-ink-2 hover:text-white uppercase tracking-wider">
+          <button onClick={() => setView('list')} className="font-mono text-caption text-ink-2 hover:text-white uppercase tracking-wider">
             ← Volver
           </button>
         </div>
@@ -240,13 +240,13 @@ export default function MyDietsScreen({ profile }: Props) {
 
         {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             {form.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
           </p>
           <div className="grid grid-cols-3 gap-3">
             {BUDGET_CATS.map(cat => (
               <div key={cat}>
-                <label className="block font-mono text-[9px] text-ink-2 mb-1">{CAT_LABEL[cat]}</label>
+                <label className="block font-mono text-caption text-ink-2 mb-1">{CAT_LABEL[cat]}</label>
                 {form.selfManaged ? (
                   <input
                     type="number"
@@ -261,7 +261,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     {fmtQty(form.budget[cat])}
                   </div>
                 )}
-                <span className="block font-mono text-[9px] text-ink-2/70 mt-0.5">Colocado: {fmtQty(placed[cat])}</span>
+                <span className="block font-mono text-caption text-ink-2/70 mt-0.5">Colocado: {fmtQty(placed[cat])}</span>
               </div>
             ))}
           </div>
@@ -286,15 +286,15 @@ export default function MyDietsScreen({ profile }: Props) {
               </div>
               <div className="p-3 space-y-2 border-t border-hairline">
                 {meal.items.length === 0 ? (
-                  <p className="text-center py-2 font-mono text-[10px] text-ink-2 italic">Sin alimentos.</p>
+                  <p className="text-center py-2 font-mono text-caption text-ink-2 italic">Sin alimentos.</p>
                 ) : meal.items.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-surface bg-surface border border-hairline">
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
+                    <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
                       {item.category.replace('_', ' ')}
                     </span>
                     <div className="flex-1 min-w-0">
                       <span className="block text-xs font-sans text-white leading-snug">{item.foodLabel}</span>
-                      <span className="block font-mono text-[9px] text-ink-2 mt-0.5">
+                      <span className="block font-mono text-caption text-ink-2 mt-0.5">
                         ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
                       </span>
                     </div>
@@ -308,7 +308,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     <button
                       key={cat}
                       onClick={() => openPicker(meal.id, cat)}
-                      className="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-raised border border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                      className="px-2.5 py-1 rounded-full font-mono text-caption font-bold uppercase tracking-wider bg-raised border border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
                     >+ {cat.replace('_', ' ')}</button>
                   ))}
                 </div>
@@ -335,7 +335,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 <div>
                   <h3 className="font-sans font-bold text-lg text-white">Añadir a la comida</h3>
                   {pickerTab === 'alimentos' && (
-                    <span className="font-mono text-[10px] text-ink-2 uppercase">
+                    <span className="font-mono text-caption text-ink-2 uppercase">
                       {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                     </span>
                   )}
@@ -350,7 +350,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <button
                     key={tab}
                     onClick={() => setPickerTab(tab)}
-                    className={`flex-1 py-2 rounded-t-control font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    className={`flex-1 py-2 rounded-t-control font-mono text-caption font-bold uppercase tracking-wider transition-all ${
                       pickerTab === tab ? 'bg-surface text-accent' : 'text-ink-2 hover:text-white'
                     }`}
                   >{tab === 'alimentos' ? 'Alimentos' : 'Recetas'}</button>
@@ -361,7 +361,7 @@ export default function MyDietsScreen({ profile }: Props) {
                 <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
                   {enabledModes.map(mode => (
                     <button key={mode} onClick={() => setActiveDietMode(mode)}
-                      className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
+                      className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
                     >{MODE_LABEL[mode]}</button>
                   ))}
                 </div>
@@ -384,7 +384,7 @@ export default function MyDietsScreen({ profile }: Props) {
                       className="w-full flex items-center gap-3 p-3.5 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {isSearchingFoods && (
-                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
+                        <span className={`text-caption font-mono font-bold px-1.5 py-0.5 rounded-control border flex-shrink-0 ${CAT_BG[food.category]}`}>
                           {food.category.replace('_', ' ')}
                         </span>
                       )}
@@ -430,7 +430,7 @@ export default function MyDietsScreen({ profile }: Props) {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex-shrink-0"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -453,14 +453,14 @@ export default function MyDietsScreen({ profile }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="block font-sans font-bold text-sm text-white truncate">{dt.name}</span>
                     {!dt.selfManaged && (
-                      <span className="flex-shrink-0 text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
+                      <span className="flex-shrink-0 text-caption font-sans font-bold uppercase px-1.5 py-0.5 rounded-control border bg-accent/10 text-accent border-accent/20">
                         De tu entrenador
                       </span>
                     )}
                   </div>
                   <div className="flex gap-2 mt-1.5 flex-wrap">
                     {BUDGET_CATS.map(cat => dt.budget[cat] > 0 && (
-                      <span key={cat} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-control border ${CAT_BG[cat]}`}>
+                      <span key={cat} className={`text-caption font-mono font-bold px-2 py-0.5 rounded-control border ${CAT_BG[cat]}`}>
                         {cat}: {fmtQty(dPlaced[cat])}/{fmtQty(dt.budget[cat])}
                       </span>
                     ))}

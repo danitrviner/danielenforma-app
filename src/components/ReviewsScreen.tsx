@@ -196,7 +196,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="flex items-center gap-3">
           {pendingCount > 0 && (
             <>
-              <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-surface font-sans font-bold uppercase">
+              <span className="flex items-center gap-1.5 text-caption bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-surface font-sans font-bold uppercase">
                 <span className="material-symbols-outlined text-sm">pending_actions</span>
                 {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
               </span>
@@ -210,7 +210,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             </>
           )}
           {loadingResponses && (
-            <span className="font-mono text-[10px] text-ink-2 animate-pulse">Cargando respuestas...</span>
+            <span className="font-mono text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
           )}
         </div>
       </header>
@@ -236,7 +236,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-sm">history_edu</span>
             <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
-            <span className="font-mono text-[9px] text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
+            <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-hairline/40">
             {unifiedItems.map(item => {
@@ -288,14 +288,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                          <span className="font-mono text-[9px] text-ink-2">Check-in · {c.dateStr}</span>
-                          <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-control flex-shrink-0 ${
+                          <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
+                          <span className={`text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control flex-shrink-0 ${
                             c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
                           }`}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
                           </span>
                         </div>
-                        <p className="font-mono text-[10px] text-ink-2 mt-0.5">
+                        <p className="font-mono text-caption text-ink-2 mt-0.5">
                           {c.weight} kg · {c.adherence} · {c.mood}
                         </p>
                       </div>
@@ -322,14 +322,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
                             <div key={cell.label} className="bg-raised p-2.5 rounded-surface border border-hairline">
-                              <span className="block text-ink-2 text-[10px] uppercase">{cell.label}</span>
+                              <span className="block text-ink-2 text-caption uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
                         </div>
                         {c.notes && (
                           <div className="bg-surface p-3 rounded-surface border border-hairline">
-                            <span className="block font-mono text-[9px] text-ink-2 uppercase mb-1">Notas del atleta</span>
+                            <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas del atleta</span>
                             <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
                           </div>
                         )}
@@ -343,7 +343,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-xs font-mono">{errorMsg}</div>
                         )}
                         {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
-                          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">
+                          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                             Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
                           </p>
                         )}
@@ -354,7 +354,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-[10px] font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
+                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
                             >
                               {r}
                             </button>
@@ -423,10 +423,10 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                        <span className="font-mono text-[9px] text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
+                        <span className="font-mono text-caption text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
                       </div>
                       {previewAnswers && (
-                        <p className="font-mono text-[10px] text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
+                        <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{previewAnswers}</p>
                       )}
                     </div>
                     {athleteProfile && (
@@ -449,7 +449,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-mono text-[9px] text-ink-2 flex-1 pt-0.5">
+                            <span className="font-mono text-caption text-ink-2 flex-1 pt-0.5">
                               {question?.label ?? ans.questionId}
                             </span>
                             <span className="font-mono text-xs text-white font-bold text-right">

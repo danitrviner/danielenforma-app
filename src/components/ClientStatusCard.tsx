@@ -140,11 +140,11 @@ export default function ClientStatusCard({
             />
             <div className="flex gap-2">
               <button onClick={saveNote} disabled={savingNote}
-                className="px-3 py-1.5 rounded-control bg-accent text-black text-[10px] font-bold uppercase tracking-wide disabled:opacity-40">
+                className="px-3 py-1.5 rounded-control bg-accent text-black text-caption font-bold uppercase tracking-wide disabled:opacity-40">
                 {savingNote ? 'Guardando…' : 'Guardar'}
               </button>
               <button onClick={() => setEditingNote(false)} disabled={savingNote}
-                className="px-3 py-1.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-[10px] font-bold uppercase tracking-wide">
+                className="px-3 py-1.5 rounded-control bg-white/5 border border-hairline text-ink-2 text-caption font-bold uppercase tracking-wide">
                 Cancelar
               </button>
             </div>
@@ -156,7 +156,7 @@ export default function ClientStatusCard({
             ) : (
               <p className="text-sm text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
             )}
-            <span className="text-[9px] font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
+            <span className="text-caption font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
           </button>
         )}
       </div>
@@ -164,7 +164,7 @@ export default function ClientStatusCard({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-hairline">
         {/* Fase */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-accent">flag</span> Fase
           </p>
           {planPhase ? (
@@ -176,13 +176,13 @@ export default function ClientStatusCard({
             <p className="text-xs text-ink-2/60 italic">Sin fase de plan definida</p>
           )}
           {activeMeso && (
-            <p className="font-mono text-[10px] text-ink-2">
+            <p className="font-mono text-caption text-ink-2">
               Meso #{activeMeso.meso.number} · {activeMeso.meso.objective} · sem {activeMeso.week}/{activeMeso.meso.weeks}
               {!activeMeso.inRange && <span className="text-amber-300"> (terminado)</span>}
             </p>
           )}
           {nutriPhase && (
-            <p className="font-mono text-[10px] text-data">
+            <p className="font-mono text-caption text-data">
               Nutrición: {nutriPhase.name}{nutriPhase.targetKcal ? ` · ${nutriPhase.targetKcal} kcal` : ''}
             </p>
           )}
@@ -190,7 +190,7 @@ export default function ClientStatusCard({
 
         {/* Objetivo */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-accent">target</span> Objetivo
           </p>
           {onboardingData?.goalBody ? (
@@ -199,10 +199,10 @@ export default function ClientStatusCard({
             <p className="text-xs text-ink-2/60 italic">Sin objetivo registrado</p>
           )}
           {onboardingData?.goalFreeText && (
-            <p className="text-[11px] text-ink-2 leading-snug">"{onboardingData.goalFreeText}"</p>
+            <p className="text-caption text-ink-2 leading-snug">"{onboardingData.goalFreeText}"</p>
           )}
           {latestWeight != null && athlete.targetWeight ? (
-            <p className="font-mono text-[10px] text-ink-2">
+            <p className="font-mono text-caption text-ink-2">
               {latestWeight} kg → <span className="text-accent font-bold">{athlete.targetWeight} kg</span>
               {' '}({Math.round(Math.abs(latestWeight - athlete.targetWeight) * 10) / 10} kg restantes)
             </p>
@@ -211,7 +211,7 @@ export default function ClientStatusCard({
 
         {/* Últimos cambios */}
         <div className="space-y-1.5 pt-3">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider flex items-center gap-1">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-xs text-accent">history</span> Últimos cambios
           </p>
           {recentChanges.length === 0 ? (
@@ -219,10 +219,10 @@ export default function ClientStatusCard({
           ) : (
             <ul className="space-y-1">
               {recentChanges.map((e, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-[11px] text-ink">
+                <li key={i} className="flex items-center gap-1.5 text-caption text-ink">
                   <span className="material-symbols-outlined text-xs text-ink-2">{e.icon}</span>
                   <span className="flex-1 truncate">{e.text}</span>
-                  <span className="font-mono text-[9px] text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
+                  <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
                 </li>
               ))}
             </ul>

@@ -160,18 +160,18 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="font-mono text-[10px] text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
-          <p className="font-mono text-[9px] text-ink-3 mt-0.5">
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
+          <p className="font-mono text-caption text-ink-3 mt-0.5">
             Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
           </p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
+            className="px-3 py-1.5 font-mono text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 font-sans text-caption uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -186,11 +186,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">{meta.icon}</span>
               {meta.label}
-              <span className="ml-auto font-mono text-[9px] text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
+              <span className="ml-auto font-mono text-caption text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
             </h4>
 
             {qs.length === 0 && (
-              <p className="font-mono text-[9px] text-ink-3 italic">Sin preguntas en esta sección.</p>
+              <p className="font-mono text-caption text-ink-3 italic">Sin preguntas en esta sección.</p>
             )}
 
             <div className="space-y-3">
@@ -206,7 +206,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-2.5 py-1 rounded-control font-mono text-[9px] font-bold uppercase border transition-all ${
+                            className={`px-2.5 py-1 rounded-control font-mono text-caption font-bold uppercase border transition-all ${
                               q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
@@ -232,7 +232,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
-                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 py-0.5 rounded-full text-[9px] font-mono">
+                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 py-0.5 rounded-full text-caption font-mono">
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
@@ -256,11 +256,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-1.5">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-accent text-black font-sans text-[9px] font-bold uppercase rounded-control hover:bg-accent-press">
+                          className="px-2.5 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-2.5 py-1 font-mono text-[10px] uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
+                          className="px-2.5 py-1 font-mono text-caption uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
                           Eliminar
                         </button>
                       </div>
@@ -268,7 +268,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
+                      <span className={`text-caption font-mono uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
                         q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
@@ -277,7 +277,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
                         {q.label || <em className="text-ink-3">sin etiqueta</em>}
                       </span>
-                      {q.unit && <span className="text-[9px] text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
+                      {q.unit && <span className="text-caption text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
                       <button type="button" onClick={() => { setEditingId(q.id); setOptionInput(''); }}
                         className="p-1 text-ink-2 hover:text-data transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
@@ -293,7 +293,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
+              className="flex items-center gap-1.5 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir pregunta
             </button>
@@ -436,7 +436,7 @@ function IndyaImportPanel() {
           <span className="material-symbols-outlined text-sm">library_books</span>
           Importar biblioteca Indya
         </h3>
-        <p className="font-mono text-[9px] text-ink-3 mt-1">
+        <p className="font-mono text-caption text-ink-3 mt-1">
           8 850 recetas · idempotente · lotes de {IMPORT_BATCH} · UPSERT por UUID
         </p>
       </div>
@@ -453,7 +453,7 @@ function IndyaImportPanel() {
 
       {(status === 'loading' || status === 'writing') && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-ink-2 animate-pulse">{phase}</p>
+          <p className="font-mono text-caption text-ink-2 animate-pulse">{phase}</p>
           {total > 0 && (
             <>
               <div className="w-full h-2.5 bg-raised rounded-full overflow-hidden">
@@ -462,7 +462,7 @@ function IndyaImportPanel() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex justify-between font-mono text-[9px] text-ink-3">
+              <div className="flex justify-between font-mono text-caption text-ink-3">
                 <span>{done.toLocaleString('es')} / {total.toLocaleString('es')} recetas</span>
                 <span>{pct}%</span>
               </div>
@@ -479,7 +479,7 @@ function IndyaImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-[10px] uppercase rounded-control transition-all"
+            className="px-3 py-1.5 border border-hairline text-ink-2 hover:text-white font-mono text-caption uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -488,12 +488,12 @@ function IndyaImportPanel() {
 
       {status === 'error' && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
+          <p className="font-mono text-caption text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
             {error}
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-[10px] uppercase rounded-control transition-all"
+            className="px-3 py-1.5 border border-data/30 text-data hover:bg-data/10 font-mono text-caption uppercase rounded-control transition-all"
           >
             Reintentar
           </button>
@@ -601,13 +601,13 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
+                      {isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      {isSelf && !isOwner && <span className="text-caption font-mono px-1.5 py-0.5 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-xs text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-control uppercase font-bold border ${
+                    <span className={`text-caption font-mono px-2 py-0.5 rounded-control uppercase font-bold border ${
                       isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
@@ -621,7 +621,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                         }
                       </button>
                     )}
-                    {isOwner && <span className="text-[10px] font-mono text-ink-2 italic">Permanente</span>}
+                    {isOwner && <span className="text-caption font-mono text-ink-2 italic">Permanente</span>}
                   </div>
                 </div>
               );

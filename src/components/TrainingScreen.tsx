@@ -376,10 +376,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-sans font-bold text-white text-base">{wo?.name || 'Rutina'}</p>
               {isNext && a.status === 'pending' && (
-                <span className="text-[9px] font-mono bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-control uppercase font-bold">Siguiente</span>
+                <span className="text-caption font-mono bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-control uppercase font-bold">Siguiente</span>
               )}
               {!isNext && isPast && a.status === 'pending' && (
-                <span className="text-[9px] font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 py-0.5 rounded-control uppercase font-bold">Atrasado</span>
+                <span className="text-caption font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 py-0.5 rounded-control uppercase font-bold">Atrasado</span>
               )}
             </div>
             <p className="font-mono text-xs text-ink-2 mt-0.5">
@@ -388,14 +388,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
+          <span className={`text-caption font-mono font-bold uppercase px-2.5 py-1 rounded-full ${STATUS_STYLE[a.status]}`}>
             {STATUS_LABEL[a.status]}
           </span>
           {canAct && (
             <>
               <button
                 onClick={() => handleSkip(a)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono text-[10px] uppercase font-bold rounded-control active:scale-95 transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono text-caption uppercase font-bold rounded-control active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-sm">skip_next</span>
                 Saltar
@@ -438,11 +438,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="font-sans font-black text-xl text-white truncate">{activeWorkout.name}</h1>
-            <p className="font-mono text-[10px] text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
+            <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
           </div>
           <div className="flex-shrink-0 text-right">
             <span className="font-mono text-xs text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
-            <span className="block font-mono text-[9px] text-ink-2 uppercase">series hechas</span>
+            <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
           </div>
         </header>
 
@@ -456,7 +456,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <p className="font-mono text-lg font-black text-white tabular-nums">
                 {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
               </p>
-              <p className="font-mono text-[8px] text-ink-2 uppercase tracking-wide mt-0.5">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mt-0.5">
                 {restTimer.secondsLeft > 0 ? 'Descanso' : '¡Listo!'}
               </p>
             </div>
@@ -522,7 +522,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             >
               {/* Exercise header */}
               <div className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
-                <span className="font-mono text-[10px] text-ink-2/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
+                <span className="font-mono text-caption text-ink-2/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-hairline flex-shrink-0" />
                 ) : (
@@ -534,24 +534,24 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
                     {ex?.name || we.exerciseId}
                     {we.technique && (
-                      <span className={`inline-flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
+                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-1.5 py-0.5 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
                         {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
                       </span>
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="font-mono text-[9px] text-ink-2">
+                    <span className="font-mono text-caption text-ink-2">
                       Prescripción: {we.setGroups && we.setGroups.length > 0
                         ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
                     {ex?.type && (
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
+                      <span className={`text-caption font-mono px-1.5 py-0.5 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
                     {warmup.readiness && (
                       <span
                         title={warmup.readiness.message}
-                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded-control border ${
+                        className={`text-caption font-mono px-1.5 py-0.5 rounded-control border ${
                           warmup.readiness.score >= 75 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
                           : warmup.readiness.score >= 45 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
                           : 'text-red-300 border-red-500/30 bg-red-500/10'
@@ -568,7 +568,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                     </span>
                   ) : (
-                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-control bg-white/7 text-ink-2">
+                    <span className="font-mono text-caption font-bold px-2 py-0.5 rounded-control bg-white/7 text-ink-2">
                       {doneSets}/{totalSets}
                     </span>
                   )}
@@ -601,12 +601,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <table className="w-full text-left min-w-[480px]">
                   <thead>
                     <tr className="bg-bg border-b border-hairline">
-                      <th className="px-4 py-2 font-mono text-[9px] text-ink-2 uppercase w-12">Serie</th>
-                      <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Peso (kg)</th>
-                      <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">Reps</th>
-                      <th className="px-3 py-2 font-mono text-[9px] text-ink-2 uppercase">RIR</th>
-                      <th className="px-3 py-2 font-mono text-[9px] text-ink-3 uppercase">Anterior</th>
-                      <th className="px-4 py-2 font-mono text-[9px] text-ink-2 uppercase text-center">Hecha</th>
+                      <th className="px-4 py-2 font-mono text-caption text-ink-2 uppercase w-12">Serie</th>
+                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">Peso (kg)</th>
+                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">Reps</th>
+                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">RIR</th>
+                      <th className="px-3 py-2 font-mono text-caption text-ink-3 uppercase">Anterior</th>
+                      <th className="px-4 py-2 font-mono text-caption text-ink-2 uppercase text-center">Hecha</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -624,7 +624,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           <span className="w-16 inline-block text-center text-orange-200 font-mono text-sm">{w.reps}</span>
                         </td>
                         <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-sm">—</td>
-                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-[10px]">Warm-up</td>
+                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-caption">Warm-up</td>
                         <td className="px-4 py-2 text-center text-orange-200/30 font-mono text-sm">—</td>
                       </tr>
                     ))}
@@ -646,7 +646,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               )}
                             </span>
                             {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                              <span className="block font-mono text-[8px] text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
+                              <span className="block font-mono text-caption text-accent/70 uppercase mt-0.5">{expanded[sIdx].label}</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -685,11 +685,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           </td>
                           <td className="px-3 py-2">
                             {prev ? (
-                              <span className="font-mono text-[10px] text-ink-3 whitespace-nowrap">
+                              <span className="font-mono text-caption text-ink-3 whitespace-nowrap">
                                 {prev.weight > 0 ? `${prev.weight}kg` : '—'} × {prev.repsDone > 0 ? `${prev.repsDone}r` : '—'}
                               </span>
                             ) : (
-                              <span className="font-mono text-[10px] text-ink-3">—</span>
+                              <span className="font-mono text-caption text-ink-3">—</span>
                             )}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -724,7 +724,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {/* Athlete's note for this exercise */}
               <div className="px-4 py-3 bg-bg border-t border-hairline">
-                <label className="font-mono text-[9px] text-ink-2 uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
+                <label className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-1.5">Tu nota (opcional)</label>
                 <textarea
                   value={exerciseNoteInputs[exIdx] || ''}
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
@@ -736,20 +736,20 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
               {we.notes && (
                 <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-mono text-[10px] text-ink-2 italic">📌 {we.notes}</p>
+                  <p className="font-mono text-caption text-ink-2 italic">📌 {we.notes}</p>
                 </div>
               )}
 
               {ex?.instructions && (
                 <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-mono text-[9px] text-ink-3 uppercase mb-0.5">Descripción</p>
+                  <p className="font-mono text-caption text-ink-3 uppercase mb-0.5">Descripción</p>
                   <p className="text-xs text-ink-2">{ex.instructions}</p>
                 </div>
               )}
 
               {getPersonalNote(we.exerciseId) && (
                 <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
-                  <p className="font-mono text-[9px] text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
+                  <p className="font-mono text-caption text-accent/70 uppercase mb-0.5">Nota de tu entrenador para ti</p>
                   <p className="text-xs text-accent">{getPersonalNote(we.exerciseId)}</p>
                 </div>
               )}
@@ -759,7 +759,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Nota del entrenamiento completo */}
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-          <label className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
+          <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
           <textarea
             value={workoutNoteInput}
             onChange={e => setWorkoutNoteInput(e.target.value)}
@@ -820,11 +820,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-raised rounded-surface p-3">
                   <p className="font-mono text-2xl font-black text-white tabular-nums">{celebration.totalSets}</p>
-                  <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">Series</p>
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
                 </div>
                 <div className="bg-raised rounded-surface p-3">
                   <p className="font-mono text-2xl font-black text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
-                  <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide">kg movidos</p>
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
                 </div>
               </div>
               {celebration.prs.length > 0 && (
@@ -899,7 +899,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <button
                 key={f}
                 onClick={() => setListFilter(f)}
-                className={`px-4 py-2 rounded-full font-mono text-[10px] uppercase font-bold border transition-all min-h-[36px] ${
+                className={`px-4 py-2 rounded-full font-mono text-caption uppercase font-bold border transition-all min-h-[36px] ${
                   listFilter === f
                     ? 'bg-accent border-accent text-black'
                     : 'border-hairline text-ink-2 hover:border-hairline hover:text-white'
@@ -931,11 +931,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 {thisWeekBlock.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-accent">
+                      <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">
                         {formatWeekLabel(curWeekStart, true)}
                       </span>
                       <div className="flex-1 h-px bg-raised" />
-                      <span className="font-mono text-[10px] text-ink-2">
+                      <span className="font-mono text-caption text-ink-2">
                         {thisWeekBlock.filter(a => a.status === 'completed').length}/{thisWeekBlock.length}
                       </span>
                     </div>
@@ -947,9 +947,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 {overdueBlock.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-red-300">Atrasados</span>
+                      <span className="font-mono text-caption uppercase font-bold tracking-widest text-red-300">Atrasados</span>
                       <div className="flex-1 h-px bg-raised" />
-                      <span className="font-mono text-[10px] text-ink-2">{overdueBlock.length}</span>
+                      <span className="font-mono text-caption text-ink-2">{overdueBlock.length}</span>
                     </div>
                     {overdueBlock.map(a => renderAssignmentCard(a))}
                   </div>
@@ -981,11 +981,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <div key={weekStart} className="space-y-3">
                         {/* Week header */}
                         <div className="flex items-center gap-3">
-                          <span className={`font-mono text-[10px] uppercase font-bold tracking-widest ${isCurWeek ? 'text-accent' : 'text-ink-2'}`}>
+                          <span className={`font-mono text-caption uppercase font-bold tracking-widest ${isCurWeek ? 'text-accent' : 'text-ink-2'}`}>
                             {formatWeekLabel(weekStart, isCurWeek)}
                           </span>
                           <div className="flex-1 h-px bg-raised" />
-                          <span className="font-mono text-[10px] text-ink-2">
+                          <span className="font-mono text-caption text-ink-2">
                             {items.filter(a => a.status === 'completed').length}/{items.length}
                           </span>
                         </div>

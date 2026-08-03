@@ -161,7 +161,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
       {/* Summary */}
       <div className="bg-surface border border-hairline rounded-surface p-5">
-        <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
         <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
       </div>
 
@@ -179,15 +179,15 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Macro deviation */}
       {report.macroDeviation.length > 0 && (
         <div className="bg-surface border border-hairline rounded-surface p-5">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
               <div key={m.category}>
-                <span className="block font-mono text-[9px] text-ink-2">{m.category}</span>
+                <span className="block font-mono text-caption text-ink-2">{m.category}</span>
                 <span className={`block font-mono text-sm font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
-                <span className="block font-mono text-[9px] text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
+                <span className="block font-mono text-caption text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
               </div>
             ))}
           </div>
@@ -197,9 +197,9 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* ── Micronutrientes (estimados) ── */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Micronutrientes (estimados)</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Micronutrientes (estimados)</p>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-ink-2 uppercase">Verdura/día</span>
+            <span className="font-mono text-caption text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
               <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">−</button>
               <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
@@ -209,7 +209,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
 
         <div className="space-y-1.5">
-          <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 
@@ -217,12 +217,12 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           {micros.perMicro.map(m => (
             <div key={m.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-ink-2">
+                <span className="font-mono text-caption text-ink-2">
                   {m.label}
                   {m.status === 'low' && <span className="ml-1.5 text-red-400">déficit</span>}
                   {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
                 </span>
-                <span className="font-mono text-[10px] font-bold text-white">
+                <span className="font-mono text-caption font-bold text-white">
                   {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
                 </span>
               </div>
@@ -233,7 +233,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           ))}
         </div>
 
-        <p className="font-mono text-[9px] text-ink-3 leading-relaxed">
+        <p className="font-mono text-caption text-ink-3 leading-relaxed">
           {micros.note}
           {micros.unmatched.length > 0 && ` · ${micros.unmatched.length} alimento(s) sin estimación.`}
           {!activeDiet && ' · Sin dieta activa: sólo cuenta la línea base de verdura.'}
@@ -243,7 +243,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       {/* Flags */}
       {report.flags.length > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface p-5 space-y-1.5">
-          <p className="font-mono text-[9px] text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
+          <p className="font-mono text-caption text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
           {report.flags.map((f, i) => (
             <p key={i} className="text-xs text-amber-200 font-sans">{f}</p>
           ))}
@@ -256,7 +256,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           <p className="text-xs text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
           </p>
-          <p className="text-[10px] text-ink-2 font-mono mt-0.5">
+          <p className="text-caption text-ink-2 font-mono mt-0.5">
             {nutritionConfig?.sharedReportSnapshot
               ? `Compartido el ${new Date(nutritionConfig.sharedReportSnapshot.generatedAt).toLocaleDateString('es-ES')}`
               : 'El atleta no ve este análisis hasta que lo compartas.'}
@@ -264,11 +264,11 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
           <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-mono text-[10px] font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-raised border border-hairline text-ink-2 font-mono text-caption font-bold uppercase rounded-control hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
           >Dejar de compartir</button>
         ) : (
           <button onClick={handleShare} disabled={sharing}
-            className="px-3.5 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press transition-all disabled:opacity-50"
+            className="px-3.5 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all disabled:opacity-50"
           >Compartir resumen</button>
         )}
       </div>
@@ -279,9 +279,9 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
-      <span className="block font-mono text-[9px] text-ink-2 uppercase tracking-wider">{label}</span>
+      <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider">{label}</span>
       <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
-      <span className="block font-mono text-[9px] text-ink-2 mt-0.5">{sub}</span>
+      <span className="block font-mono text-caption text-ink-2 mt-0.5">{sub}</span>
     </div>
   );
 }

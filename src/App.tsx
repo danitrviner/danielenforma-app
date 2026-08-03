@@ -283,7 +283,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-black text-xl tracking-tighter uppercase select-none">EN FORMA</span>
-          <span className="text-[10px] bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded-control font-mono uppercase ml-2 select-none">
+          <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 py-0.5 rounded-control font-mono uppercase ml-2 select-none">
             {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
@@ -304,7 +304,7 @@ function AppContent() {
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 rounded-control" />
           <span className="font-sans font-black text-lg tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-[8px] bg-white/7 text-ink-2 px-1.5 py-0.5 rounded-control font-bold uppercase select-none">
+          <span className="text-caption bg-white/7 text-ink-2 px-1.5 py-0.5 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
@@ -425,7 +425,7 @@ function AppContent() {
             >
               {tab.icon}
             </span>
-            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center px-0.5">
+            <span className="font-sans text-caption uppercase font-bold leading-none truncate w-full text-center px-0.5">
               {tab.shortLabel ?? tab.label}
             </span>
             {tab.id === 'reviews' && pendingCount > 0 && (

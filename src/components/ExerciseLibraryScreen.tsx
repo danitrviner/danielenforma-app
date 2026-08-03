@@ -296,7 +296,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       </div>
 
       {!loading && (
-        <p className="font-mono text-[10px] text-ink-2 uppercase tracking-widest">
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
           {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
@@ -328,13 +328,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-raised border-b border-hairline">
-                    <th className="p-4 pl-6 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Ejercicio</th>
-                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Grupo</th>
-                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Material</th>
-                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Tipo</th>
-                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Perfil</th>
-                    <th className="p-4 font-mono text-[10px] text-ink-2 uppercase tracking-wider">Origen</th>
-                    <th className="p-4 pr-6 font-mono text-[10px] text-ink-2 uppercase tracking-wider text-right">Acciones</th>
+                    <th className="p-4 pl-6 font-mono text-caption text-ink-2 uppercase tracking-wider">Ejercicio</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Material</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Tipo</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Perfil</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Origen</th>
+                    <th className="p-4 pr-6 font-mono text-caption text-ink-2 uppercase tracking-wider text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -352,8 +352,8 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div>
                             <span className="font-sans font-bold text-sm text-white block">{ex.name}</span>
                             {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-mono text-data/70 hover:text-data flex items-center gap-0.5 transition-colors">
-                                <span className="material-symbols-outlined text-[10px]">play_circle</span>
+                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-mono text-data/70 hover:text-data flex items-center gap-0.5 transition-colors">
+                                <span className="material-symbols-outlined text-caption">play_circle</span>
                                 Ver video
                               </a>
                             )}
@@ -364,7 +364,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         <div className="space-y-0.5">
                           {ex.muscleGroup ? (
                             <span className="inline-flex items-center gap-1 font-mono text-xs text-accent bg-accent/8 border border-accent/20 px-1.5 py-0.5 rounded-control">
-                              <span className="material-symbols-outlined text-[10px]">link</span>
+                              <span className="material-symbols-outlined text-caption">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
                           ) : (
@@ -375,27 +375,27 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
                           {(ex.equipment ?? []).length === 0 ? (
-                            <span className="font-mono text-[9px] text-ink-3">—</span>
+                            <span className="font-mono text-caption text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-[9px] bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded-control text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
+                        <span className={`px-2 py-0.5 rounded-control text-caption font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                       </td>
                       <td className="p-4">
                         {ex.enduranceProfile ? (
-                          <span className={`px-2 py-0.5 rounded-control text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                          <span className={`px-2 py-0.5 rounded-control text-caption font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                         ) : (
-                          <span className="font-mono text-[9px] text-ink-3">—</span>
+                          <span className="font-mono text-caption text-ink-3">—</span>
                         )}
                       </td>
                       <td className="p-4">
                         {ex.isCustom ? (
-                          <span className="text-[9px] font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 py-0.5 rounded-control uppercase">Personalizado</span>
+                          <span className="text-caption font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 py-0.5 rounded-control uppercase">Personalizado</span>
                         ) : (
-                          <span className="text-[9px] font-mono text-ink-2/60 uppercase">Sistema</span>
+                          <span className="text-caption font-mono text-ink-2/60 uppercase">Sistema</span>
                         )}
                       </td>
                       <td className="p-4 pr-6 text-right">
@@ -417,7 +417,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             </button>
                           </div>
                         ) : (
-                          <span className="text-ink-3 font-mono text-[10px] uppercase">—</span>
+                          <span className="text-ink-3 font-mono text-caption uppercase">—</span>
                         )}
                       </td>
                     </tr>
@@ -442,10 +442,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     )}
                     <div>
                       <p className="font-sans font-bold text-sm text-white">{ex.name}</p>
-                      <p className="font-mono text-[10px] text-ink-2">{muscleLabel(ex)}</p>
+                      <p className="font-mono text-caption text-ink-2">{muscleLabel(ex)}</p>
                       {ex.muscleGroup && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-accent/80">
-                          <span className="material-symbols-outlined text-[9px]">link</span>
+                        <span className="inline-flex items-center gap-0.5 text-caption font-mono text-accent/80">
+                          <span className="material-symbols-outlined text-caption">link</span>
                           Macro
                         </span>
                       )}
@@ -463,15 +463,15 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-control text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
+                  <span className={`px-2 py-0.5 rounded-control text-caption font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                   {ex.enduranceProfile && (
-                    <span className={`px-2 py-0.5 rounded-control text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                    <span className={`px-2 py-0.5 rounded-control text-caption font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                   )}
                   {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-[9px] bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
+                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-1.5 py-0.5 rounded-control capitalize">{eq}</span>
                   ))}
                   {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-data/70 flex items-center gap-0.5">
+                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-mono text-data/70 flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-xs">play_circle</span>
                       Video
                     </a>
@@ -526,7 +526,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             <form onSubmit={handleSave} className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Nombre *</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre *</label>
                 <input
                   type="text"
                   required
@@ -539,9 +539,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Grupo muscular — the 14 typed keys */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Grupo muscular
-                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(vincula con el plan de volumen)</span>
                 </label>
                 <select
                   value={form.muscleGroup ?? ''}
@@ -561,7 +561,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
               {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Tipo *</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Tipo *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
@@ -571,7 +571,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
                   <select
                     value={form.enduranceProfile ?? ''}
                     onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
@@ -585,9 +585,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Material necesario
-                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(sin tag = siempre disponible)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {EQUIPMENT_OPTIONS.map(eq => {
@@ -602,7 +602,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             ? (f.equipment ?? []).filter(e => e !== eq)
                             : [...(f.equipment ?? []), eq],
                         }))}
-                        className={`px-2.5 py-1 rounded-control font-mono text-[10px] border capitalize transition-all ${
+                        className={`px-2.5 py-1 rounded-control font-mono text-caption border capitalize transition-all ${
                           selected
                             ? 'bg-accent/15 border-accent/40 text-accent font-bold'
                             : 'bg-surface border-hairline text-ink-2 hover:border-hairline'
@@ -617,7 +617,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
                 <input
                   type="url"
                   value={form.imageUrl}
@@ -629,7 +629,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Video URL */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
                 <input
                   type="url"
                   value={form.videoUrl}
@@ -641,9 +641,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">
                   Descripción global
-                  <span className="ml-2 text-ink-3 normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(visible para cualquier atleta)</span>
                 </label>
                 <textarea
                   value={form.instructions}

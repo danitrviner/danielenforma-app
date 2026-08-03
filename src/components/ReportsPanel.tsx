@@ -164,10 +164,10 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
 
       {/* Generator */}
       <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-        <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Nuevo reporte</p>
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nuevo reporte</p>
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-1">Periodo</label>
+            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Periodo</label>
             <select
               value={periodMode}
               onChange={e => setPeriodMode(e.target.value as PeriodMode)}
@@ -180,7 +180,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
           </div>
           {periodMode !== 'meso' && (
             <div>
-              <label className="block font-mono text-[9px] text-ink-2 uppercase tracking-wider mb-1">Comparar con</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Comparar con</label>
               <select
                 value={compareWeeks}
                 onChange={e => setCompareWeeks(Number(e.target.value))}
@@ -193,7 +193,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             </div>
           )}
           {periodMode === 'meso' && (
-            <p className="font-mono text-[10px] text-ink-2 pb-2">
+            <p className="font-mono text-caption text-ink-2 pb-2">
               {mesoPair.previous ? `vs Macrociclo ${mesoPair.previous.number}` : 'sin macrociclo previo para comparar'}
             </p>
           )}
@@ -209,7 +209,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
 
       {/* History */}
       <div className="space-y-3">
-        <p className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Historial</p>
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Historial</p>
         {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-12 w-full" />
@@ -229,12 +229,12 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
                 <div className="min-w-0">
                   <p className="text-sm text-white font-sans font-bold truncate">{r.title}</p>
-                  <p className="font-mono text-[10px] text-ink-2 mt-0.5">
+                  <p className="font-mono text-caption text-ink-2 mt-0.5">
                     {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
                   </p>
                 </div>
               </button>
-              <span className={`flex-shrink-0 font-sans text-[9px] font-bold uppercase px-2 py-1 rounded-full ${
+              <span className={`flex-shrink-0 font-sans text-caption font-bold uppercase px-2 py-1 rounded-full ${
                 r.status === 'sent' ? 'bg-green-500/15 text-green-400' : 'bg-raised text-ink-2 border border-hairline'
               }`}>
                 {r.status === 'sent' ? 'Enviado' : 'Borrador'}

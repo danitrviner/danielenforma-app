@@ -68,7 +68,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
       render: s => (
         <div>
           <p className="font-bold">{formatEuros(s.importeCents)}</p>
-          <p className="font-mono text-[9px] text-ink-3">{s.periodicidad}</p>
+          <p className="font-mono text-caption text-ink-3">{s.periodicidad}</p>
         </div>
       ),
     },
@@ -79,7 +79,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
       render: s => (
         <div>
           <p className="tabular-nums">{formatDia(s.proximoCobro)}</p>
-          <p className="font-mono text-[9px] text-ink-3">{tiempoRelativo(s.proximoCobro)}</p>
+          <p className="font-mono text-caption text-ink-3">{tiempoRelativo(s.proximoCobro)}</p>
         </div>
       ),
     },
@@ -101,7 +101,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
               type="button"
               onClick={() => registrar.mutate({ suscripcion: s, coachEmail })}
               disabled={filaMutandoRegistro(s.id)}
-              className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-[9px] uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
+              className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-caption uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
             >
               {filaMutandoRegistro(s.id) ? 'Registrando…' : 'Registrar cobro'}
             </button>

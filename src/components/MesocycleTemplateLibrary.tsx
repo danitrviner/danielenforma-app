@@ -126,10 +126,10 @@ const ExerciseRow: React.FC<{
   return (
     <div className="flex items-center gap-2 py-1.5 border-b border-hairline last:border-0 group">
       {/* Name */}
-      <span className="font-mono text-[10px] text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
+      <span className="font-mono text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
       <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-ink-3">sets</span>
+        <span className="font-mono text-caption text-ink-3">sets</span>
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
@@ -138,7 +138,7 @@ const ExerciseRow: React.FC<{
       </div>
       {/* Reps */}
       <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-ink-3">reps</span>
+        <span className="font-mono text-caption text-ink-3">reps</span>
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
@@ -148,7 +148,7 @@ const ExerciseRow: React.FC<{
       </div>
       {/* RIR */}
       <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-ink-3">rir</span>
+        <span className="font-mono text-caption text-ink-3">rir</span>
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
@@ -157,7 +157,7 @@ const ExerciseRow: React.FC<{
       </div>
       {/* Rest */}
       <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-ink-3">rest</span>
+        <span className="font-mono text-caption text-ink-3">rest</span>
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
@@ -248,7 +248,7 @@ const DayBlock: React.FC<{
           className="flex-1 bg-transparent font-mono text-xs text-white focus:outline-none"
           placeholder="Nombre del día"
         />
-        <span className="font-mono text-[9px] text-ink-3">{day.exercises.length} ejerc.</span>
+        <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
           className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
@@ -263,7 +263,7 @@ const DayBlock: React.FC<{
         <div className="px-3 py-2 bg-bg space-y-1">
           {/* Exercise list */}
           {sortedExs.length === 0 ? (
-            <p className="font-mono text-[9px] text-ink-3 italic py-1">Sin ejercicios.</p>
+            <p className="font-mono text-caption text-ink-3 italic py-1">Sin ejercicios.</p>
           ) : (
             sortedExs.map((ex, idx) => {
               const exObj = exercises.find(e => e.id === ex.exerciseId);
@@ -378,7 +378,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
         <span className={`material-symbols-outlined text-sm text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`}>
           chevron_right
         </span>
-        <span className="font-mono text-[9px] text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
+        <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
         <input
           type="text"
           value={stage.name}
@@ -389,11 +389,11 @@ const StageAccordion: React.FC<StageFormProps> = ({
         />
         <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
           <div className="flex items-center gap-1">
-            <span className="font-mono text-[9px] text-ink-3">sem</span>
+            <span className="font-mono text-caption text-ink-3">sem</span>
             <Stepper value={stage.weeks} min={1} max={20} onChange={v => onChange({ ...stage, weeks: v })} />
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-mono text-[9px] text-ink-3">días/sem</span>
+            <span className="font-mono text-caption text-ink-3">días/sem</span>
             <Stepper value={stage.daysPerWeek} min={1} max={7} onChange={v => onChange({ ...stage, daysPerWeek: v })} />
           </div>
           {!isOnly && (
@@ -430,16 +430,16 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'volume' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
-                <span className="font-mono text-[10px] text-accent font-bold">{totalSeries} series/sem</span>
+                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
+                <span className="font-mono text-caption text-accent font-bold">{totalSeries} series/sem</span>
               </div>
               <div className="border border-hairline rounded-surface overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-bg border-b border-hairline">
-                      <th className="px-3 py-2 text-left font-mono text-[9px] text-ink-2 uppercase tracking-wider">Grupo</th>
-                      <th className="px-3 py-2 text-center font-mono text-[9px] text-ink-2 uppercase tracking-wider">Series</th>
-                      <th className="px-3 py-2 text-right font-mono text-[9px] text-ink-2 uppercase tracking-wider">Prioridad</th>
+                      <th className="px-3 py-2 text-left font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
+                      <th className="px-3 py-2 text-center font-mono text-caption text-ink-2 uppercase tracking-wider">Series</th>
+                      <th className="px-3 py-2 text-right font-mono text-caption text-ink-2 uppercase tracking-wider">Prioridad</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -482,13 +482,13 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'training' && (
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
+                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                   Días de entrenamiento ({stage.days.length}/{stage.daysPerWeek})
                 </span>
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Añadir día
@@ -496,7 +496,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
               </div>
               {stage.days.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-hairline rounded-surface">
-                  <p className="font-mono text-[10px] text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
+                  <p className="font-mono text-caption text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -621,7 +621,7 @@ function TemplateEditor({
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
+            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
             <input
               type="text"
               value={form.name}
@@ -629,10 +629,10 @@ function TemplateEditor({
               placeholder="Ej: Powerbuilding 12 semanas"
               className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-sm focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
-            {nameError && <p className="text-red-400 font-mono text-[10px] mt-1">{nameError}</p>}
+            {nameError && <p className="text-red-400 font-mono text-caption mt-1">{nameError}</p>}
           </div>
           <div>
-            <label className="block font-mono text-[10px] text-ink-2 uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
+            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
             <input
               type="text"
               value={form.description}
@@ -647,14 +647,14 @@ function TemplateEditor({
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <span className="font-mono text-[10px] text-ink-2 uppercase tracking-wider">
+              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                 Mesociclos ({form.stages.length})
               </span>
-              <span className="font-mono text-[10px] text-ink-3 ml-3">{totalWeeks} semanas en total</span>
+              <span className="font-mono text-caption text-ink-3 ml-3">{totalWeeks} semanas en total</span>
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-[10px] rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span>
               Añadir mesociclo
@@ -738,13 +738,13 @@ function TemplateCard({
         <div className="min-w-0">
           <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
           {tpl.description && (
-            <p className="font-mono text-[9px] text-ink-2 mt-0.5 truncate">{tpl.description}</p>
+            <p className="font-mono text-caption text-ink-2 mt-0.5 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
-            <span className="font-mono text-[10px] text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
-            <span className="font-mono text-[10px] text-accent font-bold">{totalWeeks} semanas</span>
+            <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
+            <span className="font-mono text-caption text-accent font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
-              <span className="font-mono text-[10px] text-data">{totalExercises} ejercicios</span>
+              <span className="font-mono text-caption text-data">{totalExercises} ejercicios</span>
             )}
           </div>
         </div>
@@ -772,7 +772,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-mono text-[8px] px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-mono text-caption px-1.5 py-0.5 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -785,7 +785,7 @@ function TemplateCard({
         {tpl.stages.map(st => (
           <span
             key={st.id}
-            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-raised border border-hairline text-ink-2"
+            className="font-mono text-caption px-2 py-0.5 rounded-full bg-raised border border-hairline text-ink-2"
           >
             {st.name} · {st.weeks}sem
           </span>
@@ -887,13 +887,13 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-sans font-bold text-lg text-white">Plantillas de mesociclo</h2>
-          <p className="font-mono text-[10px] text-ink-2 mt-0.5">
+          <p className="font-mono text-caption text-ink-2 mt-0.5">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
         >
           <span className="material-symbols-outlined text-sm">add</span>
           Nueva
@@ -914,7 +914,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <p className="text-ink-2 text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
           <button
             onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-[10px] font-bold uppercase rounded-control hover:bg-accent-press transition-all"
+            className="mt-4 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press transition-all"
           >
             Crear plantilla
           </button>
@@ -940,7 +940,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-hairline rounded-surface p-6 max-w-sm w-full space-y-4">
               <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
-              <p className="font-mono text-[11px] text-ink-2">
+              <p className="font-mono text-caption text-ink-2">
                 Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
               </p>
               <div className="flex gap-3">

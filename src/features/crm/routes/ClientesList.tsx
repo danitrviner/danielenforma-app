@@ -88,7 +88,7 @@ export default function ClientesList() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <p className="font-bold truncate">{c.nombre}</p>
-            <p className="font-mono text-[9px] text-ink-3 truncate">
+            <p className="font-mono text-caption text-ink-3 truncate">
               {c.dni ? formatDni(c.dni) : c.email ?? '—'}
             </p>
           </div>
@@ -112,7 +112,7 @@ export default function ClientesList() {
         return (
           <div className="min-w-0">
             <p className="truncate">{actual.nombre}</p>
-            <p className="font-mono text-[9px] text-ink-3 tabular-nums">
+            <p className="font-mono text-caption text-ink-3 tabular-nums">
               {formatEurosCompacto(actual.importeCents)} · {actual.periodicidad}
             </p>
           </div>
@@ -141,7 +141,7 @@ export default function ClientesList() {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-black text-xl text-ink">Clientes</h1>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-3 tabular-nums">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-3 tabular-nums">
             {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
           </p>
         </div>
@@ -149,7 +149,7 @@ export default function ClientesList() {
           <button
             type="button"
             onClick={() => setImportarAbierto(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">upload_file</span>
             Importar
@@ -157,7 +157,7 @@ export default function ClientesList() {
           <button
             type="button"
             onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-[11px] hover:bg-accent-press transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             Nuevo cliente
@@ -176,7 +176,7 @@ export default function ClientesList() {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-[11px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+            className="w-full pl-7 pr-2 py-1.5 rounded-control bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
@@ -186,7 +186,7 @@ export default function ClientesList() {
               type="button"
               onClick={() => setParam('estado', f.id === 'todos' ? '' : f.id)}
               aria-pressed={filtro === f.id}
-              className={`px-2.5 py-1.5 rounded-control font-mono text-[9px] uppercase tracking-widest transition-colors ${
+              className={`px-2.5 py-1.5 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                 filtro === f.id
                   ? 'bg-accent/15 text-accent border border-accent/30'
                   : 'bg-field text-ink-2 border border-hairline hover:border-strong'

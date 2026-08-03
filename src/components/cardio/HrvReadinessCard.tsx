@@ -24,17 +24,17 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <h3 className="text-[10px] font-mono uppercase text-data tracking-wider">HRV matinal</h3>
+      <h3 className="text-caption font-mono uppercase text-data tracking-wider">HRV matinal</h3>
 
       {latest ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-mono text-ink-2">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
+            <p className="text-caption font-mono text-ink-2">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
             <p className="font-sans font-black text-3xl text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-xs font-mono text-ink-2">ms</span></p>
           </div>
           {band && (
             <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
-              <p className="text-[9px] font-mono uppercase" style={{ color: READINESS_COLOR[band] }}>Preparación</p>
+              <p className="text-caption font-mono uppercase" style={{ color: READINESS_COLOR[band] }}>Preparación</p>
               <p className="font-sans font-bold text-sm" style={{ color: READINESS_COLOR[band] }}>{READINESS_LABEL[band]}</p>
             </div>
           )}

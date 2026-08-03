@@ -83,11 +83,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
                 const isOver = tgt > 0 && v > tgt;
                 return (
                   <div key={cat} className="py-3 px-2 text-center">
-                    <span className={`block font-mono text-[9px] font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
+                    <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
                     <span className={`block font-mono font-bold text-sm mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
                       {fmtQ(v)}{tgt > 0 ? `/${fmtQ(tgt)}` : ''}
                     </span>
-                    <span className={`block font-mono text-[8px] mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                    <span className={`block font-mono text-caption mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
                       {isOk ? '✓ ok' : isOver ? `+${fmtQ(round2(v - tgt))}` : 'int'}
                     </span>
                   </div>
@@ -101,11 +101,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       {/* Day totals */}
       <div className="bg-bg border border-accent/20 rounded-surface overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
-          <span className="font-mono text-[10px] text-accent uppercase font-bold tracking-wide">Total del día</span>
+          <span className="font-mono text-caption text-accent uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
             <span className="font-mono font-bold text-accent">{totalKcal} kcal</span>
             {budgetKcal > 0 && (
-              <span className={`block font-mono text-[9px] ${kcalDelta > 0 ? 'text-red-400' : kcalDelta < 0 ? 'text-ink-3' : 'text-green-400'}`}>
+              <span className={`block font-mono text-caption ${kcalDelta > 0 ? 'text-red-400' : kcalDelta < 0 ? 'text-ink-3' : 'text-green-400'}`}>
                 {kcalDelta === 0 ? '✓ en presupuesto' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${budgetKcal}`}
               </span>
             )}
@@ -120,11 +120,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             const delta  = round2(v - b);
             return (
               <div key={cat} className="py-3 px-2 text-center">
-                <span className={`block font-mono text-[9px] font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
+                <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
                 <span className={`block font-mono font-bold text-base mt-0.5 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
                   {fmtQ(v)}{b > 0 ? `/${fmtQ(b)}` : ''}
                 </span>
-                <span className={`block font-mono text-[8px] mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                <span className={`block font-mono text-caption mt-0.5 ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
                   {isOk ? '✓' : isOver ? `+${fmtQ(delta)}` : b > 0 ? `${fmtQ(delta)}` : 'int'}
                 </span>
               </div>

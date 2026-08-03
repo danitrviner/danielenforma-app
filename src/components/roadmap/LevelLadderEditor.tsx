@@ -94,7 +94,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <p className="text-ink-2 text-xs font-mono">Escalera de niveles motivadores. Un nivel se alcanza cumpliendo todos sus criterios.</p>
-          <p className="font-mono text-[10px] text-ink-2 mt-1">
+          <p className="font-mono text-caption text-ink-2 mt-1">
             Nivel actual del atleta: <span className="text-accent font-bold">{status.currentLevel?.name ?? 'ninguno todavía'}</span>
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                 className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-sm font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
-                <span className="font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
+                <span className="font-mono text-caption text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
               )}
             </div>
             <IconPicker value={level.icon} onChange={icon => updateLevel(level.id, { icon })} />
@@ -140,7 +140,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                   <select
                     value={c.kind}
                     onChange={e => updateCriterion(level.id, c.id, { kind: e.target.value as LevelCriterionKind })}
-                    className="bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
+                    className="bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
                   >
                     {(Object.keys(CRITERION_KIND_LABEL) as LevelCriterionKind[]).map(k => (
                       <option key={k} value={k}>{CRITERION_KIND_LABEL[k]}</option>
@@ -150,7 +150,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     value={c.label}
                     onChange={e => updateCriterion(level.id, c.id, { label: e.target.value })}
                     placeholder="Etiqueta (ej. 10 dominadas)"
-                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
+                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
                   />
                   {c.kind !== 'manual' && (
                     <input
@@ -159,7 +159,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.targetValue ?? ''}
                       onChange={e => updateCriterion(level.id, c.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="Objetivo"
-                      className="w-20 bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-20 bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'sentadilla_xbw' && (
@@ -167,11 +167,11 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.exerciseNameMatch ?? 'sentadilla'}
                       onChange={e => updateCriterion(level.id, c.id, { exerciseNameMatch: e.target.value })}
                       placeholder="nombre del ejercicio"
-                      className="w-28 bg-raised border border-hairline rounded-control p-1.5 text-[10px] text-white focus:outline-none"
+                      className="w-28 bg-raised border border-hairline rounded-control p-1.5 text-caption text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'manual' && (
-                    <label className="flex items-center gap-1 text-[10px] text-ink-2 font-mono">
+                    <label className="flex items-center gap-1 text-caption text-ink-2 font-mono">
                       <input type="checkbox" checked={c.manualDone ?? false} onChange={e => updateCriterion(level.id, c.id, { manualDone: e.target.checked })} />
                       Verificado
                     </label>
@@ -181,12 +181,12 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                   </button>
                 </div>
               ))}
-              <button onClick={() => addCriterion(level.id)} className="font-mono text-[10px] text-data hover:underline">
+              <button onClick={() => addCriterion(level.id)} className="font-mono text-caption text-data hover:underline">
                 + Añadir criterio
               </button>
             </div>
 
-            <button onClick={() => removeLevel(level.id)} className="font-mono text-[10px] text-ink-2 hover:text-red-400">
+            <button onClick={() => removeLevel(level.id)} className="font-mono text-caption text-ink-2 hover:text-red-400">
               Eliminar nivel
             </button>
           </div>

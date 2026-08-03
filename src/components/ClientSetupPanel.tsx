@@ -186,12 +186,12 @@ export default function ClientSetupPanel({
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
             <>
-              <p className="font-mono text-[9px] text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
               <p className="font-sans font-bold text-sm text-white mb-2">{result.nextStep.title}</p>
               {result.nextStep.link && (
                 <button
                   onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-accent px-3 py-1.5 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
+                  className="flex items-center gap-1 font-mono text-caption text-black bg-accent px-3 py-1.5 rounded-control font-bold uppercase hover:bg-accent-press transition-all"
                 >
                   Ir ahora
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -222,7 +222,7 @@ export default function ClientSetupPanel({
               </span>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-xs font-bold text-white">{alert.title}</p>
-                {alert.detail && <p className="font-mono text-[10px] text-ink-2">{alert.detail}</p>}
+                {alert.detail && <p className="font-mono text-caption text-ink-2">{alert.detail}</p>}
               </div>
             </button>
           ))}
@@ -242,7 +242,7 @@ export default function ClientSetupPanel({
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
                     <p className="font-sans font-bold text-sm text-white">{phase.title}</p>
-                    {phase.subtitle && <span className="font-mono text-[9px] text-ink-2">{phase.subtitle}</span>}
+                    {phase.subtitle && <span className="font-mono text-caption text-ink-2">{phase.subtitle}</span>}
                   </div>
                   <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div
@@ -273,7 +273,7 @@ export default function ClientSetupPanel({
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className={`font-sans text-xs ${item.status === 'done' ? 'text-ink-2 line-through' : 'text-white'}`}>{item.title}</p>
-                        {item.detail && <p className="font-mono text-[10px] text-ink-2 mt-0.5">{item.detail}</p>}
+                        {item.detail && <p className="font-mono text-caption text-ink-2 mt-0.5">{item.detail}</p>}
                       </div>
                       {item.link && item.status !== 'na' && (
                         <span className="material-symbols-outlined text-ink-3 text-base flex-shrink-0">chevron_right</span>
@@ -296,7 +296,7 @@ export default function ClientSetupPanel({
           </h3>
           <button
             onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
+            className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-2.5 py-1.5 rounded-control"
           >
             <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
