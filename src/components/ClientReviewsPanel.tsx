@@ -1247,7 +1247,7 @@ export default function ClientReviewsPanel({
 
         {/* ── Asignar cuestionario ───────────────────────────────────── */}
             <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
                   <span className="material-symbols-outlined text-accent text-sm">quiz</span>
                   Asignar cuestionario
