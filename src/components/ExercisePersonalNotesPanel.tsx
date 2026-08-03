@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExercisePersonalNote } from '../types';
 import { getExercises, getExerciseNotesForAthlete, saveExerciseNote } from '../dbService';
 import Skeleton from './Skeleton';
+import { Icon, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -60,7 +61,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-3">
-        <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
+        <Icon name="edit_note" size="m" className="text-accent" />
         Observación personalizada por ejercicio
         <span className="ml-2 text-caption font-sans text-ink-3 normal-case font-sans">(solo la ve este atleta)</span>
       </h3>
@@ -95,13 +96,9 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
                 rows={3}
                 className="w-full bg-bg border border-hairline rounded-control p-3 text-label text-white focus:outline-none focus:border-accent resize-none"
               />
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-              >
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar observación'}
-              </button>
+              </Button>
             </>
           )}
         </div>

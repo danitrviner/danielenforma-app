@@ -7,6 +7,7 @@ import ReportsPanel from './ReportsPanel';
 import NutritionAnalysisPanel from './NutritionAnalysisPanel';
 import CorrelationPanel from './CorrelationPanel';
 import { AnalisisTab } from './ClientHub';
+import { Tabs } from './ui';
 
 interface Props {
   athlete: UserProfile;
@@ -28,24 +29,16 @@ export default function ClientAnalysisPanel({
   return (
     <div className="space-y-6">
       {/* Sub-switcher */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
-        {([
+      <Tabs
+        items={[
           { id: 'reportes',      label: 'Reportes',      icon: 'analytics' },
           { id: 'nutricion',     label: 'Nutrición',     icon: 'nutrition' },
           { id: 'correlaciones', label: 'Correlaciones', icon: 'insights'  },
-        ] as const).map(t => (
-          <button
-            key={t.id}
-            onClick={() => onAnalisisTabChange(t.id)}
-            className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${
-              analisisTab === t.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-title-s">{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+        ]}
+        value={analisisTab}
+        onChange={id => onAnalisisTabChange(id as AnalisisTab)}
+        label="Secciones de Análisis"
+      />
 
       {analisisTab === 'reportes' && (
         <ReportsPanel

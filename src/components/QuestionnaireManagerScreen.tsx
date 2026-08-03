@@ -6,6 +6,7 @@ import {
 } from '../dbService';
 import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from './QuestionnaireEditor';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState, ListRow, Badge } from './ui';
 
 interface Props { coachId: string }
 
@@ -82,12 +83,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="font-sans font-bold text-title-m text-white">Cuestionarios</h2>
-        <button
-          onClick={() => openEditor()}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">add</span>Nuevo
-        </button>
+        <Button onClick={() => openEditor()} icon="add">Nuevo</Button>
       </div>
 
       {loading ? (
@@ -97,51 +93,45 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
           <Skeleton className="h-16 w-full rounded-surface" />
         </div>
       ) : questionnaires.length === 0 ? (
-        <div className="border border-dashed border-hairline rounded-surface py-10 text-center">
-          <span className="material-symbols-outlined text-display text-ink-3 block mb-3">quiz</span>
-          <p className="font-sans font-bold text-white text-body-s">Sin cuestionarios todavía</p>
-          <p className="text-ink-2 text-label mt-1">Crea plantillas para asignarlas a tus clientes.</p>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState icon="quiz" title="Sin cuestionarios todavía" description="Crea plantillas para asignarlas a tus clientes." />
         </div>
       ) : (
         <div className="space-y-3">
           {questionnaires.map(q => (
-            <div key={q.id} className="bg-surface border border-hairline rounded-surface p-4 flex items-center gap-4">
-              <div className="w-9 h-9 bg-accent/10 rounded-surface flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-accent text-title-s">quiz</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-sans font-bold text-white text-body-s truncate">{q.title}</p>
-                  {q.questions.some(qq => qq.graphable) && (
-                    <span className="flex items-center text-caption font-mono text-accent bg-accent/10 px-2 rounded-control border border-accent/20">
-                      <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
-                      Graficable
-                    </span>
-                  )}
+            <ListRow
+              key={q.id}
+              className="rounded-surface border border-hairline bg-surface"
+              leading={
+                <div className="w-9 h-9 bg-accent/10 rounded-surface flex items-center justify-center flex-shrink-0">
+                  <Icon name="quiz" size="m" className="text-accent" />
                 </div>
-                <p className="font-mono text-caption text-ink-2">
-                  {q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}
-                  {q.description ? ` · ${q.description.slice(0, 50)}${q.description.length > 50 ? '…' : ''}` : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => openEditor(q)}
-                  className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
-                  title="Editar"
-                >
-                  <span className="material-symbols-outlined text-body-s">edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(q.id)}
-                  disabled={deleting === q.id}
-                  className="p-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-control transition-all"
-                  title="Eliminar"
-                >
-                  <span className="material-symbols-outlined text-body-s">{deleting === q.id ? 'progress_activity' : 'delete'}</span>
-                </button>
-              </div>
-            </div>
+              }
+              title={q.title}
+              subtitle={`${q.questions.length} pregunta${q.questions.length !== 1 ? 's' : ''}${q.description ? ` · ${q.description.slice(0, 50)}${q.description.length > 50 ? '…' : ''}` : ''}`}
+              trailing={
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {q.questions.some(qq => qq.graphable) && (
+                    <Badge tone="data" icon="show_chart">Graficable</Badge>
+                  )}
+                  <button
+                    onClick={() => openEditor(q)}
+                    className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                    title="Editar"
+                  >
+                    <Icon name="edit" size="s" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(q.id)}
+                    disabled={deleting === q.id}
+                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-control transition-all"
+                    title="Eliminar"
+                  >
+                    <Icon name={deleting === q.id ? 'progress_activity' : 'delete'} size="s" className={deleting === q.id ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+              }
+            />
           ))}
         </div>
       )}

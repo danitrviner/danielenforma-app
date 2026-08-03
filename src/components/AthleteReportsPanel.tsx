@@ -5,6 +5,7 @@ import { getSentReportsForAthlete } from '../dbService';
 import { fmtReportDate } from '../utils/reportBuilder';
 import ReportView from './ReportView';
 import Skeleton from './Skeleton';
+import { Icon, ListRow, Badge } from './ui';
 
 // Athlete-facing, self-loading card on the Home screen: shows the reports the
 // coach has sent (persistent history, newest first). Tapping one opens the same
@@ -22,7 +23,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
-        <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+        <Icon name="analytics" size="l" filled className="text-accent" />
         Reportes de tu entrenador
       </h2>
 
@@ -34,25 +35,19 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
       ) : (
         <div className="space-y-2">
           {reports.map((r, i) => (
-            <button
+            <ListRow
               key={r.id}
               onClick={() => setOpen(r)}
-              className={`w-full flex items-center justify-between gap-3 rounded-control p-3 text-left transition-all border ${
-                i === 0 ? 'bg-raised border-accent/30 hover:border-accent/60' : 'bg-raised border-hairline hover:border-accent/40'
-              }`}
-            >
-              <div className="min-w-0">
-                <p className="font-sans text-body-s text-white truncate flex items-center gap-2">
-                  {r.title}
-                  {i === 0 && <span className="font-sans text-caption font-bold uppercase bg-accent text-black px-2 rounded-control flex-shrink-0">Nuevo</span>}
-                </p>
-                <p className="font-mono text-caption text-ink-2 ">
-                  {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)}
-                  {r.sentAt && ` · ${new Date(r.sentAt).toLocaleDateString('es-ES')}`}
-                </p>
-              </div>
-              <span className="material-symbols-outlined text-ink-2 flex-shrink-0">chevron_right</span>
-            </button>
+              className={`rounded-control border ${i === 0 ? 'bg-raised border-accent/30' : 'bg-raised border-hairline'}`}
+              title={r.title}
+              subtitle={`${fmtReportDate(r.periodStart)}–${fmtReportDate(r.periodEnd)}${r.sentAt ? ` · ${new Date(r.sentAt).toLocaleDateString('es-ES')}` : ''}`}
+              trailing={
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {i === 0 && <Badge tone="neutral">Nuevo</Badge>}
+                  <Icon name="chevron_right" size="m" className="text-ink-2" />
+                </div>
+              }
+            />
           ))}
         </div>
       )}
@@ -64,7 +59,7 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
               <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between">
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reporte</p>
                 <button onClick={() => setOpen(null)} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-title-s">close</span>
+                  <Icon name="close" size="m" />
                 </button>
               </div>
               <div className="p-4 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">

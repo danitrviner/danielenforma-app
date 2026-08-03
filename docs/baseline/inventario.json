@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-03T21:48:08.489Z",
-  "commit": "696eee9",
+  "generado": "2026-08-03T21:53:07.753Z",
+  "commit": "b39647d",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39792
+    "lineasTsx": 39755
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 5212,
+    "clasesTokenEnUso": 5190,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 1015,
-    "fontSans": 1058,
+    "fontMono": 1012,
+    "fontSans": 1050,
     "pesosProhibidos": 29,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 39,
-    "transitionAll": 346,
+    "transitionAll": 341,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -216,11 +216,10 @@
       "roundedFull": 4
     },
     "src/components/AthleteReportsPanel.tsx": {
-      "clasesTokenEnUso": 20,
-      "fontMono": 2,
-      "fontSans": 3,
+      "clasesTokenEnUso": 16,
+      "fontMono": 1,
+      "fontSans": 1,
       "modalesArtesanales": 1,
-      "transitionAll": 1,
       "roundedFull": 1
     },
     "src/components/AthleteRoadmapScreen.tsx": {
@@ -257,11 +256,6 @@
       "pesosProhibidos": 1,
       "transitionAll": 10,
       "roundedFull": 2
-    },
-    "src/components/ClientAnalysisPanel.tsx": {
-      "clasesTokenEnUso": 4,
-      "fontSans": 1,
-      "transitionAll": 1
     },
     "src/components/ClientDietsPanel.tsx": {
       "clasesTokenEnUso": 86,
@@ -320,9 +314,8 @@
       "roundedFull": 1
     },
     "src/components/CoachRoadmapView.tsx": {
-      "clasesTokenEnUso": 7,
-      "fontSans": 4,
-      "transitionAll": 1
+      "clasesTokenEnUso": 3,
+      "fontSans": 3
     },
     "src/components/CoachesScreen.tsx": {
       "clasesTokenEnUso": 99,
@@ -377,9 +370,8 @@
       "transitionAll": 16
     },
     "src/components/ExercisePersonalNotesPanel.tsx": {
-      "clasesTokenEnUso": 13,
-      "fontSans": 5,
-      "transitionAll": 1
+      "clasesTokenEnUso": 11,
+      "fontSans": 4
     },
     "src/components/FoodLibraryScreen.tsx": {
       "clasesTokenEnUso": 50,
@@ -574,10 +566,9 @@
       "transitionAll": 4
     },
     "src/components/QuestionnaireManagerScreen.tsx": {
-      "clasesTokenEnUso": 20,
-      "fontMono": 2,
-      "fontSans": 4,
-      "transitionAll": 3
+      "clasesTokenEnUso": 12,
+      "fontSans": 1,
+      "transitionAll": 2
     },
     "src/components/RecipeBuilderScreen.tsx": {
       "clasesTokenEnUso": 105,
