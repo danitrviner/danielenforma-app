@@ -4,6 +4,7 @@ import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import Skeleton from './Skeleton';
+import { EmptyState } from './ui';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -212,9 +213,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             </div>
           ))}
           {filtered.length === 0 && !loading && (
-            <div className="text-center py-10 text-ink-2 font-sans text-label italic">
-              Ningún alimento coincide.
-            </div>
+            <EmptyState icon="search_off" title="Ningún alimento coincide." />
           )}
         </div>
       )}
