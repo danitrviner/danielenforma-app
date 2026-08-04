@@ -9,7 +9,7 @@ import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
-import { Badge, BadgeTone } from './ui';
+import { Badge, BadgeTone, Sheet, Button, Icon } from './ui';
 
 const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   pending:   'Pendiente',
@@ -275,16 +275,30 @@ export default function ClientWorkoutsPanel({
 
       {/* ── Assign modal ──────────────────────────────────────────────────── */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center sm:p-4">
-          <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 w-full sm:max-w-md shadow-e2 space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">Asignar entrenamiento</h2>
-              <button onClick={() => setShowAssignModal(false)} className="text-ink-2 hover:text-white transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
+        <Sheet
+          open
+          onClose={() => setShowAssignModal(false)}
+          title="Asignar entrenamiento"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setShowAssignModal(false)} fullWidth>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateAssignment}
+                disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
+                loading={isAssigning}
+                icon="event_available"
+                fullWidth
+              >
+                {isAssigning ? 'Asignando...' : 'Confirmar'}
+              </Button>
+            </>
+          )}
+        >
+          <div className="space-y-5">
             <p className="text-label text-ink-2 font-mono flex items-center gap-2">
-              <span className="material-symbols-outlined text-body-s text-accent">person</span>
+              <Icon name="person" size="s" className="text-accent" />
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
             <div>
@@ -312,24 +326,8 @@ export default function ClientWorkoutsPanel({
                 className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
-            <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowAssignModal(false)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreateAssignment}
-                disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                {isAssigning ? (
-                  <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Asignando...</>
-                ) : (
-                  <><span className="material-symbols-outlined text-body-s">event_available</span>Confirmar</>
-                )}
-              </button>
-            </div>
           </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );
