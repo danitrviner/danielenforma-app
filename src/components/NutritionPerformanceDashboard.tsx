@@ -18,7 +18,11 @@ import {
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
 import Skeleton from './Skeleton';
-import { Icon, EmptyState } from './ui';
+import {
+  Icon, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+  LEYENDA_GRAFICA,
+} from './ui';
 
 const DEFAULT_STEP_GOAL = 8000;
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-chart-3)', 'var(--color-warning)'];
@@ -347,32 +351,30 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         </div>
 
         {chartRows.length > 0 && projection && (
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={chartRows} margin={{ top: 8, right: 16, bottom: 0, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
+          <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.l}>
+            <ComposedChart data={chartRows} margin={MARGEN_GRAFICA}>
+              <CartesianGrid {...REJILLA_GRAFICA} />
               {phaseBands.map((band, i) => (
                 <ReferenceAreaAny key={i} x1={band.from} x2={band.to} strokeOpacity={0} fill={band.color} fillOpacity={0.05} />
               ))}
               <XAxis
                 dataKey="week"
                 tickFormatter={w => `S${w}`}
-                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={{ stroke: 'var(--color-raised)' }}
-                tickLine={false}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
                 minTickGap={28}
               />
               <YAxis
                 domain={['auto', 'auto']}
-                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
-                width={36}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
+                width={ANCHO_EJE_Y}
                 tickFormatter={v => `${v}`}
               />
               <Tooltip content={props => <ProjectionTooltip {...props} />} />
-              <ReferenceLine x={projection.currentWeek} stroke="var(--color-ink-2)" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: 'HOY', position: 'insideTopRight', fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }} />
+              <ReferenceLine x={projection.currentWeek} stroke="var(--color-ink-2)" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: 'HOY', position: 'insideTopRight', fill: 'var(--color-ink-2)', fontSize: 11, fontFamily: 'monospace' }} />
               {targetWeightKg != null && (
-                <ReferenceLine y={targetWeightKg} stroke="var(--color-success)" strokeDasharray="5 4" strokeOpacity={0.5} label={{ value: `Objetivo ${targetWeightKg}kg`, position: 'insideBottomRight', fill: 'var(--color-success)', fontSize: 9, fontFamily: 'monospace' }} />
+                <ReferenceLine y={targetWeightKg} stroke="var(--color-success)" strokeDasharray="5 4" strokeOpacity={0.5} label={{ value: `Objetivo ${targetWeightKg}kg`, position: 'insideBottomRight', fill: 'var(--color-success)', fontSize: 11, fontFamily: 'monospace' }} />
               )}
               {curveMode !== 'adh' && (
                 <Line type="monotone" dataKey="expected100" stroke="var(--color-data)" strokeWidth={2} dot={false} name="Esperado 100%" connectNulls />
@@ -387,7 +389,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 connectNulls
               />
               <Legend
-                wrapperStyle={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--color-ink-2)', paddingTop: 8 }}
+                wrapperStyle={LEYENDA_GRAFICA}
                 iconType="plainline"
               />
             </ComposedChart>
