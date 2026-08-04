@@ -5,6 +5,7 @@ import { createNotificationDeduped, saveNutritionProgram } from '../../dbService
 import { buildPhasesFromPreset } from '../../data/phasePresets';
 import { buildNutritionProgramDraft } from '../../utils/planNutritionBridge';
 import IconPicker from './IconPicker';
+import { Dialog, Button } from '../ui';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const PHASE_ICONS = ['route', 'local_fire_department', 'balance', 'fitness_center', 'star', 'flag', 'bolt', 'favorite'];
@@ -219,9 +220,18 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       </div>
 
       {showNutritionModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNutritionModal(false)}>
-          <div className="bg-surface border border-hairline rounded-surface p-5 max-w-sm w-full space-y-3" onClick={e => e.stopPropagation()}>
-            <p className="font-sans font-bold text-white text-body-s">Ya existe una periodización nutricional</p>
+        <Dialog
+          open
+          onClose={() => setShowNutritionModal(false)}
+          title="Ya existe una periodización nutricional"
+          size="s"
+          footer={(
+            <Button variant="ghost" onClick={() => setShowNutritionModal(false)} fullWidth>
+              Cancelar
+            </Button>
+          )}
+        >
+          <div className="space-y-3">
             <p className="text-label text-ink-2 font-sans leading-relaxed">
               ¿Regeneras todo el programa desde cero, o solo las fases futuras (conservando el histórico y la fase en curso)?
             </p>
@@ -233,22 +243,17 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
               >
                 Regenerar solo fases futuras
               </button>
-              <button
+              <Button
+                variant="danger"
                 onClick={() => generateNutritionProgram('full')}
                 disabled={generatingNutrition}
-                className="py-2 border border-red-500/40 text-red-400 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/10 disabled:opacity-50"
+                fullWidth
               >
                 Regenerar todo (sobrescribe)
-              </button>
-              <button
-                onClick={() => setShowNutritionModal(false)}
-                className="py-2 text-ink-2 font-mono text-label hover:text-white"
-              >
-                Cancelar
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {sorted.map((phase, idx) => {

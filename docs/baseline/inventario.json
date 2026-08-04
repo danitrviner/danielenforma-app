@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:34:51.758Z",
-  "commit": "3c7d7f1",
+  "generado": "2026-08-04T09:36:04.860Z",
+  "commit": "de03790",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39337
+    "lineasTsx": 39342
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4790,
+    "clasesTokenEnUso": 4787,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 975,
-    "fontSans": 916,
+    "fontMono": 974,
+    "fontSans": 914,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 11,
+    "modalesArtesanales": 10,
     "transitionAll": 264,
     "animatePulse": 29,
     "ariaLabel": 32,
@@ -791,10 +791,9 @@
     },
     "src/components/roadmap/PlanPhaseEditor.tsx": {
       "hexLiterales": 1,
-      "clasesTokenEnUso": 65,
-      "fontMono": 8,
-      "fontSans": 13,
-      "modalesArtesanales": 1,
+      "clasesTokenEnUso": 62,
+      "fontMono": 7,
+      "fontSans": 11,
       "transitionAll": 3,
       "roundedFull": 3
     },
