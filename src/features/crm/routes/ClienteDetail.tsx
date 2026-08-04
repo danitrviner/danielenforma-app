@@ -10,6 +10,7 @@ import RenovacionesTab from '../components/RenovacionesTab';
 import ReunionesTab from '../components/ReunionesTab';
 import HistorialTab from '../components/HistorialTab';
 import { enlaceWhatsApp, formatTelefono } from '../lib/identidad';
+import { Icon } from '../../../components/ui';
 
 // La pestaña activa va en `?tab=`, como pediste — no en useState. Refrescar o
 // volver atrás recupera la pestaña exacta.
@@ -69,7 +70,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         onClick={() => navigate('/crm/clientes')}
         className="flex items-center gap-1 font-mono text-caption uppercase tracking-widest text-ink-2 hover:text-ink transition-colors"
       >
-        <span className="material-symbols-outlined text-body-s">arrow_back</span>
+        <Icon name="arrow_back" size="s" />
         Clientes
       </button>
 
@@ -93,7 +94,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
-              <span className="material-symbols-outlined text-body-s">chat</span>
+              <Icon name="chat" size="s" />
               WhatsApp
             </a>
           )}
@@ -105,7 +106,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               onClick={() => navigate(`/clients/${cliente.userId}`)}
               className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
             >
-              <span className="material-symbols-outlined text-body-s">fitness_center</span>
+              <Icon name="fitness_center" size="s" />
               Ficha de entreno
             </button>
           )}

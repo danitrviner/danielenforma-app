@@ -7,6 +7,7 @@ import { esDniValido, normalizarDni, PREFIJOS_FRECUENTES } from '../lib/identida
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 import type { EstadoCrm } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Alta manual. Crea un `crmContacto` — una persona sin cuenta en la app. Los
 // clientes que YA usan En Forma no se crean aquí: llegan por invitación desde
@@ -123,7 +124,7 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
 
         {duplicado && (
           <p className="flex items-start gap-2 px-3 py-2 rounded-surface bg-warning/10 border border-warning/25 font-sans text-caption text-warning">
-            <span className="material-symbols-outlined text-body-s shrink-0">warning</span>
+            <Icon name="warning" size="s" className="shrink-0" />
             Ya existe un cliente con este DNI: <strong>{duplicado.nombre}</strong>. Puedes crearlo igualmente, pero probablemente sea un duplicado.
           </p>
         )}

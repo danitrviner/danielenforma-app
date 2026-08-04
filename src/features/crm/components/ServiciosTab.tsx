@@ -8,6 +8,7 @@ import EmptyState from './EmptyState';
 import MetricCard from './MetricCard';
 import NuevoServicioModal from './NuevoServicioModal';
 import type { Cliente, CrmServicio } from '../types';
+import { Icon } from '../../../components/ui';
 
 export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { showToast } = useToast();
@@ -121,7 +122,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-body-s">add</span>
+          <Icon name="add" size="s" />
           Nuevo servicio
         </button>
       </div>

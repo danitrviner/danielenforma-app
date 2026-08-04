@@ -5,6 +5,7 @@ import MetricCard from './MetricCard';
 import PagosTable from './PagosTable';
 import PagoModal from './PagoModal';
 import type { Cliente } from '../types';
+import { Icon } from '../../../components/ui';
 
 export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { data: pagos = [], isPending, isError } = usePagosDe(cliente.id);
@@ -26,7 +27,7 @@ export default function PagosTab({ cliente, coachEmail }: { cliente: Cliente; co
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-body-s">add</span>
+          <Icon name="add" size="s" />
           Registrar pago
         </button>
       </div>

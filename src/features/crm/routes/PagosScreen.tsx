@@ -9,6 +9,7 @@ import PagosTable from '../components/PagosTable';
 import SuscripcionModal from '../components/SuscripcionModal';
 import PagoModal from '../components/PagoModal';
 import type { EstadoPago } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Pantalla global /crm/pagos: vista de negocio a través de TODOS los clientes,
 // a diferencia de PagosTab/RenovacionesTab que están scopeados a uno. El
@@ -64,7 +65,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
             onClick={() => setModalSuscripcion(true)}
             className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
-            <span className="material-symbols-outlined text-body-s">add</span>
+            <Icon name="add" size="s" />
             Nueva suscripción
           </button>
         </div>
@@ -86,16 +87,14 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
             onClick={() => setModalPago(true)}
             className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
-            <span className="material-symbols-outlined text-body-s">add</span>
+            <Icon name="add" size="s" />
             Registrar pago
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-body-s text-ink-3 pointer-events-none">
-              search
-            </span>
+            <Icon name="search" size="s" className="absolute left-2 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
             <input
               type="search"
               value={busqueda}

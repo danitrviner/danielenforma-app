@@ -10,6 +10,7 @@ import ErrorState from '../components/ErrorState';
 import ReunionModal from '../components/ReunionModal';
 import ResultadoGraduacionModal from '../components/ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
+import { Icon } from '../../../components/ui';
 
 const TIPO_LABEL: Record<CrmReunion['tipo'], string> = {
   optimizacion: 'Optimización',
@@ -104,7 +105,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-body-s">add</span>
+          <Icon name="add" size="s" />
           Nueva reunión
         </button>
       </header>
@@ -147,7 +148,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                       aria-label="Abrir WhatsApp" title="WhatsApp"
                       className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-title-s">chat</span>
+                      <Icon name="chat" size="m" />
                     </a>
                   )}
                   {ev.tipo === 'reunion' && ev.reunion && (
@@ -158,7 +159,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         aria-label="Editar" title="Editar"
                         className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                       >
-                        <span className="material-symbols-outlined text-title-s">edit</span>
+                        <Icon name="edit" size="m" />
                       </button>
                       <button
                         type="button"

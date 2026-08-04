@@ -8,6 +8,7 @@ import { EstadoPagoPill } from './StatusPill';
 import EmptyState from './EmptyState';
 import PagoModal from './PagoModal';
 import type { CrmPago } from '../types';
+import { Icon } from '../../../components/ui';
 
 interface Props {
   pagos: CrmPago[];
@@ -98,7 +99,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             </span>
             {atrasado && (
               <p className="flex items-center font-mono text-caption text-danger">
-                <span className="material-symbols-outlined text-caption">warning</span>
+                <Icon name="warning" size="s" />
                 {retraso} días de retraso
               </p>
             )}
@@ -121,7 +122,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               title="Marcar como pagado"
               className="w-7 h-7 rounded-control inline-flex items-center justify-center text-emerald-400 hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-title-s">check_circle</span>
+              <Icon name="check_circle" size="m" />
             </button>
           )}
           <button
@@ -131,7 +132,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             title="Editar"
             className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
-            <span className="material-symbols-outlined text-title-s">edit</span>
+            <Icon name="edit" size="m" />
           </button>
           {p.estado === 'pendiente' && (
             <button
@@ -141,7 +142,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               title="Borrar"
               className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-title-s">delete</span>
+              <Icon name="delete" size="m" />
             </button>
           )}
         </div>

@@ -12,6 +12,7 @@ import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import NuevoClienteModal from '../components/NuevoClienteModal';
 import type { Cliente, EstadoCrm, CrmServicio } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Lazy: read-excel-file + papaparse (las dependencias de este modal) pesan más
 // que el resto de la pantalla junta, y la mayoría de visitas a /crm/clientes
@@ -131,7 +132,7 @@ export default function ClientesList() {
       width: '44px',
       align: 'right',
       render: () => (
-        <span className="material-symbols-outlined text-title-s text-ink-3">chevron_right</span>
+        <Icon name="chevron_right" size="m" className="text-ink-3" />
       ),
     },
   ];
@@ -151,7 +152,7 @@ export default function ClientesList() {
             onClick={() => setImportarAbierto(true)}
             className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
-            <span className="material-symbols-outlined text-body-s">upload_file</span>
+            <Icon name="upload_file" size="s" />
             Importar
           </button>
           <button
@@ -159,7 +160,7 @@ export default function ClientesList() {
             onClick={() => setModalAbierto(true)}
             className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
-            <span className="material-symbols-outlined text-body-s">add</span>
+            <Icon name="add" size="s" />
             Nuevo cliente
           </button>
         </div>
@@ -167,9 +168,7 @@ export default function ClientesList() {
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
-          <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-body-s text-ink-3 pointer-events-none">
-            search
-          </span>
+          <Icon name="search" size="s" className="absolute left-2 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
           <input
             type="search"
             value={busqueda}

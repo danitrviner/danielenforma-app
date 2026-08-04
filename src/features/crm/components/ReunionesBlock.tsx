@@ -9,6 +9,7 @@ import EmptyState from './EmptyState';
 import ReunionModal from './ReunionModal';
 import ResultadoGraduacionModal from './ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
+import { Icon } from '../../../components/ui';
 
 interface Props {
   reuniones: CrmReunion[];
@@ -100,7 +101,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
                 className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                 onClick={e => e.stopPropagation()}
               >
-                <span className="material-symbols-outlined text-title-s">chat</span>
+                <Icon name="chat" size="m" />
               </a>
             )}
             <button
@@ -110,7 +111,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               title="Editar"
               className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-title-s">edit</span>
+              <Icon name="edit" size="m" />
             </button>
             <button
               type="button"

@@ -6,6 +6,7 @@ import { hoyISO } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import { Campo, inputClass, BotonPrimario } from './Modal';
 import type { Cliente, EstadoCrm, MotivoBaja } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Estados de preventa ('lead', 'llamada_agendada') solo tienen sentido para
 // contactos sin cuenta — un `fuente === 'perfil'` ya se registró en la app,
@@ -182,7 +183,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       {mostrarCamposBaja && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
           <div className="sm:col-span-2 flex items-start gap-2">
-            <span className="material-symbols-outlined text-body-s text-danger shrink-0 ">warning</span>
+            <Icon name="warning" size="s" className="text-danger shrink-0" />
             <p className="font-sans text-caption text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
               queda incalculable para siempre.

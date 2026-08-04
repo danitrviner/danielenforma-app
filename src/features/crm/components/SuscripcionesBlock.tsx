@@ -8,6 +8,7 @@ import { EstadoSuscripcionPill } from './StatusPill';
 import EmptyState from './EmptyState';
 import SuscripcionModal from './SuscripcionModal';
 import type { CrmSuscripcion } from '../types';
+import { Icon } from '../../../components/ui';
 
 interface Props {
   suscripciones: CrmSuscripcion[];
@@ -125,7 +126,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             title="Editar"
             className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
-            <span className="material-symbols-outlined text-title-s">edit</span>
+            <Icon name="edit" size="m" />
           </button>
         </div>
       ),

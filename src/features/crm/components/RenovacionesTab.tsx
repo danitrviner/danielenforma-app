@@ -6,6 +6,7 @@ import MetricCard from './MetricCard';
 import SuscripcionesBlock from './SuscripcionesBlock';
 import SuscripcionModal from './SuscripcionModal';
 import type { Cliente, CrmSuscripcion, Periodicidad } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Mensualiza el importe de una suscripción activa para poder sumarlas todas
 // en una sola cifra comparable, aunque tengan periodicidades distintas
@@ -38,7 +39,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
           onClick={() => setModalAbierto(true)}
           className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-body-s">add</span>
+          <Icon name="add" size="s" />
           Nueva suscripción
         </button>
       </div>
