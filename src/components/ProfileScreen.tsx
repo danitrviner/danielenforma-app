@@ -10,7 +10,7 @@ import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
 import StatTile from './StatTile';
-import { Icon, Button, PageHeader, ListRow } from './ui';
+import { Icon, Button, PageHeader, ListRow, Input } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -347,16 +347,12 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       <form onSubmit={handleUpdate} className="bg-surface border border-hairline p-5 rounded-surface space-y-4">
         <h3 className="font-sans font-bold text-title-s text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
 
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre deportivo</label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
-            required
-          />
-        </div>
+        <Input
+          label="Nombre deportivo"
+          required
+          value={displayName}
+          onChange={setDisplayName}
+        />
 
         <div>
           <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
@@ -369,15 +365,12 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
           />
         </div>
 
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Avatar Imagen URL</label>
-          <input
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-mono text-white focus:outline-none focus:border-accent"
-          />
-        </div>
+        <Input
+          label="Avatar (URL de imagen)"
+          type="url"
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+        />
 
         <button
           type="submit"

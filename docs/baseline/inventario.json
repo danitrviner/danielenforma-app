@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-04T14:08:17.381Z",
-  "commit": "39d0ca8",
+  "generado": "2026-08-04T14:09:57.519Z",
+  "commit": "bbe3f01",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39309
+    "lineasTsx": 39297
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4684,
+    "clasesTokenEnUso": 4668,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 1,
-    "fontMono": 951,
+    "fontMono": 945,
     "fontSans": 906,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
@@ -511,8 +511,8 @@
       "fontSans": 3
     },
     "src/components/ProfileScreen.tsx": {
-      "clasesTokenEnUso": 65,
-      "fontMono": 8,
+      "clasesTokenEnUso": 57,
+      "fontMono": 6,
       "fontSans": 7,
       "transitionAll": 2,
       "roundedFull": 7
@@ -570,8 +570,8 @@
       "roundedFull": 4
     },
     "src/components/ReportsPanel.tsx": {
-      "clasesTokenEnUso": 24,
-      "fontMono": 8,
+      "clasesTokenEnUso": 16,
+      "fontMono": 4,
       "fontSans": 3,
       "transitionAll": 1
     },

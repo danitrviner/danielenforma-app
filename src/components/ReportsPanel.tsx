@@ -12,7 +12,7 @@ import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasI
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge, Button } from './ui';
+import { EmptyState, Badge, Button, Select } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -167,31 +167,26 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
       <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
         <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nuevo reporte</p>
         <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Periodo</label>
-            <select
-              value={periodMode}
-              onChange={e => setPeriodMode(e.target.value as PeriodMode)}
-              className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
-            >
-              <option value="7d">Últimos 7 días</option>
-              <option value="14d">Últimos 14 días</option>
-              <option value="meso" disabled={!canMeso}>Este macrociclo{!canMeso ? ' (sin datos)' : ''}</option>
-            </select>
-          </div>
+          <Select
+            label="Periodo"
+            value={periodMode}
+            onChange={v => setPeriodMode(v as PeriodMode)}
+            options={[
+              { value: '7d', label: 'Últimos 7 días' },
+              { value: '14d', label: 'Últimos 14 días' },
+              { value: 'meso', label: `Este macrociclo${!canMeso ? ' (sin datos)' : ''}`, disabled: !canMeso },
+            ]}
+          />
           {periodMode !== 'meso' && (
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Comparar con</label>
-              <select
-                value={compareWeeks}
-                onChange={e => setCompareWeeks(Number(e.target.value))}
-                className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
-              >
-                {compareWeekOptions.map(w => (
-                  <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Comparar con"
+              value={String(compareWeeks)}
+              onChange={v => setCompareWeeks(Number(v))}
+              options={compareWeekOptions.map(w => ({
+                value: String(w),
+                label: w === 1 ? 'La semana anterior' : `${w} semanas antes`,
+              }))}
+            />
           )}
           {periodMode === 'meso' && (
             <p className="font-mono text-caption text-ink-2 pb-2">
