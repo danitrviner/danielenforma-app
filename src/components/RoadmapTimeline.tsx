@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog } from '../types';
-import { Icon, Button, EmptyState } from './ui';
+import { Icon, Button, EmptyState, Sheet } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -100,17 +100,23 @@ interface EditorProps {
 
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-raised border border-hairline rounded-t-surface sm:rounded-surface p-6 max-w-md w-full shadow-e2 space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
-            {isNew ? 'Nuevo item' : 'Editar item'}
-          </h2>
-          <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
-            <Icon name="close" size="m" />
-          </button>
-        </div>
-
+    <Sheet
+      open
+      onClose={onCancel}
+      title={isNew ? 'Nuevo item' : 'Editar item'}
+      footer={(
+        <>
+          {!isNew && onDelete && (
+            <Button variant="danger" onClick={onDelete}>Eliminar</Button>
+          )}
+          <Button variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
+          <Button onClick={onConfirm} disabled={saving || !item.title.trim()} loading={saving} className="flex-1">
+            {saving ? 'Guardando...' : isNew ? 'Añadir' : 'Guardar'}
+          </Button>
+        </>
+      )}
+    >
+      <div className="space-y-4">
         {/* Title */}
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Título *</label>
@@ -199,19 +205,8 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <option value="logrado">Logrado</option>
           </select>
         </div>
-
-        {/* Buttons */}
-        <div className="flex gap-3 pt-1">
-          {!isNew && onDelete && (
-            <Button variant="danger" onClick={onDelete}>Eliminar</Button>
-          )}
-          <Button variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
-          <Button onClick={onConfirm} disabled={saving || !item.title.trim()} loading={saving} className="flex-1">
-            {saving ? 'Guardando...' : isNew ? 'Añadir' : 'Guardar'}
-          </Button>
-        </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
