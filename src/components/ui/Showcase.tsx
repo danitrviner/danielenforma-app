@@ -135,6 +135,7 @@ export default function Showcase() {
   const [filaPulsada, setFilaPulsada] = React.useState('');
   const [vecesAtras, setVecesAtras] = React.useState(0);
   const [sheetAbierto, setSheetAbierto] = React.useState(false);
+  const [sheetPickerAbierto, setSheetPickerAbierto] = React.useState(false);
   const [dialogAbierto, setDialogAbierto] = React.useState(false);
   const [dialogXlAbierto, setDialogXlAbierto] = React.useState(false);
   const [vecesCrearRutina, setVecesCrearRutina] = React.useState(0);
@@ -509,9 +510,14 @@ export default function Showcase() {
         titulo="Sheet"
         resumen="El panel que sube desde abajo. Plantilla de lo que a los 39 overlays artesanales de la app les falta hoy: foco atrapado, Escape, y el bloqueo de scroll sin el bug clásico de esta migración (R4)."
       >
-        <Button variant="secondary" icon="tune" onClick={() => setSheetAbierto(true)}>
-          Abrir Sheet
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="secondary" icon="tune" onClick={() => setSheetAbierto(true)}>
+            Abrir Sheet
+          </Button>
+          <Button variant="secondary" icon="search" onClick={() => setSheetPickerAbierto(true)}>
+            Abrir Sheet con toolbar
+          </Button>
+        </div>
 
         <Sheet
           open={sheetAbierto}
@@ -535,6 +541,26 @@ export default function Showcase() {
             <p className="font-sans text-body-s text-ink-3">
               Prueba el tabulador: el foco no sale de este panel. Prueba Escape, o toca fuera.
             </p>
+          </div>
+        </Sheet>
+
+        <Sheet
+          open={sheetPickerAbierto}
+          onClose={() => setSheetPickerAbierto(false)}
+          title="Añadir alimento"
+          toolbar={(
+            <div className="flex items-center gap-2 border-y border-hairline bg-raised px-4 py-2">
+              <Icon name="search" size="s" className="text-ink-2" />
+              <span className="font-sans text-body-s text-ink-3">Buscar alimento…</span>
+            </div>
+          )}
+        >
+          <div className="flex flex-col gap-2 pt-3">
+            {Array.from({ length: 30 }, (_, i) => (
+              <div key={i} className="rounded-control border border-hairline bg-surface px-4 py-3">
+                <span className="font-sans text-body-s text-ink">Alimento {i + 1}</span>
+              </div>
+            ))}
           </div>
         </Sheet>
 

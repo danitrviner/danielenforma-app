@@ -42,6 +42,21 @@ type Props = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   /**
+   * Zona fija entre la cabecera y el cuerpo: pestañas, filtros, un buscador.
+   * No scrollea — es su razón de ser.
+   *
+   * Lo añade F9 al migrar los overlays reales. Siete de ellos son *pickers* con
+   * la misma anatomía (título · pestañas/chips/buscador · lista de resultados),
+   * y son de los overlays más usados de la app: añadir alimento, cambiar
+   * comida, elegir ejercicio, la paleta de comandos. Metiendo esa barra en el
+   * cuerpo, el buscador se va con el scroll: escribes, bajas a mirar la lista y
+   * pierdes el campo de vista. Sobre 311 alimentos eso no es un matiz estético.
+   *
+   * Va a sangre, sin relleno lateral propio: estas barras suelen llevar su
+   * propio fondo y su borde inferior de lado a lado.
+   */
+  toolbar?: React.ReactNode;
+  /**
    * Ancho máximo en escritorio. En móvil el panel ocupa todo el ancho pase lo
    * que pase — el gesto de «panel que sube» no admite márgenes laterales.
    * `l` es el valor que tenía la primitiva antes de que F9 le diera escala.
@@ -51,7 +66,7 @@ type Props = {
   label?: string;
 };
 
-export default function Sheet({ open, onClose, title, children, footer, size = 'l', label }: Props) {
+export default function Sheet({ open, onClose, title, children, footer, toolbar, size = 'l', label }: Props) {
   const ref = React.useRef<HTMLDivElement>(null);
   const idTitulo = React.useId();
 
@@ -101,6 +116,8 @@ export default function Sheet({ open, onClose, title, children, footer, size = '
             </button>
           </div>
         )}
+
+        {toolbar && <div className="shrink-0">{toolbar}</div>}
 
         <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
 
