@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-04T14:03:50.069Z",
-  "commit": "e492201",
+  "generado": "2026-08-04T14:05:11.618Z",
+  "commit": "ca9b2d7",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39333
+    "lineasTsx": 39329
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4723,
+    "clasesTokenEnUso": 4716,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 1,
-    "fontMono": 961,
+    "fontMono": 960,
     "fontSans": 908,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
@@ -274,8 +274,8 @@
       "fontMono": 8
     },
     "src/components/ClientWorkoutsPanel.tsx": {
-      "clasesTokenEnUso": 52,
-      "fontMono": 14,
+      "clasesTokenEnUso": 45,
+      "fontMono": 13,
       "fontSans": 9,
       "transitionAll": 1,
       "roundedFull": 4

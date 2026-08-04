@@ -9,7 +9,7 @@ import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
-import { Badge, BadgeTone, Sheet, Button, Icon } from './ui';
+import { Badge, BadgeTone, Sheet, Button, Icon, Input, Select } from './ui';
 
 const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   pending:   'Pendiente',
@@ -301,31 +301,27 @@ export default function ClientWorkoutsPanel({
               <Icon name="person" size="s" className="text-accent" />
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
-              {workouts.length === 0 ? (
+            {workouts.length === 0 ? (
+              <div>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
                 <p className="text-label text-ink-2 font-sans italic">No hay rutinas disponibles.</p>
-              ) : (
-                <select
-                  value={assignWorkoutId}
-                  onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                >
-                  {workouts.map(w => (
-                    <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha *</label>
-              <input
-                type="date"
-                value={assignDate}
-                onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              </div>
+            ) : (
+              <Select
+                label="Rutina"
+                required
+                value={assignWorkoutId}
+                onChange={setAssignWorkoutId}
+                options={workouts.map(w => ({ value: w.id, label: `${w.name} (${w.exercises.length} ej.)` }))}
               />
-            </div>
+            )}
+            <Input
+              label="Fecha"
+              required
+              type="date"
+              value={assignDate}
+              onChange={setAssignDate}
+            />
           </div>
         </Sheet>
       )}
