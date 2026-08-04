@@ -14,7 +14,7 @@ import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
-import { Icon, EmptyState, ListRow, Badge } from './ui';
+import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog } from './ui';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -551,14 +551,13 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Swap sheet */}
       {swapFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setSwapFor(null)}>
-          <div onClick={e => e.stopPropagation()} className="bg-surface border border-hairline rounded-surface w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-sans font-bold text-body-s text-white">Elige una alternativa</h3>
-              <button onClick={() => setSwapFor(null)} className="text-ink-2 hover:text-white">
-                <Icon name="close" size="m" />
-              </button>
-            </div>
+        <Sheet
+          open
+          onClose={() => setSwapFor(null)}
+          title="Elige una alternativa"
+          size="m"
+        >
+          <div className="space-y-2 pt-2">
             {swapLoading ? (
               <p className="font-sans text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
             ) : swapCandidates.length === 0 ? (
@@ -581,25 +580,24 @@ export default function MyMenuScreen({ profile }: Props) {
               ))
             )}
           </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Recipe detail */}
       {detailOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={closeDetail}>
-          <div onClick={e => e.stopPropagation()} className="bg-surface border border-hairline rounded-surface w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
+        <Dialog
+          open
+          onClose={closeDetail}
+          size="l"
+          title={detailRecipe?.name ?? 'Receta'}
+        >
+          <div className="space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
                 <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
               </div>
             ) : detailRecipe ? (
               <>
-                <div className="flex items-center justify-between">
-                  <h3 className="font-sans font-bold text-title-s text-white">{detailRecipe.name}</h3>
-                  <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <Icon name="close" size="m" />
-                  </button>
-                </div>
                 {(detailRecipe.image ?? detailRecipe.photoUrl) && (
                   <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
                     <img src={detailRecipe.image ?? detailRecipe.photoUrl} alt={detailRecipe.name} className="w-full h-full object-cover" />
@@ -684,17 +682,10 @@ export default function MyMenuScreen({ profile }: Props) {
                 ) : null}
               </>
             ) : (
-              <>
-                <div className="flex justify-end">
-                  <button onClick={closeDetail} className="text-ink-2 hover:text-white">
-                    <Icon name="close" size="m" />
-                  </button>
-                </div>
-                <p className="font-sans text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
-              </>
+              <p className="font-sans text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
             )}
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

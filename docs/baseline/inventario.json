@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:27:30.589Z",
-  "commit": "50a0768",
+  "generado": "2026-08-04T09:29:37.989Z",
+  "commit": "3ada3bc",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39370
+    "lineasTsx": 39361
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4818,
+    "clasesTokenEnUso": 4811,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 976,
-    "fontSans": 922,
+    "fontSans": 920,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 17,
+    "modalesArtesanales": 15,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -127,7 +127,7 @@
       },
       {
         "archivo": "src/components/MyMenuScreen.tsx",
-        "lineas": 701
+        "lineas": 692
       },
       {
         "archivo": "src/components/WorkoutsScreen.tsx",
@@ -424,10 +424,9 @@
       "roundedFull": 2
     },
     "src/components/MyMenuScreen.tsx": {
-      "clasesTokenEnUso": 105,
+      "clasesTokenEnUso": 98,
       "fontMono": 17,
-      "fontSans": 25,
-      "modalesArtesanales": 2,
+      "fontSans": 23,
       "transitionAll": 5,
       "roundedFull": 2
     },
