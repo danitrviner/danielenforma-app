@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Dialog, Button, Icon } from './ui';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -488,44 +488,37 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
       {/* DELETE CONFIRM MODAL */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-e2">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
-              <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar ejercicio?</h3>
-            </div>
-            <p className="text-body-s text-ink-2">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
-              >
+        <Dialog
+          open
+          onClose={() => setDeleteConfirm(null)}
+          title="¿Eliminar ejercicio?"
+          size="s"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)} className="flex-1">
                 Cancelar
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-3 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all"
-              >
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete(deleteConfirm)} className="flex-1">
                 Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2 flex items-start gap-3">
+            <Icon name="warning" size="l" className="text-danger shrink-0" />
+            Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.
+          </p>
+        </Dialog>
       )}
 
       {/* CREATE / EDIT FORM MODAL */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-lg w-full shadow-e2 max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
-                {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white p-1 rounded-control transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
+        <Dialog
+          open
+          onClose={() => setShowForm(false)}
+          title={editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
+          size="l"
+        >
             <form onSubmit={handleSave} className="space-y-4">
               {/* Name */}
               <div>
@@ -657,33 +650,23 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 />
               </div>
 
-              {/* Actions */}
+              {/* Actions — se quedan DENTRO del <form>: sacarlas al footer de
+                  Dialog dejaría al submit fuera de su formulario. */}
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={isSaving || !form.name.trim()}
-                  className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  loading={isSaving}
+                  className="flex-1"
                 >
-                  {isSaving ? (
-                    <>
-                      <span className="material-symbols-outlined text-body-s animate-spin">refresh</span>
-                      Guardando...
-                    </>
-                  ) : (
-                    <>{editingId ? 'Guardar cambios' : 'Crear ejercicio'}</>
-                  )}
-                </button>
+                  {isSaving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear ejercicio'}
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
