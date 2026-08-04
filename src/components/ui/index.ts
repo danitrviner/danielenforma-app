@@ -44,3 +44,9 @@ export { default as Dialog } from './Dialog';
 export type { DialogSize } from './Dialog';
 
 export { default as EmptyState } from './EmptyState';
+
+export {
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA,
+  EJE_GRAFICA, TOOLTIP_GRAFICA, LEYENDA_GRAFICA, SERIES_GRAFICA, colorSerie,
+} from './chart';
+export type { AlturaGrafica } from './chart';
