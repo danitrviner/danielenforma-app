@@ -3,7 +3,7 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-5 completados (F0-F10)** ·
+> **Última actualización:** 4 de agosto de 2026 · **Migración previa al rediseño terminada (F0-F11)** ·
 > rama `ds/f0-linea-base` · commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
@@ -21,12 +21,12 @@ Sprint 2  ████████████████████  F2 F3   
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ████████████████████  F6 F7        COMPLETADO
 Sprint 5  ████████████████████  F8 F9 F10    COMPLETADO
-Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
+Sprint 6  ████████████████████  F11          COMPLETADO (recortada)
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**11 de 16 fases completadas. F11 (recortada) es la siguiente, y la última antes de Claude Design.**
+**12 de 16 fases. La migración previa al rediseño está terminada: lo siguiente es Claude Design.**
 
 > **El Design System es la base, no el objetivo.** El plan acordado el 4 ago 2026 recorta lo que
 > queda para llegar antes a la fase que de verdad persigue el objetivo —una app de aspecto
@@ -51,7 +51,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 5 | **F8** | Adopción de bajo riesgo | ✅ Completada | 2026-08-04 | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ✅ Completada | 2026-08-04 | **Alto** |
 | 5 | **F10** | Chart unificado | ✅ Completada | 2026-08-04 | Bajo |
-| 6 | **F11** | Migración de pantallas | ⬜ Pendiente | — | Medio |
+| 6 | **F11** | Migración de pantallas (recortada) | ✅ Completada | 2026-08-04 | Medio |
 | 7 | **F12** | Momentos clave (rediseños reales) | ⬜ Pendiente | — | **Alto** |
 | 8 | **F13** | Motion, hápticos y reduced-motion | ⬜ Pendiente | — | Medio |
 | 8 | **F14** | Accesibilidad base | ⬜ Pendiente | — | Bajo |
@@ -63,26 +63,27 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 
 | Indicador | Dir. | Base (F0) | Hoy | Objetivo | Fase |
 |---|:--:|--:|--:|--:|:--:|
-| Hex distintos en componentes | ↓ | 101 | **14** | ≤ 22 | F1 ✅ |
+| Hex distintos en componentes | ↓ | 101 | **13** | ≤ 22 | F1 ✅ |
 | Hex literales en componentes | ↓ | 4.638 | **23** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **4.775** | — | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **4.602** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
 | Textos por debajo de 11 px | ↓ | 1.151 | **1 (excep.)** | 1 | F4 ✅ |
+| Campos de formulario < 16 px | ↓ | 227 | **0** | 0 | F11 ✅ |
 | Escalones de tamaño en uso | ↓ | 16 | **8 + 2 excep.** | ≤ 8 | F4 ✅ |
 | Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
-| `font-mono` | ↓ | 1.527 | **974** | mono < sans | F5 ✅ |
-| `font-sans` | ↑ | 590 | **910** | > mono | F5 ✅ |
+| `font-mono` | ↓ | 1.527 | **940** | mono < sans | F5 ✅ |
+| `font-sans` | ↑ | 590 | **892** | > mono | F5 ✅ |
 | Espaciado fuera de escala | ↓ | 1.170 | **0** | 0 | F6 ✅ |
 | Sombras fuera de la escala | ↓ | 113 | **0** | 0 | F6 ✅ |
 | Brillos dorados ad-hoc | ↓ | 31 | **0** | 1, con token | F6 ✅ |
 | Overlays artesanales (no `ui/`) | ↓ | 39 | **7** | 7, clasificados | F9 ✅ |
-| `transition-all` | ↓ | 377 | **262** | 0 | F13 |
+| `transition-all` | ↓ | 377 | **256** | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
 | `prefers-reduced-motion` | ↑ | 0 | 0 | > 0 | F13 |
 | `aria-label` | ↑ | 23 | **30** | — | F14 |
-| `htmlFor` | ↑ | 0 | **1** | ≥ 116 | F14 |
-| `focus-visible` | ↑ | 0 | **31** | > 0 | F14 |
+| `htmlFor` | ↑ | 0 | **1** | 1, centralizado | F14 ✅ |
+| `focus-visible` | ↑ | 0 | **33** | > 0 | F14 |
 | Archivos > 600 líneas | · | 21 | 20 | 0 (a un año) | F15 |
 | Radios `lg / xl / 2xl` | · | 425/257/278 | **0/0/0** | 3 + `full` | F3 ✅ |
 
@@ -387,6 +388,75 @@ directo; y su ausencia de rejilla, porque sus bandas de zona de FC **son** la re
 **Sin verificación visual:** los 7 paneles viven detrás del login de coach salvo `BodyweightPanel`;
 misma limitación de F8 y F9.
 
+### Sprint 6 — F11 recortada · Formularios y módulos diferidos · 2026-08-04
+
+**F11 (recortada).** ✅ Cerrada. 24 commits. **Es la última fase antes de Claude Design.**
+
+#### 11a · `Input` / `Select` — **R8 cerrado: 227 → 0**
+
+R8 era el defecto abierto más antiguo de la migración —detectado en F2, aplazado en F4— y el único
+con consecuencia física: Safari en iOS amplía la página al enfocar un campo de menos de 16 px **y no
+lo deshace**.
+
+**Primero hubo que hacerlo medible.** Llevaba desde F4 sin contador: la auditoría dijo 5 campos, F2
+encontró 238, y nadie podía comprobar si subían o bajaban. La métrica nueva dio **227**, el mismo
+número que un conteo independiente por otro método. Cuarta fase seguida (F6, F7, F9, F11) que
+empieza arreglando el instrumento.
+
+**El CRM era R8 en bloque y no aparecía en ninguna cuenta:** sus ~40 campos comparten la constante
+`inputClass`, que fijaba 11 px, y la métrica lee la clase escrita en la etiqueta. Un solo cambio los
+arregló todos.
+
+**La adopción de la primitiva cubre menos de lo que parecía, y el motivo importa.** De los 227
+campos, `Input` solo encaja limpiamente en los que son campos de formulario con etiqueta propia.
+Los demás quedan **con su estructura intacta y solo el tamaño corregido**, que es lo que cierra R8:
+
+| Por qué no adopta la primitiva | Cuántos |
+|---|--:|
+| `<textarea>` — `Input` no tiene esa variante y crear una era ampliar el alcance | 12 |
+| Rejilla apretada o edición en línea (`w-20`, `grid-cols-[1fr_auto_auto_auto_auto]`): 44 px de alto rompen la fila | 9 |
+| Campo en línea con un botón al lado, con la etiqueta fuera de la fila | 5 |
+| Deliberado: el nombre de la rutina, tratado como título editable a 19 px y negrita | 1 |
+
+**Y 9 «campos sin etiqueta» resultaron no serlo:** eran `<label>` que *envuelven* su checkbox, que es
+asociación implícita válida. No había nada que arreglar.
+
+**Consecuencia visual asumida:** los campos crecen. Donde más se nota es en la tabla de registro de
+series del atleta y en las filas de ejercicio de las plantillas, que ensanchan columnas.
+
+#### 11b · Primitivas en los tres módulos diferidos
+
+**`Icon`: 63 → 0** en `cardio/`, `roadmap/` y `features/crm`. Como en F8, esto **no es cosmético**:
+la clase de Google trae `font-size: 24px` sin capa CSS, así que los tokens de tamaño que esos iconos
+ya llevaban escritos no hacían nada y todos se pintaban a 24 px. Al adoptar `Icon` los tamaños pasan
+a aplicarse — varios iconos se ven más pequeños, y eso es la corrección.
+
+**El CRM deja de tener implementación propia de lo que el DS ya resuelve.** Mismo patrón que
+`Modal.tsx` en F9 — la API en español no cambia y ningún uso se toca:
+
+| Componente del CRM | Ahora envuelve | Qué gana |
+|---|---|---|
+| `Modal` | `Sheet` | Cierra R4 (bloqueo de scroll), foco atrapado |
+| `EmptyState` | `EmptyState` | Su CTA deja de ser un `<button>` a mano |
+| `BotonPrimario` / `BotonSecundario` | `Button` | `focus-visible` y 44 px de alto en sus 36 usos |
+| `StatusPill` | `Badge` | Sus 4 tonos ya existían en la primitiva con otro nombre |
+
+#### Dos cosas que aprendimos sobre el instrumento
+
+**`htmlFor` no puede crecer, y su objetivo era erróneo.** El literal vive dentro de `Campo`, así que
+la métrica se queda en 1 por muchos formularios que se migren — mismo mecanismo que `aria-label` en
+F9. El objetivo `≥ 116` que este panel tenía escrito significaba *116 literales repetidos*; el
+objetivo correcto es **1, centralizado**, y ya está cumplido.
+
+**Los comentarios envenenan los contadores.** Pasó cuatro veces (dos en F9, una en F10, una aquí):
+escribir el nombre de una clase o etiqueta dentro de un comentario hace que la métrica lo cuente.
+Esta vez se arregló el instrumento y no solo el comentario — la métrica de campos exige ahora un
+espacio detrás del nombre de etiqueta, porque un control real siempre lleva atributos y en prosa la
+etiqueta se escribe cerrada.
+
+**Verificado:** `tsc`, 263 pruebas, `build` y `ds:inventario` limpios tras cada uno de los 24
+commits. **Sin verificación visual**, como F8, F9 y F10.
+
 ## Excepciones explícitas al Design System
 
 Aprobadas caso por caso. **Prima la usabilidad sobre la uniformidad del sistema.**
@@ -423,7 +493,7 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 | ~~R5~~ | ~~Desbordamiento de layout al subir tamaños~~ | F4 · F6 | ✅ **Cerrado.** Tras F6 el desbordamiento horizontal sigue a 0 en todas las rutas medidas y los únicos truncados son los previos de la barra inferior, que es R10 |
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
-| R8 | **238 campos de formulario por debajo de 16 px** provocan zoom automático en iOS al enfocarlos, y el zoom no revierte solo. La auditoría contaba 5. | F4 | **Abierto — mayor de lo estimado** |
+| ~~R8~~ | ~~238 campos de formulario por debajo de 16 px~~ | F4 · F11 | ✅ **Cerrado.** Eran 227 medidos (más los ~40 del CRM que llegaban por variable y no se contaban). A 0, con métrica propia en el inventario para que no vuelvan |
 | R10 | **La barra inferior tiene 7 destinos donde el DS fija 5.** Es lo que impide cumplir el suelo de 11 px sin truncar. Incidencia abierta: la solución pasa por reorganizar destinos, reducir pestañas visibles, iconografía más eficiente o navegación adaptativa. | Por decidir | **Abierto — incidencia** |
 | R9 | **El estado caliente de HMR miente.** Una verificación de layout sobre CSS recargado en caliente dio un falso negativo: las clases `md:` parecían no aplicarse. Toda verificación de layout exige recarga completa. | Método | Vigente |
 
@@ -437,16 +507,16 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Escala de z-index elegida por orden de aparición~~ | ~~11~~ | ✅ F2 — declarada; los overlays la adoptan en F9 |
 | ~~`sticky top-[65px]` contra una cabecera de 78 px~~ | ~~1~~ | ✅ F2 |
 | ~~`MetricsScreen.tsx`, código muerto~~ | ~~441 líneas~~ | ✅ F2 — borrado |
-| Campos de formulario por debajo de 16 px → zoom en iOS | 238 | **sigue abierto** |
+| ~~Campos de formulario por debajo de 16 px → zoom en iOS~~ | ~~227~~ | ✅ F11 |
 | ~~Radios: 6 valores renderizados con dos colisiones~~ | ~~1.310~~ | ✅ F3 |
 | ~~Textos por debajo de 11 px~~ | ~~1.145~~ | ✅ F4 |
-| Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | F5 parcial → F11 |
+| Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | Fase de diseño |
 | Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | **sigue abierto** |
 | 590 iconos Material Symbols con tokens de texto que no aplican — la clase de Google gana sin capa a cualquier utilidad de Tailwind | 590 | F7 ✅ primitiva construida → F8 ✅ adoptados en `src/components/*.tsx`; quedan los de tamaño en píxeles a medida (bespoke) y `cardio/`/`roadmap/`, diferidos |
 | ~~Espaciado fuera de la escala de 4 px~~ | ~~1.170~~ | ✅ F6 |
 | ~~Glow en cuatro tarjetas donde no señala nada~~ | ~~4~~ | ✅ F6 |
-| Márgenes negativos para compensar espaciado | 21 | F11 |
-| `<select>` con aspecto nativo junto a campos personalizados | — | F7 ✅ primitiva construida → F11 adopción |
+| Márgenes negativos para compensar espaciado | 21 | Fase de diseño |
+| ~~`<select>` con aspecto nativo junto a campos personalizados~~ | — | ✅ F11 — adoptado donde el control tiene etiqueta propia |
 | ~~Overlays artesanales sin foco atrapado ni Escape~~ | ~~39~~ | ✅ F9 — 31 migrados; los 7 restantes clasificados y documentados en el código |
 | Posición superior de overlay (paleta Cmd+K) sin variante en la primitiva | 1 | Fase de diseño |
 | Editor de reportes: overlay a dos columnas de 896 px, ¿modal, ruta o panel? | 1 | Fase de diseño |
@@ -454,7 +524,9 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | Colores de gráfica asignados por dominio, fuera de los 5 tokens de serie (14 grupos musculares, métricas, fases, zonas de FC) | 4 mapas | Fase de diseño |
 | Barra inferior del coach con 7 destinos; el DS fija 5 | 7 | F12 |
 | Botones de la barra inferior **sin nombre accesible** — confirmado en el árbol de accesibilidad | 7 | F14 |
-| `<label>` sin `htmlFor` | 116 | F14 |
+| ~~`<label>` sin `htmlFor`~~ | ~~116~~ | ✅ F11 — `Campo` lo genera con `useId`; lo que no adopta la primitiva son textareas y campos de rejilla, anotados abajo |
+| Áreas de texto sin primitiva (`Input` no tiene variante `textarea`) | 12 | Fase de diseño |
+| Campos en rejilla apretada o edición en línea, donde 44 px de alto rompen la fila | 14 | Fase de diseño |
 | Archivos de más de 600 líneas | 21 | F15 |
 | Tokens antiguos aún en `@theme`, marcados «en retirada», con 0 usos | 12 | F15 |
 

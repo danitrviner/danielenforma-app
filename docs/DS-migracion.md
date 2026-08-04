@@ -879,3 +879,98 @@ coach, y el séptimo (`BodyweightPanel`) detrás del de atleta — misma limitac
 
 **Siguiente fase: F11 recortada** (`Input`/`Select` para cerrar R8, y primitivas en `cardio/`,
 `roadmap/` y CRM), la última antes de la auditoría visual con Claude Design.
+
+---
+
+## Sprint 6 · Formularios y módulos diferidos
+
+### F11 (recortada) · `Input`/`Select` y primitivas en los tres módulos aplazados
+
+**Fecha:** 4 de agosto de 2026 · **Commits:** 24 · **Última fase antes de Claude Design**
+
+El alcance se recortó a propósito respecto a la F11 original: solo lo que es defecto de usabilidad
+(R8) y lo que dejaba tres módulos visualmente desalineados. Lo cosmético —márgenes negativos,
+monoespaciadas ambiguas, el patrón píldora rectangular, partir archivos— se deja para el rediseño,
+porque hacerlo ahora es trabajo que el rediseño tiraría.
+
+#### Paso 0 — R8 no era medible
+
+Cuarta fase seguida (F6, F7, F9, F11) que empieza arreglando el instrumento. R8 llevaba abierto
+desde F4 sin contador: la auditoría dijo 5 campos, F2 encontró 238, y desde entonces nadie podía
+comprobar si subían o bajaban. Sin métrica, F11 habría sido la única fase verificable solo a ojo —
+y en pantallas que están detrás del login de coach.
+
+La métrica lee el `className` de la propia etiqueta de apertura de cada `<input>`, `<select>` y
+`<textarea>`, no el heredado. Da **227**, el mismo número que un conteo independiente escrito con
+otro método y otro lenguaje.
+
+#### 11a · R8 cerrado: 227 → 0
+
+Cuatro tandas: 57 en entrenamiento, 32 en nutrición, 99 en el resto de `components`, 39 en
+`roadmap`/`cardio`/CRM.
+
+**El CRM era R8 en bloque y no salía en ninguna cuenta.** Sus ~40 campos comparten la constante
+`inputClass`, que fijaba `text-caption` (11 px); la métrica mide la clase escrita en la etiqueta y
+ahí llegaba por variable. Un solo cambio los arregló todos, y explica por qué el total real era
+mayor que los 227 medidos.
+
+**Decisión de Dani, consultada con los números delante.** `Input` solo encajaba limpiamente en 50 de
+los 227: excluye `type="number"` por diseño (F7), y su envoltorio `Campo` pone siempre una etiqueta
+encima, lo que en una celda de tabla o un buscador es rehacer el layout. Se acordó **adoptar donde
+encaja y subir el resto a 16 px en su sitio**, que es lo que cierra R8 sin reestructurar nada. Los
+`type="number"` se quedan como están y conservan `min`/`max`/`step`.
+
+**La adopción de la primitiva cubrió menos de lo estimado, y el desglose es el hallazgo:**
+
+| Motivo | Cuántos |
+|---|--:|
+| `<textarea>` — la primitiva no tiene esa variante | 12 |
+| Rejilla apretada o edición en línea: 44 px de alto rompen la fila | 9 |
+| Campo en línea con botón al lado, etiqueta fuera de la fila | 5 |
+| Deliberado: nombre de rutina como título editable (19 px, negrita) | 1 |
+| **Falsos positivos**: `<label>` que *envuelve* su checkbox — asociación implícita, ya correcta | 9 |
+
+**Consecuencia visual asumida:** los campos crecen. Se nota sobre todo en la tabla de registro de
+series del atleta y en las filas de ejercicio de las plantillas, cuyos campos son estrechos
+(`w-10`, `w-14`) y ahora llevan letra de 16 px.
+
+**Arreglos que llegaron con la adopción**, sin ser objetivo: el error de nombre duplicado de las
+plantillas deja de ser un `<p>` suelto y pasa a `aria-describedby` + `aria-invalid`; el campo de
+correo del acceso gana `autoComplete="email"`, que no tenía; el buscador de ingredientes de recetas
+cambia una lupa posicionada a mano (absolute + `pl-10` calculado) por la prop `icon`.
+
+#### 11b · Primitivas en `cardio/`, `roadmap/` y `features/crm`
+
+**`Icon`: 63 → 0.** Como en F8, esto no es cosmético: `.material-symbols-outlined` trae
+`font-size: 24px` y llega sin capa CSS, así que los tokens de tamaño que esos iconos ya llevaban
+escritos no hacían nada y todos se pintaban a 24 px. Al adoptar `Icon` los tamaños se aplican de
+verdad y varios iconos se ven más pequeños — es la corrección, no una regresión.
+
+**El CRM deja de reimplementar lo que el DS ya resuelve.** Mismo patrón que `Modal.tsx` en F9: la
+API en español no cambia y ningún uso se toca.
+
+| Componente del CRM | Envuelve | Qué gana |
+|---|---|---|
+| `EmptyState` | `EmptyState` del DS | Su CTA deja de ser un `<button>` a mano |
+| `BotonPrimario` / `BotonSecundario` | `Button` | `focus-visible` y 44 px de alto en 36 usos |
+| `StatusPill` | `Badge` | Sus 4 tonos ya existían en la primitiva con otro nombre |
+
+#### Dos lecciones sobre el instrumento
+
+**`htmlFor` no puede crecer, y su objetivo estaba mal planteado.** El literal vive dentro de `Campo`,
+así que la métrica se queda en 1 por muchos formularios que se migren — mismo mecanismo que
+`aria-label` en F9. El objetivo `≥ 116` que el panel tenía escrito significaba *116 literales
+repetidos*: el correcto es 1, centralizado, y ya está cumplido. Se corrigió el panel.
+
+**Los comentarios envenenan los contadores, cuatro veces ya.** Dos en F9 (la métrica de overlays
+contando prosa que describía el patrón, y luego los propios comentarios que documentaban los
+overlays no migrados), una en F10 (un hex citado en un comentario) y una aquí: escribir «es un
+`<textarea>`» dejó la métrica en 1 con la deuda a 0. Esta vez se arregló **el instrumento**: la
+métrica exige un espacio detrás del nombre de etiqueta, porque un control real siempre lleva
+atributos y en prosa la etiqueta se escribe cerrada.
+
+**Verificado:** `tsc --noEmit`, 263 pruebas, `npm run build` y `ds:inventario` limpios tras cada uno
+de los 24 commits. **Sin verificación visual**, igual que F8, F9 y F10: las pantallas viven detrás
+del login de coach.
+
+**Con F11 termina la migración previa al rediseño. Lo siguiente es Claude Design.**
