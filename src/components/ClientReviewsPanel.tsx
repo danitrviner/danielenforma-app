@@ -1028,13 +1028,13 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
                                     <input type="number" step="0.1" value={checkinEditForm.weight}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                   <div>
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
                                     <input type="text" value={checkinEditForm.dateStr}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono" />
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -1042,7 +1042,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
                                     <select value={checkinEditForm.adherence}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1050,7 +1050,7 @@ export default function ClientReviewsPanel({
                                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
                                     <select value={checkinEditForm.mood}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-mono">
+                                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono">
                                       {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                   </div>
@@ -1059,7 +1059,7 @@ export default function ClientReviewsPanel({
                                   <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
                                   <textarea value={checkinEditForm.notes}
                                     onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-body-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
+                                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                 </div>
                                 <div className="flex gap-2">
                                   <button onClick={() => handleSaveCheckinEdit(c.id)} disabled={savingEdit}
@@ -1106,7 +1106,7 @@ export default function ClientReviewsPanel({
                                 value={expandedReviewId === key ? unifiedFeedbackText : (c.coachFeedback || '')}
                                 onChange={e => setUnifiedFeedbackText(e.target.value)}
                                 placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                                className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                               />
                               <button
                                 type="submit"
@@ -1188,24 +1188,24 @@ export default function ClientReviewsPanel({
                                     {isChoice && question?.options ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-32">
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white focus:outline-none focus:border-data/50 font-mono w-32">
                                         {question.options.map(o => <option key={o} value={o}>{o}</option>)}
                                       </select>
                                     ) : isBool ? (
                                       <select value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-sans w-24">
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white focus:outline-none focus:border-data/50 font-sans w-24">
                                         <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                                         <option value="false">{question?.labelFalse ?? 'No'}</option>
                                       </select>
                                     ) : isNum ? (
                                       <input type="number" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: parseFloat(e.target.value) || 0 } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white focus:outline-none focus:border-data/50 font-mono w-24 text-right" />
                                     ) : (
                                       <input type="text" value={String(ans.value)}
                                         onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-label text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
+                                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
                                     )}
                                   </div>
                                 );
@@ -1289,7 +1289,7 @@ export default function ClientReviewsPanel({
                   <select
                     value={assignQId}
                     onChange={e => setAssignQId(e.target.value)}
-                    className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
                     {coachQuestionnaires.map(q => (

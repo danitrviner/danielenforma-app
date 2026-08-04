@@ -438,7 +438,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-control pl-10 pr-3 py-3 text-body-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-bg border border-hairline rounded-control pl-10 pr-3 py-3 text-title-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -599,7 +599,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
+            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
           />
           <button
             type="submit"

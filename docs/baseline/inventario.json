@@ -1,6 +1,6 @@
 {
-  "generado": "2026-08-04T13:49:50.744Z",
-  "commit": "9779704",
+  "generado": "2026-08-04T13:50:57.409Z",
+  "commit": "b27270c",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39372
@@ -11,7 +11,7 @@
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "camposBajo16px": 138,
+    "camposBajo16px": 39,
     "fontMono": 974,
     "fontSans": 910,
     "pesosProhibidos": 23,
@@ -184,7 +184,6 @@
     },
     "src/components/AcademyCoachScreen.tsx": {
       "clasesTokenEnUso": 57,
-      "camposBajo16px": 9,
       "fontMono": 5,
       "fontSans": 7,
       "roundedFull": 2
@@ -198,7 +197,6 @@
     },
     "src/components/AiChatPanel.tsx": {
       "clasesTokenEnUso": 64,
-      "camposBajo16px": 2,
       "fontMono": 6,
       "fontSans": 3,
       "animatePulse": 2,
@@ -227,21 +225,18 @@
     },
     "src/components/CardioCoachScreen.tsx": {
       "clasesTokenEnUso": 59,
-      "camposBajo16px": 11,
       "fontMono": 6,
       "fontSans": 8,
       "roundedFull": 1
     },
     "src/components/CardioScreen.tsx": {
       "clasesTokenEnUso": 28,
-      "camposBajo16px": 3,
       "fontMono": 9,
       "fontSans": 6,
       "roundedFull": 2
     },
     "src/components/CheckInScreen.tsx": {
       "clasesTokenEnUso": 119,
-      "camposBajo16px": 2,
       "fontMono": 15,
       "fontSans": 26,
       "pesosProhibidos": 1,
@@ -250,14 +245,12 @@
     },
     "src/components/ClientDietsPanel.tsx": {
       "clasesTokenEnUso": 86,
-      "camposBajo16px": 3,
       "fontMono": 21,
       "fontSans": 13,
       "transitionAll": 6
     },
     "src/components/ClientHub.tsx": {
       "clasesTokenEnUso": 17,
-      "camposBajo16px": 2,
       "fontMono": 5,
       "fontSans": 3,
       "transitionAll": 2,
@@ -265,7 +258,6 @@
     },
     "src/components/ClientReviewsPanel.tsx": {
       "clasesTokenEnUso": 283,
-      "camposBajo16px": 11,
       "fontMono": 70,
       "fontSans": 53,
       "transitionAll": 20,
@@ -273,14 +265,12 @@
     },
     "src/components/ClientSetupPanel.tsx": {
       "clasesTokenEnUso": 28,
-      "camposBajo16px": 1,
       "fontMono": 2,
       "fontSans": 6,
       "roundedFull": 2
     },
     "src/components/ClientStatusCard.tsx": {
       "clasesTokenEnUso": 30,
-      "camposBajo16px": 1,
       "fontMono": 8
     },
     "src/components/ClientWorkoutsPanel.tsx": {
@@ -292,7 +282,6 @@
     },
     "src/components/ClientsScreen.tsx": {
       "clasesTokenEnUso": 89,
-      "camposBajo16px": 2,
       "fontMono": 12,
       "fontSans": 28,
       "pesosProhibidos": 2,
@@ -302,7 +291,6 @@
     },
     "src/components/CoachNotesPanel.tsx": {
       "clasesTokenEnUso": 25,
-      "camposBajo16px": 2,
       "fontMono": 1,
       "fontSans": 3,
       "roundedFull": 1
@@ -313,7 +301,6 @@
     },
     "src/components/CoachesScreen.tsx": {
       "clasesTokenEnUso": 99,
-      "camposBajo16px": 2,
       "fontMono": 20,
       "fontSans": 17,
       "transitionAll": 11,
@@ -326,7 +313,6 @@
     },
     "src/components/CommandPalette.tsx": {
       "clasesTokenEnUso": 12,
-      "camposBajo16px": 1,
       "fontMono": 3,
       "fontSans": 1,
       "modalesArtesanales": 1,
@@ -365,7 +351,6 @@
     },
     "src/components/ExercisePersonalNotesPanel.tsx": {
       "clasesTokenEnUso": 11,
-      "camposBajo16px": 2,
       "fontSans": 4
     },
     "src/components/FoodLibraryScreen.tsx": {
@@ -499,7 +484,6 @@
     },
     "src/components/OnboardingForm.tsx": {
       "clasesTokenEnUso": 185,
-      "camposBajo16px": 15,
       "fontMono": 58,
       "fontSans": 27,
       "transitionAll": 10,
@@ -516,7 +500,6 @@
     },
     "src/components/PhotosScreen.tsx": {
       "clasesTokenEnUso": 8,
-      "camposBajo16px": 1,
       "fontMono": 3,
       "fontSans": 1,
       "transitionAll": 1,
@@ -546,7 +529,6 @@
     },
     "src/components/QuestionnaireEditor.tsx": {
       "clasesTokenEnUso": 44,
-      "camposBajo16px": 1,
       "fontMono": 19,
       "fontSans": 4,
       "transitionAll": 1
@@ -573,7 +555,6 @@
     },
     "src/components/ReportEditor.tsx": {
       "clasesTokenEnUso": 32,
-      "camposBajo16px": 3,
       "fontMono": 3,
       "fontSans": 5,
       "modalesArtesanales": 1,
@@ -589,20 +570,17 @@
     },
     "src/components/ReportsPanel.tsx": {
       "clasesTokenEnUso": 24,
-      "camposBajo16px": 2,
       "fontMono": 8,
       "fontSans": 3,
       "transitionAll": 1
     },
     "src/components/ResourcesPanel.tsx": {
       "clasesTokenEnUso": 24,
-      "camposBajo16px": 3,
       "fontMono": 2,
       "fontSans": 3
     },
     "src/components/ReviewsScreen.tsx": {
       "clasesTokenEnUso": 63,
-      "camposBajo16px": 2,
       "fontMono": 11,
       "fontSans": 10,
       "transitionAll": 4,
@@ -611,7 +589,6 @@
     },
     "src/components/RoadmapTimeline.tsx": {
       "clasesTokenEnUso": 72,
-      "camposBajo16px": 7,
       "fontMono": 22,
       "fontSans": 8,
       "transitionAll": 3,
@@ -620,7 +597,6 @@
     },
     "src/components/ScheduleFields.tsx": {
       "clasesTokenEnUso": 24,
-      "camposBajo16px": 4,
       "fontMono": 10,
       "fontSans": 1,
       "transitionAll": 1
@@ -635,7 +611,6 @@
     },
     "src/components/StepsWidget.tsx": {
       "clasesTokenEnUso": 16,
-      "camposBajo16px": 1,
       "fontMono": 2,
       "fontSans": 2,
       "transitionAll": 1,
@@ -643,7 +618,6 @@
     },
     "src/components/TaskManagerPanel.tsx": {
       "clasesTokenEnUso": 20,
-      "camposBajo16px": 3,
       "fontSans": 2
     },
     "src/components/TrainingCoachScreen.tsx": {
@@ -680,7 +654,6 @@
     },
     "src/components/WelcomeScreen.tsx": {
       "clasesTokenEnUso": 33,
-      "camposBajo16px": 3,
       "fontMono": 5,
       "fontSans": 3,
       "pesosProhibidos": 2,

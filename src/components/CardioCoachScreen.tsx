@@ -101,11 +101,11 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
           <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
         <Button variant="secondary" size="s" onClick={regenerate} className="self-end">Recalcular</Button>
       </div>
@@ -114,10 +114,10 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <div key={z} className="flex items-center gap-2">
             <span className="text-label font-sans text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
@@ -244,21 +244,21 @@ function PrescriptionTab() {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-title-s text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
+        className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
       <div className="flex gap-2">
         <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent">
+          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
           <option value="intervalos">Intervalos</option>
         </select>
         {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent" />
+        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
       </div>
 
       {type === 'intervalos' && (
@@ -267,12 +267,12 @@ function PrescriptionTab() {
           {blocks.map((b, i) => (
             <div key={i} className="flex gap-2 items-center">
               <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
               <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent" />
+                className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
               <span className="text-caption text-ink-2 font-mono">s</span>
               <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-surface border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent">
+                className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
                 {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
               </select>
               <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">

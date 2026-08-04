@@ -284,7 +284,7 @@ export default function ClientSetupPanel({
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               required
             />
             <Button type="submit" size="s" disabled={savingExtra}>{savingExtra ? '...' : 'Crear'}</Button>

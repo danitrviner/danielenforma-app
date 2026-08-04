@@ -137,7 +137,7 @@ export default function ClientStatusCard({
               rows={2}
               autoFocus
               placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-body-s text-ink placeholder-ink-2/50 outline-none"
+              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-title-s text-ink placeholder-ink-2/50 outline-none"
             />
             <div className="flex gap-2">
               <Button size="s" onClick={saveNote} disabled={savingNote}>{savingNote ? 'Guardando…' : 'Guardar'}</Button>

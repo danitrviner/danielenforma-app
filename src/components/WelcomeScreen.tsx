@@ -173,7 +173,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={inviteEmailInput}
               onChange={e => setInviteEmailInput(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
               required
               autoFocus
             />
@@ -222,7 +222,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="atleta@enforma.com"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>
@@ -244,7 +244,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:outline-none focus:border-accent transition-colors"
+              className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
               required
             />
           </div>

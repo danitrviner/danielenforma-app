@@ -104,7 +104,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar atleta o acción..."
-            className="flex-1 bg-transparent text-white text-body-s focus:outline-none placeholder-ink-2/50"
+            className="flex-1 bg-transparent text-white text-title-s focus:outline-none placeholder-ink-2/50"
           />
           <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-2 flex-shrink-0">ESC</span>
         </div>

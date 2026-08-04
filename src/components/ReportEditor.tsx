@@ -71,7 +71,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                 <input
                   value={draft.title}
                   onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50"
                 />
               </div>
 
@@ -82,7 +82,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
@@ -102,7 +102,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
+                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>

@@ -172,7 +172,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             <select
               value={periodMode}
               onChange={e => setPeriodMode(e.target.value as PeriodMode)}
-              className="bg-raised border border-hairline text-white text-label font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+              className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
             >
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
@@ -185,7 +185,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <select
                 value={compareWeeks}
                 onChange={e => setCompareWeeks(Number(e.target.value))}
-                className="bg-raised border border-hairline text-white text-label font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
+                className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-accent/50 cursor-pointer"
               >
                 {compareWeekOptions.map(w => (
                   <option key={w} value={w}>{w === 1 ? 'La semana anterior' : `${w} semanas antes`}</option>

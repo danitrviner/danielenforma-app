@@ -363,7 +363,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-raised border border-hairline rounded-control p-3 text-body-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
@@ -475,7 +475,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   value={r}
                   onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                   placeholder="ej. Buen trabajo esta semana, sigue así."
-                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <Button
                   variant="ghost"

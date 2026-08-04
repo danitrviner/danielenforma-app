@@ -88,14 +88,14 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -105,7 +105,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             />
           </div>
           <Button type="submit" disabled={createMutation.isPending} fullWidth>

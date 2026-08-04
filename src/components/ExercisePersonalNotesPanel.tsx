@@ -76,7 +76,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
           <select
             value={selectedExerciseId}
             onChange={e => setSelectedExerciseId(e.target.value)}
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-label text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent"
           >
             <option value="">{inProgram ? 'Selecciona un ejercicio de su programa...' : 'Selecciona un ejercicio...'}</option>
             {selectable.map(ex => (
@@ -94,7 +94,7 @@ export default function ExercisePersonalNotesPanel({ athleteEmail, programExerci
                 onChange={e => setText(e.target.value)}
                 placeholder="ej. Utiliza elevación de talones..."
                 rows={3}
-                className="w-full bg-bg border border-hairline rounded-control p-3 text-label text-white focus:outline-none focus:border-accent resize-none"
+                className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent resize-none"
               />
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar observación'}

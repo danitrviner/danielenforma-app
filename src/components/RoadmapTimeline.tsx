@@ -125,7 +125,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             value={item.title}
             onChange={e => onChange({ ...item, title: e.target.value })}
             placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -137,7 +137,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -148,7 +148,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.type}
               onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="objetivo">Objetivo</option>
               <option value="hito">Hito</option>
@@ -160,7 +160,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             <select
               value={item.lane}
               onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="entreno">Entreno</option>
               <option value="nutricion">Nutrición</option>
@@ -178,7 +178,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.startDate ?? ''}
               onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div>
@@ -187,7 +187,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
               type="date"
               value={item.targetDate ?? ''}
               onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
@@ -198,7 +198,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
           <select
             value={item.status ?? 'pendiente'}
             onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="pendiente">Pendiente</option>
             <option value="en_progreso">En progreso</option>

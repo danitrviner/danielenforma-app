@@ -422,12 +422,12 @@ export default function ClientHub({
             type="date"
             value={planStart}
             onChange={e => setPlanStart(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>

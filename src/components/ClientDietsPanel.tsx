@@ -218,7 +218,7 @@ export default function ClientDietsPanel({
                 <select
                   value={scheduledId ?? ''}
                   onChange={e => onScheduleDay(day, e.target.value || null)}
-                  className="w-full bg-raised border border-hairline text-ink-2 text-caption font-mono rounded-control px-2 py-2 focus:outline-none focus:border-accent/40 hover:border-hairline transition-colors cursor-pointer"
+                  className="w-full bg-raised border border-hairline text-ink-2 text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-accent/40 hover:border-hairline transition-colors cursor-pointer"
                   title={WEEK_DAY_FULL[day]}
                 >
                   <option value="">Libre</option>
@@ -404,7 +404,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -418,7 +418,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-label focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

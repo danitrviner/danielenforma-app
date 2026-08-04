@@ -97,7 +97,7 @@ function QuestionnaireForm({
                 onChange={e => setAnswer(q.id, e.target.value)}
                 maxLength={q.maxChars}
                 placeholder="Escribe aquí..."
-                className="w-full bg-raised border-0 border-b border-hairline text-ink text-label p-3 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
+                className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
               />
             )}
 
@@ -418,7 +418,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 onChange={e => { setBwInput(e.target.value); setBwError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
                 placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+                className="w-24 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
               />
               <span className="font-mono text-label text-ink-3">kg</span>
             </div>

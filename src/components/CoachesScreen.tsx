@@ -223,10 +223,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-label text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-label text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (

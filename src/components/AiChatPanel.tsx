@@ -460,7 +460,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <Button
@@ -504,7 +504,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 onChange={e => setInstructionsDraft(e.target.value)}
                 rows={8}
                 placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s text-ink placeholder-ink-2/50 outline-none"
+                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
         </Dialog>

@@ -123,7 +123,7 @@ export default function StepsWidget({ athleteEmail }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <Button size="s" onClick={handleSave} loading={saving} icon="check" label="Guardar" />
         </div>

@@ -120,7 +120,7 @@ export default function PhotosScreen({ profile }: Props) {
             type="date"
             value={uploadDate}
             onChange={e => setUploadDate(e.target.value)}
-            className="bg-transparent border-none text-white font-mono text-body-s focus:outline-none focus:ring-0 min-w-0"
+            className="bg-transparent border-none text-white font-mono text-title-s focus:outline-none focus:ring-0 min-w-0"
           />
         </div>
         <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload">
