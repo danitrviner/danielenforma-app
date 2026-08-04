@@ -7,6 +7,7 @@ import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
+import { Icon, Button, EmptyState } from './ui';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -266,18 +267,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               {workouts.length} rutinas creadas
             </p>
           </div>
-          <button
-            onClick={() => openEditor()}
-            className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all self-start md:self-auto"
-          >
-            <span className="material-symbols-outlined text-body-s">add</span>
+          <Button onClick={() => openEditor()} variant="primary" icon="add" className="self-start md:self-auto">
             Nueva rutina
-          </button>
+          </Button>
         </header>
 
         {successMsg && (
           <div className="bg-accent/10 border border-accent/25 text-white p-3 rounded-surface text-body-s flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
+            <Icon name="check_circle" size="m" className="text-accent" />
             {successMsg}
           </div>
         )}
@@ -289,17 +286,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : workouts.length === 0 ? (
-          <div className="bg-surface border border-dashed border-hairline rounded-surface p-10 text-center">
-            <span className="material-symbols-outlined text-display text-accent/40 block mb-3">format_list_bulleted</span>
-            <p className="text-white font-bold text-body-s">Sin rutinas todavía</p>
-            <p className="text-ink-2 text-label mt-1">Crea tu primera rutina para empezar a asignarla a tus atletas.</p>
-            <button
-              onClick={() => openEditor()}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-3 bg-accent/10 border border-accent/30 text-accent font-mono text-label uppercase rounded-control hover:bg-accent/20 transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s">add</span>
-              Crear primera rutina
-            </button>
+          <div className="bg-surface border border-dashed border-hairline rounded-surface">
+            <EmptyState
+              icon="format_list_bulleted"
+              title="Sin rutinas todavía"
+              description="Crea tu primera rutina para empezar a asignarla a tus atletas."
+              actionLabel="Crear primera rutina"
+              onAction={() => openEditor()}
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -330,7 +324,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                           <span className="text-ink-3 font-bold w-4 text-center">{i + 1}</span>
                           <span className="truncate">{ex?.name || (we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : '—')}</span>
                           {we.recordVideoSet && (
-                            <span className="material-symbols-outlined text-accent text-body-s flex-shrink-0" title="Recordatorio de vídeo activo">videocam</span>
+                            <Icon name="videocam" size="s" className="text-accent flex-shrink-0" title="Recordatorio de vídeo activo" />
                           )}
                           {we.technique && (
                             <span className="flex-shrink-0" title={TECHNIQUE_LABEL[we.technique]}>{TECHNIQUE_EMOJI[we.technique]}</span>
@@ -352,7 +346,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     onClick={() => openEditor(w)}
                     className="flex-1 flex items-center justify-center gap-2 py-2 bg-raised hover:bg-accent/10 border border-hairline hover:border-accent/30 text-ink-2 hover:text-accent rounded-control font-mono text-caption uppercase font-bold transition-all"
                   >
-                    <span className="material-symbols-outlined text-body-s">edit</span>
+                    <Icon name="edit" size="s" />
                     Editar
                   </button>
                   <button
@@ -361,16 +355,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     title="Duplicar rutina"
                     className="flex items-center justify-center gap-2 py-2 px-3 bg-raised hover:bg-accent/10 border border-hairline hover:border-accent/30 text-ink-2 hover:text-accent rounded-control font-mono text-caption uppercase font-bold transition-all disabled:opacity-50"
                   >
-                    <span className={`material-symbols-outlined text-body-s ${duplicatingId === w.id ? 'animate-spin' : ''}`}>
-                      {duplicatingId === w.id ? 'progress_activity' : 'content_copy'}
-                    </span>
+                    <Icon name={duplicatingId === w.id ? 'progress_activity' : 'content_copy'} size="s" className={duplicatingId === w.id ? 'animate-spin' : ''} />
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(w.id)}
                     title="Eliminar rutina"
                     className="flex items-center justify-center gap-2 py-2 px-3 bg-raised hover:bg-red-500/10 border border-hairline hover:border-red-500/30 text-ink-2 hover:text-red-400 rounded-control font-mono text-caption uppercase font-bold transition-all"
                   >
-                    <span className="material-symbols-outlined text-body-s">delete</span>
+                    <Icon name="delete" size="s" />
                   </button>
                 </div>
               </div>
@@ -384,17 +376,17 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-e2">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-red-400 text-title-l">warning</span>
+                <Icon name="warning" size="l" className="text-red-400" />
                 <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar rutina?</h3>
               </div>
               <p className="text-body-s text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
+                <Button onClick={() => setDeleteConfirm(null)} variant="secondary" fullWidth>
                   Cancelar
-                </button>
-                <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-3 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-label uppercase rounded-control transition-all">
+                </Button>
+                <Button onClick={() => handleDelete(deleteConfirm)} variant="danger" fullWidth>
                   Eliminar
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -408,13 +400,9 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
     <div className="space-y-6">
       {/* Editor header */}
       <header className="flex items-center gap-4 pb-4 border-b border-hairline">
-        <button
-          onClick={() => setView('list')}
-          className="flex items-center gap-2 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">arrow_back</span>
+        <Button onClick={() => setView('list')} variant="secondary" size="s" icon="arrow_back">
           Volver
-        </button>
+        </Button>
         <h1 className="font-sans font-bold text-title-l tracking-tight text-white uppercase">
           {editingId ? 'Editar rutina' : 'Nueva rutina'}
         </h1>
@@ -450,7 +438,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             onClick={openPicker}
             className="flex items-center gap-2 text-label font-sans text-accent hover:text-white border border-accent/30 hover:border-accent px-3 py-2 rounded-control transition-all"
           >
-            <span className="material-symbols-outlined text-body-s">add</span>
+            <Icon name="add" size="s" />
             Añadir ejercicio
           </button>
         </div>
@@ -460,7 +448,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             onClick={openPicker}
             className="bg-surface border border-dashed border-hairline hover:border-accent/30 rounded-surface p-10 text-center cursor-pointer transition-all group"
           >
-            <span className="material-symbols-outlined text-display text-accent/30 group-hover:text-accent/60 transition-all block mb-2">add_circle</span>
+            <Icon name="add_circle" size="xl" className="text-accent/30 group-hover:text-accent/60 transition-all block mb-2" />
             <p className="text-label text-ink-2 group-hover:text-white transition-colors">Haz clic para añadir el primer ejercicio</p>
           </div>
         ) : (
@@ -521,7 +509,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-control object-cover border border-hairline flex-shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-label text-ink-2">fitness_center</span>
+                        <Icon name="fitness_center" size="s" className="text-ink-2" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -547,7 +535,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                         className="p-1 text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="Subir"
                       >
-                        <span className="material-symbols-outlined text-body-s">arrow_upward</span>
+                        <Icon name="arrow_upward" size="s" />
                       </button>
                       <button
                         onClick={() => moveWE(idx, 1)}
@@ -555,14 +543,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                         className="p-1 text-ink-2 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         title="Bajar"
                       >
-                        <span className="material-symbols-outlined text-body-s">arrow_downward</span>
+                        <Icon name="arrow_downward" size="s" />
                       </button>
                       <button
                         onClick={() => removeWE(idx)}
                         className="p-1 text-ink-2 hover:text-red-400 transition-colors ml-1"
                         title="Eliminar"
                       >
-                        <span className="material-symbols-outlined text-body-s">delete</span>
+                        <Icon name="delete" size="s" />
                       </button>
                     </div>
                   </div>
@@ -583,7 +571,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
               onClick={openPicker}
               className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-accent/40 text-ink-2 hover:text-accent rounded-control font-sans text-label uppercase transition-all"
             >
-              <span className="material-symbols-outlined text-body-s">add</span>
+              <Icon name="add" size="s" />
               Añadir ejercicio
             </button>
           </div>
@@ -592,23 +580,19 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
       {/* Save / Cancel */}
       <div className="flex gap-3 pt-2 border-t border-hairline">
-        <button
-          onClick={() => setView('list')}
-          className="flex-1 md:flex-none md:px-8 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all"
-        >
+        <Button onClick={() => setView('list')} variant="secondary" className="flex-1 md:flex-none md:px-8">
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
-          disabled={isSaving || !editorName.trim()}
-          className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+          disabled={!editorName.trim()}
+          loading={isSaving}
+          variant="primary"
+          icon="save"
+          className="flex-1"
         >
-          {isSaving ? (
-            <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</>
-          ) : (
-            <><span className="material-symbols-outlined text-body-s">save</span>{editingId ? 'Guardar cambios' : 'Crear rutina'}</>
-          )}
-        </button>
+          {editingId ? 'Guardar cambios' : 'Crear rutina'}
+        </Button>
       </div>
 
       {/* Exercise picker modal */}
@@ -619,14 +603,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
             <div className="flex items-center justify-between p-5 border-b border-hairline flex-shrink-0">
               <h3 className="font-sans font-bold text-white text-title-m">Seleccionar ejercicio</h3>
               <button onClick={() => setShowPicker(false)} className="text-ink-2 hover:text-white transition-colors">
-                <span className="material-symbols-outlined">close</span>
+                <Icon name="close" size="l" />
               </button>
             </div>
 
             {/* Picker filters */}
             <div className="p-4 border-b border-hairline space-y-3 flex-shrink-0">
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
+                <Icon name="search" size="m" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 pointer-events-none" />
                 <input
                   autoFocus
                   type="text"
@@ -673,7 +657,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-surface object-cover border border-hairline flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
+                        <Icon name="fitness_center" size="m" className="text-ink-2" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -683,7 +667,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                         <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                       </div>
                     </div>
-                    <span className="material-symbols-outlined text-accent/50 group-hover:text-accent transition-colors flex-shrink-0">add_circle</span>
+                    <Icon name="add_circle" size="m" className="text-accent/50 group-hover:text-accent transition-colors flex-shrink-0" />
                   </button>
                 ))
               )}
