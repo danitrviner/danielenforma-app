@@ -94,12 +94,12 @@ export default function ClientesList() {
             </p>
           </div>
           {!c.userId && (
-            <span
-              className="material-symbols-outlined text-body-s text-ink-3 shrink-0"
-              title="Contacto sin cuenta en la app"
-            >
-              person_off
-            </span>
+            <Icon
+              name="person_off"
+              size="s"
+              label="Contacto sin cuenta en la app"
+              className="text-ink-3 shrink-0"
+            />
           )}
         </div>
       ),

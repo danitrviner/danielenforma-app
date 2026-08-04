@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../ui';
 
 export interface Achievement {
   id: string;
@@ -34,12 +35,12 @@ export default function RecentAchievements({ achievements }: Props) {
             className="flex-shrink-0 flex flex-col items-center gap-2 w-[84px] rounded-surface border p-3 text-center"
             style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
           >
-            <span
-              className="material-symbols-outlined text-title-m w-9 h-9 rounded-full flex items-center justify-center"
+            <Icon
+              name={a.icon}
+              size="l"
+              className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ color: a.color, backgroundColor: `${a.color}1a` }}
-            >
-              {a.icon}
-            </span>
+            />
             <p className="text-white text-caption font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
             <p className="text-ink-2 text-caption font-mono">{fmtDate(a.date)}</p>
           </div>
