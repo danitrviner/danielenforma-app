@@ -17,13 +17,24 @@ import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks'
    `footer`. El diálogo no conoce el dominio de lo que confirma.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export type DialogSize = 's' | 'm' | 'l';
+export type DialogSize = 's' | 'm' | 'l' | 'xl';
 
-/** Clases literales: Tailwind lee cadenas del código, no las compone. */
+/**
+ * Clases literales: Tailwind lee cadenas del código, no las compone.
+ *
+ * `xl` lo añade F9, no F7. Al censar los 38 overlays artesanales antes de
+ * migrarlos, los anchos reales salieron `sm` 11, `md` 9, `lg` 9 y **`2xl` 5** —
+ * y esos 5 son justo los que muestran prosa larga o dos columnas (el visor de
+ * reportes del atleta, el editor de cuestionarios, el análisis semanal de IA,
+ * el constructor de recetas, la vista previa de rutinas). Sin este escalón,
+ * adoptar la primitiva los estrecharía de 672 a 512 px, que es una regresión
+ * de legibilidad, no un cambio de estilo. Es aditivo: ningún uso previo cambia.
+ */
 const ANCHO: Record<DialogSize, string> = {
   s: 'max-w-sm',
   m: 'max-w-md',
   l: 'max-w-lg',
+  xl: 'max-w-2xl',
 };
 
 type Props = {

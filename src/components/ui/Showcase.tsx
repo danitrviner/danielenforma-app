@@ -136,6 +136,7 @@ export default function Showcase() {
   const [vecesAtras, setVecesAtras] = React.useState(0);
   const [sheetAbierto, setSheetAbierto] = React.useState(false);
   const [dialogAbierto, setDialogAbierto] = React.useState(false);
+  const [dialogXlAbierto, setDialogXlAbierto] = React.useState(false);
   const [vecesCrearRutina, setVecesCrearRutina] = React.useState(0);
   const [segundoOverlayAbierto, setSegundoOverlayAbierto] = React.useState(false);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
@@ -558,6 +559,9 @@ export default function Showcase() {
           >
             Abrir los dos a la vez
           </Button>
+          <Button variant="secondary" icon="description" onClick={() => setDialogXlAbierto(true)}>
+            Abrir Dialog xl
+          </Button>
         </div>
 
         <Dialog
@@ -575,6 +579,21 @@ export default function Showcase() {
             Esta acción no se puede deshacer. El tono danger del botón no es una prop de Dialog: es
             pasar Button variant=&quot;danger&quot; como footer — el diálogo no conoce el dominio de
             lo que confirma.
+          </p>
+        </Dialog>
+
+        <Dialog
+          open={dialogXlAbierto}
+          onClose={() => setDialogXlAbierto(false)}
+          size="xl"
+          title="Reporte de la semana"
+          footer={<Button onClick={() => setDialogXlAbierto(false)}>Cerrar</Button>}
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            El escalón que añade F9. Los tres tamaños de F7 (sm, md, lg) cubren confirmaciones y
+            formularios cortos, pero no la media docena de overlays reales que muestran prosa larga
+            o dos columnas: a 512 px el texto de un reporte se estrecha hasta dar una columna de
+            lectura peor que la que tenía antes de migrar. Aditivo — ningún uso previo cambia.
           </p>
         </Dialog>
 
