@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:08:54.527Z",
-  "commit": "f0eff05",
+  "generado": "2026-08-04T09:13:41.225Z",
+  "commit": "5249ab4",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39411
+    "lineasTsx": 39408
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4867,
+    "clasesTokenEnUso": 4861,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 979,
-    "fontSans": 933,
+    "fontSans": 932,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 28,
+    "modalesArtesanales": 27,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 161,
+    "roundedFull": 160,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -417,12 +417,11 @@
       "roundedFull": 1
     },
     "src/components/MyDietsScreen.tsx": {
-      "clasesTokenEnUso": 93,
+      "clasesTokenEnUso": 87,
       "fontMono": 10,
-      "fontSans": 18,
-      "modalesArtesanales": 1,
+      "fontSans": 17,
       "transitionAll": 8,
-      "roundedFull": 3
+      "roundedFull": 2
     },
     "src/components/MyMenuScreen.tsx": {
       "clasesTokenEnUso": 105,
