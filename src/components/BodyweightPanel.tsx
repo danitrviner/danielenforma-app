@@ -8,7 +8,10 @@ import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import Skeleton from './Skeleton';
-import { Icon, Button, EmptyState } from './ui';
+import {
+  Icon, Button, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -202,23 +205,21 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         <>
           {/* Chart */}
           {logs.length > 0 && (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
+            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+              <LineChart data={chartData} margin={MARGEN_GRAFICA}>
+                <CartesianGrid {...REJILLA_GRAFICA} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                  axisLine={{ stroke: 'var(--color-raised)' }}
-                  tickLine={false}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
                   minTickGap={56}
                 />
                 <YAxis
                   domain={yDomain}
-                  tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
+                  width={ANCHO_EJE_Y}
                   tickFormatter={v => `${v}`}
                 />
                 <Tooltip content={(props) => <BwTooltip {...props} />} />
