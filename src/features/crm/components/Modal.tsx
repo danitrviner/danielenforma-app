@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { Sheet } from '../../../components/ui';
 
 interface Props {
   titulo: string;
@@ -7,58 +8,28 @@ interface Props {
   footer?: React.ReactNode;
 }
 
-// Modal base del CRM. Copia el patrón visual ya usado en ExerciseLibraryScreen
-// y ClientWorkoutsPanel (`fixed inset-0 bg-black/70 backdrop-blur-sm`) y le
-// añade lo que a aquellos les falta: cierre con Escape, foco inicial dentro del
-// diálogo y bloqueo del scroll de fondo.
+/**
+ * Modal base del CRM — hoy una envoltura fina sobre la primitiva `Sheet`.
+ *
+ * Antes tenía su propia implementación, y era la única del repo con intento de
+ * bloqueo de scroll: guardaba el `overflow` del body y lo restauraba al
+ * desmontar. Correcto con UN overlay, roto con dos, porque el primero en
+ * cerrarse devolvía el scroll aunque el otro siguiera abierto — ese es el
+ * riesgo R4 de esta migración, y `internal/overlayHooks` lo resuelve con un
+ * contador compartido a nivel de módulo. Delegar es lo que lo cierra de verdad,
+ * en vez de arreglar la misma lógica dos veces.
+ *
+ * También le faltaba el foco atrapado: solo movía el foco al primer campo al
+ * abrir, así que el tabulador se escapaba al fondo de la página.
+ *
+ * La API (`titulo` / `onCerrar`) no cambia: las pantallas del CRM que lo usan no
+ * se tocan.
+ */
 export default function Modal({ titulo, onCerrar, children, footer }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
-    document.addEventListener('keydown', onKey);
-    const overflowPrevio = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = overflowPrevio;
-    };
-  }, [onCerrar]);
-
   return (
-    <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center sm:p-4"
-      onClick={e => { if (e.target === e.currentTarget) onCerrar(); }}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-label={titulo}
-        className="w-full sm:max-w-[480px] max-h-[90vh] flex flex-col bg-surface border border-strong rounded-t-surface sm:rounded-surface overflow-hidden"
-      >
-        <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-hairline shrink-0">
-          <h2 className="font-sans font-bold text-body-s text-ink">{titulo}</h2>
-          <button
-            type="button"
-            onClick={onCerrar}
-            aria-label="Cerrar"
-            className="w-7 h-7 rounded-control flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
-          >
-            <span className="material-symbols-outlined text-title-s">close</span>
-          </button>
-        </header>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-3">{children}</div>
-
-        {footer && (
-          <footer className="flex items-center justify-end gap-2 px-4 py-3 border-t border-hairline shrink-0">
-            {footer}
-          </footer>
-        )}
-      </div>
-    </div>
+    <Sheet open onClose={onCerrar} title={titulo} footer={footer}>
+      {children}
+    </Sheet>
   );
 }
 

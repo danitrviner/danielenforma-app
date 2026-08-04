@@ -1,26 +1,26 @@
 {
-  "generado": "2026-08-04T09:36:04.860Z",
-  "commit": "de03790",
+  "generado": "2026-08-04T09:37:33.555Z",
+  "commit": "2d47ac0",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39342
+    "lineasTsx": 39313
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4787,
+    "clasesTokenEnUso": 4781,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 974,
-    "fontSans": 914,
+    "fontSans": 913,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 10,
+    "modalesArtesanales": 8,
     "transitionAll": 264,
     "animatePulse": 29,
-    "ariaLabel": 32,
+    "ariaLabel": 30,
     "htmlFor": 1,
     "focusVisible": 31,
     "reducedMotion": 0,
@@ -937,10 +937,8 @@
       "roundedFull": 1
     },
     "src/features/crm/components/Modal.tsx": {
-      "clasesTokenEnUso": 17,
-      "fontSans": 6,
-      "modalesArtesanales": 2,
-      "ariaLabel": 2
+      "clasesTokenEnUso": 11,
+      "fontSans": 5
     },
     "src/features/crm/components/NuevoClienteModal.tsx": {
       "clasesTokenEnUso": 3,
