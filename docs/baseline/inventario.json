@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:17:03.097Z",
-  "commit": "2f44078",
+  "generado": "2026-08-04T09:20:22.595Z",
+  "commit": "9194311",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39401
+    "lineasTsx": 39389
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4847,
+    "clasesTokenEnUso": 4840,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 979,
-    "fontSans": 929,
+    "fontSans": 928,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 24,
+    "modalesArtesanales": 23,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 158,
+    "roundedFull": 157,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -95,7 +95,7 @@
       },
       {
         "archivo": "src/components/NutritionScreen.tsx",
-        "lineas": 1643
+        "lineas": 1631
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
@@ -481,13 +481,13 @@
       "roundedFull": 3
     },
     "src/components/NutritionScreen.tsx": {
-      "clasesTokenEnUso": 250,
+      "clasesTokenEnUso": 243,
       "fontMono": 32,
-      "fontSans": 37,
+      "fontSans": 36,
       "pesosProhibidos": 1,
-      "modalesArtesanales": 5,
+      "modalesArtesanales": 4,
       "transitionAll": 30,
-      "roundedFull": 14
+      "roundedFull": 13
     },
     "src/components/OnboardingForm.tsx": {
       "clasesTokenEnUso": 185,

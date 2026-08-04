@@ -1423,28 +1423,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {/* Cambiar comida sheet */}
       {swapContext && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
-              <div>
-                <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
-                  Cambiar comida
-                </h3>
-                {swapSourceRecipe && (
-                  <span className="font-sans text-caption text-ink-2 uppercase">
-                    Alternativas a {swapSourceRecipe.name} (±10% kcal)
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setSwapContext(null)}
-                className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
-              >
-                <span className="material-symbols-outlined text-body-s select-none">close</span>
-              </button>
+        <Sheet
+          open
+          onClose={() => setSwapContext(null)}
+          title="Cambiar comida"
+          toolbar={swapSourceRecipe ? (
+            <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
+              Alternativas a {swapSourceRecipe.name} (±10% kcal)
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+          ) : undefined}
+        >
+            <div className="pt-4 space-y-2">
               {swapCandidates.length === 0 ? (
                 <div className="text-center py-10 font-sans text-label text-ink-2 italic">
                   Sin alternativas nutricionalmente similares disponibles.
@@ -1470,8 +1459,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Food picker sheet */}
