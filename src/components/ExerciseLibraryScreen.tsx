@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState, Dialog, Button, Icon } from './ui';
+import { EmptyState, Dialog, Button, Icon, Input, Select } from './ui';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -520,63 +520,40 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           size="l"
         >
             <form onSubmit={handleSave} className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="ej. Press inclinado con mancuernas"
-                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
-                />
-              </div>
+              <Input
+                label="Nombre"
+                required
+                value={form.name}
+                onChange={v => setForm(f => ({ ...f, name: v }))}
+                placeholder="ej. Press inclinado con mancuernas"
+              />
 
               {/* Grupo muscular — the 14 typed keys */}
-              <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
-                  Grupo muscular
-                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(vincula con el plan de volumen)</span>
-                </label>
-                <select
-                  value={form.muscleGroup ?? ''}
-                  onChange={e => setForm(f => ({
-                    ...f,
-                    muscleGroup: (e.target.value as MuscleGroup) || undefined,
-                  }))}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                >
-                  <option value="">— Sin asignar —</option>
-                  {MACRO_MUSCLE_GROUPS.map(g => (
-                    <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Grupo muscular"
+                hint="Vincula con el plan de volumen."
+                value={form.muscleGroup ?? ''}
+                onChange={v => setForm(f => ({ ...f, muscleGroup: (v as MuscleGroup) || undefined }))}
+                placeholder="— Sin asignar —"
+                options={MACRO_MUSCLE_GROUPS.map(g => ({ value: g, label: MACRO_MUSCLE_LABELS[g] }))}
+              />
 
               {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Tipo *</label>
-                  <select
-                    value={form.type}
-                    onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                  >
-                    {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Perfil de resistencia</label>
-                  <select
-                    value={form.enduranceProfile ?? ''}
-                    onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                  >
-                    <option value="">— Sin asignar —</option>
-                    {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
-                  </select>
-                </div>
+                <Select
+                  label="Tipo"
+                  required
+                  value={form.type}
+                  onChange={v => setForm(f => ({ ...f, type: v as ExerciseType }))}
+                  options={TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+                />
+                <Select
+                  label="Perfil de resistencia"
+                  value={form.enduranceProfile ?? ''}
+                  onChange={v => setForm(f => ({ ...f, enduranceProfile: (v as EnduranceProfile) || undefined }))}
+                  placeholder="— Sin asignar —"
+                  options={ENDURANCE_PROFILES.map(p => ({ value: p, label: ENDURANCE_LABELS[p] }))}
+                />
               </div>
 
               {/* Equipment multi-select */}

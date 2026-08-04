@@ -1,25 +1,25 @@
 {
-  "generado": "2026-08-04T13:52:22.180Z",
-  "commit": "3108a5c",
+  "generado": "2026-08-04T13:54:21.428Z",
+  "commit": "1bde502",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39379
+    "lineasTsx": 39356
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4775,
+    "clasesTokenEnUso": 4757,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 974,
-    "fontSans": 910,
+    "fontMono": 971,
+    "fontSans": 908,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 262,
+    "transitionAll": 261,
     "animatePulse": 29,
     "ariaLabel": 30,
     "htmlFor": 1,
@@ -138,16 +138,16 @@
         "lineas": 676
       },
       {
-        "archivo": "src/components/ExerciseLibraryScreen.tsx",
-        "lineas": 673
-      },
-      {
         "archivo": "src/components/CardioScreen.tsx",
         "lineas": 664
       },
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
         "lineas": 661
+      },
+      {
+        "archivo": "src/components/ExerciseLibraryScreen.tsx",
+        "lineas": 650
       },
       {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
@@ -343,11 +343,11 @@
       "transitionAll": 5
     },
     "src/components/ExerciseLibraryScreen.tsx": {
-      "clasesTokenEnUso": 136,
-      "fontMono": 25,
-      "fontSans": 21,
+      "clasesTokenEnUso": 118,
+      "fontMono": 22,
+      "fontSans": 19,
       "pesosProhibidos": 1,
-      "transitionAll": 12
+      "transitionAll": 11
     },
     "src/components/ExercisePersonalNotesPanel.tsx": {
       "clasesTokenEnUso": 11,
