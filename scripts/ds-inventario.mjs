@@ -188,7 +188,15 @@ const METRICAS = [
       const MENORES = /\btext-(caption|label|body-s|body|xs|sm|base)\b/;
       const GRANDES = new Set(['text-body', 'text-base']); // 15 px y 16 px
       let n = 0;
-      for (const m of t.matchAll(/<(?:input|select|textarea)\b/g)) {
+      /*
+       * Exige un espacio detrás del nombre de etiqueta. Un control real de este
+       * repo siempre lleva atributos (`<input type=…`, `<select\n  value=…`),
+       * mientras que en prosa se escribe cerrada: «se queda a mano porque es un
+       * <textarea>». Sin esta guarda, un comentario que MENCIONA la etiqueta se
+       * cuenta como campo y adopta el `className` del siguiente elemento —
+       * pasó de verdad, y dejó la métrica en 1 con la deuda ya a 0.
+       */
+      for (const m of t.matchAll(/<(?:input|select|textarea)\s/g)) {
         const etiqueta = t.slice(m.index, m.index + 900);
         const cls = /className=[{"`]([^"`}]*)/.exec(etiqueta);
         if (!cls) continue;

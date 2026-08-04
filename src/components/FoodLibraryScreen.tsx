@@ -258,7 +258,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   options={CATEGORIES.map(c => ({ value: c.id, label: c.label }))}
                 />
               </div>
-              {/* Descripción: <textarea>, sin variante en Input — se queda a mano. */}
+              {/* Descripción: área de texto multilínea, sin variante en Input —
+                  se queda a mano. */}
               <div>
                 <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Descripción (1 intercambio = ...) *</label>
                 <textarea
