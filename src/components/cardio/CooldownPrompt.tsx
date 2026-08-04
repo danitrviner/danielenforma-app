@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Icon } from '../ui';
 
 // Vuelta a la calma de 2 min tras terminar el entreno (§5.6 del análisis) —
 // con banda BLE no hay otra forma de medir el Heart Rate Recovery, porque la
@@ -37,7 +38,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
         </div>
 
         <div className="flex items-center justify-center gap-2">
-          <span className="material-symbols-outlined text-danger text-title-m">favorite</span>
+          <Icon name="favorite" size="l" className="text-danger" />
           <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
         </div>
 

@@ -3,6 +3,7 @@ import { UserProfile, HrvReading } from '../../types';
 import { HeartRateMonitor, isBleAvailable } from '../../services/bleHeartRate';
 import { createHrvReading } from '../../dbService';
 import { rmssd, hrvBaseline, readinessScoreFromHrv } from '../../utils/cardioMetrics';
+import { Icon } from '../ui';
 
 // HRV matinal (F8, §7/§8 del análisis): 3 min tumbado con la banda puesta,
 // quieto. Es una lectura puntual e independiente del entreno — su propia
@@ -122,7 +123,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
           <>
             <div>
               <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">HRV matinal</p>
-              <span className="material-symbols-outlined text-data text-display mt-3 block">bedtime</span>
+              <Icon name="bedtime" size="xl" className="text-data mt-3 block" />
               <p className="text-body-s text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
             {error && <p className="text-label text-red-400 font-sans">{error}</p>}
@@ -142,7 +143,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
             <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
             <p className="font-sans font-bold text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-danger text-title-m">favorite</span>
+              <Icon name="favorite" size="l" className="text-danger" />
               <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
             {error && <p className="text-label text-red-400 font-sans">{error}</p>}

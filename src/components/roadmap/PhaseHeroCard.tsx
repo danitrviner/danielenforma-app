@@ -4,6 +4,7 @@ import { PhaseProgress } from '../../utils/planPhase';
 import { PhaseWeightStatus } from '../../utils/planNutritionBridge';
 import ProgressRing from '../ProgressRing';
 import StatTile from '../StatTile';
+import { Icon } from '../ui';
 
 interface Props {
   phase: PlanPhase;
@@ -75,7 +76,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
 
       {phase.exitCriteria && (
         <div className="flex items-start gap-2 pt-2 border-t border-hairline">
-          <span className="material-symbols-outlined text-body-s text-ink-2 ">flag</span>
+          <Icon name="flag" size="s" className="text-ink-2" />
           <p className="text-ink-2 text-label font-sans leading-relaxed">
             <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
           </p>

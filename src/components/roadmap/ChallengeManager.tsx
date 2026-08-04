@@ -7,6 +7,7 @@ import {
 import { isoWeekKey, isoWeekBounds, evaluateChallengeProgress, ChallengeData } from '../../utils/weeklyChallenge';
 import { addDays, getWeekStart } from '../../utils/trainingWeek';
 import ChallengeOptionsPanel from './ChallengeOptionsPanel';
+import { Icon } from '../ui';
 
 const KIND_LABEL: Record<ChallengeKind, string> = {
   pasos_media: 'Media de pasos', pasos_total: 'Pasos totales', carga_ejercicio: 'Carga en un ejercicio',
@@ -344,7 +345,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                   <p className="text-caption text-ink-2 font-sans">{KIND_LABEL[t.kind]}</p>
                 </div>
                 <button onClick={() => removeTemplate(t.id)} className="text-ink-2 hover:text-red-400">
-                  <span className="material-symbols-outlined text-body-s">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
             ))}

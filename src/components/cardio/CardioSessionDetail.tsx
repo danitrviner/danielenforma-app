@@ -4,6 +4,7 @@ import { updateCardioSession } from '../../dbService';
 import { compare30DayAverage } from '../../utils/cardioHistory';
 import ZoneBars from './ZoneBars';
 import HrChart from './HrChart';
+import { Icon } from '../ui';
 
 // Detalle y edición post-entreno (§6 del análisis): título/notas/etiquetas
 // editables, el `type` no. Comparativa vs los últimos 30 días como en el
@@ -65,7 +66,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
       <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between">
           <button onClick={onClose} className="text-ink-2 hover:text-white transition-colors">
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" />
           </button>
           <p className="text-caption font-mono uppercase text-ink-2">{session.date} · {SESSION_TYPE_LABEL[session.type] ?? session.type}</p>
           <div className="w-6" />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../ui';
 
 // Chip de banda con BPM en vivo ANTES de arrancar la sesión (§4bis.3 del
 // análisis: "🔵 Google Fitbit Air · Conectado  ♥ 99"). Evita el fallo nº1
@@ -31,7 +32,7 @@ export default function DeviceChip({ status, deviceName, bpm }: Props) {
       </p>
       {status === 'ready' && (
         <p className="flex items-center gap-1 text-body-s font-sans font-bold text-white tabular-nums">
-          <span className="material-symbols-outlined text-danger text-title-s">favorite</span>
+          <Icon name="favorite" size="m" className="text-danger" />
           {bpm ?? '--'}
         </p>
       )}

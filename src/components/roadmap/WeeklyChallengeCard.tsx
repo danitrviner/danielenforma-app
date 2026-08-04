@@ -1,6 +1,7 @@
 import React from 'react';
 import { WeeklyChallenge } from '../../types';
 import { ChallengeProgress } from '../../utils/weeklyChallenge';
+import { Icon } from '../ui';
 
 interface Props {
   challenge: WeeklyChallenge;
@@ -88,9 +89,7 @@ export function ChallengePendingCard() {
       style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33' }}
     >
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-title-m animate-pulse" style={{ color: 'var(--color-accent)' }}>
-          hourglass_top
-        </span>
+        <Icon name="hourglass_top" size="l" className="animate-pulse" />
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
       <h3 className="font-sans font-bold text-title-m text-white leading-tight">Tu entrenador está preparando tu reto</h3>

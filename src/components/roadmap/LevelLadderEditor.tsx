@@ -4,6 +4,7 @@ import { computeLadderStatus, LadderData } from '../../utils/levelLadder';
 import { DEFAULT_LEVEL_LADDER } from '../../data/defaultLevelLadder';
 import { LADDER_PRESETS } from '../../data/ladderPresets';
 import IconPicker from './IconPicker';
+import { Icon } from '../ui';
 
 const CRITERION_KIND_LABEL: Record<LevelCriterionKind, string> = {
   peso_perdido_kg: 'Kg perdidos desde el inicio',
@@ -177,7 +178,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     </label>
                   )}
                   <button onClick={() => removeCriterion(level.id, c.id)} className="text-ink-2 hover:text-red-400">
-                    <span className="material-symbols-outlined text-body-s">close</span>
+                    <Icon name="close" size="s" />
                   </button>
                 </div>
               ))}

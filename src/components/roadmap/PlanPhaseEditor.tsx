@@ -5,7 +5,7 @@ import { createNotificationDeduped, saveNutritionProgram } from '../../dbService
 import { buildPhasesFromPreset } from '../../data/phasePresets';
 import { buildNutritionProgramDraft } from '../../utils/planNutritionBridge';
 import IconPicker from './IconPicker';
-import { Dialog, Button } from '../ui';
+import { Dialog, Button, Icon } from '../ui';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const PHASE_ICONS = ['route', 'local_fire_department', 'balance', 'fitness_center', 'star', 'flag', 'bolt', 'favorite'];
@@ -388,7 +388,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         </label>
                       )}
                       <button onClick={() => removeMetric(phase.id, m.id)} className="text-ink-2 hover:text-red-400">
-                        <span className="material-symbols-outlined text-body-s">close</span>
+                        <Icon name="close" size="s" />
                       </button>
                     </div>
                   ))}
