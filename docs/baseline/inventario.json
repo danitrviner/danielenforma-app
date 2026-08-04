@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T08:54:49.795Z",
-  "commit": "18b4e86",
+  "generado": "2026-08-04T08:56:24.013Z",
+  "commit": "4447f09",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39398
+    "lineasTsx": 39386
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4888,
+    "clasesTokenEnUso": 4881,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 984,
+    "fontMono": 983,
     "fontSans": 939,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 34,
+    "modalesArtesanales": 33,
     "transitionAll": 272,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 162,
+    "roundedFull": 161,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -211,11 +211,8 @@
       "roundedFull": 4
     },
     "src/components/AthleteReportsPanel.tsx": {
-      "clasesTokenEnUso": 16,
-      "fontMono": 1,
-      "fontSans": 1,
-      "modalesArtesanales": 1,
-      "roundedFull": 1
+      "clasesTokenEnUso": 9,
+      "fontSans": 1
     },
     "src/components/AthleteRoadmapScreen.tsx": {
       "clasesTokenEnUso": 2,

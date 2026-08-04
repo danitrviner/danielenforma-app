@@ -5,7 +5,7 @@ import { getSentReportsForAthlete } from '../dbService';
 import { fmtReportDate } from '../utils/reportBuilder';
 import ReportView from './ReportView';
 import Skeleton from './Skeleton';
-import { Icon, ListRow, Badge } from './ui';
+import { Icon, ListRow, Badge, Dialog } from './ui';
 
 // Athlete-facing, self-loading card on the Home screen: shows the reports the
 // coach has sent (persistent history, newest first). Tapping one opens the same
@@ -53,21 +53,9 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
       )}
 
       {open && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
-          <div className="min-h-full flex items-start justify-center sm:p-4">
-            <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-2xl shadow-e2">
-              <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between">
-                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reporte</p>
-                <button onClick={() => setOpen(null)} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors">
-                  <Icon name="close" size="m" />
-                </button>
-              </div>
-              <div className="p-4 sm:p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-                <ReportView report={open} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <Dialog open onClose={() => setOpen(null)} title="Reporte" size="xl">
+          <ReportView report={open} />
+        </Dialog>
       )}
     </section>
   );
