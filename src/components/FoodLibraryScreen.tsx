@@ -4,7 +4,7 @@ import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Dialog, Button } from './ui';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -220,16 +220,27 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
       {/* Create / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-hairline rounded-surface p-6 max-w-md w-full shadow-e2 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
-                {editingId ? 'Editar alimento' : 'Nuevo alimento'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-ink-2 hover:text-white">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
+        <Dialog
+          open
+          onClose={() => setShowModal(false)}
+          title={editingId ? 'Editar alimento' : 'Nuevo alimento'}
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setShowModal(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !form.label.trim()}
+                loading={saving}
+                icon="save"
+                className="flex-1"
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </>
+          )}
+        >
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -264,33 +275,27 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-3 border border-hairline text-ink-2 hover:text-white font-mono text-label uppercase rounded-control transition-all">
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !form.label.trim()}
-                className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                {saving ? <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Guardando...</> : <><span className="material-symbols-outlined text-body-s">save</span>Guardar</>}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Delete confirm */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-e2 space-y-4">
-            <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar alimento?</h3>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-3 border border-hairline text-ink-2 font-mono text-label uppercase rounded-control">Cancelar</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-300 font-sans font-bold text-label uppercase rounded-control hover:bg-red-500/30 transition-colors">Eliminar</button>
-            </div>
-          </div>
-        </div>
+        <Dialog
+          open
+          onClose={() => setDeleteId(null)}
+          title="¿Eliminar alimento?"
+          size="s"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setDeleteId(null)} className="flex-1">Cancelar</Button>
+              <Button variant="danger" onClick={() => handleDelete(deleteId)} className="flex-1">Eliminar</Button>
+            </>
+          )}
+        >
+          <p className="font-sans text-caption text-ink-2">
+            «{items.find(f => f.id === deleteId)?.label}»
+          </p>
+        </Dialog>
       )}
     </div>
   );
