@@ -4,7 +4,11 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog } from '../types';
 import { epley } from '../utils/oneRepMax';
-import { EmptyState } from './ui';
+import {
+  EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+  TOOLTIP_GRAFICA, LEYENDA_GRAFICA, colorSerie,
+} from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -18,9 +22,9 @@ interface Props {
 type DataPoint = { date: string; value: number };
 type Series = { id: string; label: string; points: DataPoint[]; unit?: string };
 
-const COLORS = [
-  'var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-chart-3)', 'var(--color-data)',
-];
+/* F10: la lista local de 8 colores tenía tres repetidos —warning, chart-3 y
+   data salían dos veces—, así que dos series distintas podían pintarse igual en
+   la misma gráfica. Ahora usa `colorSerie`, los 5 tokens del DS. */
 
 function pearson(a: DataPoint[], b: DataPoint[]): number | null {
   const dateSet = new Set(a.map(p => p.date));
@@ -305,7 +309,7 @@ export default function CorrelationPanel({
         {/* Chips — always visible on desktop, collapsible on mobile */}
         <div className={`flex flex-wrap gap-2 px-4 pb-4 sm:px-0 sm:pb-0 ${selectorOpen ? 'block' : 'hidden sm:flex'}`}>
           {allSeries.map((s, i) => {
-            const color = COLORS[i % COLORS.length];
+            const color = colorSerie(i);
             const active = selectedIds.includes(s.id);
             return (
               <button
@@ -345,24 +349,25 @@ export default function CorrelationPanel({
                   : (selectedSeries[0].unit ? `Valor en ${selectedSeries[0].unit}` : 'Valor')}
               </p>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" />
+            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.l}>
+              <LineChart data={chartData} margin={MARGEN_GRAFICA}>
+                <CartesianGrid {...REJILLA_GRAFICA} />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: 'var(--color-ink-2)', fontSize: 10, fontFamily: 'monospace' }}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
                   tickFormatter={fmtDate}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fill: 'var(--color-ink-2)', fontSize: 10, fontFamily: 'monospace' }}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
                   unit={multiNorm ? '%' : (selectedSeries[0]?.unit ? ` ${selectedSeries[0].unit}` : '')}
                   width={multiNorm ? 40 : 55}
                   domain={multiNorm ? [0, 100] : (singleDomain ?? ['auto', 'auto'])}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'var(--color-raised)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, fontFamily: 'monospace', fontSize: 11 }}
-                  labelStyle={{ color: 'var(--color-accent)', marginBottom: 4 }}
+                  {...TOOLTIP_GRAFICA}
                   labelFormatter={(label) => fmtDate(String(label))}
                   formatter={(value: number, name: string, item: { payload?: Record<string, number> }) => {
                     const s = selectedSeries.find(s => s.id === name);
@@ -379,7 +384,7 @@ export default function CorrelationPanel({
                   <Legend
                     formatter={(value) => {
                       const s = selectedSeries.find(s => s.id === value);
-                      return <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--color-ink-2)' }}>{s?.label ?? value}</span>;
+                      return <span style={LEYENDA_GRAFICA}>{s?.label ?? value}</span>;
                     }}
                   />
                 )}
@@ -387,7 +392,7 @@ export default function CorrelationPanel({
                   <Line
                     key={s.id}
                     dataKey={s.id}
-                    stroke={COLORS[allSeries.findIndex(a => a.id === s.id) % COLORS.length]}
+                    stroke={colorSerie(allSeries.findIndex(a => a.id === s.id))}
                     strokeWidth={2}
                     dot={{ r: 3, strokeWidth: 0 }}
                     activeDot={{ r: 5 }}
