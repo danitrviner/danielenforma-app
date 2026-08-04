@@ -401,7 +401,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
         </div>
 
@@ -475,7 +475,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Ej. Bowl de pollo y quinoa"
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
               />
             </div>
 
@@ -487,7 +487,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 value={form.photoUrl}
                 onChange={e => setForm(f => ({ ...f, photoUrl: e.target.value }))}
                 placeholder="https://..."
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-label text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
+                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
               />
               {form.photoUrl && (
                 <img
@@ -549,7 +549,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     value={ingredientSearch}
                     onChange={e => setIngSearch(e.target.value)}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                    className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-e2">
@@ -607,7 +607,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewExtra(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra(); } }}
                   placeholder="Ej. Sal al gusto"
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                 />
                 <button type="button" onClick={addExtra} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-sans text-label uppercase">Añadir</button>
               </div>
@@ -634,7 +634,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewStep(e.target.value)}
                   placeholder="Describe el paso..."
                   rows={2}
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-body-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
                 />
                 <button type="button" onClick={addStep} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-white transition-colors font-sans text-label uppercase self-end mb-0">Añadir</button>
               </div>

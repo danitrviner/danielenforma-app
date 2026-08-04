@@ -740,7 +740,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             value={indyaSearch}
             onChange={e => setIndyaSearch(e.target.value)}
             placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-label text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
+            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
           {indyaSearch && (
             <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">

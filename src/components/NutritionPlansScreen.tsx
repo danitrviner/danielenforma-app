@@ -388,7 +388,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             <select
               value={selectedEmail}
               onChange={e => setSelectedEmail(e.target.value)}
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="">— Seleccionar atleta —</option>
               {athletes.map(a => (
@@ -563,7 +563,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             placeholder="Ej: Día Alto, Día Bajo, Día Libre"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div>
@@ -575,7 +575,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-body-s text-white placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
@@ -705,7 +705,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 value={meal.name}
                 onChange={e => setMealName(meal.id, e.target.value)}
                 placeholder="Nombre libre: Desayuno, Pre-entreno…"
-                className="flex-1 bg-transparent text-body-s text-white focus:outline-none placeholder:text-ink-2/40"
+                className="flex-1 bg-transparent text-title-s text-white focus:outline-none placeholder:text-ink-2/40"
               />
               {form.meals.length > 1 && (
                 <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
@@ -898,7 +898,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
               <Icon name="search" size="s" className="text-ink-2 select-none" />
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
             </>

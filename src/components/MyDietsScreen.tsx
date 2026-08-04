@@ -236,7 +236,7 @@ export default function MyDietsScreen({ profile }: Props) {
           placeholder="Nombre de la dieta"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-white text-body-s focus:outline-none focus:border-accent/50"
+          className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-white text-title-s focus:outline-none focus:border-accent/50"
         />
 
         {/* Budget — fijo cuando la dieta viene del entrenador; el atleta solo rellena alimentos */}
@@ -255,7 +255,7 @@ export default function MyDietsScreen({ profile }: Props) {
                     step={0.25}
                     value={form.budget[cat]}
                     onChange={e => setForm(prev => ({ ...prev, budget: { ...prev.budget, [cat]: parseFloat(e.target.value) || 0 } }))}
-                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-label focus:outline-none focus:border-accent/50"
+                    className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
                   />
                 ) : (
                   <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
@@ -277,7 +277,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   type="text"
                   value={meal.name}
                   onChange={e => renameMeal(meal.id, e.target.value)}
-                  className="flex-1 bg-transparent border-none text-white text-body-s font-sans font-bold focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-white text-title-s font-sans font-bold focus:outline-none"
                 />
                 {form.meals.length > 1 && (
                   <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
@@ -368,7 +368,7 @@ export default function MyDietsScreen({ profile }: Props) {
                   <Icon name="search" size="s" className="text-ink-2" />
                   <input type="text" placeholder={pickerTab === 'alimentos' ? 'Buscar alimento...' : 'Buscar receta...'} value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                    className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
                   />
                 </div>
               </>

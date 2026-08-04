@@ -164,7 +164,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar alimento..."
-              className="bg-transparent text-white text-label focus:outline-none w-full placeholder-ink-2/40"
+              className="bg-transparent text-white text-title-s focus:outline-none w-full placeholder-ink-2/40"
             />
           </div>
           <button
@@ -248,7 +248,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.mode}
                     onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
@@ -258,7 +258,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   <select
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                   >
                     {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
@@ -271,7 +271,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>

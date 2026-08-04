@@ -1020,7 +1020,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           step={0.25}
                           value={selectedDiet.budget[cat]}
                           onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-label focus:outline-none focus:border-accent/50"
+                          className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
                         />
                       ) : (
                         <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
@@ -1153,7 +1153,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white font-mono focus:outline-none focus:border-data/50"
+                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
@@ -1341,7 +1341,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   placeholder="Buscar receta..."
                   value={recipeSearch}
                   onChange={e => setRecipeSearch(e.target.value)}
-                  className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                  className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
                 />
               </div>
 
@@ -1496,7 +1496,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <Icon name="search" size="s" className="text-ink-2" />
               <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
             </>

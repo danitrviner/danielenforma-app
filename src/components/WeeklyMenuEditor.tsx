@@ -320,7 +320,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:border-accent/50 font-mono"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50 font-mono"
           />
         </div>
 
@@ -339,7 +339,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                 <input
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
-                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-body-s text-white font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>
               </div>

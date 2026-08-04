@@ -1,6 +1,6 @@
 {
-  "generado": "2026-08-04T13:48:52.079Z",
-  "commit": "025f767",
+  "generado": "2026-08-04T13:49:50.744Z",
+  "commit": "9779704",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39372
@@ -11,7 +11,7 @@
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "camposBajo16px": 170,
+    "camposBajo16px": 138,
     "fontMono": 974,
     "fontSans": 910,
     "pesosProhibidos": 23,
@@ -370,7 +370,6 @@
     },
     "src/components/FoodLibraryScreen.tsx": {
       "clasesTokenEnUso": 41,
-      "camposBajo16px": 4,
       "fontMono": 7,
       "fontSans": 4,
       "transitionAll": 4,
@@ -378,7 +377,6 @@
     },
     "src/components/FoodPreferencesPanel.tsx": {
       "clasesTokenEnUso": 32,
-      "camposBajo16px": 1,
       "fontMono": 8,
       "fontSans": 4,
       "transitionAll": 5
@@ -430,7 +428,6 @@
     },
     "src/components/MyDietsScreen.tsx": {
       "clasesTokenEnUso": 87,
-      "camposBajo16px": 4,
       "fontMono": 10,
       "fontSans": 17,
       "transitionAll": 8,
@@ -481,14 +478,12 @@
     "src/components/NutritionPeriodizationPanel.tsx": {
       "hexLiterales": 5,
       "clasesTokenEnUso": 58,
-      "camposBajo16px": 5,
       "fontMono": 20,
       "fontSans": 10,
       "transitionAll": 2
     },
     "src/components/NutritionPlansScreen.tsx": {
       "clasesTokenEnUso": 128,
-      "camposBajo16px": 5,
       "fontMono": 33,
       "fontSans": 17,
       "transitionAll": 7,
@@ -496,7 +491,6 @@
     },
     "src/components/NutritionScreen.tsx": {
       "clasesTokenEnUso": 226,
-      "camposBajo16px": 4,
       "fontMono": 29,
       "fontSans": 32,
       "pesosProhibidos": 1,
@@ -564,7 +558,6 @@
     },
     "src/components/RecipeBuilderScreen.tsx": {
       "clasesTokenEnUso": 97,
-      "camposBajo16px": 6,
       "fontMono": 22,
       "fontSans": 15,
       "transitionAll": 8,
@@ -572,7 +565,6 @@
     },
     "src/components/RecipesScreen.tsx": {
       "clasesTokenEnUso": 84,
-      "camposBajo16px": 1,
       "fontMono": 22,
       "fontSans": 21,
       "pesosProhibidos": 1,
@@ -681,7 +673,6 @@
     },
     "src/components/WeeklyMenuEditor.tsx": {
       "clasesTokenEnUso": 96,
-      "camposBajo16px": 2,
       "fontMono": 25,
       "fontSans": 27,
       "transitionAll": 4,
