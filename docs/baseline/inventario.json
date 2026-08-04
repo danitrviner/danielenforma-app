@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-04T09:32:11.347Z",
-  "commit": "63155a5",
+  "generado": "2026-08-04T09:33:37.644Z",
+  "commit": "cb7c96e",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39348
+    "lineasTsx": 39341
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4801,
+    "clasesTokenEnUso": 4793,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 976,
-    "fontSans": 918,
+    "fontMono": 975,
+    "fontSans": 916,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 13,
-    "transitionAll": 265,
+    "modalesArtesanales": 12,
+    "transitionAll": 264,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -142,12 +142,12 @@
         "lineas": 673
       },
       {
-        "archivo": "src/components/RecipeBuilderScreen.tsx",
-        "lineas": 668
-      },
-      {
         "archivo": "src/components/CardioScreen.tsx",
         "lineas": 664
+      },
+      {
+        "archivo": "src/components/RecipeBuilderScreen.tsx",
+        "lineas": 661
       },
       {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
@@ -542,11 +542,10 @@
       "transitionAll": 2
     },
     "src/components/RecipeBuilderScreen.tsx": {
-      "clasesTokenEnUso": 105,
-      "fontMono": 23,
-      "fontSans": 17,
-      "modalesArtesanales": 1,
-      "transitionAll": 9,
+      "clasesTokenEnUso": 97,
+      "fontMono": 22,
+      "fontSans": 15,
+      "transitionAll": 8,
       "roundedFull": 4
     },
     "src/components/RecipesScreen.tsx": {

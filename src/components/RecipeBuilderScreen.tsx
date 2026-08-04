@@ -4,7 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge, Chip } from './ui';
+import { EmptyState, Badge, Chip, Dialog, Button } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -444,17 +444,28 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
       {/* ── FORM MODAL ──────────────────────────────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto p-4">
-          <div className="w-full max-w-2xl bg-bg border border-hairline rounded-surface p-6 my-6 space-y-5">
-
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
-                {editingId ? 'Editar receta' : 'Nueva receta'}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="text-ink-2 hover:text-white transition-colors p-1">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
+        <Dialog
+          open
+          onClose={() => setShowForm(false)}
+          title={editingId ? 'Editar receta' : 'Nueva receta'}
+          size="xl"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !form.name.trim()}
+                loading={saving}
+                className="flex-1"
+              >
+                {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
+              </Button>
+            </>
+          )}
+        >
+          <div className="space-y-5">
 
             {/* Name */}
             <div className="space-y-2">
@@ -642,26 +653,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               )}
             </div>
 
-            <div className="flex gap-3 pt-2 border-t border-hairline">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 py-3 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !form.name.trim()}
-                className="flex-1 py-3 rounded-control bg-accent text-black font-sans text-label uppercase tracking-wider font-bold hover:bg-accent-press disabled:opacity-40 transition-all active:scale-95"
-              >
-                {saving ? 'Guardando…' : editingId ? 'Actualizar' : 'Crear receta'}
-              </button>
-            </div>
-
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
