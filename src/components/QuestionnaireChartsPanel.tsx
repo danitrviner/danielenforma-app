@@ -4,7 +4,10 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Questionnaire, QuestionnaireQuestion, QuestionnaireResponse } from '../types';
-import { Icon, Badge } from './ui';
+import {
+  Icon, Badge,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
 
 interface Props {
   questionnaires: Questionnaire[];
@@ -115,23 +118,21 @@ function QuestionChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={180}>
-        <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
+      <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+        <LineChart data={data} margin={MARGEN_GRAFICA}>
+          <CartesianGrid {...REJILLA_GRAFICA} />
           <XAxis
             dataKey="date"
             tickFormatter={fmtDate}
-            tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-            axisLine={{ stroke: 'var(--color-raised)' }}
-            tickLine={false}
+            tick={TICK_GRAFICA}
+            {...EJE_GRAFICA}
             minTickGap={40}
           />
           <YAxis
             domain={yMin !== undefined && yMax !== undefined ? [yMin, yMax] : ['auto', 'auto']}
-            tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-            axisLine={false}
-            tickLine={false}
-            width={36}
+            tick={TICK_GRAFICA}
+            {...EJE_GRAFICA}
+            width={ANCHO_EJE_Y}
           />
           <Tooltip
             content={(props) => (
