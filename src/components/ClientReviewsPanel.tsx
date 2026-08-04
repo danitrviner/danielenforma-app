@@ -23,7 +23,7 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm } from './QuestionnaireEditor';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
-import { Badge } from './ui';
+import { Badge, Sheet } from './ui';
 
 const DIET_LABELS: Record<string, string> = {
   omnivoro: 'Omnívoro', vegetariano: 'Vegetariano', vegano: 'Vegano', otro: 'Otro',
@@ -1261,25 +1261,21 @@ export default function ClientReviewsPanel({
 
               {/* Inline new-questionnaire editor modal — bottom-sheet on mobile, centered dialog on desktop */}
               {showNewQEditor && (
-                <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center sm:p-4">
-                  <div className="relative w-full sm:max-w-2xl bg-bg border border-hairline rounded-t-surface sm:rounded-surface p-6 shadow-e2 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
-                    <button
-                      onClick={() => setShowNewQEditor(false)}
-                      className="absolute top-4 right-4 p-2 text-ink-2 hover:text-white transition-colors"
-                      aria-label="Cerrar"
-                    >
-                      <span className="material-symbols-outlined text-title-m">close</span>
-                    </button>
-                    <QuestionnaireEditor
-                      form={newQForm}
-                      setForm={setNewQForm}
-                      onSave={handleCreateNewQ}
-                      onCancel={() => setShowNewQEditor(false)}
-                      saving={savingNewQ}
-                      isNew
-                    />
-                  </div>
-                </div>
+                <Sheet
+                  open
+                  onClose={() => setShowNewQEditor(false)}
+                  title="Nuevo cuestionario"
+                  size="xl"
+                >
+                  <QuestionnaireEditor
+                    form={newQForm}
+                    setForm={setNewQForm}
+                    onSave={handleCreateNewQ}
+                    onCancel={() => setShowNewQEditor(false)}
+                    saving={savingNewQ}
+                    isNew
+                  />
+                </Sheet>
               )}
 
               {coachQuestionnaires.length === 0 ? (

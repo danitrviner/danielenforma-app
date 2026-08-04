@@ -1,13 +1,13 @@
 {
-  "generado": "2026-08-04T09:33:37.644Z",
-  "commit": "cb7c96e",
+  "generado": "2026-08-04T09:34:51.758Z",
+  "commit": "3c7d7f1",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39341
+    "lineasTsx": 39337
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4793,
+    "clasesTokenEnUso": 4790,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
@@ -17,10 +17,10 @@
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 12,
+    "modalesArtesanales": 11,
     "transitionAll": 264,
     "animatePulse": 29,
-    "ariaLabel": 33,
+    "ariaLabel": 32,
     "htmlFor": 1,
     "focusVisible": 31,
     "reducedMotion": 0,
@@ -99,7 +99,7 @@
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
-        "lineas": 1414
+        "lineas": 1410
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
@@ -257,12 +257,10 @@
       "roundedFull": 1
     },
     "src/components/ClientReviewsPanel.tsx": {
-      "clasesTokenEnUso": 286,
+      "clasesTokenEnUso": 283,
       "fontMono": 70,
       "fontSans": 53,
-      "modalesArtesanales": 1,
       "transitionAll": 20,
-      "ariaLabel": 1,
       "roundedFull": 1
     },
     "src/components/ClientSetupPanel.tsx": {
