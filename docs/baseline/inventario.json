@@ -1,19 +1,19 @@
 {
-  "generado": "2026-08-04T14:06:41.374Z",
-  "commit": "7c7451b",
+  "generado": "2026-08-04T14:08:17.381Z",
+  "commit": "39d0ca8",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39321
+    "lineasTsx": 39309
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4703,
+    "clasesTokenEnUso": 4684,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 1,
-    "fontMono": 955,
-    "fontSans": 908,
+    "fontMono": 951,
+    "fontSans": 906,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -91,7 +91,7 @@
     "archivosGrandes": [
       {
         "archivo": "src/components/MesocycleManager.tsx",
-        "lineas": 1700
+        "lineas": 1695
       },
       {
         "archivo": "src/components/NutritionScreen.tsx",
@@ -111,7 +111,7 @@
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
-        "lineas": 948
+        "lineas": 941
       },
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
@@ -397,8 +397,8 @@
       "animatePulse": 1
     },
     "src/components/MesocycleManager.tsx": {
-      "clasesTokenEnUso": 225,
-      "fontMono": 69,
+      "clasesTokenEnUso": 216,
+      "fontMono": 66,
       "fontSans": 37,
       "pesosProhibidos": 1,
       "transitionAll": 15,
@@ -406,9 +406,9 @@
       "roundedFull": 3
     },
     "src/components/MesocycleTemplateLibrary.tsx": {
-      "clasesTokenEnUso": 121,
-      "fontMono": 28,
-      "fontSans": 19,
+      "clasesTokenEnUso": 111,
+      "fontMono": 27,
+      "fontSans": 17,
       "transitionAll": 8,
       "roundedFull": 1
     },

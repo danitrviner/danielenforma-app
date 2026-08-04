@@ -18,7 +18,7 @@ import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
-import { EmptyState, Dialog } from './ui';
+import { EmptyState, Dialog, Input } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1240,14 +1240,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
-                  <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha inicio</label>
-                    <input type="date"
-                      value={editing.startDate}
-                      onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
-                    />
-                  </div>
+                  <Input
+                    label="Fecha inicio"
+                    type="date"
+                    value={editing.startDate}
+                    onChange={v => updateField('startDate', v)}
+                  />
                   <div>
                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Días/semana</label>
                     <div className="flex gap-1 flex-wrap">
@@ -1262,15 +1260,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Objetivo</label>
-                  <input type="text"
-                    placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
-                    value={editing.objective}
-                    onChange={e => updateField('objective', e.target.value)}
-                    className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white placeholder-ink-3 focus:outline-none focus:border-accent"
-                  />
-                </div>
+                <Input
+                  label="Objetivo"
+                  value={editing.objective}
+                  onChange={v => updateField('objective', v)}
+                  placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
+                />
               </div>
 
               {/* Tab bar */}

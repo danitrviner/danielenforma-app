@@ -7,7 +7,7 @@ import {
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
 import Skeleton from './Skeleton';
-import { Icon, Button, EmptyState, Dialog } from './ui';
+import { Icon, Button, EmptyState, Dialog, Input } from './ui';
 
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
@@ -617,27 +617,20 @@ function TemplateEditor({
       <div className="p-5 space-y-5">
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
-          <div>
-            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la plantilla</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
-              placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-title-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
-            />
-            {nameError && <p className="text-red-400 font-sans text-caption mt-1">{nameError}</p>}
-          </div>
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Descripción (opcional)</label>
-            <input
-              type="text"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Breve descripción de la plantilla"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-title-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
-            />
-          </div>
+          <Input
+            label="Nombre de la plantilla"
+            value={form.name}
+            onChange={v => { setForm(f => ({ ...f, name: v })); setNameError(''); }}
+            placeholder="Ej: Powerbuilding 12 semanas"
+            error={nameError || undefined}
+          />
+          <Input
+            label="Descripción"
+            hint="Opcional."
+            value={form.description}
+            onChange={v => setForm(f => ({ ...f, description: v }))}
+            placeholder="Breve descripción de la plantilla"
+          />
         </div>
 
         {/* Stages */}
