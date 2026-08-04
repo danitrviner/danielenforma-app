@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:29:37.989Z",
-  "commit": "3ada3bc",
+  "generado": "2026-08-04T09:30:55.687Z",
+  "commit": "d823e3c",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39361
+    "lineasTsx": 39348
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4811,
+    "clasesTokenEnUso": 4806,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 976,
-    "fontSans": 920,
+    "fontSans": 919,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 15,
+    "modalesArtesanales": 14,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -91,7 +91,7 @@
     "archivosGrandes": [
       {
         "archivo": "src/components/MesocycleManager.tsx",
-        "lineas": 1713
+        "lineas": 1700
       },
       {
         "archivo": "src/components/NutritionScreen.tsx",
@@ -400,11 +400,10 @@
       "animatePulse": 1
     },
     "src/components/MesocycleManager.tsx": {
-      "clasesTokenEnUso": 230,
+      "clasesTokenEnUso": 225,
       "fontMono": 69,
-      "fontSans": 38,
+      "fontSans": 37,
       "pesosProhibidos": 1,
-      "modalesArtesanales": 1,
       "transitionAll": 15,
       "animatePulse": 1,
       "roundedFull": 3

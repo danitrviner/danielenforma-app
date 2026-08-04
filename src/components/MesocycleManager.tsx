@@ -18,7 +18,7 @@ import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Dialog } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1642,29 +1642,17 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
       {/* ── Template picker modal ── */}
       {showTemplatePicker && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-raised border border-hairline rounded-surface w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-hairline flex-shrink-0">
-              <div>
-                <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-title-s">library_books</span>
-                  Usar plantilla
-                </h3>
-                <p className="font-mono text-caption text-ink-2 ">
-                  Se clonarán todos los mesociclos del programa para {selectedEmail}.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowTemplatePicker(false)}
-                className="text-ink-2 hover:text-white transition-colors ml-4"
-              >
-                <span className="material-symbols-outlined text-title-s">close</span>
-              </button>
-            </div>
-
+        <Dialog
+          open
+          onClose={() => setShowTemplatePicker(false)}
+          title="Usar plantilla"
+          size="l"
+        >
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <div className="space-y-3">
+              <p className="font-mono text-caption text-ink-2">
+                Se clonarán todos los mesociclos del programa para {selectedEmail}.
+              </p>
               {loadingTemplates ? (
                 <div className="space-y-2">
                   <Skeleton className="h-16 w-full rounded-surface" />
@@ -1705,8 +1693,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 );
               })}
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
