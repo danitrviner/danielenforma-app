@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog } from '../types';
-import { Icon, Button, EmptyState, Sheet } from './ui';
+import { Icon, Button, EmptyState, Sheet, Input, Select } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -118,18 +118,16 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
     >
       <div className="space-y-4">
         {/* Title */}
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Título *</label>
-          <input
-            type="text"
-            value={item.title}
-            onChange={e => onChange({ ...item, title: e.target.value })}
-            placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </div>
+        <Input
+          label="Título"
+          required
+          value={item.title}
+          onChange={v => onChange({ ...item, title: v })}
+          placeholder="Nombre del objetivo / hito..."
+        />
 
-        {/* Description */}
+        {/* Description — sigue a mano: `Input` no tiene variante de textarea y
+            crear una sería ampliar el alcance de F11. */}
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Descripción</label>
           <textarea
@@ -143,68 +141,56 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
 
         {/* Type + Lane */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Tipo</label>
-            <select
-              value={item.type}
-              onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-            >
-              <option value="objetivo">Objetivo</option>
-              <option value="hito">Hito</option>
-              <option value="nota">Nota</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Lane</label>
-            <select
-              value={item.lane}
-              onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-            >
-              <option value="entreno">Entreno</option>
-              <option value="nutricion">Nutrición</option>
-              <option value="movilidad">Movilidad</option>
-              <option value="general">General</option>
-            </select>
-          </div>
+          <Select
+            label="Tipo"
+            value={item.type}
+            onChange={v => onChange({ ...item, type: v as RoadmapItem['type'] })}
+            options={[
+              { value: 'objetivo', label: 'Objetivo' },
+              { value: 'hito', label: 'Hito' },
+              { value: 'nota', label: 'Nota' },
+            ]}
+          />
+          <Select
+            label="Lane"
+            value={item.lane}
+            onChange={v => onChange({ ...item, lane: v as RoadmapItem['lane'] })}
+            options={[
+              { value: 'entreno', label: 'Entreno' },
+              { value: 'nutricion', label: 'Nutrición' },
+              { value: 'movilidad', label: 'Movilidad' },
+              { value: 'general', label: 'General' },
+            ]}
+          />
         </div>
 
         {/* Start / Target dates */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Inicio</label>
-            <input
-              type="date"
-              value={item.startDate ?? ''}
-              onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-          <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Objetivo</label>
-            <input
-              type="date"
-              value={item.targetDate ?? ''}
-              onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
+          <Input
+            label="Inicio"
+            type="date"
+            value={item.startDate ?? ''}
+            onChange={v => onChange({ ...item, startDate: v || undefined })}
+          />
+          <Input
+            label="Objetivo"
+            type="date"
+            value={item.targetDate ?? ''}
+            onChange={v => onChange({ ...item, targetDate: v || undefined })}
+          />
         </div>
 
         {/* Status */}
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Estado</label>
-          <select
-            value={item.status ?? 'pendiente'}
-            onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="pendiente">Pendiente</option>
-            <option value="en_progreso">En progreso</option>
-            <option value="logrado">Logrado</option>
-          </select>
-        </div>
+        <Select
+          label="Estado"
+          value={item.status ?? 'pendiente'}
+          onChange={v => onChange({ ...item, status: v as RoadmapItem['status'] })}
+          options={[
+            { value: 'pendiente', label: 'Pendiente' },
+            { value: 'en_progreso', label: 'En progreso' },
+            { value: 'logrado', label: 'Logrado' },
+          ]}
+        />
       </div>
     </Sheet>
   );

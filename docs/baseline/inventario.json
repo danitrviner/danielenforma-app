@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-04T14:01:01.420Z",
-  "commit": "e5eb7d4",
+  "generado": "2026-08-04T14:02:54.636Z",
+  "commit": "c13559d",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39352
+    "lineasTsx": 39338
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4755,
+    "clasesTokenEnUso": 4731,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 969,
+    "fontMono": 963,
     "fontSans": 908,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
@@ -123,7 +123,7 @@
       },
       {
         "archivo": "src/components/RoadmapTimeline.tsx",
-        "lineas": 761
+        "lineas": 747
       },
       {
         "archivo": "src/components/MyMenuScreen.tsx",
@@ -588,8 +588,8 @@
       "roundedFull": 2
     },
     "src/components/RoadmapTimeline.tsx": {
-      "clasesTokenEnUso": 72,
-      "fontMono": 22,
+      "clasesTokenEnUso": 48,
+      "fontMono": 16,
       "fontSans": 8,
       "transitionAll": 3,
       "animatePulse": 1,
