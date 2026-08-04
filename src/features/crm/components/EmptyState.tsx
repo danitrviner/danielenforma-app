@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon } from '../../../components/ui';
+import { EmptyState as EmptyStateDS } from '../../../components/ui';
 
 interface Props {
   icon: string;
@@ -8,26 +8,28 @@ interface Props {
   cta?: { label: string; onClick: () => void };
 }
 
-// Estado vacío real: el CRM arranca sin un solo dato de ejemplo, así que esto
-// es lo primero que se ve en cada tabla. Lleva su CTA para que la pantalla
-// vacía sea accionable y no un callejón sin salida.
+/**
+ * Estado vacío del CRM — hoy una envoltura fina sobre la primitiva del DS.
+ *
+ * El CRM arranca sin un solo dato de ejemplo, así que esto es lo primero que se
+ * ve en cada tabla; lleva su CTA para que la pantalla vacía sea accionable y no
+ * un callejón sin salida. Eso no cambia: la primitiva tiene el mismo hueco de
+ * acción (`actionLabel` / `onAction`).
+ *
+ * Lo que aporta delegar: el CTA deja de ser un `<button>` a mano —sin
+ * `focus-visible` y sin altura mínima táctil— y pasa a `Button`.
+ *
+ * La API en español (`titulo` / `descripcion` / `cta`) no cambia: las pantallas
+ * del CRM que lo usan no se tocan.
+ */
 export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-2 py-10 px-6">
-      <Icon name={icon} size="xl" className="text-ink-3" />
-      <p className="font-sans font-bold text-body-s text-ink">{titulo}</p>
-      {descripcion && (
-        <p className="font-sans text-caption text-ink-2 max-w-[320px] leading-relaxed">{descripcion}</p>
-      )}
-      {cta && (
-        <button
-          type="button"
-          onClick={cta.onClick}
-          className="mt-2 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
-        >
-          {cta.label}
-        </button>
-      )}
-    </div>
+    <EmptyStateDS
+      icon={icon}
+      title={titulo}
+      description={descripcion}
+      actionLabel={cta?.label}
+      onAction={cta?.onClick}
+    />
   );
 }

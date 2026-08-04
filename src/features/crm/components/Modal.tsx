@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sheet } from '../../../components/ui';
+import { Sheet, Button } from '../../../components/ui';
 
 interface Props {
   titulo: string;
@@ -59,29 +59,30 @@ export function Campo({ label, children, hint, error }: {
 export const inputClass =
   'w-full px-3 py-2 rounded-surface bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
+/**
+ * Los dos botones del CRM — hoy envoltura fina sobre `Button` del DS.
+ *
+ * Ganan lo que un `<button>` a mano no tenía: `focus-visible`, altura mínima
+ * táctil de 44 px y el mismo tratamiento de `disabled` que el resto de la app.
+ * Se ven algo más altos que antes (medían ~34 px), que es exactamente el motivo
+ * por el que la primitiva fija ese suelo.
+ *
+ * La API no cambia: sus 36 usos en el CRM no se tocan.
+ */
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';
 }) {
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className="px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-    >
+    <Button type={type} onClick={onClick} disabled={disabled} size="s">
       {children}
-    </button>
+    </Button>
   );
 }
 
 export function BotonSecundario({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
-    >
+    <Button variant="secondary" onClick={onClick} size="s">
       {children}
-    </button>
+    </Button>
   );
 }
