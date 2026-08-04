@@ -9,7 +9,7 @@ import {
 import { runAgentTurn, messageText } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
-import { Icon, Button, ListRow, Badge } from './ui';
+import { Icon, Button, ListRow, Badge, Dialog } from './ui';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -480,13 +480,22 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       )}
 
       {editingInstructions && (
-        <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
-          <div className="bg-bg border border-hairline rounded-surface w-full max-w-md flex flex-col shadow-e2" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
-              <Icon name="tune" size="m" className="text-accent" />
-              <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Instrucciones fijas</span>
-            </div>
-            <div className="p-4 flex flex-col gap-2">
+        <Dialog
+          open
+          onClose={() => { if (!savingInstructions) setEditingInstructions(false); }}
+          title="Instrucciones fijas"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={saveInstructions} disabled={savingInstructions} loading={savingInstructions} className="flex-1">
+                {savingInstructions ? 'Guardando…' : 'Guardar'}
+              </Button>
+            </>
+          )}
+        >
+            <div className="flex flex-col gap-2">
               <p className="text-label text-ink-2">
                 Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
               </p>
@@ -498,16 +507,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s text-ink placeholder-ink-2/50 outline-none"
               />
             </div>
-            <div className="flex gap-2 p-4 pt-0">
-              <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={saveInstructions} disabled={savingInstructions} className="flex-1">
-                {savingInstructions ? 'Guardando…' : 'Guardar'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
