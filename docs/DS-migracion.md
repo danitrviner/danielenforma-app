@@ -810,3 +810,72 @@ credenciales que F8, y decisión explícita de Dani el 4 ago: no dedicar tiempo 
 porque la auditoría visual global la hace Claude Design sobre el conjunto.
 
 **Siguiente fase: F10 (Chart unificado).**
+
+---
+
+## Sprint 5 · Gráficas
+
+### F10 · Chart unificado
+
+**Fecha:** 4 de agosto de 2026 · **Commits:** 8 · **7 paneles Recharts**
+
+**Censo previo.** Antes de escribir nada, medir qué había realmente:
+
+| | Valores distintos |
+|---|---|
+| Alturas | 160, 180, 200, 280, 300 y `height="100%"` — **6** |
+| Márgenes | **6**, con `left` negativos (`-20`, `-28`) |
+| Rejilla | horizontal (5 paneles), completa (1), ninguna (1) |
+| Tamaño de tick | 9 px (5) y 10 px (1) |
+| Tooltip | **4** tratamientos: constante compartida, dos `contentStyle` en línea distintos y dos componentes propios |
+
+**`ui/chart.ts` no es una primitiva y no lo intenta.** Recharts se compone declarando sus propios
+hijos, así que envolverlo obligaría a reimplementar su API entera y a mantenerla al día. Lo que se
+comparte son las decisiones visuales —altura, rejilla, ejes, ticks, tooltip, márgenes y colores de
+serie—, que se aplican con *spread* sobre los componentes de Recharts tal cual.
+
+**Los `left` negativos eran un número mágico.** `-20` y `-28` compensaban a mano el ancho por
+defecto del eje Y de Recharts (60 px). Fijar `width` en el `<YAxis>` hace lo mismo explícitamente y
+permite que el margen sea idéntico en los siete paneles.
+
+**Los ticks estaban por debajo del suelo tipográfico del DS.** F4 llevó a cero los textos por debajo
+de 11 px en toda la app, pero no vio estos: son objetos JS, no clases de Tailwind, así que ni el
+inventario, ni `tsc`, ni el build los detectan. Mismo punto ciego que la clase de Google Fonts que
+fijaba los iconos a 24 px, encontrada en F7 — y encontrado igual, mirando el código real en vez del
+contador.
+
+Antes de subirlos se comprobó que no amontonan etiquetas en ningún panel: `BodyweightPanel`,
+`QuestionnaireChartsPanel` y `NutritionPerformanceDashboard` delegan en `minTickGap` (56, 40 y 28),
+que Recharts resuelve en píxeles descartando ticks; `CorrelationPanel` usa `preserveStartEnd`;
+`LoadHistoryPanel` fuerza `interval={0}` pero su `tickFormatter` devuelve cadena vacía salvo en los
+cambios de mes; y `MesocycleDashboard` etiqueta con `#1`, `#2`…
+
+**Un defecto de fondo, no de forma.** `CorrelationPanel` sacaba los colores de una lista local de 8
+entradas con **tres repetidas** (`warning`, `chart-3` y `data` aparecían dos veces). Al seleccionar
+varias métricas, dos series distintas podían salir del mismo color — justo en el panel cuyo propósito
+es compararlas. Los 5 tokens `--color-chart-*` que F1 declaró para esto llevaban desde entonces sin
+un solo consumidor.
+
+**Tres líneas de eje X invisibles.** `BodyweightPanel`, `NutritionPerformanceDashboard` y
+`QuestionnaireChartsPanel` dibujaban `axisLine` en `var(--color-raised)` — el mismo color que la
+rejilla, así que se leía como una línea de rejilla más pegada abajo. Se retira: los otros cuatro
+paneles ya no la tenían.
+
+**Dos hex literales menos** (25 → 23): el blanco del trazo de FC de `HrChart` y el del color de
+texto del tooltip de `MesocycleDashboard`, que además llevaba un radio de 8 px fuera de la escala
+de F3.
+
+**Qué se dejó fuera, y por qué**
+
+| Qué | Por qué |
+|---|---|
+| `METRIC_COLOR`, `GROUP_COLOR` (14 grupos musculares), `PHASE_COLORS`, `ZONE_COLOR` | Color asignado por **dominio**, no por posición en una lista. `GROUP_COLOR` además necesita 14 valores donde el DS define 5 |
+| La altura de `HrChart` | Es una prop porque rellena el alto de su contenedor durante la sesión en directo: decisión de layout, no de escala |
+| La ausencia de rejilla en `HrChart` | Sus bandas de zona de FC **son** la referencia; ponerle líneas encima cambiaría la gráfica en vez de unificarla |
+
+**Verificado:** `tsc --noEmit`, 263 pruebas, `npm run build` y `ds:inventario` limpios tras cada uno
+de los 8 commits. **Sin verificación visual:** seis de los siete paneles viven detrás del login de
+coach, y el séptimo (`BodyweightPanel`) detrás del de atleta — misma limitación que F8 y F9.
+
+**Siguiente fase: F11 recortada** (`Input`/`Select` para cerrar R8, y primitivas en `cardio/`,
+`roadmap/` y CRM), la última antes de la auditoría visual con Claude Design.

@@ -3,7 +3,7 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-4 completados, F8 y F9 completadas (Sprint 5 en curso: F10 pendiente)** ·
+> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-5 completados (F0-F10)** ·
 > rama `ds/f0-linea-base` · commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
@@ -20,13 +20,13 @@ Sprint 1  ████████████████████  F0 F1   
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ████████████████████  F6 F7        COMPLETADO
-Sprint 5  █████████████░░░░░░░  F8 F9 F10    F8 y F9 completadas, F10 pendiente
+Sprint 5  ████████████████████  F8 F9 F10    COMPLETADO
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**10 de 16 fases completadas. F10 (Chart unificado) es la siguiente.**
+**11 de 16 fases completadas. F11 (recortada) es la siguiente, y la última antes de Claude Design.**
 
 > **El Design System es la base, no el objetivo.** El plan acordado el 4 ago 2026 recorta lo que
 > queda para llegar antes a la fase que de verdad persigue el objetivo —una app de aspecto
@@ -50,7 +50,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 4 | **F7** | Primitivas en `src/components/ui/` | ✅ Completada | 2026-08-03 | Bajo |
 | 5 | **F8** | Adopción de bajo riesgo | ✅ Completada | 2026-08-04 | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ✅ Completada | 2026-08-04 | **Alto** |
-| 5 | **F10** | Chart unificado | ⬜ Pendiente | — | Bajo |
+| 5 | **F10** | Chart unificado | ✅ Completada | 2026-08-04 | Bajo |
 | 6 | **F11** | Migración de pantallas | ⬜ Pendiente | — | Medio |
 | 7 | **F12** | Momentos clave (rediseños reales) | ⬜ Pendiente | — | **Alto** |
 | 8 | **F13** | Motion, hápticos y reduced-motion | ⬜ Pendiente | — | Medio |
@@ -64,7 +64,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | Indicador | Dir. | Base (F0) | Hoy | Objetivo | Fase |
 |---|:--:|--:|--:|--:|:--:|
 | Hex distintos en componentes | ↓ | 101 | **14** | ≤ 22 | F1 ✅ |
-| Hex literales en componentes | ↓ | 4.638 | **25** | ~0 | F1 ✅ |
+| Hex literales en componentes | ↓ | 4.638 | **23** | ~0 | F1 ✅ |
 | Tokens del DS en uso | ↑ | 0 | **4.775** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
@@ -340,6 +340,53 @@ tras recarga completa. **Sin verificación visual en pantallas reales de coach**
 de credenciales de F8; decisión de Dani el 4 ago: no dedicar tiempo a QA por pantalla, la auditoría
 visual global la hace Claude Design.
 
+### Sprint 5 — F10 · Gráficas · 2026-08-04
+
+**F10 · Chart unificado.** ✅ Cerrada. 8 commits, los 7 paneles Recharts de la app.
+
+**Lo que había:** 6 alturas, 3 tratamientos de rejilla, 2 tamaños de tick, 6 márgenes y 4 formas
+distintas de estilar el tooltip. Ninguna estaba mal por separado; el problema era que fueran todas
+distintas, que es lo que hace que un producto parezca descuidado aunque cada pantalla aguante bien
+mirada de cerca.
+
+[`ui/chart.ts`](src/components/ui/chart.ts) **no es una primitiva y no lo intenta.** Recharts se
+compone declarando sus propios hijos (`<XAxis>`, `<Tooltip>`…), así que envolverlo obligaría a
+reimplementar su API entera. Lo que se comparte son las decisiones visuales, no la estructura.
+
+| Decisión | Antes | Ahora |
+|---|---|---|
+| Alturas | 160, 180, 200, 280, 300, `100%` | 3 pasos: `s` 180 · `m` 220 · `l` 280 |
+| Márgenes | 6 distintos, con `left` negativos (`-20`, `-28`) | Uno solo; el ancho del eje Y es explícito |
+| Rejilla | horizontal (5), completa (1), ninguna (1) | Horizontal siempre; `HrChart` sigue sin rejilla a propósito |
+| Ticks | 9 px (5 paneles) y 10 px (1) | **11 px, el suelo del DS** |
+| Tooltip | 4 tratamientos | Uno, con dos defectos corregidos |
+| Colores de serie | listas locales por panel | Los 5 tokens `--color-chart-*` de F1 |
+
+**Los ticks estaban por debajo del suelo tipográfico y nadie lo veía.** F4 llevó a cero los textos
+por debajo de 11 px en toda la app, pero estos son objetos JS, no clases de Tailwind: ni el
+inventario, ni `tsc`, ni el build los detectan. Es el mismo tipo de punto ciego que la clase de
+Google que fijaba los iconos a 24 px, encontrado en F7. Comprobado que subirlos no amontona etiquetas
+en ningún panel: tres delegan en `minTickGap`, que Recharts resuelve en píxeles descartando ticks;
+`CorrelationPanel` usa `preserveStartEnd`; `LoadHistoryPanel` fuerza todos los ticks pero su
+formateador devuelve cadena vacía salvo en los cambios de mes; y `MesocycleDashboard` etiqueta con
+`#1`, `#2`…
+
+**Un defecto real, no cosmético:** `CorrelationPanel` —el panel cuyo propósito es comparar series—
+sacaba los colores de una lista local de 8 entradas con **tres repetidas**, así que dos métricas
+distintas podían pintarse del mismo color en la misma gráfica.
+
+**Dos hex literales menos** (25 → 23): el blanco del trazo de FC en `HrChart` y el del texto del
+tooltip de `MesocycleDashboard`, que además usaba un radio de 8 px fuera de la escala de F3.
+
+**Lo que NO se unificó, porque sería rediseño:** los colores asignados por dominio
+(`METRIC_COLOR` por métrica, `GROUP_COLOR` de 14 grupos musculares, `PHASE_COLORS`, `ZONE_COLOR` de
+cardio); la altura de `HrChart`, que es una prop porque rellena su contenedor en la sesión en
+directo; y su ausencia de rejilla, porque sus bandas de zona de FC **son** la referencia.
+
+**Verificado:** `tsc`, 263 pruebas, `build` y `ds:inventario` limpios tras cada uno de los 8 commits.
+**Sin verificación visual:** los 7 paneles viven detrás del login de coach salvo `BodyweightPanel`;
+misma limitación de F8 y F9.
+
 ## Excepciones explícitas al Design System
 
 Aprobadas caso por caso. **Prima la usabilidad sobre la uniformidad del sistema.**
@@ -403,7 +450,8 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Overlays artesanales sin foco atrapado ni Escape~~ | ~~39~~ | ✅ F9 — 31 migrados; los 7 restantes clasificados y documentados en el código |
 | Posición superior de overlay (paleta Cmd+K) sin variante en la primitiva | 1 | Fase de diseño |
 | Editor de reportes: overlay a dos columnas de 896 px, ¿modal, ruta o panel? | 1 | Fase de diseño |
-| Gráficas sin especificación común (5 alturas, 2 rejillas, 6 tamaños de tick) | 7 paneles | F10 |
+| ~~Gráficas sin especificación común (5 alturas, 2 rejillas, 6 tamaños de tick)~~ | ~~7 paneles~~ | ✅ F10 |
+| Colores de gráfica asignados por dominio, fuera de los 5 tokens de serie (14 grupos musculares, métricas, fases, zonas de FC) | 4 mapas | Fase de diseño |
 | Barra inferior del coach con 7 destinos; el DS fija 5 | 7 | F12 |
 | Botones de la barra inferior **sin nombre accesible** — confirmado en el árbol de accesibilidad | 7 | F14 |
 | `<label>` sin `htmlFor` | 116 | F14 |
