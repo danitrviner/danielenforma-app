@@ -37,6 +37,14 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
   const alreadySent = initial.status === 'sent';
 
   return (
+    /* F9 no migra este overlay, a propósito: es el único de la app con layout
+       a dos columnas (`lg:grid-cols-2` — controles a la izquierda, vista previa
+       en vivo del reporte a la derecha) y mide `max-w-4xl`. Ni con el escalón
+       `xl` que F9 añadió a la escala compartida cabe: cada columna bajaría de
+       ~430 a ~320 px, menos de lo que mide la vista previa en el móvil del
+       atleta. Decisión de Dani el 4 ago 2026: esto no es un modal más sino una
+       pantalla de trabajo que casualmente flota, y le toca a la fase de diseño
+       decidir si debe ser modal, ruta propia o panel. */
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center sm:p-4">
         <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-4xl shadow-e2">

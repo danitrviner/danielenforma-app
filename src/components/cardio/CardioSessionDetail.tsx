@@ -55,6 +55,12 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
   };
 
   return (
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
     <div className="fixed inset-0 z-[90] bg-bg overflow-y-auto">
       <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between">

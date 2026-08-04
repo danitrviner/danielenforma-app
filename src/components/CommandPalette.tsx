@@ -82,6 +82,13 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   };
 
   return (
+    /* F9 no migra este overlay, a propósito: la paleta va anclada arriba
+       (`pt-14`), que es la convención de Cmd+K, y ninguna primitiva tiene esa
+       posición — `Dialog` centra y `Sheet` sube desde abajo. Cierra con Escape
+       por su cuenta; lo que le falta es el foco atrapado y el bloqueo de
+       scroll compartido. Decisión de Dani el 4 ago 2026: queda para la fase de
+       diseño, que decidirá si la posición superior se convierte en una
+       variante de la primitiva. */
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
       onClick={() => setOpen(false)}

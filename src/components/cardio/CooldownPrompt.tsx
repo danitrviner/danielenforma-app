@@ -22,6 +22,12 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
   }, [remaining, onDone]);
 
   return (
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>

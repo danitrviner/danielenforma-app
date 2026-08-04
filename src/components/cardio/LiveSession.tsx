@@ -50,6 +50,12 @@ export default function LiveSession({
   const targetFraction = targetDurationSec ? Math.min(targetProgressSec / targetDurationSec, 1) : null;
 
   return (
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
     <div
       className="fixed inset-0 z-[90] flex flex-col transition-colors duration-700"
       style={{ background: `linear-gradient(180deg, ${zoneColor}f2, ${zoneColor}cc)` }}
