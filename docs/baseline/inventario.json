@@ -1,25 +1,25 @@
 {
-  "generado": "2026-08-04T14:39:02.342Z",
-  "commit": "ed5d34d",
+  "generado": "2026-08-04T14:39:58.195Z",
+  "commit": "fadb3ad",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39304
+    "lineasTsx": 39299
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4610,
+    "clasesTokenEnUso": 4602,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
     "fontMono": 940,
-    "fontSans": 895,
+    "fontSans": 892,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 259,
+    "transitionAll": 256,
     "animatePulse": 29,
     "ariaLabel": 30,
     "htmlFor": 1,
@@ -785,10 +785,9 @@
     },
     "src/components/roadmap/PlanPhaseEditor.tsx": {
       "hexLiterales": 1,
-      "clasesTokenEnUso": 62,
+      "clasesTokenEnUso": 54,
       "fontMono": 7,
-      "fontSans": 11,
-      "transitionAll": 3,
+      "fontSans": 8,
       "roundedFull": 3
     },
     "src/components/roadmap/RecentAchievements.tsx": {

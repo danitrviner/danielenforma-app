@@ -196,26 +196,21 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
           Fases del plan por progresión, no por tiempo. El cliente ve la actual destacada y las siguientes como "lo que le queda por delante".
         </p>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
-          <button
-            onClick={useStandardPreset}
-            className="py-2 px-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-white hover:border-strong transition-all"
-          >
+          <Button variant="secondary" size="s" onClick={useStandardPreset}>
             Usar plan estándar (6 fases)
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            size="s"
             onClick={onGenerateClick}
             disabled={generatingNutrition || phases.length === 0}
-            className="py-2 px-3 border border-data/40 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 transition-all disabled:opacity-40"
+            loading={generatingNutrition}
           >
             {generatingNutrition ? 'Generando...' : 'Generar periodización nutricional'}
-          </button>
-          <button
-            onClick={save}
-            disabled={!dirty || saving}
-            className="py-2 px-4 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-          >
+          </Button>
+          <Button size="s" onClick={save} disabled={!dirty || saving} loading={saving}>
             {saving ? 'Guardando...' : 'Guardar cambios'}
-          </button>
+          </Button>
         </div>
       </div>
 
