@@ -5,7 +5,7 @@ import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, s
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 import Skeleton from './Skeleton';
-import { Icon, Button, Chip, EmptyState, Sheet, Dialog } from './ui';
+import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -382,19 +382,13 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         {/* Athlete selector — hidden in embedded mode */}
         {!isEmbedded && (
           <div className="bg-surface border border-hairline rounded-surface p-4">
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">
-              Atleta
-            </label>
-            <select
+            <Select
+              label="Atleta"
               value={selectedEmail}
-              onChange={e => setSelectedEmail(e.target.value)}
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-            >
-              <option value="">— Seleccionar atleta —</option>
-              {athletes.map(a => (
-                <option key={a.email} value={a.email}>{a.displayName}</option>
-              ))}
-            </select>
+              onChange={setSelectedEmail}
+              placeholder="— Seleccionar atleta —"
+              options={athletes.map(a => ({ value: a.email, label: a.displayName }))}
+            />
           </div>
         )}
 
@@ -557,15 +551,13 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       {/* Metadata */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <h3 className="font-mono text-label text-ink-2 uppercase tracking-wider">Datos generales</h3>
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Nombre *</label>
-          <input
-            value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Ej: Día Alto, Día Bajo, Día Libre"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </div>
+        <Input
+          label="Nombre"
+          required
+          value={form.name}
+          onChange={v => setForm(f => ({ ...f, name: v }))}
+          placeholder="Ej: Día Alto, Día Bajo, Día Libre"
+        />
         <div>
           <label className="block font-mono text-caption text-ink-2 uppercase mb-2">
             Nota del coach

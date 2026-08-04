@@ -1,19 +1,19 @@
 {
-  "generado": "2026-08-04T14:28:00.444Z",
-  "commit": "5fae986",
+  "generado": "2026-08-04T14:29:03.048Z",
+  "commit": "f6a075c",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39293
+    "lineasTsx": 39290
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4653,
+    "clasesTokenEnUso": 4643,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 943,
-    "fontSans": 905,
+    "fontMono": 941,
+    "fontSans": 903,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -115,7 +115,7 @@
       },
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
-        "lineas": 923
+        "lineas": 915
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
@@ -203,9 +203,9 @@
       "roundedFull": 1
     },
     "src/components/AthleteOnboardingWizard.tsx": {
-      "clasesTokenEnUso": 44,
+      "clasesTokenEnUso": 42,
       "fontMono": 5,
-      "fontSans": 13,
+      "fontSans": 11,
       "transitionAll": 2,
       "roundedFull": 4
     },
@@ -468,8 +468,8 @@
       "transitionAll": 2
     },
     "src/components/NutritionPlansScreen.tsx": {
-      "clasesTokenEnUso": 128,
-      "fontMono": 33,
+      "clasesTokenEnUso": 120,
+      "fontMono": 31,
       "fontSans": 17,
       "transitionAll": 7,
       "roundedFull": 3

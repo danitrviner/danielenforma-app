@@ -4,7 +4,7 @@ import {
   ActivityLevel, DietType,
 } from '../types';
 import { saveOnboarding } from '../dbService';
-import { Icon, Button } from './ui';
+import { Icon, Button, Input } from './ui';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
 // bloquea la app hasta completarse (gating en App.tsx). Recoge lo esencial del
@@ -354,14 +354,19 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 <Chip selected={!batchCookingPreferred} onClick={() => setBatchCookingPreferred(false)}>No, cocino cada día</Chip>
               </div>
             </div>
-            <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Alergias o intolerancias (separa por comas, o deja vacío)</label>
-              <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej: lactosa, frutos secos" className={inputCls} />
-            </div>
-            <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Alimentos que NO quieres ver en tu dieta</label>
-              <input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="Ej: pescado azul, coliflor" className={inputCls} />
-            </div>
+            <Input
+              label="Alergias o intolerancias"
+              hint="Separa por comas, o déjalo vacío."
+              value={allergies}
+              onChange={setAllergies}
+              placeholder="Ej: lactosa, frutos secos"
+            />
+            <Input
+              label="Alimentos que NO quieres ver en tu dieta"
+              value={dislikedFoods}
+              onChange={setDislikedFoods}
+              placeholder="Ej: pescado azul, coliflor"
+            />
           </StepShell>
         )}
 
