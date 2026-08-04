@@ -164,6 +164,41 @@ const METRICAS = [
       .filter((n) => Number(n) < 11).length,
   },
   {
+    id: 'camposBajo16px',
+    etiqueta: 'Campos de formulario < 16 px',
+    direccion: 'bajar',
+    fase: 'F11',
+    /*
+     * R8: Safari en iOS hace zoom al enfocar un `<input>`, `<select>` o
+     * `<textarea>` con letra menor de 16 px, y NO lo deshace al salir — el
+     * usuario se queda con la página ampliada.
+     *
+     * El riesgo llevaba abierto desde F4 sin contador: la auditoría dijo 5,
+     * F2 encontró 238 y nadie podía comprobar si subían o bajaban. Sin esto,
+     * F11 sería la única fase de la migración verificable solo a ojo.
+     *
+     * Mide la clase de tamaño que lleva el propio control, no la heredada:
+     * busca la etiqueta de apertura y le lee el `className`. Los que no
+     * declaran tamaño no se cuentan — heredan, y no hay forma barata de saber
+     * de qué. Los de `ui/` quedan fuera: `Input` fija 16 px por construcción y
+     * es el destino, no la deuda.
+     */
+    ambito: (rel) => !esPrimitiva(rel),
+    medir: (t) => {
+      const MENORES = /\btext-(caption|label|body-s|body|xs|sm|base)\b/;
+      const GRANDES = new Set(['text-body', 'text-base']); // 15 px y 16 px
+      let n = 0;
+      for (const m of t.matchAll(/<(?:input|select|textarea)\b/g)) {
+        const etiqueta = t.slice(m.index, m.index + 900);
+        const cls = /className=[{"`]([^"`}]*)/.exec(etiqueta);
+        if (!cls) continue;
+        const hallado = MENORES.exec(cls[1]);
+        if (hallado && !GRANDES.has(hallado[0])) n++;
+      }
+      return n;
+    },
+  },
+  {
     id: 'fontMono',
     etiqueta: 'font-mono',
     direccion: 'bajar',
