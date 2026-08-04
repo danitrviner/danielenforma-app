@@ -7,7 +7,7 @@ import {
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
 import Skeleton from './Skeleton';
-import { Icon, Button, EmptyState } from './ui';
+import { Icon, Button, EmptyState, Dialog } from './ui';
 
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
@@ -921,22 +921,26 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {confirmDeleteId && (() => {
         const tpl = templates.find(t => t.id === confirmDeleteId);
         return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-hairline rounded-surface p-6 max-w-sm w-full space-y-4">
-              <p className="font-sans font-bold text-white text-body-s">¿Eliminar plantilla?</p>
-              <p className="font-sans text-caption text-ink-2">
-                Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
-              </p>
-              <div className="flex gap-3">
-                <Button onClick={() => handleDelete(confirmDeleteId)} variant="danger" fullWidth>
-                  Eliminar
-                </Button>
-                <Button onClick={() => setConfirmDeleteId(null)} variant="secondary" fullWidth>
+          <Dialog
+            open
+            onClose={() => setConfirmDeleteId(null)}
+            title="¿Eliminar plantilla?"
+            size="s"
+            footer={(
+              <>
+                <Button onClick={() => setConfirmDeleteId(null)} variant="secondary">
                   Cancelar
                 </Button>
-              </div>
-            </div>
-          </div>
+                <Button onClick={() => handleDelete(confirmDeleteId)} variant="danger">
+                  Eliminar
+                </Button>
+              </>
+            )}
+          >
+            <p className="font-sans text-caption text-ink-2">
+              Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
+            </p>
+          </Dialog>
         );
       })()}
     </div>
