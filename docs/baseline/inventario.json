@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-04T14:05:11.618Z",
-  "commit": "ca9b2d7",
+  "generado": "2026-08-04T14:06:41.374Z",
+  "commit": "7c7451b",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39329
+    "lineasTsx": 39321
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4716,
+    "clasesTokenEnUso": 4703,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 1,
-    "fontMono": 960,
+    "fontMono": 955,
     "fontSans": 908,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
@@ -150,12 +150,12 @@
         "lineas": 650
       },
       {
-        "archivo": "src/components/WeeklyMenuEditor.tsx",
-        "lineas": 647
-      },
-      {
         "archivo": "src/components/ClientsScreen.tsx",
         "lineas": 645
+      },
+      {
+        "archivo": "src/components/WeeklyMenuEditor.tsx",
+        "lineas": 644
       },
       {
         "archivo": "src/components/CoachesScreen.tsx",
@@ -463,8 +463,8 @@
     },
     "src/components/NutritionPeriodizationPanel.tsx": {
       "hexLiterales": 5,
-      "clasesTokenEnUso": 58,
-      "fontMono": 20,
+      "clasesTokenEnUso": 53,
+      "fontMono": 18,
       "fontSans": 10,
       "transitionAll": 2
     },
@@ -647,15 +647,15 @@
       "animatePulse": 1
     },
     "src/components/WeeklyMenuEditor.tsx": {
-      "clasesTokenEnUso": 96,
-      "fontMono": 25,
+      "clasesTokenEnUso": 92,
+      "fontMono": 23,
       "fontSans": 27,
       "transitionAll": 4,
       "roundedFull": 2
     },
     "src/components/WelcomeScreen.tsx": {
-      "clasesTokenEnUso": 33,
-      "fontMono": 5,
+      "clasesTokenEnUso": 29,
+      "fontMono": 4,
       "fontSans": 3,
       "pesosProhibidos": 2,
       "transitionAll": 1,

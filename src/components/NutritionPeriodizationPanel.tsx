@@ -17,7 +17,7 @@ import {
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 import Skeleton from './Skeleton';
-import { Icon, Button, EmptyState } from './ui';
+import { Icon, Button, EmptyState, Input } from './ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -417,14 +417,11 @@ export default function NutritionPeriodizationPanel({
 
       {/* Start date */}
       <div className="space-y-2">
-        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">
-          Fecha de inicio
-        </label>
-        <input
+        <Input
+          label="Fecha de inicio"
           type="date"
           value={form.startDate}
-          onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-chart-3/50 hover:border-hairline transition-colors"
+          onChange={v => setForm(prev => prev ? { ...prev, startDate: v } : prev)}
         />
       </div>
 

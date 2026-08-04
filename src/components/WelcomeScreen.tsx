@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, sendPasswordResetEmail, isSignInWithEmailLink, signInWithEmailLink } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
-import { Button } from './ui';
+import { Button, Input } from './ui';
 
 interface WelcomeScreenProps {
   onLoginSuccess: (user: any) => void;
@@ -215,17 +215,15 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         )}
 
         <form onSubmit={handleEmailAuth} className="space-y-4">
-          <div>
-            <label className="block text-label font-mono text-ink-2 uppercase tracking-wider mb-2">Correo Electrónico</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="atleta@enforma.com"
-              className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
-              required
-            />
-          </div>
+          <Input
+            label="Correo electrónico"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="atleta@enforma.com"
+            autoComplete="email"
+            required
+          />
 
           <div>
             <div className="flex items-center justify-between mb-2">

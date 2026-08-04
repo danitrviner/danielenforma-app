@@ -12,7 +12,7 @@ import {
 } from '../utils/menuEngine';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
-import { Icon, Button } from './ui';
+import { Icon, Button, Input } from './ui';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -315,14 +315,11 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           </div>
         )}
 
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre del menú</label>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50 font-mono"
-          />
-        </div>
+        <Input
+          label="Nombre del menú"
+          value={name}
+          onChange={setName}
+        />
 
         <div>
           <div className="flex items-center justify-between mb-2">
