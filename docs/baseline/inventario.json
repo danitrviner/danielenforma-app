@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:13:41.225Z",
-  "commit": "5249ab4",
+  "generado": "2026-08-04T09:15:12.734Z",
+  "commit": "c160435",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39408
+    "lineasTsx": 39411
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4861,
+    "clasesTokenEnUso": 4854,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 979,
-    "fontSans": 932,
+    "fontSans": 930,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 27,
+    "modalesArtesanales": 25,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -30,7 +30,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 160,
+    "roundedFull": 159,
     "hexDistintos": 14,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -115,7 +115,7 @@
       },
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
-        "lineas": 920
+        "lineas": 923
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
@@ -474,12 +474,11 @@
       "transitionAll": 2
     },
     "src/components/NutritionPlansScreen.tsx": {
-      "clasesTokenEnUso": 135,
+      "clasesTokenEnUso": 128,
       "fontMono": 33,
-      "fontSans": 19,
-      "modalesArtesanales": 2,
+      "fontSans": 17,
       "transitionAll": 7,
-      "roundedFull": 4
+      "roundedFull": 3
     },
     "src/components/NutritionScreen.tsx": {
       "clasesTokenEnUso": 257,

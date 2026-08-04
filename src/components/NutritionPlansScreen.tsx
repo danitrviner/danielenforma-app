@@ -5,7 +5,7 @@ import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, s
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 import Skeleton from './Skeleton';
-import { Icon, Button, Chip, EmptyState } from './ui';
+import { Icon, Button, Chip, EmptyState, Sheet, Dialog } from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -470,16 +470,20 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         )}
 
         {deleteId && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full shadow-e2 space-y-4">
-              <h3 className="font-sans font-bold text-title-m text-white">¿Eliminar dieta?</h3>
-              <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
-              <div className="flex gap-3">
-                <Button onClick={() => setDeleteId(null)} variant="secondary" fullWidth>Cancelar</Button>
-                <Button onClick={() => handleDelete(deleteId)} variant="danger" fullWidth>Eliminar</Button>
-              </div>
-            </div>
-          </div>
+          <Dialog
+            open
+            onClose={() => setDeleteId(null)}
+            title="¿Eliminar dieta?"
+            size="s"
+            footer={(
+              <>
+                <Button onClick={() => setDeleteId(null)} variant="secondary">Cancelar</Button>
+                <Button onClick={() => handleDelete(deleteId)} variant="danger">Eliminar</Button>
+              </>
+            )}
+          >
+            <p className="text-body-s text-ink-2">Se quitará también de los atletas que la tengan activa.</p>
+          </Dialog>
         )}
       </div>
     );
@@ -862,17 +866,15 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
       {/* Food picker sheet */}
       {pickerMealId && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
-              <div>
-                <h3 className="font-sans font-bold text-title-m text-white">Añadir alimento</h3>
-                <span className="font-sans text-caption text-ink-2 uppercase">{CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}</span>
+        <Sheet
+          open
+          onClose={() => setPickerMealId(null)}
+          title="Añadir alimento"
+          toolbar={(
+            <>
+              <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
+                {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
               </div>
-              <button onClick={() => setPickerMealId(null)} className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
-                <Icon name="close" size="s" className="select-none" />
-              </button>
-            </div>
 
             {enabledModes.length > 1 && (
               <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
@@ -899,8 +901,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 className="w-full bg-transparent border-none text-white text-label focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+            </>
+          )}
+        >
+            <div className="pt-4 space-y-2">
               {filteredFoods.length === 0 ? (
                 <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
               ) : filteredFoods.map(food => (
@@ -912,8 +916,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );
