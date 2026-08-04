@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Icon } from '../ui';
 
 // "Deslizar para guardar/descartar" en vez de un botón — el patrón exacto
 // observado en FITIV (§4bis.1 del análisis). Con las manos sudadas o en
@@ -74,7 +75,7 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
           touchAction: 'pan-y',
         }}
       >
-        <span className="material-symbols-outlined text-black text-title-m">{icon}</span>
+        <Icon name={icon} size="l" className="text-black" />
       </div>
     </div>
   );

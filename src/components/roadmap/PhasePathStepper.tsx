@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlanPhase } from '../../types';
+import { Icon } from '../ui';
 
 interface Props {
   phases: PlanPhase[];
@@ -34,9 +35,7 @@ export default function PhasePathStepper({ phases }: Props) {
                     color: isDone ? phase.color : isActive ? phase.color : 'var(--color-ink-3)',
                   }}
                 >
-                  <span className="material-symbols-outlined text-title-s">
-                    {isDone ? 'check' : phase.icon || 'circle'}
-                  </span>
+                  <Icon name={isDone ? 'check' : phase.icon || 'circle'} size="m" />
                 </div>
                 {!isLast && (
                   <div

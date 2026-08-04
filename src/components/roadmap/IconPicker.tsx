@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../ui';
 
 // Grid de iconos DIBUJADOS con etiqueta en español — sustituye los <select> de
 // nombres técnicos (material symbol names) que el coach no reconoce a simple
@@ -48,9 +49,7 @@ export default function IconPicker({ value, onChange, accent = 'var(--color-acce
               backgroundColor: selected ? `${accent}1a` : 'var(--color-bg)',
             }}
           >
-            <span className="material-symbols-outlined text-title-m" style={{ color: selected ? accent : 'var(--color-ink-2)' }}>
-              {opt.icon}
-            </span>
+            <Icon name={opt.icon} size="l" style={{ color: selected ? accent : 'var(--color-ink-2)' }} />
             <span className="font-sans text-caption text-ink-2 leading-none text-center">{opt.label}</span>
           </button>
         );

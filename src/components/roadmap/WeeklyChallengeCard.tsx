@@ -36,9 +36,7 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-title-m" style={{ color: accent }}>
-            {achieved ? 'emoji_events' : 'flag'}
-          </span>
+          <Icon name={achieved ? 'emoji_events' : 'flag'} size="l" style={{ color: accent }} />
           <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
             Reto de la semana · de tu entrenador
           </p>

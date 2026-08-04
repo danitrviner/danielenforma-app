@@ -5,6 +5,7 @@ import ClienteDetail from './ClienteDetail';
 import PagosScreen from './PagosScreen';
 import ReunionesScreen from './ReunionesScreen';
 import DashboardScreen from './DashboardScreen';
+import { Icon } from '../../../components/ui';
 
 // Contenedor del módulo CRM. Monta sus propias rutas anidadas para que App.tsx
 // solo necesite una línea (`/crm/*`) y el módulo siga siendo autocontenido.
@@ -41,7 +42,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
-                <span className="material-symbols-outlined text-body-s">{s.icon}</span>
+                <Icon name={s.icon} size="s" />
                 {s.label}
               </button>
             );

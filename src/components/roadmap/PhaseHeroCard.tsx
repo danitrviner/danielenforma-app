@@ -25,7 +25,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${phase.color}1a`, color: phase.color }}
         >
-          <span className="material-symbols-outlined text-title-l">{phase.icon || 'route'}</span>
+          <Icon name={phase.icon || 'route'} size="l" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fase actual</p>

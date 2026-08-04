@@ -212,7 +212,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 function Resumen({ icono, color, numero, label }: { icono: string; color: string; numero: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
-      <span className="material-symbols-outlined text-title-s" style={{ color }}>{icono}</span>
+      <Icon name={icono} size="m" style={{ color }} />
       <span className="font-sans font-bold text-title-s text-ink tabular-nums">{numero}</span>
       <span className="font-sans text-caption uppercase tracking-widest text-ink-3">{label}</span>
     </div>

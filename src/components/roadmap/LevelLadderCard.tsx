@@ -1,5 +1,6 @@
 import React from 'react';
 import { LadderStatus } from '../../utils/levelLadder';
+import { Icon } from '../ui';
 
 interface Props {
   status: LadderStatus;
@@ -25,7 +26,7 @@ export default function LevelLadderCard({ status }: Props) {
 
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
-          <span className="material-symbols-outlined text-title-l">{currentLevel?.icon || 'military_tech'}</span>
+          <Icon name={currentLevel?.icon || 'military_tech'} size="l" />
         </div>
         <div>
           <p className="font-sans font-bold text-title-m text-white">{currentLevel?.name ?? 'Aún por empezar'}</p>
@@ -39,12 +40,7 @@ export default function LevelLadderCard({ status }: Props) {
         <div className="flex flex-col gap-2 pt-2 border-t border-hairline">
           {nextLevelCriteria.map(c => (
             <div key={c.criterion.id} className="flex items-center gap-2">
-              <span
-                className="material-symbols-outlined text-body-s flex-shrink-0"
-                style={{ color: c.done ? 'var(--color-success)' : 'var(--color-ink-3)' }}
-              >
-                {c.done ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
+              <Icon name={c.done ? 'check_circle' : 'radio_button_unchecked'} size="s" className="flex-shrink-0" style={{ color: c.done ? 'var(--color-success)' : 'var(--color-ink-3)' }} />
               <div className="flex-1 min-w-0">
                 <p className={`text-label font-sans ${c.done ? 'text-success' : 'text-ink-2'}`}>
                   {c.criterion.label}

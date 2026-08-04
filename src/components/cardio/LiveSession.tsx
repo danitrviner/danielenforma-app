@@ -5,6 +5,7 @@ import { ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR } from '../.
 import HrChart from './HrChart';
 import ZoneBars from './ZoneBars';
 import SlideAction from './SlideAction';
+import { Icon } from '../ui';
 
 // La pantalla de entreno en vivo de FITIV (§4bis.1 del análisis): el fondo
 // ENTERO de la pantalla es el color de la zona actual — "sabes tu zona sin
@@ -61,9 +62,7 @@ export default function LiveSession({
       style={{ background: `linear-gradient(180deg, ${zoneColor}f2, ${zoneColor}cc)` }}
     >
       <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)]">
-        <span className="material-symbols-outlined text-white/80 text-title-m">
-          {deviceStatus === 'connected' ? 'bluetooth_connected' : deviceStatus === 'reconnecting' ? 'bluetooth_searching' : 'bluetooth_disabled'}
-        </span>
+        <Icon name={deviceStatus === 'connected' ? 'bluetooth_connected' : deviceStatus === 'reconnecting' ? 'bluetooth_searching' : 'bluetooth_disabled'} size="l" className="text-white/80" />
         <p className="text-label font-mono text-white/80 tabular-nums">{fmtClock(elapsedSec)}</p>
       </div>
 

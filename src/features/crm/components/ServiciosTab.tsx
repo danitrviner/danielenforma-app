@@ -91,9 +91,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           title={s.archivado ? 'Recuperar' : 'Archivar'}
           className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
         >
-          <span className="material-symbols-outlined text-title-s">
-            {s.archivado ? 'unarchive' : 'archive'}
-          </span>
+          <Icon name={s.archivado ? 'unarchive' : 'archive'} size="m" />
         </button>
       ),
     },

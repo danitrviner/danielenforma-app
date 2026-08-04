@@ -127,7 +127,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'
             }`}
           >
-            <span className="material-symbols-outlined text-body-s">{t.icon}</span>
+            <Icon name={t.icon} size="s" />
             {t.label}
           </button>
         ))}

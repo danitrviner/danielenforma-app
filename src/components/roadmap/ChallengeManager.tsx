@@ -205,7 +205,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           onClick={() => setShowAssign(v => !v)}
           className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
         >
-          <span className="material-symbols-outlined text-body-s">{showAssign ? 'close' : 'add'}</span>
+          <Icon name={showAssign ? 'close' : 'add'} size="s" />
           {showAssign ? 'Cancelar' : 'Asignar reto'}
         </button>
 
