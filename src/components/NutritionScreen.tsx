@@ -9,7 +9,7 @@ import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import Skeleton from './Skeleton';
-import { EmptyState } from './ui';
+import { EmptyState, Sheet, Icon } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -1321,32 +1321,21 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {recipePickerMealId && (() => {
         const targetMeal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
         return (
-          <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-raised border-t md:border border-hairline w-full max-w-lg rounded-t-surface md:rounded-surface max-h-[85vh] flex flex-col overflow-hidden">
-              {/* Header */}
-              <div className="p-4 border-b border-hairline flex items-center justify-between sticky top-0 bg-raised z-10">
-                <div>
-                  <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
-                    Usar receta
-                  </h3>
-                  {targetMeal && (
-                    <span className="font-mono text-caption text-ink-2 uppercase">
-                      {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setRecipePickerMealId(null)}
-                  className="text-white bg-raised hover:bg-raised p-2 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <span className="material-symbols-outlined text-body-s select-none">close</span>
-                </button>
-              </div>
+          <Sheet
+            open
+            onClose={() => setRecipePickerMealId(null)}
+            title="Usar receta"
+            toolbar={(
+              <>
+                {targetMeal && (
+                  <div className="px-4 pb-2 font-mono text-caption text-ink-2 uppercase">
+                    {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
+                  </div>
+                )}
 
               {/* Search */}
               <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-                <span className="material-symbols-outlined text-ink-2 text-body-s select-none">search</span>
+                <Icon name="search" size="s" className="text-ink-2" />
                 <input
                   type="text"
                   placeholder="Buscar receta..."
@@ -1372,9 +1361,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   ))}
                 </div>
               )}
-
+              </>
+            )}
+          >
               {/* Recipe list */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              <div className="pt-4 space-y-2">
                 {sortedPickerRecipes.length === 0 ? (
                   <div className="text-center py-10 font-mono text-label text-ink-2 italic">
                     {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
@@ -1426,8 +1417,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   );
                 })}
               </div>
-            </div>
-          </div>
+          </Sheet>
         );
       })()}
 
