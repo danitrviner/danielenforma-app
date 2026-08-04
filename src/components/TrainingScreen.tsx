@@ -18,7 +18,7 @@ import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import Skeleton from './Skeleton';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
-import { Badge, BadgeTone } from './ui';
+import { Badge, BadgeTone, Dialog, Button, Icon } from './ui';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -798,12 +798,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         {/* Celebración al terminar — se muestra antes de volver a la lista;
             el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
         {celebration && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-surface border border-accent/30 rounded-canvas w-full max-w-sm p-8 space-y-5 shadow-e2 text-center">
+          <Dialog
+            open
+            onClose={dismissCelebration}
+            size="s"
+            label={celebration.isFirstEver ? 'Primera sesión registrada' : 'Entreno completado'}
+            footer={(
+              <Button onClick={dismissCelebration} fullWidth>Genial</Button>
+            )}
+          >
+            <div className="space-y-5 text-center">
               <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
-                <span className="material-symbols-outlined text-display text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {celebration.isFirstEver ? 'celebration' : 'bolt'}
-                </span>
+                <Icon name={celebration.isFirstEver ? 'celebration' : 'bolt'} size="xl" filled className="text-accent" />
               </div>
               <div>
                 <h2 className="font-sans font-bold text-title-m text-white">
@@ -827,20 +833,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">
                   {celebration.prs.map(pr => (
                     <p key={pr.exerciseId} className="text-label text-accent flex items-center gap-2">
-                      <span className="material-symbols-outlined text-body-s">military_tech</span>
+                      <Icon name="military_tech" size="s" />
                       Récord en {pr.name} — {pr.newBest} kg est.
                     </p>
                   ))}
                 </div>
               )}
-              <button
-                onClick={dismissCelebration}
-                className="w-full py-3 rounded-control bg-accent text-black font-sans font-bold text-body-s uppercase tracking-widest active:scale-95 transition-all"
-              >
-                Genial
-              </button>
             </div>
-          </div>
+          </Dialog>
         )}
       </div>
     );

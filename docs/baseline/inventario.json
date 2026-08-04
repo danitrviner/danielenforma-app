@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-04T08:56:24.013Z",
-  "commit": "4447f09",
+  "generado": "2026-08-04T08:59:07.716Z",
+  "commit": "e96a47a",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39386
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4881,
+    "clasesTokenEnUso": 4878,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 983,
-    "fontSans": 939,
+    "fontSans": 938,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 33,
-    "transitionAll": 272,
+    "modalesArtesanales": 32,
+    "transitionAll": 271,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -641,12 +641,11 @@
       "roundedFull": 1
     },
     "src/components/TrainingScreen.tsx": {
-      "clasesTokenEnUso": 167,
+      "clasesTokenEnUso": 164,
       "fontMono": 48,
-      "fontSans": 19,
+      "fontSans": 18,
       "pesosProhibidos": 1,
-      "modalesArtesanales": 1,
-      "transitionAll": 12,
+      "transitionAll": 11,
       "animatePulse": 1,
       "ariaLabel": 1,
       "roundedFull": 6
