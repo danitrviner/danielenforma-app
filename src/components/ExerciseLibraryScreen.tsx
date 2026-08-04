@@ -590,25 +590,25 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">URL de imagen (opcional)</label>
-                <input
+                <Input
+                  label="URL de imagen"
+                  hint="Opcional."
                   type="url"
                   value={form.imageUrl}
-                  onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, imageUrl: v }))}
                   placeholder="https://..."
-                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
 
               {/* Video URL */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">URL de vídeo YouTube (opcional)</label>
-                <input
+                <Input
+                  label="URL de vídeo YouTube"
+                  hint="Opcional."
                   type="url"
                   value={form.videoUrl}
-                  onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, videoUrl: v }))}
                   placeholder="https://youtube.com/..."
-                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
                 />
               </div>
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CoachReport } from '../types';
 import ReportView from './ReportView';
 import { buildReportText } from '../utils/reportBuilder';
-import { Icon, Button } from './ui';
+import { Icon, Button, Input } from './ui';
 
 interface Props {
   initial: CoachReport;
@@ -66,14 +66,11 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
           <div className="grid lg:grid-cols-2 gap-5 p-4 sm:p-6">
             {/* ── Left: editing controls ── */}
             <div className="space-y-4">
-              <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Título</label>
-                <input
-                  value={draft.title}
-                  onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50"
-                />
-              </div>
+              <Input
+                label="Título"
+                value={draft.title}
+                onChange={v => setDraft(d => ({ ...d, title: v }))}
+              />
 
               <div>
                 <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Mensaje para el atleta</label>

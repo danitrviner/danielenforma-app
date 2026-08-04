@@ -1,25 +1,25 @@
 {
-  "generado": "2026-08-04T14:29:03.048Z",
-  "commit": "f6a075c",
+  "generado": "2026-08-04T14:30:19.087Z",
+  "commit": "e554a6f",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39290
+    "lineasTsx": 39287
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4643,
+    "clasesTokenEnUso": 4629,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 941,
-    "fontSans": 903,
+    "fontMono": 940,
+    "fontSans": 901,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 261,
+    "transitionAll": 259,
     "animatePulse": 29,
     "ariaLabel": 30,
     "htmlFor": 1,
@@ -343,11 +343,11 @@
       "transitionAll": 5
     },
     "src/components/ExerciseLibraryScreen.tsx": {
-      "clasesTokenEnUso": 118,
+      "clasesTokenEnUso": 108,
       "fontMono": 22,
-      "fontSans": 19,
+      "fontSans": 17,
       "pesosProhibidos": 1,
-      "transitionAll": 11
+      "transitionAll": 9
     },
     "src/components/ExercisePersonalNotesPanel.tsx": {
       "clasesTokenEnUso": 11,
@@ -554,8 +554,8 @@
       "roundedFull": 7
     },
     "src/components/ReportEditor.tsx": {
-      "clasesTokenEnUso": 32,
-      "fontMono": 3,
+      "clasesTokenEnUso": 28,
+      "fontMono": 2,
       "fontSans": 5,
       "modalesArtesanales": 1,
       "transitionAll": 1,
