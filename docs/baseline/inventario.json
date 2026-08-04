@@ -1,23 +1,23 @@
 {
-  "generado": "2026-08-04T09:23:43.176Z",
-  "commit": "06406bc",
+  "generado": "2026-08-04T09:25:48.222Z",
+  "commit": "4e604cd",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39386
+    "lineasTsx": 39373
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4834,
+    "clasesTokenEnUso": 4823,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "fontMono": 979,
-    "fontSans": 927,
+    "fontMono": 976,
+    "fontSans": 924,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 22,
+    "modalesArtesanales": 19,
     "transitionAll": 265,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -95,7 +95,7 @@
       },
       {
         "archivo": "src/components/NutritionScreen.tsx",
-        "lineas": 1628
+        "lineas": 1615
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
@@ -481,11 +481,10 @@
       "roundedFull": 3
     },
     "src/components/NutritionScreen.tsx": {
-      "clasesTokenEnUso": 237,
-      "fontMono": 32,
-      "fontSans": 35,
+      "clasesTokenEnUso": 226,
+      "fontMono": 29,
+      "fontSans": 32,
       "pesosProhibidos": 1,
-      "modalesArtesanales": 3,
       "transitionAll": 30,
       "roundedFull": 12
     },

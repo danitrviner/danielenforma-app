@@ -9,7 +9,7 @@ import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import Skeleton from './Skeleton';
-import { EmptyState, Sheet, Icon } from './ui';
+import { EmptyState, Sheet, Icon, Button } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -1524,9 +1524,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {/* Save-choice sheet — only when saving edits to a diet the coach created */}
       {saveChoiceOpen && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-title-m text-white">¿Cómo quieres guardar?</h3>
+        <Sheet
+          open
+          onClose={() => setSaveChoiceOpen(false)}
+          title="¿Cómo quieres guardar?"
+          size="m"
+          footer={<Button variant="ghost" onClick={() => setSaveChoiceOpen(false)} fullWidth>Cancelar</Button>}
+        >
+          <div className="space-y-3">
             <p className="text-label text-ink-2">
               Esta dieta la creó tu entrenador. Puedes actualizarla directamente o guardar tus
               cambios como una dieta nueva tuya, sin tocar la original.
@@ -1536,7 +1541,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               disabled={saving}
               className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-accent text-title-s">edit</span>
+              <Icon name="edit" size="m" className="text-accent" />
               <span className="text-body-s text-white font-sans">Actualizar esta dieta</span>
             </button>
             <button
@@ -1544,28 +1549,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               disabled={saving}
               className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-data text-title-s">bookmark_add</span>
+              <Icon name="bookmark_add" size="m" className="text-data" />
               <span className="text-body-s text-white font-sans">Guardar como nueva dieta mía</span>
             </button>
-            <button
-              onClick={() => setSaveChoiceOpen(false)}
-              className="w-full py-2 text-center font-mono text-caption text-ink-2 hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
           </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}
       {chooseDietForRecipe && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
-              ¿A qué dieta añadir "{chooseDietForRecipe.name}"?
-            </h3>
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+        <Sheet
+          open
+          onClose={() => setChooseDietForRecipe(null)}
+          title={`¿A qué dieta añadir "${chooseDietForRecipe.name}"?`}
+          size="m"
+          footer={<Button variant="ghost" onClick={() => setChooseDietForRecipe(null)} fullWidth>Cancelar</Button>}
+        >
+            <div className="space-y-2 pt-2">
               {allDietsList.map(dt => (
                 <button
                   key={dt.id}
@@ -1584,25 +1584,19 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">add_circle</span>
               </button>
             </div>
-            <button
-              onClick={() => setChooseDietForRecipe(null)}
-              className="w-full py-2 text-center font-mono text-caption text-ink-2 hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Choose which meal to add a recipe to (hand-off from Recetas, multi-meal case) */}
       {chooseMealForRecipe && selectedDiet && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-raised border-t md:border border-hairline w-full max-w-md rounded-t-surface md:rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-title-s">skillet</span>
-              ¿A qué comida añadir "{chooseMealForRecipe.name}"?
-            </h3>
-            <div className="space-y-2">
+        <Sheet
+          open
+          onClose={() => setChooseMealForRecipe(null)}
+          title={`¿A qué comida añadir "${chooseMealForRecipe.name}"?`}
+          size="m"
+          footer={<Button variant="ghost" onClick={() => setChooseMealForRecipe(null)} fullWidth>Cancelar</Button>}
+        >
+            <div className="space-y-2 pt-2">
               {selectedDiet.meals.map((meal, mi) => (
                 <button
                   key={meal.id}
@@ -1614,14 +1608,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => setChooseMealForRecipe(null)}
-              className="w-full py-2 text-center font-mono text-caption text-ink-2 hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );
