@@ -9,7 +9,10 @@ import { WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles } from '../dbService';
 import { epley } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
-import { Icon, EmptyState } from './ui';
+import {
+  Icon, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -514,22 +517,21 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               % del máximo
             </p>
           )}
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -28 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
+          <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+            <LineChart data={chartData} margin={MARGEN_GRAFICA}>
+              <CartesianGrid {...REJILLA_GRAFICA} />
               <XAxis
                 dataKey="date"
                 tickFormatter={xTickFormatter}
                 interval={0}
-                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
               />
               <YAxis
                 domain={isMulti ? [0, 100] : ['auto', 'auto']}
-                tick={{ fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
+                width={ANCHO_EJE_Y}
               />
               <Tooltip
                 content={<ChartTooltip activeMetrics={activeMetrics} />}
