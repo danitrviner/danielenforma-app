@@ -725,3 +725,88 @@ explícita cada uno — 74 con cambios, 5 sin ellos (justificado arriba, en amba
 que queda (`Select`, `Sheet`/`Dialog`, los overlays artesanales, `cardio/`, `roadmap/`,
 `src/features/crm/**`, y el patrón píldora rectangular) es la reservada por diseño para F9/F11/F12,
 no trabajo pendiente de F8. Siguiente fase: F9 (`Sheet`/`Dialog`).
+
+### F9 · Sheet / Dialog: los modales artesanales
+
+**Fecha:** 4 de agosto de 2026 · **Commits:** 28 · **Overlays artesanales: 39 → 7**
+
+**Paso 0 — clasificar antes de migrar.** El plan lo exigía y fue lo que evitó el error de la fase:
+migrar por patrón de clase habría convertido pantallas en diálogos. Cada overlay recibió una
+etiqueta —`Sheet`, `Dialog`, o «no es un modal»— antes de escribir una línea.
+
+**Y el instrumento contaba prosa.** De las 39 apariciones, una era un *comentario* en
+`features/crm/components/Modal.tsx` que describía el patrón: los overlays reales eran **38**. La
+misma trampa volvió al final: los comentarios que documentan los overlays no migrados subieron la
+métrica de 7 a 12 hasta reescribirlos sin la cadena literal. Tercera fase seguida (F6, F7, F9) en la
+que hay que entender el contador antes de fiarse de él.
+
+**Tres ampliaciones de primitiva, las tres consultadas con Dani antes de tocarlas.** Ninguna era
+previsible en F7, que construyó las primitivas sin un solo consumidor real:
+
+| Ampliación | Qué la motivó |
+|---|---|
+| `Dialog` gana `xl` (`max-w-2xl`) | Censo de anchos reales: `sm` 11, `md` 9, `lg` 9, **`2xl` 5**, `4xl` 1. Los 5 de `2xl` son los que muestran prosa larga o dos columnas |
+| `Sheet` gana la misma escala | Dos overlays son `2xl` **y** bottom-sheet, así que no podían irse a `Dialog`. La escala se extrae a `ui/internal/overlaySizes.ts`: el ancho es la misma decisión en ambas |
+| `Sheet` gana el slot `toolbar` | 7 overlays son *pickers* con la misma anatomía y su barra de búsqueda no puede scrollear |
+
+El `toolbar` es el hallazgo de la fase. Los pickers comparten título · barra fija (pestañas, chips,
+buscador) · lista de resultados, y `Sheet` solo tenía cabecera + cuerpo scrollable + footer. Con la
+barra dentro del cuerpo, el buscador desaparece al bajar por la lista — sobre el banco de 311
+alimentos eso no es estética, es dejar de poder usar el picker. Verificado en `/ui` tras recarga
+completa: con la lista desplazada 600 px de 2.480, la barra sigue en `top: 78px`.
+
+**R4 cerrado en su origen.** `features/crm/components/Modal.tsx` pasa de 63 líneas a 33 envolviendo
+`Sheet`. Era la única implementación del repo con bloqueo de scroll propio y tenía el bug exacto que
+R4 describe: capturaba y restauraba el `overflow` del body por overlay, así que con dos abiertos el
+primero en cerrarse devolvía el scroll. También le faltaba el foco atrapado. Su API (`titulo` /
+`onCerrar` / `footer`) no cambia y sus 7 usos no se tocan.
+
+**R3 se disuelve al clasificar, no al migrar.** El riesgo eran los modales que se abren durante un
+entrenamiento en directo. Al leerlos: **5 de los 6 overlays de `cardio/` no son modales**.
+`LiveSession` (degradado opaco por zona de FC), `EffortPrompt`, `CooldownPrompt`, `HrvTestScreen` y
+`CardioSessionDetail` tienen fondo opaco, sin telón y sin caja — son vistas a pantalla completa.
+El único modal de verdad era `ManualSessionModal`, que se abre desde la lista, no durante el esfuerzo.
+
+**Los 7 overlays que no se migran, con el motivo escrito en el propio código** para que nadie
+«termine el trabajo»:
+
+| Overlay | Motivo |
+|---|---|
+| Las 5 vistas de `cardio/` | No son modales |
+| `CommandPalette` | Anclada arriba (`pt-14`), convención de Cmd+K; ni `Dialog` (centra) ni `Sheet` (sube) tienen esa posición |
+| `ReportEditor` | Único con `lg:grid-cols-2` (controles + vista previa en vivo) a `max-w-4xl`; a `xl` cada columna bajaría de ~430 a ~320 px |
+
+Los dos últimos, **decisión de Dani**: no se les añade una variante ahora; van a la fase de diseño,
+que decidirá si la posición superior merece ser parte de la primitiva y si el editor de reportes
+debe ser modal, ruta propia o panel.
+
+**Un caso donde el `footer` de la primitiva es el sitio equivocado.** En `ExerciseLibraryScreen` los
+botones se quedan dentro del `<form>`: el de guardar es `type="submit"` y llevarlo al `footer` lo
+habría sacado de su formulario. Queda escrito porque es contraintuitivo.
+
+**Falso positivo de familia nueva.** Además del ya conocido (`Tokens del DS en uso` y `font-sans`
+bajan al centralizar clases en `ui/`), en F9 bajó **`aria-label` 33 → 30, que es métrica de salud**.
+Causa: los `aria-label="Cerrar"` escritos a mano desaparecen y los pone la primitiva, que ya
+aportaba el suyo desde F7. Verificado leyendo `Sheet`/`Dialog`: ningún botón perdió su nombre
+accesible, y en el CRM mejora — pasa a `aria-labelledby` apuntando al título visible.
+
+**Arreglos que llegaron gratis**, sin ser objetivo de la fase: el confirmar-borrado del banco de
+alimentos no decía *qué* se borraba (ahora muestra la etiqueta, dato ya disponible en pantalla); las
+instrucciones fijas del asistente no tenían botón de cerrar ni Escape; el detalle de receta de Mi
+Menú repetía el cierre en dos ramas y no tenía ninguno mientras cargaba; el picker de ejercicios
+conserva su contador «N ejercicios disponibles» en el `footer` en vez de perderlo.
+
+**Cambios visuales anotados, no accidentales.** La celebración de entreno completado pierde su borde
+dorado (`accent/30` → `strong`); los iconos decorativos de las cabeceras de overlay se pierden
+porque `title` es texto plano; los subtítulos dinámicos bajan del título al `toolbar` o al cuerpo.
+Todos son adopción, no rediseño, y quedan como candidatos para la fase de diseño.
+
+**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios tras cada uno de los 28
+commits; `ds:inventario` sin regresiones reales. Verificación funcional de las primitivas en el
+navegador (`/ui`, recarga completa): `Dialog xl` computa 672 px exactos, el `overflow` del body pasa
+a `hidden` al abrir y Escape lo cierra devolviéndolo, y la barra del `toolbar` no se mueve al
+desplazar la lista. **Sin verificación visual en pantallas reales** — misma limitación de
+credenciales que F8, y decisión explícita de Dani el 4 ago: no dedicar tiempo a QA por pantalla,
+porque la auditoría visual global la hace Claude Design sobre el conjunto.
+
+**Siguiente fase: F10 (Chart unificado).**

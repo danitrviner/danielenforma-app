@@ -3,7 +3,7 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-4 completados, F8 completada (Sprint 5 en curso: F9/F10 pendientes)** ·
+> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-4 completados, F8 y F9 completadas (Sprint 5 en curso: F10 pendiente)** ·
 > rama `ds/f0-linea-base` · commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
@@ -20,13 +20,21 @@ Sprint 1  ████████████████████  F0 F1   
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ████████████████████  F6 F7        COMPLETADO
-Sprint 5  ███████░░░░░░░░░░░░░  F8 F9 F10    F8 completada, F9/F10 pendientes
+Sprint 5  █████████████░░░░░░░  F8 F9 F10    F8 y F9 completadas, F10 pendiente
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**9 de 16 fases completadas. F9 (Sheet/Dialog) es la siguiente.**
+**10 de 16 fases completadas. F10 (Chart unificado) es la siguiente.**
+
+> **El Design System es la base, no el objetivo.** El plan acordado el 4 ago 2026 recorta lo que
+> queda para llegar antes a la fase que de verdad persigue el objetivo —una app de aspecto
+> premium—: **F10 y una F11 recortada** (solo `Input`/`Select`, que cierra R8, y las primitivas en
+> `cardio/`, `roadmap/` y CRM), y después **la auditoría visual con Claude Design**, que absorbe
+> F12 entera y F13 (motion, microinteracciones y transiciones son su encargo, no una pasada
+> mecánica previa). F14 se paga sola dentro de F11 y de F15 solo se conserva borrar los 12 tokens
+> muertos: partir los 20 archivos de más de 600 líneas queda fuera de este esfuerzo.
 
 ## Fases
 
@@ -41,7 +49,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F7** | Primitivas en `src/components/ui/` | ✅ Completada | 2026-08-03 | Bajo |
 | 5 | **F8** | Adopción de bajo riesgo | ✅ Completada | 2026-08-04 | Bajo |
-| 5 | **F9** | Sheet / Dialog: los modales artesanales | ⬜ Pendiente | — | **Alto** |
+| 5 | **F9** | Sheet / Dialog: los modales artesanales | ✅ Completada | 2026-08-04 | **Alto** |
 | 5 | **F10** | Chart unificado | ⬜ Pendiente | — | Bajo |
 | 6 | **F11** | Migración de pantallas | ⬜ Pendiente | — | Medio |
 | 7 | **F12** | Momentos clave (rediseños reales) | ⬜ Pendiente | — | **Alto** |
@@ -57,22 +65,22 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 |---|:--:|--:|--:|--:|:--:|
 | Hex distintos en componentes | ↓ | 101 | **14** | ≤ 22 | F1 ✅ |
 | Hex literales en componentes | ↓ | 4.638 | **25** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **4.911** | — | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **4.775** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
-| Textos por debajo de 11 px | ↓ | 1.151 | **0** | 0 | F4 ✅ |
+| Textos por debajo de 11 px | ↓ | 1.151 | **1 (excep.)** | 1 | F4 ✅ |
 | Escalones de tamaño en uso | ↓ | 16 | **8 + 2 excep.** | ≤ 8 | F4 ✅ |
 | Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
-| `font-mono` | ↓ | 1.527 | **985** | mono < sans | F5 ✅ |
-| `font-sans` | ↑ | 590 | **945** | > mono | F5 ✅ |
+| `font-mono` | ↓ | 1.527 | **974** | mono < sans | F5 ✅ |
+| `font-sans` | ↑ | 590 | **910** | > mono | F5 ✅ |
 | Espaciado fuera de escala | ↓ | 1.170 | **0** | 0 | F6 ✅ |
 | Sombras fuera de la escala | ↓ | 113 | **0** | 0 | F6 ✅ |
 | Brillos dorados ad-hoc | ↓ | 31 | **0** | 1, con token | F6 ✅ |
-| Overlays artesanales (no `ui/`) | ↓ | 39 | **39** | 0 | F9 |
-| `transition-all` | ↓ | 377 | **275** | 0 | F13 |
+| Overlays artesanales (no `ui/`) | ↓ | 39 | **7** | 7, clasificados | F9 ✅ |
+| `transition-all` | ↓ | 377 | **262** | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
 | `prefers-reduced-motion` | ↑ | 0 | 0 | > 0 | F13 |
-| `aria-label` | ↑ | 23 | **33** | — | F14 |
+| `aria-label` | ↑ | 23 | **30** | — | F14 |
 | `htmlFor` | ↑ | 0 | **1** | ≥ 116 | F14 |
 | `focus-visible` | ↑ | 0 | **31** | > 0 | F14 |
 | Archivos > 600 líneas | · | 21 | 20 | 0 (a un año) | F15 |
@@ -271,6 +279,67 @@ artesanales, `cardio/`, `roadmap/`, `src/features/crm/**`, y el patrón píldora
 arriba) es deuda documentada para F9/F11/F12, no trabajo olvidado. F9 (`Sheet`/`Dialog`) es la
 siguiente fase.
 
+### Sprint 5 — F9 · Overlays · 2026-08-04
+
+**F9 · Sheet / Dialog.** ✅ Cerrada. 28 commits. **Overlays artesanales 39 → 7**, y los 7 que
+quedan están clasificados uno a uno, no pendientes.
+
+**Primer hallazgo: eran 38, no 39.** Una de las 39 apariciones era una línea de *comentario* en
+`features/crm/components/Modal.tsx` que describía el patrón. El instrumento contaba prosa. Volvió a
+morder al final de la fase: los comentarios que documentan los overlays no migrados subieron la
+métrica de 7 a 12 hasta reescribirlos sin la cadena literal.
+
+**Las primitivas necesitaron tres ampliaciones, las tres consultadas antes de tocarlas** — el censo
+de anchos reales (`sm` 11, `md` 9, `lg` 9, `2xl` 5, `4xl` 1) y la anatomía real de los pickers no se
+podían conocer en F7, cuando se construyeron sin un solo consumidor:
+
+1. **`Dialog` gana `xl`** (`max-w-2xl`). Sin él, los 5 overlays que muestran prosa larga o dos
+   columnas se estrechaban de 672 a 512 px.
+2. **`Sheet` gana la misma escala**, extraída a `ui/internal/overlaySizes.ts` en vez de duplicarla:
+   el ancho es la misma decisión en las dos primitivas. Por defecto `l`, que es lo que `Sheet` medía.
+3. **`Sheet` gana el slot `toolbar`**, la zona que no scrollea. Siete overlays son *pickers* con la
+   misma anatomía —título, barra de pestañas/chips/buscador, lista— y meter esa barra en el cuerpo
+   hacía que el buscador se fuera con el scroll. Sobre 311 alimentos eso no es un matiz estético.
+   Verificado en `/ui`: con la lista desplazada 600 px de 2.480, la barra sigue en `top: 78px`.
+
+**R4 cerrado de verdad.** `features/crm/components/Modal.tsx` pasa de 63 líneas a 33 envolviendo
+`Sheet`: era la única implementación del repo con bloqueo de scroll propio, y con el bug exacto que
+R4 describe. Su API no cambia, así que sus 7 usos no se tocan.
+
+**R3 se disuelve al clasificar.** El riesgo era migrar modales que se abren durante un entrenamiento
+en directo — y resulta que **5 de los 6 overlays de `cardio/` no son modales**: `LiveSession`,
+`EffortPrompt`, `CooldownPrompt`, `HrvTestScreen` y `CardioSessionDetail` tienen fondo opaco, sin
+telón y sin caja. Son vistas a pantalla completa. Solo `ManualSessionModal` lo era, y se migró.
+
+**Los 7 que quedan, con motivo escrito en el propio código:**
+
+| Overlay | Por qué se queda |
+|---|---|
+| 5 vistas de `cardio/` | No son modales. Convertirlas sería un rediseño |
+| `CommandPalette` | Anclada arriba (`pt-14`), la convención de Cmd+K; ninguna primitiva tiene esa posición |
+| `ReportEditor` | Único con layout a dos columnas (`lg:grid-cols-2`) a `max-w-4xl`; ni con `xl` cabe |
+
+Los dos últimos son **decisión de Dani**: van a la fase de diseño, que decidirá si merecen una
+variante de posición y si el editor de reportes debe ser modal, ruta propia o panel.
+
+**Un falso positivo de familia nueva.** Hasta ahora el inventario bajaba `Tokens del DS en uso` y
+`font-sans` al centralizar clases en `ui/`. En F9 bajó también **`aria-label` (33 → 30), que es
+métrica de salud**: los `aria-label="Cerrar"` escritos a mano desaparecen y los pone la primitiva,
+que ya aportaba el suyo desde F7. Verificado leyendo `Sheet`/`Dialog`, no asumido: ningún botón
+perdió su nombre accesible, y en el CRM incluso mejora (pasa a `aria-labelledby` apuntando al título
+visible).
+
+**Arreglos que llegaron gratis con la migración**, sin ser objetivo de la fase: el confirmar-borrado
+del banco de alimentos no decía *qué* se borraba; las instrucciones fijas del asistente no tenían
+botón de cerrar ni Escape; el detalle de receta de Mi Menú repetía el botón de cerrar en dos ramas y
+no tenía ninguno mientras cargaba.
+
+**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios tras cada uno de los 28
+commits, y `ds:inventario` sin regresiones reales. Verificación funcional de las primitivas en `/ui`
+tras recarga completa. **Sin verificación visual en pantallas reales de coach** — misma limitación
+de credenciales de F8; decisión de Dani el 4 ago: no dedicar tiempo a QA por pantalla, la auditoría
+visual global la hace Claude Design.
+
 ## Excepciones explícitas al Design System
 
 Aprobadas caso por caso. **Prima la usabilidad sobre la uniformidad del sistema.**
@@ -302,8 +371,8 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 |:--:|---|:--:|---|
 | ~~R1~~ | ~~Colisión de radios~~ | F3 | ✅ **Cerrado.** Al retirar los overrides, `rounded-lg` vuelve a 8 px y `rounded-2xl` a 16: la colisión no existe |
 | R2 | **Sin capturas de referencia automáticas.** Se decidió no añadir Playwright ni Puppeteer. En F3 se cubrió con censo de `border-radius` computado más capturas manuales del navegador integrado, que basta para cambios medibles. Sigue abierto para F11 y F12, donde lo que cambia es la composición y no hay contador que lo detecte. | F11 · F12 | Abierto, ya no bloqueante |
-| R3 | **Modales dentro de una sesión de cardio en directo.** `LiveSession`, `EffortPrompt`, `CooldownPrompt` y `HrvTestScreen` se abren durante un entrenamiento real; un fallo ahí lo interrumpe. | F9 | Abierto |
-| R4 | **Bloqueo de scroll mal desmontado** al migrar los 39 overlays deja la página congelada. Es el bug clásico de esta migración. | F9 | Abierto — el arreglo ya existe y está verificado en `ui/internal/overlayHooks.ts` (contador compartido, no captura por overlay); falta aplicarlo a los 39 |
+| ~~R3~~ | ~~Modales dentro de una sesión de cardio en directo~~ | F9 | ✅ **Cerrado al clasificar.** 5 de los 6 overlays de `cardio/` no son modales sino vistas a pantalla completa, así que no se migraron. El único que lo era (`ManualSessionModal`) no se abre durante un entrenamiento |
+| ~~R4~~ | ~~Bloqueo de scroll mal desmontado~~ | F9 | ✅ **Cerrado.** Los 31 overlays migrados usan el contador compartido de `ui/internal/overlayHooks.ts`, y el `Modal` del CRM —la única implementación con el bug— ahora envuelve `Sheet` en vez de tener la suya |
 | ~~R5~~ | ~~Desbordamiento de layout al subir tamaños~~ | F4 · F6 | ✅ **Cerrado.** Tras F6 el desbordamiento horizontal sigue a 0 en todas las rutas medidas y los únicos truncados son los previos de la barra inferior, que es R10 |
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
@@ -331,7 +400,9 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Glow en cuatro tarjetas donde no señala nada~~ | ~~4~~ | ✅ F6 |
 | Márgenes negativos para compensar espaciado | 21 | F11 |
 | `<select>` con aspecto nativo junto a campos personalizados | — | F7 ✅ primitiva construida → F11 adopción |
-| Overlays artesanales sin foco atrapado ni Escape | 39 | F9 — plantilla lista en `ui/Sheet` y `ui/Dialog` |
+| ~~Overlays artesanales sin foco atrapado ni Escape~~ | ~~39~~ | ✅ F9 — 31 migrados; los 7 restantes clasificados y documentados en el código |
+| Posición superior de overlay (paleta Cmd+K) sin variante en la primitiva | 1 | Fase de diseño |
+| Editor de reportes: overlay a dos columnas de 896 px, ¿modal, ruta o panel? | 1 | Fase de diseño |
 | Gráficas sin especificación común (5 alturas, 2 rejillas, 6 tamaños de tick) | 7 paneles | F10 |
 | Barra inferior del coach con 7 destinos; el DS fija 5 | 7 | F12 |
 | Botones de la barra inferior **sin nombre accesible** — confirmado en el árbol de accesibilidad | 7 | F14 |
