@@ -4,7 +4,7 @@ import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import Skeleton from './Skeleton';
-import { EmptyState, Dialog, Button } from './ui';
+import { EmptyState, Dialog, Button, Select } from './ui';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -243,27 +243,22 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         >
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Modo *</label>
-                  <select
-                    value={form.mode}
-                    onChange={e => setForm(f => ({ ...f, mode: e.target.value as DietMode }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                  >
-                    {MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Categoría *</label>
-                  <select
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value as FoodCategory }))}
-                    className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                  >
-                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                  </select>
-                </div>
+                <Select
+                  label="Modo"
+                  required
+                  value={form.mode}
+                  onChange={v => setForm(f => ({ ...f, mode: v as DietMode }))}
+                  options={MODES.map(m => ({ value: m.id, label: m.label }))}
+                />
+                <Select
+                  label="Categoría"
+                  required
+                  value={form.category}
+                  onChange={v => setForm(f => ({ ...f, category: v as FoodCategory }))}
+                  options={CATEGORIES.map(c => ({ value: c.id, label: c.label }))}
+                />
               </div>
+              {/* Descripción: <textarea>, sin variante en Input — se queda a mano. */}
               <div>
                 <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Descripción (1 intercambio = ...) *</label>
                 <textarea

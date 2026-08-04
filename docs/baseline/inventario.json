@@ -1,18 +1,18 @@
 {
-  "generado": "2026-08-04T14:02:54.636Z",
-  "commit": "c13559d",
+  "generado": "2026-08-04T14:03:50.069Z",
+  "commit": "e492201",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39338
+    "lineasTsx": 39333
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4731,
+    "clasesTokenEnUso": 4723,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "camposBajo16px": 0,
-    "fontMono": 963,
+    "camposBajo16px": 1,
+    "fontMono": 961,
     "fontSans": 908,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
@@ -354,8 +354,9 @@
       "fontSans": 4
     },
     "src/components/FoodLibraryScreen.tsx": {
-      "clasesTokenEnUso": 41,
-      "fontMono": 7,
+      "clasesTokenEnUso": 33,
+      "camposBajo16px": 1,
+      "fontMono": 5,
       "fontSans": 4,
       "transitionAll": 4,
       "roundedFull": 2
