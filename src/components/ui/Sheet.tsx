@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks';
+import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Sheet
@@ -31,17 +32,26 @@ import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks'
    otra.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/** La escala de anchos es común con `Dialog`; vive en `internal/overlaySizes`. */
+export type SheetSize = OverlaySize;
+
 type Props = {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /**
+   * Ancho máximo en escritorio. En móvil el panel ocupa todo el ancho pase lo
+   * que pase — el gesto de «panel que sube» no admite márgenes laterales.
+   * `l` es el valor que tenía la primitiva antes de que F9 le diera escala.
+   */
+  size?: SheetSize;
   /** Nombre accesible cuando no hay `title` visible. */
   label?: string;
 };
 
-export default function Sheet({ open, onClose, title, children, footer, label }: Props) {
+export default function Sheet({ open, onClose, title, children, footer, size = 'l', label }: Props) {
   const ref = React.useRef<HTMLDivElement>(null);
   const idTitulo = React.useId();
 
@@ -66,7 +76,7 @@ export default function Sheet({ open, onClose, title, children, footer, label }:
         aria-label={title ? undefined : label}
         tabIndex={-1}
         className={
-          'relative z-[var(--z-modal)] flex max-h-[85vh] w-full max-w-lg flex-col '
+          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col `
           + 'rounded-t-canvas border-t border-x border-strong bg-surface shadow-e2 '
           + 'focus:outline-none sm:mb-6 sm:rounded-canvas sm:border'
         }
