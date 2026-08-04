@@ -1,5 +1,6 @@
 import React from 'react';
 import type { EstadoCrm, EstadoPago, EstadoSuscripcion } from '../types';
+import { Badge, type BadgeTone } from '../../../components/ui';
 
 // Colores tomados del bloque @theme de src/index.css. Van como literales de
 // Tailwind a propósito: interpolar valores de theme.ts en un className rompe en
@@ -7,13 +8,6 @@ import type { EstadoCrm, EstadoPago, EstadoSuscripcion } from '../types';
 // avisado en la cabecera de src/theme.ts.
 
 type Tono = 'ok' | 'aviso' | 'apagado' | 'peligro';
-
-const TONO_CLASS: Record<Tono, string> = {
-  ok:       'bg-success/12 text-success border-success/25',
-  aviso:    'bg-warning/12 text-warning border-warning/25',
-  apagado:  'bg-white/5 text-ink-2 border-hairline',
-  peligro:  'bg-danger/12 text-danger border-danger/25',
-};
 
 const ESTADO_CLIENTE: Record<EstadoCrm, { label: string; tono: Tono }> = {
   lead:             { label: 'Lead',        tono: 'apagado' },
@@ -33,11 +27,21 @@ const ESTADO_SUSCRIPCION: Record<EstadoSuscripcion, { label: string; tono: Tono 
   pausada: { label: 'Pausada', tono: 'apagado' },
 };
 
+/**
+ * F11: el pill deja de dibujarse a mano y pasa a `Badge` del DS. El mapa
+ * `TONO_CLASS` de arriba desaparece: sus cuatro tonos son los mismos que la
+ * primitiva ya define, solo que con otro nombre.
+ */
+const TONO_BADGE: Record<Tono, BadgeTone> = {
+  ok:      'success',
+  aviso:   'warning',
+  apagado: 'neutral',
+  peligro: 'danger',
+};
+
 function Pill({ label, tono }: { label: string; tono: Tono }) {
   return (
-    <span className={`inline-flex items-center px-2 rounded-full border font-sans text-caption uppercase tracking-widest whitespace-nowrap ${TONO_CLASS[tono]}`}>
-      {label}
-    </span>
+    <Badge tone={TONO_BADGE[tono]}>{label}</Badge>
   );
 }
 

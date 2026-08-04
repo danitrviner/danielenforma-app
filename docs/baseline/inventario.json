@@ -1,19 +1,19 @@
 {
-  "generado": "2026-08-04T14:38:02.194Z",
-  "commit": "cbc04b3",
+  "generado": "2026-08-04T14:39:02.342Z",
+  "commit": "ed5d34d",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39300
+    "lineasTsx": 39304
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4621,
+    "clasesTokenEnUso": 4610,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
     "fontMono": 940,
-    "fontSans": 896,
+    "fontSans": 895,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 156,
+    "roundedFull": 155,
     "hexDistintos": 13,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -984,11 +984,6 @@
       "fontMono": 3,
       "fontSans": 2,
       "ariaLabel": 1
-    },
-    "src/features/crm/components/StatusPill.tsx": {
-      "clasesTokenEnUso": 11,
-      "fontSans": 1,
-      "roundedFull": 1
     },
     "src/features/crm/components/SuscripcionesBlock.tsx": {
       "clasesTokenEnUso": 10,
