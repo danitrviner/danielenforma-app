@@ -4,7 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import Skeleton from './Skeleton';
-import { EmptyState, Badge, Chip, Dialog, Button } from './ui';
+import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -468,26 +468,23 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           <div className="space-y-5">
 
             {/* Name */}
-            <div className="space-y-2">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nombre *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Ej. Bowl de pollo y quinoa"
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
-              />
-            </div>
+            <Input
+              label="Nombre"
+              required
+              value={form.name}
+              onChange={v => setForm(f => ({ ...f, name: v }))}
+              placeholder="Ej. Bowl de pollo y quinoa"
+            />
 
             {/* Photo URL */}
             <div className="space-y-2">
-              <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">URL de foto (opcional)</label>
-              <input
+              <Input
+                label="URL de foto"
+                hint="Opcional."
                 type="url"
                 value={form.photoUrl}
-                onChange={e => setForm(f => ({ ...f, photoUrl: e.target.value }))}
+                onChange={v => setForm(f => ({ ...f, photoUrl: v }))}
                 placeholder="https://..."
-                className="w-full bg-raised border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none font-mono"
               />
               {form.photoUrl && (
                 <img
@@ -543,13 +540,11 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
               <div className="flex gap-2 items-center">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-body-s text-ink-2">search</span>
-                  <input
-                    type="text"
+                  <Input
+                    icon="search"
                     value={ingredientSearch}
-                    onChange={e => setIngSearch(e.target.value)}
+                    onChange={setIngSearch}
                     placeholder="Buscar alimento..."
-                    className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                   />
                   {filteredFoods.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-raised border border-hairline rounded-surface overflow-hidden z-10 shadow-e2">

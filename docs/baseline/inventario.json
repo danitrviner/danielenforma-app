@@ -1,19 +1,19 @@
 {
-  "generado": "2026-08-04T14:12:06.895Z",
-  "commit": "3df6f76",
+  "generado": "2026-08-04T14:28:00.444Z",
+  "commit": "5fae986",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39298
+    "lineasTsx": 39293
   },
   "metricas": {
     "hexLiterales": 23,
-    "clasesTokenEnUso": 4668,
+    "clasesTokenEnUso": 4653,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 945,
-    "fontSans": 906,
+    "fontMono": 943,
+    "fontSans": 905,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
@@ -143,7 +143,7 @@
       },
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
-        "lineas": 661
+        "lineas": 656
       },
       {
         "archivo": "src/components/ExerciseLibraryScreen.tsx",
@@ -539,9 +539,9 @@
       "transitionAll": 2
     },
     "src/components/RecipeBuilderScreen.tsx": {
-      "clasesTokenEnUso": 97,
-      "fontMono": 22,
-      "fontSans": 15,
+      "clasesTokenEnUso": 82,
+      "fontMono": 20,
+      "fontSans": 14,
       "transitionAll": 8,
       "roundedFull": 4
     },
