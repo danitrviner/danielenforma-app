@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
-import { Badge, PageHeader, Button } from './ui';
+import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -458,48 +458,43 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {showQuickReplyManager && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface border border-hairline rounded-surface w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-white text-body-s">Plantillas de feedback</h3>
-              <button onClick={() => setShowQuickReplyManager(false)} className="text-ink-2 hover:text-white">
-                <span className="material-symbols-outlined text-title-s">close</span>
-              </button>
-            </div>
-            <div className="space-y-2 overflow-y-auto flex-1">
-              {quickReplyDraft.map((r, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={r}
-                    onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
-                    placeholder="ej. Buen trabajo esta semana, sigue así."
-                    className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <button
-                    onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
-                    className="text-ink-2 hover:text-red-300 p-1 flex-shrink-0"
-                  >
-                    <span className="material-symbols-outlined text-title-s">delete</span>
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
-                className="flex items-center gap-2 text-label font-mono text-accent hover:text-white"
-              >
-                <span className="material-symbols-outlined text-body-s">add</span>
-                Añadir plantilla
-              </button>
-            </div>
-            <button
-              onClick={saveQuickReplyManager}
-              disabled={savingQuickReplies}
-              className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-            >
+        <Dialog
+          open
+          onClose={() => setShowQuickReplyManager(false)}
+          title="Plantillas de feedback"
+          footer={(
+            <Button onClick={saveQuickReplyManager} disabled={savingQuickReplies} fullWidth>
               {savingQuickReplies ? 'Guardando...' : 'Guardar'}
+            </Button>
+          )}
+        >
+          <div className="space-y-2">
+            {quickReplyDraft.map((r, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={r}
+                  onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
+                  placeholder="ej. Buen trabajo esta semana, sigue así."
+                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-label text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <Button
+                  variant="ghost"
+                  size="s"
+                  icon="delete"
+                  label="Quitar plantilla"
+                  onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
+                />
+              </div>
+            ))}
+            <button
+              onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
+              className="flex items-center gap-2 text-label font-mono text-accent hover:text-white"
+            >
+              <Icon name="add" size="s" />
+              Añadir plantilla
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

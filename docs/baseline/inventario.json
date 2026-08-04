@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-04T08:38:48.009Z",
-  "commit": "a396092",
+  "generado": "2026-08-04T08:40:17.245Z",
+  "commit": "1474cf8",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39384
+    "lineasTsx": 39379
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4909,
+    "clasesTokenEnUso": 4903,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 985,
-    "fontSans": 944,
+    "fontSans": 942,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 38,
-    "transitionAll": 275,
+    "modalesArtesanales": 37,
+    "transitionAll": 274,
     "animatePulse": 29,
     "ariaLabel": 33,
     "htmlFor": 1,
@@ -596,11 +596,10 @@
       "fontSans": 3
     },
     "src/components/ReviewsScreen.tsx": {
-      "clasesTokenEnUso": 69,
+      "clasesTokenEnUso": 63,
       "fontMono": 11,
-      "fontSans": 12,
-      "modalesArtesanales": 1,
-      "transitionAll": 5,
+      "fontSans": 10,
+      "transitionAll": 4,
       "animatePulse": 1,
       "roundedFull": 2
     },
