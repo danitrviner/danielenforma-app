@@ -7,7 +7,11 @@ import {
 } from 'recharts';
 import { Mesocycle, MuscleGroup } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
-import { Icon, EmptyState } from './ui';
+import {
+  Icon, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+  TOOLTIP_GRAFICA,
+} from './ui';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -38,16 +42,9 @@ const GROUP_COLOR: Record<MuscleGroup, string> = Object.fromEntries(
 
 // ── Recharts shared style ─────────────────────────────────────────────────────
 
-const TOOLTIP_STYLE = {
-  contentStyle: {
-    backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-hairline)',
-    borderRadius: '8px', fontFamily: 'monospace', fontSize: '11px', color: '#fff',
-  },
-  labelStyle: { color: 'var(--color-ink-2)', marginBottom: '4px', fontFamily: 'monospace', fontSize: '10px' },
-  itemStyle: { fontFamily: 'monospace', fontSize: '11px' },
-};
-
-const AXIS_TICK = { fill: 'var(--color-ink-2)', fontSize: 9, fontFamily: 'monospace' };
+/* F10: TOOLTIP_STYLE y AXIS_TICK vivían aquí. Eran los más trabajados de los
+   cuatro tratamientos que había en la app, así que son la base de
+   `TOOLTIP_GRAFICA` y `TICK_GRAFICA` en `ui/chart.ts`. */
 
 // ── Helper: empty chart placeholder ──────────────────────────────────────────
 
@@ -170,12 +167,12 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
 
         {/* Chart 1 */}
         <ChartCard title="Series totales programadas" icon="bar_chart">
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={totalSeriesData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
-              <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
-              <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v} series`, 'Total']} />
+          <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+            <BarChart data={totalSeriesData} margin={MARGEN_GRAFICA}>
+              <CartesianGrid {...REJILLA_GRAFICA} />
+              <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
+              <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} />
+              <Tooltip {...TOOLTIP_GRAFICA} formatter={(v: number) => [`${v} series`, 'Total']} />
               <Bar dataKey="series" fill="var(--color-accent)" radius={[3, 3, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
@@ -186,14 +183,14 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
           {!hasAdherence ? (
             <EmptyChart message="Sin sesiones asignadas todavía" />
           ) : (
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={adherenceData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
-                <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} domain={[0, 100]} />
+            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+              <BarChart data={adherenceData} margin={MARGEN_GRAFICA}>
+                <CartesianGrid {...REJILLA_GRAFICA} />
+                <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
+                <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} domain={[0, 100]} />
                 <ReferenceLine y={100} stroke="var(--color-ink-3)" strokeDasharray="4 4" />
                 <Tooltip
-                  {...TOOLTIP_STYLE}
+                  {...TOOLTIP_GRAFICA}
                   formatter={(v: number, _: string, props: { payload?: { completed?: number; total?: number } }) => {
                     const { completed = 0, total = 0 } = props.payload ?? {};
                     return [`${v}% (${completed}/${total})`, 'Adherencia'];
@@ -245,13 +242,13 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               )}
             </div>
 
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={groupSeriesData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-raised)" vertical={false} />
-                <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
+            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.m}>
+              <LineChart data={groupSeriesData} margin={MARGEN_GRAFICA}>
+                <CartesianGrid {...REJILLA_GRAFICA} />
+                <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
+                <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} />
                 <Tooltip
-                  {...TOOLTIP_STYLE}
+                  {...TOOLTIP_GRAFICA}
                   formatter={(v: number, key: string) => [`${v} series`, MUSCLE_LABELS[key as MuscleGroup] ?? key]}
                 />
                 {visibleGroups.map(g => (
