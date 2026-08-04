@@ -1,9 +1,9 @@
 {
-  "generado": "2026-08-04T13:50:57.409Z",
-  "commit": "b27270c",
+  "generado": "2026-08-04T13:52:22.180Z",
+  "commit": "3108a5c",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39372
+    "lineasTsx": 39379
   },
   "metricas": {
     "hexLiterales": 23,
@@ -11,7 +11,7 @@
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "camposBajo16px": 39,
+    "camposBajo16px": 0,
     "fontMono": 974,
     "fontSans": 910,
     "pesosProhibidos": 23,
@@ -670,7 +670,6 @@
     },
     "src/components/cardio/CardioSessionDetail.tsx": {
       "clasesTokenEnUso": 25,
-      "camposBajo16px": 2,
       "fontMono": 6,
       "fontSans": 5,
       "modalesArtesanales": 1,
@@ -719,7 +718,6 @@
     },
     "src/components/cardio/ManualSessionModal.tsx": {
       "clasesTokenEnUso": 16,
-      "camposBajo16px": 5,
       "fontSans": 1
     },
     "src/components/cardio/SlideAction.tsx": {
@@ -740,7 +738,6 @@
     },
     "src/components/roadmap/ChallengeManager.tsx": {
       "clasesTokenEnUso": 72,
-      "camposBajo16px": 12,
       "fontMono": 8,
       "fontSans": 13,
       "transitionAll": 2,
@@ -750,7 +747,6 @@
     "src/components/roadmap/ChallengeOptionsPanel.tsx": {
       "hexLiterales": 1,
       "clasesTokenEnUso": 21,
-      "camposBajo16px": 2,
       "fontMono": 7,
       "fontSans": 7,
       "transitionAll": 1,
@@ -769,7 +765,6 @@
     },
     "src/components/roadmap/LevelLadderEditor.tsx": {
       "clasesTokenEnUso": 32,
-      "camposBajo16px": 6,
       "fontMono": 4,
       "fontSans": 4,
       "transitionAll": 1,
@@ -791,7 +786,6 @@
     "src/components/roadmap/PlanPhaseEditor.tsx": {
       "hexLiterales": 1,
       "clasesTokenEnUso": 62,
-      "camposBajo16px": 10,
       "fontMono": 7,
       "fontSans": 11,
       "transitionAll": 3,
@@ -1009,7 +1003,6 @@
     },
     "src/features/crm/routes/ClientesList.tsx": {
       "clasesTokenEnUso": 25,
-      "camposBajo16px": 1,
       "fontMono": 2,
       "fontSans": 5,
       "ariaLabel": 2
@@ -1025,7 +1018,6 @@
     },
     "src/features/crm/routes/PagosScreen.tsx": {
       "clasesTokenEnUso": 19,
-      "camposBajo16px": 1,
       "fontMono": 3,
       "fontSans": 3,
       "ariaLabel": 2

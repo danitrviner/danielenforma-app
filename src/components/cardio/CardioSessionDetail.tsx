@@ -131,7 +131,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
             <input
               value={tagInput} onChange={e => setTagInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-              placeholder="+ etiqueta" className="bg-transparent text-caption font-mono text-white placeholder:text-ink-2 focus:outline-none w-20"
+              placeholder="+ etiqueta" className="bg-transparent text-title-s font-mono text-white placeholder:text-ink-2 focus:outline-none w-20"
             />
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-caption font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-surface border border-hairline rounded-control p-3 text-label text-white focus:outline-none focus:border-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>

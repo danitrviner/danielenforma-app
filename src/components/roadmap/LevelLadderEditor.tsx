@@ -102,7 +102,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
           <select
             value=""
             onChange={e => e.target.value && loadPreset(e.target.value)}
-            className="bg-bg border border-hairline rounded-control p-2 text-label text-ink-2 focus:outline-none focus:border-accent"
+            className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink-2 focus:outline-none focus:border-accent"
           >
             <option value="">Cargar plantilla…</option>
             {LADDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -126,7 +126,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                 value={level.name}
                 onChange={e => updateLevel(level.id, { name: e.target.value })}
                 placeholder="Nombre del nivel"
-                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-body-s font-bold text-white focus:outline-none focus:border-accent"
+                className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-title-s font-bold text-white focus:outline-none focus:border-accent"
               />
               {achieved && (
                 <span className="font-mono text-caption text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">logrado {achieved}</span>
@@ -140,7 +140,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                   <select
                     value={c.kind}
                     onChange={e => updateCriterion(level.id, c.id, { kind: e.target.value as LevelCriterionKind })}
-                    className="bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
+                    className="bg-raised border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none"
                   >
                     {(Object.keys(CRITERION_KIND_LABEL) as LevelCriterionKind[]).map(k => (
                       <option key={k} value={k}>{CRITERION_KIND_LABEL[k]}</option>
@@ -150,7 +150,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                     value={c.label}
                     onChange={e => updateCriterion(level.id, c.id, { label: e.target.value })}
                     placeholder="Etiqueta (ej. 10 dominadas)"
-                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
+                    className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none"
                   />
                   {c.kind !== 'manual' && (
                     <input
@@ -159,7 +159,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.targetValue ?? ''}
                       onChange={e => updateCriterion(level.id, c.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="Objetivo"
-                      className="w-20 bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
+                      className="w-20 bg-raised border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'sentadilla_xbw' && (
@@ -167,7 +167,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
                       value={c.exerciseNameMatch ?? 'sentadilla'}
                       onChange={e => updateCriterion(level.id, c.id, { exerciseNameMatch: e.target.value })}
                       placeholder="nombre del ejercicio"
-                      className="w-28 bg-raised border border-hairline rounded-control p-2 text-caption text-white focus:outline-none"
+                      className="w-28 bg-raised border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none"
                     />
                   )}
                   {c.kind === 'manual' && (

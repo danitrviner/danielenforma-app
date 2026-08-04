@@ -214,7 +214,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <select
                 value={form.target}
                 onChange={e => setForm(f => ({ ...f, target: e.target.value as AssignForm['target'] }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               >
                 <option value="esta">Esta semana</option>
                 <option value="siguiente">Semana que viene</option>
@@ -222,7 +222,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               <select
                 value={form.templateId}
                 onChange={e => applyTemplate(e.target.value)}
-                className="flex-1 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               >
                 <option value="">Custom (sin plantilla)</option>
                 {templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
@@ -232,20 +232,20 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título del reto"
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={form.kind}
                 onChange={e => setForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -253,14 +253,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={form.unit}
                 onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad (kg, pasos...)"
-                className="w-32 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="w-32 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={form.target_}
                 onChange={e => setForm(f => ({ ...f, target_: Number(e.target.value) }))}
                 placeholder="objetivo"
-                className="w-24 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               />
             </div>
             {overwritingAuto && (
@@ -293,20 +293,20 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
               value={tplForm.title}
               onChange={e => setTplForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Título"
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             />
             <textarea
               value={tplForm.description}
               onChange={e => setTplForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Descripción"
               rows={2}
-              className="w-full bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent resize-none"
+              className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent resize-none"
             />
             <div className="flex gap-2">
               <select
                 value={tplForm.kind}
                 onChange={e => setTplForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
-                className="bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               >
                 {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
@@ -314,14 +314,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 value={tplForm.unit}
                 onChange={e => setTplForm(f => ({ ...f, unit: e.target.value }))}
                 placeholder="unidad"
-                className="w-24 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="w-24 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               />
               <input
                 type="number"
                 value={tplForm.defaultTarget}
                 onChange={e => setTplForm(f => ({ ...f, defaultTarget: Number(e.target.value) }))}
                 placeholder="objetivo por defecto"
-                className="w-28 bg-bg border border-hairline rounded-control p-2 text-label text-white focus:outline-none focus:border-accent"
+                className="w-28 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               />
             </div>
             <button

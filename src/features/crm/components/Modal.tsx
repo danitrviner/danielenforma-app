@@ -49,8 +49,15 @@ export function Campo({ label, children, hint, error }: {
   );
 }
 
+/**
+ * F11: `text-caption` (11 px) → `text-title-s` (16 px).
+ *
+ * Los ~40 campos del CRM comparten esta constante, así que eran R8 en bloque —
+ * y el contador del inventario no los veía, porque mide la clase escrita en la
+ * etiqueta y aquí llega por variable. Un solo cambio los arregla todos.
+ */
 export const inputClass =
-  'w-full px-3 py-2 rounded-surface bg-field border border-hairline text-caption text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
+  'w-full px-3 py-2 rounded-surface bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40';
 
 export function BotonPrimario({ children, disabled, onClick, type = 'button' }: {
   children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: 'button' | 'submit';

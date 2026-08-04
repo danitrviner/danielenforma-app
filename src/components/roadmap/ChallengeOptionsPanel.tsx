@@ -93,7 +93,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-hairline rounded-control p-2 text-caption text-white focus:outline-none focus:border-accent"
+          className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -164,7 +164,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-2 px-3 bg-surface border border-hairline text-ink-2 font-mono text-caption rounded-control hover:text-white disabled:opacity-50"
+              className="py-2 px-3 bg-surface border border-hairline text-ink-2 font-mono text-title-s rounded-control hover:text-white disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>
