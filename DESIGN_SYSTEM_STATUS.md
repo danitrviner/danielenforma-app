@@ -3,7 +3,7 @@
 **Documento vivo.** Es la referencia del estado del refactor: dónde estamos, qué queda y qué
 riesgos hay abiertos. Se actualiza al cerrar cada fase.
 
-> **Última actualización:** 3 de agosto de 2026 · **Sprints 1-4 completados, Sprint 5 (F8) en curso** ·
+> **Última actualización:** 4 de agosto de 2026 · **Sprints 1-4 completados, F8 completada (Sprint 5 en curso: F9/F10 pendientes)** ·
 > rama `ds/f0-linea-base` · commits sin pushear
 
 **Dos documentos, dos funciones.** Este es el *panel de estado*: se lee de un vistazo y siempre
@@ -20,13 +20,13 @@ Sprint 1  ████████████████████  F0 F1   
 Sprint 2  ████████████████████  F2 F3        COMPLETADO
 Sprint 3  ████████████████████  F4 F5        COMPLETADO
 Sprint 4  ████████████████████  F6 F7        COMPLETADO
-Sprint 5  ██████░░░░░░░░░░░░░░  F8 F9 F10    F8 en curso
+Sprint 5  ███████░░░░░░░░░░░░░  F8 F9 F10    F8 completada, F9/F10 pendientes
 Sprint 6  ░░░░░░░░░░░░░░░░░░░░  F11          pendiente
 Sprint 7  ░░░░░░░░░░░░░░░░░░░░  F12          pendiente
 Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 F15  pendiente
 ```
 
-**8 de 16 fases completadas, F8 en curso.**
+**9 de 16 fases completadas. F9 (Sheet/Dialog) es la siguiente.**
 
 ## Fases
 
@@ -40,7 +40,7 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 | 3 | **F5** | Mono → Sans | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F6** | Espaciado, ritmo vertical y sombras | ✅ Completada | 2026-08-03 | Medio |
 | 4 | **F7** | Primitivas en `src/components/ui/` | ✅ Completada | 2026-08-03 | Bajo |
-| 5 | **F8** | Adopción de bajo riesgo | 🟡 En curso | — | Bajo |
+| 5 | **F8** | Adopción de bajo riesgo | ✅ Completada | 2026-08-04 | Bajo |
 | 5 | **F9** | Sheet / Dialog: los modales artesanales | ⬜ Pendiente | — | **Alto** |
 | 5 | **F10** | Chart unificado | ⬜ Pendiente | — | Bajo |
 | 6 | **F11** | Migración de pantallas | ⬜ Pendiente | — | Medio |
@@ -57,25 +57,25 @@ Sprint 8  ░░░░░░░░░░░░░░░░░░░░  F13 F14 
 |---|:--:|--:|--:|--:|:--:|
 | Hex distintos en componentes | ↓ | 101 | **14** | ≤ 22 | F1 ✅ |
 | Hex literales en componentes | ↓ | 4.638 | **25** | ~0 | F1 ✅ |
-| Tokens del DS en uso | ↑ | 0 | **5.362** | — | F1 ✅ |
+| Tokens del DS en uso | ↑ | 0 | **4.911** | — | F1 ✅ |
 | Imports de `theme.ts` | ↓ | 0 | **borrado** | 0 | F1 ✅ |
 | Bordes `border-white/>12` | ↓ | 93 | **0** | 0 | F2 ✅ |
 | Textos por debajo de 11 px | ↓ | 1.151 | **0** | 0 | F4 ✅ |
 | Escalones de tamaño en uso | ↓ | 16 | **8 + 2 excep.** | ≤ 8 | F4 ✅ |
 | Pesos de fuente distintos | ↓ | 6 | **4** | 4 | F4 ✅ |
-| `font-mono` | ↓ | 1.527 | **1.030** | mono < sans | F5 ✅ |
-| `font-sans` | ↑ | 590 | **1.108** | > mono | F5 ✅ |
+| `font-mono` | ↓ | 1.527 | **985** | mono < sans | F5 ✅ |
+| `font-sans` | ↑ | 590 | **945** | > mono | F5 ✅ |
 | Espaciado fuera de escala | ↓ | 1.170 | **0** | 0 | F6 ✅ |
 | Sombras fuera de la escala | ↓ | 113 | **0** | 0 | F6 ✅ |
 | Brillos dorados ad-hoc | ↓ | 31 | **0** | 1, con token | F6 ✅ |
 | Overlays artesanales (no `ui/`) | ↓ | 39 | **39** | 0 | F9 |
-| `transition-all` | ↓ | 377 | 372 | 0 | F13 |
+| `transition-all` | ↓ | 377 | **275** | 0 | F13 |
 | `animate-pulse` | ↓ | 29 | 29 | solo en `Skeleton` | F13 |
 | `prefers-reduced-motion` | ↑ | 0 | 0 | > 0 | F13 |
 | `aria-label` | ↑ | 23 | **33** | — | F14 |
 | `htmlFor` | ↑ | 0 | **1** | ≥ 116 | F14 |
 | `focus-visible` | ↑ | 0 | **31** | > 0 | F14 |
-| Archivos > 600 líneas | · | 21 | 21 | 0 (a un año) | F15 |
+| Archivos > 600 líneas | · | 21 | 20 | 0 (a un año) | F15 |
 | Radios `lg / xl / 2xl` | · | 425/257/278 | **0/0/0** | 3 + `full` | F3 ✅ |
 
 ## Resumen de lo hecho
@@ -189,13 +189,19 @@ inequívoca, 902 se quedan en mono porque el DS las quiere ahí (etiquetas en ve
 **Limpieza aprobada:** 12 tokens muertos del `@theme` y `.cyan-glow`, con 0 referencias verificadas
 sobre 297 archivos.
 
-### Sprint 5 — Adopción (F8, en curso) · 2026-08-03
+### Sprint 5 — Adopción (F8 completada) · 2026-08-04
 
-**F8 · Adopción de bajo riesgo.** 64 commits hasta ahora, 9 de las 13 primitivas adoptadas
-(`EmptyState`, `Badge`, `Chip`, `ListRow`, `Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) en 57 de
-79 archivos de `src/components/*.tsx`. **No está cerrada** — sigue en curso, y no era el objetivo
-agotar los 79 archivos en una sola sesión (la propia fase lo declara explícitamente). `Select` y
-`Sheet`/`Dialog` no se tocan: son F11 y F9.
+**F8 · Adopción de bajo riesgo.** ✅ Cerrada. 81 commits, 9 primitivas (`EmptyState`, `Badge`,
+`Chip`, `ListRow`, `Card`, `Tabs`, `Button`, `PageHeader`, `Icon`) adoptadas en los 79 archivos de
+`src/components/*.tsx` — los 79 revisados con una decisión explícita, no solo los que tenían un
+caso obvio. 74 recibieron cambios; 5 se revisaron y se dejaron intactos a propósito (no son
+omisiones): `DietMealsView` (tabla numérica pura, sin iconos/botones/filas), `ClientRoadmapPanel`
+(10 líneas, un simple *pass-through* a `roadmap/`, diferido), `ProgressRing` (SVG puro, nada que
+adoptar), `ScheduleFields` (un `<select>` reservado a F11 y un selector de día-de-semana con el
+mismo patrón píldora rectangular que se dejó en `OnboardingForm`, ver abajo) y `Skeleton` (es en sí
+misma infraestructura visual, no una pantalla). `Select` y `Sheet`/`Dialog` no se tocan: son F11 y
+F9, y `src/components/cardio/`, `src/components/roadmap/` y `src/features/crm/**` siguen diferidos
+tal y como fijó el alcance de la fase.
 
 **Cada primitiva mueve el inventario igual, y es un falso positivo ya visto antes.** `Tokens del DS
 en uso` y `font-sans` bajan por archivo cada vez que una pantalla adopta una primitiva, porque las
@@ -220,8 +226,9 @@ usaban `TrainingLab` y `Revisiones`.
 
 **Casos que no encajaron limpiamente, dejados tal cual a propósito** (no son omisiones, son
 decisiones): filtros con color por categoría que la primitiva no reproduce (`CAT_COLOR`,
-`METRIC_COLOR`, el filtro `indyaCat` de Recetas en `bg-data`); toggles con `min-h-[44px]` explícito
-donde `Chip` sería más bajo (regresión de objetivo táctil); tarjetas con título+icono combinado
+`METRIC_COLOR`, el filtro `indyaCat` de Recetas en `bg-data`, las 5 categorías de intercambios de
+`NutritionPlansScreen`/`MyMenuScreen` en `bg-data`); toggles con `min-h-[44px]` explícito donde
+`Chip` sería más bajo (regresión de objetivo táctil); tarjetas con título+icono combinado
 (`Card.title` es solo texto); filas con un enlace real dentro del título o con tres líneas de texto
 (`ListRow` no lo soporta); cabeceras con un indicador "Sincronizado" en vivo junto a la ceja
 (`PageHeader.eyebrow` es solo texto) — `TrainingCoachScreen`, `NutritionCoachScreen` y
@@ -229,25 +236,40 @@ donde `Chip` sería más bajo (regresión de objetivo táctil); tarjetas con tí
 badge de plan + tarjeta de adherencia) tampoco encaja: es una composición propia, no un título de
 pantalla.
 
-**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios después de cada lote;
-`ds:inventario` sin regresiones reales (solo el falso positivo ya descrito, corregido con
-`--write` cada vez). Verificación visual en `/ui` (recarga completa, 375 px) para cada primitiva
-adoptada. **Sin verificación visual en pantallas reales**: el login de coach usa Google OAuth real
-y no hay sandbox de coach; el login de atleta (`atleta@enforma.com`) existe pero esta sesión no
-tenía la contraseña. Pendiente que Dani o el asistente de QA de navegador lo revisen en las
-pantallas reales, sobre todo la nav principal (`App.tsx`) y el cambio de color de `Tabs`, que son
-los de mayor impacto visual.
+**El mayor caso repetido de "no encaja": el selector píldora rectangular con `bg-accent
+text-black`.** Aparece como abstracción compartida (`PillSelect`/`YesNo`/`CheckboxGroup` de
+`OnboardingForm`, usados en decenas de campos de la ficha de iniciación) y como variantes locales
+casi idénticas en `WeeklyMenuEditor` (variedad, tipos de plato), `ScheduleFields` (día de la
+semana) y el `Chip` local de `AthleteOnboardingWizard` (que además soporta una variante "grande"
+de tarjeta que el `Chip` del DS no tiene). Todos comparten forma `rounded-control` (rectangular),
+no `rounded-full` como `Chip`. Migrarlos habría cambiado la forma de la práctica totalidad de los
+controles de elección de la app — eso es un rediseño, no una adopción de bajo riesgo, y el plan de
+F8 lo excluye explícitamente («no hacer rediseños todavía»). Queda documentado como candidato para
+una fase de rediseño futura (F12), no como un olvido.
 
-**Qué queda para continuar F8:** 22 archivos de `src/components/*.tsx` sin revisar todavía —
-los más grandes y complejos del lote: `OnboardingForm`, `MesocycleTemplateLibrary`,
-`WorkoutsScreen`, `NutritionPlansScreen`, `MyMenuScreen`, `WeeklyMenuEditor`, `DietMealsView`,
-`CardioScreen`/`CardioCoachScreen`, `AthleteOnboardingWizard`, `ProfileScreen`,
-`QuestionnaireEditor`, `AiChatPanel`, `RoadmapTimeline`, `WelcomeScreen`, `CommandPalette`,
-`NutritionPeriodizationPanel`, `NutritionPerformanceDashboard`. Icon standalone solo se adoptó
-donde ya tocaba por otra primitiva o en componentes pequeños — sigue habiendo cientos de usos
-sueltos en las pantallas grandes de la lista anterior. `cardio/` y `roadmap/` (subdirectorios)
-siguen diferidos (ver alcance de la fase). Se recomienda retomar por pantalla, con el mismo
-ritmo de verificación.
+Un caso más pequeño del mismo tipo, ya resuelto en sentido contrario: los selectores de modo de
+dieta/categoría del *picker* de alimentos en `NutritionPlansScreen` (botones sueltos redondeados,
+sin abstracción compartida) sí se migraron a `Chip` — mismo criterio que `Tabs`: la primitiva ya
+aprobada en F7 se adopta tal cual, aunque cambie el tono de sólido dorado a tintado con borde.
+
+**Verificado:** `tsc --noEmit`, 263 pruebas y `npm run build` limpios después de cada uno de los 81
+commits; `ds:inventario` sin regresiones reales en ninguno (solo el falso positivo ya descrito,
+corregido con `--write` cada vez — es la razón de que `Tokens del DS en uso` **baje** en el panel de
+indicadores de arriba pese a la flecha ↑: las clases literales se centralizan en `ui/*.tsx`, que ya
+las contaba desde F7, en vez de repetirse en cada pantalla). Verificación visual en `/ui` (recarga
+completa, 375 px) para cada primitiva adoptada. **Sin verificación visual en pantallas reales**: el
+login de coach usa Google OAuth real y no hay sandbox de coach; el login de atleta
+(`atleta@enforma.com`) existe pero ninguna de las dos sesiones que trabajaron F8 tenía la
+contraseña. Pendiente que Dani o el asistente de QA de navegador lo revisen en las pantallas
+reales, sobre todo la nav principal (`App.tsx`), el cambio de color de `Tabs` y los tamaños de
+icono nuevos — son los de mayor impacto visual y los que ninguna de las dos sesiones pudo
+comprobar en el navegador.
+
+**Cierre de F8:** los 79 archivos de `src/components/*.tsx` quedan revisados con una decisión
+explícita cada uno. Lo que no se tocó (`Select`/`Input`, `Sheet`/`Dialog`, los 39 overlays
+artesanales, `cardio/`, `roadmap/`, `src/features/crm/**`, y el patrón píldora rectangular descrito
+arriba) es deuda documentada para F9/F11/F12, no trabajo olvidado. F9 (`Sheet`/`Dialog`) es la
+siguiente fase.
 
 ## Excepciones explícitas al Design System
 
@@ -304,7 +326,7 @@ Detectada y **no** resuelta, con la fase a la que pertenece.
 | ~~Textos por debajo de 11 px~~ | ~~1.145~~ | ✅ F4 |
 | Monoespaciada: 286 apariciones ambiguas sin clasificar | 286 | F5 parcial → F11 |
 | Emojis usados como iconografía funcional (🔥 en calentamiento, 🏅⚡⭐ en insignias) | — | **sigue abierto** |
-| 590 iconos Material Symbols con tokens de texto que no aplican — la clase de Google gana sin capa a cualquier utilidad de Tailwind | 590 | F7 ✅ primitiva construida → F8 adopción |
+| 590 iconos Material Symbols con tokens de texto que no aplican — la clase de Google gana sin capa a cualquier utilidad de Tailwind | 590 | F7 ✅ primitiva construida → F8 ✅ adoptados en `src/components/*.tsx`; quedan los de tamaño en píxeles a medida (bespoke) y `cardio/`/`roadmap/`, diferidos |
 | ~~Espaciado fuera de la escala de 4 px~~ | ~~1.170~~ | ✅ F6 |
 | ~~Glow en cuatro tarjetas donde no señala nada~~ | ~~4~~ | ✅ F6 |
 | Márgenes negativos para compensar espaciado | 21 | F11 |

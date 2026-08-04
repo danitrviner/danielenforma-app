@@ -671,3 +671,57 @@ en `App.tsx` (nav principal, se ve en cada sesión de cada usuario) y en las sei
 | Usos de `Icon` standalone pendientes de migrar (solo se adoptó donde ya tocaba por otra primitiva, o en componentes pequeños) | varios cientos, concentrados en los archivos de arriba |
 | Cabeceras con `PageHeader` sin adoptar por el indicador "Sincronizado" | 3 (`TrainingCoachScreen`, `NutritionCoachScreen`, `ClientsScreen`) |
 | Verificación visual con sesión real (atleta y coach) | Pendiente — bloqueada por credenciales |
+
+### F8 · Cierre (continuación, 4 de agosto de 2026)
+
+**Commits de esta continuación:** 17 (uno por archivo, más los rebaselines de `ds:inventario`
+incluidos en cada commit) · **Total F8:** 81 commits · **Estado: ✅ cerrada**
+
+Se retomó exactamente donde quedó la entrada anterior — 22 archivos listados como deuda — y se
+revisaron uno a uno con el mismo ritmo (`lint` → `test` → `build` → `ds:inventario`, confirmar el
+falso positivo, `--write`, commit): `AiChatPanel`, `AthleteOnboardingWizard`, `CardioScreen`,
+`CardioCoachScreen`, `CommandPalette`, `DietMealsView` (revisado, sin cambios — tabla numérica pura
+sin iconos/botones), `MesocycleTemplateLibrary`, `MyMenuScreen`, `NutritionPerformanceDashboard`,
+`NutritionPeriodizationPanel`, `NutritionPlansScreen`, `OnboardingForm`, `ProfileScreen`,
+`QuestionnaireEditor`, `RoadmapTimeline`, `WeeklyMenuEditor`, `WelcomeScreen`, `WorkoutsScreen`.
+
+**Cuatro archivos más, fuera de la lista de deuda original, aparecieron al recontar los 79 al
+cierre:** `ClientRoadmapPanel.tsx` (10 líneas, un *pass-through* a `roadmap/`, nada que adoptar),
+`ProgressRing.tsx` (SVG puro, sin iconos ni botones), `ScheduleFields.tsx` (un `<select>`, F11, y un
+selector de día-de-semana con el mismo patrón píldora rectangular documentado abajo) y
+`Skeleton.tsx` (es infraestructura visual — el propio bloque base de los estados de carga — no una
+pantalla de producción). Los cuatro se revisaron y se dejan intactos a propósito; ninguno tenía
+contenido dentro del alcance de F8.
+
+**El patrón repetido que sí se dejó fuera, documentado una sola vez para no repetirlo archivo a
+archivo:** el selector de opción con forma de píldora rectangular (`rounded-control`,
+`bg-accent text-black` cuando está seleccionado) aparece como abstracción compartida
+(`PillSelect`/`YesNo`/`CheckboxGroup` de `OnboardingForm`, usada en decenas de campos de la
+anamnesis) y como variantes locales casi idénticas en `WeeklyMenuEditor` (variedad, tipos de
+plato), `ScheduleFields` (día de la semana) y el `Chip` local de `AthleteOnboardingWizard` (que
+además soporta una variante "grande" de tarjeta que `Chip` del DS no tiene). `Chip` del DS es
+`rounded-full` — cambiar la forma de prácticamente todos los controles de elección de la app habría
+sido un rediseño, no la adopción de bajo riesgo que F8 tiene mandato de hacer. Se deja como
+candidato documentado para F12.
+
+**Un caso nuevo sí se resolvió con `Chip`:** los selectores de modo de dieta y categoría del
+*picker* de alimentos en `NutritionPlansScreen` (botones sueltos `rounded-full`, sin abstracción
+compartida) — mismo criterio ya aplicado a `Tabs`: la primitiva aprobada en F7 se adopta tal cual,
+aunque el tono cambie de sólido dorado a tintado con borde.
+
+**`danger` de `Button` es tenue, no sólido — aceptado en todos los modales de confirmación de
+borrado de esta continuación** (`MesocycleTemplateLibrary`, `NutritionPlansScreen`,
+`WorkoutsScreen`), incluidos los que partían de un rojo sólido (`bg-red-500/80`,
+`bg-red-500 hover:bg-red-600`). Mismo razonamiento que `Tabs`: la primitiva ya la aprobó F7, F8
+adopta, no rediseña.
+
+**Verificado:** los mismos cuatro pasos (`tsc --noEmit`, 263 pruebas, `npm run build`,
+`ds:inventario` con el falso positivo esperado y corregido) en los 17 commits de esta continuación,
+sin ninguna regresión real ni fallo. **Sigue sin verificación visual en pantallas reales** — misma
+limitación de credenciales que la entrada anterior; no cambió en esta sesión.
+
+**F8 queda cerrada.** Los 79 archivos de `src/components/*.tsx` están revisados con una decisión
+explícita cada uno — 74 con cambios, 5 sin ellos (justificado arriba, en ambas entradas). La deuda
+que queda (`Select`, `Sheet`/`Dialog`, los overlays artesanales, `cardio/`, `roadmap/`,
+`src/features/crm/**`, y el patrón píldora rectangular) es la reservada por diseño para F9/F11/F12,
+no trabajo pendiente de F8. Siguiente fase: F9 (`Sheet`/`Dialog`).
