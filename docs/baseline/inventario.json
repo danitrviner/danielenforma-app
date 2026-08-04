@@ -1,24 +1,24 @@
 {
-  "generado": "2026-08-04T09:37:33.555Z",
-  "commit": "2d47ac0",
+  "generado": "2026-08-04T09:39:14.143Z",
+  "commit": "ff76ad9",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39313
+    "lineasTsx": 39316
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4781,
+    "clasesTokenEnUso": 4775,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "fontMono": 974,
-    "fontSans": 913,
+    "fontSans": 910,
     "pesosProhibidos": 23,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 8,
-    "transitionAll": 264,
+    "modalesArtesanales": 7,
+    "transitionAll": 262,
     "animatePulse": 29,
     "ariaLabel": 30,
     "htmlFor": 1,
@@ -721,10 +721,8 @@
       "roundedFull": 2
     },
     "src/components/cardio/ManualSessionModal.tsx": {
-      "clasesTokenEnUso": 22,
-      "fontSans": 4,
-      "modalesArtesanales": 1,
-      "transitionAll": 2
+      "clasesTokenEnUso": 16,
+      "fontSans": 1
     },
     "src/components/cardio/SlideAction.tsx": {
       "fontSans": 1,

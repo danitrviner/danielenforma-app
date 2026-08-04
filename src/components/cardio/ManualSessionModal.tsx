@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardioSession, CardioSessionType } from '../../types';
 import { createCardioSession } from '../../dbService';
+import { Dialog, Button } from '../ui';
 
 // Alta manual (§6 del análisis): tipo, duración, FC media opcional, notas.
 // Sin banda real de por medio, así que NUNCA otorga XP ni Puntos FITIV —
@@ -41,9 +42,21 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-surface border border-hairline rounded-surface p-5 space-y-3" onClick={e => e.stopPropagation()}>
-        <h3 className="font-sans font-bold text-title-s text-white">Añadir sesión a mano</h3>
+    <Dialog
+      open
+      onClose={onClose}
+      title="Añadir sesión a mano"
+      size="s"
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving || !durationMin} loading={saving} className="flex-1">
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </>
+      )}
+    >
+      <div className="space-y-3">
         <p className="text-caption font-sans text-ink-2">Sin banda de por medio — no suma XP ni puntos.</p>
 
         <div className="flex gap-2">
@@ -66,17 +79,7 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
 
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Notas (opcional)"
           className="w-full bg-bg border border-hairline rounded-control p-3 text-label text-white focus:outline-none focus:border-accent resize-none" />
-
-        <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="flex-1 py-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-white transition-all">
-            Cancelar
-          </button>
-          <button onClick={handleSave} disabled={saving || !durationMin}
-            className="flex-1 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
-        </div>
       </div>
-    </div>
+    </Dialog>
   );
 }
