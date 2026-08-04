@@ -7,7 +7,7 @@ import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
 import { useToast } from '../hooks/useToast';
 import Skeleton from './Skeleton';
-import { Icon, Button, EmptyState } from './ui';
+import { Icon, Button, EmptyState, Dialog, Sheet } from './ui';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -373,23 +373,23 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
         {/* Delete confirm */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-raised border border-red-500/30 rounded-surface p-6 max-w-sm w-full space-y-4 shadow-e2">
-              <div className="flex items-center gap-3">
-                <Icon name="warning" size="l" className="text-red-400" />
-                <h3 className="font-sans font-bold text-white text-title-m">¿Eliminar rutina?</h3>
-              </div>
-              <p className="text-body-s text-ink-2">Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.</p>
-              <div className="flex gap-3">
-                <Button onClick={() => setDeleteConfirm(null)} variant="secondary" fullWidth>
-                  Cancelar
-                </Button>
-                <Button onClick={() => handleDelete(deleteConfirm)} variant="danger" fullWidth>
-                  Eliminar
-                </Button>
-              </div>
-            </div>
-          </div>
+          <Dialog
+            open
+            onClose={() => setDeleteConfirm(null)}
+            title="¿Eliminar rutina?"
+            size="s"
+            footer={(
+              <>
+                <Button onClick={() => setDeleteConfirm(null)} variant="secondary">Cancelar</Button>
+                <Button onClick={() => handleDelete(deleteConfirm)} variant="danger">Eliminar</Button>
+              </>
+            )}
+          >
+            <p className="text-body-s text-ink-2 flex items-start gap-3">
+              <Icon name="warning" size="l" className="text-danger shrink-0" />
+              Las asignaciones ya creadas no se verán afectadas, pero la rutina dejará de estar disponible.
+            </p>
+          </Dialog>
         )}
       </div>
     );
@@ -597,18 +597,19 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
       {/* Exercise picker modal */}
       {showPicker && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="bg-raised border border-hairline rounded-t-surface md:rounded-surface w-full md:max-w-2xl shadow-e2 flex flex-col max-h-[85vh]">
-            {/* Picker header */}
-            <div className="flex items-center justify-between p-5 border-b border-hairline flex-shrink-0">
-              <h3 className="font-sans font-bold text-white text-title-m">Seleccionar ejercicio</h3>
-              <button onClick={() => setShowPicker(false)} className="text-ink-2 hover:text-white transition-colors">
-                <Icon name="close" size="l" />
-              </button>
-            </div>
-
-            {/* Picker filters */}
-            <div className="p-4 border-b border-hairline space-y-3 flex-shrink-0">
+        <Sheet
+          open
+          onClose={() => setShowPicker(false)}
+          title="Seleccionar ejercicio"
+          size="xl"
+          footer={(
+            <p className="mx-auto font-mono text-caption text-ink-2">
+              {pickerFiltered.length} ejercicios disponibles
+            </p>
+          )}
+          toolbar={(
+            /* Picker filters */
+            <div className="p-4 border-b border-hairline space-y-3">
               <div className="relative">
                 <Icon name="search" size="m" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 pointer-events-none" />
                 <input
@@ -639,9 +640,10 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 </select>
               </div>
             </div>
-
+          )}
+        >
             {/* Picker list */}
-            <div className="overflow-y-auto flex-1 divide-y divide-hairline/40">
+            <div className="-mx-4 divide-y divide-hairline/40">
               {pickerFiltered.length === 0 ? (
                 <div className="py-10 text-center text-ink-2 text-body-s">
                   {allExercises.length === 0 ? 'Cargando ejercicios...' : 'Sin resultados para los filtros actuales.'}
@@ -672,12 +674,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 ))
               )}
             </div>
-
-            <div className="p-4 border-t border-hairline flex-shrink-0">
-              <p className="font-mono text-caption text-ink-2 text-center">{pickerFiltered.length} ejercicios disponibles</p>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );
