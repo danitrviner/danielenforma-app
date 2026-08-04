@@ -1,13 +1,13 @@
 {
-  "generado": "2026-08-04T08:41:46.641Z",
-  "commit": "7f4a6a5",
+  "generado": "2026-08-04T08:53:28.402Z",
+  "commit": "5c16d19",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39377
+    "lineasTsx": 39403
   },
   "metricas": {
     "hexLiterales": 25,
-    "clasesTokenEnUso": 4896,
+    "clasesTokenEnUso": 4891,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
@@ -17,7 +17,7 @@
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 36,
+    "modalesArtesanales": 35,
     "transitionAll": 272,
     "animatePulse": 29,
     "ariaLabel": 33,
@@ -146,6 +146,10 @@
         "lineas": 664
       },
       {
+        "archivo": "src/components/ui/Showcase.tsx",
+        "lineas": 650
+      },
+      {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
         "lineas": 647
       },
@@ -160,10 +164,6 @@
       {
         "archivo": "src/components/LoadHistoryPanel.tsx",
         "lineas": 637
-      },
-      {
-        "archivo": "src/components/ui/Showcase.tsx",
-        "lineas": 631
       },
       {
         "archivo": "src/components/CheckInScreen.tsx",
@@ -656,10 +656,9 @@
       "roundedFull": 6
     },
     "src/components/WeeklyAnalysisButton.tsx": {
-      "clasesTokenEnUso": 16,
+      "clasesTokenEnUso": 10,
       "fontMono": 1,
-      "fontSans": 3,
-      "modalesArtesanales": 1,
+      "fontSans": 2,
       "transitionAll": 1,
       "animatePulse": 1
     },
@@ -895,8 +894,8 @@
       "roundedFull": 1
     },
     "src/components/ui/Showcase.tsx": {
-      "clasesTokenEnUso": 37,
-      "fontSans": 29,
+      "clasesTokenEnUso": 38,
+      "fontSans": 30,
       "focusVisible": 1,
       "roundedFull": 1
     },
