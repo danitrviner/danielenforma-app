@@ -2,6 +2,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts';
 import { CardioZones } from '../../types';
 import { ZONE_ORDER, ZONE_COLOR, pctOfMaxHR } from '../../utils/cardioZones';
+import { MARGEN_GRAFICA, ANCHO_EJE_Y, TICK_GRAFICA, EJE_GRAFICA, TOOLTIP_GRAFICA } from '../ui';
 
 // Gráfica de FC con bandas de zona de fondo + BPM a la izquierda y % de
 // FCmax a la derecha — página 4 del carrusel en vivo y bloque 7 del informe
@@ -26,19 +27,21 @@ export default function HrChart({ data, zones, maxHR, height = 140 }: Props) {
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 4, right: maxHR ? 4 : 12, left: 0, bottom: 0 }}>
+        <LineChart data={data} margin={MARGEN_GRAFICA}>
+          {/* Sin CartesianGrid a propósito: las bandas de zona SON la referencia
+              de esta gráfica. Añadirle una rejilla encima sería rediseñarla. */}
           {ZONE_ORDER.map(z => (
             <ReferenceAreaAny key={z} yAxisId="bpm" y1={zones[z].min} y2={zones[z].max} fill={ZONE_COLOR[z]} fillOpacity={0.12} strokeWidth={0} />
           ))}
           <XAxis dataKey="t" hide />
           <YAxis yAxisId="bpm" domain={['dataMin - 10', 'dataMax + 10']} ticks={boundaryTicks}
-            tick={{ fontSize: 9, fill: 'var(--color-ink-2)' }} width={28} axisLine={false} tickLine={false} />
+            tick={TICK_GRAFICA} width={ANCHO_EJE_Y} {...EJE_GRAFICA} />
           {maxHR && (
             <YAxis yAxisId="pct" orientation="right" domain={['dataMin - 10', 'dataMax + 10']} ticks={boundaryTicks}
-              tickFormatter={v => `${pctOfMaxHR(v, maxHR)}%`} tick={{ fontSize: 9, fill: 'var(--color-ink-2)' }} width={28} axisLine={false} tickLine={false} />
+              tickFormatter={v => `${pctOfMaxHR(v, maxHR)}%`} tick={TICK_GRAFICA} width={ANCHO_EJE_Y} {...EJE_GRAFICA} />
           )}
-          <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11 }} />
-          <Line yAxisId="bpm" type="monotone" dataKey="bpm" stroke="#ffffff" dot={false} strokeWidth={2} />
+          <Tooltip {...TOOLTIP_GRAFICA} />
+          <Line yAxisId="bpm" type="monotone" dataKey="bpm" stroke="var(--color-ink)" dot={false} strokeWidth={2} />
         </LineChart>
       </ResponsiveContainer>
     </div>

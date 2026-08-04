@@ -1,12 +1,12 @@
 {
-  "generado": "2026-08-04T09:39:14.143Z",
-  "commit": "ff76ad9",
+  "generado": "2026-08-04T10:09:22.543Z",
+  "commit": "f6c1cf0",
   "totales": {
     "archivosTsx": 147,
-    "lineasTsx": 39316
+    "lineasTsx": 39372
   },
   "metricas": {
-    "hexLiterales": 25,
+    "hexLiterales": 23,
     "clasesTokenEnUso": 4775,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
@@ -31,7 +31,7 @@
     "rounded2xl": 0,
     "rounded3xl": 0,
     "roundedFull": 156,
-    "hexDistintos": 14,
+    "hexDistintos": 13,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
     "hexEnTokensCss": 21
@@ -50,8 +50,7 @@
       "#ff4d4d",
       "#ff8c42",
       "#ff8c69",
-      "#fff",
-      "#ffffff"
+      "#fff"
     ],
     "hexEnTokensCss": [
       "#000000",
@@ -163,7 +162,7 @@
       },
       {
         "archivo": "src/components/LoadHistoryPanel.tsx",
-        "lineas": 637
+        "lineas": 639
       },
       {
         "archivo": "src/components/CheckInScreen.tsx",
@@ -389,7 +388,6 @@
       "fontSans": 2
     },
     "src/components/MesocycleDashboard.tsx": {
-      "hexLiterales": 1,
       "clasesTokenEnUso": 12,
       "fontMono": 1,
       "fontSans": 5,
@@ -694,9 +692,6 @@
       "fontSans": 4,
       "modalesArtesanales": 1,
       "transitionAll": 1
-    },
-    "src/components/cardio/HrChart.tsx": {
-      "hexLiterales": 1
     },
     "src/components/cardio/HrvReadinessCard.tsx": {
       "clasesTokenEnUso": 10,
