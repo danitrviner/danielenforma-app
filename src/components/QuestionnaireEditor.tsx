@@ -1,6 +1,6 @@
 import React from 'react';
 import { QuestionnaireQuestion, QuestionType } from '../types';
-import { Icon, Button } from './ui';
+import { Icon, Button, Input } from './ui';
 
 // ── Shared types & helpers (consumed by QuestionnaireManagerScreen + ClientHub) ─
 
@@ -103,24 +103,20 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
 
       {/* Title + description */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Título *</label>
-          <input
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Ej: Control semanal de bienestar"
-            className={`w-full ${INPUT_CLS}`}
-          />
-        </div>
-        <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Descripción (opcional)</label>
-          <input
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Indica al atleta qué información buscas"
-            className={`w-full ${INPUT_CLS}`}
-          />
-        </div>
+        <Input
+          label="Título"
+          required
+          value={form.title}
+          onChange={v => setForm(f => ({ ...f, title: v }))}
+          placeholder="Ej: Control semanal de bienestar"
+        />
+        <Input
+          label="Descripción"
+          hint="Opcional. Indica al atleta qué información buscas."
+          value={form.description}
+          onChange={v => setForm(f => ({ ...f, description: v }))}
+          placeholder="Indica al atleta qué información buscas"
+        />
       </div>
 
       {/* Questions */}
