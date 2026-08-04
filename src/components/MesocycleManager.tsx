@@ -273,14 +273,14 @@ const DayCard: React.FC<{
                 type="number" min={0} max={25}
                 value={a.series}
                 onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
-                className="w-11 bg-bg border border-hairline rounded-control px-1 text-center text-white font-mono text-label focus:outline-none focus:border-accent"
+                className="w-11 bg-bg border border-hairline rounded-control px-1 text-center text-white font-mono text-title-s focus:outline-none focus:border-accent"
               />
               {otherDays.length > 0 && (
                 <select
                   value=""
                   onChange={e => { if (e.target.value) onMove(i, parseInt(e.target.value)); }}
                   title="Mover a otro día"
-                  className="bg-bg border border-hairline rounded-control text-caption font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                  className="bg-bg border border-hairline rounded-control text-title-s font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                 >
                   <option value="">→</option>
                   {otherDays.map(d => <option key={d} value={d}>Día {d + 1}</option>)}
@@ -302,7 +302,7 @@ const DayCard: React.FC<{
       <select
         value=""
         onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-control px-2 py-1 text-caption font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-control px-2 py-1 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
       >
         <option value="">+ Añadir grupo…</option>
         {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (
@@ -1130,7 +1130,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             <select
               value={selectedEmail}
               onChange={e => { setSelectedEmail(e.target.value); setEditing(null); setGenPhase('idle'); }}
-              className="bg-raised border border-hairline text-white font-sans text-body-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
+              className="bg-raised border border-hairline text-white font-sans text-title-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
             >
               <option value="">— Selecciona un atleta —</option>
               {athletes.map(a => (
@@ -1229,7 +1229,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1237,7 +1237,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1245,7 +1245,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <input type="date"
                       value={editing.startDate}
                       onChange={e => updateField('startDate', e.target.value)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -1268,7 +1268,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
                     value={editing.objective}
                     onChange={e => updateField('objective', e.target.value)}
-                    className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white placeholder-ink-3 focus:outline-none focus:border-accent"
+                    className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white placeholder-ink-3 focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -1516,7 +1516,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <select
                                 value=""
                                 onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-label font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                                className="w-full bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
                               >
                                 <option value="">+ Añadir ejercicio…</option>
                                 {allExercises.map(ex => (

@@ -418,7 +418,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-caption font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -452,7 +452,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-raised border border-hairline text-white text-caption font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
+                  className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (

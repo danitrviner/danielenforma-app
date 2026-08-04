@@ -654,7 +654,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -665,7 +665,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className="w-16 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-16 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -676,7 +676,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className="w-14 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-body-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-14 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -726,7 +726,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   onChange={e => updateExerciseNote(exIdx, e.target.value)}
                   placeholder="ej. Molestia leve en el hombro derecho..."
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-3 text-label text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
 
@@ -761,7 +761,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             onChange={e => setWorkoutNoteInput(e.target.value)}
             placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
             rows={2}
-            className="w-full bg-bg border border-hairline rounded-control p-3 text-body-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 

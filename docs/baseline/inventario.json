@@ -1,6 +1,6 @@
 {
-  "generado": "2026-08-04T13:47:07.851Z",
-  "commit": "996ce3b",
+  "generado": "2026-08-04T13:48:52.079Z",
+  "commit": "025f767",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39372
@@ -11,7 +11,7 @@
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
-    "camposBajo16px": 227,
+    "camposBajo16px": 170,
     "fontMono": 974,
     "fontSans": 910,
     "pesosProhibidos": 23,
@@ -285,7 +285,6 @@
     },
     "src/components/ClientWorkoutsPanel.tsx": {
       "clasesTokenEnUso": 52,
-      "camposBajo16px": 2,
       "fontMono": 14,
       "fontSans": 9,
       "transitionAll": 1,
@@ -353,14 +352,12 @@
     },
     "src/components/ExerciseConfigEditor.tsx": {
       "clasesTokenEnUso": 80,
-      "camposBajo16px": 13,
       "fontMono": 26,
       "fontSans": 10,
       "transitionAll": 5
     },
     "src/components/ExerciseLibraryScreen.tsx": {
       "clasesTokenEnUso": 136,
-      "camposBajo16px": 12,
       "fontMono": 25,
       "fontSans": 21,
       "pesosProhibidos": 1,
@@ -400,7 +397,6 @@
     },
     "src/components/LoadHistoryPanel.tsx": {
       "clasesTokenEnUso": 60,
-      "camposBajo16px": 2,
       "fontMono": 17,
       "fontSans": 9,
       "transitionAll": 4,
@@ -418,7 +414,6 @@
     },
     "src/components/MesocycleManager.tsx": {
       "clasesTokenEnUso": 225,
-      "camposBajo16px": 9,
       "fontMono": 69,
       "fontSans": 37,
       "pesosProhibidos": 1,
@@ -428,7 +423,6 @@
     },
     "src/components/MesocycleTemplateLibrary.tsx": {
       "clasesTokenEnUso": 121,
-      "camposBajo16px": 9,
       "fontMono": 28,
       "fontSans": 19,
       "transitionAll": 8,
@@ -670,7 +664,6 @@
     },
     "src/components/TrainingScreen.tsx": {
       "clasesTokenEnUso": 164,
-      "camposBajo16px": 5,
       "fontMono": 48,
       "fontSans": 18,
       "pesosProhibidos": 1,
@@ -706,7 +699,6 @@
     },
     "src/components/WorkoutsScreen.tsx": {
       "clasesTokenEnUso": 123,
-      "camposBajo16px": 5,
       "fontMono": 18,
       "fontSans": 13,
       "pesosProhibidos": 1,

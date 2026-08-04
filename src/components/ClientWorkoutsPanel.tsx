@@ -309,7 +309,7 @@ export default function ClientWorkoutsPanel({
                 <select
                   value={assignWorkoutId}
                   onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   {workouts.map(w => (
                     <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
@@ -323,7 +323,7 @@ export default function ClientWorkoutsPanel({
                 type="date"
                 value={assignDate}
                 onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

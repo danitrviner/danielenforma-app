@@ -134,7 +134,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
@@ -143,7 +143,7 @@ const ExerciseRow: React.FC<{
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
@@ -153,7 +153,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
@@ -162,7 +162,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-label text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
@@ -244,7 +244,7 @@ const DayBlock: React.FC<{
           value={day.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...day, name: e.target.value })}
-          className="flex-1 bg-transparent font-mono text-label text-white focus:outline-none"
+          className="flex-1 bg-transparent font-mono text-title-s text-white focus:outline-none"
           placeholder="Nombre del día"
         />
         <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
@@ -287,7 +287,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-2 text-white font-sans text-label focus:outline-none focus:border-accent/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-2 text-white font-sans text-title-s focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -381,7 +381,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           value={stage.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...stage, name: e.target.value })}
-          className="flex-1 bg-transparent font-sans font-bold text-body-s text-white focus:outline-none"
+          className="flex-1 bg-transparent font-sans font-bold text-title-s text-white focus:outline-none"
           placeholder="Nombre del mesociclo"
         />
         <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -624,7 +624,7 @@ function TemplateEditor({
               value={form.name}
               onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
               placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-body-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-title-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
             {nameError && <p className="text-red-400 font-sans text-caption mt-1">{nameError}</p>}
           </div>
@@ -635,7 +635,7 @@ function TemplateEditor({
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Breve descripción de la plantilla"
-              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-body-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
+              className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-white text-title-s focus:outline-none focus:border-accent/50 placeholder-ink-3"
             />
           </div>
         </div>
