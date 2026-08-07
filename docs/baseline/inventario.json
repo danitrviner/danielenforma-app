@@ -1,25 +1,25 @@
 {
-  "generado": "2026-08-07T13:39:41.066Z",
-  "commit": "20ce86e",
+  "generado": "2026-08-07T13:49:27.849Z",
+  "commit": "192f342",
   "totales": {
     "archivosTsx": 158,
-    "lineasTsx": 40440
+    "lineasTsx": 40511
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4686,
+    "clasesTokenEnUso": 4694,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 947,
+    "fontMono": 948,
     "fontSans": 903,
     "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 256,
+    "transitionAll": 254,
     "animatePulse": 29,
     "ariaLabel": 41,
     "htmlFor": 1,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 156,
+    "roundedFull": 157,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -165,14 +165,14 @@
   },
   "porArchivo": {
     "src/App.tsx": {
-      "clasesTokenEnUso": 40,
+      "clasesTokenEnUso": 42,
       "textoBajo11px": 1,
-      "fontMono": 1,
+      "fontMono": 2,
       "fontSans": 10,
       "pesosProhibidos": 2,
-      "transitionAll": 3,
+      "transitionAll": 1,
       "animatePulse": 5,
-      "roundedFull": 4
+      "roundedFull": 5
     },
     "src/components/AcademyCoachScreen.tsx": {
       "clasesTokenEnUso": 57,
@@ -502,7 +502,7 @@
       "fontSans": 3
     },
     "src/components/ProfileScreen.tsx": {
-      "clasesTokenEnUso": 57,
+      "clasesTokenEnUso": 63,
       "fontMono": 6,
       "fontSans": 7,
       "transitionAll": 2,

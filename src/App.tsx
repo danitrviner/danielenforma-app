@@ -58,15 +58,19 @@ const OWNER_EMAIL = 'danitrviner@gmail.com';
 
 export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'profile';
 
-// Academia y Cardio no tienen pestaña propia — se accede desde tarjetas en
-// Inicio (HomeScreen) para no saturar la barra de navegación. Siguen siendo
-// rutas válidas (ver ATHLETE_PATH_SEGMENTS) para que el refresh/atrás funcione.
+// Fase 3 (F3.4): la barra pasa a los cinco destinos del handoff — Hoy ·
+// Rutinas · Academia · Nutrición · Perfil. Cardio se queda sin pestaña
+// propia a propósito (regla dura del módulo Cardio: nunca aparece antes que
+// el entreno de fuerza, se entra desde una tarjeta en Hoy). Check-in y Road
+// map dejan de ser pestañas — Perfil los absorbe (decisión de Dani,
+// 2026-08-07) — pero sus rutas siguen vivas (ATHLETE_PATH_SEGMENTS) y
+// ProfileScreen enlaza a ellas hasta que F3.11 las integre de verdad.
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
-  { id: 'home',      label: 'Inicio',        shortLabel: 'Inicio',   icon: 'bolt' },
-  { id: 'training',  label: 'Entrenamiento', shortLabel: 'Entreno',  icon: 'fitness_center' },
-  { id: 'nutrition', label: 'Nutrición',     shortLabel: 'Nutri.',   icon: 'restaurant' },
-  { id: 'checkin',   label: 'Check-in',      shortLabel: 'Check-in', icon: 'edit_note' },
-  { id: 'roadmap',   label: 'Road map',      shortLabel: 'Mapa',     icon: 'map' },
+  { id: 'home',      label: 'Hoy',      shortLabel: 'Hoy',      icon: 'bolt' },
+  { id: 'training',  label: 'Rutinas',  shortLabel: 'Rutinas',  icon: 'fitness_center' },
+  { id: 'academy',   label: 'Academia', shortLabel: 'Academia', icon: 'school' },
+  { id: 'nutrition', label: 'Nutrición', shortLabel: 'Nutri.',  icon: 'restaurant' },
+  { id: 'profile',   label: 'Perfil',   shortLabel: 'Perfil',   icon: 'person' },
 ];
 
 const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
@@ -367,8 +371,13 @@ function AppContent() {
         )}
       </nav>
 
-      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[var(--sidebar-w)] p-4 md:p-8 max-w-7xl mx-auto w-full transition-all">
+      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[var(--sidebar-w)] p-4 md:p-8 max-w-7xl mx-auto w-full">
       <Suspense fallback={<ScreenFallback />}>
+        {/* Fundido hacia arriba al cambiar de PESTAÑA (280 ms) — la key es
+            pathTab, no la ruta completa, así que navegar dentro de una misma
+            pestaña (p. ej. entre clientes del CRM) no reinicia la animación
+            ni el estado de scroll cada vez. */}
+        <div key={pathTab} className="animate-fade-up">
         <Routes>
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
 
@@ -418,6 +427,7 @@ function AppContent() {
                 isCoach={isCoach}
                 onRefreshProfile={handleRefreshData}
                 onLogOut={() => setCurrentUser(null)}
+                onNavigate={goToTab}
               />
             )}
           />
@@ -426,33 +436,64 @@ function AppContent() {
               de una sesión anterior de coach en el mismo navegador) */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </div>
       </Suspense>
       </main>
 
-      {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-center gap-1 px-2 pt-2 bg-bg border-t border-hairline select-none shadow-e1" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}>
-        {mainTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => goToTab(tab.id)}
-            className={`flex flex-col items-center justify-center py-2 flex-1 min-w-0 rounded-control transition-all relative border ${pathTab === tab.id ? 'bg-accent/10 border-accent/30 text-accent' : 'border-transparent text-ink-2'}`}
-          >
-            <Icon name={tab.icon} size="l" filled={pathTab === tab.id} />
-            {/* EXCEPCIÓN TEMPORAL AL DESIGN SYSTEM — ver DESIGN_SYSTEM_STATUS.md
-                El suelo del DS son 11 px, pero con SIETE destinos en 375 px las
-                etiquetas se truncan hasta quedar ilegibles ("ACA…", "CAR…"):
-                5 de 7 truncadas frente a 2 antes. Prima la usabilidad sobre la
-                uniformidad. La solución no es tipográfica sino de arquitectura
-                de navegación, y se evalúa en una fase posterior. */}
-            <span className="font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center ">
-              {tab.shortLabel ?? tab.label}
-            </span>
-            {tab.id === 'reviews' && pendingCount > 0 && (
-              <span className="absolute top-0.5 right-1 w-1.5 h-1.5 rounded-full bg-data"></span>
-            )}
-          </button>
-        ))}
-        {/* Both athletes and coaches reach their profile via the avatar bubble in the header — no separate nav item needed */}
+      {/* MOBILE BOTTOM NAV — Fase 3 (F3.4)
+          78 px de contenido + safe area, fondo casi negro con blur, línea
+          superior al 7 %. La pestaña activa no lleva fondo propio: sube el
+          icono 1 px y un punto de 4 px se escala .2→1 debajo — el
+          "fundido hacia arriba" del contenido lo hace el wrapper con key
+          por pestaña más abajo, en <main>. Sin deslizamiento lateral entre
+          pestañas: es un cambio de ruta, no un carrusel.
+          Para el atleta son los 5 destinos del handoff; el coach conserva
+          sus 7 (R10 sigue abierto, se resuelve en F3.13) — la excepción de
+          10 px sigue viva mientras tanto. */}
+      <nav
+        className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none"
+        style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
+      >
+        {mainTabs.map((tab) => {
+          const activa = pathTab === tab.id;
+          const insignia = tab.id === 'reviews' ? Math.min(pendingCount, 99) : 0;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => goToTab(tab.id)}
+              className="relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1"
+            >
+              <span
+                className={
+                  'relative flex transition-transform duration-(--duration-state) ease-brand '
+                  + (activa ? '-translate-y-px text-accent' : 'text-ink-2')
+                }
+              >
+                <Icon name={tab.icon} size="l" filled={activa} />
+                {insignia > 0 && (
+                  <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 font-mono text-caption font-bold leading-none text-on-accent">
+                    {insignia}
+                  </span>
+                )}
+              </span>
+              {/* EXCEPCIÓN TEMPORAL AL DESIGN SYSTEM — ver DESIGN_SYSTEM_STATUS.md
+                  El suelo del DS son 11 px; con los 7 destinos del coach en
+                  375 px las etiquetas largas se truncan por debajo de eso.
+                  Con los 5 del atleta ya no hace falta, pero el componente es
+                  compartido y R10 (la IA del coach) se resuelve en F3.13. */}
+              <span className={`font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center ${activa ? 'text-accent' : 'text-ink-2'}`}>
+                {tab.shortLabel ?? tab.label}
+              </span>
+              <span
+                aria-hidden
+                className={
+                  'h-1 w-1 rounded-full bg-accent transition-transform duration-(--duration-state) ease-brand '
+                  + (activa ? 'scale-100' : 'scale-[.2] opacity-0')
+                }
+              />
+            </button>
+          );
+        })}
       </nav>
 
       {/* Asistente IA — solo coach, flotante y global para poder preguntar desde cualquier pantalla */}

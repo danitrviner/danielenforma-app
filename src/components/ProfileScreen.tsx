@@ -17,6 +17,9 @@ interface ProfileScreenProps {
   isCoach: boolean;
   onRefreshProfile: () => void;
   onLogOut: () => void;
+  /** Navega a otra pestaña por su NavTab id (ver App.tsx). Opcional: el
+   * escaparate y otros consumidores futuros pueden no necesitarlo. */
+  onNavigate?: (tab: 'checkin' | 'roadmap') => void;
 }
 
 // The reorderable content blocks on this screen — order persisted per-athlete on
@@ -26,7 +29,7 @@ interface ProfileScreenProps {
 type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences';
 const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
 
-export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut }: ProfileScreenProps) {
+export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut, onNavigate }: ProfileScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [showCoaches, setShowCoaches] = useState(false);
@@ -276,6 +279,33 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
       {success && (
         <div className="bg-accent/10 border border-accent/30 text-white p-4 rounded-surface text-label font-bold text-center">
           {success}
+        </div>
+      )}
+
+      {/* ── Progreso y plan (F3.4: enlaza, no absorbe todavía) ──────────────────
+          Check-in y Road map dejaron de ser pestañas propias (decisión de
+          Dani, 2026-08-07: Perfil las absorbe). Esto es el enlace mínimo
+          para no perder el acceso mientras tanto — la integración real
+          (peso, fotos y cuestionarios COMO parte de Perfil, no un salto a
+          otra pantalla) es trabajo de F3.11, no de esta fase. */}
+      {!isCoach && onNavigate && (
+        <div className="flex flex-col gap-2">
+          <ListRow
+            onClick={() => onNavigate('checkin')}
+            className="rounded-control border bg-surface border-hairline"
+            leading={<Icon name="edit_note" size="m" className="text-accent" />}
+            title="Progreso"
+            subtitle="Peso, fotos y cuestionarios de revisión"
+            chevron
+          />
+          <ListRow
+            onClick={() => onNavigate('roadmap')}
+            className="rounded-control border bg-surface border-hairline"
+            leading={<Icon name="map" size="m" className="text-accent" />}
+            title="Road map"
+            subtitle="Tu plan, fases y retos semanales"
+            chevron
+          />
         </div>
       )}
 
