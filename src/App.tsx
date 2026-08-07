@@ -63,8 +63,10 @@ export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' |
 // propia a propósito (regla dura del módulo Cardio: nunca aparece antes que
 // el entreno de fuerza, se entra desde una tarjeta en Hoy). Check-in y Road
 // map dejan de ser pestañas — Perfil los absorbe (decisión de Dani,
-// 2026-08-07) — pero sus rutas siguen vivas (ATHLETE_PATH_SEGMENTS) y
-// ProfileScreen enlaza a ellas hasta que F3.11 las integre de verdad.
+// 2026-08-07): F3.11 los renderiza dentro de Perfil como secciones
+// expandibles (CheckInScreen/AthleteRoadmapScreen embebidos, no un salto de
+// pantalla). Sus rutas siguen vivas (ATHLETE_PATH_SEGMENTS) por si algo
+// externo enlaza directo a /checkin o /roadmap.
 const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
   { id: 'home',      label: 'Hoy',      shortLabel: 'Hoy',      icon: 'bolt' },
   { id: 'training',  label: 'Rutinas',  shortLabel: 'Rutinas',  icon: 'fitness_center' },
@@ -425,9 +427,9 @@ function AppContent() {
               <ProfileScreen
                 profile={profile}
                 isCoach={isCoach}
+                checkins={checkins}
                 onRefreshProfile={handleRefreshData}
                 onLogOut={() => setCurrentUser(null)}
-                onNavigate={goToTab}
               />
             )}
           />

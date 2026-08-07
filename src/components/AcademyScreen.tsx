@@ -5,8 +5,9 @@ import { getAllCourses, getAllLessons, getAcademyProgress, markLessonComplete, g
 import { evaluateUnlockRule } from '../utils/academyUnlock';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
+import LessonPlayer from './academy/LessonPlayer';
 import { Skeleton } from './ui';
-import { Icon, Button, EmptyState, PageHeader, ListRow } from './ui';
+import { Icon, Button, EmptyState, PageHeader, ListRow, ProgressBar } from './ui';
 
 interface Props {
   profile: UserProfile;
@@ -18,12 +19,6 @@ const CATEGORY_LABEL: Record<AcademyCategory, string> = {
 };
 
 const XP_PER_LESSON = 20;
-
-function embedUrl(l: AcademyLesson): string {
-  return l.videoProvider === 'youtube'
-    ? `https://www.youtube.com/embed/${l.videoId}`
-    : `https://player.vimeo.com/video/${l.videoId}`;
-}
 
 export default function AcademyScreen({ profile }: Props) {
   const queryClient = useQueryClient();
@@ -94,36 +89,20 @@ export default function AcademyScreen({ profile }: Props) {
   // ── DETALLE DE LECCIÓN ──────────────────────────────────────────────────
   if (openLesson && openCourse) {
     const done = !!progressSafe.completed[openLesson.id];
+    const lessonIndex = courseLessons.findIndex(l => l.id === openLesson.id);
+    const nextLesson = courseLessons[lessonIndex + 1];
+
     return (
-      <div className="space-y-6">
-        <Button variant="ghost" size="s" onClick={() => setOpenLessonId(null)} icon="arrow_back">{openCourse.title}</Button>
-        <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
-          <iframe
-            src={embedUrl(openLesson)}
-            title={openLesson.title}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-        <div>
-          <h2 className="font-sans font-bold text-title-m text-white">{openLesson.title}</h2>
-          {openLesson.description && <p className="text-label text-ink-2 font-sans mt-1">{openLesson.description}</p>}
-        </div>
-        {openLesson.resources && openLesson.resources.length > 0 && (
-          <div className="space-y-2">
-            {openLesson.resources.map((r, i) => (
-              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-label font-mono text-data hover:underline">
-                <Icon name={r.kind === 'pdf' ? 'picture_as_pdf' : 'link'} size="s" />
-                {r.title}
-              </a>
-            ))}
-          </div>
-        )}
-        <Button onClick={() => handleCompleteLesson(openLesson)} disabled={done} fullWidth>
-          {done ? 'Lección completada ✓' : 'Marcar como completada (+20 XP)'}
-        </Button>
-      </div>
+      <LessonPlayer
+        lesson={openLesson}
+        course={openCourse}
+        courseLessons={courseLessons}
+        done={done}
+        nextLesson={nextLesson}
+        onBack={() => setOpenLessonId(null)}
+        onComplete={() => handleCompleteLesson(openLesson)}
+        onOpenLesson={id => setOpenLessonId(id)}
+      />
     );
   }
 
@@ -193,9 +172,7 @@ export default function AcademyScreen({ profile }: Props) {
                   </div>
                   <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{c.description}</p>
                   {unlocked ? (
-                    <div className="mt-3 h-1.5 bg-white/7 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-                    </div>
+                    <ProgressBar value={pct} label={`Progreso de ${c.title}, ${pct}%`} className="mt-3" />
                   ) : (
                     <p className="text-caption text-ink-3 font-mono mt-3">{reason}</p>
                   )}

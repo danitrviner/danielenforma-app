@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Questionnaire, OnboardingData } from '../types';
+import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -9,18 +9,26 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
+import CheckInScreen from './CheckInScreen';
+import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
-import { Icon, Button, PageHeader, ListRow, Input } from './ui';
+import { Icon, Button, PageHeader, ListRow, Input, Sheet } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
   isCoach: boolean;
+  checkins: WeightCheckIn[];
   onRefreshProfile: () => void;
   onLogOut: () => void;
-  /** Navega a otra pestaña por su NavTab id (ver App.tsx). Opcional: el
-   * escaparate y otros consumidores futuros pueden no necesitarlo. */
-  onNavigate?: (tab: 'checkin' | 'roadmap') => void;
 }
+
+// Progreso y Road map (F3.11, módulo 11): "Perfil absorbe Check-in y Road
+// map" se cumple embebiendo las pantallas existentes tal cual —son
+// autocontenidas, solo necesitan `profile`/`checkins`— dentro de una sección
+// expandible, no reescribiéndolas ni saltando a otra ruta. Cero riesgo de
+// regresión en su lógica (peso, fotos, cuestionarios, hitos), que se queda
+// intacta; lo único nuevo es DÓNDE vive en la app.
+type ExpandedSection = 'progress' | 'roadmap' | null;
 
 // The reorderable content blocks on this screen — order persisted per-athlete on
 // UserProfile.dashboardOrder. Not every block is visible for every athlete/coach
@@ -29,10 +37,12 @@ interface ProfileScreenProps {
 type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences';
 const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
 
-export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut, onNavigate }: ProfileScreenProps) {
+export default function ProfileScreen({ profile, isCoach, checkins, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [showCoaches, setShowCoaches] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
@@ -178,39 +188,6 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
               <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
               <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="var(--color-data)" />
             </div>
-
-            {/* Iron Calendar */}
-            <div>
-              <span className="font-sans text-caption text-ink-2 uppercase block mb-3">Iron Calendar (Apego de entrenos)</span>
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 14 }).map((_, idx) => {
-                  const isActive = idx < Math.min(14, streakDays % 14 || 6);
-                  return (
-                    <div
-                      key={idx}
-                      className={`aspect-square rounded-control border transition-all ${isActive ? 'bg-accent border-transparent' : 'bg-raised border-hairline'}`}
-                      title={isActive ? 'Entrenamiento registrado' : 'Próximo entreno'}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Badges */}
-            <div>
-              <span className="font-mono text-caption text-ink-2 uppercase block mb-3">Insignias Desbloqueadas</span>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
-                  <span>🏅</span> Primera semana
-                </span>
-                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
-                  <span className="text-accent">⚡</span> 10 días de racha
-                </span>
-                <span className="px-3 py-2 bg-raised text-white rounded-full text-label border border-hairline flex items-center gap-2">
-                  <span className="text-data">⭐</span> Nivel {profile.level}
-                </span>
-              </div>
-            </div>
           </div>
         );
 
@@ -274,63 +251,44 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Mi Perfil" subtitle="Tu gamificación, evolución de peso, gráficas y configuración de ficha." />
+      <PageHeader
+        title="Mi Perfil"
+        subtitle="Progreso, gráficas y ficha."
+        action={<Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" />}
+      />
 
-      {success && (
-        <div className="bg-accent/10 border border-accent/30 text-white p-4 rounded-surface text-label font-bold text-center">
-          {success}
-        </div>
-      )}
-
-      {/* ── Progreso y plan (F3.4: enlaza, no absorbe todavía) ──────────────────
-          Check-in y Road map dejaron de ser pestañas propias (decisión de
-          Dani, 2026-08-07: Perfil las absorbe). Esto es el enlace mínimo
-          para no perder el acceso mientras tanto — la integración real
-          (peso, fotos y cuestionarios COMO parte de Perfil, no un salto a
-          otra pantalla) es trabajo de F3.11, no de esta fase. */}
-      {!isCoach && onNavigate && (
+      {/* ── Progreso y Road map absorbidos (F3.11, módulo 11: "Perfil absorbe
+          Check-in y Road map") — CheckInScreen/AthleteRoadmapScreen se
+          embeben enteros al expandir, no se reescriben ni se navega fuera. */}
+      {!isCoach && (
         <div className="flex flex-col gap-2">
           <ListRow
-            onClick={() => onNavigate('checkin')}
+            onClick={() => setExpandedSection(v => v === 'progress' ? null : 'progress')}
             className="rounded-control border bg-surface border-hairline"
             leading={<Icon name="edit_note" size="m" className="text-accent" />}
             title="Progreso"
             subtitle="Peso, fotos y cuestionarios de revisión"
-            chevron
+            trailing={<Icon name={expandedSection === 'progress' ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />}
           />
+          {expandedSection === 'progress' && (
+            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+              <CheckInScreen profile={profile} checkins={checkins} />
+            </div>
+          )}
           <ListRow
-            onClick={() => onNavigate('roadmap')}
+            onClick={() => setExpandedSection(v => v === 'roadmap' ? null : 'roadmap')}
             className="rounded-control border bg-surface border-hairline"
             leading={<Icon name="map" size="m" className="text-accent" />}
             title="Road map"
             subtitle="Tu plan, fases y retos semanales"
-            chevron
+            trailing={<Icon name={expandedSection === 'roadmap' ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />}
           />
-        </div>
-      )}
-
-      {/* ── Entrenadores (coach only) ───────────────────────────────────────────── */}
-      {isCoach && (
-        showCoaches ? (
-          <div className="bg-surface border border-hairline p-5 rounded-surface">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <Icon name="groups" size="m" className="text-accent" />
-                Entrenadores
-              </h3>
-              <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
+          {expandedSection === 'roadmap' && (
+            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+              <AthleteRoadmapScreen profile={profile} />
             </div>
-            <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
-          </div>
-        ) : (
-          <ListRow
-            onClick={() => setShowCoaches(true)}
-            className="rounded-control border bg-surface border-hairline"
-            leading={<Icon name="groups" size="m" className="text-accent" />}
-            title="Entrenadores"
-            chevron
-          />
-        )
+          )}
+        </div>
       )}
 
       {/* ── Reorder toggle ───────────────────────────────────────────────────── */}
@@ -373,48 +331,60 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         </div>
       ))}
 
-      {/* ── Edit profile form ─────────────────────────────────────────────────── */}
-      <form onSubmit={handleUpdate} className="bg-surface border border-hairline p-5 rounded-surface space-y-4">
-        <h3 className="font-sans font-bold text-title-s text-accent uppercase tracking-wide border-b border-hairline pb-2">Editar Marca de Ficha</h3>
+      {/* ── Ajustes (F3.11, módulo 11: "vive detrás de un icono en la
+          cabecera, nunca en la barra inferior") — nombre/avatar/meta,
+          entrenadores (coach) y cerrar sesión, la única acción destructiva
+          de la pantalla en texto rojo sobre fondo neutro, no un botón
+          relleno. "Repetir el tour" queda fuera: el motor de tutorial es
+          F3.12, todavía no existe nada que repetir. */}
+      <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
+        <div className="space-y-6">
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <Input label="Nombre deportivo" required value={displayName} onChange={setDisplayName} />
+            <div>
+              <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={targetWeight}
+                onChange={(e) => setTargetWeight(e.target.value)}
+                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
+              />
+            </div>
+            <Input label="Avatar (URL de imagen)" type="url" value={avatarUrl} onChange={setAvatarUrl} />
+            <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
+            {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
+          </form>
 
-        <Input
-          label="Nombre deportivo"
-          required
-          value={displayName}
-          onChange={setDisplayName}
-        />
+          {isCoach && (
+            showCoaches ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                    <Icon name="groups" size="m" className="text-accent" />
+                    Entrenadores
+                  </h3>
+                  <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
+                </div>
+                <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
+              </div>
+            ) : (
+              <ListRow
+                onClick={() => setShowCoaches(true)}
+                className="rounded-control border bg-surface border-hairline"
+                leading={<Icon name="groups" size="m" className="text-accent" />}
+                title="Entrenadores"
+                chevron
+              />
+            )
+          )}
 
-        <div>
-          <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de Peso Personal (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={targetWeight}
-            onChange={(e) => setTargetWeight(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
-          />
+          <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">
+            <Icon name="logout" size="m" />
+            Cerrar sesión
+          </button>
         </div>
-
-        <Input
-          label="Avatar (URL de imagen)"
-          type="url"
-          value={avatarUrl}
-          onChange={setAvatarUrl}
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-white hover:bg-opacity-95 text-black font-bold text-label font-mono rounded-control uppercase tracking-wider transition-colors active:scale-95"
-        >
-          {loading ? 'Sincronizando...' : 'Guardar Cambios Deportivos'}
-        </button>
-      </form>
-
-      {/* ── Sign out ──────────────────────────────────────────────────────────── */}
-      <div className="pt-2">
-        <Button variant="danger" onClick={handleSignOut} icon="logout" fullWidth>Cerrar Sesión Activa</Button>
-      </div>
+      </Sheet>
     </div>
   );
 }
