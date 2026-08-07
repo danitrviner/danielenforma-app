@@ -580,50 +580,76 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <PhotosScreen profile={profile} />
       </section>
 
-      {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
+      {/* ── El hilo de revisiones (F3.13c) ───────────────────────────────────── */}
       <section className="bg-surface border border-hairline rounded-surface p-5">
-        <h2 className="font-sans font-bold text-title-m text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
-          <span className="material-symbols-outlined text-data">history</span>
-          Historial de Revisiones
-        </h2>
-        <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
-          {checkins.map((item) => (
-            <div
-              key={item.id}
-              className={`bg-raised border rounded-surface p-4 transition-all hover:bg-raised ${item.approved ? 'border-data/30' : 'border-hairline'}`}
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-label text-ink-2">{item.dateStr}</span>
-                  <span className="font-mono font-bold text-white text-body-s">{item.weight} kg</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-title-s">{item.mood}</span>
-                  <span className={`text-caption px-2 rounded-control uppercase font-mono ${item.adherence === 'Sí' ? 'bg-accent/10 text-accent' : item.adherence === 'Parcial' ? 'bg-data/10 text-data' : 'bg-red-400/10 text-red-300'}`}>
-                    {item.adherence}
-                  </span>
-                </div>
-              </div>
-              {item.notes && (
-                <p className="text-label text-ink-2 font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
-              )}
-              {item.coachFeedback ? (
-                <div className="text-label border-l-2 border-accent pl-3 py-1 ml-1 bg-black/20 rounded-r-control p-2">
-                  <span className="font-sans font-bold text-accent block mb-1">Nota del Entrenador:</span>
-                  <p className="text-white leading-relaxed">{item.coachFeedback}</p>
-                </div>
-              ) : (
-                <div className="text-caption text-ink-2/60 font-mono italic pl-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-label animate-spin text-accent">sync</span>
-                  Pendiente de revisión del Entrenador
-                </div>
-              )}
-            </div>
-          ))}
-          {checkins.length === 0 && (
-            <EmptyState icon="monitor_weight" title="Aún no tienes registros de peso. Envía tu primer check-in." />
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+          <h2 className="font-sans font-bold text-title-m text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent">history</span>
+            Revisiones
+          </h2>
+          {checkins.length > 0 && (
+            <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">
+              {checkins.length} enviada{checkins.length === 1 ? '' : 's'}
+            </span>
           )}
         </div>
+
+        {checkins.length === 0 ? (
+          <EmptyState
+            icon="history_edu"
+            title="Cada domingo, dos minutos"
+            description="Tú cuentas cómo ha ido la semana y tu coach ajusta el plan con eso. Aquí quedará todo el hilo, revisión a revisión."
+          />
+        ) : (() => {
+          const ordenado = [...checkins].sort((a, b) => {
+            const ta = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp as unknown as string).getTime();
+            const tb = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp as unknown as string).getTime();
+            return (isNaN(tb) ? 0 : tb) - (isNaN(ta) ? 0 : ta);
+          });
+          return (
+            <div className="relative max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+              <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gradient-to-b from-accent-line to-transparent" aria-hidden />
+              {ordenado.map((item, idx) => {
+                const esUltima = idx === 0;
+                const tieneRespuesta = !!item.coachFeedback;
+                return (
+                  <div key={item.id} className="relative flex gap-4 pb-4 last:pb-0">
+                    <span
+                      className={`relative z-10 mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${esUltima ? 'bg-accent animate-pulse-dot' : 'bg-ink-4'}`}
+                      aria-hidden
+                    />
+                    <div
+                      className={`min-w-0 flex-1 space-y-2 rounded-field border p-4 ${
+                        esUltima && tieneRespuesta ? 'border-accent-line bg-raised' : 'border-hairline bg-field'
+                      }`}
+                    >
+                      {esUltima && tieneRespuesta && (
+                        <span className="inline-block rounded-chip bg-accent px-2 py-1 font-mono text-caption font-bold uppercase tracking-wide text-on-accent">
+                          Respuesta nueva
+                        </span>
+                      )}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-sans text-body-s text-ink">{item.dateStr}</span>
+                        <span className="font-mono text-caption text-ink-2">{item.weight} kg · {item.adherence}</span>
+                      </div>
+                      {item.notes && (
+                        <p className="font-sans text-body-s text-ink-2 italic leading-relaxed">"{item.notes}"</p>
+                      )}
+                      {tieneRespuesta ? (
+                        <p className="font-sans text-body-s text-ink leading-relaxed">{item.coachFeedback}</p>
+                      ) : (
+                        <p className="flex items-center gap-1 font-mono text-caption italic text-ink-3">
+                          <span className="material-symbols-outlined animate-spin text-accent text-label">sync</span>
+                          Pendiente de revisión
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </section>
     </div>
   );

@@ -4,8 +4,9 @@ import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Skeleton } from './ui';
-import { Icon, Button, PageHeader, Tabs, EmptyState } from './ui';
+import { Icon, Button, PageHeader, Tabs, SegmentedControl, EmptyState } from './ui';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -36,6 +37,7 @@ export default function PhotosScreen({ profile }: Props) {
     queryFn: () => getProgressPhotos(profile.email),
   });
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
+  const [mode, setMode] = useState<'galeria' | 'comparar'>('galeria');
   const [uploadDate, setUploadDate]   = useState(todayStr());
   const [uploading, setUploading]     = useState(false);
   const [deleting, setDeleting]       = useState<string | null>(null);
@@ -112,6 +114,15 @@ export default function PhotosScreen({ profile }: Props) {
         label="Ángulo de la foto"
       />
 
+      {visiblePhotos.length >= 2 && (
+        <SegmentedControl
+          options={[{ value: 'galeria', label: 'Galería' }, { value: 'comparar', label: 'Comparar' }]}
+          value={mode}
+          onChange={v => setMode(v as 'galeria' | 'comparar')}
+          label="Vista de fotos"
+        />
+      )}
+
       {/* Upload bar */}
       <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -148,6 +159,27 @@ export default function PhotosScreen({ profile }: Props) {
             actionLabel="Subir foto"
             onAction={() => fileInputRef.current?.click()}
           />
+        </div>
+      ) : mode === 'comparar' && visiblePhotos.length >= 2 ? (
+        <div className="space-y-3">
+          <PhotoCompareCurtain
+            antes={visiblePhotos[visiblePhotos.length - 1]}
+            ahora={visiblePhotos[0]}
+            badge={`${Math.max(1, Math.round((new Date(visiblePhotos[0].date).getTime() - new Date(visiblePhotos[visiblePhotos.length - 1].date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
+          />
+          <p className="font-sans text-caption text-ink-2/70 text-center">
+            Misma luz, misma hora, misma distancia: así se nota mejor el cambio.
+          </p>
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {visiblePhotos.map(photo => (
+              <img
+                key={photo.id}
+                src={photo.url}
+                alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
+                className="h-16 w-12 shrink-0 rounded-control border border-hairline object-cover object-top"
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

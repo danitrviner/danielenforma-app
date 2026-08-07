@@ -1,27 +1,27 @@
 {
-  "generado": "2026-08-07T16:07:32.607Z",
-  "commit": "6282c90",
+  "generado": "2026-08-07T17:00:07.742Z",
+  "commit": "f9ce80e",
   "totales": {
-    "archivosTsx": 165,
-    "lineasTsx": 41956
+    "archivosTsx": 167,
+    "lineasTsx": 42156
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4909,
+    "clasesTokenEnUso": 4921,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 2,
     "camposBajo16px": 0,
-    "fontMono": 978,
-    "fontSans": 900,
+    "fontMono": 980,
+    "fontSans": 901,
     "pesosProhibidos": 50,
     "espaciadoFueraEscala": 2,
     "sombrasFueraEscala": 3,
     "glowAcento": 0,
     "modalesArtesanales": 10,
-    "transitionAll": 231,
+    "transitionAll": 228,
     "animatePulse": 29,
-    "ariaLabel": 47,
+    "ariaLabel": 48,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 2,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 157,
+    "roundedFull": 162,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 21,
@@ -92,7 +92,7 @@
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
-        "lineas": 1410
+        "lineas": 1408
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
@@ -143,8 +143,8 @@
         "lineas": 657
       },
       {
-        "archivo": "src/components/ClientHub.tsx",
-        "lineas": 647
+        "archivo": "src/components/CheckInScreen.tsx",
+        "lineas": 656
       },
       {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
@@ -159,12 +159,12 @@
         "lineas": 639
       },
       {
-        "archivo": "src/components/CheckInScreen.tsx",
-        "lineas": 630
-      },
-      {
         "archivo": "src/components/ClientsScreen.tsx",
         "lineas": 626
+      },
+      {
+        "archivo": "src/components/ClientHub.tsx",
+        "lineas": 618
       }
     ]
   },
@@ -232,12 +232,12 @@
       "roundedFull": 2
     },
     "src/components/CheckInScreen.tsx": {
-      "clasesTokenEnUso": 119,
+      "clasesTokenEnUso": 121,
       "fontMono": 15,
-      "fontSans": 26,
+      "fontSans": 27,
       "pesosProhibidos": 1,
-      "transitionAll": 10,
-      "roundedFull": 2
+      "transitionAll": 9,
+      "roundedFull": 3
     },
     "src/components/ClientDietsPanel.tsx": {
       "clasesTokenEnUso": 86,
@@ -246,18 +246,24 @@
       "transitionAll": 6
     },
     "src/components/ClientHub.tsx": {
-      "clasesTokenEnUso": 30,
-      "fontMono": 9,
-      "fontSans": 3,
-      "pesosProhibidos": 4,
+      "clasesTokenEnUso": 18,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 1,
       "transitionAll": 2,
       "roundedFull": 1
     },
+    "src/components/ClientHubSummary.tsx": {
+      "clasesTokenEnUso": 12,
+      "fontMono": 5,
+      "fontSans": 1,
+      "pesosProhibidos": 3
+    },
     "src/components/ClientReviewsPanel.tsx": {
-      "clasesTokenEnUso": 283,
-      "fontMono": 70,
-      "fontSans": 53,
-      "transitionAll": 20,
+      "clasesTokenEnUso": 281,
+      "fontMono": 69,
+      "fontSans": 52,
+      "transitionAll": 18,
       "roundedFull": 1
     },
     "src/components/ClientSetupPanel.tsx": {
@@ -509,9 +515,9 @@
       "transitionAll": 1
     },
     "src/components/PhotosScreen.tsx": {
-      "clasesTokenEnUso": 8,
+      "clasesTokenEnUso": 10,
       "fontMono": 3,
-      "fontSans": 1,
+      "fontSans": 2,
       "transitionAll": 1,
       "roundedFull": 1
     },
@@ -759,6 +765,12 @@
       "fontMono": 2,
       "fontSans": 1,
       "roundedFull": 1
+    },
+    "src/components/progress/PhotoCompareCurtain.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 3,
+      "ariaLabel": 1,
+      "roundedFull": 4
     },
     "src/components/roadmap/ChallengeManager.tsx": {
       "clasesTokenEnUso": 72,

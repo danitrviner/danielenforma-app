@@ -23,6 +23,7 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm } from './QuestionnaireEditor';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
+import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Badge, Sheet } from './ui';
 
 const DIET_LABELS: Record<string, string> = {
@@ -372,20 +373,12 @@ export default function ClientReviewsPanel({
                       <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative rounded-surface overflow-hidden border border-hairline group">
-                        <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-hairline px-3 rounded-control text-white font-mono text-caption">
-                          Baseline · {fmtDate(baseline.date)}
-                        </div>
-                        <img className="w-full h-[280px] object-cover object-top filter grayscale-[20%] group-hover:filter-none transition-all duration-500" src={baseline.url} alt="Baseline" />
-                      </div>
-                      <div className="relative rounded-surface overflow-hidden border border-accent/20 group">
-                        <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
-                          Actual · {fmtDate(latest.date)}
-                        </div>
-                        <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
-                      </div>
-                    </div>
+                    <PhotoCompareCurtain
+                      antes={baseline}
+                      ahora={latest}
+                      badge={`${Math.max(1, Math.round((new Date(latest.date).getTime() - new Date(baseline.date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
+                      height={280}
+                    />
                   )}
                   {viewPhotos.length > 2 && (
                     <p className="text-center font-mono text-caption text-ink-2 mt-2">
@@ -950,17 +943,22 @@ export default function ClientReviewsPanel({
             );
           }
 
+          const latestKey = items.length > 0
+            ? (items[items.length - 1].kind === 'checkin' ? `c_${items[items.length - 1].data.id}` : `r_${items[items.length - 1].data.id}`)
+            : null;
+
           return (
             <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
-                <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Historial unificado</h3>
-                <span className="font-mono text-caption text-ink-2 ml-1">({items.length} entradas)</span>
+                <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Revisiones</h3>
+                <span className="font-mono text-caption text-ink-2 ml-1">({items.length} en el hilo)</span>
               </div>
               <div className="divide-y divide-hairline/40">
                 {items.map(item => {
                   const key = item.kind === 'checkin' ? `c_${item.data.id}` : `r_${item.data.id}`;
                   const isExpanded = expandedReviewId === key;
+                  const isLatest = key === latestKey;
                   const toggle = () => {
                     if (isExpanded) {
                       setExpandedReviewId(null);
@@ -980,7 +978,7 @@ export default function ClientReviewsPanel({
                       <div key={key}>
                         <div
                           onClick={toggle}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''} ${isLatest ? 'border-l-2 border-l-accent' : ''}`}
                         >
                           <span
                             className="material-symbols-outlined flex-shrink-0 text-title-m"
@@ -1138,7 +1136,7 @@ export default function ClientReviewsPanel({
                     <div key={key}>
                       <div
                         onClick={toggle}
-                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''} ${isLatest ? 'border-l-2 border-l-accent' : ''}`}
                       >
                         <span
                           className="material-symbols-outlined flex-shrink-0 text-title-m"
