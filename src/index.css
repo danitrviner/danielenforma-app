@@ -283,8 +283,132 @@
               en todas partes deja de indicar «esto es lo importante».        */
   --shadow-e1:   0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-e2:   0 12px 32px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 0 24px -6px rgba(251, 203, 26, 0.35);
+  --shadow-glow: 0 0 24px -6px rgba(255, 199, 44, 0.35);
 
+  /* ── Motion (F3.2) ──────────────────────────────────────────────────────────
+     Un solo easing para todo el sistema — el handoff es explícito: mezclar
+     curvas es lo que hace que una app se sienta cosida a trozos. `--ease-*` sí
+     tiene namespace propio en Tailwind v4 (genera la utilidad `ease-brand`);
+     las duraciones no [`--duration-N` de Tailwind ya genera Nms sin theme, así
+     que no hay hueco para un `--duration-base` con nombre] — se declaran como
+     variables sueltas en `:root`, justo después de este bloque, y se leen con
+     la sintaxis `duration-(--duration-base)` de Tailwind v4 o directamente en
+     el `animation` shorthand de las entradas de abajo.
+
+     Regla dura repetida en el handoff: las salidas son siempre más rápidas
+     que las entradas (`exit` 140 ms es el paso más corto de la escala) y los
+     números que el usuario lee mientras cambian —cronómetros, reps— no se
+     animan nunca, entren por donde entren. */
+  --ease-brand: cubic-bezier(0.2, 0.9, 0.2, 1);
+
+  /* Animaciones de entrada/estado nombradas — Tailwind v4 las expone como
+     `animate-fade-up`, `animate-scale-y-in`, etc. Sus `@keyframes` van justo
+     debajo, dentro de este mismo `@theme`: es el patrón que usa el propio
+     Tailwind para `animate-spin`/`animate-pulse` (ver
+     node_modules/tailwindcss/theme.css) — un `@theme` puede anidar `@keyframes`
+     y así el nombre corto y su definición viven en un solo sitio. */
+  --animate-fade-up:        fade-up var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-scale-y-in:     scale-y-in var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-skeleton-sweep: skeleton-sweep 1.4s linear infinite;
+  --animate-pulse-dot:      pulse-dot 1.6s var(--ease-brand) infinite;
+  --animate-ghost-tap:      ghost-tap 1.1s var(--ease-brand) infinite;
+  --animate-seal-pop:       seal-pop var(--duration-stagger-item) var(--ease-brand) both;
+
+  /* fade-up — entrada por defecto de tarjetas y filas escalonadas. */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* scale-y-in — barras de sparkline creciendo desde la base (transform-origin
+     lo fija el propio componente, no el keyframe: una barra crece hacia
+     arriba, un icono con esta animación crecería desde su centro). */
+  @keyframes scale-y-in {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+
+  /* skeleton-sweep — el barrido de luz de los esqueletos de carga. Gradiente y
+     color los pone el componente (Skeleton); esto solo mueve la posición. */
+  @keyframes skeleton-sweep {
+    from { background-position: -200% 0; }
+    to   { background-position: 200% 0; }
+  }
+
+  /* pulse-dot — el punto que late: "requiere acción" en Home Coach/CRM, "en
+     revisión" en los vacíos de Nutrición. Opacidad, no escala: un punto que
+     cambia de tamaño se lee como si fuera a desaparecer. */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+  }
+
+  /* ghost-tap — el anillo del tutorial que respira sobre el punto que hay que
+     tocar. Escala de .72 a 1.5 y se desvanece: nunca llega a 0 de golpe. */
+  @keyframes ghost-tap {
+    0%   { transform: scale(0.72); opacity: 0.9; }
+    70%  { transform: scale(1.15); opacity: 0.35; }
+    100% { transform: scale(1.5);  opacity: 0; }
+  }
+
+  /* seal-pop — el sello de check al cerrar un anillo (día de nutrición, semana
+     de cardio, cierre del tutorial). Rebote corto, nunca oscila más de una
+     vez: es una confirmación, no una celebración ruidosa. */
+  @keyframes seal-pop {
+    0%   { transform: scale(0.62); opacity: 0; }
+    55%  { transform: scale(1.07); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DURACIONES (F3.2)
+   Escala corta y nombrada por lo que hace, no por el número: así un
+   componente elige "esto es una salida" y no "yo diría que 140 ms". Fuera de
+   la tabla, prohibido — misma gobernanza que la escala tipográfica.
+   Se consumen con la sintaxis `duration-(--duration-x)` de Tailwind v4
+   (equivale a `duration-[var(--duration-x)]`) para transiciones normales, o
+   ya están incrustadas en los `--animate-*` de arriba para keyframes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --duration-exit:         140ms;  /* toda salida — siempre la más corta      */
+  --duration-state:        200ms;  /* cambio de color/estado                  */
+  --duration-base:         240ms;  /* press de botón, la mayoría de entradas  */
+  --duration-slide:        340ms;  /* lista→detalle, cambio de ejercicio      */
+  --duration-sheet:        380ms;  /* Sheet/hoja de Dani entrando             */
+  --duration-bar:          450ms;  /* ancho de barra de progreso              */
+  --duration-stagger-item: 550ms;  /* entrada de tarjeta/fila individual      */
+  --duration-ring:        1100ms;  /* anillo SVG cerrándose + sello           */
+}
+
+@layer utilities {
+  /* Stagger sin hook de JS: cada hijo lleva `style={{ '--i': idx }}` y esta
+     clase multiplica por 40 ms — el paso que fija el handoff entre elementos
+     de una misma lista. `--i` por defecto 0 para que un elemento suelto (sin
+     el estilo en línea) no herede un retraso de otra lista. */
+  .stagger-child {
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREFERS-REDUCED-MOTION
+   Anula duración e iteración de CUALQUIER transition/animation CSS —las
+   utilidades de Tailwind (`transition-*`, `duration-*`) y las `--animate-*`
+   de arriba por igual— sin tener que auditar cada componente uno a uno. Es
+   la anulación estándar (0.01ms, no 0ms: algunos navegadores tratan
+   duración 0 como "sin transición" y disparan el evento `transitionend` de
+   forma distinta). El motion dirigido por JavaScript (anillos con `rAF`, el
+   recorrido de scroll del tutorial, una cuenta atrás) no pasa por CSS: ese
+   usa el hook `useReducedMotion` (`ui/internal/useReducedMotion.ts`) para
+   decidir en el propio código si interpola o salta al estado final. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -15,7 +15,7 @@ import {
 } from '../utils/cardioMetrics';
 import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
-import { hapticZoneAlert } from '../services/cardioHaptics';
+import { haptics } from '../services/haptics';
 import { speak, cancelSpeech } from '../services/cardioVoice';
 import { grantXp } from '../utils/xp';
 import Skeleton from './Skeleton';
@@ -221,7 +221,7 @@ export default function CardioScreen({ profile }: Props) {
             const direction = getZoneAlertDirection(sample.bpm, profile.zones[alertZone]);
             if (direction !== 'in' && sample.at - lastAlertAtRef.current > ZONE_ALERT_COOLDOWN_MS) {
               lastAlertAtRef.current = sample.at;
-              void hapticZoneAlert();
+              void haptics.warning();
               speak(direction === 'high' ? 'Por encima de tu zona. Baja el ritmo.' : 'Por debajo de tu zona. Sube un poco.');
             }
           }
@@ -289,7 +289,7 @@ export default function CardioScreen({ profile }: Props) {
             sessionTargetZoneRef.current = blocks[nextIndex].targetZone;
             setDisplayBlockIndex(nextIndex);
             setDisplayBlockRemainingSec(blocks[nextIndex].durationSec);
-            void hapticZoneAlert();
+            void haptics.heavy();
             speak(blocks[nextIndex].label);
           } else {
             // Último bloque completado: la secuencia ha terminado sola.

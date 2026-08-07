@@ -1,6 +1,6 @@
 {
-  "generado": "2026-08-07T12:55:14.443Z",
-  "commit": "0f280ab",
+  "generado": "2026-08-07T13:03:40.830Z",
+  "commit": "1366628",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39299
@@ -24,7 +24,7 @@
     "ariaLabel": 30,
     "htmlFor": 1,
     "focusVisible": 33,
-    "reducedMotion": 0,
+    "reducedMotion": 2,
     "roundedSm": 0,
     "roundedMd": 0,
     "roundedLg": 0,
@@ -872,6 +872,9 @@
       "ariaLabel": 1,
       "focusVisible": 3,
       "roundedFull": 1
+    },
+    "src/components/ui/internal/useReducedMotion.ts": {
+      "reducedMotion": 2
     },
     "src/data/phasePresets.ts": {
       "hexLiterales": 6
