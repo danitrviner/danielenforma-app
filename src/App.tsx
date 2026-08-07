@@ -1,8 +1,8 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
-import { UserProfile, WeightCheckIn } from './types';
+import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete } from './dbService';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
@@ -274,6 +274,17 @@ function AppContent() {
 
   const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
 
+  // F3.13e: tipos que el coach silenció en Ajustes › Notificaciones. Vacío
+  // para el atleta (ese panel es coach-only, ver ProfileScreen).
+  const mutedNotifTypes = useMemo(() => {
+    const prefs = profile.notificationPrefs;
+    if (!prefs) return undefined;
+    const muted = (Object.entries(prefs) as [NotificationType, boolean | undefined][])
+      .filter(([, on]) => on === false)
+      .map(([type]) => type);
+    return muted.length ? new Set(muted) : undefined;
+  }, [profile.notificationPrefs]);
+
   // Mismo query key que HomeScreen — comparten caché, esto no dispara una
   // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
   // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
@@ -342,7 +353,7 @@ function AppContent() {
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
+            <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
             <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
               <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
@@ -362,7 +373,7 @@ function AppContent() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} />
+          <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
           <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>

@@ -7,6 +7,9 @@ import { Icon, EmptyState } from './ui';
 interface Props {
   recipientEmail: string;
   onNavigate: (tab: string) => void;
+  /** Tipos silenciados en Ajustes › Notificaciones (F3.13e) — se filtran aquí,
+   * en la lectura, no en la escritura (ver la nota en UserProfile.notificationPrefs). */
+  mutedTypes?: Set<AppNotification['type']>;
 }
 
 function timeAgo(iso: string): string {
@@ -34,13 +37,14 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   lesson_completed:        'play_lesson',
 };
 
-export default function NotificationBell({ recipientEmail, onNavigate }: Props) {
+export default function NotificationBell({ recipientEmail, onNavigate, mutedTypes }: Props) {
   const queryClient = useQueryClient();
   const queryKey = ['notifications', recipientEmail];
-  const { data: notifs = [], isPending: loading, refetch } = useQuery({
+  const { data: allNotifs = [], isPending: loading, refetch } = useQuery({
     queryKey,
     queryFn: async () => (await getNotifications(recipientEmail)).slice(0, 40),
   });
+  const notifs = mutedTypes?.size ? allNotifs.filter(n => !mutedTypes.has(n.type)) : allNotifs;
   const [open, setOpen]       = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn } from '../types';
+import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -39,6 +39,36 @@ type ExpandedSection = 'progress' | 'roadmap' | null;
 type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences';
 const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
 
+// Ajustes › Notificaciones (F3.13e) — SOLO los tipos que de verdad se generan
+// hacia el coach hoy (ver los `createNotificationDeduped(..., {recipientEmail:
+// coachEmail/COACH_EMAIL})` reales en ClientsScreen/CheckInScreen/HrTestsPanel).
+// El mockup del handoff pedía también "Entreno completado" y "Mensaje nuevo"
+// — no existen (no hay push real ni mensajería coach↔atleta en la app), así
+// que no se fingen aquí.
+const COACH_NOTIF_TYPES: { type: NotificationType; label: string; sub: string }[] = [
+  { type: 'checkin_late', label: 'Check-in atrasado', sub: 'Un atleta lleva más de una semana sin enviarlo' },
+  { type: 'plan_expiring', label: 'Plan por vencer', sub: 'El plan de un atleta caduca pronto, o ya venció' },
+  { type: 'questionnaire_submitted', label: 'Cuestionario enviado', sub: 'Un atleta envía una revisión' },
+  { type: 'hrtest_pending', label: 'Test de FC pendiente', sub: 'Un atleta espera tu aprobación de zonas' },
+];
+
+function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      style={{ padding: '2px' }}
+      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-white/12'}`}
+    >
+      <span
+        className={`block w-5 h-5 rounded-full bg-bg transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
+      />
+    </button>
+  );
+}
+
 export default function ProfileScreen({ profile, isCoach, checkins, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -53,6 +83,20 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
+  const [notifPrefs, setNotifPrefs] = useState(profile.notificationPrefs ?? {});
+
+  const toggleNotifPref = async (type: NotificationType) => {
+    const next = { ...notifPrefs, [type]: notifPrefs[type] === false ? true : false };
+    setNotifPrefs(next);
+    try {
+      await updateUserProfile(profile.userId, { notificationPrefs: next });
+      onRefreshProfile();
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo guardar la preferencia.');
+      setNotifPrefs(notifPrefs);
+    }
+  };
 
   // Questionnaire data for charts
   const { data: assignments = [] } = useQuery({
@@ -132,10 +176,13 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     try {
       await updateUserProfile(profile.userId, {
         displayName,
-        targetWeight: parseFloat(targetWeight) || profile.targetWeight,
-        avatarUrl
+        avatarUrl,
+        // targetWeight es una meta de ATLETA — el coach no tiene una, y el
+        // campo ni se le muestra (ver el <form> más abajo); no se toca en su
+        // guardado para no escribir un valor obsoleto de vuelta.
+        ...(isCoach ? {} : { targetWeight: parseFloat(targetWeight) || profile.targetWeight }),
       });
-      setSuccess('¡Perfil atleta actualizado correctamente!');
+      setSuccess(isCoach ? '¡Perfil actualizado!' : '¡Perfil atleta actualizado correctamente!');
       onRefreshProfile();
     } catch (err) {
       console.error(err);
@@ -149,6 +196,11 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     if (id === 'questionnaires') return questionnaires.length > 0 && responses.length > 0;
     if (id === 'ficha') return !isCoach;
     if (id === 'preferences') return !isCoach && !!onboarding && !editingFicha;
+    // F3.13e: 'gamification' (XP/nivel/racha) y 'bodyweight' son datos de
+    // ATLETA — antes se pintaban igual para el coach (bug real, sin sentido:
+    // un coach no tiene meta de peso ni racha de check-ins). La tarjeta de
+    // identidad del coach vive aparte, fuera de este listado reordenable.
+    if (id === 'gamification' || id === 'bodyweight') return !isCoach;
     return true;
   });
 
@@ -258,9 +310,25 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     <div className="space-y-6">
       <PageHeader
         title="Mi Perfil"
-        subtitle="Progreso, gráficas y ficha."
+        subtitle={isCoach ? 'Tu cuenta y tus ajustes.' : 'Progreso, gráficas y ficha.'}
         action={<span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>}
       />
+
+      {/* Tarjeta de identidad del coach (F3.13e) — antes esta pantalla le
+          pintaba al coach los mismos bloques de gamificación/peso del
+          atleta (XP, racha, meta de peso), que no significan nada para él.
+          Fuera del listado reordenable a propósito: no es contenido de
+          progreso, es quién eres. */}
+      {isCoach && (
+        <div className="bg-surface border border-hairline rounded-canvas p-5 flex items-center gap-4">
+          <img src={profile.avatarUrl} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-accent/40 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="font-sans font-bold text-title-m text-white truncate">{profile.displayName}</h3>
+            <p className="font-sans text-caption text-ink-2 truncate">{profile.email}</p>
+            <p className="font-sans text-caption text-accent uppercase tracking-widest mt-1">Coach</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Progreso y Road map absorbidos (F3.11, módulo 11: "Perfil absorbe
           Check-in y Road map") — CheckInScreen/AthleteRoadmapScreen se
@@ -345,21 +413,43 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
         <div className="space-y-6">
           <form onSubmit={handleUpdate} className="space-y-4">
-            <Input label="Nombre deportivo" required value={displayName} onChange={setDisplayName} />
-            <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={targetWeight}
-                onChange={(e) => setTargetWeight(e.target.value)}
-                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
-              />
-            </div>
+            <Input label={isCoach ? 'Nombre' : 'Nombre deportivo'} required value={displayName} onChange={setDisplayName} />
+            {!isCoach && (
+              <div>
+                <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={targetWeight}
+                  onChange={(e) => setTargetWeight(e.target.value)}
+                  className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
+                />
+              </div>
+            )}
             <Input label="Avatar (URL de imagen)" type="url" value={avatarUrl} onChange={setAvatarUrl} />
             <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
             {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
           </form>
+
+          {isCoach && (
+            <div className="space-y-2">
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <Icon name="notifications" size="m" className="text-accent" />
+                Notificaciones
+              </h3>
+              <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
+                {COACH_NOTIF_TYPES.map(n => (
+                  <div key={n.type} className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="font-sans text-caption font-bold text-white">{n.label}</p>
+                      <p className="font-sans text-caption text-ink-3">{n.sub}</p>
+                    </div>
+                    <Switch on={notifPrefs[n.type] !== false} onToggle={() => toggleNotifPref(n.type)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {isCoach && (
             showCoaches ? (

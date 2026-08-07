@@ -119,6 +119,13 @@ export interface UserProfile {
     leccionRir: boolean;
   };
 
+  // ── Preferencias de notificaciones (F3.13e) ────────────────────────────────
+  // Silencia un tipo en la campanita (NotificationBell) — NO evita que se
+  // escriba en Firestore (createNotificationDeduped no lee esto: hacerlo
+  // añadiría una lectura extra en cada notificación de la app entera, atleta
+  // incluido). Ausente o `true` ⇒ activada; solo `false` la silencia.
+  notificationPrefs?: Partial<Record<NotificationType, boolean>>;
+
   // ── Churn + atribución (2026-08-02) ────────────────────────────────────────
   // Sin fechaBaja/motivoBaja, marcar a alguien de baja pierde para siempre
   // CUÁNDO y POR QUÉ — y el churn (KPI real del negocio, objetivo <10%) queda
@@ -218,6 +225,90 @@ export interface ExercisePersonalNote {
   athleteId: string; // email
   observation: string;
   updatedAt: string; // ISO timestamp
+}
+
+// ─── CATÁLOGO DE MÁQUINAS DE GIMNASIO ─────────────────────────────────────────
+// Eje SEPARADO de `Exercise.equipment[]` (texto libre, taxonomía divergente): esto
+// describe máquinas concretas de marca concreta que existen físicamente en el
+// gimnasio del atleta. La relación máquina→ejercicio NO está implementada; ver
+// docs/catalogo-maquinas.md para el diseño de la colección puente futura.
+//
+// El catálogo publicado vive como JSON en src/data/maquinas/<marca>.json (entra en
+// el bundle, cero lecturas de Firestore); la colección `maquinas` guarda SOLO los
+// cambios del admin sobre esa semilla y las máquinas creadas a mano. El catálogo
+// efectivo es el merge de ambos — ver src/db/machines.ts.
+
+// Abierto a propósito: añadir Panatta/Matrix/Prime es un importador nuevo, no un
+// cambio de tipo. Los literales están para autocompletado de lo ya importado.
+export type MarcaMaquina = 'hammerStrength' | 'technogym' | (string & {});
+
+export const MARCA_LABELS: Record<string, string> = {
+  hammerStrength: 'Hammer Strength',
+  technogym: 'Technogym',
+};
+
+export interface Maquina {
+  // Slug determinista `${marca}-${familia}-${nombreOriginal}` calculado en el
+  // importador y congelado en el JSON. A diferencia de los IDs de `Exercise`
+  // (autogenerados por addDoc, irreproducibles entre entornos), reimportar no
+  // duplica ni renumera. Es la garantía de las migraciones y de la futura
+  // relación con ejercicios.
+  id: string;
+  nombreOriginal: string;   // 'Iso-Lateral Incline Press' — nunca se le muestra al atleta
+  nombreMostrado: string;   // 'Press inclinado' — lo único que ve el atleta
+  marca: MarcaMaquina;
+  familia: string;          // 'Plate Loaded' | 'Pure Strength'
+  categoria: MuscleGroup;   // agrupa el swipe; reutiliza el enum ya tipado
+  fotoUrl: string;          // ruta relativa a public/ para el catálogo, URL de Storage para las manuales
+  fuente: 'scraping' | 'manual';
+  visible: boolean;
+  publicadoEn: string | null; // null = importada pero sin revisar; el scraping nunca publica directo
+  creadoPor: 'admin' | 'sistema';
+}
+
+// Lo que el admin cambia sobre una máquina de la semilla. Es lo único que se
+// guarda en Firestore para las máquinas importadas — un doc por máquina tocada,
+// no uno por máquina del catálogo.
+export interface MaquinaOverride extends Partial<Omit<Maquina, 'id'>> {
+  id: string;
+  actualizadoEn: string;
+}
+
+export interface DecisionMaquina {
+  maquinaId: string;
+  tengo: boolean;
+  decididoEn: string; // ISO
+}
+
+// Máquina que el atleta añade con foto propia. Vive SOLO en su gimnasio; nunca
+// entra al catálogo global hasta que un admin la promueve.
+export interface MaquinaPropia {
+  id: string;
+  nombre: string;
+  fotoUrl: string;
+  creadaEn: string;
+  candidataAPublica: boolean;
+}
+
+export interface ProgresoCatalogo {
+  revisadas: number;
+  total: number;
+  categoriaActual: MuscleGroup | null;
+  completado: boolean;
+  // true si el atleta cerró el onboarding sin completar el catálogo. Lo leen
+  // PendingTasksPanel (tarjeta en Hoy) y el badge de la pestaña.
+  pendienteRecordatorio: boolean;
+  // Versión del catálogo con la que se completó. Sin esto, al importar una marca
+  // nueva el atleta que ya terminó queda `completado: true` para siempre y nunca
+  // ve las máquinas añadidas.
+  versionCatalogo: string;
+}
+
+export interface Gimnasio {
+  atletaId: string; // email — misma convención que onboarding/, tasks, progressPhotos
+  maquinas: DecisionMaquina[];
+  progresoCatalogo: ProgresoCatalogo;
+  maquinasPropias: MaquinaPropia[];
 }
 
 // High-intensity techniques a coach can flag on an exercise so the athlete sees a
