@@ -4,10 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { getCrmServicios } from '../../../dbService';
 import { useClientes } from '../hooks/useClientes';
 import { servicioActual } from '../hooks/useServicios';
+import { useSuscripciones } from '../hooks/useSuscripciones';
 import { crmKeys } from '../lib/crmQueries';
 import { normalizarDni, formatDni } from '../lib/identidad';
 import { formatEurosCompacto } from '../lib/dinero';
 import DataTable, { Columna } from '../components/DataTable';
+import ClientesActionList from '../components/ClientesActionList';
 import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import NuevoClienteModal from '../components/NuevoClienteModal';
@@ -34,7 +36,7 @@ const FILTROS: { id: EstadoCrm | 'todos'; label: string }[] = [
   { id: 'baja',             label: 'Bajas' },
 ];
 
-export default function ClientesList() {
+export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -42,6 +44,10 @@ export default function ClientesList() {
 
   const filtro = (params.get('estado') as EstadoCrm | 'todos') || 'todos';
   const busqueda = params.get('q') ?? '';
+  // Solo "Activos" tiene suscripción que vigilar — leads, llamadas, pausados
+  // y bajas no encajan en Requiere-acción/Al-día, así que se quedan en la
+  // tabla de siempre. Ver la decisión de alcance en el plan de F3.13d.
+  const vistaPorSuscripcion = filtro === 'activo';
 
   const setParam = (clave: string, valor: string) => {
     const next = new URLSearchParams(params);
@@ -55,6 +61,8 @@ export default function ClientesList() {
     queryKey: crmKeys.servicios,
     queryFn: getCrmServicios,
   });
+
+  const { data: suscripciones = [], isPending: cargandoSuscripciones } = useSuscripciones();
 
   // Un solo agrupado por cliente en vez de filtrar la lista entera por cada
   // fila (que sería O(clientes × servicios) en cada render).
@@ -197,32 +205,41 @@ export default function ClientesList() {
         </div>
       </div>
 
-      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
-        <DataTable
-          columnas={columnas}
-          filas={filas}
-          keyOf={c => c.id}
-          cargando={isPending}
-          error={Boolean(error)}
-          onRowClick={c => navigate(`/crm/clientes/${c.id}`)}
-          vacio={
-            clientes.length === 0 ? (
-              <EmptyState
-                icon="group"
-                titulo="Aún no hay clientes"
-                descripcion="Crea el primero a mano, o importa tu cartera desde una hoja de cálculo."
-                cta={{ label: 'Nuevo cliente', onClick: () => setModalAbierto(true) }}
-              />
-            ) : (
-              <EmptyState
-                icon="search_off"
-                titulo="Ningún cliente coincide"
-                descripcion="Prueba con otro término o quita el filtro de estado."
-              />
-            )
-          }
+      {vistaPorSuscripcion && !error ? (
+        <ClientesActionList
+          clientes={filas}
+          suscripciones={suscripciones}
+          coachEmail={coachEmail}
+          cargando={isPending || cargandoSuscripciones}
         />
-      </div>
+      ) : (
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
+          <DataTable
+            columnas={columnas}
+            filas={filas}
+            keyOf={c => c.id}
+            cargando={isPending}
+            error={Boolean(error)}
+            onRowClick={c => navigate(`/crm/clientes/${c.id}`)}
+            vacio={
+              clientes.length === 0 ? (
+                <EmptyState
+                  icon="group"
+                  titulo="Aún no hay clientes"
+                  descripcion="Crea el primero a mano, o importa tu cartera desde una hoja de cálculo."
+                  cta={{ label: 'Nuevo cliente', onClick: () => setModalAbierto(true) }}
+                />
+              ) : (
+                <EmptyState
+                  icon="search_off"
+                  titulo="Ningún cliente coincide"
+                  descripcion="Prueba con otro término o quita el filtro de estado."
+                />
+              )
+            }
+          />
+        </div>
+      )}
 
       {modalAbierto && <NuevoClienteModal onCerrar={() => setModalAbierto(false)} />}
       {importarAbierto && (

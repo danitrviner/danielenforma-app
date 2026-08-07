@@ -52,7 +52,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
 
       <Routes>
         <Route index element={<DashboardScreen />} />
-        <Route path="clientes" element={<ClientesList />} />
+        <Route path="clientes" element={<ClientesList coachEmail={coachEmail} />} />
         <Route path="clientes/:id" element={<ClienteDetail coachEmail={coachEmail} />} />
         <Route path="pagos" element={<PagosScreen coachEmail={coachEmail} />} />
         <Route path="reuniones" element={<ReunionesScreen coachEmail={coachEmail} />} />
