@@ -6,6 +6,11 @@ export interface AdherenceResult {
   score: number;           // 0-100
   trainingScore: number | null;  // null = sin datos de entreno
   checkinScore: number;
+  // false = ni entrenos ni check-ins en las últimas 4 semanas. `score` da 0 en
+  // ese caso por ausencia de datos, NO por mal desempeño — un atleta recién
+  // invitado no debería verse "0% · En riesgo" en rojo (F3.13f, panel "datos
+  // insuficientes": nunca una gráfica/indicador que finja saber algo que no sabe).
+  hasData: boolean;
 }
 
 export function computeAdherenceScore(
@@ -42,7 +47,7 @@ export function computeAdherenceScore(
     ? Math.round(checkinScore)
     : Math.round(trainingScore * 0.5 + checkinScore * 0.5);
 
-  return { score, trainingScore, checkinScore };
+  return { score, trainingScore, checkinScore, hasData: wa.length > 0 || wc.length > 0 };
 }
 
 export interface ScoreStyle {
@@ -50,6 +55,13 @@ export interface ScoreStyle {
   bg:    string;
   label: string;
 }
+
+// Estilo neutro para cuando `AdherenceResult.hasData` es false — mismo shape
+// que devuelve `scoreStyle`, para que el llamante no tenga que ramificar el
+// className, solo qué función/constante usar.
+export const SIN_DATOS_ADHERENCIA: ScoreStyle = {
+  text: 'text-ink-3', bg: 'bg-white/4 border-hairline', label: 'Sin datos aún',
+};
 
 export function scoreStyle(score: number): ScoreStyle {
   if (score >= 75) return { text: 'text-success', bg: 'bg-success/10 border-success/20', label: 'Buena adherencia' };

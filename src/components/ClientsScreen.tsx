@@ -8,7 +8,7 @@ import HomeCoachScreen from './HomeCoachScreen';
 import ResourcesPanel from './ResourcesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
-import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
@@ -218,6 +218,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         sortScore,
         setupPct,
         adherenceScore: adherence.score,
+        adherenceHasData: adherence.hasData,
       };
     }).sort((a, b) => a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
@@ -462,8 +463,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {
               const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
-                      totalCheckCount, pendingCount, adherenceScore, setupPct } = athlete;
-              const adh = scoreStyle(adherenceScore);
+                      totalCheckCount, pendingCount, adherenceScore, adherenceHasData, setupPct } = athlete;
+              const adh = adherenceHasData ? scoreStyle(adherenceScore) : SIN_DATOS_ADHERENCIA;
               const needsAttention = planExpired || planSoon || checkinLate;
 
               return (
@@ -541,7 +542,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                           <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
                           {adh.label}
                         </span>
-                        <span className={`text-body-s font-bold ${adh.text}`}>{adherenceScore}</span>
+                        <span className={`text-body-s font-bold ${adh.text}`}>{adherenceHasData ? adherenceScore : '—'}</span>
                       </div>
                     </div>
                   </div>

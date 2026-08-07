@@ -203,8 +203,18 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         <Skeleton className="h-[180px] w-full" />
       ) : (
         <>
+          {/* Con 1 solo registro, un LineChart dibuja un punto suelto sin línea
+              — no es falso, pero tampoco dice nada útil (F3.13f, "nunca una
+              gráfica que finja saber una tendencia que no tiene"). Se pide
+              explícitamente el segundo dato en vez de fingir el gráfico. */}
+          {logs.length === 1 && (
+            <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
+              <Icon name="show_chart" size="m" className="text-accent shrink-0" />
+              <p className="font-sans text-caption text-ink-2">Con un registro más dibujamos tu tendencia.</p>
+            </div>
+          )}
           {/* Chart */}
-          {logs.length > 0 && (
+          {logs.length > 1 && (
             <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
               <LineChart data={chartData} margin={MARGEN_GRAFICA}>
                 <CartesianGrid {...REJILLA_GRAFICA} />

@@ -9,7 +9,7 @@ import {
   OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
-import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
@@ -298,7 +298,7 @@ export default function ClientHub({
   );
 
   const adherence = computeAdherenceScore(assignments, athleteCheckins);
-  const adh        = scoreStyle(adherence.score);
+  const adh        = adherence.hasData ? scoreStyle(adherence.score) : SIN_DATOS_ADHERENCIA;
 
   // ── Resumen del Hub (F3.13b) ──────────────────────────────────────────────
   // Fila de KPIs de la cabecera: peso más reciente (con el mismo fallback que
@@ -427,7 +427,7 @@ export default function ClientHub({
         {/* Resumen: adherencia / peso / RIR medio + plan sin publicar / próxima
             revisión (F3.13b, "Hub del atleta") */}
         <ClientHubSummary
-          adherenceScore={adherence.score}
+          adherenceScore={adherence.hasData ? adherence.score : null}
           adherenceStyle={adh}
           latestWeight={latestWeight}
           averageRir={avgRir}

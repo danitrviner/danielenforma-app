@@ -13,7 +13,9 @@ import { Banner, Button } from './ui';
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
-  adherenceScore: number;
+  /** null = sin entrenos ni check-ins en las últimas 4 semanas (atleta recién
+   * invitado) — se pinta "—", nunca "0%", que leería como mal desempeño. */
+  adherenceScore: number | null;
   adherenceStyle: ScoreStyle;
   latestWeight: number | null;
   averageRir: number | null;
@@ -36,7 +38,9 @@ export default function ClientHubSummary({
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-field border border-hairline rounded-field p-3">
           <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Adherencia</p>
-          <p className={`font-display font-black text-title-m mt-2 ${adherenceStyle.text}`}>{adherenceScore}%</p>
+          <p className={`font-display font-black text-title-m mt-2 ${adherenceStyle.text}`}>
+            {adherenceScore != null ? `${adherenceScore}%` : '—'}
+          </p>
           <p className={`font-mono text-caption uppercase mt-1 ${adherenceStyle.text}`}>{adherenceStyle.label}</p>
         </div>
         <div className="bg-field border border-hairline rounded-field p-3">
