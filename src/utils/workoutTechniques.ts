@@ -1,13 +1,14 @@
 import { WorkoutTechnique } from '../types';
 
-// Emoji instead of material-symbols so the badge always renders regardless of
-// icon-font glyph coverage (the app already does this for gamification badges,
-// see ProfileScreen.tsx) — and 💀 is what was explicitly asked for on AMRAP.
+// Emoji instead of material-symbols so la insignia siempre se ve, sin
+// depender de que la fuente de iconos haya cargado ya (mismo patrón que la
+// gamificación de ProfileScreen.tsx) — 💀 es lo que pidió Dani para AMRAP.
 export const TECHNIQUE_EMOJI: Record<WorkoutTechnique, string> = {
   amrap:     '💀',
   dropset:   '⬇️',
   myoreps:   '🔄',
   restpause: '⏸️',
+  fallo:     '🔥',
 };
 
 export const TECHNIQUE_LABEL: Record<WorkoutTechnique, string> = {
@@ -15,13 +16,24 @@ export const TECHNIQUE_LABEL: Record<WorkoutTechnique, string> = {
   dropset:   'Drop-set',
   myoreps:   'Myo-reps',
   restpause: 'Rest-pause',
+  fallo:     'Al fallo',
 };
 
+/**
+ * Fase 3: tokens del DS en vez de los colores de Tailwind sueltos (red-400,
+ * orange-400, violet-400, blue-400) que llevaba antes — la escala de estado
+ * del sistema no tiene un tono por técnica, así que se reparten los cuatro
+ * disponibles + `data` (en retirada, pero es exactamente el caso "distinto y
+ * no es una acción" que todavía lo justifica). AMRAP y FALLO comparten
+ * `danger`: son la misma familia de intensidad ("hasta que no puedas más"),
+ * el emoji y la etiqueta ya los distinguen.
+ */
 export const TECHNIQUE_COLOR: Record<WorkoutTechnique, string> = {
-  amrap:     'text-red-400 border-red-500/30 bg-red-500/10',
-  dropset:   'text-orange-400 border-orange-500/30 bg-orange-500/10',
-  myoreps:   'text-violet-400 border-violet-500/30 bg-violet-500/10',
-  restpause: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+  amrap:     'text-danger border-danger/30 bg-danger/10',
+  dropset:   'text-warning border-warning/30 bg-warning/10',
+  myoreps:   'text-info border-info/30 bg-info/10',
+  restpause: 'text-data border-data/30 bg-data/10',
+  fallo:     'text-danger border-danger/30 bg-danger/10',
 };
 
 export const TECHNIQUE_DESCRIPTION: Record<WorkoutTechnique, string> = {
@@ -33,6 +45,8 @@ export const TECHNIQUE_DESCRIPTION: Record<WorkoutTechnique, string> = {
     'Haz una serie de activación hasta cerca del fallo, descansa 15-20s, y encadena varias mini-series de 3-5 repeticiones con el mismo peso hasta que no puedas completar el mínimo.',
   restpause:
     'Al llegar al fallo, descansa 10-15s respirando (sin soltar el peso si es posible) y haz unas repeticiones más. Repite 1-2 veces más.',
+  fallo:
+    'Serie a fallo real: sigue hasta que la técnica se rompa, no hasta un número de repeticiones prefijado.',
 };
 
-export const TECHNIQUES: WorkoutTechnique[] = ['amrap', 'dropset', 'myoreps', 'restpause'];
+export const TECHNIQUES: WorkoutTechnique[] = ['amrap', 'dropset', 'myoreps', 'restpause', 'fallo'];

@@ -1,27 +1,27 @@
 {
-  "generado": "2026-08-07T13:57:45.234Z",
-  "commit": "2c4d05f",
+  "generado": "2026-08-07T14:13:24.783Z",
+  "commit": "628f7b0",
   "totales": {
     "archivosTsx": 158,
-    "lineasTsx": 40575
+    "lineasTsx": 40579
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4710,
+    "clasesTokenEnUso": 4733,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 950,
-    "fontSans": 903,
-    "pesosProhibidos": 26,
+    "fontMono": 945,
+    "fontSans": 895,
+    "pesosProhibidos": 28,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 252,
-    "animatePulse": 28,
-    "ariaLabel": 41,
+    "transitionAll": 242,
+    "animatePulse": 27,
+    "ariaLabel": 40,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 2,
@@ -99,7 +99,7 @@
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
-        "lineas": 1006
+        "lineas": 1010
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
@@ -621,13 +621,11 @@
       "roundedFull": 1
     },
     "src/components/TrainingScreen.tsx": {
-      "clasesTokenEnUso": 164,
-      "fontMono": 48,
-      "fontSans": 18,
-      "pesosProhibidos": 1,
-      "transitionAll": 11,
-      "animatePulse": 1,
-      "ariaLabel": 1,
+      "clasesTokenEnUso": 172,
+      "fontMono": 43,
+      "fontSans": 10,
+      "pesosProhibidos": 3,
+      "transitionAll": 1,
       "roundedFull": 6
     },
     "src/components/WeeklyAnalysisButton.tsx": {
@@ -1090,6 +1088,9 @@
     },
     "src/utils/planNutritionBridge.test.ts": {
       "hexLiterales": 1
+    },
+    "src/utils/workoutTechniques.ts": {
+      "clasesTokenEnUso": 15
     },
     "index.html": {
       "clasesTokenEnUso": 4

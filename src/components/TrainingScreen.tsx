@@ -12,13 +12,15 @@ import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTIO
 import { generateWarmup } from '../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
+import { prefillWorkoutSets } from '../utils/setPrefill';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
-import { Badge, BadgeTone, Dialog, Button, Icon } from './ui';
+import { haptics } from '../services/haptics';
+import { Badge, BadgeTone, Dialog, Button, Icon, ProgressBar, SegmentedControl, Chip, EmptyState } from './ui';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -28,11 +30,35 @@ interface TrainingScreenProps {
 
 type MainTab = 'programa' | 'progresion';
 
+/** `rir` guarda '0'-'5' o el literal 'fallo' — Fase 3: FALLO no es RIR 0
+ * (decisión de Dani, 2026-08-07), así que necesita su propio valor, no un
+ * número reservado. */
 interface SetInput {
   weight: string;
   repsDone: string;
   rir: string;
   done: boolean;
+}
+
+/** Orden de ciclo del selector compacto de la tabla: el valor más bajo (serie
+ * más dura) primero, con FALLO como un séptimo escalón aparte, no dentro del
+ * 0-5. */
+const RIR_OPCIONES = ['fallo', '0', '1', '2', '3', '4', '5'] as const;
+
+function rirTexto(valor: string): string {
+  return valor === 'fallo' ? 'FALLO' : valor;
+}
+
+/** Mismo criterio de color que la primitiva RirScale (ui/RirScale.tsx),
+ * aplicado aquí a un `<select>` nativo en vez de a los 7 botones de la
+ * primitiva: la tabla no tiene sitio para el selector completo por fila, así
+ * que el toque abre la rueda nativa y esto solo pinta el valor ya elegido. */
+function rirClaseColor(valor: string): string {
+  if (valor === 'fallo') return 'text-danger';
+  const n = Number(valor);
+  if (n <= 1) return 'text-accent';
+  if (n <= 3) return 'text-accent/70';
+  return 'text-ink-2';
 }
 
 interface SessionCelebration {
@@ -197,30 +223,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
 
   // ── Player helpers ─────────────────────────────────────────────────────────
-  // Top-set/back-off-set blocks (setGroups) expand into one row per set, each carrying
-  // its own target RIR — a plain uniform exercise expands into `sets` identical rows.
-  const initPlayerSets = (workout: Workout): SetInput[][] =>
-    workout.exercises
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map(we => expandSetGroups(we).map(row => ({
-        weight: '',
-        repsDone: '',
-        rir: String(row.rir),
-        done: false,
-      })));
-
+  // Fase 3 (decisión de Dani, 2026-08-07 — "Registro editable en la sesión"):
+  // la tabla llega PRERRELLENADA con lo del último día y el atleta corrige,
+  // no un campo vacío con el dato anterior solo como referencia gris. La
+  // lógica vive en utils/setPrefill.ts (testeada ahí) para no depender de
+  // montar todo el player en el test.
   const openPlayer = (assignment: WorkoutAssignment) => {
     const wo = getWorkout(assignment.workoutId);
     if (!wo) return;
-    setActiveAssignment(assignment);
-    setActiveWorkout(wo);
-    setPlayerSets(initPlayerSets(wo));
-    setExerciseNoteInputs(wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
-    setWorkoutNoteInput('');
-    setCelebration(null);
 
-    // For each exercise in the workout, find the most recent logged set across ALL previous sessions
+    // Para cada ejercicio de la rutina, la sesión registrada más reciente
+    // entre TODAS las sesiones anteriores — es lo que rellena la tabla.
     const sortedPrev = logs
       .filter(l => l.date < assignment.date)
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -234,6 +247,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         }
       }
     }
+
+    setActiveAssignment(assignment);
+    setActiveWorkout(wo);
+    setPlayerSets(prefillWorkoutSets(wo, entries));
+    setExerciseNoteInputs(wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
+    setWorkoutNoteInput('');
+    setCelebration(null);
     setPrevEntries(entries);
   };
 
@@ -268,7 +288,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             .map(s => ({
               weight: parseFloat(s.weight) || 0,
               repsDone: parseInt(s.repsDone) || 0,
-              rir: parseInt(s.rir) || 0,
+              rir: s.rir === 'fallo' ? 0 : parseInt(s.rir) || 0,
+              alFallo: s.rir === 'fallo',
             })),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
         }))
@@ -309,6 +330,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ));
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
       setRestTimer(null);
+      void haptics.success();
       // El modal de celebración se muestra ANTES de cerrar el player — el
       // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
       setCelebration({ isFirstEver, totalSets, tonnage, prs });
@@ -360,28 +382,26 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       >
         <div className="flex items-center gap-4">
           <div className={`w-10 h-10 rounded-surface flex items-center justify-center flex-shrink-0 ${
-            a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400'
+            a.status === 'completed' ? 'bg-success/15 text-success'
             : a.status === 'skipped'  ? 'bg-raised text-ink-2'
-            : a.status === 'perdido'  ? 'bg-red-500/10 text-red-300'
+            : a.status === 'perdido'  ? 'bg-danger/10 text-danger'
             : isNext ? 'bg-accent/15 text-accent'
             : 'bg-raised text-ink-2'
           }`}>
-            <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>
-              {a.status === 'completed' ? 'check_circle'
+            <Icon
+              name={a.status === 'completed' ? 'check_circle'
                 : a.status === 'skipped' ? 'skip_next'
                 : a.status === 'perdido' ? 'event_busy'
                 : isNext || isToday ? 'bolt' : 'fitness_center'}
-            </span>
+              size="m"
+              filled
+            />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-sans font-bold text-white text-title-s">{wo?.name || 'Rutina'}</p>
-              {isNext && a.status === 'pending' && (
-                <span className="text-caption font-mono bg-accent/15 text-accent border border-accent/30 px-2 rounded-control uppercase font-bold">Siguiente</span>
-              )}
-              {!isNext && isPast && a.status === 'pending' && (
-                <span className="text-caption font-mono bg-red-500/10 text-red-300 border border-red-500/20 px-2 rounded-control uppercase font-bold">Atrasado</span>
-              )}
+              <p className="font-sans font-bold text-ink text-title-s">{wo?.name || 'Rutina'}</p>
+              {isNext && a.status === 'pending' && <Badge tone="accent">Siguiente</Badge>}
+              {!isNext && isPast && a.status === 'pending' && <Badge tone="danger">Atrasado</Badge>}
             </div>
             <p className="font-mono text-label text-ink-2 ">
               {formatDate(a.date)} · {wo ? `${wo.exercises.length} ejercicio${wo.exercises.length !== 1 ? 's' : ''}` : '—'}
@@ -392,27 +412,15 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
           {canAct && (
             <>
-              <button
-                onClick={() => handleSkip(a)}
-                className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono text-caption uppercase font-bold rounded-control active:scale-95 transition-all"
-              >
-                <span className="material-symbols-outlined text-body-s">skip_next</span>
-                Saltar
-              </button>
+              <Button variant="secondary" size="s" icon="skip_next" onClick={() => handleSkip(a)}>Saltar</Button>
               {wo && (
-                <button
-                  onClick={() => openPlayer(a)}
-                  className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
-                >
-                  <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+                <Button variant="primary" size="s" icon="play_circle" onClick={() => openPlayer(a)}>
                   {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
-                </button>
+                </Button>
               )}
             </>
           )}
-          {a.status === 'completed' && (
-            <span className="material-symbols-outlined text-emerald-400 text-title-m" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
-          )}
+          {a.status === 'completed' && <Icon name="task_alt" size="l" filled className="text-success" />}
         </div>
       </div>
     );
@@ -427,17 +435,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div className="space-y-6 pb-14">
         {/* Player header */}
-        <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg z-[var(--z-sticky)] pt-2">
-          <button
+        <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2">
+          <Button
+            variant="ghost"
+            size="s"
+            icon="arrow_back"
+            label="Volver"
             onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
-            className="flex items-center gap-2 text-label font-mono text-ink-2 hover:text-white border border-hairline hover:border-hairline px-3 py-2 rounded-control transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-body-s">arrow_back</span>
-            Volver
-          </button>
+            className="shrink-0"
+          />
           <div className="flex-1 min-w-0">
-            <h1 className="font-sans font-bold text-title-m text-white truncate">{activeWorkout.name}</h1>
-            <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · {orderedExercises.length} ejercicios</p>
+            <h1 className="font-display text-title-l font-black uppercase tracking-tight text-ink truncate">{activeWorkout.name}</h1>
+            <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · EJERCICIO {orderedExercises.length}</p>
           </div>
           <div className="flex-shrink-0 text-right">
             <span className="font-mono text-label text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
@@ -445,37 +454,32 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </header>
 
-        {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI */}
+        {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI.
+            Pastilla oro con punto que late mientras cuenta (handoff, Sesión
+            módulo 3): al llegar a 0 el icono deja de latir y el texto pasa a
+            "¡Listo!" un instante antes de cerrarse sola. */}
         {restTimer && (
-          <div className="fixed top-20 right-4 z-40 bg-surface border border-accent/40 rounded-surface pl-4 pr-2 py-2 shadow-e1 flex items-center gap-3">
-            <span
-              className={`material-symbols-outlined text-accent text-title-m ${restTimer.secondsLeft > 0 ? '' : 'animate-pulse'}`}
-            >timer</span>
+          <div className="fixed top-20 right-4 z-[var(--z-fab)] flex items-center gap-3 rounded-full border border-accent-line bg-surface py-2 pl-4 pr-2 shadow-e1">
+            <span className="relative flex h-2 w-2" aria-hidden>
+              {restTimer.secondsLeft > 0 && (
+                <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-accent" />
+              )}
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+            </span>
             <div className="leading-none">
-              <p className="font-mono text-title-m font-bold text-white tabular-nums">
+              <p className="font-mono text-title-m font-bold tabular-nums text-ink">
                 {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
               </p>
-              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide ">
+              <p className="font-mono text-caption uppercase tracking-wide text-ink-2">
                 {restTimer.secondsLeft > 0 ? 'Descanso' : '¡Listo!'}
               </p>
             </div>
-            <button
-              onClick={() => setRestTimer(null)}
-              aria-label="Saltar descanso"
-              className="text-ink-2/60 hover:text-white p-1 -m-1"
-            >
-              <span className="material-symbols-outlined text-title-s">close</span>
-            </button>
+            <Button variant="ghost" size="s" icon="close" label="Saltar descanso" onClick={() => setRestTimer(null)} />
           </div>
         )}
 
         {/* Progress bar */}
-        <div className="h-1.5 bg-raised rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent rounded-full transition-all duration-300"
-            style={{ width: totalSets > 0 ? `${(doneSetsTotal / totalSets) * 100}%` : '0%' }}
-          />
-        </div>
+        <ProgressBar value={totalSets > 0 ? (doneSetsTotal / totalSets) * 100 : 0} label={`${doneSetsTotal} de ${totalSets} series hechas`} />
 
         {/* Stat tiles: real progress metrics */}
         <div className="grid grid-cols-2 gap-3">
@@ -516,18 +520,19 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 we.recordVideoSet ? 'border-accent/50' : 'border-hairline'
               }`}
             >
-              {/* Exercise header */}
+              {/* Exercise header — nombre en Archivo 900 (handoff, Sesión): es
+                  el único titular de la tarjeta, todo lo demás es dato o chip. */}
               <div className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
-                <span className="font-mono text-caption text-ink-2/50 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
+                <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-hairline flex-shrink-0" />
                 ) : (
                   <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
+                    <Icon name="fitness_center" size="m" className="text-ink-2" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
+                  <p className="font-display text-title-m font-black uppercase tracking-tight text-ink truncate flex items-center gap-2">
                     {ex?.name || we.exerciseId}
                     {we.technique && (
                       <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
@@ -537,7 +542,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-caption text-ink-2">
-                      Prescripción: {we.setGroups && we.setGroups.length > 0
+                      {we.setGroups && we.setGroups.length > 0
                         ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
@@ -548,9 +553,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                       <span
                         title={warmup.readiness.message}
                         className={`text-caption font-mono px-2 rounded-control border ${
-                          warmup.readiness.score >= 75 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
-                          : warmup.readiness.score >= 45 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
-                          : 'text-red-300 border-red-500/30 bg-red-500/10'
+                          warmup.readiness.score >= 75 ? 'text-success border-success/30 bg-success/10'
+                          : warmup.readiness.score >= 45 ? 'text-warning border-warning/30 bg-warning/10'
+                          : 'text-danger border-danger/30 bg-danger/10'
                         }`}
                       >
                         🔥 Readiness {warmup.readiness.score}
@@ -560,11 +565,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
                 <div className="flex-shrink-0">
                   {doneSets === totalSets ? (
-                    <span className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-on-accent">
+                      <Icon name="check" size="s" filled />
                     </span>
                   ) : (
-                    <span className="font-mono text-caption font-bold px-2 rounded-control bg-white/7 text-ink-2">
+                    <span className="font-mono text-caption font-bold px-2 py-1 rounded-control bg-inset text-ink-2">
                       {doneSets}/{totalSets}
                     </span>
                   )}
@@ -572,8 +577,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
 
               {we.recordVideoSet && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20">
-                  <span className="material-symbols-outlined text-accent text-title-s">videocam</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">
+                  <Icon name="videocam" size="s" className="text-accent" />
                   <p className="font-sans text-label font-bold text-accent">
                     {we.recordVideoSet === 'all'
                       ? 'Tu entrenador quiere que grabes todas las series con el móvil'
@@ -607,39 +612,41 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   </thead>
                   <tbody>
                     {warmup.sets.map((w, wIdx) => (
-                      <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-orange-500/5">
+                      <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-warning/6">
                         <td className="px-4 py-3">
-                          <span className="font-mono text-label font-bold text-orange-300 flex items-center gap-1">
+                          <span className="font-mono text-label font-bold text-warning flex items-center gap-1">
                             🔥 W{wIdx + 1}
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="w-20 inline-block text-center text-orange-200 font-mono text-body-s">{w.weight}</span>
+                          <span className="w-20 inline-block text-center text-warning font-mono text-body-s">{w.weight}</span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className="w-16 inline-block text-center text-orange-200 font-mono text-body-s">{w.reps}</span>
+                          <span className="w-16 inline-block text-center text-warning font-mono text-body-s">{w.reps}</span>
                         </td>
-                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-body-s">—</td>
-                        <td className="px-3 py-2 text-center text-orange-200/40 font-mono text-caption">Warm-up</td>
-                        <td className="px-4 py-2 text-center text-orange-200/30 font-mono text-body-s">—</td>
+                        <td className="px-3 py-2 text-center text-warning/50 font-mono text-body-s">—</td>
+                        <td className="px-3 py-2 text-center text-warning/50 font-mono text-caption">Warm-up</td>
+                        <td className="px-4 py-2 text-center text-warning/40 font-mono text-body-s">—</td>
                       </tr>
                     ))}
                     {exSets.map((setInput, sIdx) => {
                       const prev = prevEntry?.sets[sIdx];
                       const shouldRecord = we.recordVideoSet === 'all' || we.recordVideoSet === sIdx + 1;
+                      // Serie siguiente anticipada (handoff): la primera sin
+                      // marcar, en orden — número y casilla en oro para que el
+                      // atleta sepa dónde está sin tener que contar filas.
+                      const esSiguiente = !setInput.done && exSets.slice(0, sIdx).every(s => s.done);
                       return (
                         <tr
                           key={sIdx}
-                          className={`border-b border-hairline transition-colors ${
-                            setInput.done ? 'bg-emerald-500/5' : shouldRecord ? 'bg-accent/5' : 'hover:bg-raised'
+                          className={`border-b border-hairline transition-colors duration-(--duration-state) ${
+                            setInput.done ? 'bg-accent/6' : shouldRecord ? 'bg-accent/5' : esSiguiente ? 'bg-accent/[.03]' : 'hover:bg-raised'
                           }`}
                         >
                           <td className="px-4 py-3">
-                            <span className="font-mono text-label font-bold text-ink-2 flex items-center gap-1">
-                              S{sIdx + 1}
-                              {shouldRecord && (
-                                <span className="material-symbols-outlined text-accent text-body-s" title="Grabar con el móvil">videocam</span>
-                              )}
+                            <span className={`font-mono text-label font-bold flex items-center gap-1 ${setInput.done || esSiguiente ? 'text-accent' : 'text-ink-2'}`}>
+                              {String(sIdx + 1).padStart(2, '0')}
+                              {shouldRecord && <Icon name="videocam" size="s" className="text-accent" label="Grabar con el móvil" />}
                             </span>
                             {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
                               <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
@@ -654,7 +661,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className={`w-20 rounded-control border bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -665,19 +672,25 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className="w-16 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                              className={`w-16 rounded-control border bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                             />
                           </td>
                           <td className="px-3 py-2">
-                            <input
-                              type="number"
-                              min={0}
-                              max={5}
+                            {/* FALLO no es RIR 0: es un séptimo valor, no un número
+                                reservado — de ahí el <select> en vez de un <input
+                                type="number"> con min/max 0-5. La rueda nativa es
+                                el mismo criterio que ya usa `Select` (ui/Select.tsx):
+                                en móvil gana a cualquier lista propia. */}
+                            <select
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className="w-14 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
+                              className={`w-16 appearance-none bg-field border border-hairline rounded-control px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
+                            >
+                              {RIR_OPCIONES.map(v => (
+                                <option key={v} value={v}>{rirTexto(v)}</option>
+                              ))}
+                            </select>
                           </td>
                           <td className="px-3 py-2">
                             {prev ? (
@@ -689,9 +702,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                             )}
                           </td>
                           <td className="px-4 py-2 text-center">
+                            {/* Casilla oro con check en on-accent al completar (handoff,
+                                Componentes 06) — desmarcar es tocar otra vez, sin confirmar. */}
                             <button
                               onClick={() => {
                                 const markingDone = !setInput.done;
+                                void haptics.light();
                                 updateSet(exIdx, sIdx, 'done', markingDone);
                                 if (markingDone && we.restSeconds) {
                                   setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
@@ -700,15 +716,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                                   stopRestTimer().catch(() => {});
                                 }
                               }}
-                              className={`w-11 h-11 rounded-control border flex items-center justify-center mx-auto transition-all ${
+                              className={`mx-auto flex h-11 w-11 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
                                 setInput.done
-                                  ? 'bg-emerald-500 border-emerald-500 text-white'
-                                  : 'border-hairline text-ink-3 hover:border-accent/50 hover:text-accent/50'
+                                  ? 'bg-accent border-accent text-on-accent'
+                                  : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent'
                               }`}
                             >
-                              <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>
-                                {setInput.done ? 'check_circle' : 'radio_button_unchecked'}
-                              </span>
+                              <Icon name={setInput.done ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={setInput.done} />
                             </button>
                           </td>
                         </tr>
@@ -765,34 +779,39 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           />
         </div>
 
-        {/* Player action bar */}
-        <div className="fixed bottom-24 md:bottom-6 left-0 right-0 flex justify-center gap-3 z-40 px-4">
-          <button
-            onClick={async () => {
-              await handleSkip(activeAssignment);
-              setActiveAssignment(null);
-              setActiveWorkout(null);
-              setPrevEntries([]);
-              setExerciseNoteInputs([]);
-              setWorkoutNoteInput('');
-              setRestTimer(null);
-            }}
-            className="flex items-center gap-2 px-5 py-4 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-hairline font-mono font-bold text-body-s uppercase rounded-control active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined">skip_next</span>
-            Saltar
-          </button>
-          <button
-            onClick={handleFinish}
-            disabled={!canFinish || isFinishing || !!celebration}
-            className="flex items-center gap-2 px-8 py-4 bg-accent text-black font-sans font-bold text-body-s uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-          >
-            {isFinishing ? (
-              <><span className="material-symbols-outlined animate-spin">refresh</span>Guardando...</>
-            ) : (
-              <><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>flag</span>Finalizar</>
-            )}
-          </button>
+        {/* Player action bar — pie fijo con degradado al fondo (handoff): el
+            retroceso es un botón cuadrado y el primario es quien lleva la
+            acción de verdad. */}
+        <div className="fixed bottom-24 md:bottom-6 left-0 right-0 z-[var(--z-fab)] px-4 pt-8 bg-gradient-to-t from-bg via-bg/90 to-transparent">
+          <div className="flex justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="l"
+              icon="skip_next"
+              label="Saltar sesión"
+              onClick={async () => {
+                await handleSkip(activeAssignment);
+                setActiveAssignment(null);
+                setActiveWorkout(null);
+                setPrevEntries([]);
+                setExerciseNoteInputs([]);
+                setWorkoutNoteInput('');
+                setRestTimer(null);
+              }}
+            />
+            <Button
+              variant="primary"
+              size="l"
+              icon="flag"
+              loading={isFinishing}
+              loadingLabel="Guardando"
+              disabled={!canFinish || !!celebration}
+              onClick={handleFinish}
+              className="flex-1 max-w-xs"
+            >
+              Terminar sesión
+            </Button>
+          </div>
         </div>
 
         {/* Celebración al terminar — se muestra antes de volver a la lista;
@@ -852,7 +871,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-3">
         <div>
-          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Entrenamiento</h1>
+          <h1 className="font-display text-hero font-black tracking-tight text-ink uppercase">Rutinas</h1>
           <p className="text-ink-2 text-body-s mt-1">
             {visiblePendingCount > 0
               ? `${visiblePendingCount} entrenamientos pendientes`
@@ -861,30 +880,21 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         </div>
         {/* Week summary chip */}
         <div className="flex items-center gap-2 bg-surface border border-hairline px-4 py-2 rounded-surface">
-          <span className="material-symbols-outlined text-accent text-body-s">calendar_today</span>
+          <Icon name="calendar_today" size="s" className="text-accent" />
           <span className="font-sans text-label text-ink-2">Esta semana:</span>
-          <span className="font-mono text-body-s font-bold text-white">{weekCompleted}/{weekAssignments.length}</span>
+          <span className="font-mono text-body-s font-bold text-ink">{weekCompleted}/{weekAssignments.length}</span>
           <span className="font-mono text-label text-ink-2">completados</span>
         </div>
       </header>
 
       {/* Main tabs */}
-      <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 w-full sm:w-fit">
-        <button
-          onClick={() => setMainTab('programa')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'programa' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
-        >
-          <span className="material-symbols-outlined text-title-s">event</span>
-          Programa
-        </button>
-        <button
-          onClick={() => setMainTab('progresion')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold tracking-wider uppercase transition-all ${mainTab === 'progresion' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
-        >
-          <span className="material-symbols-outlined text-title-s">trending_up</span>
-          Progresión
-        </button>
-      </div>
+      <SegmentedControl
+        label="Vista"
+        value={mainTab}
+        onChange={(v) => setMainTab(v as MainTab)}
+        options={[{ value: 'programa', label: 'Programa' }, { value: 'progresion', label: 'Progresión' }]}
+        className="w-full sm:w-fit"
+      />
 
       {/* ── PROGRAMA TAB ───────────────────────────────────────────────────── */}
       {mainTab === 'programa' && (
@@ -892,34 +902,28 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           {/* Status filter */}
           <div className="flex gap-2 flex-wrap">
             {(['pending', 'completed', 'all'] as const).map(f => (
-              <button
-                key={f}
-                onClick={() => setListFilter(f)}
-                className={`px-4 py-2 rounded-full font-sans text-caption uppercase font-bold border transition-all min-h-[36px] ${
-                  listFilter === f
-                    ? 'bg-accent border-accent text-black'
-                    : 'border-hairline text-ink-2 hover:border-hairline hover:text-white'
-                }`}
-              >
+              <Chip key={f} selected={listFilter === f} onClick={() => setListFilter(f)}>
                 {f === 'pending' ? `Pendientes (${visiblePendingCount})` :
                  f === 'completed' ? `Completados (${assignments.filter(a => a.status === 'completed').length})` :
                  `Todos (${assignments.length})`}
-              </button>
+              </Chip>
             ))}
           </div>
 
           {loading ? (
             <div className="space-y-3">
-              <Skeleton className="h-20 w-full rounded-surface" />
-              <Skeleton className="h-20 w-full rounded-surface" />
-              <Skeleton className="h-20 w-full rounded-surface" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
           ) : listFilter === 'pending' ? (
             thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
-              <div className="bg-surface border border-dashed border-hairline rounded-surface p-14 text-center">
-                <span className="material-symbols-outlined text-display text-accent/30 block mb-3">fitness_center</span>
-                <p className="text-white font-bold text-body-s">Sin entrenamientos pendientes</p>
-                <p className="text-ink-2 text-label mt-1">Tu entrenador asignará sesiones próximamente.</p>
+              <div className="rounded-surface border border-dashed border-accent/45 bg-surface p-10">
+                <EmptyState
+                  icon="fitness_center"
+                  title="Sin entrenamientos pendientes"
+                  description="Tu entrenador asignará sesiones próximamente."
+                />
               </div>
             ) : (
               <div className="space-y-6">
@@ -953,11 +957,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </div>
             )
           ) : filteredAssignments.length === 0 ? (
-            <div className="bg-surface border border-dashed border-hairline rounded-surface p-14 text-center">
-              <span className="material-symbols-outlined text-display text-accent/30 block mb-3">fitness_center</span>
-              <p className="text-white font-bold text-body-s">Sin entrenamientos {listFilter === 'completed' ? 'completados' : ''}</p>
-              <p className="text-ink-2 text-label mt-1">Tu entrenador asignará sesiones próximamente.</p>
-            </div>
+            <EmptyState
+              icon="fitness_center"
+              title={`Sin entrenamientos ${listFilter === 'completed' ? 'completados' : ''}`}
+              description="Tu entrenador asignará sesiones próximamente."
+            />
           ) : (
             (() => {
               // Group by week — used for "Completados" (history) and "Todos" (full picture,

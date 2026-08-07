@@ -206,7 +206,7 @@ export interface ExercisePersonalNote {
 
 // High-intensity techniques a coach can flag on an exercise so the athlete sees a
 // distinct badge + explanation of what to actually do. See utils/workoutTechniques.ts.
-export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause';
+export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause' | 'fallo';
 
 // One warm-up approximation set — display-only, never logged, never counts toward
 // volume/records/progression. See src/utils/warmup/.
@@ -281,7 +281,12 @@ export interface Workout {
 export interface WorkoutSetLog {
   weight: number;   // kg lifted
   repsDone: number; // actual reps completed
-  rir: number;      // perceived reps in reserve
+  rir: number;      // perceived reps in reserve — se ignora si alFallo es true
+  // Fase 3 (decisión de Dani, 2026-08-07): FALLO no es RIR 0. Son dos cosas
+  // distintas ("no podía hacer ni una más pero paré ahí" vs "seguí hasta que
+  // la forma se rompió") y el contrato de datos original lo mezclaba. Cuando
+  // es true, `rir` no se lee — se conserva por compatibilidad con logs viejos.
+  alFallo?: boolean;
 }
 
 export interface WorkoutEntryLog {
