@@ -1169,6 +1169,22 @@ export interface CardioSession {
   manual?: boolean;       // añadida a mano, sin banda real — no otorga XP ni Puntos (regla de FITIV, §6)
 }
 
+// Objetivo semanal de cardio (F3.9, `objetivosCardio` del contrato). Doc ID
+// determinista `${athleteId}_${isoWeek}`, mismo patrón que WeeklyChallenge.
+// `minutesGoal`/`sessionsGoal` son lo único que persiste: los minutos hechos
+// siempre se derivan de `cardioSessions` (ver weeklyCardioMinutesDone) para
+// que el contador nunca pueda divergir de las sesiones reales. `closed`
+// existe solo para no repetir el haptic de éxito una vez la semana ya cerró.
+export interface CardioWeeklyGoal {
+  id: string;          // `${athleteId}_${isoWeek}`
+  athleteId: string;
+  isoWeek: string;      // '2026-W28'
+  minutesGoal: number;
+  sessionsGoal?: number;
+  closed: boolean;
+  closedAt?: string;    // ISO
+}
+
 export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';
 
 export interface HrTestResult {

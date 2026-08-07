@@ -1,25 +1,25 @@
 {
-  "generado": "2026-08-07T14:47:46.452Z",
-  "commit": "14a15bb",
+  "generado": "2026-08-07T15:03:52.767Z",
+  "commit": "d6b63eb",
   "totales": {
-    "archivosTsx": 158,
-    "lineasTsx": 40942
+    "archivosTsx": 160,
+    "lineasTsx": 41221
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4791,
+    "clasesTokenEnUso": 4835,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 956,
-    "fontSans": 900,
-    "pesosProhibidos": 32,
+    "fontMono": 964,
+    "fontSans": 904,
+    "pesosProhibidos": 39,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
-    "modalesArtesanales": 7,
-    "transitionAll": 236,
+    "modalesArtesanales": 8,
+    "transitionAll": 235,
     "animatePulse": 27,
     "ariaLabel": 43,
     "htmlFor": 1,
@@ -122,16 +122,16 @@
         "lineas": 747
       },
       {
+        "archivo": "src/components/CardioScreen.tsx",
+        "lineas": 722
+      },
+      {
         "archivo": "src/components/MyMenuScreen.tsx",
         "lineas": 692
       },
       {
         "archivo": "src/components/WorkoutsScreen.tsx",
         "lineas": 681
-      },
-      {
-        "archivo": "src/components/CardioScreen.tsx",
-        "lineas": 664
       },
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
@@ -222,9 +222,9 @@
       "roundedFull": 1
     },
     "src/components/CardioScreen.tsx": {
-      "clasesTokenEnUso": 28,
-      "fontMono": 9,
-      "fontSans": 6,
+      "clasesTokenEnUso": 23,
+      "fontMono": 8,
+      "fontSans": 4,
       "roundedFull": 2
     },
     "src/components/CheckInScreen.tsx": {
@@ -666,6 +666,19 @@
       "transitionAll": 1,
       "roundedFull": 1
     },
+    "src/components/cardio/CardioSessionSummary.tsx": {
+      "clasesTokenEnUso": 15,
+      "fontMono": 5,
+      "fontSans": 5,
+      "pesosProhibidos": 2,
+      "modalesArtesanales": 1
+    },
+    "src/components/cardio/CardioToday.tsx": {
+      "clasesTokenEnUso": 38,
+      "fontMono": 4,
+      "fontSans": 5,
+      "pesosProhibidos": 4
+    },
     "src/components/cardio/CooldownPrompt.tsx": {
       "clasesTokenEnUso": 7,
       "fontSans": 5,
@@ -678,11 +691,10 @@
       "roundedFull": 1
     },
     "src/components/cardio/EffortPrompt.tsx": {
-      "clasesTokenEnUso": 7,
+      "clasesTokenEnUso": 3,
       "fontMono": 1,
-      "fontSans": 4,
-      "modalesArtesanales": 1,
-      "transitionAll": 1
+      "pesosProhibidos": 1,
+      "modalesArtesanales": 1
     },
     "src/components/cardio/HrvReadinessCard.tsx": {
       "clasesTokenEnUso": 10,

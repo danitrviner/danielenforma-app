@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock } from '../types';
-import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getHrvReadingsForAthlete } from '../dbService';
+import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock, CardioSession, CardioWeeklyGoal } from '../types';
+import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getHrvReadingsForAthlete, getCardioWeeklyGoal, saveCardioWeeklyGoal, getStepsForAthlete, getAthleteNutritionConfig } from '../dbService';
 import { HeartRateMonitor, HeartRateStatus, isBleAvailable } from '../services/bleHeartRate';
 import { getZoneForBpm, getZoneAlertDirection, ZONE_LABEL, ZONE_COLOR, ZONE_ORDER } from '../utils/cardioZones';
 import {
   ZERO_TIME_IN_ZONE, ZoneAccumulator, createZoneAccumulator, flushZoneTime, setActiveZone,
   roundTimeInZone, elapsedSecFromWallClock, shouldDiscardSession, summarizeSamples, pickActiveZona2Assignment,
-  pickActiveIntervalAssignment,
+  pickActiveIntervalAssignment, weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal, isoWeekKey,
 } from '../utils/cardioSession';
 import {
   caloriesKeytel, caloriesActive, metsFromCalories, fitivPoints, trimpBanister, hrTss,
@@ -15,12 +15,12 @@ import {
 } from '../utils/cardioMetrics';
 import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
+import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
 import { haptics } from '../services/haptics';
 import { speak, cancelSpeech } from '../services/cardioVoice';
 import { grantXp } from '../utils/xp';
 import { Skeleton } from './ui';
 import HrTestsPanel from './HrTestsPanel';
-import DeviceChip from './cardio/DeviceChip';
 import LiveSession from './cardio/LiveSession';
 import EffortPrompt from './cardio/EffortPrompt';
 import CooldownPrompt from './cardio/CooldownPrompt';
@@ -28,6 +28,8 @@ import TrainingLoadPanel from './cardio/TrainingLoadPanel';
 import HrvReadinessCard from './cardio/HrvReadinessCard';
 import HrvTestScreen from './cardio/HrvTestScreen';
 import CardioSessionDetail from './cardio/CardioSessionDetail';
+import CardioSessionSummary from './cardio/CardioSessionSummary';
+import CardioToday from './cardio/CardioToday';
 import ManualSessionModal from './cardio/ManualSessionModal';
 import { Icon, Button, PageHeader, Chip } from './ui';
 
@@ -56,7 +58,7 @@ const COOLDOWN_TARGET_SEC = [60, 120] as const;
 // Rate Recovery (§5.6) — solo si la sesión cumple sus condiciones y la
 // banda sigue conectada.
 // 'effort' = pidiendo el Esfuerzo Percibido antes de guardar (§5.4).
-type SessionState = 'idle' | 'connecting' | 'ready' | 'live' | 'cooldown' | 'effort' | 'saving';
+type SessionState = 'idle' | 'connecting' | 'ready' | 'live' | 'cooldown' | 'effort' | 'saving' | 'summary';
 
 export default function CardioScreen({ profile }: Props) {
   const queryClient = useQueryClient();
@@ -86,7 +88,25 @@ export default function CardioScreen({ profile }: Props) {
     queryFn: () => getHrvReadingsForAthlete(profile.email),
   });
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const currentIsoWeek = isoWeekKey(todayIso);
+  const { data: weeklyGoal } = useQuery({
+    queryKey: ['cardioWeeklyGoal', profile.email, currentIsoWeek],
+    queryFn: () => getCardioWeeklyGoal(profile.email, currentIsoWeek),
+  });
+  const { data: todaysSteps = [] } = useQuery({
+    queryKey: ['stepsForAthlete', profile.email],
+    queryFn: () => getStepsForAthlete(profile.email),
+  });
+  const { data: nutritionConfig } = useQuery({
+    queryKey: ['athleteNutritionConfig', profile.email],
+    queryFn: () => getAthleteNutritionConfig(profile.email).catch(() => null),
+  });
+
   const [state, setState] = useState<SessionState>('idle');
+  const [justSavedSession, setJustSavedSession] = useState<CardioSession | null>(null);
+  const [weekJustClosed, setWeekJustClosed] = useState(false);
+  const [skippedToday, setSkippedToday] = useState(() => isCardioSkippedToday(profile.email, todayIso));
   const [showHrvTest, setShowHrvTest] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -433,8 +453,35 @@ export default function CardioScreen({ profile }: Props) {
     });
     queryClient.setQueryData(['cardioSessions', profile.email], (prev: any[] = []) => [...prev, session]);
     grantXp(profile, XP_PER_SESSION).catch(err => console.warn('grantXp (cardio session) failed:', err));
+
+    // Semana de cardio (§F3.9, contrato "objetivosCardio"): los minutos
+    // hechos siempre se derivan de las sesiones reales, nunca se guardan.
+    // Solo se persiste si la semana ya cerró — para no repetir el haptic de
+    // éxito en sesiones posteriores de la misma semana ya completa.
+    const goalDefaults = defaultWeeklyCardioGoal(assignments);
+    const minutesGoal = weeklyGoal?.minutesGoal ?? goalDefaults.minutesGoal;
+    const minutesDoneAfter = weeklyCardioMinutesDone([...sessions, session], todayIso);
+    const alreadyClosed = weeklyGoal?.closed ?? false;
+    const closesNow = !alreadyClosed && minutesDoneAfter >= minutesGoal;
+    if (closesNow) {
+      const updatedGoal: CardioWeeklyGoal = {
+        id: `${profile.email}_${currentIsoWeek}`,
+        athleteId: profile.email,
+        isoWeek: currentIsoWeek,
+        minutesGoal,
+        sessionsGoal: weeklyGoal?.sessionsGoal ?? goalDefaults.sessionsGoal,
+        closed: true,
+        closedAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData(['cardioWeeklyGoal', profile.email, currentIsoWeek], updatedGoal);
+      saveCardioWeeklyGoal(updatedGoal).catch(err => console.warn('saveCardioWeeklyGoal failed:', err));
+      void haptics.success();
+    }
+
     draftRef.current = null;
-    setState('idle');
+    setJustSavedSession(session);
+    setWeekJustClosed(closesNow);
+    setState('summary');
     setBpm(null);
   };
 
@@ -490,6 +537,19 @@ export default function CardioScreen({ profile }: Props) {
     );
   }
 
+  if (state === 'summary' && justSavedSession) {
+    const goalDefaults = defaultWeeklyCardioGoal(assignments);
+    return (
+      <CardioSessionSummary
+        session={justSavedSession}
+        weeklyMinutesGoal={weeklyGoal?.minutesGoal ?? goalDefaults.minutesGoal}
+        weeklyMinutesDone={weeklyCardioMinutesDone(sessions, todayIso)}
+        weekJustClosed={weekJustClosed}
+        onClose={() => { setJustSavedSession(null); setWeekJustClosed(false); setState('idle'); }}
+      />
+    );
+  }
+
   if (state === 'live') {
     return (
       <LiveSession
@@ -526,9 +586,43 @@ export default function CardioScreen({ profile }: Props) {
         </div>
       )}
 
-      {cardioProfile && (
-        <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-          <div className="flex flex-wrap gap-2">
+      {cardioProfile && (state === 'idle' || state === 'connecting' || state === 'ready') && (() => {
+        const goalDefaults = defaultWeeklyCardioGoal(assignments);
+        const minutesGoal = weeklyGoal?.minutesGoal ?? goalDefaults.minutesGoal;
+        const sessionsGoal = weeklyGoal?.sessionsGoal ?? goalDefaults.sessionsGoal;
+        const sessionsDone = sessions.filter(s => isoWeekKey(s.date) === currentIsoWeek).length;
+        const todaysStepsEntry = todaysSteps.find(s => s.date === todayIso);
+        return (
+          <CardioToday
+            connState={state}
+            bpm={bpm}
+            deviceStatus={deviceStatus}
+            error={error}
+            zona2Assignment={zona2Assignment}
+            intervalAssignment={intervalAssignment}
+            sessionType={sessionType}
+            onChangeSessionType={setSessionType}
+            skippedToday={skippedToday}
+            onConnect={handleConnect}
+            onCancelReady={handleCancelReady}
+            onStart={handleStartSession}
+            onManualAdd={() => setShowManualAdd(true)}
+            onSkipToday={() => { skipCardioToday(profile.email, todayIso); setSkippedToday(true); }}
+            weeklyMinutesGoal={minutesGoal}
+            weeklyMinutesDone={weeklyCardioMinutesDone(sessions, todayIso)}
+            sessionsGoal={sessionsGoal}
+            sessionsDone={sessionsDone}
+            dailyMinutes={dailyCardioMinutesForWeek(sessions, todayIso)}
+            todaysSteps={todaysStepsEntry?.steps ?? null}
+            stepGoal={nutritionConfig?.stepGoal}
+          />
+        );
+      })()}
+
+      {cardioProfile && state === 'idle' && (
+        <details className="bg-surface border border-hairline rounded-surface p-3">
+          <summary className="text-caption font-mono uppercase text-ink-2 cursor-pointer select-none">Tus zonas de FC</summary>
+          <div className="flex flex-wrap gap-2 mt-3">
             {ZONE_ORDER.map(z => (
               <div key={z} className="flex-1 min-w-[100px] rounded-surface p-3 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
                 <p className="text-caption font-sans uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
@@ -536,43 +630,7 @@ export default function CardioScreen({ profile }: Props) {
               </div>
             ))}
           </div>
-
-          {state === 'idle' && (
-            <Button onClick={handleConnect} fullWidth>Conectar banda</Button>
-          )}
-
-          {state === 'connecting' && <p className="text-label text-ink-2 font-sans text-center py-4">Conectando con la banda...</p>}
-
-          {error && <p className="text-label text-red-400 font-sans">{error}</p>}
-
-          {state === 'ready' && (
-            <div className="space-y-3">
-              <DeviceChip status="ready" bpm={bpm} />
-              {zona2Assignment && sessionType === 'zona2' && (
-                <p className="text-caption font-mono text-ink-2 text-center">
-                  Prescrito por tu entrenador: Zona 2{zona2Assignment.targetDurationSec ? ` · ${Math.round(zona2Assignment.targetDurationSec / 60)} min` : ''}
-                </p>
-              )}
-              {intervalAssignment && sessionType === 'intervalos' && (
-                <p className="text-caption font-mono text-ink-2 text-center">
-                  Prescrito por tu entrenador: {intervalAssignment.intervals?.length} bloques de intervalos
-                </p>
-              )}
-              <div className="flex items-center gap-2">
-                <select value={sessionType} onChange={e => setSessionType(e.target.value as CardioSessionType)}
-                  className="bg-bg border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent">
-                  <option value="libre">Libre</option>
-                  <option value="zona2">Sesión Zona 2</option>
-                  <option value="intervalos" disabled={!intervalAssignment}>
-                    {intervalAssignment ? 'Intervalos' : 'Intervalos (sin prescripción)'}
-                  </option>
-                </select>
-                <Button onClick={handleStartSession} className="flex-1">Empezar entrenamiento</Button>
-              </div>
-              <Button variant="ghost" size="s" onClick={handleCancelReady} fullWidth>Desconectar</Button>
-            </div>
-          )}
-        </section>
+        </details>
       )}
 
       {state === 'idle' && <HrvReadinessCard readings={hrvReadings} onMeasure={() => setShowHrvTest(true)} />}

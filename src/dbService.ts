@@ -207,6 +207,7 @@ export {
   getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
   getCardioSessionsForAthlete, createCardioSession, updateCardioSession,
+  getCardioWeeklyGoal, saveCardioWeeklyGoal,
   getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
   getHrvReadingsForAthlete, createHrvReading,
 } from './db/cardio';

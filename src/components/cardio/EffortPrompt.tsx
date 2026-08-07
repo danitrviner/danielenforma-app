@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { PE_LABELS, peLabel } from '../../utils/cardioMetrics';
+import { Button, EffortScale } from '../ui';
 
-// Paso previo a guardar: Esfuerzo Percibido 1–10 (§5.4 del análisis) — la
-// única carga de entrenamiento válida también para fuerza, y lo que alimenta
-// Effort Minutes. FITIV lo autoestima desde la FC; aquí se sugiere por zona
-// dominante (suggestedPerceivedEffort) y el atleta lo ajusta antes de guardar.
+// Paso previo a guardar: Esfuerzo Percibido 1–10 (§5.4 del análisis, "04 ·
+// registro en dos toques" del handoff de Fase 3) — la única carga de
+// entrenamiento válida también para fuerza, y lo que alimenta Effort
+// Minutes. FITIV lo autoestima desde la FC; aquí se sugiere por zona
+// dominante (suggestedPerceivedEffort) y el atleta lo ajusta antes de
+// guardar con la misma `EffortScale` que usa el cardio sin pulsómetro — el
+// campo se llama ESFUERZO, distinto de RIR.
 
 interface Props {
   suggested: number;
@@ -23,27 +26,17 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
        porque esa métrica mide la utilidad de posición, que aquí no significa
        overlay sino pantalla. */
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
-      <div className="w-full max-w-sm space-y-6 text-center">
-        <div>
-          <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Esfuerzo percibido</p>
-          <p className="font-sans font-bold text-6xl text-accent tabular-nums mt-2">{pe}</p>
-          <p className="text-body-s font-sans font-bold text-white mt-1">{peLabel(pe)}</p>
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Esfuerzo</p>
+          <p className="font-display text-hero font-black text-accent tabular-nums mt-1">{pe}</p>
         </div>
 
-        <input
-          type="range" min={1} max={10} step={1} value={pe}
-          onChange={e => setPe(Number(e.target.value))}
-          className="w-full accent-accent"
-        />
-        <div className="flex justify-between text-caption font-sans text-ink-2 px-1">
-          <span>{PE_LABELS[0]}</span>
-          <span>{PE_LABELS[9]}</span>
-        </div>
+        <EffortScale value={pe} onChange={setPe} label="Esfuerzo percibido, de 1 a 10" />
 
-        <button onClick={() => onConfirm(pe)} disabled={saving}
-          className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
-          {saving ? 'Guardando...' : 'Guardar sesión'}
-        </button>
+        <Button onClick={() => onConfirm(pe)} disabled={saving} loading={saving} loadingLabel="Guardando" fullWidth size="l">
+          Guardar sesión
+        </Button>
       </div>
     </div>
   );

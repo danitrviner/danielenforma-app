@@ -516,6 +516,17 @@ service cloud.firestore {
                                 && request.auth.token.email_verified == true);
     }
 
+    // ── cardioWeeklyGoals (F3.9; doc id `${athleteId}_${isoWeek}`, athleteId = EMAIL) ──
+    match /cardioWeeklyGoals/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create, update: if isCoach()
+                            || (request.auth != null && request.auth.token.email == request.resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+      allow delete: if isCoach();
+    }
+
     // ── hrTests (athleteId = EMAIL; el atleta hace el test, el coach aprueba) ─
     match /hrTests/{docId} {
       allow read: if isCoach()

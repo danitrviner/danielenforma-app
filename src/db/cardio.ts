@@ -1,5 +1,5 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
-import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones } from '../types';
+import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones, CardioWeeklyGoal } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
 
 // ─── PERFIL CARDIO (zonas, doc id = athleteId) ─────────────────────────────
@@ -254,6 +254,48 @@ export async function updateHrTest(id: string, updates: Partial<HrTest>): Promis
     console.warn('updateHrTest Firestore failed, saving local:', err);
     setLocalBypassMode(true);
     saveLocalHrTests(updated);
+  }
+}
+
+// ─── OBJETIVO SEMANAL DE CARDIO (F3.9, doc id `${athleteId}_${isoWeek}`) ───
+
+const WEEKLY_GOAL_LOCAL_KEY = 'enforma_cardio_weekly_goal_v1';
+
+function getLocalWeeklyGoals(): Record<string, CardioWeeklyGoal> {
+  try { return JSON.parse(localStorage.getItem(WEEKLY_GOAL_LOCAL_KEY) || '{}'); } catch { return {}; }
+}
+function saveLocalWeeklyGoals(map: Record<string, CardioWeeklyGoal>): void {
+  localStorage.setItem(WEEKLY_GOAL_LOCAL_KEY, JSON.stringify(map));
+}
+
+export async function getCardioWeeklyGoal(athleteId: string, isoWeek: string): Promise<CardioWeeklyGoal | null> {
+  const id = `${athleteId}_${isoWeek}`;
+  if (forceLocalOnly) return getLocalWeeklyGoals()[id] ?? null;
+  try {
+    const snap = await getDoc(doc(db, 'cardioWeeklyGoals', id));
+    const goal = snap.exists() ? ({ id, ...snap.data() } as CardioWeeklyGoal) : null;
+    const map = getLocalWeeklyGoals();
+    if (goal) map[id] = goal; else delete map[id];
+    saveLocalWeeklyGoals(map);
+    return goal;
+  } catch (err) {
+    console.warn('getCardioWeeklyGoal Firestore failed, using local:', err);
+    setLocalBypassMode(true);
+    return getLocalWeeklyGoals()[id] ?? null;
+  }
+}
+
+export async function saveCardioWeeklyGoal(goal: CardioWeeklyGoal): Promise<void> {
+  const map = getLocalWeeklyGoals();
+  map[goal.id] = goal;
+  if (forceLocalOnly) { saveLocalWeeklyGoals(map); return; }
+  try {
+    await setDoc(doc(db, 'cardioWeeklyGoals', goal.id), stripUndefined(goal), { merge: true });
+    saveLocalWeeklyGoals(map);
+  } catch (err) {
+    console.warn('saveCardioWeeklyGoal Firestore failed, saving local:', err);
+    setLocalBypassMode(true);
+    saveLocalWeeklyGoals(map);
   }
 }
 
