@@ -17,6 +17,7 @@ import { useToast } from '../hooks/useToast';
 import { registerTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import Coachmark from './Coachmark';
+import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
@@ -172,6 +173,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+  // Vídeo demo abierto (F3.13, "ficha de ejercicio" — el tutorial ya promete
+  // "aquí tienes el vídeo a 0,5× o velocidad normal" señalando esta tarjeta,
+  // pero hasta ahora solo había una miniatura estática sin reproducir nada).
+  // Uno solo a la vez: N iframes de YouTube cargados a la vez en una sesión
+  // con varios ejercicios sería peso muerto en cada carga de pantalla.
+  const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
   // Cronómetro de descanso: se arranca solo al marcar una serie como hecha,
   // con el restSeconds prescrito del ejercicio — antes el atleta tenía que
   // llevar la cuenta él mismo en el momento de mayor intensidad de la sesión.
@@ -555,6 +562,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                     {ex?.type && (
                       <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
+                    {ex?.videoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenVideoIdx(v => v === exIdx ? null : exIdx)}
+                        className={`inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border transition-colors ${
+                          openVideoIdx === exIdx ? 'bg-accent text-on-accent border-accent' : 'text-accent border-accent/30 hover:bg-accent/10'
+                        }`}
+                      >
+                        <Icon name="play_circle" size="s" filled={openVideoIdx === exIdx} />
+                        Vídeo
+                      </button>
+                    )}
                     {warmup.readiness && (
                       <span
                         title={warmup.readiness.message}
@@ -581,6 +600,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   )}
                 </div>
               </div>
+
+              {openVideoIdx === exIdx && ex?.videoUrl && (
+                <ExerciseVideoPlayer videoUrl={ex.videoUrl} />
+              )}
 
               {we.recordVideoSet && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">

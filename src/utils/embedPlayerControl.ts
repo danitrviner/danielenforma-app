@@ -17,6 +17,20 @@
 
 export type EmbedProvider = 'youtube' | 'vimeo';
 
+// `Exercise.videoUrl` (a diferencia de `AcademyLesson`) guarda la URL cruda que
+// pegó el coach — "URL de vídeo YouTube" en el formulario, sin provider/id
+// separados — así que hace falta extraerlos antes de poder embeber con
+// control de velocidad. Cubre los formatos que de verdad se pegan: watch?v=,
+// youtu.be/ y shorts/ de YouTube, y vimeo.com/ID.
+export function parseVideoUrl(url: string): { provider: EmbedProvider; id: string } | null {
+  const trimmed = url.trim();
+  const yt = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+  if (yt) return { provider: 'youtube', id: yt[1] };
+  const vimeo = trimmed.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return { provider: 'vimeo', id: vimeo[1] };
+  return null;
+}
+
 export function embedSrcWithApi(provider: EmbedProvider, id: string): string {
   return provider === 'youtube'
     ? `https://www.youtube.com/embed/${id}?enablejsapi=1&playsinline=1`
