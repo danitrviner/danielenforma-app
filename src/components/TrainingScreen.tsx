@@ -14,6 +14,8 @@ import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { useToast } from '../hooks/useToast';
+import { registerTourTarget } from '../features/tutorial/TourTargetContext';
+import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import Coachmark from './Coachmark';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
@@ -105,6 +107,7 @@ const TYPE_CHIP: Record<string, string> = {
 export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const tutorial = useTutorialEngine();
   const [mainTab, setMainTab] = useState<MainTab>('programa');
 
   // Data
@@ -522,7 +525,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             >
               {/* Exercise header — nombre en Archivo 900 (handoff, Sesión): es
                   el único titular de la tarjeta, todo lo demás es dato o chip. */}
-              <div className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
+              <div
+                ref={el => { if (exIdx === 0) registerTourTarget('training-exercise-video', el); }}
+                className="flex items-center gap-3 p-4 bg-surface border-b border-hairline"
+              >
                 <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
                 {ex?.imageUrl ? (
                   <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-hairline flex-shrink-0" />
@@ -652,7 +658,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
                             )}
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2" ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-set-editor', el); }}>
                             <input
                               type="number"
                               min={0}
@@ -705,10 +711,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                             {/* Casilla oro con check en on-accent al completar (handoff,
                                 Componentes 06) — desmarcar es tocar otra vez, sin confirmar. */}
                             <button
+                              ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-first-set-row', el); }}
                               onClick={() => {
                                 const markingDone = !setInput.done;
                                 void haptics.light();
                                 updateSet(exIdx, sIdx, 'done', markingDone);
+                                if (markingDone) tutorial.markActionDone('marcar-serie');
                                 if (markingDone && we.restSeconds) {
                                   setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
                                   startRestTimer(ex?.name || 'tu ejercicio', we.restSeconds).catch(() => {});

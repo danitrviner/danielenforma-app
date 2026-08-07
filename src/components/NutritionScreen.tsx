@@ -9,6 +9,8 @@ import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants'
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import { haptics } from '../services/haptics';
+import { registerTourTarget } from '../features/tutorial/TourTargetContext';
+import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper } from './ui';
 
@@ -68,6 +70,7 @@ interface Props {
 export default function NutritionScreen({ profile, pendingRecipe, onConsumedPendingRecipe }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const tutorial = useTutorialEngine();
 
   // ── Queries: Phase 1 (diet/config) ──────────────────────────────────────────
   const dietsKey = ['dietsForAthlete', profile.email] as const;
@@ -454,6 +457,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const allDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
     const nextDone = !allDone;
     void haptics.light();
+    if (nextDone) tutorial.markActionDone('registrar-ingesta');
     setItemStates(prev => {
       const next = { ...prev };
       meal.items.forEach((_, idx) => {
@@ -1102,7 +1106,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
               {/* ── 01 · Tracker del día (F3.8) ─────────────────────────────────── */}
-              <div className="bg-raised border border-hairline rounded-canvas p-4">
+              <div ref={el => registerTourTarget('nutrition-tracker', el)} className="bg-raised border border-hairline rounded-canvas p-4">
                 {dayClosed ? (
                   <div className="flex flex-col items-center py-4 text-center animate-fade-up">
                     <RingSeal percent={100} complete size={112} strokeWidth={8} label="Día cerrado en presupuesto" />
@@ -1167,6 +1171,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         return (
                           <div
                             key={meal.id}
+                            ref={el => { if (mi === 0) registerTourTarget('nutrition-first-meal-row', el); }}
                             className={`flex items-center gap-3 rounded-surface border p-3 transition-colors duration-(--duration-state) ${
                               mealDone ? 'border-accent/20 bg-accent/6' : 'border-hairline bg-surface'
                             }`}

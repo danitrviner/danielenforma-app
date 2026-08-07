@@ -1,10 +1,13 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete } from './dbService';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
+import TutorialEngine from './features/tutorial/TutorialEngine';
+import { useTourTarget, registerTourTarget } from './features/tutorial/TourTargetContext';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
@@ -266,6 +269,15 @@ function AppContent() {
 
   const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
 
+  // Mismo query key que HomeScreen — comparten caché, esto no dispara una
+  // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
+  // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
+  const { data: tutorialGateAssignments = [] } = useQuery({
+    queryKey: ['workoutAssignments', profile.userId],
+    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+    enabled: !isCoach,
+  });
+
   // Primer login del atleta: onboarding guiado obligatorio antes de ver la app.
   if (!isCoach && onboardingGate !== 'done') {
     if (onboardingGate === 'missing') {
@@ -304,6 +316,13 @@ function AppContent() {
 
   return (
     <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[calc(var(--nav-h)+1rem)] md:pb-0">
+    <TutorialEngine
+      profile={profile}
+      hasPlan={!isCoach && tutorialGateAssignments.length > 0}
+      currentTab={pathTab}
+      onNavigate={goToTab}
+      onProfileChanged={updates => setProfile(p => p ? { ...p, ...updates } as UserProfile : p)}
+    >
 
       <LocalModeBanner />
 
@@ -453,6 +472,7 @@ function AppContent() {
           sus 7 (R10 sigue abierto, se resuelve en F3.13) — la excepción de
           10 px sigue viva mientras tanto. */}
       <nav
+        ref={useTourTarget('nav-tabs')}
         className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
       >
@@ -462,6 +482,7 @@ function AppContent() {
           return (
             <button
               key={tab.id}
+              ref={el => { if (['training', 'nutrition', 'academy'].includes(tab.id)) registerTourTarget(`nav-tab-${tab.id}`, el); }}
               onClick={() => goToTab(tab.id)}
               className="relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1"
             >
@@ -512,6 +533,7 @@ function AppContent() {
         </Suspense>
       )}
 
+    </TutorialEngine>
     </div>
   );
 }

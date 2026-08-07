@@ -103,6 +103,22 @@ export interface UserProfile {
   telefono?: { prefijo: string; numero: string }; // prefijo con '+' («+34»)
   estadoCrm?: EstadoCrm;                          // ausente ⇒ se trata como 'activo'
 
+  // ── Bienvenida guiada / tutorial (F3.12, Fase 3) ──────────────────────────
+  // Dato del propio atleta (su progreso viendo el tour), no una decisión
+  // comercial del coach — por eso NO está en la lista bloqueada del `allow
+  // update` de arriba: el atleta puede escribirlo sin pasar por el coach.
+  tutorial?: {
+    completado: boolean;
+    pasoAlcanzado: number;    // índice del último paso visto, para reanudar si se cierra la app
+    ejemplosVistos: string[]; // ids de paso cuyo aviso "EJEMPLO" ya no debe repetirse
+    completadoEn?: string;    // ISO
+  };
+  checklistInicial?: {
+    primeraSesion: boolean;
+    cincoIngestas: boolean;
+    leccionRir: boolean;
+  };
+
   // ── Churn + atribución (2026-08-02) ────────────────────────────────────────
   // Sin fechaBaja/motivoBaja, marcar a alguien de baja pierde para siempre
   // CUÁNDO y POR QUÉ — y el churn (KPI real del negocio, objetivo <10%) queda

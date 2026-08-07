@@ -12,6 +12,8 @@ import CoachesScreen from './CoachesScreen';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
+import { useTourTarget } from '../features/tutorial/TourTargetContext';
+import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { Icon, Button, PageHeader, ListRow, Input, Sheet } from './ui';
 
 interface ProfileScreenProps {
@@ -40,6 +42,9 @@ const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionn
 export default function ProfileScreen({ profile, isCoach, checkins, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const tutorial = useTutorialEngine();
+  const progressRowRef = useTourTarget('profile-progress-row');
+  const settingsActionRef = useTourTarget('profile-settings-action');
   const [showCoaches, setShowCoaches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
@@ -254,14 +259,14 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       <PageHeader
         title="Mi Perfil"
         subtitle="Progreso, gráficas y ficha."
-        action={<Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" />}
+        action={<span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>}
       />
 
       {/* ── Progreso y Road map absorbidos (F3.11, módulo 11: "Perfil absorbe
           Check-in y Road map") — CheckInScreen/AthleteRoadmapScreen se
           embeben enteros al expandir, no se reescriben ni se navega fuera. */}
       {!isCoach && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" ref={progressRowRef}>
           <ListRow
             onClick={() => setExpandedSection(v => v === 'progress' ? null : 'progress')}
             className="rounded-control border bg-surface border-hairline"
@@ -377,6 +382,17 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 chevron
               />
             )
+          )}
+
+          {!isCoach && (
+            <ListRow
+              onClick={() => { setShowSettings(false); tutorial.restart(); }}
+              className="rounded-control border bg-surface border-hairline"
+              leading={<Icon name="school" size="m" className="text-accent" />}
+              title="Repetir el tour"
+              subtitle="Vuelve a empezar desde el paso 01"
+              chevron
+            />
           )}
 
           <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">

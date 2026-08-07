@@ -10,6 +10,7 @@ import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import PlanInPreparationCard from './PlanInPreparationCard';
+import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow, ProgressBar } from './ui';
 
@@ -88,6 +89,8 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
 
   const cardioIsPrimary = isRestDay && !!cardioRx;
+  const primaryCardRef = useTourTarget('home-primary-card');
+  const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
     <div className="space-y-6">
@@ -101,7 +104,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         <>
           {/* ── Tarjeta primaria: entreno de fuerza, salvo día de descanso con cardio prescrito ── */}
           {!cardioIsPrimary && todayAssignment && (
-            <section className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
+            <section ref={primaryCardRef} className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Entreno de hoy</p>
               <p className="font-display text-feature font-black uppercase text-ink mt-1">{todayWorkout?.name ?? 'Rutina'}</p>
               {todayAssignment.status === 'completed' ? (
@@ -116,7 +119,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           )}
 
           {cardioIsPrimary && cardioRx && (
-            <section className="rounded-canvas p-5 border bg-surface border-hairline">
+            <section ref={primaryCardRef} className="rounded-canvas p-5 border bg-surface border-hairline">
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Día de descanso · Cardio</p>
               <p className="font-display text-feature font-black uppercase text-ink mt-1">
                 {cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
@@ -133,6 +136,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
           {/* ── Cardio como fila secundaria cuando hoy toca fuerza ── */}
           {!cardioIsPrimary && cardioRx && (
+            <div ref={cardioRowRef}>
             <ListRow
               onClick={() => onNavigate('cardio')}
               className="rounded-control border bg-surface border-hairline"
@@ -141,6 +145,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
               subtitle={cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
               chevron
             />
+            </div>
           )}
 
           {/* ── Nutrición: fila de progreso, nunca el detalle ── */}

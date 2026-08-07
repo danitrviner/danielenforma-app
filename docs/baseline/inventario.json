@@ -1,27 +1,27 @@
 {
-  "generado": "2026-08-07T15:29:20.189Z",
-  "commit": "c6eaf78",
+  "generado": "2026-08-07T15:47:01.226Z",
+  "commit": "77e6889",
   "totales": {
-    "archivosTsx": 161,
-    "lineasTsx": 41381
+    "archivosTsx": 164,
+    "lineasTsx": 41785
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4836,
+    "clasesTokenEnUso": 4854,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 2,
     "camposBajo16px": 0,
-    "fontMono": 966,
-    "fontSans": 899,
-    "pesosProhibidos": 42,
-    "espaciadoFueraEscala": 0,
-    "sombrasFueraEscala": 0,
+    "fontMono": 970,
+    "fontSans": 901,
+    "pesosProhibidos": 44,
+    "espaciadoFueraEscala": 2,
+    "sombrasFueraEscala": 3,
     "glowAcento": 0,
-    "modalesArtesanales": 8,
+    "modalesArtesanales": 10,
     "transitionAll": 231,
     "animatePulse": 27,
-    "ariaLabel": 46,
+    "ariaLabel": 47,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 2,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 151,
+    "roundedFull": 155,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 20,
@@ -84,7 +84,7 @@
     "archivosGrandes": [
       {
         "archivo": "src/components/NutritionScreen.tsx",
-        "lineas": 1892
+        "lineas": 1897
       },
       {
         "archivo": "src/components/MesocycleManager.tsx",
@@ -100,7 +100,7 @@
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
-        "lineas": 1010
+        "lineas": 1018
       },
       {
         "archivo": "src/components/RecipesScreen.tsx",
@@ -508,7 +508,7 @@
       "roundedFull": 2
     },
     "src/components/ProfileScreen.tsx": {
-      "clasesTokenEnUso": 50,
+      "clasesTokenEnUso": 53,
       "fontMono": 4,
       "fontSans": 7,
       "transitionAll": 1,
@@ -1099,6 +1099,17 @@
       "animatePulse": 1,
       "ariaLabel": 2,
       "roundedFull": 1
+    },
+    "src/features/tutorial/TourOverlay.tsx": {
+      "clasesTokenEnUso": 15,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 2,
+      "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 3,
+      "modalesArtesanales": 2,
+      "ariaLabel": 1,
+      "roundedFull": 4
     },
     "src/hooks/useToast.tsx": {
       "clasesTokenEnUso": 5,
