@@ -114,7 +114,7 @@ export default function ChallengeOptionsPanel({
             <div
               key={opt.kind}
               className="bg-surface border rounded-surface p-3 space-y-2"
-              style={{ borderColor: opt.isMilestone ? '#fbcb1a55' : 'rgba(255,255,255,0.07)' }}
+              style={{ borderColor: opt.isMilestone ? '#FFC72C55' : 'rgba(255,255,255,0.07)' }}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-bold text-white text-body-s">{opt.title}</p>

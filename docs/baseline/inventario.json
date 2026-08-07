@@ -1,12 +1,12 @@
 {
-  "generado": "2026-08-04T14:39:58.195Z",
-  "commit": "fadb3ad",
+  "generado": "2026-08-07T12:55:14.443Z",
+  "commit": "0f280ab",
   "totales": {
     "archivosTsx": 147,
     "lineasTsx": 39299
   },
   "metricas": {
-    "hexLiterales": 23,
+    "hexLiterales": 20,
     "clasesTokenEnUso": 4602,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
@@ -32,49 +32,41 @@
     "rounded2xl": 0,
     "rounded3xl": 0,
     "roundedFull": 155,
-    "hexDistintos": 13,
+    "hexDistintos": 12,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
-    "hexEnTokensCss": 21
+    "hexEnTokensCss": 14
   },
   "listas": {
     "hexDistintos": [
       "#000",
       "#00eefc",
-      "#181816",
       "#4a90d9",
       "#6b7280",
       "#a78bfa",
       "#fbcb1a",
-      "#fbcb1a33",
-      "#fbcb1a55",
       "#ff4d4d",
       "#ff8c42",
       "#ff8c69",
+      "#ffc72c33",
+      "#ffc72c55",
       "#fff"
     ],
     "hexEnTokensCss": [
-      "#000000",
       "#00eefc",
-      "#111110",
-      "#141413",
-      "#181816",
-      "#1e1e1b",
-      "#2a2a2a",
-      "#353534",
-      "#3e3e3e",
-      "#444",
-      "#555",
-      "#86efac",
-      "#8a8d7b",
+      "#050505",
+      "#0b0b0b",
+      "#0f0f0f",
+      "#141414",
+      "#1a1a1a",
+      "#3ecf8e",
       "#93c5fd",
       "#a78bfa",
-      "#c6c9ab",
-      "#d4a800",
-      "#f5f5f0",
-      "#fbcb1a",
-      "#fca5a5",
-      "#fdba74"
+      "#d9a925",
+      "#f5f5f4",
+      "#fdba74",
+      "#ff5a4e",
+      "#ffc72c"
     ],
     "tamanosTexto": [
       "10px",
@@ -454,14 +446,14 @@
       "fontSans": 4
     },
     "src/components/NutritionPerformanceDashboard.tsx": {
-      "hexLiterales": 2,
+      "hexLiterales": 1,
       "clasesTokenEnUso": 59,
       "fontMono": 6,
       "fontSans": 12,
       "roundedFull": 2
     },
     "src/components/NutritionPeriodizationPanel.tsx": {
-      "hexLiterales": 5,
+      "hexLiterales": 3,
       "clasesTokenEnUso": 53,
       "fontMono": 18,
       "fontSans": 10,

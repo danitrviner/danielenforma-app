@@ -262,7 +262,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     <div className="space-y-5">
       {/* Hero: current phase */}
       {activePhase ? (
-        <div className="relative bg-surface border border-hairline rounded-surface overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), #181816` }}>
+        <div className="relative bg-surface border border-hairline rounded-surface overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), var(--color-surface)` }}>
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>

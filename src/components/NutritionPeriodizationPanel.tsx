@@ -45,7 +45,7 @@ interface FormState {
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 
 function phaseTextColor(bgColor: string): string {
-  // #fbcb1a and #00eefc are light, others are darker
+  // accent y data son claros, el resto son oscuros
   if (bgColor === 'var(--color-accent)') return '#000';
   if (bgColor === 'var(--color-data)') return '#000';
   return '#fff';

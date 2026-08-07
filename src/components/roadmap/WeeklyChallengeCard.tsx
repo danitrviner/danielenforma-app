@@ -84,7 +84,7 @@ export function ChallengePendingCard() {
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-2"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#fbcb1a33' }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#FFC72C33' }}
     >
       <div className="flex items-center gap-2">
         <Icon name="hourglass_top" size="l" className="animate-pulse" />

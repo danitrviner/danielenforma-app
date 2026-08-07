@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.danielenforma.app',
   appName: 'En Forma',
   webDir: 'dist',
-  backgroundColor: '#111110',
+  backgroundColor: '#050505',
 };
 
 export default config;

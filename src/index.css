@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/* ── Fuentes · self-host (Fase 3) ─────────────────────────────────────────────
+   Capacitor empaqueta este build para iOS/Android: un atleta en un gimnasio
+   con mala cobertura abre la app y las fuentes tienen que estar YA en el
+   bundle, no pedirse a fonts.googleapis.com en caliente. @fontsource las trae
+   como archivos estáticos (woff2 subsetéado por rango unicode), así que solo
+   se piden los pesos y subconjuntos que de verdad se usan.
+   Material Symbols sigue remoto (index.html): re-hacer la iconografía es otro
+   proyecto, queda anotado como deuda offline conocida. */
+@import "@fontsource/archivo/700.css";
+@import "@fontsource/archivo/900.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";  /* font-extrabold, 23 usos existentes */
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
 /* ═══════════════════════════════════════════════════════════════════════════
    TOKENS DEL DESIGN SYSTEM
    Fuente única de verdad del color en Forma. Los valores viven aquí, en CSS,
@@ -10,20 +29,32 @@
    avisa en consola — el estilo simplemente desaparece.
 
    Estructura, para que las fases siguientes inserten sin reescribir:
-     · Tipografía        familias (F1) · escala de tamaños (F4)
+     · Tipografía        familias (F1) · escala de tamaños (F4) · display (F3.1)
      · Color             superficies, texto, líneas, marca, dato, estado (F1)
      · Radios            (F3)
      · Elevación         (F6)
-     · Motion            (F13)
+     · Motion            (F3.2)
    `static` es obligatorio: sin él Tailwind solo emite las variables que alguna
    clase de utilidad usa, y un `var(--color-x)` escrito en un estilo en línea o
    en un atributo SVG se quedaría sin definir — sin error de compilación y sin
    aviso en consola. Es la misma clase de fallo silencioso que frenó theme.ts.
+
+   ── Fase 3 (2026-08) ──────────────────────────────────────────────────────
+   Re-skin del handoff de experiencia (docs/design/fase3/). Mutación en el
+   sitio: los nombres de token no cambian, así que los 113 consumidores
+   existentes heredan la piel nueva sin tocar un componente. Donde la escala
+   del handoff es más fina que la actual (radios, superficies, texto), se
+   AÑADEN tokens nuevos en vez de forzar la escala vieja — las primitivas los
+   adoptan en F3.3.
    ═══════════════════════════════════════════════════════════════════════════ */
 @theme static {
   /* ── Tipografía ─────────────────────────────────────────────────────────── */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Solo para titulares y cifras protagonistas (--text-hero/-headline/-feature
+     de abajo, o combinada con un --text-title-* existente). Nunca en cuerpo
+     ni en UI: el handoff reserva Archivo para "lo que se lee de lejos". */
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
   /* ── Escala tipográfica · 8 pasos ───────────────────────────────────────────
      Cualquier tamaño fuera de esta tabla está prohibido. Antes convivían 16.
@@ -80,6 +111,29 @@
   --text-caption--line-height: 1.35;
   --text-caption--letter-spacing: 0.02em;
 
+  /* ── Escala display · 3 pasos (Fase 3) ──────────────────────────────────────
+     El handoff pide titulares y cifras protagonistas de 38 a 46 px en Archivo
+     900 — por encima de cualquier paso de la escala de arriba (tope: 32).
+     Igual que el resto del sistema, se gobiernan con pocos pasos: 46/38/26
+     cubren el rango observado (títulos de pantalla, "TE QUEDAN" de Nutrición,
+     nombre de ejercicio en Sesión, cifra "tu mejor serie"). Un titular de 24
+     no necesita paso propio: ya existe `--text-title-l`, y la familia se elige
+     aparte con `font-display` — el tamaño y la familia son variables
+     independientes en este sistema, igual que en la escala de abajo.
+     Las cifras de cardio en vivo (60-72 px) siguen siendo la excepción ya
+     documentada en DESIGN_SYSTEM_STATUS.md, no un cuarto paso de esta escala. */
+  --text-hero: 46px;
+  --text-hero--line-height: 1.05;
+  --text-hero--letter-spacing: -0.03em;
+
+  --text-headline: 38px;
+  --text-headline--line-height: 1.05;
+  --text-headline--letter-spacing: -0.025em;
+
+  --text-feature: 26px;
+  --text-feature--line-height: 1.1;
+  --text-feature--letter-spacing: -0.02em;
+
   /* ── Escala de icono · 4 pasos ──────────────────────────────────────────────
      Un icono NO es texto y no pertenece a la escala de arriba, aunque hasta
      ahora se dimensionara con ella: los 590 Material Symbols de la app llevan
@@ -101,74 +155,117 @@
   --text-icon-l:  24px;
   --text-icon-xl: 32px;
 
-  /* ── Superficies · 4 ────────────────────────────────────────────────────────
-     Cuatro niveles y ni uno más. Sustituyen a los ~20 grises casi idénticos.
-     `field` es más oscuro que su contenedor a propósito: el hueco se hunde. */
-  --color-bg:      #111110;
-  --color-surface: #181816;
-  --color-raised:  #1e1e1b;
-  --color-field:   #141413;
+  /* ── Superficies · 6 (Fase 3) ───────────────────────────────────────────────
+     El handoff distingue seis niveles donde antes había cuatro: el fondo casi
+     negro (`bg`) obliga a más pasos intermedios para que una tarjeta sobre
+     otra tarjeta siga siendo legible. `field` pasa a compartir valor con
+     `surface` —el handoff no hunde los campos, los pone al mismo nivel que la
+     tarjeta que los contiene—; `inset` es el nuevo escalón hundido de verdad
+     (miniaturas, botón "menos" del stepper, fondo del toast, botón
+     deshabilitado); `track` es solo para pistas de barra de progreso y
+     segmentos pendientes. */
+  --color-bg:      #050505;
+  --color-surface: #0B0B0B;
+  --color-raised:  #0F0F0F;
+  --color-field:   #0B0B0B;
+  --color-inset:   #141414;
+  --color-track:   #1a1a1a;
 
-  /* ── Texto · 3 + inverso ────────────────────────────────────────────────────
-     Contraste medido sobre `surface`. `ink-3` es nuevo: sustituye a #555 y #444
-     (2,38:1 y 1,83:1, ambos por debajo del mínimo AA de 4,5:1). */
-  --color-ink:       #f5f5f0;  /* 16,3:1 — títulos, cifras, nombres           */
-  --color-ink-2:     #c6c9ab;  /* 10,5:1 — apoyo, etiquetas, descripciones    */
-  --color-ink-3:     #8a8d7b;  /*  5,2:1 — placeholders, ayudas, timestamps   */
-  --color-on-accent: #000000;  /* 13,7:1 — único color admitido sobre el oro  */
+  /* ── Texto · 5 + inverso (Fase 3) ───────────────────────────────────────────
+     El handoff expresa el texto secundario como alfa sobre `ink`, no como un
+     gris sólido nuevo: así el texto se comporta igual sobre cualquier
+     superficie (surface/raised/inset) sin recalcular contraste por par de
+     colores. `ink-4`/`ink-5` son nuevos —etiqueta mono y pie de página—, por
+     debajo de `ink-3` no hay más pasos: seguir bajando el alfa deja de leerse. */
+  --color-ink:       #F5F5F4;
+  --color-ink-2:     rgba(245, 245, 244, 0.6);   /* apoyo, etiquetas, descripciones */
+  --color-ink-3:     rgba(245, 245, 244, 0.45);  /* placeholders, ayudas, timestamps */
+  --color-ink-4:     rgba(245, 245, 244, 0.34);  /* etiqueta mono, dato terciario    */
+  --color-ink-5:     rgba(245, 245, 244, 0.26);  /* pie de página, texto deshabilitado */
+  --color-on-accent: #050505;  /* único color admitido sobre el oro             */
 
   /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
      Todos los bordes son de 1 px. El borde —no la sombra— define una superficie.
-     Nada de blanco por encima del 12 %: sobre #111110 es una línea blanca.
+     Nada de blanco por encima del 12 %: sobre #050505 es una línea blanca.
      `accent-line` se llama así, y no `accent`, porque `--color-accent` ya es el
-     oro sólido: en Tailwind ambos generarían la misma clase `border-accent`. */
+     oro sólido: en Tailwind ambos generarían la misma clase `border-accent`.
+     El handoff usa oro al 45/42/40/55 % según el contexto (chip seleccionado,
+     contorno de botón secundario, selector inactivo, foco del tutorial): esos
+     matices no son tokens nuevos, son el modificador de opacidad de Tailwind
+     v4 sobre `--color-accent` (`border-accent/42`, `border-accent/55`) — el
+     mismo mecanismo que ya usan 200+ sitios con `border-white/N`. */
   --color-hairline:    rgba(255, 255, 255, 0.07);
   --color-strong:      rgba(255, 255, 255, 0.12);
-  --color-accent-line: rgba(251, 203, 26, 0.35);
+  --color-accent-line: rgba(255, 199, 44, 0.45);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
      El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
      Máximo un elemento amarillo relleno por pantalla visible. */
-  --color-accent:       #fbcb1a;
-  --color-accent-press: #d4a800;  /* solo pulsado y hover del primario        */
-  --color-accent-bg:    rgba(251, 203, 26, 0.10);
+  --color-accent:       #FFC72C;
+  --color-accent-press: #D9A925;  /* solo pulsado y hover del primario        */
+  --color-accent-bg:    rgba(255, 199, 44, 0.14);
 
   /* ── Dato · 1 ───────────────────────────────────────────────────────────────
-     El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo. */
+     El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo.
+     En retirada: el handoff no lo usa fuera de zonas de FC (excepción propia,
+     ver --color-chart-*); se borra cuando su contador llegue a 0 (F15). */
   --color-data: #00eefc;
 
   /* ── Estado · 4 ─────────────────────────────────────────────────────────────
-     Un tono por estado: texto al 100 %, fondo al 10 %, borde al 25 %. */
-  --color-success: #86efac;  /* completado, al día, dentro de objetivo        */
-  --color-warning: #fdba74;  /* atención sin urgencia                         */
-  --color-danger:  #fca5a5;  /* error, atrasado, acción destructiva           */
-  --color-info:    #93c5fd;  /* neutro informativo                            */
+     Un tono por estado: texto al 100 %, fondo a un alfa bajo, borde a uno medio
+     (aplicados por opacidad en cada consumidor, no como tokens separados).
+     `success`/`danger` son los del handoff (verde/rojo de fuerza y nutrición).
+     `warning`/`info` NO están en el handoff —sus pantallas resuelven "atención"
+     y "informativo" con oro— pero 45+ sitios de análisis del coach (gráficas
+     de correlación, carga de entrenamiento, dashboards con más de dos estados)
+     los necesitan como una tercera y cuarta categoría real, no decorativa.
+     Se mantienen sin cambio de valor: no forman parte del re-skin. */
+  --color-success: #3ECF8E;  /* completado, al día, dentro de objetivo        */
+  --color-warning: #fdba74;  /* atención sin urgencia (fuera del handoff)     */
+  --color-danger:  #FF5A4E;  /* error, atrasado, acción destructiva           */
+  --color-info:    #93c5fd;  /* neutro informativo (fuera del handoff)        */
 
   /* ── Series de gráfica · 5 ──────────────────────────────────────────────────
      Orden de asignación fijo; la primera serie siempre es `data`. Se declaran
      aquí para que ningún hex literal sobreviva en los paneles de gráficas.
-     Quien las consume de verdad es F10. Una sexta serie significa que la
-     gráfica está mal planteada. */
+     Los valores siguen a `data`/`accent`/`success` para no desincronizarse del
+     token que dicen representar. Una sexta serie significa que la gráfica está
+     mal planteada. Excepción propia y ya documentada: las 5 zonas de FC de
+     Cardio/Gráficas usan sus propios colores (Z1-Z5), no esta escala. */
   --color-chart-1: #00eefc;  /* = data    */
-  --color-chart-2: #fbcb1a;  /* = accent  */
+  --color-chart-2: #FFC72C;  /* = accent  */
   --color-chart-3: #a78bfa;
-  --color-chart-4: #86efac;  /* = success */
+  --color-chart-4: #3ECF8E;  /* = success */
   --color-chart-5: #fdba74;  /* = warning */
 
-  
-  /* ── Radios · 3 + full ──────────────────────────────────────────────────────
-     Tres valores y una regla de anidamiento: un hijo siempre baja un escalón
-     respecto a su padre. Dentro de una `surface` (16) los elementos son
-     `control` (10). Nunca igual al padre, nunca mayor — eso es lo que produce
-     el efecto de esquinas concéntricas descuadradas.
 
-       control   botones, campos, chips, badges, celdas, iconos-botón
-       surface   tarjetas, paneles, filas de lista, contenedores de sección
-       canvas    modales, bottom sheets y la tarjeta protagonista
-       full      avatares, pills de estado, FAB, interruptores, anillos     */
-  --radius-control: 10px;
-  --radius-surface: 16px;
+  /* ── Radios · 6 + full (Fase 3) ─────────────────────────────────────────────
+     El handoff pide más granularidad que los tres pasos originales — nueve
+     valores entre 8 y 26 px según el elemento. En vez de perseguir cada
+     número exacto (a 375 px la diferencia entre 15 y 16, o entre 18 y 20, no
+     se percibe — la propia fase F3 de la migración ya estableció ese
+     criterio), se amplía a seis pasos que absorben los valores cercanos:
+
+       chip      11   chips, casillas, pastillas mono               (nuevo)
+       control   14   cuadros de icono, miniaturas, botones de icono (10→14, absorbe 13)
+       field     16   botones y campos de entrada                    (nuevo, absorbe 15)
+       surface   20   tarjetas, filas de lista, banners              (16→20, absorbe 18)
+       canvas    24   tarjeta grande, Dialog
+       sheet     26   Sheet — bottom sheets                          (nuevo)
+       full      —    avatares, pills de estado, FAB, interruptores, anillos
+
+     Regla de anidamiento igual que antes: un hijo baja de escalón respecto a
+     su padre (nunca igual, nunca mayor). `control` y `surface` mutan de valor
+     en este commit, así que los 113 consumidores existentes de
+     `rounded-control`/`rounded-surface` heredan el radio nuevo sin tocar un
+     componente; la migración de Button/Input a `field` y de Chip a `chip`
+     ocurre en F3.3 (primitivas), no aquí. */
+  --radius-chip:    11px;
+  --radius-control: 14px;
+  --radius-field:   16px;
+  --radius-surface: 20px;
   --radius-canvas:  24px;
+  --radius-sheet:   26px;
 
   /* ── Elevación · 3 + ninguna ────────────────────────────────────────────────
      Sobre un fondo casi negro la sombra apenas se percibe: la elevación se
@@ -300,11 +397,11 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: var(--color-track);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3e3e3e;
+  background: var(--color-strong);
 }
 
 /* Range input styling for En Forma */
@@ -318,16 +415,16 @@ input[type=range]::-webkit-slider-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #fbcb1a;
+  background: var(--color-accent);
   cursor: pointer;
   margin-top: -8px;
-  box-shadow: 0 0 0 3px #141413;
+  box-shadow: 0 0 0 3px var(--color-inset);
 }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
   cursor: pointer;
-  background: #353534;
+  background: var(--color-track);
   border-radius: 2px;
 }
 input[type=range]:focus {
