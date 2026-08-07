@@ -187,18 +187,30 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   return (
     <div className="min-h-screen bg-bg flex flex-col relative overflow-hidden">
       <style>{`@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }`}</style>
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/5 blur-[120px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-data/5 blur-[120px] rounded-full pointer-events-none"></div>
+      {/* Corrige P0-1 de la auditoría visual (docs/auditoria-visual/hallazgos.md):
+          los brillos con offset negativo (-10%) inflaban el scrollWidth del
+          ancestro a 413 px en un viewport de 375 — `overflow-hidden` en el
+          contenedor flex de arriba no bastaba. Un wrapper propio, absoluto y
+          recortado a los cuatro bordes, los aísla del cálculo de layout del
+          resto de la pantalla. */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/6 blur-[120px] rounded-full"></div>
+      </div>
 
-      {/* Progreso */}
+      {/* Progreso — corrige P2-1: pista más visible (track, no white/5) y
+          "Paso N de M" explícito en vez de solo la fracción junto al logo. */}
       <div className="w-full max-w-lg mx-auto px-6 pt-8">
         <div className="flex items-center gap-2 mb-2">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-control" />
+          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
-          <span className="ml-auto font-mono text-caption text-ink-2">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
+          {step > 0 && (
+            <span className="ml-auto font-mono text-caption uppercase tracking-widest text-ink-2">
+              Paso {step} de {TOTAL_STEPS - 1}
+            </span>
+          )}
         </div>
-        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-1.5 bg-track rounded-full overflow-hidden">
+          <div className="h-full bg-accent rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
@@ -402,24 +414,26 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               })}
             </div>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-surface text-body-s text-center">{error}</div>
+              <div className="bg-danger/7 border border-danger/24 text-danger p-3 rounded-surface text-body-s text-center">{error}</div>
             )}
           </StepShell>
         )}
       </div>
 
-      {/* Navegación */}
+      {/* Navegación — corrige P1-2: la jerarquía estaba invertida porque
+          "Siguiente" no llevaba variant="primary" (el default de Button es
+          "secondary", igual que "Atrás" — ambos pesaban lo mismo). */}
       <div className="w-full max-w-lg mx-auto px-6 pb-10 flex gap-3">
         {step > 0 && step < TOTAL_STEPS - 1 && (
-          <Button variant="secondary" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
+          <Button variant="ghost" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <Button size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
+          <Button variant="primary" size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
             {step === 0 ? 'Empezar' : 'Siguiente'}
           </Button>
         ) : (
-          <Button size="l" onClick={finish} disabled={saving} className="flex-1">
-            {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
+          <Button variant="primary" size="l" loading={saving} loadingLabel="Guardando" onClick={finish} className="flex-1">
+            Entrar en EN FORMA
           </Button>
         )}
       </div>

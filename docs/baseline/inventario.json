@@ -1,26 +1,26 @@
 {
-  "generado": "2026-08-07T13:49:27.849Z",
-  "commit": "192f342",
+  "generado": "2026-08-07T13:57:45.234Z",
+  "commit": "2c4d05f",
   "totales": {
     "archivosTsx": 158,
-    "lineasTsx": 40511
+    "lineasTsx": 40575
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4694,
+    "clasesTokenEnUso": 4710,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 948,
+    "fontMono": 950,
     "fontSans": 903,
-    "pesosProhibidos": 25,
+    "pesosProhibidos": 26,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 254,
-    "animatePulse": 29,
+    "transitionAll": 252,
+    "animatePulse": 28,
     "ariaLabel": 41,
     "htmlFor": 1,
     "focusVisible": 50,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 157,
+    "roundedFull": 156,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -195,11 +195,11 @@
       "roundedFull": 1
     },
     "src/components/AthleteOnboardingWizard.tsx": {
-      "clasesTokenEnUso": 42,
+      "clasesTokenEnUso": 44,
       "fontMono": 5,
       "fontSans": 11,
-      "transitionAll": 2,
-      "roundedFull": 4
+      "transitionAll": 1,
+      "roundedFull": 3
     },
     "src/components/AthleteReportsPanel.tsx": {
       "clasesTokenEnUso": 9,
@@ -498,8 +498,11 @@
       "roundedFull": 1
     },
     "src/components/PlanInPreparationCard.tsx": {
-      "clasesTokenEnUso": 15,
-      "fontSans": 3
+      "clasesTokenEnUso": 24,
+      "fontMono": 1,
+      "fontSans": 4,
+      "pesosProhibidos": 1,
+      "roundedFull": 2
     },
     "src/components/ProfileScreen.tsx": {
       "clasesTokenEnUso": 63,
@@ -642,13 +645,11 @@
       "roundedFull": 2
     },
     "src/components/WelcomeScreen.tsx": {
-      "clasesTokenEnUso": 29,
-      "fontMono": 4,
-      "fontSans": 3,
+      "clasesTokenEnUso": 34,
+      "fontMono": 5,
+      "fontSans": 2,
       "pesosProhibidos": 2,
-      "transitionAll": 1,
-      "animatePulse": 1,
-      "roundedFull": 4
+      "roundedFull": 2
     },
     "src/components/WorkoutsScreen.tsx": {
       "clasesTokenEnUso": 123,

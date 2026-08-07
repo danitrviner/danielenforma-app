@@ -13,7 +13,7 @@ import PlanInPreparationCard from './PlanInPreparationCard';
 import { Skeleton } from './ui';
 import { Icon, PageHeader, ListRow } from './ui';
 
-type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio';
+type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
 interface HomeScreenProps {
   profile: UserProfile;
