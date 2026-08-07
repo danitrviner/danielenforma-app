@@ -63,6 +63,53 @@ export function sumaCents(items: { importeCents: number }[]): number {
   return items.reduce((acc, i) => acc + (i.importeCents ?? 0), 0);
 }
 
+export interface IngresoMensual {
+  mes: string; // 'YYYY-MM'
+  totalCents: number;
+}
+
+/**
+ * Cobrado real por mes (solo `estado === 'pagado'`, agrupado por `fechaCobro`
+ * — NO por `fechaEmision`, que puede caer en un mes distinto de cuando entró
+ * el dinero), para los últimos `meses` meses incluyendo el actual. Meses sin
+ * ningún pago cobrado salen con `totalCents: 0`, no se omiten — el histograma
+ * necesita huecos visibles, no una serie comprimida.
+ */
+export function ingresosPorMes(
+  pagos: { estado: EstadoPagoLike; fechaCobro?: string; importeCents: number }[],
+  meses = 7,
+  hoy: Date = new Date()
+): IngresoMensual[] {
+  const claves = Array.from({ length: meses }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const totales = new Map(claves.map(c => [c, 0]));
+  for (const p of pagos) {
+    if (p.estado !== 'pagado' || !p.fechaCobro) continue;
+    const clave = p.fechaCobro.slice(0, 7);
+    if (totales.has(clave)) totales.set(clave, totales.get(clave)! + p.importeCents);
+  }
+  return claves.map(mes => ({ mes, totalCents: totales.get(mes)! }));
+}
+
+// Tipado laxo a propósito: `dinero.ts` no importa `EstadoPago` de `../types`
+// para no crear una dependencia circular entre lib y types.
+type EstadoPagoLike = 'pendiente' | 'pagado';
+
+/**
+ * % de variación del último mes de la serie respecto al anterior. `null` si
+ * no hay mes anterior con el que comparar o si fue 0 (división por cero, y
+ * "+∞%" no es un dato útil para el badge).
+ */
+export function variacionMensualPct(serie: IngresoMensual[]): number | null {
+  if (serie.length < 2) return null;
+  const anterior = serie[serie.length - 2].totalCents;
+  const actual = serie[serie.length - 1].totalCents;
+  if (anterior === 0) return null;
+  return Math.round(((actual - anterior) / anterior) * 100);
+}
+
 /**
  * Reparte un importe en N cuotas enteras en céntimos, sin perder ni un
  * céntimo por redondeo: todas iguales salvo la última, que absorbe el resto

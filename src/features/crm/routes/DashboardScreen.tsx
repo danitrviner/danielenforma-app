@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useClientes } from '../hooks/useClientes';
 import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
-import { formatEuros, sumaCents } from '../lib/dinero';
+import { formatEuros, sumaCents, ingresosPorMes } from '../lib/dinero';
 import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
+import RecurringRevenueCard from '../components/RecurringRevenueCard';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
+import Skeleton from '../../../components/ui/Skeleton';
 
 const MAX_FILAS = 6;
 
@@ -34,6 +36,8 @@ export default function DashboardScreen() {
     () => pagos.filter(p => p.estado === 'pendiente').sort((a, b) => a.fechaEmision.localeCompare(b.fechaEmision)).slice(0, MAX_FILAS),
     [pagos]
   );
+
+  const serieIngresos = useMemo(() => ingresosPorMes(pagos), [pagos]);
 
   const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
   const totalPendiente = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
@@ -93,6 +97,12 @@ export default function DashboardScreen() {
           onClick={() => navigate('/crm/pagos?estado=pagado')}
         />
       </div>
+
+      {pagosSinDato ? (
+        <Skeleton className="h-[104px] w-full" />
+      ) : (
+        <RecurringRevenueCard serie={serieIngresos} onClick={() => navigate('/crm/pagos?estado=pagado')} />
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         <MetricCard
