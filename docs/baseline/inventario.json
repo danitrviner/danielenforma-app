@@ -1,26 +1,26 @@
 {
-  "generado": "2026-08-07T15:47:01.226Z",
-  "commit": "77e6889",
+  "generado": "2026-08-07T15:54:42.997Z",
+  "commit": "4271f3b",
   "totales": {
-    "archivosTsx": 164,
-    "lineasTsx": 41785
+    "archivosTsx": 165,
+    "lineasTsx": 41914
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4854,
+    "clasesTokenEnUso": 4865,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 2,
     "camposBajo16px": 0,
-    "fontMono": 970,
-    "fontSans": 901,
-    "pesosProhibidos": 44,
+    "fontMono": 973,
+    "fontSans": 900,
+    "pesosProhibidos": 45,
     "espaciadoFueraEscala": 2,
     "sombrasFueraEscala": 3,
     "glowAcento": 0,
     "modalesArtesanales": 10,
     "transitionAll": 231,
-    "animatePulse": 27,
+    "animatePulse": 29,
     "ariaLabel": 47,
     "htmlFor": 1,
     "focusVisible": 50,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 155,
+    "roundedFull": 157,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 20,
@@ -143,10 +143,6 @@
         "lineas": 657
       },
       {
-        "archivo": "src/components/ClientsScreen.tsx",
-        "lineas": 645
-      },
-      {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
         "lineas": 644
       },
@@ -161,6 +157,10 @@
       {
         "archivo": "src/components/CheckInScreen.tsx",
         "lineas": 630
+      },
+      {
+        "archivo": "src/components/ClientsScreen.tsx",
+        "lineas": 626
       }
     ]
   },
@@ -273,12 +273,12 @@
       "roundedFull": 4
     },
     "src/components/ClientsScreen.tsx": {
-      "clasesTokenEnUso": 89,
-      "fontMono": 12,
-      "fontSans": 28,
+      "clasesTokenEnUso": 78,
+      "fontMono": 11,
+      "fontSans": 25,
       "pesosProhibidos": 2,
       "transitionAll": 4,
-      "animatePulse": 2,
+      "animatePulse": 1,
       "roundedFull": 2
     },
     "src/components/CoachNotesPanel.tsx": {
@@ -359,6 +359,14 @@
       "fontMono": 8,
       "fontSans": 4,
       "transitionAll": 5
+    },
+    "src/components/HomeCoachScreen.tsx": {
+      "clasesTokenEnUso": 22,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 1,
+      "animatePulse": 3,
+      "roundedFull": 2
     },
     "src/components/HomeScreen.tsx": {
       "clasesTokenEnUso": 37,

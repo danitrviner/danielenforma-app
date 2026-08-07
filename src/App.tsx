@@ -79,7 +79,12 @@ const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: strin
 ];
 
 const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
-  { id: 'clients',   label: 'Clientes',   icon: 'group'           },
+  // F3.13a: "Home Coach sustituye la entrada del coach" (decisión de Dani,
+  // 2026-08-07) — la ruta sigue siendo /clients (no romper enlaces
+  // existentes ni el :athleteId de ClientHub), solo cambian la etiqueta y
+  // el icono; el contenido en sí lo decide ClientsScreen (HomeCoachScreen
+  // prepended, ver ese commit).
+  { id: 'clients',   label: 'Inicio',     icon: 'bolt'            },
   { id: 'crm',       label: 'CRM',        icon: 'contacts'        },
   { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
   { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
@@ -419,7 +424,6 @@ function AppContent() {
                 onRefreshCheckIns={handleRefreshData}
                 coachId={profile.userId}
                 coachEmail={profile.email}
-                onOpenReviews={() => goToTab('reviews')}
               />
             );
             return (

@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
 import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
+import HomeCoachScreen from './HomeCoachScreen';
 import ResourcesPanel from './ResourcesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
@@ -24,10 +25,9 @@ interface ClientsScreenProps {
   onRefreshCheckIns: () => void;
   coachId: string;
   coachEmail: string;
-  onOpenReviews?: () => void;
 }
 
-export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
+export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -56,6 +56,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   });
   const allAssignments = new Map<string, WorkoutAssignment[]>();
   athletes.forEach((a, i) => allAssignments.set(a.email, assignmentsQueries[i]?.data ?? []));
+  const loadingAssignments = assignmentsQueries.some(q => q.isPending);
 
   const workoutLogsQueries = useQueries({
     queries: athletes.map(a => ({
@@ -165,8 +166,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const activeAnalisisTab: AnalisisTab = (subTab && (ANALISIS_TABS as readonly string[]).includes(subTab))
     ? (subTab as AnalisisTab)
     : DEFAULT_ANALISIS_TAB;
-
-  const pendingCheckins = getPendingReviews(checkins);
 
   const todayMs = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
@@ -320,6 +319,15 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
       </header>
 
+      {!loadingAthletes && (
+        <HomeCoachScreen
+          athletes={athletes}
+          checkins={checkins}
+          assignmentsByEmail={allAssignments}
+          loadingAssignments={loadingAssignments}
+        />
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
@@ -361,33 +369,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
         {/* Pending reviews + notes */}
         <div className="lg:col-span-7 flex flex-col gap-4">
-          <button
-            onClick={onOpenReviews}
-            disabled={!onOpenReviews}
-            className="bg-surface border border-hairline p-5 rounded-control flex flex-col justify-between text-left hover:border-data/40 transition-colors disabled:cursor-default disabled:hover:border-hairline"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-data text-title-m">pending_actions</span>
-                <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Revisiones Pendientes</h2>
-              </div>
-              {pendingCheckins.length > 0 ? (
-                <span className="text-caption bg-red-500/10 text-rose-400 px-3 border border-red-500/25 rounded-control font-sans uppercase font-bold animate-pulse">
-                  {pendingCheckins.length} por evaluar
-                </span>
-              ) : (
-                <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
-              )}
-            </div>
-            {pendingCheckins.length === 0 ? (
-              <p className="text-label font-bold text-white">¡Sin revisiones pendientes!</p>
-            ) : (
-              <p className="text-body-s text-ink-2 font-mono">
-                Ve a <strong className="text-accent">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
-              </p>
-            )}
-          </button>
-
           {/* Pending notes */}
           <div className="bg-surface border border-hairline p-5 rounded-surface">
             <div className="flex items-center justify-between mb-3">
