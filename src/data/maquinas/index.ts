@@ -18,14 +18,18 @@
 // El núcleo no se toca en ningún paso.
 
 import type { Maquina } from '../../types';
+import hammerStrength from './hammerStrength.json';
+import technogym from './technogym.json';
 
 // Se sube a mano cada vez que cambia el contenido de la semilla. Un atleta que
 // ya completó el catálogo con una versión anterior vuelve a tener máquinas
 // pendientes (solo las nuevas) en vez de quedarse en `completado` para siempre.
 export const CATALOGO_VERSION = '2026-08-07.1';
 
+// 41 Hammer Strength (Plate Loaded) + 22 Technogym (Pure Strength).
+// Todas llegan con `publicadoEn: null`: no las ve ningún atleta hasta que un
+// admin las revisa y publica desde Perfil › Ajustes › Máquinas.
 export const SEMILLA_MAQUINAS: Maquina[] = [
-  // Rellenado en F1 por los importadores:
-  //   ...(hammerStrength as Maquina[]),
-  //   ...(technogym as Maquina[]),
+  ...(hammerStrength as Maquina[]),
+  ...(technogym as Maquina[]),
 ];
