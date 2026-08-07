@@ -10,6 +10,7 @@ import {
   computePhaseStartDate,
 } from '../dbService';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import {
   resolvePhaseTargetKcal,
   suggestPhaseTargetKcal,
@@ -62,7 +63,6 @@ function addWeeks(isoDate: string, weeks: number): string {
   return d.toISOString().split('T')[0];
 }
 
-function roundQuarter(x: number): number { return Math.round(x / 0.25) * 0.25; }
 
 function fmtKcal(n: number | null): string {
   return n == null ? '—' : `${Math.round(n).toLocaleString('es-ES')} kcal`;

@@ -32,6 +32,12 @@ export const MODE_LABEL: Record<DietMode, string> = {
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
+// Quantities in the exchange system move in quarters (0.25 intercambio):
+// duplicated 5 times across the codebase (menuEngine, RecipeBuilderScreen,
+// NutritionPeriodizationPanel, CoachesScreen, OnboardingForm) before this
+// consolidation — see roundQuarter.test.ts.
+export const roundQuarter = (n: number) => Math.round(n / 0.25) * 0.25;
+
 export function fmtQty(q: number): string {
   if (Number.isInteger(q)) return String(q);
   return q.toFixed(2).replace(/\.?0+$/, '');

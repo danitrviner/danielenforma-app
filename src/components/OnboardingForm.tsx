@@ -8,6 +8,7 @@ import {
 import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import { Icon, Button } from './ui';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
@@ -57,10 +58,8 @@ const INTAKE_ICONS: Record<number, string> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function roundQ(x: number): number { return Math.round(x / 0.25) * 0.25; }
-
 function fmtExch(x: number): string {
-  const r = roundQ(x);
+  const r = roundQuarter(x);
   return r % 1 === 0 ? r.toFixed(0) : r.toFixed(2);
 }
 

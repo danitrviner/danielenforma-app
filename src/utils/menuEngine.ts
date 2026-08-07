@@ -2,7 +2,7 @@ import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
   BudgetVec, MenuDay, MenuMeal, MenuComplement,
 } from '../types';
-import { addToPlaced, round2 } from './exchangeHelpers';
+import { addToPlaced, round2, roundQuarter } from './exchangeHelpers';
 import { ingredientMatch, normalizeStr } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
@@ -16,8 +16,6 @@ import { dishType, DishType } from './dishTypes';
 
 export const MENU_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-const rQ = (x: number) => Math.round(x / 0.25) * 0.25;
 
 export interface MealSlotSpec {
   slot: number;   // intakeType 1-5
@@ -104,9 +102,9 @@ export function recipeMatchesSlot(recipe: Recipe, slot: number): boolean {
 
 export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): BudgetVec[] {
   return slots.map(sl => ({
-    HC: rQ(dayBudget.HC * sl.pct / 100),
-    PROT: rQ(dayBudget.PROT * sl.pct / 100),
-    GRASA: rQ(dayBudget.GRASA * sl.pct / 100),
+    HC: roundQuarter(dayBudget.HC * sl.pct / 100),
+    PROT: roundQuarter(dayBudget.PROT * sl.pct / 100),
+    GRASA: roundQuarter(dayBudget.GRASA * sl.pct / 100),
   }));
 }
 

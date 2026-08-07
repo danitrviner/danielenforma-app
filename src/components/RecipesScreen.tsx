@@ -6,11 +6,14 @@ import {
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites,
   getAthleteNutritionConfig, queryIndyaRecipes, getOnboarding,
+  getDietsForAthlete, getAthleteDietConfig,
 } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
+import { BUDGET_CATS, roundQuarter } from '../utils/exchangeHelpers';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Skeleton } from './ui';
-import { EmptyState, Badge, Chip } from './ui';
+import { EmptyState, Badge, Chip, SearchField, Button } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -211,21 +214,45 @@ interface DetailProps {
   isDisliked: boolean;
   enabledModes: DietMode[];
   savingFav: boolean;
+  /** Cupo diario total del atleta (suma HC+PROT+GRASA); null si no tiene dieta activa. */
+  dailyBudgetTotal: number | null;
   onBack: () => void;
   onToggleFav: (id: string) => void;
   onToggleDislike: (id: string) => void;
   onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBack, onToggleFav, onToggleDislike, onAddToIntercambios }: DetailProps) {
+// Escala una receta ×0,25–×3 (handoff, panel 03): intercambios e ingredientes
+// se redondean al cuarto más cercano, kcal recalcula proporcional.
+function scaleRecipe(recipe: Recipe, scale: number): Recipe {
+  if (scale === 1) return recipe;
+  return {
+    ...recipe,
+    ingredients: (recipe.ingredients ?? []).map(ing => ({ ...ing, quantity: roundQuarter(ing.quantity * scale) })),
+    exchanges: recipe.exchanges ? {
+      HC: roundQuarter(recipe.exchanges.HC * scale),
+      PROT: roundQuarter(recipe.exchanges.PROT * scale),
+      GRASA: roundQuarter(recipe.exchanges.GRASA * scale),
+    } : undefined,
+    kcal: recipe.kcal != null ? Math.round(recipe.kcal * scale) : recipe.kcal,
+  };
+}
+
+const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
+
+function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
+  const [scale, setScale] = useState(1);
   const isIndya = recipe.ownerId === 'indya';
-  const exch = calcExchanges(recipe);
+  const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
+  const exch = calcExchanges(scaledRecipe);
+  const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
+  const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
   const photo = recipe.image ?? recipe.photoUrl;
 
   const visibleIngredients = isIndya
     ? []
-    : (recipe.ingredients ?? []).filter(ing => enabledModes.includes(ing.mode));
+    : (scaledRecipe.ingredients ?? []).filter(ing => enabledModes.includes(ing.mode));
 
   return (
     <div className="space-y-6">
@@ -239,23 +266,14 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
           Recetas
         </button>
         <div className="flex items-center gap-4">
-          {onAddToIntercambios && (
-            <button
-              onClick={() => onAddToIntercambios(recipe)}
-              className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider text-data hover:text-white transition-all"
-            >
-              <span className="material-symbols-outlined text-title-m">playlist_add</span>
-              Añadir a Intercambios
-            </button>
-          )}
           <button
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
-            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-transform duration-(--duration-state) ease-brand active:scale-90 disabled:opacity-50"
             style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
           >
             <span
-              className="material-symbols-outlined text-title-m"
+              className="material-symbols-outlined text-title-m transition-colors duration-(--duration-state)"
               style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
@@ -353,6 +371,47 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, onBa
               </span>
             ))}
         </div>
+
+        {/* Escala — panel 03 del handoff: ×0,25–×3, recalcula en vivo */}
+        {(recipe.exchanges || (recipe.ingredients?.length ?? 0) > 0) && (
+          <div className="bg-surface border border-hairline rounded-surface p-4">
+            <div className="flex items-baseline justify-between">
+              <span className="font-mono text-caption font-semibold tracking-[.14em] text-ink-3">ESCALA</span>
+              <span className="font-mono text-title-s font-bold text-accent">×{String(scale).replace('.', ',')}</span>
+            </div>
+            <input
+              type="range"
+              min={0.25}
+              max={3}
+              step={0.25}
+              value={scale}
+              onChange={e => setScale(roundQuarter(parseFloat(e.target.value)))}
+              aria-label="Escala de la receta"
+              className="w-full mt-3 accent-accent"
+            />
+            <div className="flex justify-between font-mono text-caption text-ink-4">
+              <span>×0,25</span><span>×3</span>
+            </div>
+
+            {dailyBudgetTotal != null && (
+              <div className={`flex items-center gap-2 mt-4 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fitsBudget ? 'bg-success/10 border-success/30 text-success' : 'bg-accent-bg border-accent-line text-accent'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full flex-none ${fitsBudget ? 'bg-success' : 'bg-accent'}`} />
+                <span className="font-mono text-label font-semibold tracking-[.04em]">
+                  {fitsBudget ? 'CABE EN TU PRESUPUESTO DE HOY' : 'SE SALE DE TU PRESUPUESTO DE HOY'}
+                </span>
+              </div>
+            )}
+
+            {onAddToIntercambios && (
+              <Button variant="primary" size="l" fullWidth onClick={() => onAddToIntercambios(scaledRecipe)} className="mt-3">
+                Añadir a la comida
+              </Button>
+            )}
+            <p className="text-center font-mono text-caption tracking-[.08em] text-ink-4 mt-3">
+              LA ESCALA RECALCULA EN VIVO · EL AJUSTE PARA EN ×0,25
+            </p>
+          </div>
+        )}
 
         {/* Indya macros breakdown */}
         {isIndya && recipe.macros && (
@@ -487,6 +546,32 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     queryFn: () => getOnboarding(profile.email),
   });
   const loading = loadingRecipes || loadingFavorites || loadingNutConfig || loadingOnboarding;
+
+  // Presupuesto diario del atleta — solo para el chip "Cabe en mi presupuesto"
+  // (panel 03 del handoff). Compara contra el cupo total del día, no contra lo
+  // que queda por comer ahora mismo: ese cálculo vive en NutritionScreen y
+  // duplicarlo aquí (con su propio itemStates) se sale del alcance de F3.8.
+  const { data: diets = [] } = useQuery({
+    queryKey: ['dietsForAthlete', profile.email],
+    queryFn: () => getDietsForAthlete(profile.email),
+  });
+  const { data: dietConfig = null } = useQuery({
+    queryKey: ['athleteDietConfig', profile.email],
+    queryFn: () => getAthleteDietConfig(profile.email).catch(() => null),
+  });
+  const dailyBudgetTotal = useMemo(() => {
+    const activeIds = new Set(dietConfig?.activeDietIds ?? []);
+    const active = diets.filter(d => activeIds.has(d.id));
+    if (active.length === 0) return null;
+    return active.reduce((sum, d) => sum + BUDGET_CATS.reduce((s, c) => s + (d.budget[c] ?? 0), 0), 0);
+  }, [diets, dietConfig]);
+  const [onlyFitsBudget, setOnlyFitsBudget] = useState(true);
+  const fitsBudget = useCallback((r: Recipe) => {
+    if (dailyBudgetTotal == null) return true; // sin dieta activa — no hay presupuesto que aplicar
+    const exch = calcExchanges(r);
+    const total = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
+    return total <= dailyBudgetTotal;
+  }, [dailyBudgetTotal]);
   const prefs = useMemo(() => ({
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
@@ -560,16 +645,18 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   }, [recipes]);
 
   const filteredRecipes = useMemo(() => {
-    if (selectedCat === 'Favoritas') return recipes.filter(r => favorites.recipeIds.includes(r.id));
-    if (selectedCat === 'MisRecetas') return recipes.filter(r => r.ownerId === profile.userId);
-    if (selectedCat === 'all') return recipes;
-    return recipes.filter(r => r.categories.includes(selectedCat));
-  }, [recipes, favorites, selectedCat, profile.userId]);
+    const base = selectedCat === 'Favoritas' ? recipes.filter(r => favorites.recipeIds.includes(r.id))
+      : selectedCat === 'MisRecetas' ? recipes.filter(r => r.ownerId === profile.userId)
+      : selectedCat === 'all' ? recipes
+      : recipes.filter(r => r.categories.includes(selectedCat));
+    return onlyFitsBudget ? base.filter(fitsBudget) : base;
+  }, [recipes, favorites, selectedCat, profile.userId, onlyFitsBudget, fitsBudget]);
 
   const { indyaFeatured, indyaNormal, indyaDisliked, indyaTotalVisible } = useMemo(() => {
-    const searched = indyaSearch.trim()
+    const bySearch = indyaSearch.trim()
       ? indyaRecipes.filter(r => r.name.toLowerCase().includes(indyaSearch.toLowerCase()))
       : indyaRecipes;
+    const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
     const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0;
     if (!hasPrefs) {
@@ -590,7 +677,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       indyaDisliked: disliked,
       indyaTotalVisible: featured.length + normal.length + disliked.length,
     };
-  }, [indyaRecipes, indyaSearch, prefs]);
+  }, [indyaRecipes, indyaSearch, prefs, onlyFitsBudget, fitsBudget]);
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
@@ -635,6 +722,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
         enabledModes={enabledModes}
         savingFav={savingFav}
+        dailyBudgetTotal={dailyBudgetTotal}
         onBack={() => setActiveRecipe(null)}
         onToggleFav={toggleFavorite}
         onToggleDislike={toggleDislike}
@@ -651,6 +739,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Recetas</h1>
         <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>
       </div>
+
+      {/* "Cabe en mi presupuesto" — primer chip, seleccionado por defecto (handoff, panel 03) */}
+      {dailyBudgetTotal != null && (
+        <Chip selected={onlyFitsBudget} onClick={() => setOnlyFitsBudget(v => !v)} icon="check_circle">
+          Cabe en mi presupuesto
+        </Chip>
+      )}
 
       {/* ── Coach / athlete recipes ─────────────────────────────────────────── */}
       {!loading && recipes.length > 0 && (
@@ -733,21 +828,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </div>
 
         {/* Name search */}
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s">search</span>
-          <input
-            type="text"
-            value={indyaSearch}
-            onChange={e => setIndyaSearch(e.target.value)}
-            placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
-          />
-          {indyaSearch && (
-            <button onClick={() => setIndyaSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-white">
-              <span className="material-symbols-outlined text-body-s">close</span>
-            </button>
-          )}
-        </div>
+        <SearchField
+          value={indyaSearch}
+          onChange={setIndyaSearch}
+          placeholder="Buscar entre 8.850 recetas…"
+          label="Buscar en la biblioteca de recetas"
+        />
 
         {/* Grid */}
         {indyaLoading ? (

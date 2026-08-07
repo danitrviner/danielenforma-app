@@ -5,11 +5,12 @@ import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, create
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import { haptics } from '../services/haptics';
 import { Skeleton } from './ui';
-import { EmptyState, Sheet, Icon, Button } from './ui';
+import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -44,6 +45,12 @@ function mealLabel(name: string, n: number): string {
   const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
   return stripped || `Comida ${n}`;
 }
+
+// Etiquetas del tracker (panel 01): el handoff usa el nombre completo en mono
+// para las tres barras de presupuesto, distinto del CAT_LABEL compartido
+// ("Proteína") que usan el resto de pantallas de intercambios.
+const BAR_LABEL: Record<'HC' | 'PROT' | 'GRASA', string> = { HC: 'HIDRATOS', PROT: 'PROTEÍNA', GRASA: 'GRASA' };
+const CHIP_LABEL: Record<'HC' | 'PROT' | 'GRASA', string> = { HC: 'HC', PROT: 'PR', GRASA: 'GR' };
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -165,6 +172,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
+
+  // Hoja de ajuste (F3.8, panel 02) — ajustar los intercambios de una ingesta
+  // por macro, sin elegir alimentos concretos.
+  const [adjustMealId, setAdjustMealId] = useState<string | null>(null);
+  const [adjustDraft, setAdjustDraft] = useState<{ HC: number; PROT: number; GRASA: number }>({ HC: 0, PROT: 0, GRASA: 0 });
 
   function flash(msg: string) {
     setFlashMsg(msg);
@@ -310,6 +322,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
 
+  // Composición de cada ingesta (todos sus alimentos, estén o no marcados) —
+  // los chips del tracker ("3 HC · 2 PR · 1 GR") describen la comida, no lo
+  // que ya se ha registrado; distinto de mealDoneByCat.
+  const mealPlacedByCat = useMemo(() => {
+    const map: Record<string, Record<FoodCategory, number>> = {};
+    for (const meal of selectedDiet?.meals ?? []) {
+      const bycat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+      for (const item of meal.items) addToPlaced(bycat, item.category, item.quantity);
+      map[meal.id] = bycat;
+    }
+    return map;
+  }, [selectedDiet]);
+
+  // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
+  // igual que el handoff (nunca desglosa MIX_HC/MIX_GRASA en la cifra grande).
+  const leftByCat = {
+    HC: (selectedDiet?.budget.HC ?? 0) - doneByCat.HC,
+    PROT: (selectedDiet?.budget.PROT ?? 0) - doneByCat.PROT,
+    GRASA: (selectedDiet?.budget.GRASA ?? 0) - doneByCat.GRASA,
+  };
+  const totalBudget = BUDGET_CATS.reduce((s, c) => s + (selectedDiet?.budget[c] ?? 0), 0);
+  const totalEaten = BUDGET_CATS.reduce((s, c) => s + doneByCat[c], 0);
+  const leftExch = round2(totalBudget - totalEaten);
+  const leftKcal = Math.round(exchangeToKcal(leftByCat)); // puede ser negativo si el día se pasa
+  const dayClosed = totalItems > 0 && doneItems === totalItems;
+  const mealsDoneCount = selectedDiet?.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => itemStates[`${m.id}_${idx}`]?.done)).length ?? 0;
+
   // Distinct coach diets scheduled across the week (the "día A/B/C" concept) that
   // still don't have enough food items placed to cover the budget the coach set.
   const pendingScheduledDiets = useMemo(() => {
@@ -407,6 +446,61 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       }
       return next;
     });
+  };
+
+  // Registrar/desregistrar una ingesta entera de un toque (handoff, panel 01):
+  // marca (o desmarca) todos sus alimentos a la vez en vez de uno a uno.
+  const handleToggleMealDone = (meal: DietMeal) => {
+    const allDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
+    const nextDone = !allDone;
+    void haptics.light();
+    setItemStates(prev => {
+      const next = { ...prev };
+      meal.items.forEach((_, idx) => {
+        const key = `${meal.id}_${idx}`;
+        const cur = next[key];
+        if (cur) next[key] = { ...cur, done: nextDone };
+      });
+      if (selectedDiet) {
+        const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+        saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      }
+      return next;
+    });
+  };
+
+  // Hoja de ajuste (panel 02): steppers por macro, seedeados con la
+  // composición actual de la ingesta; confirmar sustituye sus alimentos por
+  // intercambios genéricos en esas cantidades y la registra.
+  const handleOpenAdjust = (meal: DietMeal) => {
+    const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    setAdjustDraft({ HC: bycat.HC, PROT: bycat.PROT, GRASA: bycat.GRASA });
+    setAdjustMealId(meal.id);
+  };
+
+  const handleConfirmAdjust = () => {
+    if (!adjustMealId || !selectedDiet) return;
+    const mealId = adjustMealId;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) { setAdjustMealId(null); return; }
+
+    const newItems: DietItem[] = BUDGET_CATS
+      .filter(cat => adjustDraft[cat] > 0)
+      .map(cat => ({ category: cat, foodLabel: `${CAT_LABEL[cat]} (ajustado)`, quantity: adjustDraft[cat] }));
+
+    setSelectedDiet(prev => prev ? { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: newItems }) } : prev);
+
+    setItemStates(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(k => { if (k.startsWith(`${mealId}_`)) delete next[k]; });
+      newItems.forEach((item, i) => { next[`${mealId}_${i}`] = { foodLabel: item.foodLabel, done: true }; });
+      const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+      saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      return next;
+    });
+
+    void haptics.medium();
+    setAdjustMealId(null);
   };
 
   const handleOpenPicker = (mealId: string, itemIdx: number, category: FoodCategory) => {
@@ -897,20 +991,46 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
 
       {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-8 w-1/2" />
-          <Skeleton className="h-24 w-full rounded-surface" />
-          <Skeleton className="h-24 w-full rounded-surface" />
+        // 05 · Carga — esqueletos con barrido 1,4 s y stagger 150 ms, nunca
+        // spinner ni cifras falsas (handoff).
+        <div className="bg-raised border border-hairline rounded-canvas p-4 space-y-5">
+          <div className="flex items-end justify-between gap-3">
+            <Skeleton className="stagger-child h-9 w-28" style={{ '--i': 0 } as React.CSSProperties} />
+            <Skeleton className="stagger-child h-5 w-16" style={{ '--i': 1 } as React.CSSProperties} />
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map(i => (
+              <React.Fragment key={i}><Skeleton className="stagger-child h-6 w-full" style={{ '--i': i + 2 } as React.CSSProperties} /></React.Fragment>
+            ))}
+          </div>
+          <div className="space-y-2 pt-2">
+            {[0, 1, 2].map(i => (
+              <React.Fragment key={i}><Skeleton className="stagger-child h-16 w-full" style={{ '--i': i + 5 } as React.CSSProperties} /></React.Fragment>
+            ))}
+          </div>
         </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
-        <div className="border border-dashed border-hairline rounded-surface">
-          <EmptyState
-            icon="nutrition"
-            title="Aún no tienes ningún menú."
-            description="Crea tu propio menú con alimentos y recetas hasta completar tus intercambios."
-            actionLabel="Crear mi primer menú"
-            onAction={handleStartBlank}
-          />
+        // 04 · Vacío — sin dieta publicada. Ningún vacío culpa al atleta: dice
+        // qué falta y quién lo tiene que hacer (handoff).
+        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center animate-fade-up">
+          <span className="flex h-16 w-16 items-center justify-center rounded-field border border-dashed border-accent-line">
+            <Icon name="nutrition" size="xl" className="text-accent" />
+          </span>
+          <div className="flex flex-col gap-2 max-w-[320px]">
+            <p className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink">
+              Dani está montando<br />tu dieta
+            </p>
+            <p className="font-sans text-body-s text-ink-2">
+              En cuanto tu entrenador publique tu plan de nutrición, lo verás aquí y te avisamos.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-field border border-accent-line bg-accent-bg px-4 py-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot" />
+            <span className="font-mono text-label font-semibold tracking-[.08em] text-accent">SIN PLAN PUBLICADO TODAVÍA</span>
+          </span>
+          <Button variant="ghost" onClick={handleStartBlank} className="mt-2">
+            Empezar mi propio menú mientras tanto
+          </Button>
         </div>
       ) : viewDay !== TODAY_WD ? (() => {
         const browseDietId = weeklySchedule[viewDay] ?? null;
@@ -981,6 +1101,122 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
+              {/* ── 01 · Tracker del día (F3.8) ─────────────────────────────────── */}
+              <div className="bg-raised border border-hairline rounded-canvas p-4">
+                {dayClosed ? (
+                  <div className="flex flex-col items-center py-4 text-center animate-fade-up">
+                    <RingSeal percent={100} complete size={112} strokeWidth={8} label="Día cerrado en presupuesto" />
+                    <p className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink mt-5">
+                      Día cerrado<br />en presupuesto
+                    </p>
+                    <p className="text-body-s text-ink-2 mt-2 max-w-[300px]">
+                      Registraste tus {totalItems} ingesta{totalItems !== 1 ? 's' : ''} de hoy dentro de tu presupuesto de intercambios.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Te quedan</span>
+                        <div className="flex items-baseline gap-2 mt-2">
+                          <span className={`font-display font-black text-headline leading-none ${leftExch < 0 ? 'text-danger' : 'text-accent'}`}>
+                            {fmtQty(leftExch)}
+                          </span>
+                          <span className="font-sans font-semibold text-body-s text-ink-3">intercambios</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.14em]">≈ kcal</span>
+                        <span className="block font-mono text-title-s text-ink-2 mt-2">
+                          {leftKcal < 0 ? '−' : '≈ '}{Math.abs(leftKcal).toLocaleString('es-ES')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 mt-5">
+                      {BUDGET_CATS.map(cat => {
+                        const b = selectedDiet.budget[cat] ?? 0;
+                        const d = doneByCat[cat];
+                        const over = b > 0 && d > b;
+                        const pct = b > 0 ? (d / b) * 100 : (d > 0 ? 100 : 0);
+                        return (
+                          <div key={cat}>
+                            <div className="flex items-baseline justify-between mb-2">
+                              <span className="font-mono text-caption font-semibold text-ink-2 tracking-[.1em]">{BAR_LABEL[cat]}</span>
+                              <span className={`font-mono text-label font-bold ${over ? 'text-danger' : 'text-ink-2'}`}>
+                                {fmtQty(d)}/{fmtQty(b)}{over ? `  +${fmtQty(round2(d - b))}` : ''}
+                              </span>
+                            </div>
+                            <ProgressBar value={pct} label={`${BAR_LABEL[cat]}, ${fmtQty(d)} de ${fmtQty(b)} intercambios`} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {selectedDiet.meals.length > 0 && (
+                  <>
+                    <div className="flex items-baseline justify-between mt-6 mb-2">
+                      <span className="font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Ingestas</span>
+                      <span className="font-mono text-caption text-ink-4">{mealsDoneCount} DE {selectedDiet.meals.length}</span>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {selectedDiet.meals.map((meal, mi) => {
+                        const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
+                        const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+                        return (
+                          <div
+                            key={meal.id}
+                            className={`flex items-center gap-3 rounded-surface border p-3 transition-colors duration-(--duration-state) ${
+                              mealDone ? 'border-accent/20 bg-accent/6' : 'border-hairline bg-surface'
+                            }`}
+                          >
+                            <button type="button" onClick={() => handleToggleMealDone(meal)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                              <span
+                                className={`flex h-6 w-6 flex-none items-center justify-center rounded-control border-[1.5px] transition-all duration-(--duration-state) ${
+                                  mealDone ? 'border-accent bg-accent' : 'border-strong'
+                                }`}
+                              >
+                                {mealDone && <Icon name="check" size="s" className="text-on-accent" />}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className={`block truncate font-sans text-body-s font-bold transition-colors duration-(--duration-state) ${mealDone ? 'text-ink-2' : 'text-ink'}`}>
+                                  {mealLabel(meal.name, mi + 1)}
+                                </span>
+                                {(bycat.HC > 0 || bycat.PROT > 0 || bycat.GRASA > 0) && (
+                                  <span className="mt-2 flex flex-wrap gap-1">
+                                    {(['HC', 'PROT', 'GRASA'] as const).filter(c => bycat[c] > 0).map(c => (
+                                      <span
+                                        key={c}
+                                        className={`rounded-chip px-2 py-1 font-mono text-caption font-semibold ${mealDone ? 'bg-white/5 text-ink-3' : 'bg-accent-bg text-accent'}`}
+                                      >
+                                        {fmtQty(bycat[c])} {CHIP_LABEL[c]}
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdjust(meal)}
+                              title="Ajustar intercambios"
+                              aria-label={`Ajustar intercambios de ${mealLabel(meal.name, mi + 1)}`}
+                              className="-m-2 flex-none p-2 text-ink-3 transition-colors hover:text-accent"
+                            >
+                              <Icon name="tune" size="s" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-3 text-center font-mono text-caption tracking-[.08em] text-ink-4">
+                      TOCA UNA INGESTA PARA REGISTRARLA
+                    </p>
+                  </>
+                )}
+              </div>
+
               {/* Diet header */}
               <div className="bg-raised rounded-surface p-4 border border-hairline">
                 <div className="flex items-center justify-between ">
@@ -1032,51 +1268,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </div>
               </div>
 
-              {/* Budget dashboard */}
-              <div className="bg-surface border border-hairline rounded-surface p-4">
-                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">
-                  Progreso por categoría
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
-                  {BUDGET_CATS.map(cat => {
-                    const b = selectedDiet.budget[cat];
-                    const d = doneByCat[cat];
-                    const isOver = b > 0 && d > b;
-                    const isOk = b > 0 && round2(d) === round2(b);
-                    const pct = b > 0 ? Math.min(100, (d / b) * 100) : (d > 0 ? 100 : 0);
-                    const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-accent';
-                    return (
-                      <div key={cat}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-caption font-mono font-bold ${CAT_COLOR[cat]}`}>
-                            {cat.replace('_', ' ')}
-                          </span>
-                          <span className={`text-caption font-mono font-bold ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
-                            {fmtQty(d)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
-                          </span>
-                        </div>
-                        <div className="h-1 w-full bg-raised rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Overall progress bar */}
-              <div className="bg-surface border border-hairline p-4 rounded-surface">
-                <div className="flex justify-between items-end mb-2">
-                  <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wide">Completados hoy</h2>
-                  <span className="font-mono text-label text-accent font-bold">{doneItems} / {totalItems}</span>
-                </div>
-                <div className="h-2 w-full bg-raised rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-accent rounded-full transition-all duration-500"
-                    style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
+              {/* El progreso por categoría y el total de completados hoy ya los
+                  cubre el tracker de arriba (panel 01) — este dashboard duplicaba
+                  las mismas cifras con otro estilo, de la versión pre-Fase 3. */}
 
               {/* Resumen numérico (colocado/objetivo por comida + total del día) — siempre visible */}
               <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
@@ -1098,9 +1292,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline'}`}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleMealDone(meal)}
+                            title={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
+                            aria-label={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline hover:border-accent/50'}`}
+                          >
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-                          </span>
+                          </button>
                           <input
                             type="text"
                             value={meal.name}
@@ -1206,68 +1406,70 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {/* Item list */}
                       <div className="p-3 border-t border-hairline bg-bg/40 space-y-2">
                         {meal.items.length === 0 ? (
-                          <div className="text-center py-4">
-                            <p className="font-sans text-caption text-ink-2 italic mb-2">Sin alimentos en esta comida.</p>
-                            <button
-                              onClick={() => handleOpenAddPicker(meal.id)}
-                              className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
-                            >
-                              <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
-                              <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleOpenAddPicker(meal.id)}
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors"
+                          >
+                            <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                              <Icon name="add" size="s" className="text-accent" />
+                            </span>
+                            <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
+                          </button>
                         ) : meal.items.map((item, idx) => {
                           const key = `${meal.id}_${idx}`;
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
+                          // Toque en la fila = intercambiar (handoff, panel 02b); el
+                          // checkbox y el botón "quitar" paran la propagación para no
+                          // disparar el picker a la vez.
                           return (
                             <div key={key}
-                              className={`flex items-center gap-3 p-3 rounded-surface border transition-all ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
+                              onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                              className={`flex items-center gap-3 p-3 rounded-surface border cursor-pointer transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline hover:border-accent/30'}`}
                             >
                               {/* Checkbox */}
                               <button
-                                onClick={() => handleToggleDone(meal.id, idx)}
-                                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
+                                onClick={e => { e.stopPropagation(); handleToggleDone(meal.id, idx); }}
+                                title={st.done ? 'Desmarcar' : 'Marcar'}
+                                className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
                               >
                                 {st.done && <span className="material-symbols-outlined text-body-s font-bold">check</span>}
                               </button>
 
-                              {/* Category badge */}
-                              <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
-                                {item.category.replace('_', ' ')}
+                              {/* Category tag — cuadro 44px del handoff */}
+                              <span className="w-11 h-11 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center">
+                                <span className="font-mono text-caption font-bold text-ink-3">{item.category.replace('_', '')}</span>
                               </span>
 
-                              {/* Food label + qty + weight */}
+                              {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana */}
                               <div className="flex-1 min-w-0">
-                                <span className={`block text-label font-sans leading-snug ${st.done ? 'line-through text-ink-2' : 'text-white'}`}>
-                                  {st.foodLabel}
-                                </span>
-                                <span className="block font-mono text-caption text-ink-2 ">
-                                  ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
+                                <div className="flex items-baseline gap-2">
+                                  <span className={`text-body-s font-sans font-semibold leading-snug truncate ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
+                                    {st.foodLabel}
+                                  </span>
+                                  <span className="font-mono text-body-s font-bold text-accent flex-shrink-0">
+                                    {itemWeightLabel(item.foodLabel, item.quantity)}
+                                  </span>
+                                </div>
+                                <span className="block font-sans text-caption text-ink-3 mt-1">
+                                  {fmtQty(item.quantity)} intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
                                 </span>
                               </div>
 
                               {/* Cambiar comida — only on the first item of a recipe-derived group */}
                               {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
                                 <button
-                                  onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
+                                  onClick={e => { e.stopPropagation(); handleOpenSwapPicker(meal.id, item.originRecipeId!); }}
                                   title="Cambiar comida"
                                   className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">skillet</span>
                                 </button>
                               )}
-                              {/* Swap button */}
-                              <button
-                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                                title="Cambiar alimento"
-                                className="text-ink-2 hover:text-data transition-colors flex-shrink-0 p-2 -m-1.5"
-                              >
-                                <span className="material-symbols-outlined text-body-s select-none">swap_horiz</span>
-                              </button>
+                              <Icon name="swap_horiz" size="s" className="text-accent/65 flex-shrink-0" />
                               {/* Delete button — only for recipe-added items */}
                               {idx >= (origItemCounts[meal.id] ?? Infinity) && (
                                 <button
-                                  onClick={() => handleRemoveItem(meal.id, idx)}
+                                  onClick={e => { e.stopPropagation(); handleRemoveItem(meal.id, idx); }}
                                   title="Quitar"
                                   className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5"
                                 >
@@ -1280,16 +1482,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {meal.items.length > 0 && (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}
-                            className="w-full flex items-center justify-center gap-2 py-2 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-all"
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors"
                           >
-                            <span className="material-symbols-outlined text-body-s select-none">add_circle</span>
-                            <span className="font-mono text-caption uppercase tracking-wider">Añadir alimento</span>
+                            <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                              <Icon name="add" size="s" className="text-accent" />
+                            </span>
+                            <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
                           </button>
                         )}
                       </div>
                     </div>
                   );
                 })}
+                <p className="flex items-start gap-2 bg-surface border border-hairline rounded-field px-4 py-3">
+                  <Icon name="info" size="s" className="text-accent/70 flex-shrink-0 mt-1" />
+                  <span className="font-sans text-caption text-ink-3 leading-relaxed">
+                    Cambiar un alimento no toca tu presupuesto: la app ajusta los gramos para que valga los mismos intercambios.
+                  </span>
+                </p>
                 <button
                   onClick={addMeal}
                   className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
@@ -1504,7 +1714,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         >
             <div className="pt-4 space-y-2">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
+                <EmptyState
+                  icon="search_off"
+                  title={searchTerm ? `Nada para «${searchTerm}»` : 'Sin alimentos en esta categoría.'}
+                  description={searchTerm ? 'Prueba con otra palabra o cambia de categoría.' : undefined}
+                  actionLabel={searchTerm ? 'Quitar búsqueda' : undefined}
+                  onAction={searchTerm ? () => setSearchTerm('') : undefined}
+                />
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
                   className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
@@ -1521,6 +1737,67 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             </div>
         </Sheet>
       )}
+
+      {/* Hoja de ajuste (F3.8, panel 02) — steppers por macro, píldora de encaje en vivo */}
+      {adjustMealId && selectedDiet && (() => {
+        const meal = selectedDiet.meals.find(m => m.id === adjustMealId);
+        if (!meal) return null;
+        const mi = selectedDiet.meals.indexOf(meal);
+        // Intercambios que ya cuentan otras ingestas registradas (excluye esta,
+        // que el ajuste va a sustituir por completo).
+        const otherMealsEaten = BUDGET_CATS.reduce((s, c) => s + (doneByCat[c] - (mealDoneByCat[adjustMealId]?.[c] ?? 0)), 0);
+        const draftTotal = adjustDraft.HC + adjustDraft.PROT + adjustDraft.GRASA;
+        const after = round2(totalBudget - otherMealsEaten - draftTotal);
+        const fits = after >= 0;
+        return (
+          <Sheet open onClose={() => setAdjustMealId(null)} label={`Ajustar ${mealLabel(meal.name, mi + 1)}`}>
+            <div className="pt-2">
+              <span className="inline-block px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-bold tracking-[.12em] text-accent">
+                INGESTA {mi + 1}
+              </span>
+              <h2 className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink mt-3">
+                {mealLabel(meal.name, mi + 1)}
+              </h2>
+
+              <div className="flex flex-col gap-3 mt-5">
+                {BUDGET_CATS.map(cat => (
+                  <div key={cat} className="flex items-center justify-between gap-3 bg-field border border-hairline rounded-field px-3 py-3">
+                    <div className="flex-1">
+                      <span className="block font-mono text-caption font-semibold tracking-[.1em] text-ink-3">{BAR_LABEL[cat]}</span>
+                      <span className="block font-sans text-body-s text-ink-3 mt-2">
+                        {fmtQty(adjustDraft[cat] * GRAMS_PER_EXCHANGE[cat])} g aprox.
+                      </span>
+                    </div>
+                    <Stepper
+                      label={`Intercambios de ${BAR_LABEL[cat].toLowerCase()}`}
+                      value={adjustDraft[cat]}
+                      onChange={v => setAdjustDraft(prev => ({ ...prev, [cat]: v }))}
+                      step={0.25}
+                      min={0}
+                      max={12}
+                      dense
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className={`flex items-center gap-2 mt-5 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fits ? 'bg-success/10 border-success/30 text-success' : 'bg-danger/10 border-danger/30 text-danger'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full flex-none ${fits ? 'bg-success' : 'bg-danger'}`} />
+                <span className="font-mono text-label font-semibold tracking-[.04em]">
+                  {fits ? `CABE · TE QUEDARÍAN ${fmtQty(after)}` : `TE PASAS EN ${fmtQty(Math.abs(after))} INTERCAMBIOS`}
+                </span>
+              </div>
+
+              <Button variant="primary" size="l" fullWidth onClick={handleConfirmAdjust} className="mt-3">
+                Registrar ingesta
+              </Button>
+              <p className="text-center font-mono text-caption tracking-[.08em] text-ink-4 mt-4">
+                CADA TOQUE = 1 INTERCAMBIO · {Math.round(exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }))} KCAL
+              </p>
+            </div>
+          </Sheet>
+        );
+      })()}
 
       {/* Save-choice sheet — only when saving edits to a diet the coach created */}
       {saveChoiceOpen && (

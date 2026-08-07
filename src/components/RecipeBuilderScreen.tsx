@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 
@@ -203,7 +204,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     setForm(f => ({
       ...f,
       ingredients: f.ingredients.map((ing, i) =>
-        i === idx ? { ...ing, quantity: Math.max(0.25, Math.round((ing.quantity + delta) * 4) / 4) } : ing
+        i === idx ? { ...ing, quantity: Math.max(0.25, roundQuarter(ing.quantity + delta)) } : ing
       ),
     }));
 
@@ -566,9 +567,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 </div>
                 {/* Qty stepper */}
                 <div className="flex items-center gap-1 shrink-0 bg-raised border border-hairline rounded-surface px-1">
-                  <button type="button" onClick={() => setIngQty(q => Math.max(0.25, Math.round((q - 0.25) * 4) / 4))} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">-</button>
+                  <button type="button" onClick={() => setIngQty(q => Math.max(0.25, roundQuarter(q - 0.25)))} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">-</button>
                   <span className="w-8 text-center font-mono text-body-s text-white select-none">{ingredientQty}</span>
-                  <button type="button" onClick={() => setIngQty(q => Math.round((q + 0.25) * 4) / 4)} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">+</button>
+                  <button type="button" onClick={() => setIngQty(q => roundQuarter(q + 0.25))} className="w-7 h-9 text-white hover:text-accent transition-colors font-bold">+</button>
                 </div>
               </div>
 

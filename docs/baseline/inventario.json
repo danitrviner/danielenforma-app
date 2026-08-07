@@ -1,27 +1,27 @@
 {
-  "generado": "2026-08-07T14:13:24.783Z",
-  "commit": "628f7b0",
+  "generado": "2026-08-07T14:47:46.452Z",
+  "commit": "14a15bb",
   "totales": {
     "archivosTsx": 158,
-    "lineasTsx": 40579
+    "lineasTsx": 40942
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4733,
+    "clasesTokenEnUso": 4791,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 945,
-    "fontSans": 895,
-    "pesosProhibidos": 28,
+    "fontMono": 956,
+    "fontSans": 900,
+    "pesosProhibidos": 32,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
-    "transitionAll": 242,
+    "transitionAll": 236,
     "animatePulse": 27,
-    "ariaLabel": 40,
+    "ariaLabel": 43,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 2,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 156,
+    "roundedFull": 155,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -82,12 +82,12 @@
     ],
     "archivosGrandes": [
       {
-        "archivo": "src/components/MesocycleManager.tsx",
-        "lineas": 1695
+        "archivo": "src/components/NutritionScreen.tsx",
+        "lineas": 1892
       },
       {
-        "archivo": "src/components/NutritionScreen.tsx",
-        "lineas": 1615
+        "archivo": "src/components/MesocycleManager.tsx",
+        "lineas": 1695
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
@@ -95,11 +95,15 @@
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
-        "lineas": 1333
+        "lineas": 1332
       },
       {
         "archivo": "src/components/TrainingScreen.tsx",
         "lineas": 1010
+      },
+      {
+        "archivo": "src/components/RecipesScreen.tsx",
+        "lineas": 965
       },
       {
         "archivo": "src/components/MesocycleTemplateLibrary.tsx",
@@ -108,10 +112,6 @@
       {
         "archivo": "src/components/NutritionPlansScreen.tsx",
         "lineas": 915
-      },
-      {
-        "archivo": "src/components/RecipesScreen.tsx",
-        "lineas": 879
       },
       {
         "archivo": "src/components/ui/Showcase.tsx",
@@ -135,7 +135,7 @@
       },
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
-        "lineas": 656
+        "lineas": 657
       },
       {
         "archivo": "src/components/ExerciseLibraryScreen.tsx",
@@ -467,12 +467,13 @@
       "roundedFull": 3
     },
     "src/components/NutritionScreen.tsx": {
-      "clasesTokenEnUso": 226,
-      "fontMono": 29,
-      "fontSans": 32,
-      "pesosProhibidos": 1,
-      "transitionAll": 30,
-      "roundedFull": 12
+      "clasesTokenEnUso": 278,
+      "fontMono": 37,
+      "fontSans": 37,
+      "pesosProhibidos": 5,
+      "transitionAll": 26,
+      "ariaLabel": 2,
+      "roundedFull": 10
     },
     "src/components/OnboardingForm.tsx": {
       "clasesTokenEnUso": 185,
@@ -541,12 +542,13 @@
       "roundedFull": 4
     },
     "src/components/RecipesScreen.tsx": {
-      "clasesTokenEnUso": 84,
-      "fontMono": 22,
+      "clasesTokenEnUso": 90,
+      "fontMono": 25,
       "fontSans": 21,
       "pesosProhibidos": 1,
-      "transitionAll": 9,
-      "roundedFull": 7
+      "transitionAll": 7,
+      "ariaLabel": 1,
+      "roundedFull": 8
     },
     "src/components/ReportEditor.tsx": {
       "clasesTokenEnUso": 28,

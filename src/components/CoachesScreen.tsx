@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, OnboardingSection, Recipe } from '../types';
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
 import { db, doc, writeBatch } from '../firebase';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
 import { Skeleton } from './ui';
 import { Tabs } from './ui';
@@ -337,13 +338,12 @@ interface IndyaRawRecipe {
   categoria?: string;
 }
 
-function roundQ(x: number): number { return Math.round(x / 0.25) * 0.25; }
 
 function mapIndyaRecipe(r: IndyaRawRecipe): Omit<Recipe, 'id'> {
   const exchanges = {
-    HC:    roundQ((r.macros?.carbohydrate?.grams ?? 0) / 25),
-    PROT:  roundQ((r.macros?.protein?.grams     ?? 0) / 25),
-    GRASA: roundQ((r.macros?.fat?.grams         ?? 0) / 11),
+    HC:    roundQuarter((r.macros?.carbohydrate?.grams ?? 0) / 25),
+    PROT:  roundQuarter((r.macros?.protein?.grams     ?? 0) / 25),
+    GRASA: roundQuarter((r.macros?.fat?.grams         ?? 0) / 11),
   };
   const out: Record<string, unknown> = {
     ownerId:     'indya',
