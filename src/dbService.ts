@@ -64,6 +64,18 @@ export {
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';
 
+// ─── CATÁLOGO DE MÁQUINAS + GIMNASIO DEL ATLETA ───────────────────────────────
+// Catálogo publicado = JSON del bundle (src/data/maquinas) + overrides del admin
+// en Firestore. El gimnasio del atleta (docId = email) guarda sus decisiones.
+export {
+  getCatalogoMaquinas, getCatalogoMaquinasAdmin, getCatalogoVersion,
+  upsertOverrideMaquina, publicarMaquina, ocultarMaquina, crearMaquinaAdmin,
+  promoverMaquinaPropia, subirImagenMaquina,
+  getGimnasio, guardarGimnasio, guardarDecisiones, gimnasioVacio,
+  subirFotoGimnasio, addMaquinaPropia, deleteMaquinaPropia,
+  getMaquinasDisponibles, getEstadoCatalogo,
+} from './db/machines';
+
 // ─── NUTRICIÓN (alimentos, dietas, menús, configs, programas) ────────────────
 // Movido a src/db/nutrition.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.

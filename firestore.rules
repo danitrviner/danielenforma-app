@@ -99,6 +99,25 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── maquinas (docId = slug estable de la máquina) ────────────────────────
+    // Overrides del admin sobre el catálogo semilla del bundle, más las máquinas
+    // creadas a mano. Cualquier atleta autenticado necesita leerlas para que su
+    // catálogo refleje lo que el admin ha ocultado o renombrado; escribir solo el
+    // admin. Una máquina propia de un atleta NUNCA llega aquí por sí sola: la
+    // copia el admin al promoverla (ver docs/catalogo-maquinas.md).
+    match /maquinas/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+
+    // ── gimnasios (docId = email del atleta) ─────────────────────────────────
+    // Qué máquinas tiene disponibles en su gimnasio. Mismo criterio que
+    // onboarding/: su dueño y el coach, nadie más — el coach lo necesita para el
+    // panel de equipamiento del Hub del atleta.
+    match /gimnasios/{email} {
+      allow read, write: if isCoach() || isOwnerEmail(email);
+    }
+
     // ── exerciseNotes (docId = `${exerciseId}_${athleteId}`; athleteId = EMAIL) ─
     match /exerciseNotes/{docId} {
       allow read: if isCoach()
