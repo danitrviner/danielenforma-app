@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];

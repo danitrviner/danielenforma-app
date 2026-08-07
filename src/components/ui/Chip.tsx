@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import { haptics } from '../../services/haptics';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Chip
@@ -17,6 +18,11 @@ import Icon from './Icon';
    `selected` no es lo mismo que `active` en Tabs: aquí puede haber CERO, UNO o
    VARIOS chips seleccionados a la vez —un conjunto de filtros, no una pestaña
    única— así que el estado vive fuera y la primitiva solo lo pinta.
+
+   Fase 3: el chip deja de ser píldora. El handoff le da radio 11 propio
+   (`rounded-chip`), distinto de la pastilla `rounded-full` que sigue usando
+   `Badge` — son la misma altura pero ya no la misma forma, y esa es
+   precisamente la señal visual de "esto se pulsa" frente a "esto informa".
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
@@ -41,7 +47,7 @@ export default function Chip({
   onClick,
   className = '',
 }: Props) {
-  const tonoBorde = selected ? 'border-accent-line bg-accent-bg text-accent' : 'border-hairline bg-raised text-ink-2';
+  const tonoBorde = selected ? 'border-accent-line bg-accent/16 text-accent' : 'border-hairline bg-raised text-ink-2';
   const contenido = (
     <>
       {icon && <Icon name={icon} size="s" filled={selected} />}
@@ -52,19 +58,22 @@ export default function Chip({
   return (
     <span
       className={
-        `inline-flex items-center gap-1 rounded-full border pl-3 ${onRemove ? 'pr-2' : 'pr-3'} py-2 `
-        + `transition-colors ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
+        // 9/14 px del handoff no caen en la escala de 4 px del DS; se
+        // aproxima a 8/12 (los pasos más cercanos) en vez de forzar valores
+        // arbitrarios — mismo criterio que el padding de Card.
+        `inline-flex items-center gap-1 rounded-chip border pl-3 ${onRemove ? 'pr-2' : 'pr-3'} py-2 `
+        + `transition-colors duration-(--duration-state) ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
       }
     >
       {onClick ? (
         <button
           type="button"
-          onClick={onClick}
+          onClick={() => { haptics.light(); onClick(); }}
           disabled={disabled}
           aria-pressed={selected}
           className={
             'inline-flex items-center gap-2 font-sans text-body-s font-medium select-none '
-            + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line focus-visible:rounded-full '
+            + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line focus-visible:rounded-chip '
             + (disabled ? 'pointer-events-none' : 'hover:opacity-80')
           }
         >

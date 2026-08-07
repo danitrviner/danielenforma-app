@@ -6,7 +6,7 @@ import {
   getAllLessons, createLesson, updateLesson, deleteLesson,
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Card, Tabs, Button, PageHeader } from './ui';
 
 interface Props {

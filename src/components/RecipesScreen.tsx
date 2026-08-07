@@ -9,7 +9,7 @@ import {
 } from '../dbService';
 import type { IndyaRecipeCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────

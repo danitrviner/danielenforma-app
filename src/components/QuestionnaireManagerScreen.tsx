@@ -5,7 +5,7 @@ import {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
 } from '../dbService';
 import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from './QuestionnaireEditor';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, ListRow, Badge } from './ui';
 
 interface Props { coachId: string }

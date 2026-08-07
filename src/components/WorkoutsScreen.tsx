@@ -6,7 +6,7 @@ import StatTile from './StatTile';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/workoutTechniques';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Sheet } from './ui';
 
 interface WorkoutsScreenProps {

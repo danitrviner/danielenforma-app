@@ -11,7 +11,7 @@ import {
 import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasInput } from '../utils/reportBuilder';
 import { addDays } from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Badge, Button, Select } from './ui';
 
 interface Props {

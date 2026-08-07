@@ -17,12 +17,20 @@ import Icon from './Icon';
      · **Teclado.** Flechas para moverse, Inicio y Fin para los extremos. Es lo
        que un `tablist` promete en cuanto declara ese papel; declararlo sin
        implementarlo es peor que no declararlo.
-     · **El indicador no es solo color.** La pestaña activa cambia de superficie
-       Y de peso tipográfico: distinguir la activa no puede depender de percibir
-       un tono de oro sobre un fondo casi negro.
+     · **El indicador no es solo color.** La pestaña activa cambia de peso
+       tipográfico y de opacidad Y lleva un subrayado propio: distinguir la
+       activa no puede depender de percibir un tono de oro sobre un fondo
+       casi negro.
 
    La primitiva NO guarda el estado ni pinta el contenido: recibe `value` y
    avisa con `onChange`. Quién pinta qué es de la pantalla.
+
+   Fase 3: el indicador pasa de "fondo de superficie" a "subrayado oro de
+   2 px que entra por opacidad" — es el patrón que el handoff llama
+   "Pestañas" (Navegación, no Componentes: ese nombre es del segmentado de
+   pastilla deslizante, la primitiva nueva `SegmentedControl`). Las inactivas
+   bajan al 40 % de opacidad en vez de a un gris de texto distinto, así el
+   subrayado sigue siendo lo único que compite con el oro por atención.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type TabItem = {
@@ -65,7 +73,7 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
     <div
       role="tablist"
       aria-label={label}
-      className={`flex gap-1 overflow-x-auto hide-scrollbar rounded-control bg-surface p-1 ${className}`}
+      className={`flex gap-5 overflow-x-auto hide-scrollbar border-b border-hairline ${className}`}
       style={{ scrollSnapType: 'x proximity' }}
     >
       {items.map((item, i) => {
@@ -82,12 +90,10 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
             onKeyDown={(e) => alPulsarTecla(e, i)}
             style={{ scrollSnapAlign: 'start' }}
             className={
-              'inline-flex shrink-0 items-center gap-2 rounded-control px-3 py-2 '
-              + 'font-sans text-body-s transition-colors '
-              + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
-              + (activa
-                ? 'bg-raised font-bold text-ink'
-                : 'font-medium text-ink-2 hover:text-ink')
+              'relative inline-flex shrink-0 items-center gap-2 px-1 py-3 '
+              + 'font-sans text-body-s transition-[color,opacity] duration-(--duration-state) '
+              + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line focus-visible:rounded-control '
+              + (activa ? 'font-bold text-ink opacity-100' : 'font-medium text-ink-2 opacity-40 hover:opacity-70')
             }
           >
             {item.icon && <Icon name={item.icon} size="s" filled={activa} />}
@@ -97,6 +103,16 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
                 {item.count}
               </span>
             )}
+            {/* Subrayado propio, no compartido: entra/sale por opacidad
+                (240 ms), nunca por ancho — así no "recorre" la barra al
+                cambiar de pestaña lejana. */}
+            <span
+              aria-hidden
+              className={
+                'absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent transition-opacity duration-(--duration-state) '
+                + (activa ? 'opacity-100' : 'opacity-0')
+              }
+            />
           </button>
         );
       })}

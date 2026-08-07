@@ -13,7 +13,7 @@ import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';

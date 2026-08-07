@@ -18,7 +18,7 @@ import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory
 import { haptics } from '../services/haptics';
 import { speak, cancelSpeech } from '../services/cardioVoice';
 import { grantXp } from '../utils/xp';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import HrTestsPanel from './HrTestsPanel';
 import DeviceChip from './cardio/DeviceChip';
 import LiveSession from './cardio/LiveSession';

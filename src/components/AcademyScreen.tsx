@@ -5,7 +5,7 @@ import { getAllCourses, getAllLessons, getAcademyProgress, markLessonComplete, g
 import { evaluateUnlockRule } from '../utils/academyUnlock';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, PageHeader, ListRow } from './ui';
 
 interface Props {

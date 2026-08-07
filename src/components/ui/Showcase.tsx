@@ -1,8 +1,10 @@
 import React from 'react';
 import {
-  Badge, Button, Card, Chip, Dialog, EmptyState, Icon, Input, ListRow, PageHeader, Select, Sheet, Tabs,
-  type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize,
-  type SelectOption, type TabItem,
+  Badge, Banner, Button, Card, Chip, CollapsingHeader, Dialog, EffortScale, EmptyState, Icon, Input,
+  ListRow, PageHeader, ProgressBar, RingSeal, RirScale, SearchField, SegmentedControl, Select, Sheet,
+  Skeleton, Sparkline, Stepper, SwipeRow, Tabs,
+  type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize, type RirValue,
+  type SegmentedOption, type SelectOption, type TabItem,
 } from './index';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -77,8 +79,14 @@ const VARIANTES_BOTON: { variant: ButtonVariant; texto: string }[] = [
 
 const TAMANOS_BOTON: { size: ButtonSize; pie: string }[] = [
   { size: 's', pie: 's · 36' },
-  { size: 'm', pie: 'm · 44' },
-  { size: 'l', pie: 'l · 48' },
+  { size: 'm', pie: 'm · 52' },
+  { size: 'l', pie: 'l · 56' },
+];
+
+const OPCIONES_SEGMENTO: SegmentedOption[] = [
+  { value: 'liss', label: 'LISS' },
+  { value: 'hiit', label: 'HIIT' },
+  { value: 'pasos', label: 'Pasos' },
 ];
 
 const CATEGORIAS = ['Pecho', 'Espalda', 'Pierna', 'Hombro'];
@@ -142,16 +150,28 @@ export default function Showcase() {
   const [segundoOverlayAbierto, setSegundoOverlayAbierto] = React.useState(false);
   const pesoInvalido = peso.trim() !== '' && Number.isNaN(Number(peso.replace(',', '.')));
 
+  // Fase 3 — estado de las primitivas nuevas.
+  const [carga, setCarga] = React.useState(60);
+  const [segmento, setSegmento] = React.useState('liss');
+  const [rir, setRir] = React.useState<RirValue | null>(null);
+  const [esfuerzo, setEsfuerzo] = React.useState<number | null>(null);
+  const [busqueda, setBusqueda] = React.useState('');
+  const [vecesBorrado, setVecesBorrado] = React.useState(0);
+  const [filaBorrada, setFilaBorrada] = React.useState(false);
+  const miniaturaScrollRef = React.useRef<HTMLDivElement>(null);
+
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
         <span className="font-sans text-caption uppercase tracking-widest text-accent">
-          Design System · F7
+          Design System · Fase 3
         </span>
         <h1 className="font-sans text-display font-bold text-ink">Primitivas</h1>
         <p className="font-sans text-body-s text-ink-2">
-          Las piezas de components/ui, cada una con sus variantes. Ninguna pantalla las usa
-          todavía: construirlas es F7, adoptarlas es F8.
+          Las piezas de components/ui, re-skineadas con los tokens del handoff de experiencia
+          (docs/design/fase3/) más las nuevas de F3.3: ProgressBar, Banner, Stepper,
+          SegmentedControl, RirScale, EffortScale, Sparkline, RingSeal, SwipeRow, SearchField y
+          CollapsingHeader.
         </p>
       </header>
 
@@ -670,6 +690,110 @@ export default function Showcase() {
             ? `Botón de acción pulsado ${vecesCrearRutina} ${vecesCrearRutina === 1 ? 'vez' : 'veces'}.`
             : 'El icono va en ink-3, nunca en accent: un estado vacío no es una llamada a la acción dorada por sí solo — si tiene acción, la lleva el botón, no el icono.'}
         </p>
+      </Seccion>
+
+      <Seccion titulo="Skeleton" resumen="Barrido de luz de 1,4 s, no un parpadeo de opacidad. Nunca un spinner a pantalla completa.">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="stagger-child h-8 w-48" style={{ '--i': 0 } as React.CSSProperties} />
+          <Skeleton className="stagger-child h-4 w-72" style={{ '--i': 1 } as React.CSSProperties} />
+          <Skeleton className="stagger-child h-24 w-full" style={{ '--i': 2 } as React.CSSProperties} />
+        </div>
+        <p className="font-sans text-body-s text-ink-3">
+          Se mueve en ambos ejes (background-position, 200 % de tamaño) en vez de solo cambiar de
+          opacidad: es lo que hace que se perciba como "cargando algo real" y no como un parpadeo.
+        </p>
+      </Seccion>
+
+      <Seccion titulo="ProgressBar" resumen="6 px, radio 4, relleno oro. Pasarse de 100 pinta la barra roja sin recortar el valor — el +N de más se muestra aparte.">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="font-sans text-caption uppercase tracking-widest text-ink-3">Hidratos · 68/80</span>
+            <ProgressBar value={85} label="Hidratos, 68 de 80 intercambios" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="font-sans text-caption uppercase tracking-widest text-ink-3">Proteína · 92/80 (+12)</span>
+            <ProgressBar value={115} label="Proteína, 92 de 80 intercambios, 12 de más" />
+          </div>
+        </div>
+      </Seccion>
+
+      <Seccion titulo="Banner" resumen="Radio 18, color al 7 % de fondo y 22-24 % de borde. Solo dos tonos: oro informativo, rojo error con Reintentar en contorno.">
+        <div className="flex flex-col gap-3">
+          <Banner tone="info">Dani está montando tu dieta. Te avisamos en cuanto la publique.</Banner>
+          <Banner tone="danger" actionLabel="Reintentar" onAction={() => {}}>
+            No se pudo enviar la rutina. Revisa el plan antes de reenviar.
+          </Banner>
+        </div>
+      </Seccion>
+
+      <Seccion titulo="Stepper" resumen="Dos botones de 52 px —menos neutro, más oro— y una cifra mono central. Haptic light por toque, nunca medium: es un ajuste fino.">
+        <Stepper value={carga} onChange={setCarga} step={2.5} min={0} unit="kg" label="Carga de la serie" format={(v) => v.toLocaleString('es-ES', { minimumFractionDigits: v % 1 !== 0 ? 1 : 0 })} />
+      </Seccion>
+
+      <Seccion titulo="SegmentedControl" resumen="El «Segmentado» del handoff: 46 px, fondo surface, pastilla de oro que se desliza entre opciones — distinto de Tabs, pensado para 2-4 opciones fijas.">
+        <SegmentedControl options={OPCIONES_SEGMENTO} value={segmento} onChange={setSegmento} label="Tipo de cardio" className="max-w-xs" />
+      </Seccion>
+
+      <Seccion titulo="RirScale" resumen="7 segmentos: FALLO · 0 · 1 · 2 · 3 · 4 · 5. FALLO no es RIR 0 —decisión de Dani, 7 ago 2026— y el color se invierte respecto al viejo RPE: un número bajo es la serie dura.">
+        <RirScale value={rir} onChange={setRir} label="RIR de la serie" />
+        <p className="font-sans text-body-s text-ink-3">
+          {rir == null ? 'Sin elegir todavía.' : `Elegido: ${rir === 'fallo' ? 'FALLO' : `RIR ${rir}`}.`}
+        </p>
+      </Seccion>
+
+      <Seccion titulo="EffortScale" resumen="La única escala 1-10 que sobrevive al cambio a RIR, y solo en cardio sin pulsómetro. Campo ESFUERZO, no RPE. Una frase traduce el número elegido.">
+        <EffortScale value={esfuerzo} onChange={setEsfuerzo} label="Esfuerzo percibido" />
+      </Seccion>
+
+      <Seccion titulo="Sparkline" resumen="8 barras, scaleY escalonado 40 ms, la última siempre en oro — es el dato de hoy.">
+        <Sparkline values={[42, 38, 51, 47, 60, 55, 64, 58]} label="Tonelaje de las últimas 8 sesiones" />
+      </Seccion>
+
+      <Seccion titulo="RingSeal" resumen="Se cierra en 1,1 s. Con complete, un sello de check aparece a los ~550 ms. Sin confeti — el handoff lo repite en tres módulos distintos.">
+        <div className="flex flex-wrap items-center gap-6">
+          <RingSeal percent={68} size={110} label="68 % del objetivo semanal">
+            <span className="font-mono text-title-m font-bold text-ink">68%</span>
+          </RingSeal>
+          <RingSeal percent={100} complete size={110} label="Semana de cardio completa" />
+        </div>
+      </Seccion>
+
+      <Seccion titulo="SwipeRow" resumen="96 px de recorrido, fondo rojo con icono y etiqueta en negro. Solo revela el botón: ejecutar la acción es una pulsación aparte, para poder deshacer con un toast en vez de un diálogo.">
+        <Card padding="none" className="overflow-hidden">
+          {!filaBorrada ? (
+            <SwipeRow actionLabel="Borrar" onAction={() => { setFilaBorrada(true); setVecesBorrado((n) => n + 1); }}>
+              <ListRow
+                title="Sentadilla búlgara"
+                subtitle="3×10 · 24 kg"
+                leading={<Icon name="fitness_center" size="m" className="text-ink-3" />}
+              />
+            </SwipeRow>
+          ) : (
+            <div className="flex items-center justify-between gap-3 p-3">
+              <span className="font-sans text-body-s text-ink-3">Fila borrada.</span>
+              <Button variant="ghost" size="s" onClick={() => setFilaBorrada(false)}>Deshacer</Button>
+            </div>
+          )}
+        </Card>
+        <p className="font-sans text-body-s text-ink-3">
+          Borrada {vecesBorrado} {vecesBorrado === 1 ? 'vez' : 'veces'}. Desliza la fila hacia la
+          izquierda con el ratón o el dedo para revelar el botón.
+        </p>
+      </Seccion>
+
+      <Seccion titulo="SearchField" resumen="48 px en reposo, crece a 54 con el foco; borde e icono pasan a oro en 200 ms y aparece Cancelar. Distinto de Input: no lleva etiqueta, su propia altura es el estado.">
+        <SearchField value={busqueda} onChange={setBusqueda} label="Buscar ejercicio" placeholder="Buscar ejercicio…" />
+      </Seccion>
+
+      <Seccion titulo="CollapsingHeader" resumen="Título de 46 px en reposo; al pasar 30 px de scroll sube y se desvanece mientras entra el compacto de 15,5 px con su línea. Vista en miniatura: desplaza el recuadro de abajo.">
+        <div ref={miniaturaScrollRef} className="h-64 overflow-y-auto rounded-surface border border-hairline">
+          <CollapsingHeader title="Rutinas" scrollRef={miniaturaScrollRef} />
+          <div className="space-y-3 px-5 pb-6">
+            {Array.from({ length: 12 }, (_, i) => (
+              <div key={i} className="h-12 rounded-control bg-raised" />
+            ))}
+          </div>
+        </div>
       </Seccion>
     </div>
   );

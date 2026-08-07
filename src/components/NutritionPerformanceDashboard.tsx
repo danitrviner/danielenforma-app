@@ -17,7 +17,7 @@ import {
   buildPhaseEnergyPlans, buildWeightProjection, computePeriodizationPerformance,
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,

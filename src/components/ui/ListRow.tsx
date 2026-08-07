@@ -61,7 +61,7 @@ export default function ListRow({
         <span className="truncate font-sans text-title-s text-ink">{title}</span>
         {subtitle && <span className="truncate font-sans text-body-s text-ink-2">{subtitle}</span>}
       </div>
-      {trailing ?? (chevron && <Icon name="chevron_right" size="m" className="text-ink-3" />)}
+      {trailing ?? (chevron && <Icon name="chevron_right" size="m" className="text-ink-4" />)}
     </>
   );
 
@@ -74,7 +74,7 @@ export default function ListRow({
           disabled={disabled}
           aria-label={label}
           className={
-            'flex w-full items-center gap-3 rounded-control px-3 py-3 text-left transition-colors '
+            'flex w-full min-h-[52px] items-center gap-3 rounded-control px-3 py-3 text-left transition-colors duration-(--duration-state) '
             + 'hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
             + 'disabled:opacity-40 disabled:pointer-events-none'
           }
@@ -86,7 +86,7 @@ export default function ListRow({
   }
 
   return (
-    <Envoltorio className={`flex items-center gap-3 px-3 py-3 ${className}`}>
+    <Envoltorio className={`flex min-h-[52px] items-center gap-3 px-3 py-3 ${className}`}>
       {cuerpo}
     </Envoltorio>
   );

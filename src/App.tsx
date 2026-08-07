@@ -9,7 +9,7 @@ import NotificationBell from './components/NotificationBell';
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
 import { ToastProvider } from './hooks/useToast';
-import { ScreenSkeleton } from './components/Skeleton';
+import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta

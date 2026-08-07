@@ -16,7 +16,7 @@ import {
   computePhaseEnergyBalance,
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Input } from './ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────

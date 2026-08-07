@@ -8,7 +8,7 @@ import {
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, Tabs, ListRow } from './ui';
 
 const XP_PER_APPROVED_TEST = 30;

@@ -8,7 +8,7 @@ import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';

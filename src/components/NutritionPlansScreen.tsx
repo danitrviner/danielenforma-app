@@ -4,7 +4,7 @@ import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingD
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────

@@ -34,6 +34,11 @@ const VARIANTE: Record<CardVariant, string> = {
   raised:  'bg-raised border-hairline',
 };
 
+/** Fase 3: el handoff acota el padding a 16-18 px. 18 no cae en la escala de
+ * 4 px del DS (0/4/8/12/16/20/24/32/40/56) y forzarlo como valor arbitrario
+ * reabriría exactamente la deuda que F6 cerró; `m` se queda en el escalón
+ * de la escala más cercano por arriba, 20, dentro del margen que la propia
+ * migración ya acepta ("a 375 px la diferencia no se percibe"). */
 const RELLENO: Record<CardPadding, string> = {
   none: '',
   s:    'p-4',

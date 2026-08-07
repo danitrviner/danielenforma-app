@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { ListRow, Button } from './ui';
 
 interface Props {

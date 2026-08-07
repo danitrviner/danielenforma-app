@@ -4,7 +4,7 @@ import { UserProfile, Diet, DietItem, FoodCategory, DietMode, MealItem, Recipe }
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_BG, MODE_LABEL, fmtQty, itemWeightLabel, computeDietPlaced } from '../utils/exchangeHelpers';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon } from './ui';
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;

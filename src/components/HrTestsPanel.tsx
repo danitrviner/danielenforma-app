@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, AthleteCardioProfile, HrTestType, HrTestResult } from '../types';
 import { getHrTestsForAthlete, createHrTest, createNotificationDeduped } from '../dbService';
 import { HeartRateMonitor, isBleAvailable } from '../services/bleHeartRate';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
 
 const COACH_EMAIL = 'danitrviner@gmail.com';

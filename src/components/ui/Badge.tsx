@@ -14,22 +14,32 @@ import Icon from './Icon';
    `StatusPill` porque no había dónde reutilizarlas.
 
    El color sale de la fórmula del DS para estado —texto al 100 %, fondo al
-   10 %, borde al 25 %— y no de una elección por tarjeta. El tono `accent` está
-   a propósito fuera: el oro es «lo siguiente que tienes que hacer», y un estado
-   no es una acción. Marcar «Pendiente» en oro es lo que hace que el oro deje de
-   significar algo.
+   14 %, borde al 25 %— y no de una elección por tarjeta.
+
+   Fase 3 reabre el tono `accent`, cerrado a propósito en F7: el handoff
+   pinta la insignia "EN PAUSA" del CRM en oro (verde ACTIVO, oro EN PAUSA,
+   rojo IMPAGO, gris ARCHIVADO — `Decisiones-Fase3-Aprobadas.md` § Filtros y
+   estado), y esa es una decisión de diseño ya aprobada, no una excepción que
+   esta primitiva deba impedir. La regla de fondo sigue viva —el oro no es
+   decorativo— solo que "requiere que decidas algo" (una suscripción en
+   pausa) cuenta como esa acción pendiente tanto como un botón.
+
+   Tipografía: el rebrand de julio pasó los badges de mono a sans; el handoff
+   los quiere de vuelta en mono versalitas ("insignias mono 11 px") — Fase 3
+   es la decisión más reciente y prevalece.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'data';
+export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'data';
 
 /** Clases literales, una por tono. Tailwind no compone cadenas. */
 const TONO: Record<BadgeTone, string> = {
   neutral: 'bg-raised text-ink-2 border-hairline',
-  success: 'bg-success/10 text-success border-success/25',
-  warning: 'bg-warning/10 text-warning border-warning/25',
-  danger:  'bg-danger/10 text-danger border-danger/25',
-  info:    'bg-info/10 text-info border-info/25',
-  data:    'bg-data/10 text-data border-data/25',
+  accent:  'bg-accent/14 text-accent border-accent-line',
+  success: 'bg-success/14 text-success border-success/25',
+  warning: 'bg-warning/14 text-warning border-warning/25',
+  danger:  'bg-danger/14 text-danger border-danger/25',
+  info:    'bg-info/14 text-info border-info/25',
+  data:    'bg-data/14 text-data border-data/25',
 };
 
 type Props = {
@@ -56,7 +66,7 @@ export default function Badge({ children, tone = 'neutral', icon, dot, className
     <span
       className={
         'inline-flex items-center gap-2 rounded-full border px-2 py-1 '
-        + `font-sans text-caption font-bold uppercase tracking-widest ${TONO[tone]} ${className}`
+        + `font-mono text-caption font-semibold uppercase tracking-[.11em] ${TONO[tone]} ${className}`
       }
     >
       {dot && <span className="h-2 w-2 rounded-full bg-current" aria-hidden />}

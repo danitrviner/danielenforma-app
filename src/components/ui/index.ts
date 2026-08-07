@@ -10,6 +10,8 @@
  * de los 39 overlays artesanales, F9.
  */
 
+export { default as Skeleton, ScreenSkeleton } from './Skeleton';
+
 export { default as Icon } from './Icon';
 export type { IconSize } from './Icon';
 
@@ -44,6 +46,31 @@ export { default as Dialog } from './Dialog';
 export type { DialogSize } from './Dialog';
 
 export { default as EmptyState } from './EmptyState';
+
+export { default as ProgressBar } from './ProgressBar';
+
+export { default as Banner } from './Banner';
+export type { BannerTone } from './Banner';
+
+export { default as Stepper } from './Stepper';
+
+export { default as SegmentedControl } from './SegmentedControl';
+export type { SegmentedOption } from './SegmentedControl';
+
+export { default as RirScale } from './RirScale';
+export type { RirValue } from './RirScale';
+
+export { default as EffortScale } from './EffortScale';
+
+export { default as Sparkline } from './Sparkline';
+
+export { default as RingSeal } from './RingSeal';
+
+export { default as SwipeRow } from './SwipeRow';
+
+export { default as SearchField } from './SearchField';
+
+export { default as CollapsingHeader } from './CollapsingHeader';
 
 export {
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA,

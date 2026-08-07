@@ -20,8 +20,11 @@ import { Campo } from './Input';
    Lo que no se puede maquillar desde aquí: la lista desplegada la dibuja el
    sistema operativo, no el navegador. En escritorio seguirá saliendo con los
    colores del sistema. Es la razón de que un `Select` no valga para todo — un
-   selector con iconos, descripciones o búsqueda pide un menú propio, y eso es
-   F9, cuando exista `Sheet`.
+   selector con iconos, descripciones o búsqueda pide un menú propio, y para
+   eso está `Sheet`.
+
+   Fase 3: misma altura (54) y radio (`field`) que `Input`, mismo `Campo` —así
+   que el foco dorado de la etiqueta llega gratis, sin tocar este archivo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type SelectOption = { value: string; label: string; disabled?: boolean };
@@ -71,11 +74,13 @@ export default function Select({
           className={
             // 16 px por el mismo motivo que en Input: por debajo, iOS amplía al
             // enfocar. `appearance-none` es lo que apaga la piel del sistema.
-            'h-11 w-full appearance-none rounded-control border bg-field font-sans text-title-s '
-            + 'text-ink pl-3 pr-10 transition-colors '
-            + 'focus:outline-none focus:ring-2 focus:ring-accent-line '
+            'h-[54px] w-full appearance-none rounded-field border bg-field font-sans text-title-s '
+            // El hueco del chevron sigue el mismo criterio de escala que el
+            // icono de Input — ver el comentario allí.
+            + 'text-ink pl-4 pr-10 transition-colors duration-(--duration-state) '
+            + 'focus:outline-none focus:ring-1 focus:ring-inset '
             + 'disabled:opacity-40 disabled:cursor-not-allowed '
-            + `${error ? 'border-danger/40 focus:border-danger' : 'border-hairline focus:border-accent-line'}`
+            + `${error ? 'border-danger/55 focus:border-danger focus:ring-danger' : 'border-hairline focus:border-accent focus:ring-accent'}`
           }
         >
           {placeholder && <option value="">{placeholder}</option>}
@@ -88,7 +93,7 @@ export default function Select({
         {/* Decorativa: quien anuncia el control es la etiqueta. Sin eventos de
             puntero para que al pulsar encima se despliegue igual. */}
         <span
-          className="ui-icon text-icon-m pointer-events-none absolute right-3 text-ink-3"
+          className="ui-icon text-icon-m pointer-events-none absolute right-4 text-ink-3"
           aria-hidden
         >
           expand_more

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Dialog, Button, Icon, Input, Select } from './ui';
 
 interface ExerciseLibraryScreenProps {

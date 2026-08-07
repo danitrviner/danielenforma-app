@@ -30,7 +30,18 @@ import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
    intermedio en la pantalla que lo abre — que es exactamente el tipo de fallo
    silencioso que hace que un overlay "funcione" en una pantalla y se corte en
    otra.
+
+   Fase 3: fondo `raised` y radio `sheet` (26, propio — ver index.css),
+   entra con `animate-sheet-in` (translateY 26px + scale .985, 380 ms). El
+   asa deja de ser decorativa: arrastrarla hacia abajo sigue al dedo
+   (`translateY` en línea, sin transición mientras se arrastra) y soltar por
+   encima de 96 px o con velocidad de salida cierra sin guardar — soltar por
+   debajo vuelve a su sitio con la misma animación de entrada. Pointer Events
+   cubre ratón y táctil con el mismo código.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/** A partir de aquí arrastrando hacia abajo, soltar cierra el Sheet. */
+const UMBRAL_CIERRE_PX = 96;
 
 /** La escala de anchos es común con `Dialog`; vive en `internal/overlaySizes`. */
 export type SheetSize = OverlaySize;
@@ -74,6 +85,30 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
   useFocusTrap(ref, open);
   useEscape(onClose, open);
 
+  // Arrastrar el asa: `arrastreY` es el desplazamiento en vivo (0 = en su
+  // sitio); se aplica como `transform` en línea porque cambia en cada evento
+  // de puntero y no puede pasar por una clase de Tailwind. Al soltar, o bien
+  // se anima de vuelta a 0 o se dispara `onClose` — nunca se queda a mitad.
+  const [arrastreY, setArrastreY] = React.useState(0);
+  const arrastrando = React.useRef(false);
+  const origenY = React.useRef(0);
+
+  const alBajarPuntero = (e: React.PointerEvent) => {
+    arrastrando.current = true;
+    origenY.current = e.clientY;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const alMoverPuntero = (e: React.PointerEvent) => {
+    if (!arrastrando.current) return;
+    setArrastreY(Math.max(0, e.clientY - origenY.current));
+  };
+  const alSoltarPuntero = () => {
+    if (!arrastrando.current) return;
+    arrastrando.current = false;
+    if (arrastreY > UMBRAL_CIERRE_PX) onClose();
+    else setArrastreY(0);
+  };
+
   if (!open) return null;
 
   return createPortal(
@@ -90,16 +125,24 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
         aria-labelledby={title ? idTitulo : undefined}
         aria-label={title ? undefined : label}
         tabIndex={-1}
+        style={{ transform: arrastreY ? `translateY(${arrastreY}px)` : undefined }}
         className={
-          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col `
-          + 'rounded-t-canvas border-t border-x border-strong bg-surface shadow-e2 '
-          + 'focus:outline-none sm:mb-6 sm:rounded-canvas sm:border'
+          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
+          + `${arrastreY ? '' : 'transition-transform duration-(--duration-state) ease-brand'} `
+          + 'rounded-t-sheet border-t border-x border-strong bg-raised shadow-e2 '
+          + 'focus:outline-none sm:mb-6 sm:rounded-sheet sm:border'
         }
       >
-        {/* Asa visual: el gesto de "esto se puede arrastrar" en móvil. No es
-            interactiva por su cuenta — arrastrar para cerrar no es objetivo
-            de F7, solo tocar fuera o Escape. */}
-        <div className="flex shrink-0 justify-center pt-3" aria-hidden>
+        {/* Asa: arrastrar hacia abajo sigue al dedo/ratón; soltar por encima
+            del umbral cierra sin guardar, por debajo vuelve a su sitio. */}
+        <div
+          className="flex shrink-0 cursor-grab touch-none justify-center py-3 active:cursor-grabbing"
+          onPointerDown={alBajarPuntero}
+          onPointerMove={alMoverPuntero}
+          onPointerUp={alSoltarPuntero}
+          onPointerCancel={alSoltarPuntero}
+          aria-hidden
+        >
           <span className="h-1 w-10 rounded-full bg-white/15" />
         </div>
 

@@ -57,8 +57,8 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
         aria-label={title ? undefined : label}
         tabIndex={-1}
         className={
-          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col `
-          + 'rounded-canvas border border-strong bg-surface shadow-e2 focus:outline-none'
+          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
+          + 'rounded-canvas border border-strong bg-raised shadow-e2 focus:outline-none'
         }
       >
         {title && (

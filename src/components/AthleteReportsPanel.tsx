@@ -4,7 +4,7 @@ import { CoachReport } from '../types';
 import { getSentReportsForAthlete } from '../dbService';
 import { fmtReportDate } from '../utils/reportBuilder';
 import ReportView from './ReportView';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, ListRow, Badge, Dialog } from './ui';
 
 // Athlete-facing, self-loading card on the Home screen: shows the reports the

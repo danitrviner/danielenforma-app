@@ -4,7 +4,7 @@ import { StepLog } from '../types';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
 
 interface Props {

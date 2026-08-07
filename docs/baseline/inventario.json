@@ -1,29 +1,29 @@
 {
-  "generado": "2026-08-07T13:03:40.830Z",
-  "commit": "1366628",
+  "generado": "2026-08-07T13:39:41.066Z",
+  "commit": "20ce86e",
   "totales": {
-    "archivosTsx": 147,
-    "lineasTsx": 39299
+    "archivosTsx": 158,
+    "lineasTsx": 40440
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4602,
+    "clasesTokenEnUso": 4686,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 1,
     "camposBajo16px": 0,
-    "fontMono": 940,
-    "fontSans": 892,
-    "pesosProhibidos": 23,
+    "fontMono": 947,
+    "fontSans": 903,
+    "pesosProhibidos": 25,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 7,
     "transitionAll": 256,
     "animatePulse": 29,
-    "ariaLabel": 30,
+    "ariaLabel": 41,
     "htmlFor": 1,
-    "focusVisible": 33,
+    "focusVisible": 50,
     "reducedMotion": 2,
     "roundedSm": 0,
     "roundedMd": 0,
@@ -31,7 +31,7 @@
     "roundedXl": 0,
     "rounded2xl": 0,
     "rounded3xl": 0,
-    "roundedFull": 155,
+    "roundedFull": 156,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 10,
     "archivosMas600Lineas": 20,
@@ -114,6 +114,10 @@
         "lineas": 879
       },
       {
+        "archivo": "src/components/ui/Showcase.tsx",
+        "lineas": 800
+      },
+      {
         "archivo": "src/components/RoadmapTimeline.tsx",
         "lineas": 747
       },
@@ -124,10 +128,6 @@
       {
         "archivo": "src/components/WorkoutsScreen.tsx",
         "lineas": 681
-      },
-      {
-        "archivo": "src/components/ui/Showcase.tsx",
-        "lineas": 676
       },
       {
         "archivo": "src/components/CardioScreen.tsx",
@@ -593,9 +593,6 @@
       "fontSans": 1,
       "transitionAll": 1
     },
-    "src/components/Skeleton.tsx": {
-      "animatePulse": 1
-    },
     "src/components/StatTile.tsx": {
       "clasesTokenEnUso": 3,
       "fontSans": 2,
@@ -798,15 +795,20 @@
       "roundedFull": 2
     },
     "src/components/ui/Badge.tsx": {
-      "clasesTokenEnUso": 18,
-      "fontSans": 2,
+      "clasesTokenEnUso": 21,
+      "fontMono": 1,
+      "fontSans": 1,
       "roundedFull": 2
     },
+    "src/components/ui/Banner.tsx": {
+      "clasesTokenEnUso": 9,
+      "fontSans": 1
+    },
     "src/components/ui/Button.tsx": {
-      "clasesTokenEnUso": 17,
+      "clasesTokenEnUso": 14,
       "fontSans": 1,
       "ariaLabel": 1,
-      "focusVisible": 6
+      "focusVisible": 5
     },
     "src/components/ui/Card.tsx": {
       "clasesTokenEnUso": 8,
@@ -819,12 +821,24 @@
       "fontSans": 2,
       "ariaLabel": 1,
       "focusVisible": 7,
-      "roundedFull": 3
+      "roundedFull": 2
+    },
+    "src/components/ui/CollapsingHeader.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontSans": 1,
+      "pesosProhibidos": 1
     },
     "src/components/ui/Dialog.tsx": {
       "clasesTokenEnUso": 8,
       "fontSans": 1,
       "ariaLabel": 2,
+      "focusVisible": 3
+    },
+    "src/components/ui/EffortScale.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 1,
+      "fontSans": 1,
+      "ariaLabel": 1,
       "focusVisible": 3
     },
     "src/components/ui/EmptyState.tsx": {
@@ -835,22 +849,50 @@
       "ariaLabel": 1
     },
     "src/components/ui/Input.tsx": {
-      "clasesTokenEnUso": 13,
-      "fontSans": 3,
+      "clasesTokenEnUso": 15,
+      "fontMono": 1,
+      "fontSans": 2,
       "htmlFor": 1
     },
     "src/components/ui/ListRow.tsx": {
-      "clasesTokenEnUso": 5,
+      "clasesTokenEnUso": 4,
       "fontSans": 2,
       "ariaLabel": 1,
       "focusVisible": 3
     },
     "src/components/ui/PageHeader.tsx": {
       "clasesTokenEnUso": 8,
-      "fontSans": 3
+      "fontSans": 2,
+      "pesosProhibidos": 1
+    },
+    "src/components/ui/ProgressBar.tsx": {
+      "clasesTokenEnUso": 2,
+      "ariaLabel": 1
+    },
+    "src/components/ui/RingSeal.tsx": {
+      "clasesTokenEnUso": 3,
+      "ariaLabel": 1,
+      "roundedFull": 1
+    },
+    "src/components/ui/RirScale.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 1,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/SearchField.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1
+    },
+    "src/components/ui/SegmentedControl.tsx": {
+      "clasesTokenEnUso": 6,
+      "fontSans": 1,
+      "ariaLabel": 1,
+      "focusVisible": 3
     },
     "src/components/ui/Select.tsx": {
-      "clasesTokenEnUso": 8,
+      "clasesTokenEnUso": 9,
       "fontSans": 1
     },
     "src/components/ui/Sheet.tsx": {
@@ -861,17 +903,36 @@
       "roundedFull": 1
     },
     "src/components/ui/Showcase.tsx": {
-      "clasesTokenEnUso": 45,
-      "fontSans": 32,
+      "clasesTokenEnUso": 55,
+      "fontMono": 1,
+      "fontSans": 38,
       "focusVisible": 1,
       "roundedFull": 1
     },
-    "src/components/ui/Tabs.tsx": {
+    "src/components/ui/Skeleton.tsx": {
+      "animatePulse": 1
+    },
+    "src/components/ui/Sparkline.tsx": {
+      "clasesTokenEnUso": 1,
+      "ariaLabel": 1
+    },
+    "src/components/ui/Stepper.tsx": {
       "clasesTokenEnUso": 8,
+      "fontMono": 2,
+      "ariaLabel": 3,
+      "focusVisible": 8
+    },
+    "src/components/ui/SwipeRow.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 1,
+      "ariaLabel": 1
+    },
+    "src/components/ui/Tabs.tsx": {
+      "clasesTokenEnUso": 7,
       "fontSans": 2,
       "ariaLabel": 1,
-      "focusVisible": 3,
-      "roundedFull": 1
+      "focusVisible": 4,
+      "roundedFull": 2
     },
     "src/components/ui/internal/useReducedMotion.ts": {
       "reducedMotion": 2
@@ -1020,8 +1081,8 @@
       "roundedFull": 1
     },
     "src/hooks/useToast.tsx": {
-      "clasesTokenEnUso": 3,
-      "fontSans": 1
+      "clasesTokenEnUso": 5,
+      "fontSans": 2
     },
     "src/utils/cardioZones.ts": {
       "hexLiterales": 6

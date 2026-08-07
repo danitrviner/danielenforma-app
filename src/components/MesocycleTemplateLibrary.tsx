@@ -6,7 +6,7 @@ import {
   getMesocycleTemplates, createMesocycleTemplate,
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Input } from './ui';
 
 function mesocycleTemplatesKey(coachId: string) {

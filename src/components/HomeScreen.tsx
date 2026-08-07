@@ -10,7 +10,7 @@ import AthleteReportsPanel from './AthleteReportsPanel';
 import ProgressRing from './ProgressRing';
 import StatTile from './StatTile';
 import PlanInPreparationCard from './PlanInPreparationCard';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, PageHeader, ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio';

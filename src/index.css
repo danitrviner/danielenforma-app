@@ -313,6 +313,8 @@
   --animate-pulse-dot:      pulse-dot 1.6s var(--ease-brand) infinite;
   --animate-ghost-tap:      ghost-tap 1.1s var(--ease-brand) infinite;
   --animate-seal-pop:       seal-pop var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-sheet-in:       sheet-in var(--duration-sheet) var(--ease-brand) both;
+  --animate-toast-in:       toast-in var(--duration-slide) var(--ease-brand) both;
 
   /* fade-up — entrada por defecto de tarjetas y filas escalonadas. */
   @keyframes fade-up {
@@ -358,6 +360,19 @@
     0%   { transform: scale(0.62); opacity: 0; }
     55%  { transform: scale(1.07); opacity: 1; }
     100% { transform: scale(1);    opacity: 1; }
+  }
+
+  /* sheet-in — Sheet y la hoja de Dani del tutorial entrando desde abajo. */
+  @keyframes sheet-in {
+    from { transform: translateY(26px) scale(0.985); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+
+  /* toast-in — más corto y con menos recorrido que sheet-in: un toast no
+     "sube desde el borde", solo se asienta. */
+  @keyframes toast-in {
+    from { transform: translateY(22px) scale(0.97); opacity: 0; }
+    to   { transform: none; opacity: 1; }
   }
 }
 

@@ -13,7 +13,7 @@ import {
 } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import ScheduleFields from './ScheduleFields';
 import OnboardingForm from './OnboardingForm';
 import FoodPreferencesPanel from './FoodPreferencesPanel';

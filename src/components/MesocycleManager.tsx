@@ -17,7 +17,7 @@ import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────

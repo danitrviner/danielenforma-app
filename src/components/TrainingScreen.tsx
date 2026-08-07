@@ -16,7 +16,7 @@ import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
 import { Badge, BadgeTone, Dialog, Button, Icon } from './ui';
 

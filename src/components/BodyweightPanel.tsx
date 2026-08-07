@@ -7,7 +7,7 @@ import {
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import {
   Icon, Button, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,

@@ -4,7 +4,7 @@ import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, Tabs, EmptyState } from './ui';
 
 const VIEW_LABELS: Record<PhotoView, string> = {

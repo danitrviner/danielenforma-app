@@ -4,7 +4,7 @@ import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, Onboarding
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
 import { db, doc, writeBatch } from '../firebase';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { Tabs } from './ui';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';

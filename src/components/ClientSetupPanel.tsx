@@ -13,7 +13,7 @@ import {
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
 import ProgressRing from './ProgressRing';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { HubTab, AnalisisTab } from './ClientHub';
 import { Icon, Button, ListRow } from './ui';
 

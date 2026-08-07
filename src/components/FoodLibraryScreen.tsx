@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { EmptyState, Dialog, Button, Select } from './ui';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));

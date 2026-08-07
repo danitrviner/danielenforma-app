@@ -4,7 +4,7 @@ import { UserProfile, WeightCheckIn, TaskType, Questionnaire } from '../types';
 import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';

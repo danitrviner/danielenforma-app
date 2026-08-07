@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CoachNote } from '../types';
 import { getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote } from '../dbService';
 import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
 import { ListRow, Button } from './ui';
 
 interface Props {
