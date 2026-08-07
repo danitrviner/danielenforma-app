@@ -6,6 +6,14 @@ interface Props {
   titulo: string;
   descripcion?: string;
   cta?: { label: string; onClick: () => void };
+  /**
+   * Segunda acción, más discreta que `cta` (enlace de texto, no botón) — para
+   * el caso con dos caminos reales distintos (p.ej. "Invitar atleta" primario
+   * vs. "o crea un contacto sin cuenta" secundario en `ClientesList`). No se
+   * tocó la primitiva del DS (`ui/EmptyState`, que solo admite un CTA) porque
+   * es de un solo botón en el resto de sus usos — esto se pinta debajo, aparte.
+   */
+  ctaSecundario?: { label: string; onClick: () => void };
 }
 
 /**
@@ -22,14 +30,27 @@ interface Props {
  * La API en español (`titulo` / `descripcion` / `cta`) no cambia: las pantallas
  * del CRM que lo usan no se tocan.
  */
-export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
+export default function EmptyState({ icon, titulo, descripcion, cta, ctaSecundario }: Props) {
   return (
-    <EmptyStateDS
-      icon={icon}
-      title={titulo}
-      description={descripcion}
-      actionLabel={cta?.label}
-      onAction={cta?.onClick}
-    />
+    <div className="space-y-3">
+      <EmptyStateDS
+        icon={icon}
+        title={titulo}
+        description={descripcion}
+        actionLabel={cta?.label}
+        onAction={cta?.onClick}
+      />
+      {ctaSecundario && (
+        <p className="text-center">
+          <button
+            type="button"
+            onClick={ctaSecundario.onClick}
+            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
+          >
+            {ctaSecundario.label}
+          </button>
+        </p>
+      )}
+    </div>
   );
 }

@@ -13,6 +13,7 @@ import ClientesActionList from '../components/ClientesActionList';
 import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import NuevoClienteModal from '../components/NuevoClienteModal';
+import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import type { Cliente, EstadoCrm, CrmServicio } from '../types';
 import { Icon } from '../../../components/ui';
 
@@ -41,6 +42,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const [params, setParams] = useSearchParams();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [importarAbierto, setImportarAbierto] = useState(false);
+  const [invitarAbierto, setInvitarAbierto] = useState(false);
 
   const filtro = (params.get('estado') as EstadoCrm | 'todos') || 'todos';
   const busqueda = params.get('q') ?? '';
@@ -225,9 +227,10 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
               clientes.length === 0 ? (
                 <EmptyState
                   icon="group"
-                  titulo="Aún no hay clientes"
-                  descripcion="Crea el primero a mano, o importa tu cartera desde una hoja de cálculo."
-                  cta={{ label: 'Nuevo cliente', onClick: () => setModalAbierto(true) }}
+                  titulo="Aquí vivirá tu negocio"
+                  descripcion="Invita a tu primer atleta con cuenta de app, o importa tu cartera desde una hoja de cálculo."
+                  cta={{ label: 'Invitar atleta', onClick: () => setInvitarAbierto(true) }}
+                  ctaSecundario={{ label: 'o crea un contacto sin cuenta', onClick: () => setModalAbierto(true) }}
                 />
               ) : (
                 <EmptyState
@@ -242,6 +245,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
       )}
 
       {modalAbierto && <NuevoClienteModal onCerrar={() => setModalAbierto(false)} />}
+      {invitarAbierto && <InvitarAtletaModal onCerrar={() => setInvitarAbierto(false)} />}
       {importarAbierto && (
         <Suspense fallback={null}>
           <ImportarClientes onCerrar={() => setImportarAbierto(false)} />
