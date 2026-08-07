@@ -1,20 +1,20 @@
 {
-  "generado": "2026-08-07T15:54:42.997Z",
-  "commit": "4271f3b",
+  "generado": "2026-08-07T16:07:32.607Z",
+  "commit": "6282c90",
   "totales": {
     "archivosTsx": 165,
-    "lineasTsx": 41914
+    "lineasTsx": 41956
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4865,
+    "clasesTokenEnUso": 4909,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
     "textoBajo11px": 2,
     "camposBajo16px": 0,
-    "fontMono": 973,
+    "fontMono": 978,
     "fontSans": 900,
-    "pesosProhibidos": 45,
+    "pesosProhibidos": 50,
     "espaciadoFueraEscala": 2,
     "sombrasFueraEscala": 3,
     "glowAcento": 0,
@@ -34,7 +34,7 @@
     "roundedFull": 157,
     "hexDistintos": 12,
     "tamanosTextoDistintos": 11,
-    "archivosMas600Lineas": 20,
+    "archivosMas600Lineas": 21,
     "hexEnTokensCss": 14
   },
   "listas": {
@@ -143,6 +143,10 @@
         "lineas": 657
       },
       {
+        "archivo": "src/components/ClientHub.tsx",
+        "lineas": 647
+      },
+      {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
         "lineas": 644
       },
@@ -242,9 +246,10 @@
       "transitionAll": 6
     },
     "src/components/ClientHub.tsx": {
-      "clasesTokenEnUso": 17,
-      "fontMono": 5,
+      "clasesTokenEnUso": 30,
+      "fontMono": 9,
       "fontSans": 3,
+      "pesosProhibidos": 4,
       "transitionAll": 2,
       "roundedFull": 1
     },
@@ -256,13 +261,14 @@
       "roundedFull": 1
     },
     "src/components/ClientSetupPanel.tsx": {
-      "clasesTokenEnUso": 28,
-      "fontMono": 2,
+      "clasesTokenEnUso": 42,
+      "fontMono": 3,
       "fontSans": 6,
+      "pesosProhibidos": 1,
       "roundedFull": 2
     },
     "src/components/ClientStatusCard.tsx": {
-      "clasesTokenEnUso": 30,
+      "clasesTokenEnUso": 34,
       "fontMono": 8
     },
     "src/components/ClientWorkoutsPanel.tsx": {
@@ -498,6 +504,7 @@
       "roundedFull": 1
     },
     "src/components/PendingTray.tsx": {
+      "clasesTokenEnUso": 4,
       "fontMono": 1,
       "transitionAll": 1
     },
@@ -1122,6 +1129,9 @@
     "src/hooks/useToast.tsx": {
       "clasesTokenEnUso": 5,
       "fontSans": 2
+    },
+    "src/utils/adherence.ts": {
+      "clasesTokenEnUso": 9
     },
     "src/utils/cardioZones.ts": {
       "hexLiterales": 6

@@ -12,10 +12,8 @@ import {
 } from '../dbService';
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
-import ProgressRing from './ProgressRing';
-import { Skeleton } from './ui';
 import { HubTab, AnalisisTab } from './ClientHub';
-import { Icon, Button, ListRow } from './ui';
+import { Icon, Button, ListRow, RingSeal, Skeleton } from './ui';
 
 interface Props {
   athlete: UserProfile;
@@ -41,8 +39,8 @@ const STATUS_ICON: Record<SetupItem['status'], string> = {
   na: 'remove',
 };
 const STATUS_COLOR: Record<SetupItem['status'], string> = {
-  done: 'text-emerald-400',
-  attention: 'text-orange-400',
+  done: 'text-success',
+  attention: 'text-warning',
   pending: 'text-ink-2',
   na: 'text-ink-3',
 };
@@ -183,7 +181,12 @@ export default function ClientSetupPanel({
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
       <div className="bg-surface border border-hairline rounded-surface p-5 flex items-center gap-5">
-        <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} label="Setup" />
+        <RingSeal percent={result.globalPct} size={104} strokeWidth={9} complete={result.globalPct >= 100} label="Progreso del setup">
+          <div className="flex flex-col items-center justify-center">
+            <span className="font-display font-black text-title-l text-ink leading-none">{result.globalPct}%</span>
+            <span className="font-mono text-caption text-ink-2 uppercase tracking-widest mt-1">Setup</span>
+          </div>
+        </RingSeal>
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
             <>
@@ -194,7 +197,7 @@ export default function ClientSetupPanel({
               )}
             </>
           ) : (
-            <p className="font-sans font-bold text-body-s text-emerald-400">Todo configurado</p>
+            <p className="font-sans font-bold text-body-s text-success">Todo configurado</p>
           )}
         </div>
       </div>
@@ -207,10 +210,10 @@ export default function ClientSetupPanel({
               key={alert.id}
               onClick={() => alert.link && onGoToTab(alert.link.tab)}
               className={`rounded-control border ${
-                alert.severity === 'critical' ? 'bg-red-500/10 border-red-500/20' : 'bg-orange-500/10 border-orange-500/20'
+                alert.severity === 'critical' ? 'bg-danger/10 border-danger/20' : 'bg-warning/10 border-warning/20'
               }`}
               leading={
-                <Icon name={alert.severity === 'critical' ? 'error' : 'warning'} size="m" className={alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'} />
+                <Icon name={alert.severity === 'critical' ? 'error' : 'warning'} size="m" className={alert.severity === 'critical' ? 'text-danger' : 'text-warning'} />
               }
               title={alert.title}
               subtitle={alert.detail}
@@ -236,7 +239,7 @@ export default function ClientSetupPanel({
                   </div>
                   <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-emerald-400' : 'bg-accent'}`}
+                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-success' : 'bg-accent'}`}
                       style={{ width: `${phase.donePct}%` }}
                     />
                   </div>
@@ -301,12 +304,12 @@ export default function ClientSetupPanel({
                 className={`rounded-surface border ${task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'}`}
                 leading={
                   <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
-                    <Icon name={task.done ? 'check_circle' : 'radio_button_unchecked'} size="l" className={task.done ? 'text-emerald-400' : 'text-ink-2'} />
+                    <Icon name={task.done ? 'check_circle' : 'radio_button_unchecked'} size="l" className={task.done ? 'text-success' : 'text-ink-2'} />
                   </button>
                 }
                 title={task.title}
                 trailing={
-                  <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-red-400 transition-colors">
+                  <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-danger transition-colors">
                     <Icon name="delete" size="m" />
                   </button>
                 }

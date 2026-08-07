@@ -147,7 +147,7 @@ export default function ClientStatusCard({
         ) : (
           <button onClick={() => { setNoteDraft(note); setEditingNote(true); }} className="flex-1 text-left group">
             {note ? (
-              <p className="text-body-s text-white leading-relaxed">{note}</p>
+              <p className="text-body-s text-ink leading-relaxed">{note}</p>
             ) : (
               <p className="text-body-s text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
             )}
@@ -163,7 +163,7 @@ export default function ClientStatusCard({
             <Icon name="flag" size="s" className="text-accent" /> Fase
           </p>
           {planPhase ? (
-            <p className="text-body-s font-bold text-white flex items-center gap-2">
+            <p className="text-body-s font-bold text-ink flex items-center gap-2">
               <Icon name={planPhase.icon} size="m" style={{ color: planPhase.color }} />
               {planPhase.name}
             </p>
@@ -173,7 +173,7 @@ export default function ClientStatusCard({
           {activeMeso && (
             <p className="font-mono text-caption text-ink-2">
               Meso #{activeMeso.meso.number} · {activeMeso.meso.objective} · sem {activeMeso.week}/{activeMeso.meso.weeks}
-              {!activeMeso.inRange && <span className="text-amber-300"> (terminado)</span>}
+              {!activeMeso.inRange && <span className="text-warning"> (terminado)</span>}
             </p>
           )}
           {nutriPhase && (
@@ -189,7 +189,7 @@ export default function ClientStatusCard({
             <Icon name="target" size="s" className="text-accent" /> Objetivo
           </p>
           {onboardingData?.goalBody ? (
-            <p className="text-body-s font-bold text-white">{GOAL_LABEL[onboardingData.goalBody]}</p>
+            <p className="text-body-s font-bold text-ink">{GOAL_LABEL[onboardingData.goalBody]}</p>
           ) : (
             <p className="text-label text-ink-2/60 italic">Sin objetivo registrado</p>
           )}

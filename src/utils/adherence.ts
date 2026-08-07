@@ -52,7 +52,7 @@ export interface ScoreStyle {
 }
 
 export function scoreStyle(score: number): ScoreStyle {
-  if (score >= 75) return { text: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', label: 'Buena adherencia' };
-  if (score >= 50) return { text: 'text-orange-400',  bg: 'bg-orange-500/10  border-orange-500/20',  label: 'Irregular'        };
-  return              { text: 'text-red-400',          bg: 'bg-red-500/10     border-red-500/20',     label: 'En riesgo'        };
+  if (score >= 75) return { text: 'text-success', bg: 'bg-success/10 border-success/20', label: 'Buena adherencia' };
+  if (score >= 50) return { text: 'text-warning', bg: 'bg-warning/10 border-warning/20', label: 'Irregular'        };
+  return              { text: 'text-danger',  bg: 'bg-danger/10  border-danger/20',  label: 'En riesgo'        };
 }

@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -36,6 +37,7 @@ import ClientReviewsPanel from './ClientReviewsPanel';
 import ClientSetupPanel from './ClientSetupPanel';
 import PendingTray from './PendingTray';
 import ClientStatusCard from './ClientStatusCard';
+import ClientHubSummary from './ClientHubSummary';
 import { Badge, Tabs } from './ui';
 
 export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
@@ -298,6 +300,18 @@ export default function ClientHub({
   const adherence = computeAdherenceScore(assignments, athleteCheckins);
   const adh        = scoreStyle(adherence.score);
 
+  // ── Resumen del Hub (F3.13b) ──────────────────────────────────────────────
+  // Fila de KPIs de la cabecera: peso más reciente (con el mismo fallback que
+  // ClientStatusCard) y RIR medio de las últimas 4 semanas (rirStats.ts).
+  const latestWeight = bodyweightLogs.length > 0
+    ? [...bodyweightLogs].sort((a, b) => b.date.localeCompare(a.date))[0].weight
+    : athlete.actualWeight || null;
+  const avgRir = computeAverageRir(athleteLogs);
+  // "Próxima revisión" del handoff = el próximo check-in que el coach aún no
+  // ha revisado (sin feedback ni aprobar) — es exactamente lo que Revisiones
+  // resuelve, así que el CTA salta directo ahí.
+  const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
+
   // ── Weekly compliance ──────────────────────────────────────────────────────
   const getWeekRange = () => {
     const today = new Date();
@@ -391,7 +405,7 @@ export default function ClientHub({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-hairline space-y-3">
+      <div className="pb-4 border-b border-hairline space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
@@ -400,21 +414,29 @@ export default function ClientHub({
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
           </button>
-          <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-accent/30 object-cover" />
+          <img src={athlete.avatarUrl} alt="" className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-sans font-bold text-white text-title-m leading-tight">{athlete.displayName}</h1>
+              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
             <p className="font-mono text-caption text-ink-2">{athlete.email}</p>
-            {/* Adherence score badge */}
-            <div className={`inline-flex items-center gap-2 mt-2 px-2 py-1 rounded-control border font-mono ${adh.bg}`}>
-              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
-              <span className={`text-caption font-bold uppercase ${adh.text}`}>{adh.label}</span>
-              <span className={`text-body-s font-bold ${adh.text}`}>{adherence.score}</span>
-            </div>
           </div>
         </div>
+
+        {/* Resumen: adherencia / peso / RIR medio + plan sin publicar / próxima
+            revisión (F3.13b, "Hub del atleta") */}
+        <ClientHubSummary
+          adherenceScore={adherence.score}
+          adherenceStyle={adh}
+          latestWeight={latestWeight}
+          averageRir={avgRir}
+          planUnpublished={assignments.length === 0}
+          pendingReviewsCount={pendingCheckins.length}
+          onGoToEntrenamientos={() => guardedTabChange('entrenamientos')}
+          onGoToRevisiones={() => guardedTabChange('revisiones')}
+        />
+
         {/* Plan duration config */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-mono text-caption text-ink-2 uppercase">Plan:</span>
@@ -447,11 +469,9 @@ export default function ClientHub({
       <PendingTray
         athleteLogs={athleteLogs}
         getWorkout={getWorkout}
-        athleteCheckins={athleteCheckins}
         coachReports={coachReports}
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
-        onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
         onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
       />
