@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import { Skeleton } from './ui';
-import { EmptyState, Dialog, Button, Icon, Input, Select } from './ui';
+import { EmptyState, Dialog, Button, Icon, Input, Select, Sheet, Chip } from './ui';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -96,10 +96,16 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     },
   });
   const [search, setSearch]                     = useState('');
-  const [filterMuscleGroup, setFilterMuscleGroup] = useState<MuscleGroup | ''>('');
+  const [filterMuscleGroups, setFilterMuscleGroups] = useState<MuscleGroup[]>([]);
   const [filterType, setFilterType]             = useState('');
   const [filterEndurance, setFilterEndurance]   = useState('');
-  const [filterEquipment, setFilterEquipment]   = useState('');
+  const [filterEquipment, setFilterEquipment]   = useState<string[]>([]);
+  const [showFilterSheet, setShowFilterSheet]   = useState(false);
+  // Borrador de la hoja de filtros (panel 05 del handoff): se aplica solo al
+  // pulsar "Ver N ejercicios", no en cada toque de chip — así el atleta... (el
+  // coach, aquí) puede tantear varias combinaciones sin que la lista salte.
+  const [draftGroups, setDraftGroups]           = useState<MuscleGroup[]>([]);
+  const [draftEquipment, setDraftEquipment]     = useState<string[]>([]);
 
   const [showForm, setShowForm]                 = useState(false);
   const [editingId, setEditingId]               = useState<string | null>(null);
@@ -108,18 +114,32 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [deleteConfirm, setDeleteConfirm]       = useState<string | null>(null);
   const [successMsg, setSuccessMsg]             = useState('');
 
-  const filtered = exercises.filter(ex => {
+  function matchesFilters(ex: Exercise, groups: MuscleGroup[], equipment: string[]): boolean {
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterMuscleGroup && ex.muscleGroup !== filterMuscleGroup) return false;
+    if (groups.length > 0 && (!ex.muscleGroup || !groups.includes(ex.muscleGroup))) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;
-    if (filterEquipment) {
+    if (equipment.length > 0) {
       const eq = ex.equipment ?? [];
       if (eq.length === 0) return false;
-      if (!eq.some(e => e.toLowerCase() === filterEquipment.toLowerCase())) return false;
+      if (!eq.some(e => equipment.includes(e))) return false;
     }
     return true;
-  });
+  }
+
+  const filtered = exercises.filter(ex => matchesFilters(ex, filterMuscleGroups, filterEquipment));
+  const draftCount = exercises.filter(ex => matchesFilters(ex, draftGroups, draftEquipment)).length;
+
+  function openFilterSheet() {
+    setDraftGroups(filterMuscleGroups);
+    setDraftEquipment(filterEquipment);
+    setShowFilterSheet(true);
+  }
+  function applyFilterSheet() {
+    setFilterMuscleGroups(draftGroups);
+    setFilterEquipment(draftEquipment);
+    setShowFilterSheet(false);
+  }
 
   const openCreate = () => {
     setEditingId(null);
@@ -196,7 +216,17 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     return ex.muscleGroup ? MACRO_MUSCLE_LABELS[ex.muscleGroup] : ex.primaryFocus;
   }
 
-  const hasFilters = !!(filterMuscleGroup || filterType || filterEndurance || filterEquipment || search);
+  const hasFilters = filterMuscleGroups.length > 0 || !!filterType || !!filterEndurance || filterEquipment.length > 0 || !!search;
+
+  function toggleGroupChip(g: MuscleGroup) {
+    setFilterMuscleGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  }
+  function toggleDraftGroup(g: MuscleGroup) {
+    setDraftGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  }
+  function toggleDraftEquipment(eq: string) {
+    setDraftEquipment(prev => prev.includes(eq) ? prev.filter(x => x !== eq) : [...prev, eq]);
+  }
 
   return (
     <div className="space-y-6">
@@ -227,79 +257,53 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </div>
       )}
 
-      {/* FILTERS */}
-      <div className="flex flex-col md:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
+      {/* FILTERS — panel 01 del handoff: buscador 48px + botón de filtros en
+          cuadro oro 14%, chips de grupo en fila con scroll horizontal para
+          el filtro rápido. Tipo/perfil de resistencia (no están en el
+          handoff, pero ya existían) se quedan dentro de la hoja de filtros. */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Icon name="search" size="m" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar ejercicio..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
+            className="h-12 w-full bg-raised border border-hairline rounded-control pl-10 pr-4 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
           />
         </div>
-
-        {/* Filter pills */}
-        <div className="flex gap-2 flex-wrap">
-          {/* Muscle group filter — 14 macrocycle keys */}
-          <select
-            value={filterMuscleGroup}
-            onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-raised border border-hairline rounded-control px-3 py-3 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="">Todos los grupos</option>
-            {MACRO_MUSCLE_GROUPS.map(g => (
-              <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterType}
-            onChange={e => setFilterType(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-3 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="">Todos los tipos</option>
-            {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-          </select>
-
-          <select
-            value={filterEndurance}
-            onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-3 text-title-s font-sans text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="">Todos los perfiles de resistencia</option>
-            {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
-          </select>
-
-          <select
-            value={filterEquipment}
-            onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-3 py-3 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="">Todo el material</option>
-            {EQUIPMENT_OPTIONS.map(e => (
-              <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>
-            ))}
-          </select>
-
-          {hasFilters && (
-            <button
-              onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1 px-3 py-3 border border-hairline rounded-control hover:border-hairline transition-all"
-            >
-              <span className="material-symbols-outlined text-body-s">close</span>
-              Limpiar
-            </button>
-          )}
-        </div>
+        <button
+          onClick={openFilterSheet}
+          aria-label="Filtros"
+          className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${
+            filterType || filterEndurance || filterEquipment.length > 0 ? 'bg-accent/14 border-accent-line text-accent' : 'bg-raised border-hairline text-ink-2'
+          }`}
+        >
+          <Icon name="tune" size="m" />
+        </button>
       </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {MACRO_MUSCLE_GROUPS.map(g => (
+          <Chip key={g} selected={filterMuscleGroups.includes(g)} onClick={() => toggleGroupChip(g)} className="shrink-0">
+            {MACRO_MUSCLE_LABELS[g]}
+          </Chip>
+        ))}
+      </div>
+
+      {hasFilters && (
+        <button
+          onClick={() => { setFilterMuscleGroups([]); setFilterType(''); setFilterEndurance(''); setFilterEquipment([]); setSearch(''); }}
+          className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1"
+        >
+          <Icon name="close" size="s" />
+          Limpiar filtros
+        </button>
+      )}
 
       {!loading && (
         <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
-          {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
       )}
 
@@ -311,16 +315,27 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
+      ) : exercises.length === 0 ? (
+        // Panel 04 del handoff: biblioteca realmente vacía (no un filtro sin
+        // resultados). En la práctica es rara — el useQuery ya llama a
+        // seedExercisesIfEmpty() al montar — pero si el coach borró los 40
+        // base a mano, esto le deja recuperarlos sin salir de la pantalla.
+        <div className="bg-surface border border-dashed border-hairline rounded-surface p-8 text-center space-y-4">
+          <p className="font-display text-title-l font-black uppercase text-ink">Biblioteca vacía</p>
+          <p className="text-body-s font-sans text-ink-2">Todavía no hay ejercicios en tu biblioteca.</p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button onClick={() => seedExercisesIfEmpty().then(() => queryClient.invalidateQueries({ queryKey: exercisesQueryKey }))}>
+              Cargar los 40 base
+            </Button>
+            <Button variant="secondary" onClick={openCreate}>Crear uno desde cero</Button>
+          </div>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="bg-surface border border-dashed border-hairline rounded-surface">
           <EmptyState
             icon="fitness_center"
             title="Sin resultados"
-            description={
-              filterMuscleGroup
-                ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo muscular en el editor.`
-                : 'Ajusta los filtros o añade un nuevo ejercicio.'
-            }
+            description="Ajusta los filtros o añade un nuevo ejercicio."
           />
         </div>
       ) : (
@@ -430,61 +445,97 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             </div>
           </div>
 
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
+          {/* Mobile cards — panel 01 del handoff: fila de 64px miniatura +
+              nombre + chip de grupo (oro 13%) + chip de equipamiento (blanco
+              5%) + chevron al 30%. La marca "SIN VÍDEO" reemplaza al enlace
+              "Ver vídeo" cuando no hay uno: la ficha con reproductor propio
+              es F3.13 (lado atleta), aquí el catálogo del coach solo informa. */}
+          <div className="md:hidden space-y-2">
             {filtered.map(ex => (
-              <div key={ex.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {ex.imageUrl ? (
-                      <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-surface object-cover border border-hairline flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-sans font-bold text-body-s text-white">{ex.name}</p>
-                      <p className="font-sans text-caption text-ink-2">{muscleLabel(ex)}</p>
-                      {ex.muscleGroup && (
-                        <span className="inline-flex items-center text-caption font-mono text-accent/80">
-                          <span className="material-symbols-outlined text-caption">link</span>
-                          Macro
-                        </span>
-                      )}
-                    </div>
+              <div key={ex.id} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface p-3">
+                <div className="relative w-16 h-16 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {ex.imageUrl ? (
+                    <img src={ex.imageUrl} alt={ex.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="fitness_center" size="l" className="text-ink-2" />
+                  )}
+                  {!ex.videoUrl && (
+                    <span className="absolute bottom-0 inset-x-0 bg-black/70 text-center text-[7px] font-mono uppercase tracking-wider text-ink-2 py-1">Sin vídeo</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-sans font-bold text-body-s text-white truncate">{ex.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-1">
+                    <span className="font-mono text-caption text-accent bg-accent/13 px-2 py-1 rounded-chip">{muscleLabel(ex)}</span>
+                    {(ex.equipment ?? []).slice(0, 2).map(eq => (
+                      <span key={eq} className="font-mono text-caption text-ink-2 bg-white/5 px-2 py-1 rounded-chip capitalize">{eq}</span>
+                    ))}
                   </div>
-                  {canEdit(ex) && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => openEdit(ex)} className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
-                        <span className="material-symbols-outlined text-body-s">edit</span>
-                      </button>
-                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-ink-2 hover:text-red-400 p-2 rounded-control transition-all">
-                        <span className="material-symbols-outlined text-body-s">delete</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
-                  {ex.enduranceProfile && (
-                    <span className={`px-2 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
-                  )}
-                  {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 rounded-control capitalize">{eq}</span>
-                  ))}
-                  {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 flex items-center ">
-                      <span className="material-symbols-outlined text-label">play_circle</span>
-                      Video
-                    </a>
-                  )}
-                </div>
+                {canEdit(ex) ? (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
+                      <Icon name="edit" size="s" />
+                    </button>
+                    <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                      <Icon name="delete" size="s" />
+                    </button>
+                  </div>
+                ) : (
+                  <Icon name="chevron_right" size="m" className="text-ink-2/30 flex-shrink-0" />
+                )}
               </div>
             ))}
           </div>
         </>
       )}
+
+      {/* HOJA DE FILTROS — panel 05: 14 grupos + equipamiento en chips
+          multi-selección, "Limpiar" arriba, primario con el recuento. */}
+      <Sheet
+        open={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        title="Filtros"
+        footer={<Button onClick={applyFilterSheet} fullWidth size="l">Ver {draftCount} ejercicios</Button>}
+      >
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <p className="text-caption font-mono uppercase text-ink-2">Grupo muscular</p>
+            {(draftGroups.length > 0 || draftEquipment.length > 0) && (
+              <button onClick={() => { setDraftGroups([]); setDraftEquipment([]); }} className="text-caption font-mono uppercase text-accent">Limpiar</button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {MACRO_MUSCLE_GROUPS.map(g => (
+              <Chip key={g} selected={draftGroups.includes(g)} onClick={() => toggleDraftGroup(g)}>{MACRO_MUSCLE_LABELS[g]}</Chip>
+            ))}
+          </div>
+
+          <p className="text-caption font-mono uppercase text-ink-2">Equipamiento</p>
+          <div className="flex flex-wrap gap-2">
+            {EQUIPMENT_OPTIONS.map(eq => (
+              <Chip key={eq} selected={draftEquipment.includes(eq)} onClick={() => toggleDraftEquipment(eq)} className="capitalize">{eq}</Chip>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Tipo"
+              value={filterType}
+              onChange={v => setFilterType(v)}
+              placeholder="Todos"
+              options={TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+            />
+            <Select
+              label="Perfil de resistencia"
+              value={filterEndurance}
+              onChange={v => setFilterEndurance(v)}
+              placeholder="Todos"
+              options={ENDURANCE_PROFILES.map(p => ({ value: p, label: ENDURANCE_LABELS[p] }))}
+            />
+          </div>
+        </div>
+      </Sheet>
 
       {/* DELETE CONFIRM MODAL */}
       {deleteConfirm && (

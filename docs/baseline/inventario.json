@@ -1,27 +1,27 @@
 {
-  "generado": "2026-08-07T15:03:52.767Z",
-  "commit": "d6b63eb",
+  "generado": "2026-08-07T15:17:35.903Z",
+  "commit": "884e0f0",
   "totales": {
     "archivosTsx": 160,
-    "lineasTsx": 41221
+    "lineasTsx": 41272
   },
   "metricas": {
     "hexLiterales": 20,
-    "clasesTokenEnUso": 4835,
+    "clasesTokenEnUso": 4829,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 0,
-    "textoBajo11px": 1,
+    "textoBajo11px": 2,
     "camposBajo16px": 0,
-    "fontMono": 964,
-    "fontSans": 904,
-    "pesosProhibidos": 39,
+    "fontMono": 965,
+    "fontSans": 900,
+    "pesosProhibidos": 40,
     "espaciadoFueraEscala": 0,
     "sombrasFueraEscala": 0,
     "glowAcento": 0,
     "modalesArtesanales": 8,
-    "transitionAll": 235,
+    "transitionAll": 234,
     "animatePulse": 27,
-    "ariaLabel": 43,
+    "ariaLabel": 46,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 2,
@@ -33,7 +33,7 @@
     "rounded3xl": 0,
     "roundedFull": 155,
     "hexDistintos": 12,
-    "tamanosTextoDistintos": 10,
+    "tamanosTextoDistintos": 11,
     "archivosMas600Lineas": 20,
     "hexEnTokensCss": 14
   },
@@ -71,6 +71,7 @@
     "tamanosTexto": [
       "10px",
       "6xl",
+      "7px",
       "7xl",
       "body-s",
       "caption",
@@ -126,6 +127,10 @@
         "lineas": 722
       },
       {
+        "archivo": "src/components/ExerciseLibraryScreen.tsx",
+        "lineas": 701
+      },
+      {
         "archivo": "src/components/MyMenuScreen.tsx",
         "lineas": 692
       },
@@ -136,10 +141,6 @@
       {
         "archivo": "src/components/RecipeBuilderScreen.tsx",
         "lineas": 657
-      },
-      {
-        "archivo": "src/components/ExerciseLibraryScreen.tsx",
-        "lineas": 650
       },
       {
         "archivo": "src/components/ClientsScreen.tsx",
@@ -335,11 +336,13 @@
       "transitionAll": 5
     },
     "src/components/ExerciseLibraryScreen.tsx": {
-      "clasesTokenEnUso": 108,
-      "fontMono": 22,
-      "fontSans": 17,
-      "pesosProhibidos": 1,
-      "transitionAll": 9
+      "clasesTokenEnUso": 102,
+      "textoBajo11px": 1,
+      "fontMono": 23,
+      "fontSans": 13,
+      "pesosProhibidos": 2,
+      "transitionAll": 8,
+      "ariaLabel": 3
     },
     "src/components/ExercisePersonalNotesPanel.tsx": {
       "clasesTokenEnUso": 11,
