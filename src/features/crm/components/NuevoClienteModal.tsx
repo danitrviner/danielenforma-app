@@ -142,7 +142,7 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
               ))}
             </select>
             <input
-              className={inputClass}
+              className={`${inputClass} min-w-0 flex-1`}
               value={numero}
               onChange={e => setNumero(e.target.value)}
               placeholder="600 000 000"

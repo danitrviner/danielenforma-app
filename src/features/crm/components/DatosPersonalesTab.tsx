@@ -154,7 +154,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
             >
               {PREFIJOS_FRECUENTES.map(p => <option key={p.code} value={p.code}>{p.label}</option>)}
             </select>
-            <input className={inputClass} value={numero} onChange={e => setNumero(e.target.value)} inputMode="tel" />
+            <input className={`${inputClass} min-w-0 flex-1`} value={numero} onChange={e => setNumero(e.target.value)} inputMode="tel" />
           </div>
         </Campo>
 
