@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCliente } from '../hooks/useClientes';
+import { useSuscripcionesDe, useRegistrarCobro } from '../hooks/useSuscripciones';
+import { estadoSuscripcionCliente } from '../lib/suscripcionEstado';
 import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import DatosPersonalesTab from '../components/DatosPersonalesTab';
@@ -38,6 +40,8 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   const [params, setParams] = useSearchParams();
 
   const { cliente, isPending } = useCliente(id);
+  const { data: suscripciones = [] } = useSuscripcionesDe(id);
+  const registrar = useRegistrarCobro();
   const tab = (params.get('tab') as Tab) || 'datos';
 
   const irATab = (t: Tab) => {
@@ -62,6 +66,13 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   }
 
   const whatsapp = enlaceWhatsApp(cliente.telefono);
+  // Acceso rápido de "Renovar plan" en la cabecera: solo cuando la
+  // suscripción vence pronto (mismo umbral que la lista partida del CRM,
+  // ver suscripcionEstado.ts) — un plan sin plan o al día ya tiene su alta
+  // o su seguimiento normal en la pestaña Renovaciones, no hace falta un
+  // botón destacado. No se duplica adherencia/KPIs de entreno aquí — eso es
+  // de ClientHub, no de esta ficha de facturación (decisión con Dani, F3.13d).
+  const estadoSuscripcion = estadoSuscripcionCliente(suscripciones);
 
   return (
     <div className="space-y-3">
@@ -87,6 +98,17 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {estadoSuscripcion.tipo === 'vence_pronto' && (
+            <button
+              type="button"
+              onClick={() => registrar.mutate({ suscripcion: estadoSuscripcion.suscripcion, coachEmail })}
+              disabled={registrar.isPending}
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 transition-colors"
+            >
+              <Icon name="autorenew" size="s" />
+              {registrar.isPending ? 'Renovando…' : 'Renovar plan'}
+            </button>
+          )}
           {whatsapp && (
             <a
               href={whatsapp}
