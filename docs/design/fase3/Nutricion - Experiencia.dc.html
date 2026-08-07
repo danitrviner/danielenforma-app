@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes shim{0%{background-position:-320px 0}100%{background-position:320px 0}}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,199,44,.32)}100%{box-shadow:0 0 0 10px rgba(255,199,44,0)}}
+@keyframes seal{from{opacity:0;transform:scale(.62) rotate(-9deg)}62%{transform:scale(1.07) rotate(1deg)}to{opacity:1;transform:none}}
+@keyframes ringin{from{stroke-dashoffset:326}to{stroke-dashoffset:0}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes sheetin{from{opacity:0;transform:translateY(26px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes islandin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.nsc{overflow-y:auto;scrollbar-width:none}.nsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Nutrición</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · experiencia</span>
+</div>
+<p style="max-width:720px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">El sistema de intercambios como unidad visual: nunca gramos en primer plano. Registrar una ingesta es un toque, el presupuesto responde al instante y la escala de una receta recalcula en vivo. Toca las ingestas del panel 01 y mueve la escala del panel 03.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 TRACKER -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Tracker del día · interactivo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:10px 20px 0">
+    <div style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Martes 6 · semana 4</div>
+    <div style="font:900 40px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase;margin-top:8px">Tu día</div>
+  </div>
+
+  <div style="margin:14px 20px 0;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:15px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div>
+        <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32)">TE QUEDAN</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:7px"><span style="font:900 38px/1 Archivo,sans-serif;letter-spacing:-.03em;color:#FFC72C">{{ leftExch }}</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">intercambios</span></div>
+      </div>
+      <div style="text-align:right"><div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.3)">≈ KCAL</div><div style="font:600 17px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.62);margin-top:8px">{{ leftKcal }}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:13px;margin-top:18px">
+      <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
+            <span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.5)">{{ b.label }}</span>
+            <span style="{{ b.numStyle }}">{{ b.num }}</span>
+          </div>
+          <div style="height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="{{ b.fill }}"></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 20px 9px">
+    <span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34)">INGESTAS</span>
+    <span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28)">{{ doneTxt }}</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px;padding:0 20px 44px">
+    <sc-for list="{{ meals }}" as="m" hint-placeholder-count="5">
+      <div onClick="{{ m.tap }}" style="{{ m.row }}">
+        <div style="flex:1">
+          <div style="{{ m.title }}">{{ m.name }}</div>
+          <div style="display:flex;gap:5px;margin-top:8px"><sc-for list="{{ m.chips }}" as="c" hint-placeholder-count="3"><span style="{{ c.s }}">{{ c.t }}</span></sc-for></div>
+        </div>
+        <div style="{{ m.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ m.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:14px;font:500 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.24);text-align:center">TOCA UNA INGESTA · HAPTIC LIGHT</div>
+</div>
+</div>
+
+<!-- 02 SHEET -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Ajustar intercambios · interactivo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="position:absolute;inset:0;background:#050505;opacity:.55"></div>
+  <div style="position:absolute;top:0;left:0;right:0;height:300px;padding:56px 20px 0;filter:blur(1.5px);opacity:.35">
+    <div style="font:900 40px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Tu día</div>
+    <div style="height:150px;margin-top:20px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px"></div>
+  </div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(5,5,5,.4),rgba(5,5,5,.86))"></div>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#0F0F0F;border-top:1px solid rgba(255,255,255,.09);border-radius:26px 26px 0 0;padding:12px 20px 26px;animation:sheetin .38s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.16);margin:0 auto 18px"></div>
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="padding:5px 9px;border-radius:8px;background:rgba(255,199,44,.14);font:700 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C">INGESTA 2</span>
+      <span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36)">MEDIA MAÑANA</span>
+    </div>
+    <div style="font:900 25px/1.06 Archivo,sans-serif;letter-spacing:-.025em;color:#F5F5F4;text-transform:uppercase;margin-top:13px">Yogur, avena y nueces</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <sc-for list="{{ steppers }}" as="s" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:11px 13px">
+          <div style="flex:1"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.42)">{{ s.label }}</div><div style="font:400 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3);margin-top:7px">{{ s.grams }}</div></div>
+          <div onClick="{{ s.dec }}" style="width:42px;height:42px;border-radius:13px;background:#141414;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" stroke="rgba(245,245,244,.7)" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></div>
+          <div style="width:40px;text-align:center;font:600 26px/1 'IBM Plex Mono',monospace;color:#F5F5F4">{{ s.val }}</div>
+          <div onClick="{{ s.inc }}" style="width:42px;height:42px;border-radius:13px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ fitPill }}">
+      <span style="{{ fitDot }}"></span>
+      <span style="font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.06em">{{ fitTxt }}</span>
+    </div>
+    <div style="height:52px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;margin-top:12px;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Registrar ingesta</span></div>
+    <div style="text-align:center;margin-top:14px;font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.24)">CADA TOQUE = 1 INTERCAMBIO · 100 KCAL</div>
+  </div>
+</div>
+</div>
+
+<!-- 02b ALIMENTOS Y GRAMOS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02b</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Alimentos y gramos · intercambiar</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="display:flex;align-items:center;gap:12px;padding:6px 20px 0">
+    <div style="width:34px;height:34px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.6)" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">Tu día</span>
+  </div>
+  <div style="padding:16px 20px 0">
+    <span style="padding:5px 9px;border-radius:8px;background:rgba(255,199,44,.14);font:700 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C">INGESTA 2 · 11:00</span>
+    <div style="font:900 27px/1.05 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase;margin-top:13px">Media mañana</div>
+    <div style="display:flex;gap:6px;margin-top:12px">
+      <sc-for list="{{ mealChips }}" as="c" hint-placeholder-count="3"><span style="{{ c.s }}">{{ c.t }}</span></sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;padding:20px 20px 0">
+    <sc-for list="{{ foods }}" as="f" hint-placeholder-count="3">
+      <div onClick="{{ f.swap }}" style="{{ f.row }}">
+        <div style="width:44px;height:44px;border-radius:13px;background:#141414;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 9px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.32)">{{ f.tag }}</span></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ f.name }}</span>
+            <span style="font:600 13.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">{{ f.grams }}</span>
+          </div>
+          <div style="font:400 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.36);margin-top:7px">{{ f.detail }}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.65)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
+      </div>
+    </sc-for>
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:18px;background:transparent;border:1px dashed rgba(255,255,255,.12);cursor:pointer">
+      <div style="width:30px;height:30px;border-radius:10px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Añadir alimento del banco</span>
+    </div>
+  </div>
+
+  <div style="margin:18px 20px 0;padding:13px 14px;border-radius:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);display:flex;gap:10px;align-items:flex-start">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.7)" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+    <span style="font:400 11.5px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">Cambiar un alimento no toca tu presupuesto: la app ajusta los gramos para que valga los mismos intercambios.</span>
+  </div>
+
+  <div style="position:absolute;left:20px;right:20px;bottom:20px">
+    <div style="height:52px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Registrar ingesta</span></div>
+    <div style="margin-top:13px;font:500 10px/1.5 'IBM Plex Mono',monospace;letter-spacing:.08em;color:rgba(245,245,244,.24);text-align:center">TOCA UN ALIMENTO PARA INTERCAMBIARLO</div>
+  </div>
+</div>
+</div>
+
+<!-- 03 RECETA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Receta y escala · interactivo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:12px 20px 0">
+    <div style="height:48px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;padding:0 14px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.4)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="font:400 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.34)">Buscar entre 8.850 recetas</span>
+    </div>
+    <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
+      <span style="padding:9px 14px;border-radius:11px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.45);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Cabe en mi presupuesto</span>
+      <span style="padding:9px 14px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Comida</span>
+      <span style="padding:9px 14px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Favoritas</span>
+    </div>
+  </div>
+
+  <div style="margin:16px 20px 0;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px;overflow:hidden">
+    <div style="height:150px;background:#141414;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;position:relative">
+      <span style="font:500 10px/1.4 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28);text-align:center">FOTO RECETA<br>4:3</span>
+      <div style="position:absolute;top:12px;right:12px;display:flex;gap:8px">
+        <div onClick="{{ toggleFav }}" style="{{ favBtn }}"><svg width="15" height="15" viewBox="0 0 24 24" stroke-width="2" style="{{ favIcon }}"><path d="M12 20s-7-4.6-7-9.2A3.8 3.8 0 0112 8a3.8 3.8 0 017 2.8C19 15.4 12 20 12 20z"/></svg></div>
+        <div style="width:34px;height:34px;border-radius:11px;background:rgba(5,5,5,.72);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" stroke="rgba(245,245,244,.6)" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></div>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <div style="font:900 22px/1.1 Archivo,sans-serif;letter-spacing:-.025em;color:#F5F5F4;text-transform:uppercase">Pollo al curry con arroz</div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:16px">
+        <span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">ESCALA</span>
+        <span style="font:600 15px/1 'IBM Plex Mono',monospace;color:#FFC72C">×{{ scaleTxt }}</span>
+      </div>
+      <input type="range" min="0.25" max="3" step="0.25" value="{{ scale }}" onInput="{{ setScale }}" style="width:100%;margin:12px 0 0;accent-color:#FFC72C;height:22px;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;font:500 9px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.22)"><span>×0,25</span><span>×3</span></div>
+      <div style="display:flex;gap:7px;margin-top:16px">
+        <sc-for list="{{ recChips }}" as="c" hint-placeholder-count="3"><span style="{{ c.s }}">{{ c.t }}</span></sc-for>
+      </div>
+      <div style="{{ recFit }}"><span style="{{ recDot }}"></span><span style="font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.06em">{{ recFitTxt }}</span></div>
+      <div style="height:52px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;margin-top:12px;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Añadir a la comida</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:20px;font:500 10.5px/1.5 'IBM Plex Mono',monospace;letter-spacing:.08em;color:rgba(245,245,244,.24);text-align:center">LA ESCALA RECALCULA EN VIVO · EL AJUSTE PARA EN ×0,25</div>
+</div>
+</div>
+
+<!-- 04 VACÍO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Vacíos · sin dieta y sin resultados</span></div>
+<div style="display:flex;gap:16px">
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:10px 20px 0"><div style="font:900 40px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Tu día</div></div>
+  <div style="position:absolute;top:210px;left:24px;right:24px;text-align:center;animation:rise .5s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:62px;height:62px;margin:0 auto;border-radius:19px;border:1px dashed rgba(255,199,44,.32);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="1.9" stroke-linecap="round"><path d="M6 3v18M6 3l6 3-6 3M18 3v18M15 8h6"/></svg></div>
+    <div style="font:900 24px/1.15 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase;margin-top:20px">Dani está montando<br>tu dieta</div>
+    <p style="font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin:12px 0 0;text-wrap:pretty">Tu anamnesis está completa. En cuanto publique el plan lo verás aquí y te avisamos.</p>
+    <div style="display:inline-flex;align-items:center;gap:9px;margin-top:22px;padding:11px 15px;border-radius:13px;background:rgba(255,199,44,.07);border:1px solid rgba(255,199,44,.22)">
+      <span style="width:7px;height:7px;border-radius:4px;background:#FFC72C;animation:ping 1.6s cubic-bezier(.2,.9,.2,1) infinite"></span>
+      <span style="font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#FFC72C">EN REVISIÓN DESDE AYER</span>
+    </div>
+    <div style="height:52px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;margin-top:26px;cursor:pointer"><span style="font:700 14.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Ver mi anamnesis</span></div>
+  </div>
+</div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:12px 20px 0">
+    <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1.5px solid rgba(255,199,44,.55);display:flex;align-items:center;gap:10px;padding:0 14px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">tortilla de kale</span>
+      <div style="flex:1"></div><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Cancelar</span>
+    </div>
+  </div>
+  <div style="position:absolute;top:240px;left:28px;right:28px;text-align:center;animation:rise .5s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:58px;height:58px;margin:0 auto;border-radius:18px;border:1px dashed rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.4)" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div>
+    <div style="font:900 21px/1.2 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase;margin-top:18px">Nada para<br>«tortilla de kale»</div>
+    <p style="font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42);margin:12px 0 0">Prueba con un ingrediente suelto, o quita el filtro de presupuesto.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+      <span style="padding:9px 14px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">kale</span>
+      <span style="padding:9px 14px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">tortilla</span>
+      <span style="padding:9px 14px;border-radius:11px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.42);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Quitar presupuesto</span>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- 05 CARGA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">05</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Carga · esqueletos, nunca spinner</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:10px 20px 0"><div style="font:900 40px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Tu día</div></div>
+  <div style="margin:18px 20px 0;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:16px">
+    <sc-for list="{{ skels }}" as="k" hint-placeholder-count="6"><div style="{{ k.s }}"></div></sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;padding:22px 20px 0">
+    <sc-for list="{{ skelRows }}" as="k" hint-placeholder-count="3">
+      <div style="height:76px;border-radius:18px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);padding:16px 14px;display:flex;flex-direction:column;gap:10px">
+        <div style="{{ k.a }}"></div><div style="{{ k.b }}"></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:22px;font:500 10.5px/1.5 'IBM Plex Mono',monospace;letter-spacing:.08em;color:rgba(245,245,244,.24);text-align:center">BARRIDO 1,4 S · STAGGER 150 MS · SIN NÚMEROS FALSOS</div>
+</div>
+</div>
+
+<!-- 06 CELEBRACIÓN -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">06</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Día cerrado · celebración sobria</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>22:10</span><span>EN FORMA</span></div>
+  <div style="position:absolute;top:120px;left:0;right:0;display:flex;flex-direction:column;align-items:center">
+    <div style="position:relative;width:132px;height:132px">
+      <svg width="132" height="132" viewBox="0 0 132 132" style="transform:rotate(-90deg)">
+        <circle cx="66" cy="66" r="52" fill="none" stroke="#1a1a1a" stroke-width="7"/>
+        <circle cx="66" cy="66" r="52" fill="none" stroke="#FFC72C" stroke-width="7" stroke-linecap="round" stroke-dasharray="326" style="animation:ringin 1.1s cubic-bezier(.2,.9,.2,1) both"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:seal .5s .55s cubic-bezier(.2,.9,.2,1) both">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.8" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(255,199,44,.7);margin-top:8px">26/26</span>
+      </div>
+    </div>
+    <div style="font:900 30px/1.08 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase;text-align:center;margin-top:28px;animation:rise .45s .7s cubic-bezier(.2,.9,.2,1) both">Día cerrado<br>en presupuesto</div>
+    <p style="font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin:12px 34px 0;text-align:center;animation:rise .45s .8s cubic-bezier(.2,.9,.2,1) both">Cuarto día seguido. La adherencia de la semana sube a 92%.</p>
+    <div style="display:flex;gap:7px;margin-top:26px;animation:rise .45s .9s cubic-bezier(.2,.9,.2,1) both">
+      <sc-for list="{{ week }}" as="d" hint-placeholder-count="7"><div style="{{ d.s }}">{{ d.t }}</div></sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:22px">
+    <div style="height:52px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font:700 14.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Ver la semana</span></div>
+    <div style="margin-top:14px;font:500 10px/1.5 'IBM Plex Mono',monospace;letter-spacing:.08em;color:rgba(245,245,244,.24);text-align:center">HAPTIC SUCCESS AL CERRAR EL ANILLO · SIN CONFETI</div>
+  </div>
+</div>
+</div>
+
+<!-- 07 FUERA DE LA APP -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">07</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Isla dinámica · bloqueo · widget</span></div>
+<div style="width:390px;height:780px;background:#0d0d10;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 0%,#17171c,#08080a 70%)"></div>
+  <div style="position:relative;padding:14px 0 0;display:flex;justify-content:center">
+    <div style="background:#000;border-radius:22px;padding:10px 14px;display:flex;align-items:center;gap:11px;min-width:230px;animation:islandin .4s cubic-bezier(.2,.9,.2,1) both">
+      <div style="width:26px;height:26px;border-radius:9px;background:rgba(255,199,44,.16);display:flex;align-items:center;justify-content:center;flex:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><path d="M6 3v18M6 3l6 3-6 3M18 3v18"/></svg></div>
+      <div style="flex:1"><div style="font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Comida en 20 min</div><div style="font:500 9px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.45);margin-top:5px">QUEDAN 14 INTERCAMBIOS</div></div>
+      <div style="display:flex;gap:3px;align-items:flex-end;flex:none">
+        <sc-for list="{{ island }}" as="i" hint-placeholder-count="6"><div style="{{ i.s }}"></div></sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:relative;text-align:center;margin-top:44px">
+    <div style="font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">martes 6 de agosto</div>
+    <div style="font:900 82px/1 Archivo,sans-serif;letter-spacing:-.045em;color:#F5F5F4;margin-top:2px">9:41</div>
+  </div>
+
+  <div style="position:relative;display:flex;gap:12px;justify-content:center;margin-top:34px">
+    <div style="width:150px;height:150px;border-radius:24px;background:rgba(20,20,22,.72);border:1px solid rgba(255,255,255,.09);padding:14px;backdrop-filter:blur(12px)">
+      <div style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.4)">EN FORMA</div>
+      <div style="display:flex;align-items:baseline;gap:5px;margin-top:14px"><span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.03em;color:#FFC72C">14</span><span style="font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">restantes</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <sc-for list="{{ wBars }}" as="b" hint-placeholder-count="3">
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font:600 8px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.4)">{{ b.l }}</span><span style="font:600 8px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">{{ b.n }}</span></div><div style="height:4px;border-radius:3px;background:#1e1e1e;overflow:hidden"><div style="{{ b.f }}"></div></div></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="width:150px;height:150px;border-radius:24px;background:rgba(20,20,22,.72);border:1px solid rgba(255,255,255,.09);padding:14px;backdrop-filter:blur(12px);display:flex;flex-direction:column">
+      <div style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.4)">SIGUIENTE</div>
+      <div style="font:900 17px/1.15 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase;margin-top:12px">Pollo al curry con arroz</div>
+      <div style="flex:1"></div>
+      <div style="display:flex;gap:4px"><span style="padding:5px 7px;border-radius:7px;background:rgba(255,199,44,.13);font:600 8.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">4 HC</span><span style="padding:5px 7px;border-radius:7px;background:rgba(255,199,44,.13);font:600 8.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">3 PR</span><span style="padding:5px 7px;border-radius:7px;background:rgba(255,199,44,.13);font:600 8.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">1 GR</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:22px;font:500 10.5px/1.6 'IBM Plex Mono',monospace;letter-spacing:.08em;color:rgba(245,245,244,.26);text-align:center">LA ISLA SOLO APARECE 30 MIN ANTES DE UNA INGESTA<br>Y AL REGISTRARLA SE CIERRA SOLA</div>
+</div>
+</div>
+
+<!-- 08 REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">08</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:420px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:24px;padding:24px 24px 26px">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">MOTION</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Las barras de presupuesto interpolan el ancho en 420 ms; nunca saltan.</li>
+        <li>Al registrar, la fila se tiñe de oro al 6% en 240 ms y la barra se mueve después, no a la vez.</li>
+        <li>Pasarse del presupuesto no sacude nada: la barra se pinta roja en 300 ms y el sobrante sale como <span style="color:#FF5A4E">+2</span>.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">HAPTICS</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Light: cada toque del stepper y cada muesca de la escala.</li>
+        <li>Medium: registrar ingesta, añadir receta.</li>
+        <li>Success: cerrar el día en presupuesto. Warning: superar el presupuesto de una categoría.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">GESTOS</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Toque en la ingesta = registrar. Toque largo = abrir la hoja de ajuste.</li>
+        <li>Deslizar la ingesta a la izquierda = cambiar receta; a la derecha = saltar comida.</li>
+        <li>Arrastrar abajo en la hoja la cierra; el presupuesto no se guarda a medias.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">COPY</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Siempre intercambios en primer plano; los gramos van en gris debajo.</li>
+        <li>Kcal siempre aproximadas («≈ 1.400»), nunca exactas.</li>
+        <li>Ningún vacío culpa al atleta: dice qué falta y quién lo tiene que hacer.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+const G = '"IBM Plex Mono",monospace';
+const MEALS = [
+  {name:'Desayuno', hc:3, prot:2, gr:1},
+  {name:'Media mañana', hc:2, prot:2, gr:1},
+  {name:'Comida', hc:4, prot:3, gr:1},
+  {name:'Merienda', hc:2, prot:1, gr:1},
+  {name:'Cena', hc:3, prot:3, gr:2}
+];
+const BUD = {hc:14, prot:11, gr:6};
+const GPE = {hc:25, prot:25, gr:11};
+
+const FOODS = [
+  {tag:'PROT', ex:'2 PROT', opts:[
+    {name:'Yogur griego', grams:'200 g', detail:'2 intercambios de proteína · 1 tarrina'},
+    {name:'Queso batido 0%', grams:'250 g', detail:'2 intercambios de proteína · 1 vaso'},
+    {name:'Requesón', grams:'180 g', detail:'2 intercambios de proteína'}
+  ]},
+  {tag:'HC', ex:'2 HC', opts:[
+    {name:'Avena', grams:'50 g', detail:'2 intercambios de hidratos · 5 cucharadas'},
+    {name:'Pan integral', grams:'70 g', detail:'2 intercambios de hidratos · 2 rebanadas'},
+    {name:'Plátano', grams:'170 g', detail:'2 intercambios de hidratos · 1 grande'}
+  ]},
+  {tag:'GRASA', ex:'1 GRASA', opts:[
+    {name:'Nueces', grams:'11 g', detail:'1 intercambio de grasa · 4 mitades'},
+    {name:'Aguacate', grams:'55 g', detail:'1 intercambio de grasa · ¼ de pieza'},
+    {name:'AOVE', grams:'11 g', detail:'1 intercambio de grasa · 1 cucharada'}
+  ]}
+];
+
+class Component extends DCLogic {
+  state = {done:[true,true,false,false,false], st:{hc:2,prot:2,gr:1}, scale:1, fav:false, sw:[0,0,0]};
+
+  bump(k, d) {
+    this.setState(s => ({st:{...s.st, [k]: Math.max(0, Math.min(12, s.st[k] + d))}}));
+  }
+
+  renderVals() {
+    const done = this.state.done;
+    const eaten = MEALS.reduce((a, m, i) => done[i] ? {hc:a.hc+m.hc, prot:a.prot+m.prot, gr:a.gr+m.gr} : a, {hc:0,prot:0,gr:0});
+    const totalBud = BUD.hc + BUD.prot + BUD.gr;
+    const totalEat = eaten.hc + eaten.prot + eaten.gr;
+    const chip = (t, on) => ({t, s:`padding:5px 8px;border-radius:8px;font:600 9.5px/1 ${G};letter-spacing:.06em;background:${on?'rgba(255,199,44,.14)':'rgba(255,255,255,.05)'};color:${on?'#FFC72C':'rgba(245,245,244,.45)'}`});
+
+    const keys = [['hc','HIDRATOS'],['prot','PROTEÍNA'],['gr','GRASA']];
+    const bars = keys.map(([k, label]) => {
+      const v = eaten[k], b = BUD[k], over = v > b;
+      const col = over ? '#FF5A4E' : '#FFC72C';
+      return {
+        label,
+        num: over ? `${v}/${b}  +${v-b}` : `${v}/${b}`,
+        numStyle:`font:600 11px/1 ${G};color:${over?'#FF5A4E':'rgba(245,245,244,.6)'}`,
+        fill:`height:100%;border-radius:4px;background:${col};width:${Math.min(100, v/b*100)}%;transition:width .42s cubic-bezier(.2,.9,.2,1),background .3s linear`
+      };
+    });
+
+    const meals = MEALS.map((m, i) => {
+      const on = done[i];
+      return {
+        name:m.name,
+        tap:() => this.setState(s => ({done:s.done.map((d, j) => j === i ? !d : d)})),
+        row:`display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:18px;cursor:pointer;background:${on?'rgba(255,199,44,.055)':'#0B0B0B'};border:1px solid ${on?'rgba(255,199,44,.2)':'rgba(255,255,255,.06)'};transition:background .24s linear,border-color .24s linear`,
+        title:`font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:${on?'rgba(245,245,244,.5)':'#F5F5F4'};transition:color .24s linear`,
+        chips:[chip(`${m.hc} HC`, on), chip(`${m.prot} PR`, on), chip(`${m.gr} GR`, on)],
+        box:`width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;background:${on?'#FFC72C':'transparent'};border:1.5px solid ${on?'#FFC72C':'rgba(255,255,255,.16)'};transition:all .24s cubic-bezier(.2,.9,.2,1)`,
+        tick:`opacity:${on?1:0};transition:opacity .2s linear`
+      };
+    });
+
+    const st = this.state.st;
+    const stTotal = st.hc + st.prot + st.gr;
+    const left = totalBud - totalEat;
+    const after = left - stTotal;
+    const fits = after >= 0;
+    const fc = fits ? '#3ECF8E' : '#FF5A4E';
+
+    const sc = this.state.scale;
+    const rec = {hc:4, prot:3, gr:1};
+    const rs = k => Math.round(rec[k] * sc * 4) / 4;
+    const recTotal = rs('hc') + rs('prot') + rs('gr');
+    const recFits = recTotal <= left;
+    const rc = recFits ? '#3ECF8E' : '#FFC72C';
+
+    const skels = [ [58,'34%'], [22,'62%'], [14,'100%'], [14,'100%'], [14,'100%'] ].map(([h, w], i) => ({
+      s:`height:${h}px;width:${w};border-radius:${h>30?'8px':'5px'};margin-bottom:${i<4?'14px':'0'};background:linear-gradient(90deg,#111,#1c1c1c,#111);background-size:320px 100%;animation:shim 1.4s ${i*0.15}s linear infinite`
+    }));
+    const skelRows = [0,1,2].map(i => ({
+      a:`height:13px;width:46%;border-radius:5px;background:linear-gradient(90deg,#111,#1c1c1c,#111);background-size:320px 100%;animation:shim 1.4s ${i*0.15}s linear infinite`,
+      b:`height:11px;width:30%;border-radius:5px;background:linear-gradient(90deg,#111,#1c1c1c,#111);background-size:320px 100%;animation:shim 1.4s ${i*0.15+0.07}s linear infinite`
+    }));
+
+    const week = ['L','M','X','J','V','S','D'].map((t, i) => ({
+      t,
+      s:`width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font:600 11px/1 ${G};background:${i<4?'rgba(255,199,44,.14)':'#111'};border:1px solid ${i===3?'rgba(255,199,44,.55)':i<4?'rgba(255,199,44,.2)':'rgba(255,255,255,.06)'};color:${i<4?'#FFC72C':'rgba(245,245,244,.28)'}`
+    }));
+
+    const island = [5,9,7,12,8,14].map((h, i) => ({
+      s:`width:3px;height:${h}px;border-radius:2px;background:${i>3?'rgba(255,199,44,.32)':'#FFC72C'}`
+    }));
+    const wBars = [['HC','8/14',57],['PR','6/11',54],['GR','3/6',50]].map(([l, n, p]) => ({
+      l, n, f:`height:100%;width:${p}%;border-radius:3px;background:#FFC72C`
+    }));
+
+    return {
+      leftExch:left, leftKcal:`≈ ${(left*100).toLocaleString('es-ES')}`,
+      doneTxt:`${done.filter(Boolean).length} DE 5`,
+      bars, meals,
+      steppers:[
+        {label:'HIDRATOS', val:st.hc, grams:`${st.hc*GPE.hc} g aprox.`, inc:() => this.bump('hc',1), dec:() => this.bump('hc',-1)},
+        {label:'PROTEÍNA', val:st.prot, grams:`${st.prot*GPE.prot} g aprox.`, inc:() => this.bump('prot',1), dec:() => this.bump('prot',-1)},
+        {label:'GRASA', val:st.gr, grams:`${st.gr*GPE.gr} g aprox.`, inc:() => this.bump('gr',1), dec:() => this.bump('gr',-1)}
+      ],
+      fitPill:`display:flex;align-items:center;gap:9px;margin-top:16px;padding:12px 14px;border-radius:14px;background:${fc}12;border:1px solid ${fc}3d;color:${fc};transition:all .3s linear`,
+      fitDot:`width:7px;height:7px;border-radius:4px;flex:none;background:${fc}`,
+      fitTxt:fits ? `CABE · TE QUEDARÍAN ${after}` : `TE PASAS EN ${-after} INTERCAMBIOS`,
+      scale:sc, scaleTxt:String(sc).replace('.', ','),
+      setScale:e => this.setState({scale:parseFloat(e.target.value)}),
+      recChips:[chip(`${String(rs('hc')).replace('.',',')} HC`, true), chip(`${String(rs('prot')).replace('.',',')} PR`, true), chip(`${String(rs('gr')).replace('.',',')} GR`, true), chip(`≈ ${Math.round(recTotal*100)} KCAL`, false)],
+      recFit:`display:flex;align-items:center;gap:9px;margin-top:14px;padding:11px 13px;border-radius:13px;background:${rc}12;border:1px solid ${rc}3d;color:${rc};transition:all .3s linear`,
+      recDot:`width:7px;height:7px;border-radius:4px;flex:none;background:${rc}`,
+      recFitTxt:recFits ? `CABE EN LA COMIDA DE HOY` : `SE SALE DE LO QUE TE QUEDA`,
+      toggleFav:() => this.setState(s => ({fav:!s.fav})),
+      favBtn:`width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${this.state.fav?'rgba(255,199,44,.16)':'rgba(5,5,5,.72)'};border:1px solid ${this.state.fav?'rgba(255,199,44,.45)':'rgba(255,255,255,.1)'};transition:all .22s cubic-bezier(.2,.9,.2,1)`,
+      favIcon:`fill:${this.state.fav?'#FFC72C':'none'};stroke:${this.state.fav?'#FFC72C':'rgba(245,245,244,.6)'};transition:all .22s linear`,
+      mealChips:[chip('2 HC', true), chip('2 PR', true), chip('1 GR', true), chip('≈ 500 KCAL', false)],
+      foods:FOODS.map((f, i) => {
+        const o = f.opts[this.state.sw[i] % f.opts.length];
+        return {
+          tag:f.tag, name:o.name, grams:o.grams, detail:o.detail,
+          swap:() => this.setState(s => ({sw:s.sw.map((v, j) => j === i ? v + 1 : v)})),
+          row:'display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:18px;cursor:pointer;background:#0B0B0B;border:1px solid rgba(255,255,255,.06)'
+        };
+      }),
+      skels, skelRows, week, island, wBars
+    };
+  }
+}
+
+</script>
+</body>
+</html>

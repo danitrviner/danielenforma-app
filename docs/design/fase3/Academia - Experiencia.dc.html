@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes pop{0%{transform:scale(.6)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+.nsc{overflow-y:auto;scrollbar-width:none}
+.nsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Academia</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Pantalla pendiente</span>
+</div>
+<p style="max-width:680px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">El reproductor de lección: vídeo en curso, cierre con siguiente lección, y puntos clave con recursos — para completar el índice de Academia ya existente en Navegación. Más su ficha de reglas.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 · REPRODUCTOR EN CURSO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reproductor en curso</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 0;padding-bottom:24px">
+    <div style="position:relative;width:100%;aspect-ratio:16/9;background:#141414">
+      <div onClick="{{ back }}" style="position:absolute;top:14px;left:14px;width:34px;height:34px;border-radius:11px;background:rgba(5,5,5,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:56px;height:56px;border-radius:50%;background:rgba(255,199,44,.92);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="filter:brightness(1.05)"><svg width="20" height="20" viewBox="0 0 24 24" fill="#050505"><path d="M8 5l12 7-12 7z"/></svg></div></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:24px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.75))">
+        <div style="height:3px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden"><div style="width:34%;height:100%;background:#FFC72C"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">
+          <span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.7)">3:02 / 9:00</span>
+          <div style="display:flex;gap:6px">
+            <span style="font:600 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:5px 8px;background:rgba(255,255,255,.08);border-radius:7px">0,5×</span>
+            <span style="font:600 10px/1 'IBM Plex Mono',monospace;color:#050505;padding:5px 8px;background:#FFC72C;border-radius:7px">1×</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px 0">
+      <span style="font:700 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C;padding:6px 10px;background:rgba(255,199,44,.14);border-radius:9px">MÓDULO 2 · BASES DE HIPERTROFIA</span>
+      <div style="font:900 24px/1.15 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em;text-transform:uppercase;margin-top:13px">Intensidad y RIR</div>
+      <div style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4);margin-top:8px">LECCIÓN 2 DE 8 · 9 MIN</div>
+      <p style="margin:14px 0 0;font:400 13px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6);text-wrap:pretty">El RIR (repeticiones en reserva) es cuántas repeticiones más podrías haber hecho al terminar una serie. RIR 2 significa que podías haber hecho dos más. Es la escala que usamos en todo tu plan de fuerza.</p>
+
+      <div style="margin-top:20px;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">EN ESTE MÓDULO</div>
+      <div style="margin-top:11px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);border-radius:14px"><span style="width:8px;height:8px;border-radius:5px;border:1.5px solid #FFC72C;flex:none"></span><span style="flex:1;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Volumen y frecuencia</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34)">7 min</span></div>
+        <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.3);border-radius:14px"><span style="width:8px;height:8px;border-radius:5px;background:#FFC72C;flex:none"></span><span style="flex:1;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Intensidad y RIR</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">Ahora</span></div>
+        <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);border-radius:14px"><span style="width:8px;height:8px;border-radius:5px;border:1.5px solid rgba(245,245,244,.25);flex:none"></span><span style="flex:1;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Fallo muscular</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">6 min</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 02 · COMPLETADA + SIGUIENTE -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Completada + siguiente</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 0;padding-bottom:24px">
+    <div style="position:relative;width:100%;aspect-ratio:16/9;background:#141414;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;animation:pop .55s cubic-bezier(.2,.9,.2,1)">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(62,207,142,.16);border:1.5px solid rgba(62,207,142,.5);display:flex;align-items:center;justify-content:center;margin:0 auto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+        <div style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4;margin-top:12px">Lección completada</div>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">MÓDULO 2 · BASES DE HIPERTROFIA</span>
+        <span style="font:600 11px/1 'IBM Plex Mono',monospace;color:#FFC72C">5/8</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:#1a1a1a;margin-top:10px;overflow:hidden"><div style="width:62%;height:100%;background:#FFC72C;border-radius:3px"></div></div>
+
+      <div style="margin-top:20px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:16px;cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)">
+        <div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.34)">SIGUIENTE LECCIÓN</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:11px">
+          <div style="width:52px;height:52px;border-radius:13px;background:#161616;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="#FFC72C"><path d="M8 5l12 7-12 7z"/></svg></div>
+          <div style="flex:1;min-width:0"><div style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Fallo muscular</div><div style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4);margin-top:6px">6 min</div></div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.32)" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="filter:brightness(1.05)"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Ver siguiente lección</span></div>
+      <div style="text-align:center;margin-top:14px;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4);cursor:pointer">Volver al índice de Academia</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 03 · PUNTOS CLAVE Y RECURSOS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Puntos clave y recursos</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 0;padding:16px 20px 24px">
+    <div style="display:flex;gap:22px;border-bottom:1px solid rgba(255,255,255,.07)">
+      <div style="padding-bottom:12px;cursor:pointer;position:relative"><span style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4)">Descripción</span></div>
+      <div style="padding-bottom:12px;cursor:pointer;position:relative"><span style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Puntos clave</span><div style="position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#FFC72C"></div></div>
+      <div style="padding-bottom:12px;cursor:pointer;position:relative"><span style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4)">Recursos</span></div>
+    </div>
+
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:11px">
+      <sc-for list="{{ keyPoints }}" as="k" hint-placeholder-count="4">
+        <div style="display:flex;gap:11px;align-items:flex-start">
+          <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px"><span style="font:700 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">{{ k.n }}</span></div>
+          <span style="font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.65)">{{ k.t }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:22px;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">DESCARGABLE</div>
+    <div style="margin-top:11px;display:flex;align-items:center;gap:12px;padding:14px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:15px;cursor:pointer" style-hover="border-color:rgba(255,255,255,.15)">
+      <div style="width:38px;height:38px;border-radius:11px;background:#161616;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Tabla de escalas RIR</div><div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4);margin-top:5px">PDF · 240 KB</div></div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 12l6 6 6-6M5 20h14"/></svg>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 04 · REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:390px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:26px">
+  <div style="font:900 19px/1.2 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:14px">Academia</div>
+  <ul style="margin:0;padding:0 0 0 16px;font:400 12.5px/1.75 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+    <li>El vídeo ocupa el ancho completo en 16:9, sin recorte: es lo primero que se ve al entrar.</li>
+    <li>El control 0,5× / 1× vive siempre sobre el vídeo, nunca en un menú aparte — es el mismo patrón que la ficha de ejercicio.</li>
+    <li>«En este módulo» siempre está visible debajo del vídeo: la lección nunca se siente aislada de su módulo.</li>
+    <li>Al terminar, la lección se marca vista sola. Ningún botón «Marcar como vista» — evitar fricción donde el vídeo ya lo demuestra.</li>
+    <li>«Siguiente lección» es la salida por defecto; volver al índice es secundaria y siempre está disponible.</li>
+    <li>Puntos clave son 3-5 frases, nunca un resumen del guion completo. Los recursos descargables son opcionales, nunca bloquean el avance.</li>
+  </ul>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY_POINTS = [
+  { n: '1', t: 'RIR es cuántas repeticiones más podrías haber hecho al acabar la serie.' },
+  { n: '2', t: 'RIR 2 en tu plan significa acercarte al límite sin llegar al fallo.' },
+  { n: '3', t: 'Es más fiable que el RPE clásico porque cuenta reps, no una sensación de 1 a 10.' },
+  { n: '4', t: 'El coach ajusta la carga según el RIR que reportas cada serie.' }
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return { keyPoints: KEY_POINTS, back: () => {} };
+  }
+}
+</script>
+</body>
+</html>

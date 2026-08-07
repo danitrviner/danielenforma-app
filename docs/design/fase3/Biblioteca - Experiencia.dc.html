@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes shim{0%{background-position:-320px 0}100%{background-position:320px 0}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes sheetin{from{opacity:0;transform:translateY(26px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes barin{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,199,44,.32)}100%{box-shadow:0 0 0 10px rgba(255,199,44,0)}}
+@keyframes upl{0%{width:0}100%{width:62%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Biblioteca</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · experiencia</span>
+</div>
+<p style="max-width:720px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">Catálogo de ejercicios que el coach usa a diario y el atleta consulta en medio de la serie. Filtrar tiene que costar un toque, el vídeo se ve sin salir de la ficha, y añadir a una rutina es una selección múltiple con un solo destino. Prueba los filtros del panel 01 y la selección del panel 03.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 CATÁLOGO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Catálogo y filtros · interactivo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:10px 20px 0">
+    <div style="font:900 38px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Ejercicios</div>
+    <div style="height:48px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;padding:0 14px;margin-top:14px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.4)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="flex:1;font:400 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.34)">Buscar en 40 ejercicios</span>
+      <div style="width:30px;height:30px;border-radius:10px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
+    </div>
+  </div>
+  <div class="nsc" style="display:flex;gap:7px;padding:14px 20px 0;overflow-x:auto">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5"><span onClick="{{ g.tap }}" style="{{ g.s }}">{{ g.t }}</span></sc-for>
+  </div>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 20px 9px">
+    <span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34)">{{ countTxt }}</span>
+    <span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28)">A · Z</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px;padding:0 20px 44px">
+    <sc-for list="{{ list }}" as="e" hint-placeholder-count="5">
+      <div style="{{ e.row }}">
+        <div style="width:64px;height:64px;border-radius:14px;background:#141414;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none;position:relative">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="rgba(255,199,44,.5)"><path d="M8 5l11 7-11 7z"/></svg>
+          <span style="{{ e.noVid }}">SIN VÍDEO</span>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font:600 13.5px/1.25 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ e.name }}</div>
+          <div style="display:flex;gap:5px;margin-top:8px"><span style="{{ e.gs }}">{{ e.group }}</span><span style="{{ e.es }}">{{ e.equip }}</span></div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.3)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:14px;font:500 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.24);text-align:center">UN TOQUE POR FILTRO · LA LISTA ENTRA ESCALONADA 40 MS</div>
+</div>
+</div>
+
+<!-- 02 FICHA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Ficha del ejercicio</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:220px;background:#141414;border-bottom:1px solid rgba(255,255,255,.07);position:relative;display:flex;align-items:center;justify-content:center">
+    <span style="font:500 10px/1.4 'IBM Plex Mono',monospace;color:rgba(245,245,244,.26);text-align:center">VÍDEO DEMO<br>16:9 · BUCLE SIN SONIDO</span>
+    <div style="position:absolute;top:52px;left:16px;width:34px;height:34px;border-radius:11px;background:rgba(5,5,5,.7);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.75)" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div style="position:absolute;bottom:12px;right:14px;display:flex;gap:7px">
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(5,5,5,.72);border:1px solid rgba(255,255,255,.1);font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.7)">0,5×</span>
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.45);font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#FFC72C">1×</span>
+    </div>
+  </div>
+  <div style="padding:18px 20px 0">
+    <div style="font:900 27px/1.05 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Press banca<br>con barra</div>
+    <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap">
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(255,199,44,.14);font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#FFC72C">PECHO</span>
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(255,255,255,.05);font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.45)">BARRA</span>
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(255,255,255,.05);font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.45)">EMPUJE HORIZONTAL</span>
+    </div>
+  </div>
+
+  <div style="margin:18px 20px 0;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:15px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32)">TU MEJOR SERIE</div><div style="display:flex;align-items:baseline;gap:5px;margin-top:8px"><span style="font:900 32px/1 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4">72,5</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">kg × 8</span></div></div>
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(62,207,142,.14);font:600 10.5px/1 'IBM Plex Mono',monospace;color:#3ECF8E">+5 KG</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:5px;height:44px;margin-top:16px">
+      <sc-for list="{{ spark }}" as="b" hint-placeholder-count="8"><div style="{{ b.s }}"></div></sc-for>
+    </div>
+    <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.26);margin-top:11px">ÚLTIMAS 8 SESIONES</div>
+  </div>
+
+  <div style="margin:14px 20px 0;padding:13px 14px;border-radius:16px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.2);display:flex;gap:11px;align-items:flex-start">
+    <div style="width:24px;height:24px;border-radius:50%;background:rgba(255,199,44,.18);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 9.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">D</span></div>
+    <span style="flex:1;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.62)">Codos a 45°, no pegados al cuerpo. Si el hombro molesta, cambia a mancuernas.</span>
+  </div>
+
+  <div style="position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:10px">
+    <div style="width:56px;height:52px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.75)" stroke-width="2" stroke-linecap="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></div>
+    <div style="flex:1;height:52px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Añadir a la rutina</span></div>
+  </div>
+</div>
+</div>
+
+<!-- 03 SELECCIÓN -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Selección múltiple · interactivo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px 0">
+    <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55);cursor:pointer">Cancelar</span>
+    <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Elegir ejercicios</span>
+    <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C;cursor:pointer">Todos</span>
+  </div>
+  <div style="padding:20px 20px 0">
+    <div style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32)">DESTINO</div>
+    <div style="display:flex;align-items:center;gap:11px;margin-top:11px;padding:13px 14px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07)">
+      <div style="width:32px;height:32px;border-radius:11px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:600 10px/1 'IBM Plex Mono',monospace;color:#FFC72C">D2</span></div>
+      <div style="flex:1"><div style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 2 · Empuje</div><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34);margin-top:6px">4 EJERCICIOS · MARÍA G.</div></div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.35)" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px;padding:22px 20px 0">
+    <sc-for list="{{ pick }}" as="p" hint-placeholder-count="6">
+      <div onClick="{{ p.tap }}" style="{{ p.row }}">
+        <div style="width:48px;height:48px;border-radius:13px;background:#141414;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,199,44,.45)"><path d="M8 5l11 7-11 7z"/></svg></div>
+        <div style="flex:1"><div style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ p.name }}</div><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34);margin-top:7px">{{ p.meta }}</div></div>
+        <div style="{{ p.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ p.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 20px 20px;background:linear-gradient(to top,#050505 55%,rgba(5,5,5,0))">
+    <div style="{{ addBtn }}"><span style="{{ addTxt }}">{{ addLabel }}</span></div>
+  </div>
+</div>
+</div>
+
+<!-- 04 VÍDEO Y VACÍOS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Subida de vídeo · biblioteca vacía</span></div>
+<div style="display:flex;gap:16px">
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA · COACH</span></div>
+  <div style="padding:12px 20px 0"><div style="font:900 27px/1.05 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Remo en punta</div></div>
+  <div style="margin:16px 20px 0;height:190px;border-radius:20px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <span style="font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.55)">SUBIENDO · 62%</span>
+    <div style="width:70%;height:6px;border-radius:4px;background:#1a1a1a;margin-top:14px;overflow:hidden"><div style="height:100%;border-radius:4px;background:#FFC72C;animation:upl 2.4s cubic-bezier(.2,.9,.2,1) both"></div></div>
+    <span style="font:400 11px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.34);margin-top:13px">Puedes seguir editando mientras sube</span>
+    <span style="position:absolute;bottom:12px;right:14px;font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#FF5A4E;cursor:pointer">Cancelar</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;padding:20px 20px 0">
+    <div><div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.42)">GRUPO MUSCULAR</div><div style="height:54px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;padding:0 14px;margin-top:9px"><span style="font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Espalda · dorsal</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.45)" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+    <div><div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.42)">EQUIPAMIENTO</div><div style="height:54px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;padding:0 14px;margin-top:9px"><span style="font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Barra</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.45)" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:20px">
+    <div style="height:52px;border-radius:16px;background:rgba(255,199,44,.22);display:flex;align-items:center;justify-content:center;gap:10px"><span style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(5,5,5,.35);border-top-color:#050505;animation:spin .7s linear infinite"></span><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(5,5,5,.6)">Guardando</span></div>
+  </div>
+</div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA · COACH</span></div>
+  <div style="padding:10px 20px 0"><div style="font:900 38px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Ejercicios</div></div>
+  <div style="position:absolute;top:230px;left:26px;right:26px;text-align:center;animation:rise .5s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:62px;height:62px;margin:0 auto;border-radius:19px;border:1px dashed rgba(255,199,44,.32);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16v10H4zM10 10l5 2-5 2z"/></svg></div>
+    <div style="font:900 23px/1.15 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase;margin-top:20px">Tu biblioteca<br>está vacía</div>
+    <p style="font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin:12px 0 0;text-wrap:pretty">Empieza con los 40 ejercicios base y luego añade los tuyos con tus propios vídeos.</p>
+    <div style="height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;margin-top:24px;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Cargar los 40 base</span></div>
+    <div style="height:52px;border-radius:16px;background:transparent;border:1px solid rgba(255,199,44,.42);display:flex;align-items:center;justify-content:center;margin-top:10px;cursor:pointer"><span style="font:700 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Crear uno desde cero</span></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- 05 FILTROS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">05</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Hoja de filtros · 14 grupos</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(5,5,5,.5),rgba(5,5,5,.9))"></div>
+  <div style="position:absolute;top:56px;left:20px;right:20px;filter:blur(1.5px);opacity:.3"><div style="font:900 38px/.98 Archivo,sans-serif;letter-spacing:-.03em;color:#F5F5F4;text-transform:uppercase">Ejercicios</div></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#0F0F0F;border-top:1px solid rgba(255,255,255,.09);border-radius:26px 26px 0 0;padding:12px 20px 24px;animation:sheetin .38s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.16);margin:0 auto 18px"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font:900 21px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Filtros</span>
+      <span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);cursor:pointer">Limpiar</span>
+    </div>
+    <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);margin-top:22px">GRUPO MUSCULAR</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">
+      <sc-for list="{{ allGroups }}" as="g" hint-placeholder-count="14"><span onClick="{{ g.tap }}" style="{{ g.s }}">{{ g.t }}</span></sc-for>
+    </div>
+    <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);margin-top:22px">EQUIPAMIENTO</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">
+      <sc-for list="{{ equips }}" as="g" hint-placeholder-count="6"><span onClick="{{ g.tap }}" style="{{ g.s }}">{{ g.t }}</span></sc-for>
+    </div>
+    <div style="height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;margin-top:24px;cursor:pointer"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">{{ applyTxt }}</span></div>
+  </div>
+</div>
+</div>
+
+<!-- 06 REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">06</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:420px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:24px;padding:24px">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">MOTION</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Al cambiar de filtro la lista no se vacía: las filas que salen se van en 140 ms y las nuevas entran escalonadas 40 ms.</li>
+        <li>La miniatura reproduce el vídeo en bucle solo cuando la fila está a más del 60% en pantalla.</li>
+        <li>El sparkline de cargas entra con `scaleY` 550 ms, stagger 40 ms; la última barra en oro.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">SELECCIÓN</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>El destino se elige antes de seleccionar, y se queda fijo arriba. Nunca se pregunta al final.</li>
+        <li>El botón inferior está desactivado hasta el primer ejercicio y siempre lleva el número: «Añadir 3 al Día 2».</li>
+        <li>Haptic light por selección; medium al confirmar; toast con «Deshacer» durante 3,2 s.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">VÍDEO</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Bucle, sin sonido, con 0,5× para revisar técnica. Sin vídeo no se bloquea nada: la ficha funciona igual.</li>
+        <li>La subida sigue en segundo plano con barra oro y «Cancelar» en rojo; se puede seguir editando.</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C">COPY</div>
+      <ul style="margin:11px 0 0;padding:0 0 0 16px;font:400 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+        <li>Nombres de ejercicio tal como los dice Dani, sin abreviar en la lista.</li>
+        <li>La nota del coach va en oro al 6% y siempre firmada con su inicial.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+const G = '"IBM Plex Mono",monospace';
+const EX = [
+  {name:'Press banca con barra', g:'Pecho', e:'Barra', vid:true},
+  {name:'Aperturas en polea alta', g:'Pecho', e:'Polea', vid:true},
+  {name:'Dominadas pronas', g:'Espalda', e:'Peso libre', vid:true},
+  {name:'Remo en punta', g:'Espalda', e:'Barra', vid:false},
+  {name:'Press militar sentado', g:'Hombro', e:'Mancuernas', vid:true},
+  {name:'Elevaciones laterales', g:'Hombro', e:'Mancuernas', vid:true},
+  {name:'Sentadilla libre', g:'Cuádriceps', e:'Barra', vid:true},
+  {name:'Prensa 45°', g:'Cuádriceps', e:'Máquina', vid:true},
+  {name:'Peso muerto rumano', g:'Femoral', e:'Barra', vid:true},
+  {name:'Curl femoral tumbado', g:'Femoral', e:'Máquina', vid:false}
+];
+const GROUPS = ['Todos','Pecho','Espalda','Hombro','Cuádriceps','Femoral'];
+const ALL14 = ['Pecho','Espalda','Dorsal','Trapecio','Hombro ant.','Hombro lat.','Hombro post.','Bíceps','Tríceps','Cuádriceps','Femoral','Glúteo','Gemelo','Core'];
+const EQ = ['Barra','Mancuernas','Polea','Máquina','Peso libre','Banda'];
+const PICK = [
+  {name:'Press banca con barra', meta:'PECHO · BARRA'},
+  {name:'Press inclinado mancuernas', meta:'PECHO · MANCUERNAS'},
+  {name:'Fondos en paralelas', meta:'PECHO · PESO LIBRE'},
+  {name:'Press militar sentado', meta:'HOMBRO · MANCUERNAS'},
+  {name:'Elevaciones laterales', meta:'HOMBRO · MANCUERNAS'},
+  {name:'Extensión tríceps polea', meta:'TRÍCEPS · POLEA'}
+];
+
+class Component extends DCLogic {
+  state = {group:'Todos', sel:[0,3], fg:['Pecho','Hombro lat.'], fe:['Barra']};
+
+  toggle(key, v) {
+    this.setState(s => ({[key]: s[key].includes(v) ? s[key].filter(x => x !== v) : [...s[key], v]}));
+  }
+
+  renderVals() {
+    const chipS = on => `padding:9px 14px;border-radius:11px;white-space:nowrap;cursor:pointer;font:600 11px/1 'Plus Jakarta Sans',sans-serif;background:${on?'rgba(255,199,44,.16)':'#0F0F0F'};border:1px solid ${on?'rgba(255,199,44,.45)':'rgba(255,255,255,.07)'};color:${on?'#FFC72C':'rgba(245,245,244,.55)'};transition:all .22s cubic-bezier(.2,.9,.2,1)`;
+    const g = this.state.group;
+    const list = (g === 'Todos' ? EX : EX.filter(e => e.g === g)).slice(0, 5);
+    const sel = this.state.sel;
+
+    return {
+      groups:GROUPS.map(t => ({t, s:chipS(t === g), tap:() => this.setState({group:t})})),
+      countTxt:g === 'Todos' ? '40 EJERCICIOS' : `${EX.filter(e => e.g === g).length} EN ${g.toUpperCase()}`,
+      list:list.map((e, i) => ({
+        name:e.name, group:e.g.toUpperCase(), equip:e.e.toUpperCase(),
+        row:`display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:18px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);cursor:pointer;animation:rise .34s ${i*0.04}s cubic-bezier(.2,.9,.2,1) both`,
+        gs:`padding:5px 8px;border-radius:8px;font:600 9.5px/1 ${G};letter-spacing:.06em;background:rgba(255,199,44,.13);color:#FFC72C`,
+        es:`padding:5px 8px;border-radius:8px;font:600 9.5px/1 ${G};letter-spacing:.06em;background:rgba(255,255,255,.05);color:rgba(245,245,244,.45)`,
+        noVid:e.vid ? 'display:none' : `position:absolute;bottom:5px;left:0;right:0;text-align:center;font:600 7px/1 ${G};letter-spacing:.08em;color:rgba(245,245,244,.32)`
+      })),
+      spark:[52,58,55,62,60,66,64,72].map((v, i) => ({
+        s:`flex:1;border-radius:3px 3px 0 0;height:${(v/72*100)}%;transform-origin:bottom;background:${i === 7 ? '#FFC72C' : 'rgba(255,199,44,.28)'};animation:barin .55s ${i*0.04}s cubic-bezier(.2,.9,.2,1) both`
+      })),
+      pick:PICK.map((p, i) => {
+        const on = sel.includes(i);
+        return {
+          name:p.name, meta:p.meta,
+          tap:() => this.toggle('sel', i),
+          row:`display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:18px;cursor:pointer;background:${on?'rgba(255,199,44,.055)':'#0B0B0B'};border:1px solid ${on?'rgba(255,199,44,.2)':'rgba(255,255,255,.06)'};transition:background .24s linear,border-color .24s linear`,
+          box:`width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;background:${on?'#FFC72C':'transparent'};border:1.5px solid ${on?'#FFC72C':'rgba(255,255,255,.16)'};transition:all .24s cubic-bezier(.2,.9,.2,1)`,
+          tick:`opacity:${on?1:0};transition:opacity .2s linear`
+        };
+      }),
+      addLabel:sel.length ? `Añadir ${sel.length} al Día 2` : 'Elige al menos uno',
+      addBtn:`height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .24s linear;background:${sel.length?'#FFC72C':'#141414'};cursor:${sel.length?'pointer':'default'}`,
+      addTxt:`font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:${sel.length?'#050505':'rgba(245,245,244,.26)'}`,
+      allGroups:ALL14.map(t => ({t, s:chipS(this.state.fg.includes(t)), tap:() => this.toggle('fg', t)})),
+      equips:EQ.map(t => ({t, s:chipS(this.state.fe.includes(t)), tap:() => this.toggle('fe', t)})),
+      applyTxt:`Ver ${Math.max(0, 40 - this.state.fg.length * 6 - this.state.fe.length * 3)} ejercicios`
+    };
+  }
+}
+
+</script>
+</body>
+</html>
