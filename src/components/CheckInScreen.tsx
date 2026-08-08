@@ -1,203 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
-import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import { scheduleLabel } from '../utils/scheduleEngine';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
+import QuestionnaireForm from './QuestionnaireForm';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
-
-// ── Inline questionnaire form ─────────────────────────────────────────────────
-
-function QuestionnaireForm({
-  questionnaire,
-  assignment,
-  athleteEmail,
-  onSubmitted,
-  onCancel,
-}: {
-  questionnaire: Questionnaire;
-  assignment: QuestionnaireAssignment;
-  athleteEmail: string;
-  onSubmitted: (r: QuestionnaireResponse) => void;
-  onCancel: () => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, string | number | boolean>>({});
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const setAnswer = (qId: string, value: string | number | boolean) =>
-    setAnswers(prev => ({ ...prev, [qId]: value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const missing = questionnaire.questions.filter(q => q.required && answers[q.id] === undefined);
-    if (missing.length > 0) {
-      setErr(`Por favor responde: ${missing.map(q => q.label).join(', ')}`);
-      return;
-    }
-    setErr('');
-    setSaving(true);
-    try {
-      const payload = questionnaire.questions
-        .filter(q => answers[q.id] !== undefined)
-        .map(q => ({ questionId: q.id, value: answers[q.id] }));
-      const response = await submitResponse({
-        questionnaireId: questionnaire.id,
-        assignmentId: assignment.id,
-        athleteId: athleteEmail,
-        submittedAt: new Date().toISOString(),
-        answers: payload,
-      });
-      onSubmitted(response);
-    } catch (e) {
-      console.error(e);
-      setErr('Error al enviar. Inténtalo de nuevo.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
-        <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
-          {questionnaire.title}
-        </h2>
-        <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors p-1">
-          <span className="material-symbols-outlined text-base">close</span>
-        </button>
-      </div>
-
-      {questionnaire.description && (
-        <p className="text-xs text-[#c6c9ab] mb-4 font-sans">{questionnaire.description}</p>
-      )}
-
-      {err && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-lg text-xs mb-4">{err}</div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {questionnaire.questions.map((q: QuestionnaireQuestion) => (
-          <div key={q.id}>
-            <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">
-              {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
-            </label>
-            {q.helpText && <p className="text-[11px] text-[#c6c9ab]/70 mb-2">{q.helpText}</p>}
-
-            {q.type === 'text' && (
-              <textarea
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, e.target.value)}
-                maxLength={q.maxChars}
-                placeholder="Escribe aquí..."
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[60px]"
-              />
-            )}
-
-            {q.type === 'numeric' && (
-              <input
-                type="number"
-                step={q.decimals ? Math.pow(10, -q.decimals) : 1}
-                min={q.min}
-                max={q.max}
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors"
-              />
-            )}
-
-            {q.type === 'scale' && (
-              <div className="space-y-2">
-                <div className="flex gap-1.5 flex-wrap">
-                  {Array.from({ length: (q.scaleMax ?? 10) - (q.scaleMin ?? 1) + 1 }, (_, i) => (q.scaleMin ?? 1) + i).map(v => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setAnswer(q.id, v)}
-                      className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
-                        answers[q.id] === v
-                          ? 'bg-[#fbcb1a] text-black'
-                          : 'bg-[#1e1e1e] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/50'
-                      }`}
-                    >{v}</button>
-                  ))}
-                </div>
-                {(q.scaleMinLabel || q.scaleMaxLabel) && (
-                  <div className="flex justify-between text-[10px] font-mono text-[#c6c9ab]">
-                    <span>{q.scaleMin ?? 1} – {q.scaleMinLabel}</span>
-                    <span>{q.scaleMaxLabel} – {q.scaleMax ?? 10}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {q.type === 'boolean' && (
-              <div className="flex gap-2">
-                {([true, false] as const).map(v => (
-                  <button
-                    key={String(v)}
-                    type="button"
-                    onClick={() => setAnswer(q.id, v)}
-                    className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
-                      answers[q.id] === v
-                        ? 'bg-[#fbcb1a] text-black font-bold border-transparent'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
-                    }`}
-                  >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
-                ))}
-              </div>
-            )}
-
-            {q.type === 'choice' && q.options && (
-              <div className="flex flex-col gap-1.5">
-                {q.options.map(opt => {
-                  const curSelected: string[] = q.multiSelect
-                    ? ((answers[q.id] as string | undefined) ?? '').split(',').filter(Boolean)
-                    : [];
-                  const isSelected = q.multiSelect ? curSelected.includes(opt) : answers[q.id] === opt;
-                  return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      if (q.multiSelect) {
-                        const next = isSelected ? curSelected.filter(o => o !== opt) : [...curSelected, opt];
-                        setAnswer(q.id, next.join(','));
-                      } else {
-                        setAnswer(q.id, opt);
-                      }
-                    }}
-                    className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
-                      isSelected
-                        ? 'bg-[#fbcb1a] text-black border-transparent font-bold'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
-                    }`}
-                  >{opt}</button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
-        >
-          {saving ? 'Enviando...' : 'Enviar Respuesta'}
-          <span className="material-symbols-outlined text-sm">send</span>
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -224,6 +38,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     queryFn: () => getBodyweightForAthlete(profile.email),
   });
   const bwToday = useMemo(() => bwLogs.find(l => l.date === todayStr()) ?? null, [bwLogs]);
+  // bwLogs viene ascendente por fecha (getBodyweightForAthlete) — el último es
+  // el peso más reciente, usado para prefill de la pregunta 'metric' bodyweight.
+  const latestWeight = bwLogs.length > 0 ? bwLogs[bwLogs.length - 1].weight : undefined;
   const [bwInput, setBwInput]   = useState('');
   const [bwEditing, setBwEditing] = useState(false);
   const [bwSaving, setBwSaving] = useState(false);
@@ -319,15 +136,27 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     }
     return tMap;
   }, [questionnaireQueries]);
+  // Mesociclos del atleta — contexto para los disparadores 'plan_week' y
+  // 'mesocycle_end' (scheduleEngine no conoce el plan de entreno por sí solo).
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocyclesForAthlete', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
+
   const loadingQ = loadingAssignments || loadingResponses
     || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
 
+  // "Vencido y sin responder" (isOverdue) en vez de isDueToday: para
+  // interval/plan_week/mesocycle_end, isOverdue se queda true desde la fecha
+  // objetivo hasta que se responde, no solo el día exacto — así un
+  // cuestionario sin responder no desaparece de "pendientes" al día siguiente.
   const pendingAssignments = assignments.filter(
-    a => isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)
+    a => isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)
   );
-  const upcomingAssignments = assignments.filter(a => isUpcoming(a));
+  const upcomingAssignments = assignments.filter(a => !isOverdue(a, scheduleCtx) && isUpcoming(a, scheduleCtx));
 
   // Photo check-in state
   const { data: rawPhotoAssignments = [], isPending: loadingPhotoAssignmentsQ } = useQuery({
@@ -461,6 +290,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           questionnaire={templates.get(activeAssignment.questionnaireId)!}
           assignment={activeAssignment}
           athleteEmail={profile.email}
+          currentWeight={latestWeight}
           onSubmitted={handleQuestionnaireSubmitted}
           onCancel={() => setActiveAssignment(null)}
         />
@@ -487,7 +317,10 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   <div>
                     <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors">{q.title}</p>
                     {q.description && <p className="text-[11px] text-[#c6c9ab] mt-0.5 font-sans">{q.description}</p>}
-                    <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
+                    <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">
+                      {q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}
+                      {(a.schedule.type === 'plan_week' || a.schedule.type === 'mesocycle_end') && ` · ${scheduleLabel(a.schedule)}`}
+                    </p>
                   </div>
                   <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
@@ -516,7 +349,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
                   <p className="font-sans text-xs text-[#c6c9ab]">{q.title}</p>
                   <span className="font-mono text-[9px] text-[#555] uppercase">
-                    {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
+                    {scheduleLabel(a.schedule)}
                   </span>
                 </div>
               );

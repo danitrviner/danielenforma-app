@@ -5,6 +5,7 @@ import {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
 } from '../dbService';
 import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from './QuestionnaireEditor';
+import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../data/questionnairePresets';
 import Skeleton from './Skeleton';
 
 interface Props { coachId: string }
@@ -21,11 +22,31 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   const [form, setForm]                 = useState<FormState>(blankForm());
   const [saving, setSaving]             = useState(false);
   const [deleting, setDeleting]         = useState<string | null>(null);
+  const [loadingPresets, setLoadingPresets] = useState(false);
 
   const openEditor = (q?: Questionnaire) => {
     setEditingId(q?.id ?? null);
     setForm(q ? formFromQuestionnaire(q) : blankForm());
     setView('editor');
+  };
+
+  // Crea directamente las plantillas de Dani que aún no existan (comparando
+  // por título) — no hace falta pasar por el editor, ya vienen listas para
+  // asignar y se pueden retocar después como cualquier otro cuestionario.
+  const missingPresets = QUESTIONNAIRE_PRESETS.filter(
+    p => !questionnaires.some(q => q.title === p.title)
+  );
+
+  const handleLoadPresets = async () => {
+    if (missingPresets.length === 0) return;
+    setLoadingPresets(true);
+    try {
+      const created = await Promise.all(
+        missingPresets.map(p => createQuestionnaire(buildQuestionnaireFromPreset(p, coachId)))
+      );
+      queryClient.setQueryData<Questionnaire[]>(queryKey, prev => [...(prev ?? []), ...created]);
+    } catch (err) { console.error(err); }
+    finally { setLoadingPresets(false); }
   };
 
   const handleSave = async () => {
@@ -38,7 +59,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         description: form.description.trim() || undefined,
         questions: form.questions
           .filter(q => q.label.trim())
-          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' ? true : undefined })),
+          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' || q.type === 'metric' ? true : undefined })),
       };
       if (editingId) {
         await updateQuestionnaire(editingId, data);
@@ -80,14 +101,27 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   // ── List view ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-sans font-bold text-xl text-white">Cuestionarios</h2>
-        <button
-          onClick={() => openEditor()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>Nuevo
-        </button>
+        <div className="flex items-center gap-2">
+          {missingPresets.length > 0 && (
+            <button
+              onClick={handleLoadPresets}
+              disabled={loadingPresets}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#fbcb1a]/40 text-[#fbcb1a] font-sans text-[10px] font-bold uppercase rounded-lg hover:border-[#fbcb1a]/70 active:scale-95 transition-all disabled:opacity-50"
+              title="Crea las plantillas que falten (Entrenamiento, DOM's, Mediciones, Revisión Semanal…)"
+            >
+              <span className="material-symbols-outlined text-sm">{loadingPresets ? 'progress_activity' : 'library_add'}</span>
+              {loadingPresets ? 'Cargando…' : `Cargar plantillas (${missingPresets.length})`}
+            </button>
+          )}
+          <button
+            onClick={() => openEditor()}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>Nuevo
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -100,7 +134,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         <div className="border border-dashed border-white/7 rounded-2xl py-20 text-center">
           <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">quiz</span>
           <p className="font-sans font-bold text-white text-sm">Sin cuestionarios todavía</p>
-          <p className="text-[#c6c9ab] text-xs mt-1">Crea plantillas para asignarlas a tus clientes.</p>
+          <p className="text-[#c6c9ab] text-xs mt-1">Crea uno desde cero o usa "Cargar plantillas" arriba para traer las tuyas.</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,16 +1,18 @@
 import {
   CoachReport, CoachReportSection, WorkoutLog, Exercise, Mesocycle,
   BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge,
+  QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
 } from '../types';
 import { buildTrainingReport, resolveWindows, ComparisonMode, ExercisePerf, MuscleGroupPerf } from './trainingReport';
 import {
   computeBodyweightSection, computeAdherenceSection, computeNutritionSection, computeChallengesSection,
-  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+  computeWellnessSection,
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
 } from './reportExtras';
 import { buildNarrativeIntro } from './reportNarrative';
 
 export type {
-  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
 } from './reportExtras';
 
 // Assembles a draft CoachReport from the deterministic engines. The coach then
@@ -127,6 +129,17 @@ export function buildReportText(report: CoachReport): string {
         lines.push('');
         break;
       }
+      case 'wellness': {
+        const d = s.data as WellnessSectionData;
+        if (!d.questions?.length) break;
+        lines.push(`🧘 ${s.title}`);
+        d.questions.forEach(q => {
+          const deltaTxt = q.prevAvg != null ? ` (antes: ${q.prevAvg}${q.unit ? ` ${q.unit}` : ''})` : '';
+          lines.push(`- ${q.questionLabel}: ${q.avg}${q.unit ? ` ${q.unit}` : ''} de media${deltaTxt}`);
+        });
+        lines.push('');
+        break;
+      }
     }
     if (s.coachNote) {
       lines.push(`Nota: ${s.coachNote}`);
@@ -147,6 +160,9 @@ export interface ReportExtrasInput {
   diets?: Diet[];
   challenges?: WeeklyChallenge[];
   targetWeight?: number;
+  questionnaireResponses?: QuestionnaireResponse[];
+  questionnaires?: Questionnaire[];
+  questionnaireAssignments?: QuestionnaireAssignment[];
 }
 
 export function buildTrainingReportDraft(params: {
@@ -183,6 +199,12 @@ export function buildTrainingReportDraft(params: {
     : null;
   const challenges = extras.challenges?.length
     ? computeChallengesSection(extras.challenges, w.curStart, w.curEnd)
+    : null;
+  const wellness = extras.questionnaireResponses?.length && extras.questionnaires?.length
+    ? computeWellnessSection(
+        extras.questionnaireResponses, extras.questionnaires, extras.questionnaireAssignments ?? [],
+        w.curStart, w.curEnd, w.prevStart, w.prevEnd,
+      )
     : null;
 
   const sections: CoachReportSection[] = [];
@@ -259,10 +281,19 @@ export function buildTrainingReportDraft(params: {
     });
   }
 
+  if (wellness && wellness.questions.length > 0) {
+    sections.push({
+      id: 'wellness',
+      title: 'Bienestar (cuestionarios)',
+      included: true,
+      data: wellness,
+    });
+  }
+
   const intro = buildNarrativeIntro({
     athleteName: extras.athleteName ?? '',
     training: tr,
-    bodyweight, adherence, nutrition, challenges,
+    bodyweight, adherence, nutrition, challenges, wellness,
   });
 
   const now = new Date().toISOString();

@@ -7,6 +7,7 @@ import {
 import {
   getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped,
   getDietCompletionLogsForAthlete, getDietsForAthlete, getWeeklyChallengesForAthlete,
+  getResponsesForAthlete, getAssignmentsForAthlete, getQuestionnairesByCoach,
 } from '../dbService';
 import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasInput } from '../utils/reportBuilder';
 import { addDays } from '../utils/trainingWeek';
@@ -56,6 +57,20 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
     queryKey: ['weeklyChallengesForAthlete', athleteEmail],
     queryFn: () => getWeeklyChallengesForAthlete(athleteEmail),
   });
+  // Mismas query keys que CheckInScreen/ProfileScreen/QuestionnaireManagerScreen
+  // para la misma consulta — comparten caché en vez de refetch.
+  const { data: qResponses = [] } = useQuery({
+    queryKey: ['responsesForAthlete', athleteEmail],
+    queryFn: () => getResponsesForAthlete(athleteEmail),
+  });
+  const { data: qAssignments = [] } = useQuery({
+    queryKey: ['assignmentsForAthlete', athleteEmail],
+    queryFn: () => getAssignmentsForAthlete(athleteEmail),
+  });
+  const { data: coachQuestionnaires = [] } = useQuery({
+    queryKey: ['questionnairesByCoach', coachId],
+    queryFn: () => getQuestionnairesByCoach(coachId),
+  });
   const [editing, setEditing] = useState<CoachReport | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -94,6 +109,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
   const handleGenerate = () => {
     const extras: ReportExtrasInput = {
       athleteName, assignments, bodyweightLogs, dietLogs, diets, challenges, targetWeight,
+      questionnaireResponses: qResponses, questionnaires: coachQuestionnaires, questionnaireAssignments: qAssignments,
     };
     if (periodMode === 'meso') {
       // Guarded by `canMeso` disabling the option, but mesocycles can change

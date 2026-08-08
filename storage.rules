@@ -21,6 +21,21 @@ service firebase.storage {
       allow delete: if isCoach() || (request.auth != null && request.auth.token.email == email);
     }
 
+    // ── questionnaireMedia/{email}/{fileName} — fotos/vídeos de respuestas de
+    // cuestionario (preguntas tipo 'media', ej. corrección de ejercicios en
+    // vídeo). Mismo patrón de ownership que progressPhotos. Tope duro de 50MB
+    // en el servidor (QuestionnaireQuestion.maxSizeMb es solo un límite blando
+    // sugerido al cliente).
+    match /questionnaireMedia/{email}/{fileName} {
+      allow read: if isCoach() || (request.auth != null && request.auth.token.email == email);
+      allow write: if request.auth != null
+                   && request.auth.token.email == email
+                   && request.resource.size < 50 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*')
+                       || request.resource.contentType.matches('video/.*'));
+      allow delete: if isCoach() || (request.auth != null && request.auth.token.email == email);
+    }
+
     // Default deny — cualquier path no cubierto explícitamente arriba.
     match /{allPaths=**} {
       allow read, write: if false;

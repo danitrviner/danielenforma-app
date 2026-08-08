@@ -19,6 +19,7 @@ import {
   getWeeklyChallengesForAthlete,
   getOnboarding,
   getResponsesForAthlete,
+  getAssignmentsForAthlete,
   getQuestionnairesByCoach,
   saveCoachReport,
   createAiProposal,
@@ -34,6 +35,8 @@ import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
 import { addDays } from '../utils/trainingWeek';
+import { weekKey } from '../utils/seriesCorrelation';
+import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload } from './validators';
 import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS } from '../types';
@@ -93,6 +96,20 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         limit: { type: 'number', description: 'Cuántos check-ins devolver (por defecto 8, máx 20)' },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'get_questionnaire_trends',
+    description:
+      'Series semanales (media + nº de respuestas por semana) de las preguntas numéricas/escala/medida de los cuestionarios de un cliente — sueño, estrés, dolor, DOM\'s, motivación, perímetros, etc. A diferencia de get_checkins (que solo da las últimas respuestas sueltas), esto da tendencia en el tiempo. Úsala para detectar patrones (ej. estrés subiendo, sueño empeorando) antes de escribir un reporte o proponer un cambio.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        question_ids: { type: 'array', items: { type: 'string' }, description: 'Limita a estos ids de pregunta (opcional; si se omite, devuelve todas las graficables con datos en la ventana)' },
+        weeks: { type: 'number', description: 'Semanas hacia atrás (por defecto 8, máx 26)' },
       },
       required: ['athlete_email'],
     },
@@ -248,6 +265,7 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'get_training_history': return `Analizando entrenamientos${who}…`;
     case 'get_diet': return `Consultando dietas${who}…`;
     case 'get_checkins': return `Consultando check-ins${who}…`;
+    case 'get_questionnaire_trends': return `Consultando tendencias de cuestionarios${who}…`;
     case 'generate_report_draft': return `Generando borrador de reporte${who}…`;
     case 'draft_checkin_feedback': return `Redactando propuesta de feedback${who}…`;
     case 'get_food_library': return 'Consultando la librería de alimentos…';
@@ -474,6 +492,61 @@ async function getCheckinsInfo(email: string, limitN: number): Promise<string> {
       answers: r.answers.map(a => ({ question: labelOf.get(a.questionId) ?? a.questionId, value: a.value })),
     })),
   });
+}
+
+async function getQuestionnaireTrends(email: string, questionIds: string[] | undefined, weeksInput: number): Promise<string> {
+  const weeks = Math.min(Math.max(1, Math.round(weeksInput || 8)), 26);
+  const coachUid = auth.currentUser?.uid;
+  const [responses, questionnaires, assignments] = await Promise.all([
+    getResponsesForAthlete(email),
+    coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]),
+    getAssignmentsForAthlete(email),
+  ]);
+  const qById = new Map(questionnaires.map(q => [q.id, q]));
+  const aById = new Map(assignments.map(a => [a.id, a]));
+  const since = addDays(new Date().toISOString().slice(0, 10), -weeks * 7);
+
+  const acc = new Map<string, { label: string; qTitle: string; unit?: string; byWeek: Map<string, number[]> }>();
+
+  for (const r of responses) {
+    const date = r.submittedAt.slice(0, 10);
+    if (date < since) continue;
+    const q = qById.get(r.questionnaireId);
+    if (!q) continue;
+    const assignment = aById.get(r.assignmentId);
+    const resolved = assignment ? resolveQuestions(q, assignment) : q.questions;
+    for (const ans of r.answers) {
+      if (questionIds && questionIds.length > 0 && !questionIds.includes(ans.questionId)) continue;
+      const question = resolved.find(rq => rq.id === ans.questionId);
+      if (!question) continue;
+      const graphable = question.graphable || question.type === 'numeric' || question.type === 'scale' || question.type === 'metric';
+      if (!graphable) continue;
+      const val = Number(ans.value);
+      if (isNaN(val)) continue;
+      const wk = weekKey(date);
+      const e = acc.get(question.id) ?? { label: question.label, qTitle: q.title, unit: question.unit, byWeek: new Map<string, number[]>() };
+      const arr = e.byWeek.get(wk) ?? [];
+      arr.push(val);
+      e.byWeek.set(wk, arr);
+      acc.set(question.id, e);
+    }
+  }
+
+  const trends = [...acc.entries()].map(([id, e]) => ({
+    questionId: id,
+    questionnaire: e.qTitle,
+    label: e.label,
+    unit: e.unit ?? null,
+    weeklySeries: [...e.byWeek.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([week, vals]) => ({
+        week,
+        avg: Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10,
+        n: vals.length,
+      })),
+  }));
+
+  return toResult({ weeks, trends });
 }
 
 async function generateReportDraft(email: string, periodDaysInput: number, introOverride?: string): Promise<string> {
@@ -768,6 +841,13 @@ export async function executeTool(
       case 'get_checkins':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getCheckinsInfo(email, Number(input.limit)), isError: false };
+      case 'get_questionnaire_trends': {
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        const questionIds = Array.isArray(input.question_ids)
+          ? input.question_ids.filter((x): x is string => typeof x === 'string')
+          : undefined;
+        return { content: await getQuestionnaireTrends(email, questionIds, Number(input.weeks)), isError: false };
+      }
       case 'generate_report_draft':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await generateReportDraft(email, Number(input.period_days), typeof input.intro === 'string' ? input.intro : undefined), isError: false };

@@ -76,6 +76,7 @@ export default function ClientAnalysisPanel({
           responses={athleteQResponses}
           questionnaires={coachQuestionnaires}
           bodyweightLogs={bodyweightLogs}
+          assignments={assignments}
         />
       )}
     </div>

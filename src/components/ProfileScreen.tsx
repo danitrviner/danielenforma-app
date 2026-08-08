@@ -5,11 +5,13 @@ import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, ge
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import BodyweightPanel from './BodyweightPanel';
+import BodyMeasurementsPanel from './BodyMeasurementsPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
 import StatTile from './StatTile';
+import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -22,8 +24,8 @@ interface ProfileScreenProps {
 // UserProfile.dashboardOrder. Not every block is visible for every athlete/coach
 // (e.g. "ficha" only shows for athletes), so reorder controls are positioned
 // among only the currently-visible blocks, not this full fixed list.
-type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences';
-const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
+type BlockId = 'gamification' | 'bodyweight' | 'measurements' | 'questionnaires' | 'ficha' | 'preferences';
+const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'measurements', 'questionnaires', 'ficha', 'preferences'];
 
 export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
@@ -60,6 +62,10 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
     () => questionnaireQueries.map(q => q.data).filter((q): q is Questionnaire => !!q),
     [questionnaireQueries]
   );
+
+  // Medidas corporales — mismo query key que BodyMeasurementsPanel (comparten
+  // caché), solo para saber si hay algo que mostrar antes de renderizar el bloque.
+  const { all: bodyMeasurements } = useBodyMeasurements(profile.email);
 
   // Food preferences + ficha editing
   const onboardingKey = ['onboarding', profile.email] as const;
@@ -128,6 +134,7 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
 
   const visibleBlocks = blockOrder.filter(id => {
     if (id === 'questionnaires') return questionnaires.length > 0 && responses.length > 0;
+    if (id === 'measurements') return bodyMeasurements.some(m => m.metricKey !== 'bodyweight');
     if (id === 'ficha') return !isCoach;
     if (id === 'preferences') return !isCoach && !!onboarding && !editingFicha;
     return true;
@@ -139,6 +146,17 @@ export default function ProfileScreen({ profile, isCoach, onRefreshProfile, onLo
         return (
           <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl">
             <BodyweightPanel athleteEmail={profile.email} />
+          </div>
+        );
+
+      case 'measurements':
+        return (
+          <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl space-y-3">
+            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
+              Mediciones
+            </h3>
+            <BodyMeasurementsPanel athleteEmail={profile.email} />
           </div>
         );
 

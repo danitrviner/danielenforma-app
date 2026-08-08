@@ -5,6 +5,11 @@ import { QScheduleType } from '../types';
 // día del mes + fecha de inicio). Extracted out of ClientHub's questionnaire
 // assignment UI so photo check-in assignment can reuse it instead of
 // duplicating the same ~80 lines of markup.
+//
+// 'plan_week' y 'mesocycle_end' (disparadores por evento, atados al plan de
+// entreno del atleta) son opcionales — solo se ofrecen cuando el caller pasa
+// los handlers correspondientes (hoy, solo la asignación de cuestionarios;
+// los checks de fotos siguen sin ellos y el select simplemente no los muestra).
 
 interface Props {
   schedType: QScheduleType;
@@ -17,6 +22,10 @@ interface Props {
   onDayOfMonthChange: (n: number) => void;
   startDate: string;
   onStartDateChange: (s: string) => void;
+  planWeek?: number;
+  onPlanWeekChange?: (n: number) => void;
+  mesocycleOffsetDays?: number;
+  onMesocycleOffsetDaysChange?: (n: number) => void;
 }
 
 export default function ScheduleFields({
@@ -25,7 +34,11 @@ export default function ScheduleFields({
   intervalDays, onIntervalDaysChange,
   dayOfMonth, onDayOfMonthChange,
   startDate, onStartDateChange,
+  planWeek = 3, onPlanWeekChange,
+  mesocycleOffsetDays = 0, onMesocycleOffsetDaysChange,
 }: Props) {
+  const supportsEventTriggers = !!onPlanWeekChange && !!onMesocycleOffsetDaysChange;
+
   return (
     <div className="space-y-3">
       <select
@@ -37,6 +50,8 @@ export default function ScheduleFields({
         <option value="weekdays">Días de la semana</option>
         <option value="interval">Cada N días</option>
         <option value="monthly">Día del mes</option>
+        {supportsEventTriggers && <option value="plan_week">Semana N del plan</option>}
+        {supportsEventTriggers && <option value="mesocycle_end">Fin de bloque (mesociclo)</option>}
       </select>
 
       {schedType === 'weekdays' && (
@@ -87,6 +102,33 @@ export default function ScheduleFields({
             className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
           />
           <span className="font-mono text-xs text-[#c6c9ab]">de cada mes</span>
+        </div>
+      )}
+
+      {schedType === 'plan_week' && onPlanWeekChange && (
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-[#c6c9ab]">Semana</span>
+          <input
+            type="number"
+            value={planWeek}
+            min={1} max={52}
+            onChange={e => onPlanWeekChange(Math.max(1, Number(e.target.value)))}
+            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+          />
+          <span className="font-mono text-xs text-[#c6c9ab]">desde el inicio del plan (fecha "Desde" de abajo)</span>
+        </div>
+      )}
+
+      {schedType === 'mesocycle_end' && onMesocycleOffsetDaysChange && (
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-[#c6c9ab]">Días antes del cierre</span>
+          <input
+            type="number"
+            value={mesocycleOffsetDays}
+            onChange={e => onMesocycleOffsetDaysChange(Number(e.target.value))}
+            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+          />
+          <span className="font-mono text-xs text-[#c6c9ab]">(0 = el último día del mesociclo)</span>
         </div>
       )}
 
