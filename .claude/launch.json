@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "autoPort": true
+    },
+    {
+      "name": "en-forma-dev-f313d",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "autoPort": true
+    },
+    {
+      "name": "en-forma-maquinas",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "autoPort": true
     }
   ]
 }
