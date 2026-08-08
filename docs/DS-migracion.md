@@ -642,7 +642,7 @@ defecto (`aria-hidden`), que es lo correcto porque ya hay texto visible al lado 
 
 | Qué | Por qué |
 |---|---|
-| Filtros con color por categoría (`CAT_COLOR` en `FoodLibraryScreen`, `METRIC_COLOR` en `LoadHistoryPanel`, `indyaCat` en `RecipesScreen` con `bg-data`) | `Chip.selected` es un único color fijo; forzarlo aplanaría un sistema de color con significado real |
+| Filtros con color por categoría (`CAT_COLOR` en `FoodLibraryScreen`, `METRIC_COLOR` en `LoadHistoryPanel`, `recetasCat` en `RecipesScreen` con `bg-data`) | `Chip.selected` es un único color fijo; forzarlo aplanaría un sistema de color con significado real |
 | Toggles con `min-h-[44px]` explícito (mismos archivos) | `Chip` no garantiza 44px; adoptarlo sería una regresión de objetivo táctil, no solo visual |
 | Tarjetas con icono dentro del título (`ClientDietsPanel`, `ClientReviewsPanel`, `CoachNotesPanel`, decenas más) | `Card.title` es texto plano, sin slot para icono |
 | Filas con un `<a>` real envolviendo título+subtítulo (`ResourcesPanel`), o con 3 líneas de texto (`NotificationBell`) | `ListRow.title`/`subtitle` son un string cada uno, no nodos |

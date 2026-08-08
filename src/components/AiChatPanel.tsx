@@ -253,7 +253,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA"
-        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
+        // Solo en escritorio. En móvil el disparador vive en la cabecera,
+        // junto al avatar (App.tsx): ahí no tapa contenido, no compite con la
+        // barra inferior y no hay que reservarle hueco al final de cada
+        // pantalla. Abre por `OPEN_AI_PANEL_EVENT`, el mismo evento que ya
+        // usaba ClientHub.
+        className="hidden md:block fixed md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
       >
         <Icon name="smart_toy" size="l" filled className="block" />
       </button>

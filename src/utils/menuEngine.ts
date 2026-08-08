@@ -88,7 +88,7 @@ export function slotsFromOnboarding(
   return FALLBACK_SLOTS[count];
 }
 
-// Indya recipes carry a reliable intakeTypes tag; builder recipes (coach/athlete)
+// Recipes from the imported recetario carry a reliable intakeTypes tag; builder recipes (coach/athlete)
 // don't — RecipeBuilderScreen only offers free-form category tags. So a builder
 // recipe is eligible for any slot unless explicitly tagged "Desayuno"/"Cena".
 // Shared by the coach's generator/editor and the athlete's swap picker so both
@@ -110,7 +110,7 @@ export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): Budget
 
 // ─── Recipe → exchanges ──────────────────────────────────────────────────────
 
-// Indya recipes carry a precomputed aggregate; coach/athlete builder recipes
+// Recipes from the imported recetario carry a precomputed aggregate; coach/athlete builder recipes
 // carry structured, per-mode ingredients instead (see exchangeHelpers.ts).
 export function recipeExchanges(recipe: Recipe, mode: DietMode = 'OMNIVORO'): BudgetVec | null {
   if (recipe.exchanges) {
@@ -172,7 +172,7 @@ const MEAT_FISH_KEYWORDS = [
 ];
 const ANIMAL_KEYWORDS = [...MEAT_FISH_KEYWORDS, 'huevo', 'leche', 'queso', 'yogur', 'mantequilla', 'nata', 'miel'];
 
-// Heuristic only — Indya recipes have no explicit vegan/vegetarian flag, so
+// Heuristic only — Recipes from the imported recetario have no explicit vegan/vegetarian flag, so
 // this checks the free-text ingredient list. Recipes without ingredientsText
 // (most builder recipes) can't be verified this way and are let through
 // unfiltered; the coach reviews the draft before publishing regardless.

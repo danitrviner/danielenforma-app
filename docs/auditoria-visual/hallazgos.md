@@ -334,6 +334,13 @@ el FAB (ya existe `pb-[calc(var(--nav-h)+1rem)]` para la barra de navegación; f
 tratamiento para el FAB), en vez de dejar que el último bloque de cada pantalla termine justo donde
 cae el botón.
 
+**Resuelto de raíz (2026-08-08).** Primero se aplicó la propuesta: un suelo de 172 px en el
+`padding-bottom` global de `App.tsx`. Funcionaba, pero pagaba 60 px de contenido en todas las
+pantallas del móvil para dejarle sitio a un botón. Ahora **en móvil el disparador del asistente se
+ha mudado a la cabecera, junto al avatar**, así que no hay nada flotando que tapar: el FAB pasa a
+ser solo de escritorio (`hidden md:block`) y el hueco vuelve a ser el de la barra de navegación.
+El panel se abre con `OPEN_AI_PANEL_EVENT`, el evento que ya usaba `ClientHub`.
+
 ---
 
 ## P1-4 · Las barras de sub-pestañas se recortan por el borde sin ninguna pista de que hay más

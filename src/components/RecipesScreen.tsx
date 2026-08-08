@@ -5,10 +5,10 @@ import {
 } from '../types';
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites,
-  getAthleteNutritionConfig, queryIndyaRecipes, getOnboarding,
+  getAthleteNutritionConfig, queryRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig,
 } from '../dbService';
-import type { IndyaRecipeCursor } from '../dbService';
+import type { RecetasCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
 import { BUDGET_CATS, roundQuarter } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -54,7 +54,7 @@ function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const INDYA_CATS = [
+const RECETAS_CATS = [
   'Todas',
   'Platos salados / principales',
   'Desayuno y dulces',
@@ -139,8 +139,8 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
   );
 }
 
-// Compact card used in the Indya paginated grid (image-forward, tighter)
-function IndyaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
+// Compact card used in the Recetas paginated grid (image-forward, tighter)
+function RecetaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
   const photo = recipe.image ?? recipe.photoUrl;
   const exch = recipe.exchanges;
 
@@ -243,14 +243,14 @@ const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3]
 function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [scale, setScale] = useState(1);
-  const isIndya = recipe.ownerId === 'indya';
+  const isRecetas = recipe.ownerId === 'recetas';
   const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
   const exch = calcExchanges(scaledRecipe);
   const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
   const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
   const photo = recipe.image ?? recipe.photoUrl;
 
-  const visibleIngredients = isIndya
+  const visibleIngredients = isRecetas
     ? []
     : (scaledRecipe.ingredients ?? []).filter(ing => enabledModes.includes(ing.mode));
 
@@ -305,8 +305,8 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
       <div className="space-y-3">
         <h1 className="font-sans font-bold text-title-l text-white tracking-tight">{recipe.name}</h1>
 
-        {/* Indya metadata row */}
-        {isIndya && (
+        {/* Recetas metadata row */}
+        {isRecetas && (
           <div className="flex flex-wrap gap-3 text-ink-2 font-mono text-caption">
             {recipe.kcal != null && (
               <span className="flex items-center gap-1">
@@ -350,8 +350,8 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
           </div>
         )}
 
-        {/* Intake type tags (Indya) */}
-        {isIndya && recipe.intakeTypes && recipe.intakeTypes.length > 0 && (
+        {/* Intake type tags (Recetas) */}
+        {isRecetas && recipe.intakeTypes && recipe.intakeTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {recipe.intakeTypes.map(t => (
               <span key={t} className="px-2 rounded-full bg-raised border border-hairline text-ink-2 font-mono text-caption">
@@ -413,8 +413,8 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
           </div>
         )}
 
-        {/* Indya macros breakdown */}
-        {isIndya && recipe.macros && (
+        {/* Recetas macros breakdown */}
+        {isRecetas && recipe.macros && (
           <div className="grid grid-cols-3 gap-2 bg-raised border border-hairline rounded-surface p-3">
             {[
               { label: 'Carbos', val: recipe.macros.carb },
@@ -438,7 +438,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
             Ingredientes
           </h2>
 
-          {isIndya && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
+          {isRecetas && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
             <ul className="space-y-2">
               {recipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
@@ -447,7 +447,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
                 </li>
               ))}
             </ul>
-          ) : !isIndya && visibleIngredients.length > 0 ? (
+          ) : !isRecetas && visibleIngredients.length > 0 ? (
             <ul className="space-y-2">
               {visibleIngredients.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
@@ -462,7 +462,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
             <p className="font-sans text-label text-ink-2 italic">Sin ingredientes disponibles.</p>
           )}
 
-          {!isIndya && recipe.extras.length > 0 && (
+          {!isRecetas && recipe.extras.length > 0 && (
             <div className="pt-2 border-t border-hairline">
               <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Extras</p>
               <div className="flex flex-wrap gap-2">
@@ -475,15 +475,15 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
         </section>
 
         {/* Steps */}
-        {((isIndya && recipe.stepsText && recipe.stepsText.length > 0) ||
-          (!isIndya && recipe.steps.length > 0)) && (
+        {((isRecetas && recipe.stepsText && recipe.stepsText.length > 0) ||
+          (!isRecetas && recipe.steps.length > 0)) && (
           <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
             <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-title-s">format_list_numbered</span>
               Preparación
             </h2>
             <div className="space-y-4">
-              {(isIndya
+              {(isRecetas
                 ? (recipe.stepsText ?? []).map((s, i) => ({ idx: i, text: s.description }))
                 : recipe.steps.map((s, i) => ({ idx: i, text: s }))
               ).map(({ idx, text }) => {
@@ -581,27 +581,27 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   const [showDislikedSection, setShowDislikedSection] = useState(false);
 
-  // Indya browser
-  const [indyaCat, setIndyaCat]         = useState<string>('Todas');
-  const [indyaIntake, setIndyaIntake]   = useState<number | null>(null);
-  const [indyaSearch, setIndyaSearch]   = useState('');
-  const [indyaRecipes, setIndyaRecipes] = useState<Recipe[]>([]);
-  const [indyaCursor, setIndyaCursor]   = useState<IndyaRecipeCursor | null>(null);
-  const [indyaHasMore, setIndyaHasMore] = useState(false);
-  const [indyaLoading, setIndyaLoading] = useState(true);
-  const [indyaLoadingMore, setIndyaLoadingMore] = useState(false);
-  const [indyaError, setIndyaError] = useState<string | null>(null);
+  // Recetas browser
+  const [recetasCat, setRecetasCat]         = useState<string>('Todas');
+  const [recetasIntake, setRecetasIntake]   = useState<number | null>(null);
+  const [recetasSearch, setRecetasSearch]   = useState('');
+  const [recetasRecipes, setRecetasRecipes] = useState<Recipe[]>([]);
+  const [recetasCursor, setRecetasCursor]   = useState<RecetasCursor | null>(null);
+  const [recetasHasMore, setRecetasHasMore] = useState(false);
+  const [recetasLoading, setRecetasLoading] = useState(true);
+  const [recetasLoadingMore, setRecetasLoadingMore] = useState(false);
+  const [recetasError, setRecetasError] = useState<string | null>(null);
 
   // Detail
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
   const [savingFav, setSavingFav]       = useState(false);
 
-  // ── Indya paginated load ────────────────────────────────────────────────────
+  // ── Recetas paginated load ────────────────────────────────────────────────────
 
-  const loadIndya = useCallback(async (
+  const loadRecetas = useCallback(async (
     cat: string,
     intake: number | null,
-    cursor: IndyaRecipeCursor | null,
+    cursor: RecetasCursor | null,
     append: boolean,
   ) => {
     const filters = {
@@ -609,32 +609,32 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       intakeType: intake ?? undefined,
     };
     try {
-      const result = await queryIndyaRecipes(filters, cursor);
-      setIndyaRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
-      setIndyaCursor(result.cursor);
-      setIndyaHasMore(result.hasMore);
-      setIndyaError(null);
+      const result = await queryRecetas(filters, cursor);
+      setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
+      setRecetasCursor(result.cursor);
+      setRecetasHasMore(result.hasMore);
+      setRecetasError(null);
     } catch (err) {
-      console.warn('queryIndyaRecipes failed:', err);
-      setIndyaError('No se pudieron cargar las recetas. Reintenta.');
+      console.warn('queryRecetas failed:', err);
+      setRecetasError('No se pudieron cargar las recetas. Reintenta.');
       // Keep hasMore true so the retry button stays visible; cursor is left
       // untouched so retrying repeats the same (failed) page.
-      setIndyaHasMore(true);
+      setRecetasHasMore(true);
     }
   }, []);
 
   // Reset and reload when filters change
   useEffect(() => {
-    setIndyaLoading(true);
-    setIndyaSearch('');
-    loadIndya(indyaCat, indyaIntake, null, false).finally(() => setIndyaLoading(false));
-  }, [indyaCat, indyaIntake, loadIndya]);
+    setRecetasLoading(true);
+    setRecetasSearch('');
+    loadRecetas(recetasCat, recetasIntake, null, false).finally(() => setRecetasLoading(false));
+  }, [recetasCat, recetasIntake, loadRecetas]);
 
   const handleLoadMore = useCallback(async () => {
-    setIndyaLoadingMore(true);
-    await loadIndya(indyaCat, indyaIntake, indyaCursor, true);
-    setIndyaLoadingMore(false);
-  }, [loadIndya, indyaCat, indyaIntake, indyaCursor]);
+    setRecetasLoadingMore(true);
+    await loadRecetas(recetasCat, recetasIntake, recetasCursor, true);
+    setRecetasLoadingMore(false);
+  }, [loadRecetas, recetasCat, recetasIntake, recetasCursor]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -652,15 +652,15 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     return onlyFitsBudget ? base.filter(fitsBudget) : base;
   }, [recipes, favorites, selectedCat, profile.userId, onlyFitsBudget, fitsBudget]);
 
-  const { indyaFeatured, indyaNormal, indyaDisliked, indyaTotalVisible } = useMemo(() => {
-    const bySearch = indyaSearch.trim()
-      ? indyaRecipes.filter(r => r.name.toLowerCase().includes(indyaSearch.toLowerCase()))
-      : indyaRecipes;
+  const { recetasFeatured, recetasNormal, recetasDisliked, recetasTotalVisible } = useMemo(() => {
+    const bySearch = recetasSearch.trim()
+      ? recetasRecipes.filter(r => r.name.toLowerCase().includes(recetasSearch.toLowerCase()))
+      : recetasRecipes;
     const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
     const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0;
     if (!hasPrefs) {
-      return { indyaFeatured: [], indyaNormal: searched, indyaDisliked: [], indyaTotalVisible: searched.length };
+      return { recetasFeatured: [], recetasNormal: searched, recetasDisliked: [], recetasTotalVisible: searched.length };
     }
 
     const featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
@@ -672,12 +672,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       else normal.push(r);
     }
     return {
-      indyaFeatured: featured,
-      indyaNormal:   normal,
-      indyaDisliked: disliked,
-      indyaTotalVisible: featured.length + normal.length + disliked.length,
+      recetasFeatured: featured,
+      recetasNormal:   normal,
+      recetasDisliked: disliked,
+      recetasTotalVisible: featured.length + normal.length + disliked.length,
     };
-  }, [indyaRecipes, indyaSearch, prefs, onlyFitsBudget, fitsBudget]);
+  }, [recetasRecipes, recetasSearch, prefs, onlyFitsBudget, fitsBudget]);
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
@@ -794,7 +794,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </div>
       )}
 
-      {/* ── Biblioteca de recetas (paginated, backed by the Indya dataset — never shown to the user) ──── */}
+      {/* ── Biblioteca de recetas (paginated, backed by the Recetas dataset — never shown to the user) ──── */}
       <section className="space-y-4">
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-title-s">library_books</span>
@@ -805,12 +805,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         {/* Category filter */}
         <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 w-max">
-            {INDYA_CATS.map(cat => (
+            {RECETAS_CATS.map(cat => (
               <button
                 key={cat}
-                onClick={() => setIndyaCat(cat)}
+                onClick={() => setRecetasCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
-                  indyaCat === cat
+                  recetasCat === cat
                     ? 'bg-data text-black'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
@@ -821,65 +821,65 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
         {/* Intake type filter */}
         <div className="flex flex-wrap gap-2">
-          <Chip selected={indyaIntake === null} onClick={() => setIndyaIntake(null)}>Todos los momentos</Chip>
+          <Chip selected={recetasIntake === null} onClick={() => setRecetasIntake(null)}>Todos los momentos</Chip>
           {Object.entries(INTAKE_LABELS).map(([k, label]) => (
-            <Chip key={k} selected={indyaIntake === Number(k)} onClick={() => setIndyaIntake(Number(k))}>{label}</Chip>
+            <Chip key={k} selected={recetasIntake === Number(k)} onClick={() => setRecetasIntake(Number(k))}>{label}</Chip>
           ))}
         </div>
 
         {/* Name search */}
         <SearchField
-          value={indyaSearch}
-          onChange={setIndyaSearch}
+          value={recetasSearch}
+          onChange={setRecetasSearch}
           placeholder="Buscar entre 8.850 recetas…"
           label="Buscar en la biblioteca de recetas"
         />
 
         {/* Grid */}
-        {indyaLoading ? (
+        {recetasLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <Skeleton className="h-40 w-full rounded-surface" />
             <Skeleton className="h-40 w-full rounded-surface" />
             <Skeleton className="h-40 w-full rounded-surface" />
             <Skeleton className="h-40 w-full rounded-surface" />
           </div>
-        ) : indyaTotalVisible === 0 && indyaError ? (
+        ) : recetasTotalVisible === 0 && recetasError ? (
           <div className="flex flex-col items-center gap-3 py-10">
-            <p className="font-sans text-label text-red-300 uppercase tracking-widest text-center">{indyaError}</p>
+            <p className="font-sans text-label text-red-300 uppercase tracking-widest text-center">{recetasError}</p>
             <button
               onClick={handleLoadMore}
-              disabled={indyaLoadingMore}
+              disabled={recetasLoadingMore}
               className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {indyaLoadingMore
+              {recetasLoadingMore
                 ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
                 : <><span className="material-symbols-outlined text-body-s">refresh</span>Reintentar</>
               }
             </button>
           </div>
-        ) : indyaTotalVisible === 0 ? (
-          <EmptyState icon="search_off" title={indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
+        ) : recetasTotalVisible === 0 ? (
+          <EmptyState icon="search_off" title={recetasSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-6">
             <p className="font-sans text-caption text-ink-2 uppercase">
-              {indyaSearch
-                ? `${indyaTotalVisible} de ${indyaRecipes.length} resultados en esta página`
-                : `${indyaRecipes.length} receta${indyaRecipes.length !== 1 ? 's' : ''} cargada${indyaRecipes.length !== 1 ? 's' : ''}${indyaHasMore ? ' · hay más' : ''}`
+              {recetasSearch
+                ? `${recetasTotalVisible} de ${recetasRecipes.length} resultados en esta página`
+                : `${recetasRecipes.length} receta${recetasRecipes.length !== 1 ? 's' : ''} cargada${recetasRecipes.length !== 1 ? 's' : ''}${recetasHasMore ? ' · hay más' : ''}`
               }
             </p>
 
             {/* ── Destacadas (liked ingredients) ── */}
-            {indyaFeatured.length > 0 && (
+            {recetasFeatured.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-amber-400 text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                   <h3 className="font-sans text-caption text-amber-400 uppercase tracking-wider font-bold">
-                    Destacadas para ti ({indyaFeatured.length})
+                    Destacadas para ti ({recetasFeatured.length})
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {indyaFeatured.map(r => (
-                    <IndyaCard
+                  {recetasFeatured.map(r => (
+                    <RecetaCard
                       key={r.id}
                       recipe={r}
                       isFav={favorites.recipeIds.includes(r.id)}
@@ -893,10 +893,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             )}
 
             {/* ── Normal recipes ── */}
-            {indyaNormal.length > 0 && (
+            {recetasNormal.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {indyaNormal.map(r => (
-                  <IndyaCard
+                {recetasNormal.map(r => (
+                  <RecetaCard
                     key={r.id}
                     recipe={r}
                     isFav={favorites.recipeIds.includes(r.id)}
@@ -908,7 +908,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             )}
 
             {/* ── With disliked ingredients (collapsible) ── */}
-            {indyaDisliked.length > 0 && (
+            {recetasDisliked.length > 0 && (
               <div className="space-y-2">
                 <button
                   onClick={() => setShowDislikedSection(v => !v)}
@@ -918,13 +918,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                     {showDislikedSection ? 'expand_less' : 'expand_more'}
                   </span>
                   <span className="font-sans text-caption text-ink-3 group-hover:text-ink-2 uppercase tracking-wider transition-colors">
-                    Con ingredientes que no te gustan ({indyaDisliked.length})
+                    Con ingredientes que no te gustan ({recetasDisliked.length})
                   </span>
                 </button>
                 {showDislikedSection && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 opacity-50">
-                    {indyaDisliked.map(r => (
-                      <IndyaCard
+                    {recetasDisliked.map(r => (
+                      <RecetaCard
                         key={r.id}
                         recipe={r}
                         isFav={favorites.recipeIds.includes(r.id)}
@@ -937,22 +937,22 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               </div>
             )}
 
-            {indyaError && (
+            {recetasError && (
               <div className="flex flex-col items-center gap-2 pt-2">
-                <p className="font-sans text-caption text-red-300 uppercase tracking-wide">{indyaError}</p>
+                <p className="font-sans text-caption text-red-300 uppercase tracking-wide">{recetasError}</p>
               </div>
             )}
 
-            {indyaHasMore && !indyaSearch && (
+            {recetasHasMore && !recetasSearch && (
               <div className="flex justify-center pt-2">
                 <button
                   onClick={handleLoadMore}
-                  disabled={indyaLoadingMore}
+                  disabled={recetasLoadingMore}
                   className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  {indyaLoadingMore
+                  {recetasLoadingMore
                     ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>{indyaError ? 'Reintentar' : 'Cargar más recetas'}</>
+                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>{recetasError ? 'Reintentar' : 'Cargar más recetas'}</>
                   }
                 </button>
               </div>

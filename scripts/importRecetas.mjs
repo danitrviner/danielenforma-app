@@ -1,8 +1,8 @@
 /**
- * Import Indya recipe library into Firestore using the Admin SDK.
+ * Import Recetas recipe library into Firestore using the Admin SDK.
  *
  * Usage:
- *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/importIndya.mjs
+ *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/importRecetas.mjs
  *
  * The Admin SDK bypasses Firestore security rules — no user login needed.
  * Idempotent: batch.set() overwrites the full doc by UUID on every run.
@@ -25,14 +25,14 @@ const firebaseConfig = JSON.parse(
 const SA_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 if (!SA_PATH) {
   console.error('Error: GOOGLE_APPLICATION_CREDENTIALS env var is required.');
-  console.error('Example: GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/importIndya.mjs');
+  console.error('Example: GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/importRecetas.mjs');
   process.exit(1);
 }
 
 const serviceAccount = JSON.parse(readFileSync(resolve(SA_PATH), 'utf8'));
 
-const INDYA_DIR = resolve(
-  process.env.INDYA_DIR ?? '/Users/dani/Desktop/App enforma/recetas_indya',
+const RECETAS_DIR = resolve(
+  process.env.RECETAS_DIR ?? '/Users/dani/Desktop/App enforma/recetas_recetas',
 );
 const DB_ID     = firebaseConfig.firestoreDatabaseId;
 const BATCH_SIZE = 499;
@@ -57,18 +57,18 @@ function computeExchanges(macros) {
   };
 }
 
-// ── Indya recipe → Firestore doc ─────────────────────────────────────────────
+// ── Recetas recipe → Firestore doc ─────────────────────────────────────────────
 
 function mapRecipe(r) {
   const data = {
-    ownerId:         'indya',
+    ownerId:         'recetas',
     name:            r.name,
     // Legacy required arrays kept empty so existing RecipesScreen code doesn't break
     categories:      r.categoria ? [r.categoria] : [],
     ingredients:     [],
     extras:          [],
     steps:           [],
-    // Indya-specific fields
+    // Recetas-specific fields
     image:           r.image           ?? null,
     ingredientsText: (r.ingredients    ?? []).map(i => ({ name: i.name, quantity: i.quantity })),
     stepsText:       (r.steps          ?? []).map(s => ({ position: s.position, description: s.description })),
@@ -117,14 +117,14 @@ async function batchWrite(recipes) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const indexPath = resolve(INDYA_DIR, '00_indice.json');
+  const indexPath = resolve(RECETAS_DIR, '00_indice.json');
   const index = JSON.parse(readFileSync(indexPath, 'utf8'));
   const files = index.archivos ?? index.files ?? [];
   console.log(`Index: ${files.length} files — DB: ${DB_ID}`);
 
   const all = [];
   for (const entry of files) {
-    const filePath = resolve(INDYA_DIR, entry.archivo ?? entry.file ?? entry);
+    const filePath = resolve(RECETAS_DIR, entry.archivo ?? entry.file ?? entry);
     const raw = JSON.parse(readFileSync(filePath, 'utf8'));
     const recs = raw.recipes ?? raw.recetas ?? [];
     console.log(`  ${entry.archivo ?? entry}: ${recs.length} recipes`);

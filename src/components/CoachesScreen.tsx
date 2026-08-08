@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, OnboardingSection, Recipe } from '../types';
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
+import { OWNER_RECETARIO } from '../db/recipes';
 import { db, doc, writeBatch } from '../firebase';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
@@ -320,20 +321,20 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
   );
 }
 
-// ── Indya import panel ────────────────────────────────────────────────────────
+// ── Recetas import panel ────────────────────────────────────────────────────────
 
-interface IndyaMacros {
+interface RecetaMacros {
   carbohydrate?: { grams: number };
   protein?:      { grams: number };
   fat?:          { grams: number };
 }
-interface IndyaRawRecipe {
+interface RecetaImportada {
   id: string;
   name: string;
   image?: string;
   ingredients?: Array<{ name: string; quantity: number }>;
   steps?: Array<{ position: number; description: string }>;
-  macros?: IndyaMacros;
+  macros?: RecetaMacros;
   kcal?: number;
   weight?: number;
   cookingTime?: number;
@@ -344,14 +345,14 @@ interface IndyaRawRecipe {
 }
 
 
-function mapIndyaRecipe(r: IndyaRawRecipe): Omit<Recipe, 'id'> {
+function mapRecetasRecipe(r: RecetaImportada): Omit<Recipe, 'id'> {
   const exchanges = {
     HC:    roundQuarter((r.macros?.carbohydrate?.grams ?? 0) / 25),
     PROT:  roundQuarter((r.macros?.protein?.grams     ?? 0) / 25),
     GRASA: roundQuarter((r.macros?.fat?.grams         ?? 0) / 11),
   };
   const out: Record<string, unknown> = {
-    ownerId:     'indya',
+    ownerId:     OWNER_RECETARIO,
     name:        r.name,
     categories:  r.categoria ? [r.categoria] : [],
     ingredients: [],
@@ -376,7 +377,7 @@ function mapIndyaRecipe(r: IndyaRawRecipe): Omit<Recipe, 'id'> {
 const IMPORT_BATCH = 499;
 type ImportStatus = 'idle' | 'loading' | 'writing' | 'done' | 'error';
 
-function IndyaImportPanel() {
+function RecetasImportPanel() {
   const [status,  setStatus]  = useState<ImportStatus>('idle');
   const [done,    setDone]    = useState(0);
   const [total,   setTotal]   = useState(0);
@@ -393,7 +394,7 @@ function IndyaImportPanel() {
 
     try {
       setPhase('Leyendo índice…');
-      const idxRes = await fetch('/indya/00_indice.json');
+      const idxRes = await fetch('/recetas/00_indice.json');
       const idx = await idxRes.json();
       const files: Array<{ archivo?: string; file?: string }> = idx.archivos ?? idx.files ?? [];
 
@@ -402,10 +403,10 @@ function IndyaImportPanel() {
         const entry = files[fi];
         const fileName = entry.archivo ?? entry.file ?? String(entry);
         setPhase(`Leyendo archivo ${fi + 1} / ${files.length}: ${fileName}`);
-        const res = await fetch(`/indya/${fileName}`);
+        const res = await fetch(`/recetas/${fileName}`);
         const raw = await res.json();
-        const recs: IndyaRawRecipe[] = raw.recipes ?? raw.recetas ?? [];
-        for (const r of recs) all.push({ id: r.id, data: mapIndyaRecipe(r) });
+        const recs: RecetaImportada[] = raw.recipes ?? raw.recetas ?? [];
+        for (const r of recs) all.push({ id: r.id, data: mapRecetasRecipe(r) });
       }
 
       setTotal(all.length);
@@ -440,7 +441,7 @@ function IndyaImportPanel() {
       <div>
         <h3 className="font-mono text-label font-bold uppercase tracking-wider text-data flex items-center gap-2">
           <span className="material-symbols-outlined text-body-s">library_books</span>
-          Importar biblioteca Indya
+          Importar recetario
         </h3>
         <p className="font-mono text-caption text-ink-3 mt-1">
           8 850 recetas · idempotente · lotes de {IMPORT_BATCH} · UPSERT por UUID
@@ -577,7 +578,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
       )}
 
       {settingsTab === 'biblioteca' && isOwnerOrDev && (
-        <IndyaImportPanel />
+        <RecetasImportPanel />
       )}
 
       {settingsTab === 'roles' && (<>

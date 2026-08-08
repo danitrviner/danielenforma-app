@@ -7,7 +7,7 @@ import {
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
-  queryIndyaForGenerator, getRecipes, getRecipeById,
+  queryRecetasForGenerator, getRecipes, getRecipeById,
   getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
@@ -250,8 +250,8 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapLoading(true);
     setSwapCandidates([]);
     if (day) {
-      const [indya, builder] = await Promise.all([queryIndyaForGenerator(meal.slot, 300), getRecipes()]);
-      const pool = [...indya, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
+      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes()]);
+      const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
       const alts = findSwapAlternatives(day, meal.id, pool, prefs, 5);
       setSwapCandidates(alts);
     }

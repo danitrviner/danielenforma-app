@@ -325,7 +325,7 @@ Datos vía Firebase/dbService del codebase. El cardio en curso y el HIIT necesit
 
 ## Assets
 
-Todas las imágenes son placeholders y hay que sustituirlas: vídeos de demostración de ejercicio (16:9, bucle, sin sonido), fotos de receta (4:3, vienen del set de Indya), avatares de cliente (se resuelven con iniciales cuando faltan). Los iconos son SVG de trazo 1,9–2,2 dibujados a mano en los prototipos: sustituir por el set de iconos del codebase manteniendo el grosor.
+Todas las imágenes son placeholders y hay que sustituirlas: vídeos de demostración de ejercicio (16:9, bucle, sin sonido), fotos de receta (4:3, vienen del set del recetario importado), avatares de cliente (se resuelven con iniciales cuando faltan). Los iconos son SVG de trazo 1,9–2,2 dibujados a mano en los prototipos: sustituir por el set de iconos del codebase manteniendo el grosor.
 
 Fuentes: Archivo (700, 900), Plus Jakarta Sans (400–700), IBM Plex Mono (400–600) — Google Fonts.
 

@@ -76,8 +76,8 @@ export function addToPlaced(p: Record<FoodCategory, number>, category: FoodCateg
 
 // Builds the DietItems to insert into a meal when a recipe is "added to Intercambios".
 // Coach/athlete-built recipes carry a structured `ingredients` list (food-by-food,
-// tagged per diet mode) — use that when present. Indya-imported recipes (the vast
-// majority of the library) never populate `ingredients` (see scripts/importIndya.mjs);
+// tagged per diet mode) — use that when present. imported imported recipes (the vast
+// majority of the library) never populate `ingredients` (see scripts/importRecetas.mjs);
 // they only carry an aggregate `exchanges` total computed from their macros at import
 // time, so fall back to one item per non-zero category, labeled with the recipe name.
 // Total exchanges actually placed in a diet's meals, regardless of whether the
@@ -99,7 +99,7 @@ export function isDietPending(diet: Pick<Diet, 'budget' | 'meals'>): boolean {
 }
 
 export function recipeToDietItems(recipe: Recipe, enabledModes: DietMode[]): DietItem[] {
-  // Indya-imported recipes (the vast majority) never populate `ingredients` at all —
+  // imported imported recipes (the vast majority) never populate `ingredients` at all —
   // it's not just empty, it's absent — so don't assume the array exists.
   const structured: DietItem[] = (recipe.ingredients ?? [])
     .filter(ing => enabledModes.includes(ing.mode))

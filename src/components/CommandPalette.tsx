@@ -26,7 +26,7 @@ const ACTIONS: QuickAction[] = [
 // Buscador global del coach (Cmd+K / Ctrl+K): saltar directo a la ficha de
 // un atleta o a una pestaña sin pasar por Clientes → buscar → abrir. Acotado
 // a atletas + navegación — buscar ejercicios/recetas necesitaría un índice
-// de búsqueda de verdad (el banco de recetas Indya son 8.850+ documentos,
+// de búsqueda de verdad (el recetario importado son 8.850+ documentos,
 // no algo para traer entero al cliente), queda fuera de alcance por ahora.
 export default function CommandPalette({ onNavigateTab }: Props) {
   const [open, setOpen] = useState(false);

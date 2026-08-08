@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryIndyaRecipes } from '../dbService';
-import type { IndyaRecipeCursor } from '../dbService';
+import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas } from '../dbService';
+import type { RecetasCursor } from '../dbService';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
-// Categories/intake types as stored on Indya-imported recipes (see scripts/importIndya.mjs) —
+// Categories/intake types as stored on imported imported recipes (see scripts/importRecetas.mjs) —
 // mirrors the athlete-facing browser in RecipesScreen.tsx.
-const INDYA_CATS = [
+const RECETAS_CATS = [
   'Todas',
   'Platos salados / principales',
   'Desayuno y dulces',
@@ -23,7 +23,7 @@ const INTAKE_LABELS: Record<number, string> = {
   1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
 };
 
-function IndyaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
+function RecetaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
   const photo = recipe.image ?? recipe.photoUrl;
   return (
     <article className="relative rounded-surface overflow-hidden bg-raised border border-hairline aspect-[4/5] flex flex-col justify-end">
@@ -110,44 +110,44 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const [deleting, setDeleting]             = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete]   = useState<string | null>(null);
 
-  // Indya library browser (read-only) — the coach's own recipes above come from
-  // getRecipes(), which deliberately excludes the 8.850 Indya-imported recipes to
+  // Recetas library browser (read-only) — the coach's own recipes above come from
+  // getRecipes(), which deliberately excludes the 8.850 imported imported recipes to
   // avoid downloading the full collection; browse those separately, paginated.
-  const [indyaCat, setIndyaCat]             = useState<string>('Todas');
-  const [indyaIntake, setIndyaIntake]       = useState<number | null>(null);
-  const [indyaSearch, setIndyaSearch]       = useState('');
-  const [indyaRecipes, setIndyaRecipes]     = useState<Recipe[]>([]);
-  const [indyaCursor, setIndyaCursor]       = useState<IndyaRecipeCursor | null>(null);
-  const [indyaHasMore, setIndyaHasMore]     = useState(false);
-  const [indyaLoading, setIndyaLoading]     = useState(true);
-  const [indyaLoadingMore, setIndyaLoadingMore] = useState(false);
+  const [recetasCat, setRecetasCat]             = useState<string>('Todas');
+  const [recetasIntake, setRecetasIntake]       = useState<number | null>(null);
+  const [recetasSearch, setRecetasSearch]       = useState('');
+  const [recetasRecipes, setRecetasRecipes]     = useState<Recipe[]>([]);
+  const [recetasCursor, setRecetasCursor]       = useState<RecetasCursor | null>(null);
+  const [recetasHasMore, setRecetasHasMore]     = useState(false);
+  const [recetasLoading, setRecetasLoading]     = useState(true);
+  const [recetasLoadingMore, setRecetasLoadingMore] = useState(false);
 
-  const loadIndya = useCallback(async (
-    cat: string, intake: number | null, cursor: IndyaRecipeCursor | null, append: boolean,
+  const loadRecetas = useCallback(async (
+    cat: string, intake: number | null, cursor: RecetasCursor | null, append: boolean,
   ) => {
     const filters = { categoria: cat === 'Todas' ? undefined : cat, intakeType: intake ?? undefined };
-    const result = await queryIndyaRecipes(filters, cursor);
-    setIndyaRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
-    setIndyaCursor(result.cursor);
-    setIndyaHasMore(result.hasMore);
+    const result = await queryRecetas(filters, cursor);
+    setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
+    setRecetasCursor(result.cursor);
+    setRecetasHasMore(result.hasMore);
   }, []);
 
   useEffect(() => {
-    setIndyaLoading(true);
-    loadIndya(indyaCat, indyaIntake, null, false).finally(() => setIndyaLoading(false));
-  }, [indyaCat, indyaIntake, loadIndya]);
+    setRecetasLoading(true);
+    loadRecetas(recetasCat, recetasIntake, null, false).finally(() => setRecetasLoading(false));
+  }, [recetasCat, recetasIntake, loadRecetas]);
 
-  const handleIndyaLoadMore = async () => {
-    setIndyaLoadingMore(true);
-    await loadIndya(indyaCat, indyaIntake, indyaCursor, true);
-    setIndyaLoadingMore(false);
+  const handleRecetasLoadMore = async () => {
+    setRecetasLoadingMore(true);
+    await loadRecetas(recetasCat, recetasIntake, recetasCursor, true);
+    setRecetasLoadingMore(false);
   };
 
-  const filteredIndya = useMemo(() =>
-    indyaSearch.trim()
-      ? indyaRecipes.filter(r => r.name.toLowerCase().includes(indyaSearch.toLowerCase()))
-      : indyaRecipes,
-    [indyaRecipes, indyaSearch]
+  const filteredRecetas = useMemo(() =>
+    recetasSearch.trim()
+      ? recetasRecipes.filter(r => r.name.toLowerCase().includes(recetasSearch.toLowerCase()))
+      : recetasRecipes,
+    [recetasRecipes, recetasSearch]
   );
 
   const liveExchanges = useMemo(() => calcExchanges(form.ingredients), [form.ingredients]);
@@ -294,7 +294,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       </div>
 
       {recipes.length === 0 ? (
-        <EmptyState icon="restaurant_menu" title="Aún no has creado ninguna receta propia. La biblioteca Indya de abajo tiene 8.850 más." />
+        <EmptyState icon="restaurant_menu" title="Aún no has creado ninguna receta propia. El recetario de abajo tiene 8.850." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {recipes.map(recipe => {
@@ -364,22 +364,22 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </div>
       )}
 
-      {/* ── Biblioteca Indya (solo lectura) ─────────────────────────────── */}
+      {/* ── Recetario importado (solo lectura) ────────────────────────────── */}
       <section className="space-y-4 pt-4 border-t border-hairline">
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-title-s">library_books</span>
-          Biblioteca Indya
+          Recetario
           <span className="font-sans text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
 
         <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 w-max">
-            {INDYA_CATS.map(cat => (
+            {RECETAS_CATS.map(cat => (
               <button
                 key={cat}
-                onClick={() => setIndyaCat(cat)}
+                onClick={() => setRecetasCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
-                  indyaCat === cat
+                  recetasCat === cat
                     ? 'bg-data text-black'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
                 }`}
@@ -389,9 +389,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Chip selected={indyaIntake === null} onClick={() => setIndyaIntake(null)}>Todos los momentos</Chip>
+          <Chip selected={recetasIntake === null} onClick={() => setRecetasIntake(null)}>Todos los momentos</Chip>
           {Object.entries(INTAKE_LABELS).map(([k, label]) => (
-            <Chip key={k} selected={indyaIntake === Number(k)} onClick={() => setIndyaIntake(Number(k))}>{label}</Chip>
+            <Chip key={k} selected={recetasIntake === Number(k)} onClick={() => setRecetasIntake(Number(k))}>{label}</Chip>
           ))}
         </div>
 
@@ -399,40 +399,40 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s">search</span>
           <input
             type="text"
-            value={indyaSearch}
-            onChange={e => setIndyaSearch(e.target.value)}
+            value={recetasSearch}
+            onChange={e => setRecetasSearch(e.target.value)}
             placeholder="Buscar en esta página…"
             className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
           />
         </div>
 
-        {indyaLoading ? (
+        {recetasLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Skeleton className="h-32 w-full rounded-surface" />
             <Skeleton className="h-32 w-full rounded-surface" />
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
-        ) : filteredIndya.length === 0 ? (
-          <EmptyState icon="search_off" title={indyaSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
+        ) : filteredRecetas.length === 0 ? (
+          <EmptyState icon="search_off" title={recetasSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-3">
             <p className="font-sans text-caption text-ink-2 uppercase">
-              {indyaSearch
-                ? `${filteredIndya.length} de ${indyaRecipes.length} resultados en esta página`
-                : `${indyaRecipes.length} receta${indyaRecipes.length !== 1 ? 's' : ''} cargada${indyaRecipes.length !== 1 ? 's' : ''}${indyaHasMore ? ' · hay más' : ''}`
+              {recetasSearch
+                ? `${filteredRecetas.length} de ${recetasRecipes.length} resultados en esta página`
+                : `${recetasRecipes.length} receta${recetasRecipes.length !== 1 ? 's' : ''} cargada${recetasRecipes.length !== 1 ? 's' : ''}${recetasHasMore ? ' · hay más' : ''}`
               }
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {filteredIndya.map(r => <IndyaCard key={r.id} recipe={r} />)}
+              {filteredRecetas.map(r => <RecetaCard key={r.id} recipe={r} />)}
             </div>
-            {indyaHasMore && !indyaSearch && (
+            {recetasHasMore && !recetasSearch && (
               <div className="flex justify-center pt-2">
                 <button
-                  onClick={handleIndyaLoadMore}
-                  disabled={indyaLoadingMore}
+                  onClick={handleRecetasLoadMore}
+                  disabled={recetasLoadingMore}
                   className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  {indyaLoadingMore
+                  {recetasLoadingMore
                     ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
                     : <><span className="material-symbols-outlined text-body-s">expand_more</span>Cargar más recetas</>
                   }

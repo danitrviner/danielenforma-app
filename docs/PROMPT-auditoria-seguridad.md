@@ -148,7 +148,7 @@ si es falsificable desde el cliente). Puntos concretos:
 - Tras `npm run build`: `grep -rE "sk-ant|AIza|private_key|BEGIN PRIVATE|service_account" dist/`
   para confirmar que **ningún secreto de servidor viaja en el bundle** (la `apiKey` pública
   de Firebase sí saldrá — es correcto).
-- `scripts/importIndya.mjs`, `buildKnowledgeBase.mjs`, `generate-native-assets.mjs`: que no
+- `scripts/importRecetas.mjs`, `buildKnowledgeBase.mjs`, `generate-native-assets.mjs`: que no
   tengan credenciales embebidas.
 - `.env.example` menciona `GEMINI_API_KEY`/`APP_URL` (AI Studio) que ya no aplican. **Cambio:**
   actualizarlo a las variables reales (Anthropic, reCAPTCHA).

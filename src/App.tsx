@@ -15,6 +15,7 @@ import LocalModeBanner from './components/LocalModeBanner';
 import { ToastProvider } from './hooks/useToast';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
+import { OPEN_AI_PANEL_EVENT } from './ai/events';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -478,16 +479,14 @@ function AppContent() {
   const clientRouteMatch = location.pathname.match(/^\/clients\/([^/]+)/);
   const activeAthleteEmail = clientRouteMatch ? decodeURIComponent(clientRouteMatch[1]) : undefined;
 
-  // P1-3 de la auditoría visual: el FAB del Asistente IA (`AiChatPanel`,
-  // `fixed bottom-28 right-4 ... w-13 h-13`) tapaba el último bloque de
-  // contenido en ClientHub/CRM Pagos/Cardio Zonas — su borde superior cae a
-  // 164 px del fondo del viewport (112 + 52), más que el hueco que ya
-  // reservaba `--nav-h` para la barra de navegación. `max()` en vez de
-  // sumarlo sin más: en el caso normal manda el suelo fijo de 172 px, pero si
-  // algún día `--nav-h` creciera por encima (safe-area extremo), sigue
-  // respetándose el mayor de los dos.
+  // P1-3 de la auditoría visual se arregló aquí con un suelo de 172 px: el
+  // FAB del Asistente IA flotaba abajo-derecha y tapaba el último bloque de
+  // contenido en ClientHub/CRM Pagos/Cardio Zonas. Ese suelo ya no hace
+  // falta —en móvil el disparador se ha mudado a la cabecera, junto al
+  // avatar, y no hay nada flotando que tapar—, así que el hueco vuelve a ser
+  // solo el de la barra de navegación y el contenido recupera 60 px.
   return (
-    <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[max(calc(var(--nav-h)+1rem),172px)] md:pb-0">
+    <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[calc(var(--nav-h)+1rem)] md:pb-0">
     <TutorialEngine
       profile={profile}
       hasPlan={!isCoach && tutorialGateAssignments.length > 0}
@@ -529,6 +528,21 @@ function AppContent() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {/* Asistente IA. En escritorio sigue siendo el botón flotante de
+              abajo-derecha; en móvil vive aquí, junto al avatar. Flotando
+              tapaba el último bloque de contenido de cada pantalla (P1-3 de
+              la auditoría visual) y obligaba a reservarle 172 px de hueco al
+              final del layout; en la cabecera no tapa nada. Dispara el mismo
+              evento que ya usaba ClientHub para abrir el panel. */}
+          {isCoach && (
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
+              aria-label="Asistente IA"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+            >
+              <Icon name="smart_toy" size="m" filled />
+            </button>
+          )}
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
           <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />

@@ -962,19 +962,19 @@ export interface RecipeIngredient {
   quantity: number; // multiples of 0.25
 }
 
-export interface IndyaIngredient {
+export interface RecetaIngrediente {
   name: string;
   quantity: number; // grams or units
 }
 
-export interface IndyaStep {
+export interface RecetaPaso {
   position: number;
   description: string;
 }
 
 export interface Recipe {
   id: string;
-  ownerId: string;    // Firebase UID | 'indya'
+  ownerId: string;    // UID de Firebase, o el centinela del recetario importado (OWNER_RECETARIO en db/recipes)
   name: string;
   photoUrl?: string;
   // ── Coach / athlete builder ───────────────────────────────────────────────
@@ -982,10 +982,10 @@ export interface Recipe {
   ingredients: RecipeIngredient[];
   extras: string[];
   steps: string[];
-  // ── Indya-only fields (all optional) ────────────────────────────────────
+  // ── imported only fields (all optional) ────────────────────────────────────
   image?: string;
-  ingredientsText?: IndyaIngredient[];
-  stepsText?: IndyaStep[];
+  ingredientsText?: RecetaIngrediente[];
+  stepsText?: RecetaPaso[];
   macros?: { carb: number; prot: number; fat: number };
   kcal?: number;
   weight?: number;

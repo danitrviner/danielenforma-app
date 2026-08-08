@@ -319,13 +319,13 @@ ver ese `ownerId`, permitiendo enumerar UIDs de otros clientes del coach.
 ```
 match /recipes/{docId} {
   allow read: if request.auth != null
-              && (resource.data.ownerId == 'indya' || isCoach() || isOwnerUid(resource.data.ownerId));
+              && (resource.data.ownerId == 'recetas' || isCoach() || isOwnerUid(resource.data.ownerId));
   allow create: if isCoach()
                 || (request.auth != null && request.resource.data.ownerId == request.auth.uid);
   allow update, delete: if isCoach() || isOwnerUid(resource.data.ownerId);
 }
 ```
-Ajustar también `src/db/recipes.ts:25` (`where('ownerId','not-in',['indya'])`), que se
+Ajustar también `src/db/recipes.ts:25` (`where('ownerId','not-in',['recetas'])`), que se
 rompería para atletas no-coach con la regla más estricta (Firestore no puede evaluar la
 seguridad de un `not-in` sin filtro por propietario).
 
@@ -854,7 +854,7 @@ remoto.
 | `athleteNutritionConfigs` | coach / email propio | — | coach / email propio | docId=EMAIL | No | OK |
 | `mesocycles` | coach / email propio | coach | coach | athleteId=EMAIL | No | OK |
 | `mesocycleTemplates` | cualquier auth | coach | coach | ownerId=UID coach | No | OK |
-| `recipes` | **cualquier auth** | coach o (ownerId=uid propio) | coach o ownerUid | ownerId=UID\|'indya' | Lectura expone ownerId | **H-15 (Media)** |
+| `recipes` | **cualquier auth** | coach o (ownerId=uid propio) | coach o ownerUid | ownerId=UID\|'recetas' | Lectura expone ownerId | **H-15 (Media)** |
 | `recipeFavorites` | coach / email propio | — | coach / email propio | docId=EMAIL | No | OK |
 | `progressPhotos` | coach / email propio | email propio | coach / email propio | athleteId=EMAIL | No (ver H-19 sobre URLs) | OK con nota |
 | `bodyweightLogs` | coach / email propio | email propio | coach / email propio | athleteId=EMAIL | No | OK |

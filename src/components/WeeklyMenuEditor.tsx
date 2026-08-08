@@ -4,7 +4,7 @@ import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory,
 } from '../types';
-import { queryIndyaForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
@@ -148,8 +148,8 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
-    const [indya, builder] = await Promise.all([queryIndyaForGenerator(slot, 300), ensureBuilderRecipes()]);
-    const combined = [...indya, ...builder.filter(r => recipeMatchesSlot(r, slot))];
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300), ensureBuilderRecipes()]);
+    const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;
   }

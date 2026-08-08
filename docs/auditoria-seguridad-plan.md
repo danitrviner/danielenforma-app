@@ -292,7 +292,7 @@ Archivo: [`src/firebase.ts`](../src/firebase.ts) + flujos de login en `src/compo
 - **F4 — Bundle build.** Tras `npm run build`, haz `grep -rE "sk-ant|AIza|service_account|private_key|BEGIN PRIVATE"`
   sobre `dist/` para confirmar que **ningún secreto de servidor viaja en el bundle**.
   (La `apiKey` pública de Firebase sí aparecerá — eso es correcto.)
-- **F5 — Scripts con credenciales.** Revisa `scripts/importIndya.mjs`,
+- **F5 — Scripts con credenciales.** Revisa `scripts/importRecetas.mjs`,
   `scripts/buildKnowledgeBase.mjs`, `scripts/generate-native-assets.mjs`: ¿usan admin SDK
   o service account? ¿De dónde leen credenciales? No deben tener secretos embebidos.
 - **F6 — `vercel.json`, `Dockerfile`, `nginx.conf`, `docker-compose*.yml`** (algunos en

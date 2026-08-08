@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "fuente": "getindya.com",
+    "fuente": "recetario importado",
     "exportadoOriginal": "2026-06-13T13:20:51.294Z",
     "totalRecetas": 8850,
     "schemaVersion": 1,
-    "descripcion": "Recetas Indya limpiadas y troceadas por categoria para integrar en la app."
+    "descripcion": "Recetas limpiadas y troceadas por categoria para integrar en la app."
   },
   "categorias": [
     {

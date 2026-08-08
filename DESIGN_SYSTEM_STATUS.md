@@ -235,7 +235,7 @@ usaban `TrainingLab` y `Revisiones`.
 
 **Casos que no encajaron limpiamente, dejados tal cual a propósito** (no son omisiones, son
 decisiones): filtros con color por categoría que la primitiva no reproduce (`CAT_COLOR`,
-`METRIC_COLOR`, el filtro `indyaCat` de Recetas en `bg-data`, las 5 categorías de intercambios de
+`METRIC_COLOR`, el filtro `recetasCat` de Recetas en `bg-data`, las 5 categorías de intercambios de
 `NutritionPlansScreen`/`MyMenuScreen` en `bg-data`); toggles con `min-h-[44px]` explícito donde
 `Chip` sería más bajo (regresión de objetivo táctil); tarjetas con título+icono combinado
 (`Card.title` es solo texto); filas con un enlace real dentro del título o con tres líneas de texto
