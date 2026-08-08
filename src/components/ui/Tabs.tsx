@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import { useScrollEdgeMask } from './internal/useScrollEdgeMask';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Tabs
@@ -14,6 +15,12 @@ import Icon from './Icon';
 
      · **Nunca desborda.** Scroll horizontal con anclaje y la barra oculta. Con
        seis pestañas en 375 px no hay reparto de anchos que valga: se desliza.
+       F2 contuvo el desbordamiento (dejó de romper el layout de la página),
+       pero no avisaba de que había más pestañas fuera de vista — P1-4 de la
+       auditoría visual («Reuniones» cortado en el CRM, «Road map» en Plan,
+       etc.). `useScrollEdgeMask` (compartido con `DataTable`, mismo síntoma
+       ahí: P1-5) añade el `mask-image` que se desvanece en el borde cuando
+       de verdad hay contenido oculto a ese lado.
      · **Teclado.** Flechas para moverse, Inicio y Fin para los extremos. Es lo
        que un `tablist` promete en cuanto declara ese papel; declararlo sin
        implementarlo es peor que no declararlo.
@@ -52,6 +59,7 @@ type Props = {
 
 export default function Tabs({ items, value, onChange, label, className = '' }: Props) {
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const { ref: scrollRef, maskImage } = useScrollEdgeMask<HTMLDivElement>([items]);
 
   const alPulsarTecla = (e: React.KeyboardEvent, indice: number) => {
     const salto = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
@@ -71,10 +79,11 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
 
   return (
     <div
+      ref={scrollRef}
       role="tablist"
       aria-label={label}
       className={`flex gap-5 overflow-x-auto hide-scrollbar border-b border-hairline ${className}`}
-      style={{ scrollSnapType: 'x proximity' }}
+      style={{ scrollSnapType: 'x proximity', ...(maskImage ? { maskImage, WebkitMaskImage: maskImage } : {}) }}
     >
       {items.map((item, i) => {
         const activa = item.id === value;

@@ -1,23 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React from 'react';
 import ErrorState from './ErrorState';
-
-const MASK_FADE_PX = 24;
-
-/**
- * Máscara de opacidad en los bordes cuando hay contenido oculto por scroll
- * horizontal — mask-image en vez de box-shadow para no ensuciar el
- * inventario de sombras y no depender del color de fondo del contenedor.
- */
-function buildEdgeMask(left: boolean, right: boolean): string | undefined {
-  if (!left && !right) return undefined;
-  const stops = [
-    left ? 'transparent 0' : 'black 0',
-    ...(left ? [`black ${MASK_FADE_PX}px`] : []),
-    right ? `black calc(100% - ${MASK_FADE_PX}px)` : 'black 100%',
-    ...(right ? ['transparent 100%'] : []),
-  ];
-  return `linear-gradient(to right, ${stops.join(', ')})`;
-}
+import { useScrollEdgeMask } from '../../../components/ui/internal/useScrollEdgeMask';
 
 export interface Columna<T> {
   id: string;
@@ -73,42 +56,13 @@ export default function DataTable<T>({
 }
 
 function ScrollBody<T>({ columnas, filas, keyOf, onRowClick }: Pick<Props<T>, 'columnas' | 'filas' | 'keyOf' | 'onRowClick'>) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [overflow, setOverflow] = useState({ left: false, right: false });
-
-  const recompute = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    setOverflow({
-      left: scrollLeft > 1,
-      right: scrollWidth - clientWidth - scrollLeft > 1,
-    });
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    ro.observe(el);
-    if (el.firstElementChild) ro.observe(el.firstElementChild);
-    el.addEventListener('scroll', recompute, { passive: true });
-    window.addEventListener('resize', recompute);
-    return () => {
-      ro.disconnect();
-      el.removeEventListener('scroll', recompute);
-      window.removeEventListener('resize', recompute);
-    };
-  }, [recompute, filas, columnas]);
-
-  const mask = buildEdgeMask(overflow.left, overflow.right);
+  const { ref: scrollRef, maskImage } = useScrollEdgeMask<HTMLDivElement>([filas, columnas]);
 
   return (
     <div
       ref={scrollRef}
       className="overflow-x-auto custom-scrollbar"
-      style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
       <table className="w-full border-collapse min-w-[640px]">
         <thead>
