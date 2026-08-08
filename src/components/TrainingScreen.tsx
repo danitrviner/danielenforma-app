@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
+import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote, MUSCLE_LABELS } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import StatTile from './StatTile';
 import {
@@ -18,6 +18,8 @@ import { registerTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import Coachmark from './Coachmark';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
+import ExerciseBestSetCard from './ExerciseBestSetCard';
+import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
@@ -179,6 +181,21 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // Uno solo a la vez: N iframes de YouTube cargados a la vez en una sesión
   // con varios ejercicios sería peso muerto en cada carga de pantalla.
   const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
+
+  // "Tu mejor serie" de la ficha de ejercicio (F3.13, Biblioteca panel 02) —
+  // useMemo a nivel de componente, no dentro del .map() de tarjetas de
+  // ejercicio: llamar un hook con un nº de iteraciones variable rompería las
+  // Rules of Hooks si el entreno activo cambiara de nº de ejercicios entre
+  // renders. Se calcula sobre TODOS los ejercicios del entreno de una vez.
+  const exerciseProgressById = useMemo(() => {
+    const map = new Map<string, { progress: ExerciseBestProgress; trend: number[] }>();
+    for (const we of activeWorkout?.exercises ?? []) {
+      const progress = exerciseBestProgress(logs, we.exerciseId);
+      if (progress) map.set(we.exerciseId, { progress, trend: exerciseWeightTrend(logs, we.exerciseId) });
+    }
+    return map;
+  }, [logs, activeWorkout]);
+
   // Cronómetro de descanso: se arranca solo al marcar una serie como hecha,
   // con el restSeconds prescrito del ejercicio — antes el atleta tenía que
   // llevar la cuenta él mismo en el momento de mayor intensidad de la sesión.
@@ -562,7 +579,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                     {ex?.type && (
                       <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
                     )}
-                    {ex?.videoUrl && (
+                    {ex?.muscleGroup && (
+                      <span className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-2">{MUSCLE_LABELS[ex.muscleGroup]}</span>
+                    )}
+                    {ex?.equipment?.map(eq => (
+                      <span key={eq} className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-3">{eq}</span>
+                    ))}
+                    {(ex?.videoUrl || exerciseProgressById.has(we.exerciseId)) && (
                       <button
                         type="button"
                         onClick={() => setOpenVideoIdx(v => v === exIdx ? null : exIdx)}
@@ -570,8 +593,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           openVideoIdx === exIdx ? 'bg-accent text-on-accent border-accent' : 'text-accent border-accent/30 hover:bg-accent/10'
                         }`}
                       >
-                        <Icon name="play_circle" size="s" filled={openVideoIdx === exIdx} />
-                        Vídeo
+                        <Icon name={ex?.videoUrl ? 'play_circle' : 'trending_up'} size="s" filled={openVideoIdx === exIdx} />
+                        {ex?.videoUrl ? 'Vídeo' : 'Progreso'}
                       </button>
                     )}
                     {warmup.readiness && (
@@ -601,8 +624,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               </div>
 
-              {openVideoIdx === exIdx && ex?.videoUrl && (
-                <ExerciseVideoPlayer videoUrl={ex.videoUrl} />
+              {openVideoIdx === exIdx && (
+                <>
+                  {ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
+                  {exerciseProgressById.get(we.exerciseId) && (
+                    <ExerciseBestSetCard {...exerciseProgressById.get(we.exerciseId)!} />
+                  )}
+                </>
               )}
 
               {we.recordVideoSet && (

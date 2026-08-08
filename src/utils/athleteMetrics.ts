@@ -58,6 +58,42 @@ export function bestSet(
   return best;
 }
 
+export interface ExerciseBestProgress {
+  current: BestSet;
+  // kg de diferencia respecto al mejor set ANTERIOR a `current.date` — en kg
+  // del peso levantado, no del e1RM (que no es una cifra que el atleta
+  // reconozca). null si `current` es el único/primer registro del ejercicio.
+  deltaKgVsPrevious: number | null;
+}
+
+// "Tu mejor serie" de la ficha de ejercicio (F3.13, panel "Biblioteca" 02):
+// el mejor set histórico de un ejercicio + cuánto mejoró sobre el mejor set
+// que había ANTES de esa fecha.
+export function exerciseBestProgress(logs: WorkoutLog[], exerciseId: string): ExerciseBestProgress | null {
+  const ids = new Set([exerciseId]);
+  const current = bestSet(logs, { exerciseIds: ids });
+  if (!current) return null;
+  const previous = bestSet(logs.filter(l => l.date < current.date), { exerciseIds: ids });
+  return {
+    current,
+    deltaKgVsPrevious: previous ? Math.round((current.weight - previous.weight) * 10) / 10 : null,
+  };
+}
+
+// Peso máximo levantado por sesión en un ejercicio, últimas `sessionsBack`
+// sesiones que lo incluyeron, más antigua primero — para el `Sparkline` de
+// la ficha de ejercicio (construido en F3.3 ya pensando en este uso).
+export function exerciseWeightTrend(logs: WorkoutLog[], exerciseId: string, sessionsBack = 8): number[] {
+  const bySession: { date: string; weight: number }[] = [];
+  for (const log of logs) {
+    const entry = log.entries.find(e => e.exerciseId === exerciseId);
+    if (!entry) continue;
+    const topWeight = entry.sets.reduce((max, s) => Math.max(max, s.weight), 0);
+    if (topWeight > 0) bySession.push({ date: log.date, weight: topWeight });
+  }
+  return bySession.sort((a, b) => a.date.localeCompare(b.date)).slice(-sessionsBack).map(s => s.weight);
+}
+
 // Media diaria de pasos sobre los días CON registro dentro de [from, to].
 export function avgSteps(logs: StepLog[], from: string, to: string): { avg: number; days: number } {
   const inRange = logs.filter(l => l.date >= from && l.date <= to);
