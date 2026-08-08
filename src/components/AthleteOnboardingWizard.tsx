@@ -218,8 +218,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         </div>
       </div>
 
-      {/* Contenido del paso */}
-      <div className="flex-1 w-full max-w-lg mx-auto px-6 py-8" key={step}>
+      {/* Contenido del paso — corrige P1-1: sin `justify-center` el contenido se
+          quedaba pegado arriba y dejaba ~600 px muertos hasta los botones en
+          los pasos cortos (bienvenida, "Tu día a día"). En los pasos largos
+          (Alimentación) no cambia nada: no hay hueco que centrar, así que el
+          contenido sigue empezando arriba y la página scrollea igual. */}
+      <div className="flex-1 w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center" key={step}>
         {step === 0 && (
           <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.

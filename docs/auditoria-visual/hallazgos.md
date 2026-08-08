@@ -450,6 +450,11 @@ van anclados abajo. A 375×812 se lee como una pantalla a medio cargar, no como 
 **Propuesta:** o el contenido se centra verticalmente, o los botones suben justo debajo del último
 campo. Hoy no es ninguna de las dos cosas.
 
+**CORREGIDO (8 ago 2026).** `justify-center` en el contenedor flexible del contenido del paso: en
+los pasos cortos (bienvenida, "Tu día a día") el bloque se centra en el hueco disponible en vez de
+quedarse pegado arriba. En los pasos largos (Alimentación) no cambia nada — no hay hueco que
+centrar, la página sigue scrolleando igual que antes.
+
 ---
 
 ## P1-2 · Jerarquía invertida en los botones del asistente
