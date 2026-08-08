@@ -1,204 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
 import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
+import QuestionnaireWizard from './QuestionnaireWizard';
 import { EmptyState } from './ui';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
-
-// ── Inline questionnaire form ─────────────────────────────────────────────────
-
-function QuestionnaireForm({
-  questionnaire,
-  assignment,
-  athleteEmail,
-  onSubmitted,
-  onCancel,
-}: {
-  questionnaire: Questionnaire;
-  assignment: QuestionnaireAssignment;
-  athleteEmail: string;
-  onSubmitted: (r: QuestionnaireResponse) => void;
-  onCancel: () => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, string | number | boolean>>({});
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const setAnswer = (qId: string, value: string | number | boolean) =>
-    setAnswers(prev => ({ ...prev, [qId]: value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const missing = questionnaire.questions.filter(q => q.required && answers[q.id] === undefined);
-    if (missing.length > 0) {
-      setErr(`Por favor responde: ${missing.map(q => q.label).join(', ')}`);
-      return;
-    }
-    setErr('');
-    setSaving(true);
-    try {
-      const payload = questionnaire.questions
-        .filter(q => answers[q.id] !== undefined)
-        .map(q => ({ questionId: q.id, value: answers[q.id] }));
-      const response = await submitResponse({
-        questionnaireId: questionnaire.id,
-        assignmentId: assignment.id,
-        athleteId: athleteEmail,
-        submittedAt: new Date().toISOString(),
-        answers: payload,
-      });
-      onSubmitted(response);
-    } catch (e) {
-      console.error(e);
-      setErr('Error al enviar. Inténtalo de nuevo.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-5 pb-2 border-b border-hairline">
-        <h2 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-data">assignment</span>
-          {questionnaire.title}
-        </h2>
-        <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors p-1">
-          <span className="material-symbols-outlined text-title-s">close</span>
-        </button>
-      </div>
-
-      {questionnaire.description && (
-        <p className="text-label text-ink-2 mb-4 font-sans">{questionnaire.description}</p>
-      )}
-
-      {err && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label mb-4">{err}</div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {questionnaire.questions.map((q: QuestionnaireQuestion) => (
-          <div key={q.id}>
-            <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
-              {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
-            </label>
-            {q.helpText && <p className="text-caption text-ink-2/70 mb-2">{q.helpText}</p>}
-
-            {q.type === 'text' && (
-              <textarea
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, e.target.value)}
-                maxLength={q.maxChars}
-                placeholder="Escribe aquí..."
-                className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[60px]"
-              />
-            )}
-
-            {q.type === 'numeric' && (
-              <input
-                type="number"
-                step={q.decimals ? Math.pow(10, -q.decimals) : 1}
-                min={q.min}
-                max={q.max}
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-raised border-0 border-b border-hairline text-white font-mono p-3 focus:ring-0 focus:border-accent transition-colors"
-              />
-            )}
-
-            {q.type === 'scale' && (
-              <div className="space-y-2">
-                <div className="flex gap-2 flex-wrap">
-                  {Array.from({ length: (q.scaleMax ?? 10) - (q.scaleMin ?? 1) + 1 }, (_, i) => (q.scaleMin ?? 1) + i).map(v => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setAnswer(q.id, v)}
-                      className={`w-9 h-9 rounded-control font-mono text-label font-bold transition-all ${
-                        answers[q.id] === v
-                          ? 'bg-accent text-black'
-                          : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
-                      }`}
-                    >{v}</button>
-                  ))}
-                </div>
-                {(q.scaleMinLabel || q.scaleMaxLabel) && (
-                  <div className="flex justify-between text-caption font-mono text-ink-2">
-                    <span>{q.scaleMin ?? 1} – {q.scaleMinLabel}</span>
-                    <span>{q.scaleMaxLabel} – {q.scaleMax ?? 10}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {q.type === 'boolean' && (
-              <div className="flex gap-2">
-                {([true, false] as const).map(v => (
-                  <button
-                    key={String(v)}
-                    type="button"
-                    onClick={() => setAnswer(q.id, v)}
-                    className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[44px] ${
-                      answers[q.id] === v
-                        ? 'bg-accent text-black font-bold border-transparent'
-                        : 'bg-raised text-ink border-hairline'
-                    }`}
-                  >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
-                ))}
-              </div>
-            )}
-
-            {q.type === 'choice' && q.options && (
-              <div className="flex flex-col gap-2">
-                {q.options.map(opt => {
-                  const curSelected: string[] = q.multiSelect
-                    ? ((answers[q.id] as string | undefined) ?? '').split(',').filter(Boolean)
-                    : [];
-                  const isSelected = q.multiSelect ? curSelected.includes(opt) : answers[q.id] === opt;
-                  return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      if (q.multiSelect) {
-                        const next = isSelected ? curSelected.filter(o => o !== opt) : [...curSelected, opt];
-                        setAnswer(q.id, next.join(','));
-                      } else {
-                        setAnswer(q.id, opt);
-                      }
-                    }}
-                    className={`w-full py-3 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
-                      isSelected
-                        ? 'bg-accent text-black border-transparent font-bold'
-                        : 'bg-raised text-ink border-hairline'
-                    }`}
-                  >{opt}</button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full h-[44px] bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
-        >
-          {saving ? 'Enviando...' : 'Enviar Respuesta'}
-          <span className="material-symbols-outlined text-body-s">send</span>
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -458,7 +271,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Questionnaire active form */}
       {activeAssignment && templates.get(activeAssignment.questionnaireId) && (
-        <QuestionnaireForm
+        <QuestionnaireWizard
           questionnaire={templates.get(activeAssignment.questionnaireId)!}
           assignment={activeAssignment}
           athleteEmail={profile.email}
