@@ -13,6 +13,8 @@ import {
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
 import { HubTab, AnalisisTab } from './ClientHub';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Icon, Button, ListRow, RingSeal, Skeleton } from './ui';
 
 interface Props {
@@ -55,6 +57,7 @@ export default function ClientSetupPanel({
   workoutLogs, onGoToTab, onGoToAnalisis,
 }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const weekKey = isoWeekKey(todayISO());
   const coachClientTasksKey = ['coachClientTasks', athlete.email] as const;
 
@@ -118,8 +121,14 @@ export default function ClientSetupPanel({
     onGoToTab(item.link.tab);
   };
 
+  // Optimista en las cuatro (toggleManual/handleAddExtra/toggleExtra/removeExtra):
+  // la casilla o la fila cambian al instante. Si la escritura falla de verdad
+  // (permiso denegado — ya no se lo traga en silencio, ver
+  // escriturasHonestas.test.ts) hay que deshacer el optimismo y avisar, si no
+  // la pantalla del coach dice una cosa y Firestore otra.
   const toggleManual = async (item: SetupItem) => {
     const nextDone = item.status !== 'done';
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => {
       const list = prev ?? [];
       const existing = list.find(t => t.itemId === item.id);
@@ -131,7 +140,11 @@ export default function ClientSetupPanel({
     });
     try {
       await setSeededTaskDone(athlete.email, item.id, item.title, item.phase, nextDone);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'marcar la tarea'));
+    }
   };
 
   const extraTasks = manualTasks.filter(t => t.createdBy === 'coach');
@@ -150,6 +163,7 @@ export default function ClientSetupPanel({
       setShowExtraForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'añadir la tarea'));
     } finally {
       setSavingExtra(false);
     }
@@ -157,14 +171,28 @@ export default function ClientSetupPanel({
 
   const toggleExtra = async (task: CoachClientTask) => {
     const done = !task.done;
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev =>
       prev?.map(t => t.id === task.id ? { ...t, done } : t));
-    try { await updateCoachClientTask(task.id, { done, doneAt: done ? new Date().toISOString() : undefined }); } catch (err) { console.error(err); }
+    try {
+      await updateCoachClientTask(task.id, { done, doneAt: done ? new Date().toISOString() : undefined });
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'marcar la tarea'));
+    }
   };
 
   const removeExtra = async (task: CoachClientTask) => {
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => prev?.filter(t => t.id !== task.id));
-    try { await deleteCoachClientTask(task.id); } catch (err) { console.error(err); }
+    try {
+      await deleteCoachClientTask(task.id);
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar la tarea'));
+    }
   };
 
   if (loading) {

@@ -17,6 +17,8 @@ import {
   computePhaseEnergyBalance,
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Input } from './ui';
 
@@ -199,6 +201,7 @@ export default function NutritionPeriodizationPanel({
   athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
 }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const programQueryKey = ['nutritionProgram', athleteEmail] as const;
   const { data: program = null, isPending: loading } = useQuery({
     queryKey: programQueryKey,
@@ -237,6 +240,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('deleteNutritionProgram failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar la periodización'));
     } finally {
       setSaving(false);
     }
@@ -262,6 +266,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('saveNutritionProgram failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar la periodización'));
     } finally {
       setSaving(false);
     }
@@ -342,6 +347,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('handleAdjustDietToPhase failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'ajustar la dieta a la fase'));
     } finally {
       setAdjustingDietFor(null);
     }

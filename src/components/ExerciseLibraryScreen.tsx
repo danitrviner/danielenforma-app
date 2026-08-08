@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Button, Icon, Input, Select, Sheet, Chip } from './ui';
 
@@ -88,6 +90,7 @@ const exercisesQueryKey = ['exercises'] as const;
 
 export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreenProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { data: exercises = [], isPending: loading } = useQuery({
     queryKey: exercisesQueryKey,
     queryFn: async () => {
@@ -188,6 +191,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       setShowForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, editingId ? 'actualizar el ejercicio' : 'crear el ejercicio'));
     } finally {
       setIsSaving(false);
     }
@@ -201,6 +205,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       flash('Ejercicio eliminado.');
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar el ejercicio'));
     }
   };
 

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
 
 interface ReviewsScreenProps {
@@ -20,6 +22,7 @@ type UnifiedItem =
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Shared 'userProfiles' cache key (same as CommandPalette/MesocycleManager).
   const { data: athletes = [] } = useQuery({
@@ -78,6 +81,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       setShowQuickReplyManager(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar las respuestas rápidas'));
     } finally {
       setSavingQuickReplies(false);
     }

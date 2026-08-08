@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Resource, ResourceKind } from '../types';
 import { getAllResources, createResource, deleteResource } from '../dbService';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { Button } from './ui';
 
@@ -22,6 +24,7 @@ const resourcesQueryKey = ['resources'];
 
 export default function ResourcesPanel({ coachId, isCoach }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { data: resources = [], isPending: loading } = useQuery({
     queryKey: resourcesQueryKey,
     queryFn: getAllResources,
@@ -44,14 +47,26 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       setTitle(''); setUrl(''); setKind('link'); setShowForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'crear el recurso'));
     } finally {
       setSaving(false);
     }
   };
 
+  // Optimista: la fila desaparece al instante, pero si la escritura falla de
+  // verdad (permiso denegado — ya no se lo traga en silencio, ver
+  // escriturasHonestas.test.ts) hay que deshacer el optimismo, si no la
+  // pantalla dice que se borró un recurso que en realidad sigue ahí.
   const handleDelete = async (id: string) => {
+    const previo = queryClient.getQueryData<Resource[]>(resourcesQueryKey);
     queryClient.setQueryData<Resource[]>(resourcesQueryKey, prev => prev?.filter(r => r.id !== id));
-    try { await deleteResource(id); } catch (err) { console.error(err); }
+    try {
+      await deleteResource(id);
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(resourcesQueryKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar el recurso'));
+    }
   };
 
   return (

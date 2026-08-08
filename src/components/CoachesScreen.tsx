@@ -5,6 +5,8 @@ import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboard
 import { db, doc, writeBatch } from '../firebase';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { Tabs } from './ui';
 import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
@@ -76,6 +78,7 @@ const MINI = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label 
 
 function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const queryKey = ['onboardingTemplate', coachEmail] as const;
   const { data: fetchedTemplate, isPending: loading } = useQuery({
     queryKey,
@@ -139,6 +142,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       setDirty(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar la ficha de iniciación'));
     } finally { setSaving(false); }
   };
 
