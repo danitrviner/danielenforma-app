@@ -332,16 +332,20 @@ service cloud.firestore {
 
     // ── bodyMeasurements (docId = `${athleteId}_${date}_${metricKey}`; athleteId = EMAIL) ─
     // Perímetros corporales, escritos desde una respuesta de cuestionario
-    // (pregunta tipo 'metric') o manualmente. Mismo patrón de ownership que
-    // questionnaireResponses.
+    // (pregunta tipo 'metric') o manualmente.
+    //
+    // Usa `isOwnerEmail`, igual que el resto del fichero, y NO la comparación de
+    // email a pelo con la que llegó del merge: esa se dejaba fuera
+    // `email_verified == true`. La auditoría de seguridad del 2026-07-23 añadió
+    // esa condición en todas partes justo por esto — una cuenta de
+    // email/contraseña la puede crear cualquiera con
+    // createUserWithEmailAndPassword y sin verificar el correo, así que sin el
+    // flag bastaba con registrarse poniendo el email de otra persona para leer y
+    // escribir sus mediciones.
     match /bodyMeasurements/{docId} {
-      allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
-      allow create: if isCoach()
-                    || (request.auth != null
-                        && request.resource.data.athleteId == request.auth.token.email);
-      allow update, delete: if isCoach()
-                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+      allow read: if isCoach() || isOwnerEmail(resource.data.athleteId);
+      allow create: if isCoach() || isOwnerEmail(request.resource.data.athleteId);
+      allow update, delete: if isCoach() || isOwnerEmail(resource.data.athleteId);
     }
 
     // ── onboarding (docId = email) ───────────────────────────────────────────
