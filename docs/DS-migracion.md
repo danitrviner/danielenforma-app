@@ -1021,3 +1021,13 @@ Es el mismo mecanismo ya documentado en `htmlFor` (F11) y `aria-label` (F9): cua
 resuelve *metiéndola en una primitiva*, el contador de "usos" cae. Para estas tres métricas el
 número alto significa "repetido en muchos sitios", no "bien hecho en muchos sitios". Se acepta la
 bajada.
+
+### Sexta vez: Biblioteca centraliza las cabeceras del coach
+
+`4b9eff2` agrupa los catálogos del coach bajo `CoachLibraryScreen`, así que
+`NutritionCoachScreen` y `TrainingCoachScreen` dejan de poner su propia cabecera: sus contadores
+caen a 0 y `App.tsx` sube. Neto −8 tokens y −3 `font-sans`, con el código mejor que antes.
+
+Ya es la sexta vez que estos contadores bajan por hacer lo correcto (ver `htmlFor`, `aria-label`,
+`prefers-reduced-motion`). Para las métricas de "usos" el número alto significa **repetido en muchos
+sitios**, no bien hecho en muchos sitios. Se acepta la bajada.

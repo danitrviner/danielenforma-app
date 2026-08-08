@@ -65,16 +65,14 @@ Detalle completo en `docs/auditoria-visual/hallazgos.md` § P0-2.
 
 ---
 
-## 2. Publicar el catálogo de máquinas
+## ~~2. Publicar el catálogo de máquinas~~ — HECHO el 8 ago 2026
 
-Las 63 máquinas están importadas pero **sin publicar**: es deliberado, el scraping no decide qué
-entra en la app. Hasta que las publiques, ningún atleta ve el catálogo (el gate del onboarding se
-aparta solo, así que no rompe nada).
+Las 63 están publicadas y verificadas contra Firestore: 63 documentos en `maquinas`, todos con
+`publicadoEn` y `visible`, y `getCatalogoMaquinas()` devuelve las 63 repartidas en 13 categorías.
+El módulo ya funciona de punta a punta.
 
-Perfil → Ajustes → **Máquinas** → botón **«Publicar todas»**.
-
-Antes de pulsarlo, si quieres, repasa la lista: están los nombres traducidos, la marca, la familia
-y el grupo muscular de cada una, y cualquiera se puede renombrar o recategorizar desde ahí.
+Cualquiera se puede renombrar, recategorizar, cambiar de imagen u ocultar desde Perfil → Ajustes →
+Entrenadores → **Máquinas**.
 
 ---
 
@@ -82,7 +80,7 @@ y el grupo muscular de cada una, y cualquiera se puede renombrar o recategorizar
 
 Todo esto está detrás del login. En móvil, 375 px de ancho.
 
-### Atleta
+### Atleta — ya se puede probar, el catálogo está publicado
 - [ ] **Punto rojo en la pestaña «Hoy»** cuando el catálogo de máquinas queda a medias. Omitir el
       catálogo en el onboarding y comprobar que aparece, y que desaparece al completarlo.
 - [ ] **Perfil → Mi gimnasio**: que la lista salga con las fotos, que quitar una máquina funcione,

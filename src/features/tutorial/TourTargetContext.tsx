@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TourTargetRegistry (F3.12)
@@ -45,9 +45,25 @@ export function getTourTargetRect(id: string): DOMRect | null {
   return el ? el.getBoundingClientRect() : null;
 }
 
-/** Engancha `ref` al elemento real que representa el objetivo `id` de un paso del tour. */
+/**
+ * Engancha `ref` al elemento real que representa el objetivo `id` de un paso del
+ * tour.
+ *
+ * El `useCallback` NO es una optimización, es lo que impide un bucle infinito de
+ * renders. Sin él esta función es nueva en cada render, así que React trata el
+ * ref como distinto: llama al viejo con `null` y al nuevo con el elemento, en
+ * CADA render. Cada una de esas llamadas pasa por `registerTourTarget`, que
+ * llama a `notify()`, que despierta a `useTourTargetVersion` en el overlay del
+ * tutorial, que re-renderiza el subárbol... y vuelta a empezar.
+ *
+ * Reventaba en `ProfileScreen`, que es la única pantalla con DOS objetivos
+ * (`profile-progress-row` y `profile-settings-action`): «Maximum update depth
+ * exceeded» y la pantalla entera caída en el error boundary — con ella, el panel
+ * de Ajustes del coach. Con la referencia estable, el ref solo se engancha al
+ * montar y se suelta al desmontar, que es lo que el registro espera.
+ */
 export function useTourTarget(id: string) {
-  return (el: HTMLElement | null) => registerTourTarget(id, el);
+  return useCallback((el: HTMLElement | null) => registerTourTarget(id, el), [id]);
 }
 
 /** Re-renderiza al montarse/desmontarse cualquier objetivo — el overlay lo usa para re-medir. */

@@ -1,29 +1,29 @@
 {
-  "generado": "2026-08-08T14:09:44.172Z",
-  "commit": "3e08f73",
+  "generado": "2026-08-08T17:12:04.409Z",
+  "commit": "15c873b",
   "totales": {
-    "archivosTsx": 183,
-    "lineasTsx": 45388
+    "archivosTsx": 184,
+    "lineasTsx": 45617
   },
   "metricas": {
     "hexLiterales": 73,
-    "clasesTokenEnUso": 5142,
+    "clasesTokenEnUso": 5134,
     "importsThemeTs": 0,
     "bordesBlancosFuertes": 2,
-    "textoBajo11px": 13,
+    "textoBajo11px": 12,
     "camposBajo16px": 0,
-    "fontMono": 1030,
-    "fontSans": 976,
-    "pesosProhibidos": 58,
+    "fontMono": 1028,
+    "fontSans": 973,
+    "pesosProhibidos": 56,
     "espaciadoFueraEscala": 16,
     "sombrasFueraEscala": 3,
     "glowAcento": 0,
     "modalesArtesanales": 10,
     "transitionAll": 228,
-    "animatePulse": 29,
-    "ariaLabel": 60,
+    "animatePulse": 27,
+    "ariaLabel": 61,
     "htmlFor": 1,
-    "focusVisible": 50,
+    "focusVisible": 53,
     "reducedMotion": 3,
     "roundedSm": 0,
     "roundedMd": 0,
@@ -31,7 +31,7 @@
     "roundedXl": 1,
     "rounded2xl": 6,
     "rounded3xl": 2,
-    "roundedFull": 174,
+    "roundedFull": 173,
     "hexDistintos": 25,
     "tamanosTextoDistintos": 19,
     "archivosMas600Lineas": 21,
@@ -113,7 +113,7 @@
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
-        "lineas": 1599
+        "lineas": 1600
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
@@ -137,7 +137,11 @@
       },
       {
         "archivo": "src/components/ui/Showcase.tsx",
-        "lineas": 800
+        "lineas": 819
+      },
+      {
+        "archivo": "src/App.tsx",
+        "lineas": 767
       },
       {
         "archivo": "src/components/RoadmapTimeline.tsx",
@@ -165,7 +169,7 @@
       },
       {
         "archivo": "src/components/CoachesScreen.tsx",
-        "lineas": 651
+        "lineas": 652
       },
       {
         "archivo": "src/components/WeeklyMenuEditor.tsx",
@@ -174,10 +178,6 @@
       {
         "archivo": "src/components/LoadHistoryPanel.tsx",
         "lineas": 639
-      },
-      {
-        "archivo": "src/App.tsx",
-        "lineas": 637
       },
       {
         "archivo": "src/components/ClientsScreen.tsx",
@@ -191,15 +191,15 @@
   },
   "porArchivo": {
     "src/App.tsx": {
-      "clasesTokenEnUso": 46,
-      "textoBajo11px": 1,
+      "clasesTokenEnUso": 50,
       "fontMono": 2,
-      "fontSans": 10,
+      "fontSans": 11,
       "pesosProhibidos": 2,
       "transitionAll": 1,
       "animatePulse": 5,
-      "ariaLabel": 2,
-      "roundedFull": 7
+      "ariaLabel": 3,
+      "focusVisible": 3,
+      "roundedFull": 8
     },
     "src/components/AcademyCoachScreen.tsx": {
       "clasesTokenEnUso": 57,
@@ -502,14 +502,6 @@
       "animatePulse": 1,
       "roundedFull": 2
     },
-    "src/components/NutritionCoachScreen.tsx": {
-      "clasesTokenEnUso": 6,
-      "fontMono": 1,
-      "fontSans": 2,
-      "pesosProhibidos": 1,
-      "animatePulse": 1,
-      "roundedFull": 1
-    },
     "src/components/NutritionHubScreen.tsx": {
       "clasesTokenEnUso": 8,
       "fontMono": 1,
@@ -699,14 +691,6 @@
     "src/components/TaskManagerPanel.tsx": {
       "clasesTokenEnUso": 20,
       "fontSans": 2
-    },
-    "src/components/TrainingCoachScreen.tsx": {
-      "clasesTokenEnUso": 6,
-      "fontMono": 1,
-      "fontSans": 2,
-      "pesosProhibidos": 1,
-      "animatePulse": 1,
-      "roundedFull": 1
     },
     "src/components/TrainingScreen.tsx": {
       "clasesTokenEnUso": 180,
