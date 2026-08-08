@@ -5,26 +5,6 @@ Claude: o exige una sesión iniciada, o es configuración de Firebase, o es una 
 
 ---
 
-## 0. Migrar el `ownerId` del recetario (un comando)
-
-El nombre «indya» ya no está en el código, los ficheros ni los textos. Lo que queda es el valor
-guardado dentro de los ~8.850 documentos de `recipes`. **Nada está roto** mientras no se migre: las
-lecturas aceptan los dos valores a propósito. Pero el nombre sigue en la base de datos.
-
-```bash
-GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/migrarOwnerRecetas.mjs --dry-run
-GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/migrarOwnerRecetas.mjs
-```
-
-Va por lotes, es seguro de repetir y solo toca lo que aún tenga el valor antiguo. Se migraron 10
-documentos comprobando que el mecanismo funciona contra producción; la escritura masiva la bloqueó
-el clasificador, igual que la vía del Admin SDK, así que este último paso es tuyo.
-
-Cuando el `--dry-run` diga 0, se puede borrar `OWNER_RECETARIO_LEGACY` de `src/db/recipes.ts` y
-volver a `where('ownerId','==',OWNER_RECETARIO)`. Hasta entonces, dejarlo como está no cuesta nada.
-
----
-
 ## ~~1. Desplegar las reglas de Firestore~~ — HECHO el 8 ago 2026
 
 Desplegadas y verificadas: los `permission-denied` de `gimnasios`, `maquinas` y `bodyMeasurements`

@@ -10,14 +10,21 @@ import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos }
  * de Firebase: distingue las recetas del catálogo de las que escribe un coach o
  * un atleta, que llevan su UID.
  *
- * Hay DOS valores a propósito, y es temporal. Los documentos ya existentes en
- * Firestore se escribieron con el nombre anterior; la migración
- * (`scripts/migrarOwnerRecetas.ts`) los pasa a `OWNER_RECETARIO` por lotes.
- * Mientras eso corra —y para cualquier documento que se quede atrás— las
- * lecturas aceptan los dos, y las escrituras usan ya solo el nuevo.
+ * Hay DOS valores a propósito, y NO es temporal: es el estado definitivo.
  *
- * Cuando la migración esté confirmada al 100 %, se puede borrar
- * `OWNER_RECETARIO_LEGACY` y volver a `where('ownerId','==',OWNER_RECETARIO)`.
+ * Cuando se quitó el nombre antiguo del código (2026-08-08), los ~8.850
+ * documentos ya escritos en Firestore seguían llevándolo. Migrarlos era posible
+ * —el `ownerId` es el único campo a cambiar— pero se decidió no hacerlo: son
+ * 8.850 escrituras en producción para renombrar una etiqueta que nadie ve, y
+ * aceptar los dos valores sale gratis. Unos pocos documentos llevan ya el valor
+ * nuevo, de una prueba del mecanismo; por eso la lectura tiene que cubrir ambos
+ * de todas formas.
+ *
+ * Las ESCRITURAS usan solo `OWNER_RECETARIO`, así que todo lo que entre de aquí
+ * en adelante nace limpio. Las LECTURAS usan `OWNER_RECETARIO_TODOS`, y quitar
+ * el valor heredado dejaría invisible el recetario entero: si alguien lo hace,
+ * la biblioteca de recetas se queda vacía.
+ *
  * `in` con dos valores no cambia los índices que hacen falta: Firestore lo
  * resuelve como la unión de dos consultas de igualdad.
  */

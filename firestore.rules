@@ -218,10 +218,12 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
-    // ── recipes (ownerId = UID | 'indya') ────────────────────────────────────
+    // ── recipes (ownerId = UID del autor, o el centinela del recetario) ──────
     // Athletes may create their own (e.g. "guardar como receta" from Intercambios,
-    // or as a weekly-menu swap candidate); Indya bulk-import stays coach-only in
-    // practice since 'indya' isn't a real auth uid.
+    // or as a weekly-menu swap candidate); el recetario importado en bloque queda
+    // coach-only en la práctica, porque su centinela no es un uid de auth real.
+    // Ese centinela tiene dos valores por historia; ver OWNER_RECETARIO en
+    // src/db/recipes.ts, que explica por qué y advierte de no quitar el heredado.
     match /recipes/{docId} {
       allow read: if request.auth != null;
       allow create: if isCoach()
