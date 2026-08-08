@@ -6,7 +6,17 @@ import { Maquina, MaquinaOverride, MaquinaPropia, Gimnasio, DecisionMaquina, Pro
 import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
 import { compressImage } from '../utils/compressImage';
 import { maquinaId } from '../utils/maquinaId';
-import { SEMILLA_MAQUINAS, CATALOGO_VERSION } from '../data/maquinas';
+import { CATALOGO_VERSION } from '../data/maquinas/version';
+
+// La semilla se carga con import() diferido, no estático: son 28 KB de JSON que
+// solo hacen falta cuando alguien abre el catálogo, y un import normal los
+// metería en el chunk de entrada de la app —los descargaría todo el mundo, coach
+// incluido, en el primer arranque—. Se cachea en el módulo tras la primera vez.
+let semillaCache: Maquina[] | null = null;
+async function cargarSemilla(): Promise<Maquina[]> {
+  if (!semillaCache) semillaCache = (await import('../data/maquinas')).SEMILLA_MAQUINAS;
+  return semillaCache;
+}
 
 // ─── CATÁLOGO DE MÁQUINAS ─────────────────────────────────────────────────────
 //
@@ -56,9 +66,9 @@ function invalidateCatalogo(): void {
 // Semilla + overrides. Un override sin contrapartida en la semilla es una máquina
 // creada a mano por el admin (o promovida desde el gimnasio de un atleta): entra
 // al catálogo por derecho propio siempre que traiga los campos obligatorios.
-function mergeCatalogo(overrides: MaquinaOverride[]): Maquina[] {
+function mergeCatalogo(semilla: Maquina[], overrides: MaquinaOverride[]): Maquina[] {
   const porId = new Map<string, Maquina>();
-  for (const m of SEMILLA_MAQUINAS) porId.set(m.id, m);
+  for (const m of semilla) porId.set(m.id, m);
   for (const ov of overrides) {
     const base = porId.get(ov.id);
     if (base) {
@@ -73,7 +83,8 @@ function mergeCatalogo(overrides: MaquinaOverride[]): Maquina[] {
 
 /** Catálogo que ve el atleta: solo lo publicado y visible, ordenado por categoría. */
 export async function getCatalogoMaquinas(): Promise<Maquina[]> {
-  const todas = mergeCatalogo(await fetchOverrides());
+  const [semilla, overrides] = await Promise.all([cargarSemilla(), fetchOverrides()]);
+  const todas = mergeCatalogo(semilla, overrides);
   return todas
     .filter(m => m.visible && m.publicadoEn)
     .sort((a, b) =>
@@ -84,7 +95,8 @@ export async function getCatalogoMaquinas(): Promise<Maquina[]> {
 
 /** Catálogo completo para el admin: incluye ocultas y pendientes de publicar. */
 export async function getCatalogoMaquinasAdmin(): Promise<Maquina[]> {
-  return mergeCatalogo(await fetchOverrides()).sort((a, b) =>
+  const [semilla, overrides] = await Promise.all([cargarSemilla(), fetchOverrides()]);
+  return mergeCatalogo(semilla, overrides).sort((a, b) =>
     String(a.marca).localeCompare(String(b.marca)) ||
     a.familia.localeCompare(b.familia) ||
     a.nombreMostrado.localeCompare(b.nombreMostrado, 'es')

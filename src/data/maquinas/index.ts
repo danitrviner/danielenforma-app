@@ -16,15 +16,18 @@
 //   3. importa el JSON aquí y añádelo a SEMILLA_MAQUINAS
 //   4. sube CATALOGO_VERSION
 // El núcleo no se toca en ningún paso.
+//
+// OJO al importar de aquí: este módulo arrastra los JSON de todas las marcas.
+// `src/db/machines.ts` lo carga con un import() diferido a propósito, para que
+// los 28 KB del catálogo no caigan en el chunk de entrada de la app y se los
+// descargue todo el mundo —coaches incluidos— en el primer arranque. Si
+// necesitas solo la versión, importa `./version`, que no trae los JSON.
 
 import type { Maquina } from '../../types';
 import hammerStrength from './hammerStrength.json';
 import technogym from './technogym.json';
 
-// Se sube a mano cada vez que cambia el contenido de la semilla. Un atleta que
-// ya completó el catálogo con una versión anterior vuelve a tener máquinas
-// pendientes (solo las nuevas) en vez de quedarse en `completado` para siempre.
-export const CATALOGO_VERSION = '2026-08-07.1';
+export { CATALOGO_VERSION } from './version';
 
 // 41 Hammer Strength (Plate Loaded) + 22 Technogym (Pure Strength).
 // Todas llegan con `publicadoEn: null`: no las ve ningún atleta hasta que un
