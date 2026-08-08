@@ -5,6 +5,29 @@ Claude: o exige una sesión iniciada, o es configuración de Firebase, o es una 
 
 ---
 
+## 0. BLOQUEANTE · Desplegar las reglas de Firestore
+
+**Las reglas nuevas están en el repo pero NO en Firebase.** Detectado el 8 ago 2026 leyendo la
+consola de tu sesión real: `getGimnasio`, `fetchOverrides` y `getBodyMeasurementsForAthlete` fallan
+las tres con `permission-denied` contra producción, mientras el resto de colecciones responde bien.
+
+```bash
+firebase deploy --only firestore:rules,storage
+```
+
+Afecta a tres colecciones y a las dos funciones nuevas enteras:
+
+| Colección | Escrita en | Qué queda roto sin desplegar |
+|---|---|---|
+| `maquinas` | `fcf08cb` (7 ago) | El catálogo no se lee ni se publica |
+| `gimnasios` | `fcf08cb` (7 ago) | El atleta no puede guardar qué máquinas tiene |
+| `bodyMeasurements` | `5ed238b` (8 ago) | Las mediciones corporales no se guardan |
+
+Va antes que publicar el catálogo (punto 2): sin las reglas, «Publicar todas» tampoco puede
+escribir. Y `storage` también, por la regla de `gymPhotos` para las fotos de máquinas propias.
+
+---
+
 ## 1. BLOQUEANTE · Activar el enlace de correo en Firebase
 
 **Sin esto no se puede dar de alta a ningún cliente nuevo.** No es un bug del repo.
@@ -49,9 +72,8 @@ Todo esto está detrás del login. En móvil, 375 px de ancho.
 ### Coach
 - [ ] **Hub del atleta → tarjeta «Equipamiento»**, colapsada por defecto, sin robarle atención a
       los KPIs. Abrirla y ver el desglose por grupo muscular y la lista de «Sin máquina».
-- [ ] **Hub → Análisis** en 375 px: que «Nutrición» y «Correlaciones» se lean **enteras**. Es lo
-      último que queda por confirmar de P1-7 — la causa que describía el hallazgo ya no está en el
-      código, pero no se ha vuelto a medir.
+- [x] ~~**Hub → Análisis** en 375 px (P1-7)~~ — CONFIRMADO el 8 ago: 8 px de separación entre las
+      dos barras, ambas legibles. Medido en el DOM de la pantalla real.
 - [ ] **Perfil → Ajustes → Máquinas**: renombrar una, cambiarle la imagen, ocultarla, y añadir una
       a mano.
 - [ ] **Invitar nuevo atleta** — solo tiene sentido después del punto 1.

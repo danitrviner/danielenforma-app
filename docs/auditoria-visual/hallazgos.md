@@ -466,9 +466,11 @@ Hoy las dos barras viven en un contenedor con `space-y-2` explícito (`ClientHub
 es una fila de flex plana cuyo único elemento absoluto es el subrayado de 2 px en `-bottom-px`: no
 hay nada que pueda comerse 16 px. La causa que describía el hallazgo ya no existe en el código.
 
-No se marca como corregido porque no se ha vuelto a medir en el DOM: el Hub del coach está detrás
-del login y Claude no puede llegar. Queda en el checklist de QA de Dani — ir a Hub → Análisis en
-375 px y comprobar que «Nutrición» y «Correlaciones» se leen enteras.
+**CONFIRMADO CORREGIDO el 8 ago 2026**, medido en el DOM de la pantalla real. El navegador de la
+sesión tenía el login de coach activo, así que se pudo llegar al Hub por fin: en `/clients/…` a
+375 px la barra de zonas ocupa de y=1096 a 1140 y la de sub-pestañas empieza en 1148 — **8 px de
+separación, no 16 de solape**. Verificado también en captura: «Hoy / Plan / Análisis» y
+«Revisiones / Setup» se leen enteras.
 
 ---
 
