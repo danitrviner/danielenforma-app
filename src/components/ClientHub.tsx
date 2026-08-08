@@ -9,6 +9,7 @@ import {
   OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
@@ -486,6 +487,11 @@ export default function ClientHub({
         athleteLogs={athleteLogs}
         bodyweightLogs={bodyweightLogs}
       />
+
+      {/* Equipamiento del gimnasio del cliente — colapsado por defecto: el
+          handoff pide que "no compita con KPIs ni con la revisión". Se
+          consulta al montar el plan, no en cada visita a la ficha. */}
+      <EquipoClienteCard athleteEmail={athlete.email} />
 
       {/* Nav de zonas (nivel 1) */}
       <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 ">

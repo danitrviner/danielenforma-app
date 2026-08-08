@@ -3,6 +3,7 @@ import { SEMILLA_MAQUINAS } from '../../data/maquinas';
 import CatalogoSwipe from './CatalogoSwipe';
 import MiGimnasioPanel from './MiGimnasioPanel';
 import RecordatorioGimnasioCard from './RecordatorioGimnasioCard';
+import EquipoClienteCard from './EquipoClienteCard';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas del catálogo — SOLO DESARROLLO.
@@ -45,6 +46,8 @@ export default function DevHarness() {
       <div className="min-h-screen bg-bg p-4 space-y-4">
         <RecordatorioGimnasioCard key={`r${clave}`} email={EMAIL_PRUEBA} />
         <MiGimnasioPanel key={clave} email={EMAIL_PRUEBA} />
+        {/* Lo que ve el entrenador en el Hub del atleta (F5). */}
+        <EquipoClienteCard key={`e${clave}`} athleteEmail={EMAIL_PRUEBA} />
         <button
           type="button"
           onClick={() => { setListo(false); setClave(k => k + 1); }}
