@@ -1,5 +1,5 @@
 /**
- * Import Recetas recipe library into Firestore using the Admin SDK.
+ * Importa el recetario a Firestore using the Admin SDK.
  *
  * Usage:
  *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/importRecetas.mjs
@@ -31,9 +31,10 @@ if (!SA_PATH) {
 
 const serviceAccount = JSON.parse(readFileSync(resolve(SA_PATH), 'utf8'));
 
-const RECETAS_DIR = resolve(
-  process.env.RECETAS_DIR ?? '/Users/dani/Desktop/App enforma/recetas_recetas',
-);
+// Por defecto, la copia versionada en el repo: son los mismos 12 JSON que la
+// carpeta de origen del escritorio, y así el script no depende de una ruta
+// absoluta de la máquina de nadie. `RECETAS_DIR` sigue permitiendo apuntar a otra.
+const RECETAS_DIR = resolve(process.env.RECETAS_DIR ?? resolve(__dirname, '../public/recetas'));
 const DB_ID     = firebaseConfig.firestoreDatabaseId;
 const BATCH_SIZE = 499;
 
