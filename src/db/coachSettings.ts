@@ -1,6 +1,6 @@
 import { db, doc, getDoc, setDoc } from '../firebase';
 import { CoachInstructions, CoachQuickReplies } from '../types';
-import { forceLocalOnly, setLocalBypassMode } from './core';
+import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
 
 // ─── INSTRUCCIONES FIJAS DEL COACH (para el asistente IA) ───────────────────────
 // Doc único (id determinista 'main'): reglas propias de Dani, con prioridad
@@ -55,6 +55,7 @@ export async function saveAthleteStatusNote(email: string, note: string): Promis
   } catch (err) {
     console.warn('saveAthleteStatusNote Firestore failed, kept local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -67,6 +68,7 @@ export async function saveCoachInstructions(text: string): Promise<void> {
   } catch (err) {
     console.warn('saveCoachInstructions Firestore failed, kept local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -103,5 +105,6 @@ export async function saveQuickReplies(replies: string[]): Promise<void> {
   } catch (err) {
     console.warn('saveQuickReplies Firestore failed, kept local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }

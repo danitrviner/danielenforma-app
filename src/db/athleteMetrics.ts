@@ -1,6 +1,6 @@
 import { db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { BodyweightLog, StepLog } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 
 const LOCAL_BW = 'enforma_bodyweight_v1';
@@ -44,6 +44,7 @@ export async function addBodyweight(data: Omit<BodyweightLog, 'id'>): Promise<Bo
   } catch (err) {
     console.warn('addBodyweight Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const entry: BodyweightLog = { ...data, id: `local_bw_${Date.now()}` };
     saveLocalBw([...getLocalBw(), entry]);
     return entry;
@@ -60,6 +61,7 @@ export async function updateBodyweight(id: string, updates: Partial<Pick<Bodywei
   } catch (err) {
     console.warn('updateBodyweight Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalBw(updated);
   }
 }
@@ -73,6 +75,7 @@ export async function deleteBodyweight(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteBodyweight Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalBw(updated);
   }
 }
@@ -121,6 +124,7 @@ export async function addSteps(data: Omit<StepLog, 'id'>): Promise<StepLog> {
   } catch (err) {
     console.warn('addSteps Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const entry: StepLog = { ...data, id: `local_steps_${Date.now()}` };
     saveLocalSteps([...getLocalSteps(), entry]);
     return entry;
@@ -136,6 +140,7 @@ export async function updateSteps(id: string, updates: Partial<Pick<StepLog, 'st
   } catch (err) {
     console.warn('updateSteps Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalSteps(updated);
   }
 }

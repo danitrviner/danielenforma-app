@@ -1,6 +1,6 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones, CardioWeeklyGoal } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── PERFIL CARDIO (zonas, doc id = athleteId) ─────────────────────────────
 
@@ -48,6 +48,7 @@ export async function saveCardioProfile(profile: AthleteCardioProfile): Promise<
   } catch (err) {
     console.warn('saveCardioProfile Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalProfileMap(map);
   }
 }
@@ -92,6 +93,7 @@ export async function createCardioAssignment(data: Omit<CardioAssignment, 'id'>)
   } catch (err) {
     console.warn('createCardioAssignment Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const a: CardioAssignment = { ...data, id: `local_ca_${Date.now()}` };
     saveLocalAssignments([...getLocalAssignments(), a]);
     return a;
@@ -107,6 +109,7 @@ export async function updateCardioAssignment(id: string, updates: Partial<Cardio
   } catch (err) {
     console.warn('updateCardioAssignment Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalAssignments(updated);
   }
 }
@@ -120,6 +123,7 @@ export async function deleteCardioAssignment(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteCardioAssignment Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalAssignments(filtered);
   }
 }
@@ -164,6 +168,7 @@ export async function createCardioSession(data: Omit<CardioSession, 'id'>): Prom
   } catch (err) {
     console.warn('createCardioSession Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const s: CardioSession = { ...data, id: `local_cs_${Date.now()}` };
     saveLocalSessions([...getLocalSessions(), s]);
     return s;
@@ -182,6 +187,7 @@ export async function updateCardioSession(id: string, updates: Partial<Omit<Card
   } catch (err) {
     console.warn('updateCardioSession Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalSessions(updated);
   }
 }
@@ -238,6 +244,7 @@ export async function createHrTest(data: Omit<HrTest, 'id'>): Promise<HrTest> {
   } catch (err) {
     console.warn('createHrTest Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const t: HrTest = { ...data, id: `local_hrt_${Date.now()}` };
     saveLocalHrTests([...getLocalHrTests(), t]);
     return t;
@@ -253,6 +260,7 @@ export async function updateHrTest(id: string, updates: Partial<HrTest>): Promis
   } catch (err) {
     console.warn('updateHrTest Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalHrTests(updated);
   }
 }
@@ -295,6 +303,7 @@ export async function saveCardioWeeklyGoal(goal: CardioWeeklyGoal): Promise<void
   } catch (err) {
     console.warn('saveCardioWeeklyGoal Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalWeeklyGoals(map);
   }
 }
@@ -339,6 +348,7 @@ export async function createHrvReading(data: Omit<HrvReading, 'id'>): Promise<Hr
   } catch (err) {
     console.warn('createHrvReading Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const r: HrvReading = { ...data, id: `local_hrv_${Date.now()}` };
     saveLocalHrvReadings([...getLocalHrvReadings(), r]);
     return r;

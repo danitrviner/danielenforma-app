@@ -1,6 +1,6 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, deleteDoc, query, where } from '../firebase';
 import { Roadmap, LevelLadder, WeeklyChallenge, ChallengeTemplate } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── ROADMAPS ─────────────────────────────────────────────────────────────────
 
@@ -44,6 +44,7 @@ export async function saveRoadmap(roadmap: Roadmap): Promise<void> {
   } catch (err) {
     console.warn('saveRoadmap Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const list = getLocalRoadmaps().filter(r => r.athleteId !== athleteId);
     saveLocalRoadmaps([...list, roadmap]);
   }
@@ -119,6 +120,7 @@ export async function saveWeeklyChallenge(challenge: WeeklyChallenge): Promise<v
   } catch (err) {
     console.warn('saveWeeklyChallenge Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     upsertLocalChallenge(challenge);
   }
 }
@@ -185,6 +187,7 @@ export async function saveChallengeTemplate(template: ChallengeTemplate): Promis
   } catch (err) {
     console.warn('saveChallengeTemplate Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     upsertLocal();
   }
 }
@@ -202,6 +205,7 @@ export async function deleteChallengeTemplate(templateId: string): Promise<void>
   } catch (err) {
     console.warn('deleteChallengeTemplate Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     removeLocal();
   }
 }

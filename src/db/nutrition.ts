@@ -1,6 +1,6 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ export async function createFoodItem(data: Omit<MealItem, 'id'>): Promise<MealIt
   } catch (err) {
     console.warn('createFoodItem Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const newItem: MealItem = { ...data, id: `local_food_${Date.now()}` };
     saveLocalFoodItems([...getLocalFoodItems(), newItem]);
     return newItem;
@@ -73,6 +74,7 @@ export async function updateFoodItem(id: string, updates: Partial<MealItem>): Pr
   } catch (err) {
     console.warn('updateFoodItem Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalFoodItems(getLocalFoodItems().map(f => (f.id === id ? { ...f, ...updates } : f)));
   }
 }
@@ -89,6 +91,7 @@ export async function deleteFoodItem(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteFoodItem Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalFoodItems(getLocalFoodItems().filter(f => f.id !== id));
   }
 }
@@ -119,6 +122,8 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
     const after = await getDocs(collection(db, 'foodItems'));
     saveLocalFoodItems(after.docs.map(d => ({ id: d.id, ...d.data() } as MealItem)));
   } catch (err) {
+    // Mismo criterio que `seedExercisesIfEmpty`: catálogo del sistema, no dato
+    // del usuario. No relanza.
     console.warn('seedFoodItems Firestore failed, seeding local:', err);
     setLocalBypassMode(true, err);
     if (getLocalFoodItems().length === 0) {
@@ -182,6 +187,7 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
   } catch (err) {
     console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(localKey, JSON.stringify(data));
   }
 }
@@ -233,6 +239,7 @@ export async function createDiet(data: Omit<Diet, 'id'>): Promise<Diet> {
   } catch (err) {
     console.warn('createDiet Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const diet: Diet = { id: `diet_${Date.now()}`, ...data };
     setDietsToLocal([...getDietsFromLocal(), diet]);
     return diet;
@@ -249,6 +256,7 @@ export async function updateDiet(id: string, updates: Partial<Diet>): Promise<vo
   } catch (err) {
     console.warn('updateDiet Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setDietsToLocal(updated);
   }
 }
@@ -262,6 +270,7 @@ export async function deleteDiet(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteDiet Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setDietsToLocal(filtered);
   }
 }
@@ -341,6 +350,7 @@ export async function createWeeklyMenu(data: Omit<WeeklyMenu, 'id'>): Promise<We
   } catch (err) {
     console.warn('createWeeklyMenu Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const menu: WeeklyMenu = { id: `menu_${Date.now()}`, ...data };
     setWeeklyMenusToLocal([...getWeeklyMenusFromLocal(), menu]);
     return menu;
@@ -357,6 +367,7 @@ export async function updateWeeklyMenu(id: string, updates: Partial<WeeklyMenu>)
   } catch (err) {
     console.warn('updateWeeklyMenu Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setWeeklyMenusToLocal(updated);
   }
 }
@@ -370,6 +381,7 @@ export async function deleteWeeklyMenu(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteWeeklyMenu Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setWeeklyMenusToLocal(filtered);
   }
 }
@@ -452,6 +464,7 @@ export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>)
   } catch (err) {
     console.warn('saveDietCompletionLog Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
@@ -517,6 +530,7 @@ export async function saveMenuCompletionLog(data: Omit<MenuCompletionLog, 'id'>)
   } catch (err) {
     console.warn('saveMenuCompletionLog Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
@@ -564,6 +578,7 @@ export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<
   } catch (err) {
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(localKey, JSON.stringify(config));
   }
 }
@@ -609,6 +624,7 @@ export async function saveNutritionProgram(program: NutritionProgram): Promise<v
   } catch (err) {
     console.warn('saveNutritionProgram Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const list = getLocalNutProgs().filter(p => p.athleteId !== athleteId);
     saveLocalNutProgs([...list, program]);
   }
@@ -645,6 +661,7 @@ export async function deleteNutritionProgram(athleteEmail: string): Promise<void
   } catch (err) {
     console.warn('deleteNutritionProgram Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalNutProgs(getLocalNutProgs().filter(p => p.athleteId !== athleteEmail));
   }
 }

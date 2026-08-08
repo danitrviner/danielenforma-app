@@ -29,13 +29,13 @@ import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 import { compressImage } from './utils/compressImage';
 import { markInviteJoined } from './db/invites';
-import { forceLocalOnly, stripUndefined, authReady, withAuthRetry, setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos } from './db/core';
+import { forceLocalOnly, stripUndefined, authReady, withAuthRetry, setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos } from './db/core';
 
 // stripUndefined/authReady/withAuthRetry/forceLocalOnly/setLocalBypassMode/
 // isLocalBypassActive movidos a src/db/core.ts (2026-07-18) — es la ÚNICA
 // fuente de esa bandera ahora (import de arriba); reexportados aquí para
 // que ningún import existente (`from '../dbService'`) tenga que cambiar.
-export { setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos };
+export { setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos };
 
 // ─── USER PROFILES + CHECKINS ─────────────────────────────────────────────────
 // Movido a src/db/profiles.ts (2026-07-18) — reexportado aquí para que ningún

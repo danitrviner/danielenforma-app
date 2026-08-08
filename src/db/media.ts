@@ -1,6 +1,6 @@
 import { db, storage, storageRef, uploadBytes, getDownloadURL, deleteObject, collection, doc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { ProgressPhoto, PhotoView, PhotoAssignment } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { compressImage } from '../utils/compressImage';
 
 // ─── PROGRESS PHOTOS ──────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ export async function assignPhotoCheckIn(data: Omit<PhotoAssignment, 'id'>): Pro
   } catch (err) {
     console.warn('assignPhotoCheckIn Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
     localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
     return a;
@@ -100,6 +101,7 @@ export async function deactivatePhotoAssignment(id: string): Promise<void> {
   } catch (err) {
     console.warn('deactivatePhotoAssignment Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
   }
 }

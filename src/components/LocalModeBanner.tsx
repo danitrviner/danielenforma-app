@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { isLocalBypassActive, setLocalBypassMode, hayFalloDePermisos } from '../dbService';
+import { isLocalBypassActive, setLocalBypassMode, hayFalloDePermisos, descartarAvisoDePermisos } from '../dbService';
 import { Icon } from './ui';
 
 // Aviso persistente cuando lo que el usuario guarda NO está llegando al
@@ -37,6 +37,15 @@ export default function LocalModeBanner() {
     window.location.reload();
   };
 
+  // El aviso de permisos no tiene "Reintentar" (no serviría), así que sin esto
+  // no habría forma de quitarlo: la bandera la pone el primer permission-denied
+  // de la sesión y no se limpia sola. Descartar no arregla nada — si el fallo
+  // sigue vivo, la siguiente operación denegada lo devuelve a los 3 s.
+  const descartar = () => {
+    descartarAvisoDePermisos();
+    setEstado('ok');
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-e1">
       <Icon name={estado === 'permisos' ? 'lock' : 'cloud_off'} size="m" />
@@ -48,12 +57,20 @@ export default function LocalModeBanner() {
       {/* Reintentar solo tiene sentido con un fallo de red. Ante uno de permisos
           recargar da exactamente el mismo resultado, y ofrecerlo solo consigue
           que la persona lo pulse cinco veces antes de rendirse. */}
-      {estado === 'red' && (
+      {estado === 'red' ? (
         <button
           onClick={retry}
           className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-3 py-1 rounded-control transition-colors"
         >
           Reintentar
+        </button>
+      ) : (
+        <button
+          onClick={descartar}
+          aria-label="Descartar el aviso"
+          className="shrink-0 rounded-control p-1 transition-colors hover:bg-white/20"
+        >
+          <Icon name="close" size="s" />
         </button>
       )}
     </div>

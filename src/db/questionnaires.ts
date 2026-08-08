@@ -1,6 +1,6 @@
 import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── QUESTIONNAIRES ──────────────────────────────────────────────────────────
 // Collection: questionnaires  (owned by coach — ownerId == coachUid)
@@ -35,6 +35,7 @@ export async function createQuestionnaire(data: Omit<Questionnaire, 'id'>): Prom
   } catch (err) {
     console.warn('createQuestionnaire Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const q: Questionnaire = { ...data, id: `local_q_${Date.now()}` };
     localStorage.setItem(LOCAL_QUESTIONNAIRES, JSON.stringify([...getLocalQuestionnaires(), q]));
     return q;
@@ -51,6 +52,7 @@ export async function updateQuestionnaire(id: string, updates: Partial<Omit<Ques
   } catch (err) {
     console.warn('updateQuestionnaire Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_QUESTIONNAIRES, JSON.stringify(getLocalQuestionnaires().map(q => q.id === id ? { ...q, ...updates } : q)));
   }
 }
@@ -65,6 +67,7 @@ export async function deleteQuestionnaire(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteQuestionnaire Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_QUESTIONNAIRES, JSON.stringify(getLocalQuestionnaires().filter(q => q.id !== id)));
   }
 }
@@ -93,6 +96,7 @@ export async function assignQuestionnaire(data: Omit<QuestionnaireAssignment, 'i
   } catch (err) {
     console.warn('assignQuestionnaire Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const a: QuestionnaireAssignment = { ...safeData, id: `local_qa_${Date.now()}` };
     localStorage.setItem(LOCAL_Q_ASSIGNMENTS, JSON.stringify([...getLocalQAssignments(), a]));
     return a;
@@ -121,6 +125,7 @@ export async function deactivateAssignment(id: string): Promise<void> {
   } catch (err) {
     console.warn('deactivateAssignment Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_Q_ASSIGNMENTS, JSON.stringify(getLocalQAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
   }
 }
@@ -146,6 +151,7 @@ export async function submitResponse(data: Omit<QuestionnaireResponse, 'id'>): P
   } catch (err) {
     console.warn('submitResponse Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const r: QuestionnaireResponse = { ...data, id: `local_qr_${Date.now()}` };
     localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify([...getLocalQResponses(), r]));
     return r;
@@ -215,6 +221,7 @@ export async function updateQuestionnaireResponse(
   } catch (err) {
     console.warn('updateQuestionnaireResponse failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
   }
 }
@@ -231,6 +238,7 @@ export async function deleteQuestionnaireResponse(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteQuestionnaireResponse failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify(remove(getLocalQResponses())));
   }
 }

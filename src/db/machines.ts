@@ -3,7 +3,7 @@ import {
   collection, doc, getDoc, getDocs, setDoc,
 } from '../firebase';
 import { Maquina, MaquinaOverride, MaquinaPropia, Gimnasio, DecisionMaquina, ProgresoCatalogo } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { compressImage } from '../utils/compressImage';
 import { maquinaId } from '../utils/maquinaId';
 import { CATALOGO_VERSION } from '../data/maquinas/version';
@@ -121,6 +121,7 @@ export async function upsertOverrideMaquina(id: string, cambios: Partial<Maquina
   } catch (err) {
     console.warn('upsertOverrideMaquina Firestore failed, saved local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -263,6 +264,7 @@ export async function guardarGimnasio(email: string, cambios: Partial<Omit<Gimna
   } catch (err) {
     console.warn('guardarGimnasio Firestore failed, saved local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 

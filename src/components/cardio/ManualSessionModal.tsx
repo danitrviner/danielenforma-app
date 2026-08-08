@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardioSession, CardioSessionType } from '../../types';
 import { createCardioSession } from '../../dbService';
+import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import { Dialog, Button } from '../ui';
 
 // Alta manual (§6 del análisis): tipo, duración, FC media opcional, notas.
@@ -21,24 +22,36 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
   const [avgHR, setAvgHR] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
+  // `createCardioSession` relanza si Firestore deniega la escritura (ver
+  // src/db/escriturasHonestas.test.ts: una sesión que no se guarda no puede
+  // darse por guardada). Sin el try/finally, ese caso dejaba el botón en
+  // "Guardando..." para siempre y sin decir por qué.
   const handleSave = async () => {
     const minutes = Number(durationMin);
     if (!minutes || minutes <= 0) return;
     setSaving(true);
-    const session = await createCardioSession({
-      athleteId, type, date,
-      startedAt: `${date}T12:00:00.000Z`,
-      durationSec: Math.round(minutes * 60),
-      avgHR: avgHR ? Number(avgHR) : undefined,
-      timeInZoneSec: { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 },
-      samples: [],
-      sampleIntervalSec: 4,
-      manual: true,
-      notes: notes || undefined,
-    });
-    onSaved(session);
-    setSaving(false);
+    setError('');
+    try {
+      const session = await createCardioSession({
+        athleteId, type, date,
+        startedAt: `${date}T12:00:00.000Z`,
+        durationSec: Math.round(minutes * 60),
+        avgHR: avgHR ? Number(avgHR) : undefined,
+        timeInZoneSec: { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 },
+        samples: [],
+        sampleIntervalSec: 4,
+        manual: true,
+        notes: notes || undefined,
+      });
+      onSaved(session);
+    } catch (err) {
+      console.error('createCardioSession failed:', err);
+      setError(mensajeDeErrorFirestore(err, 'guardar la sesión'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -58,6 +71,8 @@ export default function ManualSessionModal({ athleteId, onClose, onSaved }: Prop
     >
       <div className="space-y-3">
         <p className="text-caption font-sans text-ink-2">Sin banda de por medio — no suma XP ni puntos.</p>
+
+        {error && <p className="font-sans text-caption text-danger">{error}</p>}
 
         <div className="flex gap-2">
           <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}

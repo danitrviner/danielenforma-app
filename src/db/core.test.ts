@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setLocalBypassMode, isLocalBypassActive, esFalloDePermisos, hayFalloDePermisos } from './core';
+import { setLocalBypassMode, isLocalBypassActive, esFalloDePermisos, hayFalloDePermisos, descartarAvisoDePermisos } from './core';
 import { mensajeDeErrorFirestore, reintentarNoSirve } from '../utils/erroresFirestore';
 
 /* Cubre P0-2 y P1-6 de docs/auditoria-visual/hallazgos.md.
@@ -69,6 +69,30 @@ describe('hayFalloDePermisos', () => {
     setLocalBypassMode(true, errorDe('permission-denied'));
     setLocalBypassMode(false);
     expect(hayFalloDePermisos()).toBe(false);
+  });
+});
+
+describe('descartarAvisoDePermisos', () => {
+  beforeEach(() => setLocalBypassMode(false));
+
+  it('quita el aviso — sin esto se queda fijo toda la sesión, porque no ofrece "Reintentar"', () => {
+    setLocalBypassMode(true, errorDe('permission-denied'));
+    expect(hayFalloDePermisos()).toBe(true);
+    descartarAvisoDePermisos();
+    expect(hayFalloDePermisos()).toBe(false);
+  });
+
+  it('el aviso vuelve si el problema sigue vivo', () => {
+    setLocalBypassMode(true, errorDe('permission-denied'));
+    descartarAvisoDePermisos();
+    setLocalBypassMode(true, errorDe('permission-denied')); // la siguiente operación denegada
+    expect(hayFalloDePermisos()).toBe(true);
+  });
+
+  it('no toca el modo local por red — ese aviso sí tiene "Reintentar" y no se descarta', () => {
+    setLocalBypassMode(true, errorDe('unavailable'));
+    descartarAvisoDePermisos();
+    expect(isLocalBypassActive()).toBe(true);
   });
 });
 

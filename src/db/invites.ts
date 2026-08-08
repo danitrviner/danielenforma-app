@@ -38,6 +38,12 @@ export async function inviteClient(email: string): Promise<Invite> {
     saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
     return invite;
   } catch (err) {
+    // A diferencia del resto de escrituras, esta NO relanza ante un fallo de
+    // permisos: `sendSignInLinkToEmail` ya se ejecutó ARRIBA, fuera del try, así
+    // que el correo salió de verdad y el atleta puede entrar con él. Decirle al
+    // coach «no se pudo enviar la invitación» sería una mentira en la dirección
+    // contraria. Lo que se pierde es el registro en `invites` (la fila de
+    // "pendientes"), no la invitación. El aviso global de permisos sí salta.
     console.warn('inviteClient Firestore write failed (email was still sent):', err);
     setLocalBypassMode(true, err);
     saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);

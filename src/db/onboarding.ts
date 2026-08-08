@@ -1,6 +1,6 @@
 import { db, doc, getDoc, setDoc, updateDoc } from '../firebase';
 import { OnboardingData, OnboardingTemplate } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
@@ -48,6 +48,7 @@ export async function updateOnboardingFoods(
   } catch (err) {
     console.warn('updateOnboardingFoods Firestore failed:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -118,6 +119,7 @@ export async function saveOnboardingTemplate(coachEmail: string, tpl: Onboarding
   } catch (err) {
     console.warn('saveOnboardingTemplate Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 

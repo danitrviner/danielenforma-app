@@ -1,7 +1,7 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter } from '../firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { Recipe, RecipeFavorites } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 
@@ -109,6 +109,7 @@ export async function createRecipe(data: Omit<Recipe, 'id'>): Promise<Recipe> {
   } catch (err) {
     console.warn('createRecipe Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const recipe: Recipe = { id: `recipe_${Date.now()}`, ...data };
     setLocalRecipes([...getLocalRecipes(), recipe]);
     return recipe;
@@ -125,6 +126,7 @@ export async function updateRecipe(id: string, updates: Partial<Omit<Recipe, 'id
   } catch (err) {
     console.warn('updateRecipe Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setLocalRecipes(updated);
   }
 }
@@ -138,6 +140,7 @@ export async function deleteRecipe(id: string): Promise<void> {
   } catch (err) {
     console.warn('deleteRecipe Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     setLocalRecipes(filtered);
   }
 }
@@ -184,6 +187,7 @@ export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> 
   } catch (err) {
     console.warn('saveRecipeFavorites Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     localStorage.setItem(localKey, JSON.stringify(favs));
   }
 }

@@ -1,6 +1,6 @@
 import { db, collection, doc, getDocs, addDoc, updateDoc, query, where } from '../firebase';
 import { TaskItem } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── TASKS (dashboard "Tareas pendientes") ─────────────────────────────────────
 
@@ -47,6 +47,7 @@ export async function createTask(data: Omit<TaskItem, 'id'>): Promise<TaskItem> 
   } catch (err) {
     console.warn('createTask Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const task: TaskItem = { ...data, id: `local_task_${Date.now()}` };
     saveLocalTasks([...getLocalTasks(), task]);
     return task;
@@ -62,6 +63,7 @@ export async function updateTask(id: string, updates: Partial<TaskItem>): Promis
   } catch (err) {
     console.warn('updateTask Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalTasks(updated);
   }
 }

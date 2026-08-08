@@ -113,3 +113,20 @@ export function isLocalBypassActive(): boolean {
 export function hayFalloDePermisos(): boolean {
   return !forceLocalOnly && esFalloDePermisos(ultimoErrorFirestore);
 }
+
+/**
+ * Cierra el aviso de permisos.
+ *
+ * Hace falta porque `ultimoErrorFirestore` es una bandera de sesión que no se
+ * limpia sola: la pone el PRIMER `permission-denied` que aparezca en cualquier
+ * colección, y sin esto el aviso rojo se queda fijo el resto de la sesión
+ * aunque todo lo demás funcione — sin botón para quitarlo, porque para un fallo
+ * de permisos «Reintentar» no se ofrece a propósito.
+ *
+ * No arregla nada ni promete que se haya arreglado: solo reconoce que la
+ * persona ya lo ha leído. Si el problema sigue vivo, la siguiente operación que
+ * falle vuelve a ponerlo y el aviso reaparece — que es justo lo que debe pasar.
+ */
+export function descartarAvisoDePermisos(): void {
+  if (esFalloDePermisos(ultimoErrorFirestore)) ultimoErrorFirestore = null;
+}
