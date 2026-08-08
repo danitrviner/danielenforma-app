@@ -438,6 +438,16 @@ alineado a la izquierda, «Nutrición» y «Correlaciones» quedan con la mitad 
 ilegible — el mismo síntoma que P0-3, en miniatura, y probablemente la misma familia de causa
 (dos filas de flex apiladas sin el espaciado que tenían pensado para un contenido más corto).
 
+**Probablemente resuelto por el re-skin, PENDIENTE de confirmar (8 ago 2026).** El solape se midió
+el 4 de agosto, antes de que `192f342` sustituyera las barras artesanales por la primitiva `Tabs`.
+Hoy las dos barras viven en un contenedor con `space-y-2` explícito (`ClientHub.tsx:497`) y `Tabs`
+es una fila de flex plana cuyo único elemento absoluto es el subrayado de 2 px en `-bottom-px`: no
+hay nada que pueda comerse 16 px. La causa que describía el hallazgo ya no existe en el código.
+
+No se marca como corregido porque no se ha vuelto a medir en el DOM: el Hub del coach está detrás
+del login y Claude no puede llegar. Queda en el checklist de QA de Dani — ir a Hub → Análisis en
+375 px y comprobar que «Nutrición» y «Correlaciones» se leen enteras.
+
 ---
 
 ## P1-1 · Espacio vertical muerto en el asistente
