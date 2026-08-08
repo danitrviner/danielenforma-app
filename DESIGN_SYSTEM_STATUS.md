@@ -463,7 +463,7 @@ Aprobadas caso por caso. **Prima la usabilidad sobre la uniformidad del sistema.
 
 | Excepción | Por qué | Revisar en |
 |---|---|---|
-| **Barra inferior a 10 px**, por debajo del suelo de 11 | A 11 px, 5 de los 7 destinos se truncan hasta quedar ilegibles («ACA…», «CAR…»). La solución no es tipográfica sino de arquitectura de navegación. | Incidencia abierta, fase por decidir |
+| ~~**Barra inferior a 10 px**, por debajo del suelo de 11~~ | ~~A 11 px, 5 de los 7 destinos se truncan hasta quedar ilegibles («ACA…», «CAR…»)~~ | ✅ **Retirada.** Era consecuencia de tener 7 destinos, no del componente: con los 4 del coach (Biblioteca pliega los catálogos) y los 5 del atleta, `text-caption` no trunca. Ver R10 |
 | **Cardio en directo a 60 y 72 px**, por encima de `display` (32) | Pulsación, cuentas atrás y RPE se leen a distancia de brazo durante el esfuerzo. Reducirlas a 32 px degradaría la legibilidad justo donde el contexto es más exigente. | Propuesta de extensión del DS pendiente |
 
 ## Reglas que la migración ha dejado sentadas
@@ -494,7 +494,7 @@ Valen para todo el código nuevo, no solo para las fases que quedan.
 | R6 | **Capacitor empaqueta el mismo build.** Cualquier regresión llega también a iOS y Android, donde no hay «recargar». No sincronizar a mitad de sprint. | Todas | Vigente |
 | R7 | **Fatiga de revisión.** 16 fases con un solo revisor: el riesgo real no es técnico, es que a partir del PR 20 se apruebe sin mirar. | Todas | Vigente |
 | ~~R8~~ | ~~238 campos de formulario por debajo de 16 px~~ | F4 · F11 | ✅ **Cerrado.** Eran 227 medidos (más los ~40 del CRM que llegaban por variable y no se contaban). A 0, con métrica propia en el inventario para que no vuelvan |
-| R10 | **La barra inferior tiene 7 destinos donde el DS fija 5.** Es lo que impide cumplir el suelo de 11 px sin truncar. Incidencia abierta: la solución pasa por reorganizar destinos, reducir pestañas visibles, iconografía más eficiente o navegación adaptativa. | Por decidir | **Abierto — incidencia** |
+| ~~R10~~ | ~~La barra inferior tiene 7 destinos donde el DS fija 5~~ | Navegación del coach | ✅ **Cerrado por reorganización de destinos.** Los cuatro catálogos (Ejercicios, Nutrición, Academia, Cardio) se pliegan en un único destino «Biblioteca» que los monta como pestañas (`CoachLibraryScreen`). El coach pasa de 7 a 4 destinos en móvil —Inicio · Revisiones · CRM · Biblioteca— y las etiquetas vuelven a `text-caption` (11 px): retirada la excepción de los 10 px de `App.tsx`. En PC no se pliega nada: la barra lateral sigue listando los siete, agrupados bajo «Día a día» y «Biblioteca» |
 | R9 | **El estado caliente de HMR miente.** Una verificación de layout sobre CSS recargado en caliente dio un falso negativo: las clases `md:` parecían no aplicarse. Toda verificación de layout exige recarga completa. | Método | Vigente |
 
 ## Deuda técnica del Design System

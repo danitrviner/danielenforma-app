@@ -43,6 +43,7 @@ const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
 const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
 const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
+const CoachLibraryScreen   = lazy(() => import('./components/CoachLibraryScreen'));
 const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
 const CatalogoSwipe        = lazy(() => import('./features/gimnasio/CatalogoSwipe'));
 
@@ -69,7 +70,10 @@ function ScreenFallback() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'profile';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile';
+
+type NavItem = { id: NavTab; label: string; shortLabel?: string; icon: string };
+type NavGroup = { title?: string; items: NavItem[] };
 
 // Fase 3 (F3.4): la barra pasa a los cinco destinos del handoff — Hoy ·
 // Rutinas · Academia · Nutrición · Perfil. Cardio se queda sin pestaña
@@ -80,7 +84,7 @@ export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' |
 // expandibles (CheckInScreen/AthleteRoadmapScreen embebidos, no un salto de
 // pantalla). Sus rutas siguen vivas (ATHLETE_PATH_SEGMENTS) por si algo
 // externo enlaza directo a /checkin o /roadmap.
-const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: string }[] = [
+const ATHLETE_TABS: NavItem[] = [
   { id: 'home',      label: 'Hoy',      shortLabel: 'Hoy',      icon: 'bolt' },
   { id: 'training',  label: 'Rutinas',  shortLabel: 'Rutinas',  icon: 'fitness_center' },
   { id: 'academy',   label: 'Academia', shortLabel: 'Academia', icon: 'school' },
@@ -88,26 +92,70 @@ const ATHLETE_TABS: { id: NavTab; label: string; shortLabel: string; icon: strin
   { id: 'profile',   label: 'Perfil',   shortLabel: 'Perfil',   icon: 'person' },
 ];
 
-const COACH_TABS: { id: NavTab; label: string; shortLabel?: string; icon: string }[] = [
-  // F3.13a: "Home Coach sustituye la entrada del coach" (decisión de Dani,
-  // 2026-08-07) — la ruta sigue siendo /clients (no romper enlaces
-  // existentes ni el :athleteId de ClientHub), solo cambian la etiqueta y
-  // el icono; el contenido en sí lo decide ClientsScreen (HomeCoachScreen
-  // prepended, ver ese commit).
+// F3.13a: "Home Coach sustituye la entrada del coach" (decisión de Dani,
+// 2026-08-07) — la ruta sigue siendo /clients (no romper enlaces existentes
+// ni el :athleteId de ClientHub), solo cambian la etiqueta y el icono; el
+// contenido en sí lo decide ClientsScreen (HomeCoachScreen prepended).
+const COACH_DIA_A_DIA: NavItem[] = [
+  // Sin `shortLabel`: medido a 375 px, "REVISIONES" ocupa 68 px de los 86 que
+  // toca por destino con cuatro. Ya no hace falta abreviar a "Revisar".
   { id: 'clients',   label: 'Inicio',     icon: 'bolt'            },
+  { id: 'reviews',   label: 'Revisiones', icon: 'pending_actions' },
   { id: 'crm',       label: 'CRM',        icon: 'contacts'        },
-  { id: 'reviews',   label: 'Revisiones', shortLabel: 'Revisar',   icon: 'pending_actions' },
-  { id: 'training',  label: 'Ejercicios', shortLabel: 'Ejercs.',   icon: 'fitness_center'  },
-  { id: 'nutrition', label: 'Nutrición',  shortLabel: 'Nutri.',    icon: 'restaurant'      },
-  { id: 'academy',   label: 'Academia',   shortLabel: 'Academia',  icon: 'school'          },
-  { id: 'cardio',    label: 'Cardio',     shortLabel: 'Cardio',    icon: 'favorite'        },
 ];
+
+// Los cuatro catálogos. En PC siguen siendo cuatro entradas de la barra
+// lateral (hay sitio de sobra y ahorran un clic); en móvil se pliegan en un
+// único destino "Biblioteca" que los monta como pestañas. Ver
+// CoachLibraryScreen para el porqué del corte.
+const COACH_BIBLIOTECA: NavItem[] = [
+  // Solo salen en la barra lateral de PC, que usa `label`: sin `shortLabel`.
+  { id: 'training',  label: 'Ejercicios', icon: 'fitness_center'  },
+  { id: 'nutrition', label: 'Nutrición',  icon: 'restaurant'      },
+  { id: 'academy',   label: 'Academia',   icon: 'school'          },
+  { id: 'cardio',    label: 'Cardio',     icon: 'favorite'        },
+];
+
+// Barra lateral de PC: agrupada con encabezados, nadie pierde un destino.
+const COACH_NAV_GROUPS: NavGroup[] = [
+  { title: 'Día a día',  items: COACH_DIA_A_DIA  },
+  { title: 'Biblioteca', items: COACH_BIBLIOTECA },
+];
+const ATHLETE_NAV_GROUPS: NavGroup[] = [{ items: ATHLETE_TABS }];
+
+// Barra inferior de móvil: cuatro destinos para el coach. Con los siete de
+// antes las etiquetas no cabían a los 11 px del Design System y había que
+// bajarlas a 10 (la excepción R10 de DESIGN_SYSTEM_STATUS.md); con cuatro
+// vuelven al suelo del sistema. Perfil no está porque ya vive en el avatar
+// de la cabecera.
+const COACH_TABS_MOBILE: NavItem[] = [
+  ...COACH_DIA_A_DIA,
+  { id: 'library', label: 'Biblioteca', icon: 'folder_open' },
+];
+
+// De qué destino de la barra lateral se considera activa cada sección de
+// /library, para que en PC se ilumine "Nutrición" y no un genérico.
+const LIBRARY_SECTION_TAB: Record<string, NavTab> = {
+  ejercicios: 'training',
+  nutricion:  'nutrition',
+  academia:   'academy',
+  cardio:     'cardio',
+};
+const TAB_LIBRARY_SECTION: Record<string, string> = {
+  training:  'ejercicios',
+  nutrition: 'nutricion',
+  academy:   'academia',
+  cardio:    'cardio',
+};
 
 // Segmentos de URL válidos por rol — cada pantalla tiene ahora su propia ruta
 // (antes solo /clients/* estaba enrutado; el resto vivía en un estado
 // `activeTab` que un refresh o el botón atrás de móvil no podían recuperar).
 const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'roadmap', 'academy', 'cardio', 'profile'];
-const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
+// 'training' | 'nutrition' | 'academy' | 'cardio' siguen aquí aunque ya no
+// sean destinos propios del coach: sus rutas viven (redirigen a /library/…)
+// para no romper enlaces antiguos ni las notificaciones que navegan ahí.
+const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'library', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
 
 export default function App() {
   return (
@@ -403,12 +451,27 @@ function AppContent() {
     );
   }
 
-  const mainTabs = isCoach ? COACH_TABS : ATHLETE_TABS;
+  const mobileTabs = isCoach ? COACH_TABS_MOBILE : ATHLETE_TABS;
+  const navGroups = isCoach ? COACH_NAV_GROUPS : ATHLETE_NAV_GROUPS;
   const pendingCount = getPendingReviews(checkins).length;
 
   // Pestaña activa para resaltar la nav — el primer segmento de la URL, ya
   // no un estado aparte que podía desincronizarse de dónde estaba el usuario.
   const pathTab = location.pathname.split('/')[1] as NavTab;
+
+  // En /library/<sección> el primer segmento es siempre 'library', así que la
+  // barra lateral (que sigue listando los cuatro catálogos por separado)
+  // necesita saber a cuál de ellos corresponde. La barra de móvil, que solo
+  // tiene el destino 'library', se ilumina con el segmento tal cual.
+  const librarySection = pathTab === 'library' ? location.pathname.split('/')[2] : undefined;
+  const esActiva = (id: NavTab) =>
+    pathTab === id || (librarySection != null && LIBRARY_SECTION_TAB[librarySection] === id);
+
+  // Los cuatro catálogos ya no tienen ruta propia para el coach: se navega
+  // directo a su sección de /library para no pasar por el redirect (que sigue
+  // ahí, pero para enlaces antiguos, no para un clic de la propia barra).
+  const goToNav = (id: NavTab) =>
+    isCoach && TAB_LIBRARY_SECTION[id] ? navigate(`/library/${TAB_LIBRARY_SECTION[id]}`) : goToTab(id);
 
   // Cliente activo para el asistente IA: el :athleteId de /clients/* es el email
   // URL-encodeado (ver ClientsScreen), así el chat sabe a quién se refiere "este cliente".
@@ -474,23 +537,40 @@ function AppContent() {
       </header>
 
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-[var(--sidebar-w)] bg-bg h-screen fixed left-0 top-[var(--header-h)] border-r border-hairline p-6 justify-between select-none">
-        <div className="flex flex-col gap-3">
-          {mainTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => goToTab(tab.id)}
-              className={`flex items-center gap-4 p-4 rounded-control transition-all text-left group ${pathTab === tab.id ? 'bg-accent text-black font-bold' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
-            >
-              <Icon name={tab.icon} size="l" filled={pathTab === tab.id} className="group-hover:scale-110 transition-transform" />
-              <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
-              {tab.id === 'reviews' && pendingCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
+      {/* En PC no se pliega nada: los siete destinos del coach siguen a un
+          clic, solo se agrupan bajo encabezados (Día a día / Biblioteca) para
+          que se lea de un vistazo qué es trabajo diario y qué es catálogo. El
+          atleta usa un único grupo sin título, así el render es el mismo. */}
+      <nav className="hidden md:flex flex-col w-[var(--sidebar-w)] bg-bg h-screen fixed left-0 top-[var(--header-h)] border-r border-hairline p-6 justify-between select-none overflow-y-auto">
+        <div className="flex flex-col gap-6">
+          {navGroups.map((group, gi) => (
+            <div key={group.title ?? gi} className="flex flex-col gap-1">
+              {group.title && (
+                <h2 className="px-4 pb-2 font-sans text-caption font-bold uppercase tracking-widest text-ink-2/60">
+                  {group.title}
+                </h2>
               )}
-              {tab.id === 'home' && !isCoach && gimnasioPendiente && (
-                <span className="w-1.5 h-1.5 rounded-full bg-danger" aria-label="Catálogo de máquinas a medias"></span>
-              )}
-            </button>
+              {group.items.map((tab) => {
+                const activa = esActiva(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => goToNav(tab.id)}
+                    aria-current={activa ? 'page' : undefined}
+                    className={`flex items-center gap-4 p-3 rounded-control transition-all text-left group ${activa ? 'bg-accent text-black font-bold' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
+                  >
+                    <Icon name={tab.icon} size="l" filled={activa} className="group-hover:scale-110 transition-transform" />
+                    <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
+                    {tab.id === 'reviews' && pendingCount > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
+                    )}
+                    {tab.id === 'home' && !isCoach && gimnasioPendiente && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-danger" aria-label="Catálogo de máquinas a medias"></span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           ))}
         </div>
         {isCoach && (
@@ -542,10 +622,25 @@ function AppContent() {
                 {/* El CRM monta sus propias rutas anidadas (ver CrmShell) */}
                 <Route path="/crm/*" element={<CrmShell coachEmail={profile.email} />} />
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
-                <Route path="/training" element={<TrainingCoachScreen coachId={profile.userId} />} />
-                <Route path="/nutrition" element={<NutritionCoachScreen coachId={profile.userId} />} />
-                <Route path="/academy" element={<AcademyCoachScreen coachId={profile.userId} coachEmail={profile.email} />} />
-                <Route path="/cardio" element={<CardioCoachScreen coachEmail={profile.email} />} />
+
+                {/* Biblioteca: los cuatro catálogos como rutas hijas, con la
+                    sección en la URL para que un refresco la recupere. */}
+                <Route path="/library" element={<CoachLibraryScreen />}>
+                  <Route index element={<Navigate to="ejercicios" replace />} />
+                  <Route path="ejercicios" element={<TrainingCoachScreen coachId={profile.userId} />} />
+                  <Route path="nutricion" element={<NutritionCoachScreen coachId={profile.userId} />} />
+                  <Route path="academia" element={<AcademyCoachScreen coachId={profile.userId} coachEmail={profile.email} />} />
+                  <Route path="cardio" element={<CardioCoachScreen coachEmail={profile.email} />} />
+                  <Route path="*" element={<Navigate to="/library/ejercicios" replace />} />
+                </Route>
+
+                {/* Rutas antiguas de los catálogos. Se quedan vivas —las
+                    notificaciones y los enlaces guardados siguen apuntando
+                    aquí— pero ahora solo redirigen a su pestaña. */}
+                <Route path="/training" element={<Navigate to="/library/ejercicios" replace />} />
+                <Route path="/nutrition" element={<Navigate to="/library/nutricion" replace />} />
+                <Route path="/academy" element={<Navigate to="/library/academia" replace />} />
+                <Route path="/cardio" element={<Navigate to="/library/cardio" replace />} />
               </>
             );
           })()}
@@ -579,22 +674,23 @@ function AppContent() {
           "fundido hacia arriba" del contenido lo hace el wrapper con key
           por pestaña más abajo, en <main>. Sin deslizamiento lateral entre
           pestañas: es un cambio de ruta, no un carrusel.
-          Para el atleta son los 5 destinos del handoff; el coach conserva
-          sus 7 (R10 sigue abierto, se resuelve en F3.13) — la excepción de
-          10 px sigue viva mientras tanto. */}
+          Para el atleta son los 5 destinos del handoff; el coach baja de 7 a
+          4 (Inicio · Revisiones · CRM · Biblioteca), que es lo que cierra
+          R10: las etiquetas vuelven a los 11 px del Design System y se retira
+          la excepción de los 10 px. */}
       <nav
         ref={navTabsRef}
         className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
       >
-        {mainTabs.map((tab) => {
-          const activa = pathTab === tab.id;
+        {mobileTabs.map((tab) => {
+          const activa = esActiva(tab.id);
           const insignia = tab.id === 'reviews' ? Math.min(pendingCount, 99) : 0;
           return (
             <button
               key={tab.id}
               ref={el => { if (['training', 'nutrition', 'academy'].includes(tab.id)) registerTourTarget(`nav-tab-${tab.id}`, el); }}
-              onClick={() => goToTab(tab.id)}
+              onClick={() => goToNav(tab.id)}
               className="relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1"
             >
               <span
@@ -616,12 +712,11 @@ function AppContent() {
                   </span>
                 )}
               </span>
-              {/* EXCEPCIÓN TEMPORAL AL DESIGN SYSTEM — ver DESIGN_SYSTEM_STATUS.md
-                  El suelo del DS son 11 px; con los 7 destinos del coach en
-                  375 px las etiquetas largas se truncan por debajo de eso.
-                  Con los 5 del atleta ya no hace falta, pero el componente es
-                  compartido y R10 (la IA del coach) se resuelve en F3.13. */}
-              <span className={`font-sans text-[10px] uppercase font-bold leading-none truncate w-full text-center ${activa ? 'text-accent' : 'text-ink-2'}`}>
+              {/* R10 cerrado: 11 px, el suelo del Design System. Cabía con los
+                  5 destinos del atleta y ahora también con los 4 del coach —
+                  la excepción de los 10 px que hubo aquí era consecuencia de
+                  los 7 destinos, no del componente. */}
+              <span className={`font-sans text-caption uppercase font-bold leading-none truncate w-full text-center ${activa ? 'text-accent' : 'text-ink-2'}`}>
                 {tab.shortLabel ?? tab.label}
               </span>
               <span
@@ -646,7 +741,9 @@ function AppContent() {
       {/* Buscador global (Cmd+K) — solo coach */}
       {isCoach && (
         <Suspense fallback={null}>
-          <CommandPalette onNavigateTab={goToTab} />
+          {/* goToNav, no goToTab: "Ir a Ejercicios" salta directo a su
+              pestaña de Biblioteca en vez de pasar por el redirect. */}
+          <CommandPalette onNavigateTab={goToNav} />
         </Suspense>
       )}
 

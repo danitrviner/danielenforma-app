@@ -9,7 +9,7 @@ import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import { Skeleton } from './ui';
-import { Icon, Button, PageHeader, Tabs, ListRow } from './ui';
+import { Icon, Button, Tabs, ListRow } from './ui';
 
 const XP_PER_APPROVED_TEST = 30;
 
@@ -29,7 +29,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Consola de Entrenador" title="Cardio" />
+      {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
 
       <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de Cardio" />
 

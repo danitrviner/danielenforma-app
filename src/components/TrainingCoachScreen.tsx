@@ -21,19 +21,8 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-hairline">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
-            Consola de Entrenador
-          </span>
-          <span className="inline-flex items-center gap-2 text-label font-mono text-data">
-            <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
-            Sincronizado
-          </span>
-        </div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Entrenamiento</h1>
-      </header>
-
+      {/* Sin cabecera propia: esta pantalla se monta dentro de Biblioteca
+          (CoachLibraryScreen), que ya pone la ceja y el título. */}
       <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Entrenamiento" />
 
       {activeTab === 'rutinas'    && <WorkoutsScreen coachId={coachId} />}
