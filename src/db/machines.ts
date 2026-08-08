@@ -1,6 +1,6 @@
 import {
   db, storage, storageRef, uploadBytes, getDownloadURL, deleteObject,
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+  collection, doc, getDoc, getDocs, setDoc,
 } from '../firebase';
 import { Maquina, MaquinaOverride, MaquinaPropia, Gimnasio, DecisionMaquina, ProgresoCatalogo } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
@@ -218,7 +218,12 @@ export async function getGimnasio(email: string): Promise<Gimnasio | null> {
   if (forceLocalOnly) return local;
   try {
     const snap = await getDoc(doc(db, GIMNASIOS_COL, email));
-    if (!snap.exists()) return null;
+    // Que no exista en Firestore NO significa que no haya progreso: el swipe
+    // escribe el respaldo local en cada tarjeta y solo vuelca cada 10. Si el
+    // volcado falló (sin red, permisos, sesión caducada) y el atleta recarga,
+    // devolver null aquí le borraría de golpe todas las máquinas que ya había
+    // decidido. El respaldo local manda mientras el remoto esté vacío.
+    if (!snap.exists()) return local;
     const gym = { ...(snap.data() as Gimnasio), atletaId: email };
     setLocalGimnasio(gym);
     return gym;
@@ -247,6 +252,17 @@ export async function guardarGimnasio(email: string, cambios: Partial<Omit<Gimna
     console.warn('guardarGimnasio Firestore failed, saved local:', err);
     setLocalBypassMode(true);
   }
+}
+
+/**
+ * Solo respaldo local, sin tocar Firestore. Lo usa el swipe en cada tarjeta:
+ * escribir en Firestore por gesto sería una escritura por dedo, pero perder las
+ * decisiones al cerrar la app tampoco vale. Esto guarda al instante y barato; el
+ * volcado real va cada 10 decisiones y al salir.
+ */
+export function guardarGimnasioLocal(email: string, cambios: Partial<Omit<Gimnasio, 'atletaId'>>): void {
+  const actual = getLocalGimnasios().find(g => g.atletaId === email) ?? gimnasioVacio(email);
+  setLocalGimnasio({ ...actual, ...cambios, atletaId: email });
 }
 
 export async function guardarDecisiones(

@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { useQuery } from '@tanstack/react-query';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 import TutorialEngine from './features/tutorial/TutorialEngine';
@@ -43,6 +43,7 @@ const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScree
 const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
 const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
 const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
+const CatalogoSwipe        = lazy(() => import('./features/gimnasio/CatalogoSwipe'));
 
 // Escaparate de las primitivas de `ui/` (F7). El ternario NO es un lazy() con
 // una guarda alrededor: Vite sustituye `import.meta.env.DEV` por `false` al
@@ -51,6 +52,14 @@ const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell')
 // guarda solo en la ruta, el chunk se habría empaquetado igual.
 const UiShowcase = import.meta.env.DEV
   ? lazy(() => import('./components/ui/Showcase'))
+  : null;
+
+// Banco de pruebas del catálogo de máquinas, misma poda que el escaparate. El
+// swipe solo enseña máquinas publicadas y el importador las deja sin publicar a
+// propósito, así que sin esto el flujo no se puede recorrer hasta que un admin
+// publique. Ver features/gimnasio/DevHarness.
+const GimnasioHarness = import.meta.env.DEV
+  ? lazy(() => import('./features/gimnasio/DevHarness'))
   : null;
 
 function ScreenFallback() {
@@ -116,6 +125,11 @@ function AppContent() {
   // se desbloquea la app. 'checking' mientras consultamos Firestore; el coach
   // pasa directo a 'done'.
   const [onboardingGate, setOnboardingGate] = useState<'checking' | 'missing' | 'done'>('checking');
+  // Segundo gate, independiente del anterior: el catálogo de máquinas. Va aparte
+  // y no como un paso más del wizard porque son cientos de tarjetas y el wizard
+  // no persiste su progreso (17 useState locales que se pierden al cerrar).
+  // Aquí sí se reanuda, y "omitir" es una salida legítima que deja recordatorio.
+  const [gimnasioGate, setGimnasioGate] = useState<'checking' | 'missing' | 'done'>('checking');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -139,6 +153,26 @@ function AppContent() {
       .catch(() => { if (!cancelled) setOnboardingGate('done'); }); // ante error, no bloquear la app
     return () => { cancelled = true; };
   }, [profile]);
+
+  // Catálogo de máquinas. Se evalúa después del onboarding, no a la vez: sin la
+  // anamnesis hecha, preguntar por el gimnasio no tiene sentido. Se muestra solo
+  // si nunca se ha tocado; si el atleta lo omitió (`pendienteRecordatorio`), la
+  // app se desbloquea y el recordatorio vive en Hoy — no se le vuelve a plantar
+  // el catálogo delante en cada arranque.
+  useEffect(() => {
+    if (!profile || onboardingGate !== 'done') { setGimnasioGate('checking'); return; }
+    const coachRole = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
+    if (coachRole) { setGimnasioGate('done'); return; }
+    let cancelled = false;
+    getGimnasio(profile.email)
+      .then(g => {
+        if (cancelled) return;
+        const tocado = !!g && (g.progresoCatalogo.completado || g.progresoCatalogo.pendienteRecordatorio || g.maquinas.length > 0);
+        setGimnasioGate(tocado ? 'done' : 'missing');
+      })
+      .catch(() => { if (!cancelled) setGimnasioGate('done'); }); // ante error, no bloquear la app
+    return () => { cancelled = true; };
+  }, [profile, onboardingGate]);
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
     const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
@@ -256,6 +290,14 @@ function AppContent() {
     );
   }
 
+  if (GimnasioHarness && location.pathname === '/dev/gimnasio') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <GimnasioHarness />
+      </Suspense>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
@@ -315,6 +357,20 @@ function AppContent() {
         </div>
         <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
       </div>
+    );
+  }
+
+  // Segundo gate: el catálogo de máquinas, justo después de la anamnesis.
+  // "Omitir" no bloquea — marca el recordatorio y deja pasar (lo recoge Hoy).
+  if (!isCoach && gimnasioGate === 'missing') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CatalogoSwipe
+          email={profile.email}
+          onCompletado={() => setGimnasioGate('done')}
+          onOmitir={() => setGimnasioGate('done')}
+        />
+      </Suspense>
     );
   }
 

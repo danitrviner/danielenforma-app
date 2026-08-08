@@ -71,7 +71,7 @@ export {
   getCatalogoMaquinas, getCatalogoMaquinasAdmin, getCatalogoVersion,
   upsertOverrideMaquina, publicarMaquina, ocultarMaquina, crearMaquinaAdmin,
   promoverMaquinaPropia, subirImagenMaquina,
-  getGimnasio, guardarGimnasio, guardarDecisiones, gimnasioVacio,
+  getGimnasio, guardarGimnasio, guardarGimnasioLocal, guardarDecisiones, gimnasioVacio,
   subirFotoGimnasio, addMaquinaPropia, deleteMaquinaPropia,
   getMaquinasDisponibles, getEstadoCatalogo,
 } from './db/machines';
