@@ -10,6 +10,7 @@ import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import PlanInPreparationCard from './PlanInPreparationCard';
+import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioCard';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow, ProgressBar } from './ui';
@@ -160,6 +161,12 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           )}
         </>
       )}
+
+      {/* Va ANTES de las tareas: si el atleta omitió el catálogo, es lo único
+          de esta pantalla que le pide terminar algo que él mismo dejó a medias.
+          No entra en PendingTasksPanel porque ahí todas las filas tienen la
+          misma forma y esta lleva barra de progreso y recuento propios. */}
+      <RecordatorioGimnasioCard email={profile.email} />
 
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
 

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
+import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 import TutorialEngine from './features/tutorial/TutorialEngine';
@@ -336,6 +337,15 @@ function AppContent() {
     enabled: !isCoach,
   });
 
+  // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
+  // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
+  // competiría con el de revisiones, que sí es trabajo que le llega de fuera.
+  // Va aquí y no junto a `pendingCount`, que es donde se usa: allí ya estamos
+  // por debajo de los `return` de los gates y un hook no puede vivir tras un
+  // return condicional. Comparte queryKey con MiGimnasioPanel, así que no
+  // añade una lectura.
+  const { pendiente: gimnasioPendiente } = useGimnasioPendiente(profile.email, !isCoach);
+
   // Primer login del atleta: onboarding guiado obligatorio antes de ver la app.
   if (!isCoach && onboardingGate !== 'done') {
     if (onboardingGate === 'missing') {
@@ -449,6 +459,9 @@ function AppContent() {
               <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
               {tab.id === 'reviews' && pendingCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-data animate-pulse"></span>
+              )}
+              {tab.id === 'home' && !isCoach && gimnasioPendiente && (
+                <span className="w-1.5 h-1.5 rounded-full bg-danger" aria-label="Catálogo de máquinas a medias"></span>
               )}
             </button>
           ))}
@@ -564,6 +577,12 @@ function AppContent() {
                 }
               >
                 <Icon name={tab.icon} size="l" filled={activa} />
+                {tab.id === 'home' && !isCoach && gimnasioPendiente && (
+                  <span
+                    aria-label="Tienes el catálogo de máquinas a medias"
+                    className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-danger"
+                  />
+                )}
                 {insignia > 0 && (
                   <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 font-mono text-caption font-bold leading-none text-on-accent">
                     {insignia}

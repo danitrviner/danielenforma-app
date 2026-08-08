@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SEMILLA_MAQUINAS } from '../../data/maquinas';
 import CatalogoSwipe from './CatalogoSwipe';
 import MiGimnasioPanel from './MiGimnasioPanel';
+import RecordatorioGimnasioCard from './RecordatorioGimnasioCard';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas del catálogo — SOLO DESARROLLO.
@@ -41,7 +42,8 @@ export default function DevHarness() {
 
   if (listo && vista === 'panel') {
     return (
-      <div className="min-h-screen bg-bg p-4">
+      <div className="min-h-screen bg-bg p-4 space-y-4">
+        <RecordatorioGimnasioCard key={`r${clave}`} email={EMAIL_PRUEBA} />
         <MiGimnasioPanel key={clave} email={EMAIL_PRUEBA} />
         <button
           type="button"
