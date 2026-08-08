@@ -93,7 +93,8 @@ revisión visual, no trabajo de integración.
 
 ## Estado del repo
 
-`tsc` limpio · 363 pruebas · `build` correcto · `ds:inventario` sin regresiones · árbol limpio.
+`tsc` limpio · 384 pruebas · `build` correcto · `ds:inventario` sin regresiones · árbol limpio ·
+`ds/f3-experiencia` pusheada a origin.
 
 Los 12 hallazgos con severidad de la auditoría visual (P0-1 a P2-1) están corregidos, salvo la
 mitad de configuración de P0-2 (punto 1 de este documento) y la confirmación en DOM de P1-7.
