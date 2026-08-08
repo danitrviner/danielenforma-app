@@ -12,5 +12,6 @@ export { default as MiGimnasioPanel, gimnasioQueryKey } from './MiGimnasioPanel'
 export { default as AddOwnMachineSheet } from './AddOwnMachineSheet';
 export { default as RecordatorioGimnasioCard, useGimnasioPendiente } from './RecordatorioGimnasioCard';
 export { default as EquipoClienteCard } from './EquipoClienteCard';
+export { default as AdminMaquinasTab } from './AdminMaquinasTab';
 export { useCatalogoSwipe, ORDEN_CATEGORIAS } from './useCatalogoSwipe';
 export type { EstadoSwipe, FaseSwipe, ResumenCategoria } from './useCatalogoSwipe';

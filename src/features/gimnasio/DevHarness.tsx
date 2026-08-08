@@ -4,6 +4,7 @@ import CatalogoSwipe from './CatalogoSwipe';
 import MiGimnasioPanel from './MiGimnasioPanel';
 import RecordatorioGimnasioCard from './RecordatorioGimnasioCard';
 import EquipoClienteCard from './EquipoClienteCard';
+import AdminMaquinasTab from './AdminMaquinasTab';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas del catálogo — SOLO DESARROLLO.
@@ -39,7 +40,22 @@ function limpiar() {
 export default function DevHarness() {
   const [listo, setListo] = useState(false);
   const [clave, setClave] = useState(0);
-  const [vista, setVista] = useState<'swipe' | 'panel'>('swipe');
+  const [vista, setVista] = useState<'swipe' | 'panel' | 'admin'>('swipe');
+
+  if (listo && vista === 'admin') {
+    return (
+      <div className="min-h-screen bg-bg p-4 space-y-4">
+        <AdminMaquinasTab />
+        <button
+          type="button"
+          onClick={() => { setListo(false); setClave(k => k + 1); }}
+          className="mt-4 px-4 h-11 rounded-control border border-hairline text-ink-2 font-sans text-body-s"
+        >
+          Volver al banco de pruebas
+        </button>
+      </div>
+    );
+  }
 
   if (listo && vista === 'panel') {
     return (
@@ -82,6 +98,13 @@ export default function DevHarness() {
             className="px-5 h-14 rounded-control border border-hairline text-ink-2 font-sans"
           >
             Mi gimnasio
+          </button>
+          <button
+            type="button"
+            onClick={() => { setVista('admin'); setListo(true); }}
+            className="px-5 h-14 rounded-control border border-hairline text-ink-2 font-sans"
+          >
+            Admin
           </button>
           <button
             type="button"

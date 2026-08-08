@@ -7,10 +7,11 @@ import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
 import { Skeleton } from './ui';
 import { Tabs } from './ui';
+import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca';
+type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca' | 'maquinas';
 
 // ── Default template questions ────────────────────────────────────────────────
 
@@ -552,6 +553,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
           { id: 'ficha',         label: 'Ficha',         icon: 'assignment'      },
           ...(isOwnerOrDev ? [{ id: 'biblioteca' as SettingsTab, label: 'Biblioteca', icon: 'library_books' }] : []),
+          ...(isOwnerOrDev ? [{ id: 'maquinas' as SettingsTab, label: 'Máquinas', icon: 'fitness_center' }] : []),
         ]}
         value={settingsTab}
         onChange={id => setSettingsTab(id as SettingsTab)}
@@ -564,6 +566,10 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
 
       {settingsTab === 'ficha' && (
         <OnboardingTemplateEditor coachEmail={currentUserEmail} />
+      )}
+
+      {settingsTab === 'maquinas' && isOwnerOrDev && (
+        <AdminMaquinasTab />
       )}
 
       {settingsTab === 'biblioteca' && isOwnerOrDev && (
