@@ -101,6 +101,30 @@ Con eso, el filtro real que hoy no funciona pasa a ser: máquinas del atleta
 (`gimnasios/{email}.maquinas` con `tengo: true`) → puente → ejercicios ejecutables.
 Nada de esto exige cambiar el modelo actual; solo añadir la colección.
 
+## Estado (2026-08-08)
+
+Construido y commiteado en `ds/f3-experiencia`, sin pushear:
+
+| Fase | Qué | Dónde |
+|---|---|---|
+| F0 | Tipos, `src/db/machines.ts`, reglas de Firestore y Storage | `fcf08cb` |
+| F1 | Importadores + 63 máquinas + imágenes | `b47ff4b` |
+| F2 | Swipe (pantallas 01-04) + gate en App.tsx | `5e6c2d8` |
+| F3 | Mi gimnasio en Perfil + máquina propia (05, 06) | `7de4fe6` |
+| F4 | Recordatorio en Hoy + punto en la pestaña (07) | `c47c8e9` |
+| F5 | Equipamiento en el Hub del entrenador (08) | `1c76f8f` |
+| F6 | Catálogo administrable (09) | `411da68` |
+
+**Las 63 máquinas están importadas pero NO publicadas.** Hasta que un admin entre en
+Perfil › Ajustes › Máquinas y pulse "Publicar todas", ningún atleta ve el catálogo y el
+gate del onboarding se aparta solo. Es el primer paso para poner el módulo en marcha.
+
+Pendiente de QA de Dani (no verificable sin sesión iniciada): el punto rojo en la pestaña
+Hoy, la tarjeta de equipamiento dentro del Hub real y la pestaña de admin en su sitio.
+
+`/dev/gimnasio` monta un banco de pruebas con las cuatro vistas (swipe, Mi gimnasio,
+tarjeta del coach y admin) sin necesidad de sesión. Solo existe en desarrollo.
+
 ## Lo que este módulo NO hace
 
 - No relaciona máquinas con ejercicios.
