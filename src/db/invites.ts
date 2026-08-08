@@ -1,6 +1,6 @@
 import { db, auth, sendSignInLinkToEmail, collection, doc, getDoc, setDoc, getDocs, updateDoc, query, where } from '../firebase';
 import { Invite } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 
@@ -38,14 +38,25 @@ export async function inviteClient(email: string): Promise<Invite> {
     saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
     return invite;
   } catch (err) {
-    // A diferencia del resto de escrituras, esta NO relanza ante un fallo de
-    // permisos: `sendSignInLinkToEmail` ya se ejecutó ARRIBA, fuera del try, así
-    // que el correo salió de verdad y el atleta puede entrar con él. Decirle al
-    // coach «no se pudo enviar la invitación» sería una mentira en la dirección
-    // contraria. Lo que se pierde es el registro en `invites` (la fila de
-    // "pendientes"), no la invitación. El aviso global de permisos sí salta.
     console.warn('inviteClient Firestore write failed (email was still sent):', err);
     setLocalBypassMode(true, err);
+    // Ante permisos no se relanza `err` crudo —diría «no se pudo enviar» y el
+    // correo SÍ salió, fuera del try— pero tampoco se puede devolver éxito.
+    //
+    // Perder el documento de `invites` no es cosmético: `firestore.rules` exige
+    // `exists(/invites/{email})` para que el atleta pueda crear su perfil (línea
+    // 65). Sin él, el enlace llega, el atleta entra... y choca contra un
+    // permission-denied al darse de alta. Es exactamente el encierro de P0-2,
+    // servido por el propio flujo de invitación.
+    //
+    // Tampoco se guarda la copia local: pintaría una fila en "Pendientes" que
+    // solo existe en este navegador y que nunca va a reconciliarse.
+    if (esFalloDePermisos(err)) {
+      throw Object.assign(
+        new Error('El correo se envió, pero la invitación no quedó registrada.'),
+        { code: 'invite/registro-denegado' }
+      );
+    }
     saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
     return invite;
   }

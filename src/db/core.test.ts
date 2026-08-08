@@ -140,6 +140,21 @@ describe('mensajeDeErrorFirestore', () => {
   });
 });
 
+describe('invitación con el registro denegado', () => {
+  it('no dice que el correo no se envió, porque sí se envió', () => {
+    const msg = mensajeDeErrorFirestore(errorDe('invite/registro-denegado'), 'enviar la invitación');
+    expect(msg).toMatch(/se ha enviado/i);
+    expect(msg).not.toMatch(/no se pudo enviar/i);
+  });
+
+  it('avisa de que el atleta no podrá completar el alta', () => {
+    // firestore.rules exige exists(/invites/{email}) para que el atleta cree su
+    // perfil: sin ese documento el enlace llega y no sirve.
+    expect(mensajeDeErrorFirestore(errorDe('invite/registro-denegado')))
+      .toMatch(/no podrá completar el alta/i);
+  });
+});
+
 describe('reintentarNoSirve', () => {
   it('avisa de que reintentar un fallo de permisos es perder el tiempo', () => {
     expect(reintentarNoSirve(errorDe('permission-denied'))).toBe(true);

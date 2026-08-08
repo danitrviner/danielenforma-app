@@ -123,7 +123,7 @@ export default function AddOwnMachineSheet({ open, onClose, email, onAnadida }: 
         />
 
         <p className="flex items-start gap-2 font-sans text-caption text-ink-4">
-          <Icon name="info" size="s" className="mt-0.5" />
+          <Icon name="info" size="s" className="mt-1" />
           Solo tú y Dani veis esta máquina. No aparece en el catálogo de nadie más.
         </p>
       </div>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Icon, SearchField } from '../../components/ui';
+import { Button, Icon, SearchField, Skeleton } from '../../components/ui';
 import { MARCA_LABELS, MUSCLE_LABELS } from '../../types';
 import type { Maquina, MaquinaPropia } from '../../types';
 import { getEstadoCatalogo, guardarGimnasio, deleteMaquinaPropia } from '../../dbService';
@@ -84,7 +84,10 @@ export default function MiGimnasioPanel({ email }: Props) {
   if (isLoading) {
     return (
       <div className="bg-surface border border-hairline rounded-canvas p-5">
-        <p className="font-mono text-caption text-ink-4 uppercase tracking-widest animate-pulse">Cargando tu gimnasio…</p>
+        <div className="space-y-2" aria-label="Cargando tu gimnasio">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-12 w-full" />
+        </div>
       </div>
     );
   }
@@ -181,7 +184,7 @@ export default function MiGimnasioPanel({ email }: Props) {
       />
 
       <p className="flex items-start gap-2 font-sans text-caption text-ink-5">
-        <Icon name="info" size="s" className="mt-0.5" />
+        <Icon name="info" size="s" className="mt-1" />
         Dani usa esto para montarte el plan con lo que de verdad tienes a mano.
       </p>
     </div>

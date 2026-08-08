@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Icon, ProgressBar, RingSeal } from '../../components/ui';
+import { Button, Icon, ProgressBar, RingSeal, Skeleton } from '../../components/ui';
 import { MUSCLE_LABELS } from '../../types';
 import { haptics } from '../../services/haptics';
 import MachineCard from './MachineCard';
@@ -47,14 +47,34 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
     decidir(tengo);
   };
 
+  // Salir NUNCA puede depender de que Firestore acepte la escritura.
+  //
+  // Desde ae7106c una escritura denegada relanza, y estos dos son las dos únicas
+  // salidas de una pantalla que se monta como gate a pantalla completa: si el
+  // throw sube, el atleta se queda encerrado en el catálogo sin poder terminar
+  // ni omitir. Sería el mismo encierro que P0-2, que es justo lo que todo esto
+  // venía a arreglar.
+  //
+  // Dejar salir no pierde nada: `guardarGimnasio` escribe el respaldo local
+  // ANTES de intentar Firestore, así que las decisiones siguen ahí y se
+  // reintentan en la próxima operación. Y del fallo ya avisa la barra roja
+  // global, que no depende de esta pantalla.
   const salirOmitiendo = async () => {
-    await omitir();
+    try {
+      await omitir();
+    } catch (err) {
+      console.warn('No se pudo registrar que el catálogo queda pendiente:', err);
+    }
     onOmitir?.();
   };
 
   const terminar = async () => {
     haptics.success();
-    await finalizar();
+    try {
+      await finalizar();
+    } catch (err) {
+      console.warn('No se pudo marcar el catálogo como completado:', err);
+    }
     onCompletado();
   };
 
@@ -68,7 +88,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
   if (fase === 'cargando' || fase === 'vacio') {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <p className="font-mono text-label text-ink-3 uppercase tracking-widest animate-pulse">Cargando catálogo…</p>
+        <Skeleton className="h-80 w-full max-w-sm" style={{ margin: '0 20px' }} />
       </div>
     );
   }
@@ -101,7 +121,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
 
           <div className="flex flex-wrap gap-2">
             {categoriasPreview.map(c => (
-              <span key={c} className="px-2.5 py-1.5 rounded-chip bg-raised font-mono text-caption uppercase tracking-wider text-ink-3">
+              <span key={c} className="px-2 py-1 rounded-chip bg-raised font-mono text-caption uppercase tracking-wider text-ink-3">
                 {c}
               </span>
             ))}
@@ -239,7 +259,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
         ))}
       </div>
 
-      <div className="flex justify-center gap-7 pb-4">
+      <div className="flex justify-center gap-6 pb-4">
         <button
           type="button"
           onClick={() => pulsar(false)}

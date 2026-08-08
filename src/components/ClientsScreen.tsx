@@ -126,7 +126,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       showToast(`Invitación reenviada a ${email}.`, 'success');
     } catch (err) {
       console.error('resend invite error:', err);
-      showToast(`No se pudo reenviar la invitación a ${email}.`);
+      // Mismo catálogo que el alta: si el correo salió y lo que falló fue el
+      // registro, decir "no se pudo reenviar" volvería a mentir.
+      showToast(mensajeDeErrorFirestore(err, `reenviar la invitación a ${email}`), 'error');
     }
   };
 

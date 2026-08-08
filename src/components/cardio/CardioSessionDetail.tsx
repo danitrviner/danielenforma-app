@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardioSession, CardioZones } from '../../types';
 import { updateCardioSession } from '../../dbService';
+import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import { compare30DayAverage } from '../../utils/cardioHistory';
 import ZoneBars from './ZoneBars';
 import HrChart from './HrChart';
@@ -37,6 +38,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
   const [tags, setTags] = useState<string[]>(session.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const comparison = compare30DayAverage(session, allSessions);
   const chartData = session.samples.map((v, i) => ({ t: i * session.sampleIntervalSec, bpm: v }));
@@ -47,12 +49,22 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
     setTagInput('');
   };
 
+  // Mismo caso que ManualSessionModal: `updateCardioSession` relanza si
+  // Firestore deniega la escritura, y sin el try/finally el botón se quedaba en
+  // "Guardando..." para siempre, sin decir por qué y sin poder reintentar.
   const handleSave = async () => {
     setSaving(true);
+    setError('');
     const updates = { title: title || undefined, notes: notes || undefined, tags: tags.length ? tags : undefined };
-    await updateCardioSession(session.id, updates);
-    onSaved({ ...session, ...updates });
-    setSaving(false);
+    try {
+      await updateCardioSession(session.id, updates);
+      onSaved({ ...session, ...updates });
+    } catch (err) {
+      console.error('updateCardioSession failed:', err);
+      setError(mensajeDeErrorFirestore(err, 'guardar los cambios'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -145,6 +157,8 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
             placeholder="¿Cómo te sentiste?"
           />
         </div>
+
+        {error && <p className="font-sans text-caption text-danger">{error}</p>}
 
         <button onClick={handleSave} disabled={saving}
           className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">

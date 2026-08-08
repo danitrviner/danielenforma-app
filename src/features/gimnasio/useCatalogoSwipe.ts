@@ -192,7 +192,13 @@ export function useCatalogoSwipe(email: string) {
 
       sinVolcar.current += 1;
       if (terminado || cambiaCategoria || sinVolcar.current >= FLUSH_CADA) {
-        void volcar(lista, terminado, false);
+        // El volcado va en segundo plano y no puede cortar el swipe: desde
+        // ae7106c `guardarGimnasio` relanza ante permisos, y sin este catch
+        // cada tarjeta dejaría un rechazo sin gestionar. El respaldo local ya
+        // está escrito arriba y del fallo avisa la barra roja global.
+        volcar(lista, terminado, false).catch(err =>
+          console.warn('No se pudo volcar el progreso del catálogo:', err)
+        );
       }
 
       if (terminado) setFase('resumen');
@@ -238,7 +244,12 @@ export function useCatalogoSwipe(email: string) {
   const refDecisiones = useRef(decisiones);
   refDecisiones.current = decisiones;
   useEffect(() => {
-    const alSalir = () => { void refVolcar.current(refDecisiones.current, false, false); };
+    const alSalir = () => {
+      refVolcar.current(refDecisiones.current, false, false).catch(() => {
+        // Al descargar la página no hay nadie a quien avisar, y el respaldo
+        // local ya está escrito. Sin este catch sería un rechazo sin gestionar.
+      });
+    };
     window.addEventListener('pagehide', alSalir);
     return () => {
       window.removeEventListener('pagehide', alSalir);

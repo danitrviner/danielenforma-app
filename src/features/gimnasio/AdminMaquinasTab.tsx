@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Icon, Input, SearchField, Select, Sheet } from '../../components/ui';
+import { Button, Icon, Input, SearchField, Select, Sheet, Skeleton } from '../../components/ui';
 import { MARCA_LABELS, MUSCLE_LABELS } from '../../types';
 import type { Maquina, MuscleGroup } from '../../types';
 import {
@@ -126,7 +126,11 @@ export default function AdminMaquinasTab() {
       <SearchField value={busqueda} onChange={setBusqueda} label="Buscar máquina" placeholder="Buscar en el catálogo" />
 
       {isLoading ? (
-        <p className="font-mono text-caption text-ink-4 uppercase tracking-widest animate-pulse">Cargando catálogo…</p>
+        <div className="space-y-2" aria-label="Cargando catálogo">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
       ) : (
         <ul className="divide-y divide-hairline">
           {visibles.map(m => (

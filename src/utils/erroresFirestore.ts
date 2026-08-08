@@ -44,6 +44,12 @@ const POR_CODIGO: Record<string, string> = {
     'Ese enlace de acceso ya no vale. Suele pasar si se abre en un dispositivo distinto al que lo recibió, o si ya se usó. Pide uno nuevo.',
   'auth/too-many-requests':
     'Demasiados intentos seguidos. Espera un momento y vuelve a probar.',
+  // Caso propio: el correo de invitación sí salió, pero el documento en
+  // `invites` no se pudo escribir. No es cosmético — `firestore.rules` exige
+  // que ese documento exista para que el atleta pueda crear su perfil, así que
+  // sin él la invitación llega y no sirve.
+  'invite/registro-denegado':
+    'El correo se ha enviado, pero no se pudo registrar la invitación, y sin ese registro el atleta no podrá completar el alta. Vuelve a invitarle cuando se resuelva.',
 };
 
 /**

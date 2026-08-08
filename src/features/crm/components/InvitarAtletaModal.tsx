@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { inviteClient } from '../../../dbService';
+import { mensajeDeErrorFirestore } from '../../../utils/erroresFirestore';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 
 interface Props {
@@ -30,12 +31,12 @@ export default function InvitarAtletaModal({ onCerrar }: Props) {
     try {
       await inviteClient(limpio);
       setEnviado(limpio);
-    } catch (err: any) {
-      setError(
-        err?.code === 'auth/operation-not-allowed'
-          ? 'El acceso por enlace no está activado en Firebase (Authentication → Sign-in method → Vínculo del correo electrónico).'
-          : err?.message || 'No se pudo enviar la invitación.'
-      );
+    } catch (err) {
+      console.error('inviteClient error:', err);
+      // El copy vive en utils/erroresFirestore: es el mismo catálogo que usa el
+      // alta desde ClientsScreen, y tener dos redacciones del mismo fallo en dos
+      // pantallas es como se acaba arreglando solo una.
+      setError(mensajeDeErrorFirestore(err, 'enviar la invitación'));
     } finally {
       setEnviando(false);
     }

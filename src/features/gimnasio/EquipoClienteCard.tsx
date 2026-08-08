@@ -125,7 +125,7 @@ export default function EquipoClienteCard({ athleteEmail }: Props) {
           {resumen.porMarca.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {resumen.porMarca.map(([marca, n]) => (
-                <span key={marca} className="px-2.5 py-1.5 rounded-chip bg-raised font-mono text-caption uppercase tracking-wider text-ink-3">
+                <span key={marca} className="px-2 py-1 rounded-chip bg-raised font-mono text-caption uppercase tracking-wider text-ink-3">
                   {marca} {n}
                 </span>
               ))}

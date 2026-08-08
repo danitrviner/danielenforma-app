@@ -117,13 +117,13 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
 
         {/* Los sellos aparecen con el arrastre: confirman la dirección antes de soltar. */}
         <div
-          className="absolute top-4 left-4 px-3 py-1.5 rounded-control border-2 border-success text-success font-mono text-caption font-semibold uppercase tracking-widest"
+          className="absolute top-4 left-4 px-3 py-1 rounded-control border-2 border-success text-success font-mono text-caption font-semibold uppercase tracking-widest"
           style={{ opacity: dx > 0 ? intensidad : 0, transform: 'rotate(-8deg)' }}
         >
           Sí, la tengo
         </div>
         <div
-          className="absolute top-4 right-4 px-3 py-1.5 rounded-control border-2 border-danger text-danger font-mono text-caption font-semibold uppercase tracking-widest"
+          className="absolute top-4 right-4 px-3 py-1 rounded-control border-2 border-danger text-danger font-mono text-caption font-semibold uppercase tracking-widest"
           style={{ opacity: dx < 0 ? intensidad : 0, transform: 'rotate(8deg)' }}
         >
           No la tengo
@@ -132,11 +132,11 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
 
       <div className="pt-4">
         <h2 className="font-display font-black text-feature uppercase text-ink">{maquina.nombreMostrado}</h2>
-        <div className="flex gap-2 mt-2.5">
-          <span className="px-2.5 py-1.5 rounded-control bg-accent-bg font-mono text-caption font-semibold uppercase tracking-wider text-accent">
+        <div className="flex gap-2 mt-2">
+          <span className="px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-semibold uppercase tracking-wider text-accent">
             {MARCA_LABELS[maquina.marca] ?? maquina.marca}
           </span>
-          <span className="px-2.5 py-1.5 rounded-control bg-raised font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">
+          <span className="px-2 py-1 rounded-control bg-raised font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">
             {maquina.familia}
           </span>
         </div>
