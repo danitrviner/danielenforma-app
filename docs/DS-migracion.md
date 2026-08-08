@@ -974,3 +974,37 @@ de los 24 commits. **Sin verificación visual**, igual que F8, F9 y F10: las pan
 del login de coach.
 
 **Con F11 termina la migración previa al rediseño. Lo siguiente es Claude Design.**
+
+---
+
+## Deuda heredada al integrar `feat/cuestionarios` (8 ago 2026)
+
+La rama de cuestionarios se escribió **antes** del re-skin de F3.3 y se integró 286 commits
+después (merge `6125521`). Sus ficheros nuevos y los que reescribió traen estilo pre-re-skin. Al
+resolver los conflictos se conservó el estilo de HEAD en todo lo que colisionaba, y se reescribieron
+con primitivas los controles que se pudo (`Button`, `SegmentedControl`, `Badge`, `EmptyState`), pero
+queda deuda dentro de esos ficheros que nadie tocó porque no entró en conflicto.
+
+Lo que sí se corrigió, porque no es cosmético: **4 campos de formulario por debajo de 16 px** en
+`ClientReviewsPanel` y `ScheduleFields`. Por debajo de ese suelo iOS Safari hace zoom al enfocar y no
+lo revierte. Esa métrica vuelve a 0.
+
+Lo que queda, por fichero:
+
+| Fichero | Hex literales | Texto < 11 px | Otros |
+|---|---|---|---|
+| `BodyMeasurementsPanel.tsx` (nuevo) | 20 | 2 | `border-white/>12`, 3 `font-mono` |
+| `ClientReviewsPanel.tsx` | 22 | 5 | `border-white/>12`, 5 `font-mono` |
+| `ScheduleFields.tsx` | 4 | — | — |
+| `QuestionnaireEditor.tsx` | 3 | 3 | 3 `font-mono` |
+| `ReportView.tsx` | 2 | 1 | — |
+| `ProfileScreen.tsx` | 2 | — | — |
+
+**Por qué no se migra en el merge.** No es una sustitución mecánica: `#fbcb1a` es el oro ANTERIOR y
+el token `accent` vale `#FFC72C`. Cambiar los hex por tokens **altera el color renderizado** en seis
+pantallas del coach — que es justamente lo que pretendía el re-skin, pero es una decisión de diseño
+con revisión visual detrás, no algo que deba colarse dentro de un commit de integración.
+
+La línea base se actualiza para que `ds:inventario` vuelva a detectar regresiones NUEVAS. Esta tabla
+es el registro de lo que se acepta a sabiendas; es el siguiente trozo de migración, no deuda
+olvidada.

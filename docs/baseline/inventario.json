@@ -1,39 +1,39 @@
 {
-  "generado": "2026-08-08T12:14:48.923Z",
-  "commit": "d74244e",
+  "generado": "2026-08-08T13:16:11.907Z",
+  "commit": "6125521",
   "totales": {
-    "archivosTsx": 182,
-    "lineasTsx": 44722
+    "archivosTsx": 183,
+    "lineasTsx": 45391
   },
   "metricas": {
-    "hexLiterales": 20,
-    "clasesTokenEnUso": 5123,
+    "hexLiterales": 73,
+    "clasesTokenEnUso": 5142,
     "importsThemeTs": 0,
-    "bordesBlancosFuertes": 0,
-    "textoBajo11px": 2,
+    "bordesBlancosFuertes": 2,
+    "textoBajo11px": 13,
     "camposBajo16px": 0,
-    "fontMono": 1009,
-    "fontSans": 966,
-    "pesosProhibidos": 57,
-    "espaciadoFueraEscala": 2,
+    "fontMono": 1030,
+    "fontSans": 976,
+    "pesosProhibidos": 58,
+    "espaciadoFueraEscala": 16,
     "sombrasFueraEscala": 3,
     "glowAcento": 0,
     "modalesArtesanales": 10,
-    "transitionAll": 227,
+    "transitionAll": 228,
     "animatePulse": 29,
-    "ariaLabel": 59,
+    "ariaLabel": 60,
     "htmlFor": 1,
     "focusVisible": 50,
     "reducedMotion": 4,
     "roundedSm": 0,
     "roundedMd": 0,
-    "roundedLg": 0,
-    "roundedXl": 0,
-    "rounded2xl": 0,
-    "rounded3xl": 0,
-    "roundedFull": 173,
-    "hexDistintos": 12,
-    "tamanosTextoDistintos": 12,
+    "roundedLg": 2,
+    "roundedXl": 1,
+    "rounded2xl": 6,
+    "rounded3xl": 2,
+    "roundedFull": 174,
+    "hexDistintos": 25,
+    "tamanosTextoDistintos": 19,
     "archivosMas600Lineas": 21,
     "hexEnTokensCss": 14
   },
@@ -41,9 +41,22 @@
     "hexDistintos": [
       "#000",
       "#00eefc",
+      "#0e0e0e",
+      "#121212",
+      "#141413",
+      "#181816",
+      "#1c1b1b",
+      "#1e1e1b",
+      "#1e1e1e",
+      "#212120",
+      "#2a2a2a",
+      "#3a3a3a",
       "#4a90d9",
       "#6b7280",
+      "#86efac",
       "#a78bfa",
+      "#c6c9ab",
+      "#fb923c",
       "#fbcb1a",
       "#ff4d4d",
       "#ff8c42",
@@ -70,17 +83,24 @@
     ],
     "tamanosTexto": [
       "10px",
+      "11px",
+      "4xl",
       "6xl",
       "7px",
       "7xl",
+      "9px",
+      "base",
       "body",
       "body-s",
       "caption",
       "display",
       "label",
+      "lg",
+      "sm",
       "title-l",
       "title-m",
-      "title-s"
+      "title-s",
+      "xs"
     ],
     "archivosGrandes": [
       {
@@ -93,7 +113,7 @@
       },
       {
         "archivo": "src/components/ClientReviewsPanel.tsx",
-        "lineas": 1408
+        "lineas": 1599
       },
       {
         "archivo": "src/components/OnboardingForm.tsx",
@@ -215,6 +235,17 @@
       "clasesTokenEnUso": 2,
       "fontMono": 1
     },
+    "src/components/BodyMeasurementsPanel.tsx": {
+      "hexLiterales": 20,
+      "bordesBlancosFuertes": 1,
+      "textoBajo11px": 2,
+      "fontMono": 3,
+      "fontSans": 3,
+      "pesosProhibidos": 1,
+      "transitionAll": 1,
+      "rounded2xl": 5,
+      "rounded3xl": 1
+    },
     "src/components/BodyweightPanel.tsx": {
       "clasesTokenEnUso": 32,
       "fontMono": 10,
@@ -262,11 +293,18 @@
       "pesosProhibidos": 3
     },
     "src/components/ClientReviewsPanel.tsx": {
-      "clasesTokenEnUso": 281,
-      "fontMono": 69,
-      "fontSans": 52,
+      "hexLiterales": 22,
+      "clasesTokenEnUso": 286,
+      "bordesBlancosFuertes": 1,
+      "textoBajo11px": 5,
+      "fontMono": 74,
+      "fontSans": 55,
+      "espaciadoFueraEscala": 12,
       "transitionAll": 18,
-      "roundedFull": 1
+      "roundedLg": 2,
+      "roundedXl": 1,
+      "rounded2xl": 1,
+      "roundedFull": 2
     },
     "src/components/ClientSetupPanel.tsx": {
       "clasesTokenEnUso": 42,
@@ -539,10 +577,12 @@
       "roundedFull": 2
     },
     "src/components/ProfileScreen.tsx": {
+      "hexLiterales": 2,
       "clasesTokenEnUso": 65,
       "fontMono": 4,
-      "fontSans": 13,
+      "fontSans": 14,
       "transitionAll": 1,
+      "rounded3xl": 1,
       "roundedFull": 7
     },
     "src/components/ProgressRing.tsx": {
@@ -557,8 +597,10 @@
       "transitionAll": 1
     },
     "src/components/QuestionnaireEditor.tsx": {
+      "hexLiterales": 3,
       "clasesTokenEnUso": 42,
-      "fontMono": 17,
+      "textoBajo11px": 3,
+      "fontMono": 20,
       "fontSans": 4,
       "transitionAll": 1
     },
@@ -568,11 +610,11 @@
       "transitionAll": 2
     },
     "src/components/QuestionnaireWizard.tsx": {
-      "clasesTokenEnUso": 30,
-      "fontMono": 4,
-      "fontSans": 7,
+      "clasesTokenEnUso": 38,
+      "fontMono": 7,
+      "fontSans": 9,
       "transitionAll": 3,
-      "ariaLabel": 1
+      "ariaLabel": 2
     },
     "src/components/RecipeBuilderScreen.tsx": {
       "clasesTokenEnUso": 82,
@@ -599,10 +641,13 @@
       "roundedFull": 1
     },
     "src/components/ReportView.tsx": {
+      "hexLiterales": 2,
       "clasesTokenEnUso": 37,
-      "fontMono": 23,
-      "fontSans": 7,
+      "textoBajo11px": 1,
+      "fontMono": 24,
+      "fontSans": 8,
       "pesosProhibidos": 4,
+      "espaciadoFueraEscala": 2,
       "roundedFull": 4
     },
     "src/components/ReportsPanel.tsx": {
@@ -633,8 +678,9 @@
       "roundedFull": 2
     },
     "src/components/ScheduleFields.tsx": {
-      "clasesTokenEnUso": 24,
-      "fontMono": 10,
+      "hexLiterales": 4,
+      "clasesTokenEnUso": 30,
+      "fontMono": 16,
       "fontSans": 1,
       "transitionAll": 1
     },

@@ -58,46 +58,31 @@ Todo esto está detrás del login. En móvil, 375 px de ancho.
 
 ---
 
-## 4. RIESGO · El worktree de cuestionarios se ha quedado descolgado
+## 4. RESUELTO · El worktree de cuestionarios ya está integrado
 
-En `/Users/dani/en-forma-cuestionarios` (rama `feat/cuestionarios`) hay **34 ficheros con
-cambios sin commitear**: unas 1.000 líneas de trabajo real en curso — un motor de programación
-(`scheduleEngine.ts`), disparadores `plan_week`/`mesocycle_end`, `isOverdue`, mediciones
-corporales, correlación de series. No es basura vieja.
+Se integró el 8 ago 2026 (merge `6125521`). Las ~1.000 líneas que estaban sin commitear en
+`/Users/dani/en-forma-cuestionarios` viven ya en `ds/f3-experiencia`: motor de programación,
+mediciones corporales, correlación de series y extras de informes.
 
-El problema: esa rama va **286 commits por detrás** de `ds/f3-experiencia`, y sus propios commits
-ya están integrados aquí (0 commits por delante). De los 34 ficheros sueltos, **18 los ha tocado
-también `ds/f3-experiencia`** en esos 286 commits:
+De paso apareció un hueco que ninguna de las dos ramas veía por separado: las preguntas de medición
+corporal (`metric`) y de archivo (`media`) no las renderizaba el `QuestionnaireWizard` que sustituyó
+al formulario anterior, así que habrían salido **en blanco** para el atleta. Portado.
 
-```
-firestore.rules · storage.rules · src/types.ts · src/dbService.ts · src/db/media.ts
-src/ai/tools.ts · CheckInScreen · PendingTasksPanel · ProfileScreen · ClientAnalysisPanel
-ClientReviewsPanel · CorrelationPanel · QuestionnaireChartsPanel · QuestionnaireEditor
-QuestionnaireManagerScreen · ReportView · ReportsPanel · ScheduleFields
-```
+Los respaldos (`/Users/dani/respaldo-cuestionarios-2026-08-08.*`) se pueden borrar cuando quieras.
+El worktree ya no tiene nada suelto; si no vas a seguir trabajando ahí, se quita con
+`git worktree remove ../en-forma-cuestionarios`.
 
-Cuanto más se tarde, peor la integración. Y mientras siga sin commitear, un `checkout` o un `reset`
-en ese directorio se lo lleva todo.
-
-**Respaldo ya hecho** (no se ha tocado nada del worktree):
-- `/Users/dani/respaldo-cuestionarios-2026-08-08.patch` — los 23 ficheros con seguimiento
-- `/Users/dani/respaldo-cuestionarios-2026-08-08-nuevos.tgz` — los 11 ficheros nuevos
-
-**Orden de operaciones recomendado**, y conviene que lo haga la sesión que escribió ese código,
-porque los 18 conflictos exigen saber qué se pretendía en cada uno:
-
-1. En ese worktree, **commitear** el trabajo tal cual (deja de estar en peligro).
-2. Traer `ds/f3-experiencia` encima y resolver los 18.
-3. Integrar.
-
-Los 11 ficheros nuevos son aditivos y no dan conflicto.
+Queda registrada, en `docs/DS-migracion.md`, la deuda de diseño heredada de esa rama: 53 hex
+literales en 6 ficheros del coach. No se migró en el merge porque `#fbcb1a` es el oro anterior y el
+token `accent` vale `#FFC72C` — sustituirlos cambia el color, y eso es una decisión de diseño con
+revisión visual, no trabajo de integración.
 
 ---
 
 ## 5. Decisiones tuyas, no tareas
 
-- **Pushear la rama.** Va 277 commits por delante de `origin/main` y sigue en local. Pediste no
-  pushear hasta revisarlo.
+- **Fusionar a `main`.** `ds/f3-experiencia` ya está en origin. Cuando la des por buena, queda
+  abrir el PR: https://github.com/danitrviner/danielenforma-app/pull/new/ds/f3-experiencia
 - **Relación máquina→ejercicio.** Diseñada y documentada (`docs/catalogo-maquinas.md`), sin
   implementar. Es lo que haría que el generador de entrenamientos use el equipamiento real del
   atleta — o sea, lo que le da valor de verdad al catálogo.
