@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SEMILLA_MAQUINAS } from '../../data/maquinas';
 import CatalogoSwipe from './CatalogoSwipe';
+import MiGimnasioPanel from './MiGimnasioPanel';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas del catálogo — SOLO DESARROLLO.
@@ -36,6 +37,22 @@ function limpiar() {
 export default function DevHarness() {
   const [listo, setListo] = useState(false);
   const [clave, setClave] = useState(0);
+  const [vista, setVista] = useState<'swipe' | 'panel'>('swipe');
+
+  if (listo && vista === 'panel') {
+    return (
+      <div className="min-h-screen bg-bg p-4">
+        <MiGimnasioPanel key={clave} email={EMAIL_PRUEBA} />
+        <button
+          type="button"
+          onClick={() => { setListo(false); setClave(k => k + 1); }}
+          className="mt-4 px-4 h-11 rounded-control border border-hairline text-ink-2 font-sans text-body-s"
+        >
+          Volver al banco de pruebas
+        </button>
+      </div>
+    );
+  }
 
   if (!listo) {
     return (
@@ -49,10 +66,17 @@ export default function DevHarness() {
         <div className="flex gap-3 pt-2">
           <button
             type="button"
-            onClick={() => { sembrar(); setListo(true); }}
+            onClick={() => { sembrar(); setVista('swipe'); setListo(true); }}
             className="px-5 h-14 rounded-control bg-accent text-on-accent font-sans font-bold"
           >
             Empezar
+          </button>
+          <button
+            type="button"
+            onClick={() => { sembrar(); setVista('panel'); setListo(true); }}
+            className="px-5 h-14 rounded-control border border-hairline text-ink-2 font-sans"
+          >
+            Mi gimnasio
           </button>
           <button
             type="button"

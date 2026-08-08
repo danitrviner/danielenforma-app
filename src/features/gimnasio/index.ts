@@ -8,5 +8,7 @@
 
 export { default as CatalogoSwipe } from './CatalogoSwipe';
 export { default as MachineCard } from './MachineCard';
+export { default as MiGimnasioPanel, gimnasioQueryKey } from './MiGimnasioPanel';
+export { default as AddOwnMachineSheet } from './AddOwnMachineSheet';
 export { useCatalogoSwipe, ORDEN_CATEGORIAS } from './useCatalogoSwipe';
 export type { EstadoSwipe, FaseSwipe, ResumenCategoria } from './useCatalogoSwipe';

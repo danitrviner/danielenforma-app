@@ -12,6 +12,7 @@ import CoachesScreen from './CoachesScreen';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
+import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { Icon, Button, PageHeader, ListRow, Input, Sheet } from './ui';
@@ -36,8 +37,8 @@ type ExpandedSection = 'progress' | 'roadmap' | null;
 // UserProfile.dashboardOrder. Not every block is visible for every athlete/coach
 // (e.g. "ficha" only shows for athletes), so reorder controls are positioned
 // among only the currently-visible blocks, not this full fixed list.
-type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences';
-const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences'];
+type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences' | 'gimnasio';
+const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences', 'gimnasio'];
 
 // Ajustes › Notificaciones (F3.13e) — SOLO los tipos que de verdad se generan
 // hacia el coach hoy (ver los `createNotificationDeduped(..., {recipientEmail:
@@ -201,6 +202,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     // un coach no tiene meta de peso ni racha de check-ins). La tarjeta de
     // identidad del coach vive aparte, fuera de este listado reordenable.
     if (id === 'gamification' || id === 'bodyweight') return !isCoach;
+    // El gimnasio es del atleta: el coach ve el de cada cliente en su Hub, no aquí.
+    if (id === 'gimnasio') return !isCoach;
     return true;
   });
 
@@ -247,6 +250,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             </div>
           </div>
         );
+
+      case 'gimnasio':
+        return <MiGimnasioPanel email={profile.email} />;
 
       case 'questionnaires':
         return (
