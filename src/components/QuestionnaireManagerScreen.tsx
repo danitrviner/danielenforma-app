@@ -5,6 +5,7 @@ import {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
 } from '../dbService';
 import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from './QuestionnaireEditor';
+import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../data/questionnairePresets';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, ListRow, Badge } from './ui';
 
@@ -22,11 +23,31 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   const [form, setForm]                 = useState<FormState>(blankForm());
   const [saving, setSaving]             = useState(false);
   const [deleting, setDeleting]         = useState<string | null>(null);
+  const [loadingPresets, setLoadingPresets] = useState(false);
 
   const openEditor = (q?: Questionnaire) => {
     setEditingId(q?.id ?? null);
     setForm(q ? formFromQuestionnaire(q) : blankForm());
     setView('editor');
+  };
+
+  // Crea directamente las plantillas de Dani que aún no existan (comparando
+  // por título) — no hace falta pasar por el editor, ya vienen listas para
+  // asignar y se pueden retocar después como cualquier otro cuestionario.
+  const missingPresets = QUESTIONNAIRE_PRESETS.filter(
+    p => !questionnaires.some(q => q.title === p.title)
+  );
+
+  const handleLoadPresets = async () => {
+    if (missingPresets.length === 0) return;
+    setLoadingPresets(true);
+    try {
+      const created = await Promise.all(
+        missingPresets.map(p => createQuestionnaire(buildQuestionnaireFromPreset(p, coachId)))
+      );
+      queryClient.setQueryData<Questionnaire[]>(queryKey, prev => [...(prev ?? []), ...created]);
+    } catch (err) { console.error(err); }
+    finally { setLoadingPresets(false); }
   };
 
   const handleSave = async () => {
@@ -39,7 +60,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         description: form.description.trim() || undefined,
         questions: form.questions
           .filter(q => q.label.trim())
-          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' ? true : undefined })),
+          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' || q.type === 'metric' ? true : undefined })),
       };
       if (editingId) {
         await updateQuestionnaire(editingId, data);
@@ -81,9 +102,24 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   // ── List view ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-sans font-bold text-title-m text-white">Cuestionarios</h2>
-        <Button onClick={() => openEditor()} icon="add">Nuevo</Button>
+        <div className="flex items-center gap-2">
+          {missingPresets.length > 0 && (
+            <Button
+              variant="secondary"
+              size="s"
+              icon="library_add"
+              onClick={handleLoadPresets}
+              loading={loadingPresets}
+              loadingLabel="Cargando"
+              title="Crea las plantillas que falten (Entrenamiento, DOM's, Mediciones, Revisión Semanal…)"
+            >
+              {`Cargar plantillas (${missingPresets.length})`}
+            </Button>
+          )}
+          <Button onClick={() => openEditor()} icon="add">Nuevo</Button>
+        </div>
       </div>
 
       {loading ? (
@@ -94,7 +130,11 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         </div>
       ) : questionnaires.length === 0 ? (
         <div className="border border-dashed border-hairline rounded-surface">
-          <EmptyState icon="quiz" title="Sin cuestionarios todavía" description="Crea plantillas para asignarlas a tus clientes." />
+          <EmptyState
+            icon="quiz"
+            title="Sin cuestionarios todavía"
+            description={'Crea uno desde cero o usa "Cargar plantillas" arriba para traer las tuyas.'}
+          />
         </div>
       ) : (
         <div className="space-y-3">

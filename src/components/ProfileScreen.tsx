@@ -5,6 +5,7 @@ import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, ge
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import BodyweightPanel from './BodyweightPanel';
+import BodyMeasurementsPanel from './BodyMeasurementsPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
@@ -13,6 +14,7 @@ import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
+import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { Icon, Button, PageHeader, ListRow, Input, Sheet } from './ui';
@@ -37,8 +39,8 @@ type ExpandedSection = 'progress' | 'roadmap' | null;
 // UserProfile.dashboardOrder. Not every block is visible for every athlete/coach
 // (e.g. "ficha" only shows for athletes), so reorder controls are positioned
 // among only the currently-visible blocks, not this full fixed list.
-type BlockId = 'gamification' | 'bodyweight' | 'questionnaires' | 'ficha' | 'preferences' | 'gimnasio';
-const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'questionnaires', 'ficha', 'preferences', 'gimnasio'];
+type BlockId = 'gamification' | 'bodyweight' | 'measurements' | 'questionnaires' | 'ficha' | 'preferences' | 'gimnasio';
+const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'measurements', 'questionnaires', 'ficha', 'preferences', 'gimnasio'];
 
 // Ajustes › Notificaciones (F3.13e) — SOLO los tipos que de verdad se generan
 // hacia el coach hoy (ver los `createNotificationDeduped(..., {recipientEmail:
@@ -125,6 +127,10 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     [questionnaireQueries]
   );
 
+  // Medidas corporales — mismo query key que BodyMeasurementsPanel (comparten
+  // caché), solo para saber si hay algo que mostrar antes de renderizar el bloque.
+  const { all: bodyMeasurements } = useBodyMeasurements(profile.email);
+
   // Food preferences + ficha editing
   const onboardingKey = ['onboarding', profile.email] as const;
   const { data: onboarding = null } = useQuery({
@@ -195,6 +201,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
 
   const visibleBlocks = blockOrder.filter(id => {
     if (id === 'questionnaires') return questionnaires.length > 0 && responses.length > 0;
+    if (id === 'measurements') return bodyMeasurements.some(m => m.metricKey !== 'bodyweight');
     if (id === 'ficha') return !isCoach;
     if (id === 'preferences') return !isCoach && !!onboarding && !editingFicha;
     // F3.13e: 'gamification' (XP/nivel/racha) y 'bodyweight' son datos de
@@ -213,6 +220,17 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         return (
           <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
             <BodyweightPanel athleteEmail={profile.email} />
+          </div>
+        );
+
+      case 'measurements':
+        return (
+          <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl space-y-3">
+            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
+              Mediciones
+            </h3>
+            <BodyMeasurementsPanel athleteEmail={profile.email} />
           </div>
         );
 

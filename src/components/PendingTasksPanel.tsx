@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, TaskType, Questionnaire } from '../types';
-import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
-import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
+import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { isDueToday, isOverdue, hasAnsweredThisOccurrence, todayStr, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import { Skeleton } from './ui';
 import { ListRow } from './ui';
@@ -52,12 +52,18 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     queryKey: ['progressPhotos', profile.email],
     queryFn: () => getProgressPhotos(profile.email),
   });
+  // Contexto para los disparadores 'plan_week'/'mesocycle_end' (ver CheckInScreen).
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocyclesForAthlete', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
 
   const manualTasks = tasks.filter(t => t.status === 'pending');
 
   const due = useMemo(
-    () => assignments.filter(a => a.active && isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)),
-    [assignments, responses]
+    () => assignments.filter(a => a.active && isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)),
+    [assignments, responses, scheduleCtx]
   );
 
   // One cache entry per questionnaire id (['questionnaireById', id]) so this

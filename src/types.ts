@@ -427,16 +427,26 @@ export interface WorkoutAssignment {
 
 // ─── QUESTIONNAIRES ───────────────────────────────────────────────────────────
 
-export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean';
+export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean' | 'metric' | 'media';
 
-export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly';
+export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly' | 'plan_week' | 'mesocycle_end';
 
 export interface QSchedule {
   type: QScheduleType;
   weekdays?: number[];    // 0=Sun..6=Sat  (for 'weekdays')
   intervalDays?: number;  // (for 'interval')
   dayOfMonth?: number;    // (for 'monthly')
+  planWeek?: number;          // (for 'plan_week') 1-indexed week since assignment.startDate
+  planWeekday?: number;       // (for 'plan_week') 0=Sun..6=Sat, default = startDate's weekday
+  mesocycleOffsetDays?: number; // (for 'mesocycle_end') days before/after the mesocycle's last day, default 0
 }
+
+// Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
+// (`bodyweight`) no genera un BodyMeasurement — reutiliza bodyweightLogs para
+// no partir en dos la serie que ya alimenta perfil/reportes/periodización.
+export type BodyMetricKey =
+  | 'bodyweight' | 'altura' | 'pecho' | 'cintura' | 'abdomen' | 'cadera'
+  | 'biceps_izq' | 'biceps_der' | 'muslo_izq' | 'muslo_der' | 'gemelo' | 'cuello';
 
 export interface QuestionnaireQuestion {
   id: string;
@@ -463,6 +473,11 @@ export interface QuestionnaireQuestion {
   // boolean
   labelTrue?: string;        // default 'Sí'
   labelFalse?: string;       // default 'No'
+  // metric
+  metricKey?: BodyMetricKey;
+  // media
+  mediaKind?: 'video' | 'image';
+  maxSizeMb?: number;        // default 50
 }
 
 export interface Questionnaire {
@@ -473,6 +488,18 @@ export interface Questionnaire {
   questions: QuestionnaireQuestion[];
 }
 
+// Personalización por cliente sobre la plantilla maestra: el questionId se
+// conserva siempre, así que gráficas/correlaciones/reportes pueden seguir
+// comparando la misma pregunta entre atletas y en el tiempo aunque cada uno
+// tenga su propia versión (ocultada, reformulada o con preguntas extra).
+export interface QuestionnaireOverrides {
+  hidden?: string[];                       // questionIds ocultos para este atleta
+  relabeled?: Record<string, string>;      // questionId -> enunciado propio
+  required?: Record<string, boolean>;      // questionId -> forzar/quitar obligatoriedad
+  extra?: QuestionnaireQuestion[];         // preguntas exclusivas de este atleta (id con prefijo 'x_')
+  order?: string[];                        // orden personalizado de questionIds (plantilla + extra)
+}
+
 export interface QuestionnaireAssignment {
   id: string;
   questionnaireId: string;
@@ -481,6 +508,7 @@ export interface QuestionnaireAssignment {
   startDate: string;           // YYYY-MM-DD
   active: boolean;
   createdAt: string;
+  overrides?: QuestionnaireOverrides;
 }
 
 export interface QuestionnaireResponse {
@@ -491,6 +519,44 @@ export interface QuestionnaireResponse {
   submittedAt: string;
   answers: { questionId: string; value: string | number | boolean }[];
 }
+
+// ─── BODY MEASUREMENTS ─────────────────────────────────────────────────────────
+// Serie propia de perímetros corporales. Se escribe desde una respuesta de
+// cuestionario (pregunta tipo 'metric') o manualmente. docId determinista
+// `${athleteId}_${date}_${metricKey}` (mismo patrón que progressPhotos) para
+// que responder dos veces el mismo día sobrescriba en vez de duplicar.
+
+export interface BodyMeasurement {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  metricKey: BodyMetricKey;
+  value: number;
+  unit: 'cm' | 'kg';
+  source: 'questionnaire' | 'manual';
+  responseId?: string;
+  createdAt: string;  // ISO timestamp
+}
+
+export const BODY_METRIC_LABELS: Record<BodyMetricKey, string> = {
+  bodyweight: 'Peso corporal',
+  altura:     'Altura',
+  pecho:      'Contorno de pecho',
+  cintura:    'Perímetro de cintura',
+  abdomen:    'Perímetro de abdomen',
+  cadera:     'Perímetro de cadera',
+  biceps_izq: 'Bíceps izquierdo',
+  biceps_der: 'Bíceps derecho',
+  muslo_izq:  'Muslo izquierdo',
+  muslo_der:  'Muslo derecho',
+  gemelo:     'Gemelo',
+  cuello:     'Cuello',
+};
+
+export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg'> = {
+  bodyweight: 'kg', altura: 'cm', pecho: 'cm', cintura: 'cm', abdomen: 'cm', cadera: 'cm',
+  biceps_izq: 'cm', biceps_der: 'cm', muslo_izq: 'cm', muslo_der: 'cm', gemelo: 'cm', cuello: 'cm',
+};
 
 // ─── BODYWEIGHT ───────────────────────────────────────────────────────────────
 

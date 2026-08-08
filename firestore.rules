@@ -330,6 +330,20 @@ service cloud.firestore {
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
+    // ── bodyMeasurements (docId = `${athleteId}_${date}_${metricKey}`; athleteId = EMAIL) ─
+    // Perímetros corporales, escritos desde una respuesta de cuestionario
+    // (pregunta tipo 'metric') o manualmente. Mismo patrón de ownership que
+    // questionnaireResponses.
+    match /bodyMeasurements/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.resource.data.athleteId == request.auth.token.email);
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId);
+    }
+
     // ── onboarding (docId = email) ───────────────────────────────────────────
     match /onboarding/{email} {
       allow read, write: if isCoach() || isOwnerEmail(email);

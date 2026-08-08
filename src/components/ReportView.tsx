@@ -2,7 +2,7 @@ import React from 'react';
 import { CoachReport, CoachReportSection } from '../types';
 import {
   HighlightsSectionData, TonnageSectionData, PerExerciseSectionData, MuscleSectionData,
-  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
   fmtReportDate,
 } from '../utils/reportBuilder';
 import { Icon, Card, Badge } from './ui';
@@ -239,6 +239,34 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
   );
 }
 
+function WellnessSection({ section }: { section: CoachReportSection }) {
+  const d = section.data as WellnessSectionData;
+  if (!d.questions?.length) return null;
+  return (
+    <SectionShell section={section}>
+      <ul className="space-y-2">
+        {d.questions.map(q => {
+          const delta = q.prevAvg != null ? Math.round((q.avg - q.prevAvg) * 10) / 10 : null;
+          return (
+            <li key={q.questionId} className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[#00eefc] text-base flex-shrink-0">self_improvement</span>
+              <span className="text-xs text-white font-sans flex-1 min-w-0">{q.questionLabel}</span>
+              <span className="font-mono text-xs text-[#fbcb1a] font-bold flex-shrink-0">
+                {q.avg}{q.unit ? ` ${q.unit}` : ''}
+                {delta != null && delta !== 0 && (
+                  <span className={`ml-1.5 text-[10px] ${delta > 0 ? 'text-green-400' : 'text-amber-300'}`}>
+                    ({delta > 0 ? '+' : ''}{delta})
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </SectionShell>
+  );
+}
+
 function renderSection(section: CoachReportSection) {
   switch (section.id) {
     case 'highlights':          return <HighlightsSection section={section} />;
@@ -249,6 +277,7 @@ function renderSection(section: CoachReportSection) {
     case 'adherence':           return <AdherenceSection section={section} />;
     case 'nutrition':           return <NutritionSection section={section} />;
     case 'challenges':          return <ChallengesSection section={section} />;
+    case 'wellness':            return <WellnessSection section={section} />;
     default:                    return null;
   }
 }

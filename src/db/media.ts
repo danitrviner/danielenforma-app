@@ -48,6 +48,23 @@ export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
   await deleteDoc(doc(db, 'progressPhotos', photo.id));
 }
 
+// ─── QUESTIONNAIRE MEDIA (respuestas tipo 'media') ────────────────────────────
+// Sube un vídeo/foto de respuesta de cuestionario y devuelve su URL — el
+// valor de la respuesta ES la URL (no hay doc propio, vive dentro de
+// QuestionnaireResponse.answers como cualquier otro tipo de pregunta).
+
+export async function uploadQuestionnaireMedia(
+  athleteEmail: string,
+  questionId: string,
+  file: File,
+): Promise<string> {
+  const uploadData = file.type.startsWith('image/') ? await compressImage(file) : file;
+  const path = `questionnaireMedia/${athleteEmail}/${Date.now()}_${questionId}`;
+  const sRef = storageRef(storage, path);
+  await uploadBytes(sRef, uploadData);
+  return getDownloadURL(sRef);
+}
+
 // ─── PHOTO CHECK-IN ASSIGNMENTS ───────────────────────────────────────────────
 // Collection: photoAssignments  (athleteId = email) — same shape/pattern as
 // questionnaireAssignments, so the athlete's photo check-ins can have a

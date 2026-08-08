@@ -116,6 +116,7 @@ export type { IndyaRecipeCursor, IndyaRecipeFilters } from './db/recipes';
 export {
   getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto,
   assignPhotoCheckIn, getPhotoAssignmentsForAthlete, deactivatePhotoAssignment,
+  uploadQuestionnaireMedia,
 } from './db/media';
 
 // ─── QUESTIONNAIRES + ASIGNACIONES + RESPUESTAS ───────────────────────────────
@@ -135,6 +136,11 @@ export {
   getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight,
   getStepsForAthlete, addSteps, updateSteps,
 } from './db/athleteMetrics';
+
+// ─── MEDIDAS CORPORALES (perímetros) ──────────────────────────────────────────
+export {
+  getBodyMeasurementsForAthlete, saveBodyMeasurement, deleteBodyMeasurement,
+} from './db/bodyMeasurements';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 // Movido a src/db/onboarding.ts (2026-07-18) — reexportado aquí para que ningún

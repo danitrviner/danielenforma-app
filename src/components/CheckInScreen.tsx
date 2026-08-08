@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
-import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import { scheduleLabel } from '../utils/scheduleEngine';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
@@ -38,6 +39,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     queryFn: () => getBodyweightForAthlete(profile.email),
   });
   const bwToday = useMemo(() => bwLogs.find(l => l.date === todayStr()) ?? null, [bwLogs]);
+  // bwLogs viene ascendente por fecha (getBodyweightForAthlete) — el último es
+  // el peso más reciente, usado para prefill de la pregunta 'metric' bodyweight.
+  const latestWeight = bwLogs.length > 0 ? bwLogs[bwLogs.length - 1].weight : undefined;
   const [bwInput, setBwInput]   = useState('');
   const [bwEditing, setBwEditing] = useState(false);
   const [bwSaving, setBwSaving] = useState(false);
@@ -133,15 +137,27 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     }
     return tMap;
   }, [questionnaireQueries]);
+  // Mesociclos del atleta — contexto para los disparadores 'plan_week' y
+  // 'mesocycle_end' (scheduleEngine no conoce el plan de entreno por sí solo).
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocyclesForAthlete', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
+
   const loadingQ = loadingAssignments || loadingResponses
     || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
 
+  // "Vencido y sin responder" (isOverdue) en vez de isDueToday: para
+  // interval/plan_week/mesocycle_end, isOverdue se queda true desde la fecha
+  // objetivo hasta que se responde, no solo el día exacto — así un
+  // cuestionario sin responder no desaparece de "pendientes" al día siguiente.
   const pendingAssignments = assignments.filter(
-    a => isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)
+    a => isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)
   );
-  const upcomingAssignments = assignments.filter(a => isUpcoming(a));
+  const upcomingAssignments = assignments.filter(a => !isOverdue(a, scheduleCtx) && isUpcoming(a, scheduleCtx));
 
   // Photo check-in state
   const { data: rawPhotoAssignments = [], isPending: loadingPhotoAssignmentsQ } = useQuery({
@@ -275,6 +291,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           questionnaire={templates.get(activeAssignment.questionnaireId)!}
           assignment={activeAssignment}
           athleteEmail={profile.email}
+          currentWeight={latestWeight}
           onSubmitted={handleQuestionnaireSubmitted}
           onCancel={() => setActiveAssignment(null)}
         />
@@ -301,7 +318,10 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                   <div>
                     <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
                     {q.description && <p className="text-caption text-ink-2 font-sans">{q.description}</p>}
-                    <p className="font-mono text-caption text-ink-2 mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
+                    <p className="font-mono text-caption text-ink-2 mt-1">
+                      {q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}
+                      {(a.schedule.type === 'plan_week' || a.schedule.type === 'mesocycle_end') && ` · ${scheduleLabel(a.schedule)}`}
+                    </p>
                   </div>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
@@ -330,7 +350,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
                   <p className="font-sans text-label text-ink-2">{q.title}</p>
                   <span className="font-sans text-caption text-ink-3 uppercase">
-                    {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
+                    {scheduleLabel(a.schedule)}
                   </span>
                 </div>
               );

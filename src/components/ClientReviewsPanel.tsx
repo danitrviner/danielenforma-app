@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   UserProfile, WeightCheckIn, WorkoutAssignment, Workout, ProgressPhoto,
   PhotoView, PhotoAssignment, Questionnaire, QuestionnaireAssignment,
-  QuestionnaireResponse, QSchedule, QScheduleType, OnboardingData,
+  QuestionnaireResponse, QuestionnaireQuestion, QSchedule, QScheduleType, OnboardingData,
   OnboardingTemplateQuestion,
 } from '../types';
 import {
@@ -12,6 +12,7 @@ import {
   assignPhotoCheckIn, deactivatePhotoAssignment,
 } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
+import { suggestedScheduleForTitle } from '../data/questionnairePresets';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import ScheduleFields from './ScheduleFields';
@@ -19,8 +20,9 @@ import OnboardingForm from './OnboardingForm';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import ProgressRing from './ProgressRing';
 import BodyweightPanel from './BodyweightPanel';
+import BodyMeasurementsPanel from './BodyMeasurementsPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
-import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm } from './QuestionnaireEditor';
+import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm, newQuestion, applyTypeChange } from './QuestionnaireEditor';
 import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
 import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
@@ -127,8 +129,27 @@ export default function ClientReviewsPanel({
   const [assignWeekdays, setAssignWeekdays] = useState<number[]>([]);
   const [assignIntervalDays, setAssignIntervalDays] = useState(7);
   const [assignDayOfMonth, setAssignDayOfMonth] = useState(1);
+  const [assignPlanWeek, setAssignPlanWeek] = useState(3);
+  const [assignMesocycleOffsetDays, setAssignMesocycleOffsetDays] = useState(0);
   const [assignStartDate, setAssignStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [assigningQ, setAssigningQ] = useState(false);
+
+  // Personalización por cliente sobre la plantilla elegida (overrides de la
+  // asignación) — ver QuestionnaireOverrides en types.ts. Se resetea al
+  // cambiar de plantilla o tras asignar.
+  const [assignOverridesOpen, setAssignOverridesOpen] = useState(false);
+  const [assignHidden, setAssignHidden] = useState<Set<string>>(new Set());
+  const [assignRelabeled, setAssignRelabeled] = useState<Record<string, string>>({});
+  const [assignRequiredOverride, setAssignRequiredOverride] = useState<Record<string, boolean>>({});
+  const [assignExtra, setAssignExtra] = useState<QuestionnaireQuestion[]>([]);
+
+  const resetAssignOverrides = () => {
+    setAssignOverridesOpen(false);
+    setAssignHidden(new Set());
+    setAssignRelabeled({});
+    setAssignRequiredOverride({});
+    setAssignExtra([]);
+  };
   // Inline new-questionnaire editor
   const [showNewQEditor, setShowNewQEditor] = useState(false);
   const [newQForm, setNewQForm]             = useState<QFormState>(blankQForm());
@@ -237,9 +258,22 @@ export default function ClientReviewsPanel({
     setAssigningQ(true);
     try {
       const schedule: QSchedule = { type: assignSchedType };
-      if (assignSchedType === 'weekdays')  schedule.weekdays     = assignWeekdays;
-      if (assignSchedType === 'interval')  schedule.intervalDays = assignIntervalDays;
-      if (assignSchedType === 'monthly')   schedule.dayOfMonth   = assignDayOfMonth;
+      if (assignSchedType === 'weekdays')     schedule.weekdays            = assignWeekdays;
+      if (assignSchedType === 'interval')     schedule.intervalDays        = assignIntervalDays;
+      if (assignSchedType === 'monthly')      schedule.dayOfMonth          = assignDayOfMonth;
+      if (assignSchedType === 'plan_week')    schedule.planWeek            = assignPlanWeek;
+      if (assignSchedType === 'mesocycle_end') schedule.mesocycleOffsetDays = assignMesocycleOffsetDays;
+
+      const overrides = assignHidden.size > 0 || Object.keys(assignRelabeled).length > 0
+        || Object.keys(assignRequiredOverride).length > 0 || assignExtra.length > 0
+        ? {
+            hidden: assignHidden.size > 0 ? [...assignHidden] : undefined,
+            relabeled: Object.keys(assignRelabeled).length > 0 ? assignRelabeled : undefined,
+            required: Object.keys(assignRequiredOverride).length > 0 ? assignRequiredOverride : undefined,
+            extra: assignExtra.length > 0 ? assignExtra : undefined,
+          }
+        : undefined;
+
       const a = await assignQuestionnaire({
         questionnaireId: assignQId,
         athleteId: athlete.email,
@@ -247,11 +281,13 @@ export default function ClientReviewsPanel({
         startDate: assignStartDate,
         active: true,
         createdAt: new Date().toISOString(),
+        overrides,
       });
       setAthleteQAssignments(prev => [...prev, a]);
       setAssignQId('');
       setAssignSchedType('once');
       setAssignWeekdays([]);
+      resetAssignOverrides();
     } catch (err) { console.error(err); showToast('No se pudo asignar el cuestionario.'); }
     finally { setAssigningQ(false); }
   };
@@ -302,7 +338,7 @@ export default function ClientReviewsPanel({
         description: newQForm.description.trim() || undefined,
         questions: newQForm.questions
           .filter(q => q.label.trim())
-          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' ? true : undefined })),
+          .map(q => ({ ...q, graphable: q.type === 'numeric' || q.type === 'scale' || q.type === 'metric' ? true : undefined })),
       };
       const created = await createQuestionnaire(data);
       setCoachQuestionnaires(prev => [...prev, created]);
@@ -1286,7 +1322,21 @@ export default function ClientReviewsPanel({
                 <div className="space-y-3">
                   <select
                     value={assignQId}
-                    onChange={e => setAssignQId(e.target.value)}
+                    onChange={e => {
+                      const id = e.target.value;
+                      setAssignQId(id);
+                      resetAssignOverrides();
+                      const tmpl = coachQuestionnaires.find(q => q.id === id);
+                      const suggested = tmpl ? suggestedScheduleForTitle(tmpl.title) : undefined;
+                      if (suggested) {
+                        setAssignSchedType(suggested.type);
+                        setAssignWeekdays(suggested.weekdays ?? []);
+                        setAssignIntervalDays(suggested.intervalDays ?? 7);
+                        setAssignDayOfMonth(suggested.dayOfMonth ?? 1);
+                        setAssignPlanWeek(suggested.planWeek ?? 3);
+                        setAssignMesocycleOffsetDays(suggested.mesocycleOffsetDays ?? 0);
+                      }
+                    }}
                     className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">— Seleccionar plantilla —</option>
@@ -1306,7 +1356,130 @@ export default function ClientReviewsPanel({
                     onDayOfMonthChange={setAssignDayOfMonth}
                     startDate={assignStartDate}
                     onStartDateChange={setAssignStartDate}
+                    planWeek={assignPlanWeek}
+                    onPlanWeekChange={setAssignPlanWeek}
+                    mesocycleOffsetDays={assignMesocycleOffsetDays}
+                    onMesocycleOffsetDaysChange={setAssignMesocycleOffsetDays}
                   />
+
+                  {/* ── Personalizar para este cliente (overrides sobre la plantilla) ── */}
+                  {assignQId && (() => {
+                    const tmpl = coachQuestionnaires.find(q => q.id === assignQId);
+                    if (!tmpl) return null;
+                    const changeCount = assignHidden.size + Object.keys(assignRelabeled).length
+                      + Object.keys(assignRequiredOverride).length + assignExtra.length;
+                    return (
+                      <div className="border border-white/7 rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setAssignOverridesOpen(o => !o)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 bg-[#1c1b1b] hover:bg-[#212120] transition-colors"
+                        >
+                          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-sm">tune</span>
+                            Personalizar para este cliente
+                            {changeCount > 0 && (
+                              <span className="bg-[#fbcb1a] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full">{changeCount}</span>
+                            )}
+                          </span>
+                          <span className={`material-symbols-outlined text-[#c6c9ab] text-sm transition-transform ${assignOverridesOpen ? 'rotate-180' : ''}`}>expand_more</span>
+                        </button>
+                        {assignOverridesOpen && (
+                          <div className="p-3 space-y-2 bg-[#141413]">
+                            {tmpl.questions.map(q => {
+                              const hidden = assignHidden.has(q.id);
+                              return (
+                                <div key={q.id} className={`flex items-start gap-2 p-2 rounded-lg border ${hidden ? 'border-white/60 opacity-50' : 'border-white/7'}`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAssignHidden(prev => {
+                                      const next = new Set(prev);
+                                      next.has(q.id) ? next.delete(q.id) : next.add(q.id);
+                                      return next;
+                                    })}
+                                    title={hidden ? 'Mostrar de nuevo' : 'Ocultar para este cliente'}
+                                    className="flex-shrink-0 mt-1 text-[#c6c9ab] hover:text-white transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-base">{hidden ? 'visibility_off' : 'visibility'}</span>
+                                  </button>
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <input
+                                      value={assignRelabeled[q.id] ?? ''}
+                                      onChange={e => setAssignRelabeled(prev => {
+                                        const next = { ...prev };
+                                        if (e.target.value) next[q.id] = e.target.value; else delete next[q.id];
+                                        return next;
+                                      })}
+                                      disabled={hidden}
+                                      placeholder={q.label}
+                                      className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-40"
+                                    />
+                                    <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+                                      <span
+                                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${(assignRequiredOverride[q.id] ?? q.required) ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}
+                                        onClick={() => !hidden && setAssignRequiredOverride(prev => ({ ...prev, [q.id]: !(prev[q.id] ?? q.required) }))}
+                                      >
+                                        {(assignRequiredOverride[q.id] ?? q.required) && <span className="material-symbols-outlined text-black" style={{ fontSize: '9px' }}>check</span>}
+                                      </span>
+                                      <span className="font-mono text-[9px] text-[#c6c9ab]">Obligatoria</span>
+                                    </label>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {assignExtra.map((q, idx) => (
+                              <div key={q.id} className="p-2 rounded-lg border border-[#00eefc]/30 bg-[#00eefc]/5 space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    value={q.label}
+                                    onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, label: e.target.value } : qq))}
+                                    placeholder="Pregunta exclusiva de este cliente"
+                                    className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-[#00eefc]"
+                                  />
+                                  <select
+                                    value={q.type}
+                                    onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, ...applyTypeChange({ type: e.target.value as QuestionnaireQuestion['type'] }) } : qq))}
+                                    className="bg-[#1e1e1b] border border-white/7 rounded px-1.5 py-1.5 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc] flex-shrink-0"
+                                  >
+                                    <option value="text">Texto</option>
+                                    <option value="numeric">Número</option>
+                                    <option value="scale">Escala</option>
+                                    <option value="boolean">Sí/No</option>
+                                    <option value="choice">Opción</option>
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAssignExtra(prev => prev.filter((_, i) => i !== idx))}
+                                    className="flex-shrink-0 text-[#c6c9ab] hover:text-red-400 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-base">close</span>
+                                  </button>
+                                </div>
+                                {q.type === 'choice' && (
+                                  <textarea
+                                    value={(q.options ?? []).join('\n')}
+                                    onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) } : qq))}
+                                    placeholder={'Opción A\nOpción B'}
+                                    rows={2}
+                                    className="w-full bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#00eefc] resize-none"
+                                  />
+                                )}
+                              </div>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={() => setAssignExtra(prev => [...prev, { ...newQuestion(), id: `x_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, required: false }])}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[#00eefc] font-mono text-[10px] uppercase hover:text-white transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">add</span>Añadir pregunta solo para él/ella
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <button
                     onClick={handleAssignQuestionnaire}
@@ -1325,11 +1498,20 @@ export default function ClientReviewsPanel({
                   {athleteQAssignments.filter(a => a.active).map(a => {
                     const tmpl = coachQuestionnaires.find(q => q.id === a.questionnaireId);
                     const schedLabel = scheduleLabel(a.schedule);
+                    const overrideCount = (a.overrides?.hidden?.length ?? 0)
+                      + Object.keys(a.overrides?.relabeled ?? {}).length
+                      + Object.keys(a.overrides?.required ?? {}).length
+                      + (a.overrides?.extra?.length ?? 0);
                     return (
                       <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
                         <span className="material-symbols-outlined text-accent text-body-s">quiz</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-sans font-bold text-white text-label truncate">{tmpl?.title ?? a.questionnaireId}</p>
+                          <p className="font-sans font-bold text-white text-label truncate flex items-center gap-2">
+                            {tmpl?.title ?? a.questionnaireId}
+                            {overrideCount > 0 && (
+                              <Badge tone="info">personalizado · {overrideCount}</Badge>
+                            )}
+                          </p>
                           <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                         </div>
                         <button onClick={() => handleDeactivateQ(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
@@ -1345,6 +1527,15 @@ export default function ClientReviewsPanel({
             {/* ── Peso corporal (coach view) ────────────────────────────── */}
             <div className="bg-surface border border-hairline rounded-surface p-5">
               <BodyweightPanel athleteEmail={athlete.email} readOnly />
+            </div>
+
+            {/* ── Mediciones (perímetros) ─────────────────────────────────── */}
+            <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+              <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#fbcb1a] text-sm">straighten</span>
+                Mediciones
+              </h3>
+              <BodyMeasurementsPanel athleteEmail={athlete.email} />
             </div>
 
             {/* ── Gráficas de evolución ──────────────────────────────────── */}

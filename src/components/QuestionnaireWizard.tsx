@@ -1,13 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
-import { submitResponse } from '../dbService';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, QuestionnaireQuestion,
+  BodyweightLog, BodyMeasurement,
+} from '../types';
+import { submitResponse, addBodyweight, saveBodyMeasurement, uploadQuestionnaireMedia } from '../dbService';
+import { resolveQuestions } from '../utils/questionnaireResolve';
 import { todayStr } from '../utils/questionnaireSchedule';
+import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { useBodyMeasurements, bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Icon, Button, ProgressBar } from './ui';
 
 interface Props {
   questionnaire: Questionnaire;
   assignment: QuestionnaireAssignment;
   athleteEmail: string;
+  /** Último peso conocido — prefill de una pregunta 'metric' de peso corporal. */
+  currentWeight?: number;
   onSubmitted: (r: QuestionnaireResponse) => void;
   onCancel: () => void;
 }
@@ -74,14 +84,20 @@ function clearDraft(assignmentId: string): void {
   }
 }
 
-export default function QuestionnaireWizard({ questionnaire, assignment, athleteEmail, onSubmitted, onCancel }: Props) {
-  const questions = questionnaire.questions;
+export default function QuestionnaireWizard({ questionnaire, assignment, athleteEmail, currentWeight, onSubmitted, onCancel }: Props) {
+  const queryClient = useQueryClient();
+  const { latest: latestMeasurements } = useBodyMeasurements(athleteEmail);
+  // resolveQuestions aplica los overrides de personalización por cliente que el
+  // coach configura en ClientReviewsPanel. Sin esto, el chip "personalizado · N"
+  // que ve el coach no tendría ningún efecto en lo que responde el atleta.
+  const questions = useMemo(() => resolveQuestions(questionnaire, assignment), [questionnaire, assignment]);
   const initial = useMemo(() => loadDraft(assignment.id), [assignment.id]);
   const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {});
   const [stepIdx, setStepIdx] = useState(() => Math.min(Math.max(initial?.stepIdx ?? 0, 0), questions.length - 1));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const question = questions[stepIdx];
   const isFirst = stepIdx === 0;
@@ -99,6 +115,56 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
   const setAnswer = (value: string | number | boolean) => {
     setError('');
     setAnswers(prev => ({ ...prev, [question.id]: value }));
+  };
+
+  const prefillFor = (q: QuestionnaireQuestion): number | undefined => {
+    if (q.type !== 'metric' || !q.metricKey) return undefined;
+    if (q.metricKey === 'bodyweight') return currentWeight;
+    return latestMeasurements[q.metricKey]?.value;
+  };
+
+  const subirMedia = async (file: File) => {
+    setUploading(true);
+    setError('');
+    try {
+      setAnswer(await uploadQuestionnaireMedia(athleteEmail, question.id, file));
+    } catch (e) {
+      console.error('uploadQuestionnaireMedia failed:', e);
+      setError(mensajeDeErrorFirestore(e, `subir el archivo de "${question.label}"`));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
+   * Las respuestas de tipo 'metric' se guardan además como serie propia —el peso
+   * reutiliza bodyweightLogs, los perímetros van a bodyMeasurements— para que se
+   * puedan graficar y correlacionar. Va EN PARALELO a la respuesta del
+   * cuestionario, no en su lugar.
+   */
+  const persistirMediciones = async (response: QuestionnaireResponse) => {
+    const hoy = todayStr();
+    for (const q of questions) {
+      if (q.type !== 'metric' || !q.metricKey) continue;
+      const valor = Number(answers[q.id]);
+      if (answers[q.id] === undefined || isNaN(valor)) continue;
+
+      if (q.metricKey === 'bodyweight') {
+        const entry = await addBodyweight({
+          athleteId: athleteEmail, date: hoy, weight: valor,
+          kind: 'daily', createdAt: new Date().toISOString(),
+        });
+        queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
+      } else {
+        const entry = await saveBodyMeasurement({
+          athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor, unit: 'cm',
+          source: 'questionnaire', responseId: response.id, createdAt: new Date().toISOString(),
+        });
+        queryClient.setQueryData<BodyMeasurement[]>(bodyMeasurementsForAthleteKey(athleteEmail), prev =>
+          [...(prev ?? []).filter(m => m.id !== entry.id), entry]
+        );
+      }
+    }
   };
 
   const goBack = () => {
@@ -129,11 +195,14 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
         submittedAt: new Date().toISOString(),
         answers: payload,
       });
+      // Después de la respuesta, no antes: si `submitResponse` falla no queremos
+      // haber escrito ya una medición de un cuestionario que no existe.
+      await persistirMediciones(response);
       clearDraft(assignment.id);
       onSubmitted(response);
     } catch (e) {
-      console.error(e);
-      setError('Error al enviar. Inténtalo de nuevo.');
+      console.error('submitResponse failed:', e);
+      setError(mensajeDeErrorFirestore(e, 'enviar el cuestionario'));
     } finally {
       setSaving(false);
     }
@@ -165,6 +234,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
       <div key={question.id} className="space-y-3 animate-fade-up">
         <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">
           {question.label}{question.required && ' *'}{question.unit && ` (${question.unit})`}
+          {question.type === 'metric' && question.metricKey && ` (${question.metricKey === 'bodyweight' ? 'kg' : 'cm'})`}
         </label>
         {question.helpText && <p className="text-caption text-ink-2/70">{question.helpText}</p>}
 
@@ -188,6 +258,38 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             onChange={e => setAnswer(parseFloat(e.target.value))}
             className="w-full bg-raised border-0 border-b border-hairline text-white font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
           />
+        )}
+
+        {/* 'metric' y 'media' venían de QuestionnaireForm, el formulario de una
+            página al que el wizard sustituyó. Sin ellos una pregunta de medición
+            corporal salía EN BLANCO y el atleta no podía responderla: la función
+            entera de mediciones habría nacido muerta al integrar las dos ramas. */}
+        {question.type === 'metric' && (
+          <input
+            type="number"
+            step={0.1}
+            value={(answers[question.id] as string) ?? ''}
+            onChange={e => setAnswer(parseFloat(e.target.value))}
+            placeholder={prefillFor(question) !== undefined ? String(prefillFor(question)) : undefined}
+            className="w-full bg-raised border-0 border-b border-hairline text-white font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
+          />
+        )}
+
+        {question.type === 'media' && (
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept={question.mediaKind === 'video' ? 'video/*' : question.mediaKind === 'image' ? 'image/*' : 'video/*,image/*'}
+              onChange={e => { const f = e.target.files?.[0]; if (f) subirMedia(f); }}
+              disabled={uploading}
+              aria-label={`Adjuntar archivo para ${question.label}`}
+              className="w-full font-sans text-title-s text-ink-2 file:mr-3 file:py-2 file:px-3 file:rounded-control file:border-0 file:bg-accent file:text-on-accent file:font-sans file:font-bold"
+            />
+            {uploading && <p className="font-mono text-caption text-ink-2">Subiendo…</p>}
+            {typeof answers[question.id] === 'string' && !uploading && (
+              <p className="font-mono text-caption text-success">Archivo subido</p>
+            )}
+          </div>
         )}
 
         {question.type === 'scale' && (

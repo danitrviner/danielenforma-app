@@ -8,6 +8,7 @@ import {
   Icon, Badge,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
 } from './ui';
+import { weekKey } from '../utils/seriesCorrelation';
 
 interface Props {
   questionnaires: Questionnaire[];
@@ -38,17 +39,10 @@ function extractSeries(questionId: string, responses: QuestionnaireResponse[]): 
   return pts.sort((a, b) => a.ts - b.ts);
 }
 
-function weekStart(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const dow = d.getDay();
-  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-  return d.toISOString().slice(0, 10);
-}
-
 function toWeekly(pts: DataPoint[]): WeekPoint[] {
   const map = new Map<string, { sum: number; count: number }>();
   for (const p of pts) {
-    const ws = weekStart(p.date);
+    const ws = weekKey(p.date);
     const e = map.get(ws) ?? { sum: 0, count: 0 };
     map.set(ws, { sum: e.sum + p.value, count: e.count + 1 });
   }

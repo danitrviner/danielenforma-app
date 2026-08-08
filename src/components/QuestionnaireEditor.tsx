@@ -1,5 +1,5 @@
 import React from 'react';
-import { QuestionnaireQuestion, QuestionType } from '../types';
+import { QuestionnaireQuestion, QuestionType, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
 import { Icon, Button, Input } from './ui';
 
 // ── Shared types & helpers (consumed by QuestionnaireManagerScreen + ClientHub) ─
@@ -30,12 +30,14 @@ export function newQuestion(): QuestionnaireQuestion {
 export function applyTypeChange(patch: { type: QuestionType }): Partial<QuestionnaireQuestion> {
   return {
     ...patch,
-    graphable: patch.type === 'numeric' || patch.type === 'scale' ? true : undefined,
+    graphable: patch.type === 'numeric' || patch.type === 'scale' || patch.type === 'metric' ? true : undefined,
     unit: undefined, min: undefined, max: undefined, decimals: undefined,
     scaleMin: undefined, scaleMax: undefined, scaleMinLabel: undefined, scaleMaxLabel: undefined,
     options: undefined, multiSelect: undefined,
     maxChars: undefined,
     labelTrue: undefined, labelFalse: undefined,
+    metricKey: undefined,
+    mediaKind: undefined, maxSizeMb: undefined,
   };
 }
 
@@ -45,7 +47,11 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   choice:  'Opción múltiple',
   text:    'Texto libre',
   boolean: 'Sí / No',
+  metric:  'Medida corporal',
+  media:   'Foto / Vídeo',
 };
+
+const BODY_METRIC_KEYS = Object.keys(BODY_METRIC_LABELS) as BodyMetricKey[];
 
 const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent';
 const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
@@ -164,7 +170,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
                 ))}
               </select>
-              {(q.type === 'numeric' || q.type === 'scale') && (
+              {(q.type === 'numeric' || q.type === 'scale' || q.type === 'metric') && (
                 <span title="Graficable" className="flex-shrink-0 mt-2">
                   <Icon name="show_chart" size="s" className="text-accent" />
                 </span>
@@ -297,6 +303,43 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     <input value={q.labelFalse ?? ''}
                       onChange={e => setQ(idx, { labelFalse: e.target.value || undefined })}
                       placeholder="No" className={`w-full ${MINI_INPUT_CLS}`} />
+                  </div>
+                </div>
+              )}
+              {q.type === 'metric' && (
+                <div className="w-56">
+                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Qué mide</label>
+                  <select
+                    value={q.metricKey ?? ''}
+                    onChange={e => setQ(idx, { metricKey: (e.target.value || undefined) as BodyMetricKey | undefined })}
+                    className={`w-full ${MINI_INPUT_CLS}`}
+                  >
+                    <option value="">— Elige —</option>
+                    {BODY_METRIC_KEYS.map(k => (
+                      <option key={k} value={k}>{BODY_METRIC_LABELS[k]}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {q.type === 'media' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tipo</label>
+                    <select
+                      value={q.mediaKind ?? ''}
+                      onChange={e => setQ(idx, { mediaKind: (e.target.value || undefined) as 'video' | 'image' | undefined })}
+                      className={`w-full ${MINI_INPUT_CLS}`}
+                    >
+                      <option value="">Foto o vídeo</option>
+                      <option value="video">Solo vídeo</option>
+                      <option value="image">Solo foto</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tamaño máx. (MB)</label>
+                    <input type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
+                      onChange={e => setQ(idx, { maxSizeMb: e.target.value === '' ? undefined : Number(e.target.value) })}
+                      placeholder="50" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                 </div>
               )}

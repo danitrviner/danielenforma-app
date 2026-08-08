@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
-import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog } from '../types';
+import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BODY_METRIC_LABELS } from '../types';
 import { epley } from '../utils/oneRepMax';
+import { getStepsForAthlete } from '../dbService';
+import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
+import { DataPoint, Aggregation, Granularity, weekKey, toWeeklyBuckets, pearsonAligned } from '../utils/seriesCorrelation';
 import {
-  EmptyState,
+  EmptyState, Icon,
   ALTURA_GRAFICA, MARGEN_GRAFICA, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
-  TOOLTIP_GRAFICA, LEYENDA_GRAFICA, colorSerie,
+  TOOLTIP_GRAFICA, LEYENDA_GRAFICA, colorSerie, SegmentedControl,
 } from './ui';
 
 interface Props {
@@ -17,30 +21,14 @@ interface Props {
   responses: QuestionnaireResponse[];
   questionnaires: Questionnaire[];
   bodyweightLogs: BodyweightLog[];
+  assignments: WorkoutAssignment[];
 }
 
-type DataPoint = { date: string; value: number };
-type Series = { id: string; label: string; points: DataPoint[]; unit?: string };
+type Series = { id: string; label: string; points: DataPoint[]; unit?: string; agg: Aggregation };
 
 /* F10: la lista local de 8 colores tenía tres repetidos —warning, chart-3 y
    data salían dos veces—, así que dos series distintas podían pintarse igual en
    la misma gráfica. Ahora usa `colorSerie`, los 5 tokens del DS. */
-
-function pearson(a: DataPoint[], b: DataPoint[]): number | null {
-  const dateSet = new Set(a.map(p => p.date));
-  const common = b.filter(p => dateSet.has(p.date));
-  const aAligned = common.map(p => a.find(x => x.date === p.date)!.value);
-  const bAligned = common.map(p => p.value);
-  if (aAligned.length < 3) return null;
-  const n = aAligned.length;
-  const meanA = aAligned.reduce((s, v) => s + v, 0) / n;
-  const meanB = bAligned.reduce((s, v) => s + v, 0) / n;
-  const num = aAligned.reduce((s, v, i) => s + (v - meanA) * (bAligned[i] - meanB), 0);
-  const denA = Math.sqrt(aAligned.reduce((s, v) => s + (v - meanA) ** 2, 0));
-  const denB = Math.sqrt(bAligned.reduce((s, v) => s + (v - meanB) ** 2, 0));
-  if (denA === 0 || denB === 0) return null;
-  return num / (denA * denB);
-}
 
 function fmtDate(dateStr: string): string {
   try {
@@ -51,20 +39,20 @@ function fmtDate(dateStr: string): string {
   }
 }
 
-function weekKey(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const mon = new Date(d);
-  mon.setDate(d.getDate() + diff);
-  return mon.toISOString().split('T')[0];
-}
-
 export default function CorrelationPanel({
-  logs, exercises, responses, questionnaires, bodyweightLogs,
+  athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments,
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
+  // Semanal por defecto: un cuestionario semanal vs. entrenos diarios casi
+  // nunca cae en la misma fecha exacta — a nivel semana sí se puede cruzar.
+  const [granularity, setGranularity] = useState<Granularity>('week');
+
+  const { data: stepLogs = [] } = useQuery({
+    queryKey: ['stepsForAthlete', athleteEmail],
+    queryFn: () => getStepsForAthlete(athleteEmail),
+  });
+  const { all: bodyMeasurements } = useBodyMeasurements(athleteEmail);
 
   const allSeries = useMemo<Series[]>(() => {
     const result: Series[] = [];
@@ -77,28 +65,13 @@ export default function CorrelationPanel({
         label: 'Peso corporal',
         points: sorted.map(b => ({ date: b.date, value: b.weight })),
         unit: 'kg',
+        agg: 'avg',
       });
 
       // Weekly average
-      const byWeek: Record<string, number[]> = {};
-      for (const b of sorted) {
-        const wk = weekKey(b.date);
-        if (!byWeek[wk]) byWeek[wk] = [];
-        byWeek[wk].push(b.weight);
-      }
-      const weekPoints: DataPoint[] = Object.entries(byWeek)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, vals]) => ({
-          date,
-          value: Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10,
-        }));
+      const weekPoints = toWeeklyBuckets(sorted.map(b => ({ date: b.date, value: b.weight })), 'avg');
       if (weekPoints.length > 0) {
-        result.push({
-          id: 'bw_weekly',
-          label: 'Peso corporal (media sem.)',
-          points: weekPoints,
-          unit: 'kg',
-        });
+        result.push({ id: 'bw_weekly', label: 'Peso corporal (media sem.)', points: weekPoints, unit: 'kg', agg: 'avg' });
       }
     }
 
@@ -119,7 +92,7 @@ export default function CorrelationPanel({
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, value]) => ({ date, value: Math.round(value) }));
       if (points.length > 0) {
-        result.push({ id: 'tonnage', label: 'Tonelaje total', points, unit: 'kg' });
+        result.push({ id: 'tonnage', label: 'Tonelaje total', points, unit: 'kg', agg: 'sum' });
       }
     }
 
@@ -143,12 +116,7 @@ export default function CorrelationPanel({
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, value]) => ({ date, value: Math.round(value * 10) / 10 }));
       if (points.length > 0) {
-        result.push({
-          id: `orm_${eid}`,
-          label: `1RM: ${ex?.name ?? eid}`,
-          points,
-          unit: 'kg',
-        });
+        result.push({ id: `orm_${eid}`, label: `1RM: ${ex?.name ?? eid}`, points, unit: 'kg', agg: 'avg' });
       }
     }
 
@@ -169,18 +137,56 @@ export default function CorrelationPanel({
         }
         if (points.length > 0) {
           points.sort((a, b) => a.date.localeCompare(b.date));
-          result.push({
-            id: `q_${question.id}`,
-            label: `${q.title} › ${question.label}`,
-            points,
-            unit: question.unit,
-          });
+          result.push({ id: `q_${question.id}`, label: `${q.title} › ${question.label}`, points, unit: question.unit, agg: 'avg' });
         }
       }
     }
 
+    // 5. Medidas corporales — una serie por perímetro con datos
+    const byMetric = new Map<string, DataPoint[]>();
+    for (const m of bodyMeasurements) {
+      if (!byMetric.has(m.metricKey)) byMetric.set(m.metricKey, []);
+      byMetric.get(m.metricKey)!.push({ date: m.date, value: m.value });
+    }
+    for (const [metricKey, pts] of byMetric) {
+      const sorted = [...pts].sort((a, b) => a.date.localeCompare(b.date));
+      result.push({
+        id: `metric_${metricKey}`,
+        label: BODY_METRIC_LABELS[metricKey as keyof typeof BODY_METRIC_LABELS] ?? metricKey,
+        points: sorted,
+        unit: 'cm',
+        agg: 'avg',
+      });
+    }
+
+    // 6. Pasos diarios
+    if (stepLogs.length > 0) {
+      const points = [...stepLogs]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(s => ({ date: s.date, value: s.steps }));
+      result.push({ id: 'steps', label: 'Pasos diarios', points, unit: 'pasos', agg: 'sum' });
+    }
+
+    // 7. Adherencia semanal (% de entrenos asignados completados esa semana)
+    if (assignments.length > 0) {
+      const byWeek = new Map<string, { completed: number; total: number }>();
+      for (const a of assignments) {
+        const wk = weekKey(a.date);
+        const entry = byWeek.get(wk) ?? { completed: 0, total: 0 };
+        entry.total += 1;
+        if (a.status === 'completed') entry.completed += 1;
+        byWeek.set(wk, entry);
+      }
+      const points = [...byWeek.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, { completed, total }]) => ({ date, value: Math.round((completed / total) * 1000) / 10 }));
+      if (points.length > 0) {
+        result.push({ id: 'adherence_weekly', label: 'Adherencia semanal a entrenos', points, unit: '%', agg: 'avg' });
+      }
+    }
+
     return result;
-  }, [logs, exercises, responses, questionnaires, bodyweightLogs]);
+  }, [logs, exercises, responses, questionnaires, bodyweightLogs, bodyMeasurements, stepLogs, assignments]);
 
   const toggleSeries = (id: string) => {
     setSelectedIds(prev => {
@@ -189,13 +195,21 @@ export default function CorrelationPanel({
     });
   };
 
-  const selectedSeries = allSeries.filter(s => selectedIds.includes(s.id));
+  const rawSelectedSeries = allSeries.filter(s => selectedIds.includes(s.id));
+
+  // Series efectivamente graficadas/correlacionadas — a granularidad 'week'
+  // se agregan según la semántica propia de cada serie (suma para
+  // tonelaje/pasos, media para el resto) antes de dibujar y de correlacionar,
+  // así el gráfico y el Pearson de abajo siempre muestran lo mismo.
+  const selectedSeries = useMemo<Series[]>(() => {
+    if (granularity === 'day') return rawSelectedSeries;
+    return rawSelectedSeries.map(s => ({ ...s, points: toWeeklyBuckets(s.points, s.agg) }));
+  }, [rawSelectedSeries, granularity]);
 
   // Build chart data
   const chartData = useMemo(() => {
     if (selectedSeries.length === 0) return [];
 
-    // Gather all unique dates across selected series
     const allDates = new Set<string>();
     for (const s of selectedSeries) {
       for (const p of s.points) allDates.add(p.date);
@@ -211,7 +225,6 @@ export default function CorrelationPanel({
         if (point === undefined) {
           row[s.id] = null;
         } else if (multiSeries) {
-          // Normalize 0-100
           const vals = s.points.map(p => p.value);
           const min = Math.min(...vals);
           const max = Math.max(...vals);
@@ -229,19 +242,26 @@ export default function CorrelationPanel({
     });
   }, [selectedSeries]);
 
-  // Pearson for exactly 2 series
+  // Pearson para exactamente 2 series — sobre los puntos RAW (agrega él
+  // mismo según granularidad/agg), no sobre los ya agregados por el gráfico,
+  // para no perder precisión ni acoplar el cálculo a la vista.
   const correlationResult = useMemo(() => {
-    if (selectedSeries.length !== 2) return null;
-    const [a, b] = selectedSeries;
-    const r = pearson(a.points, b.points);
-    if (r === null) return { r: null, label: 'Datos insuficientes para calcular correlación' };
-    const abs = Math.abs(r);
+    if (rawSelectedSeries.length !== 2) return null;
+    const [a, b] = rawSelectedSeries;
+    const result = pearsonAligned(a.points, a.agg, b.points, b.agg, granularity);
+    if (result === null) {
+      return {
+        r: null, n: 0,
+        label: `Datos insuficientes (mínimo 3 puntos en común) a granularidad ${granularity === 'week' ? 'semanal' : 'diaria'}${granularity === 'day' ? ' — prueba semanal' : ''}`,
+      };
+    }
+    const abs = Math.abs(result.r);
     let strength: string;
     if (abs > 0.7) strength = 'Correlación fuerte';
     else if (abs >= 0.4) strength = 'Correlación moderada';
     else strength = 'Correlación débil o nula';
-    return { r, label: strength };
-  }, [selectedSeries]);
+    return { r: result.r, n: result.n, label: strength };
+  }, [rawSelectedSeries, granularity]);
 
   const hasData = allSeries.length > 0;
   const multiNorm = selectedSeries.length > 1;
@@ -280,12 +300,25 @@ export default function CorrelationPanel({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
-          Análisis de correlaciones
-        </h2>
-        <p className="font-sans text-label text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
+            <Icon name="insights" size="l" filled className="text-accent" />
+            Análisis de correlaciones
+          </h2>
+          <p className="font-sans text-label text-ink-2 mt-1">Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.</p>
+        </div>
+        {/* Granularidad — semanal por defecto para poder cruzar cuestionarios
+            semanales con datos diarios (entrenos, pasos); diaria disponible
+            para cuando ambas series son diarias de verdad. */}
+        <div className="flex-shrink-0">
+          <SegmentedControl
+            options={[{ value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' }]}
+            value={granularity}
+            onChange={v => setGranularity(v as Granularity)}
+            label="Granularidad"
+          />
+        </div>
       </div>
 
       {/* Series selector — accordion on mobile, flat on desktop */}
@@ -347,6 +380,7 @@ export default function CorrelationPanel({
                 {multiNorm
                   ? '% relativo por serie (mín=0 % · máx=100 %)'
                   : (selectedSeries[0].unit ? `Valor en ${selectedSeries[0].unit}` : 'Valor')}
+                {granularity === 'week' ? ' · agregado por semana' : ''}
               </p>
             </div>
             <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.l}>
@@ -373,7 +407,6 @@ export default function CorrelationPanel({
                     const s = selectedSeries.find(s => s.id === name);
                     if (!s) return [null, name];
                     if (multiNorm) {
-                      // Show real value, not normalised %
                       const raw = item.payload?.[`${name}_raw`] ?? value;
                       return [`${Number(raw).toFixed(1)}${s.unit ? ` ${s.unit}` : ''}`, s.label];
                     }
@@ -433,7 +466,7 @@ export default function CorrelationPanel({
                     }}>
                       r = {correlationResult.r.toFixed(2)}
                     </span>
-                    <span className="font-sans text-label text-ink-2">{correlationResult.label}</span>
+                    <span className="font-sans text-label text-ink-2">{correlationResult.label} · n = {correlationResult.n}</span>
                   </div>
                   <p className="font-mono text-caption text-ink-3">Correlación ≠ causalidad</p>
                 </>
