@@ -22,7 +22,7 @@ export async function getAllCourses(): Promise<AcademyCourse[]> {
     return courses;
   } catch (err) {
     console.warn('getAllCourses Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalCourses();
   }
 }
@@ -40,7 +40,7 @@ export async function createCourse(data: Omit<AcademyCourse, 'id'>): Promise<Aca
     return course;
   } catch (err) {
     console.warn('createCourse Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const course: AcademyCourse = { ...data, id: `local_course_${Date.now()}` };
     saveLocalCourses([...getLocalCourses(), course]);
     return course;
@@ -55,7 +55,7 @@ export async function updateCourse(id: string, updates: Partial<AcademyCourse>):
     saveLocalCourses(updated);
   } catch (err) {
     console.warn('updateCourse Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCourses(updated);
   }
 }
@@ -68,7 +68,7 @@ export async function deleteCourse(id: string): Promise<void> {
     saveLocalCourses(filtered);
   } catch (err) {
     console.warn('deleteCourse Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCourses(filtered);
   }
 }
@@ -93,7 +93,7 @@ export async function getAllLessons(): Promise<AcademyLesson[]> {
     return lessons;
   } catch (err) {
     console.warn('getAllLessons Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalLessons();
   }
 }
@@ -111,7 +111,7 @@ export async function createLesson(data: Omit<AcademyLesson, 'id'>): Promise<Aca
     return lesson;
   } catch (err) {
     console.warn('createLesson Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const lesson: AcademyLesson = { ...data, id: `local_lesson_${Date.now()}` };
     saveLocalLessons([...getLocalLessons(), lesson]);
     return lesson;
@@ -126,7 +126,7 @@ export async function updateLesson(id: string, updates: Partial<AcademyLesson>):
     saveLocalLessons(updated);
   } catch (err) {
     console.warn('updateLesson Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalLessons(updated);
   }
 }
@@ -139,7 +139,7 @@ export async function deleteLesson(id: string): Promise<void> {
     saveLocalLessons(filtered);
   } catch (err) {
     console.warn('deleteLesson Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalLessons(filtered);
   }
 }
@@ -168,7 +168,7 @@ export async function getAcademyProgress(athleteId: string): Promise<AcademyProg
     return progress;
   } catch (err) {
     console.warn('getAcademyProgress Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalProgressMap()[athleteId] ?? emptyProgress(athleteId);
   }
 }
@@ -202,7 +202,7 @@ export async function markLessonComplete(athleteId: string, lessonId: string, co
     return progress;
   } catch (err) {
     console.warn('markLessonComplete Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const map = getLocalProgressMap();
     map[athleteId] = progress;
     saveLocalProgressMap(map);
@@ -232,7 +232,7 @@ export async function getAllAcademyAccess(): Promise<AcademyAccess[]> {
     return list;
   } catch (err) {
     console.warn('getAllAcademyAccess Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return Object.values(getLocalAccessMap());
   }
 }
@@ -248,7 +248,7 @@ export async function getAcademyAccess(athleteId: string): Promise<AcademyAccess
     return access;
   } catch (err) {
     console.warn('getAcademyAccess Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalAccessMap()[athleteId] ?? null;
   }
 }
@@ -269,7 +269,7 @@ export async function setAcademyAccess(athleteId: string, enabled: boolean, gran
     return access;
   } catch (err) {
     console.warn('setAcademyAccess Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const map = getLocalAccessMap();
     map[athleteId] = access;
     saveLocalAccessMap(map);

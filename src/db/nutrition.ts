@@ -35,7 +35,7 @@ export async function getFoodItems(): Promise<MealItem[]> {
     return items;
   } catch (err) {
     console.warn('getFoodItems Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalFoodItems();
   }
 }
@@ -54,7 +54,7 @@ export async function createFoodItem(data: Omit<MealItem, 'id'>): Promise<MealIt
     return newItem;
   } catch (err) {
     console.warn('createFoodItem Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const newItem: MealItem = { ...data, id: `local_food_${Date.now()}` };
     saveLocalFoodItems([...getLocalFoodItems(), newItem]);
     return newItem;
@@ -72,7 +72,7 @@ export async function updateFoodItem(id: string, updates: Partial<MealItem>): Pr
     saveLocalFoodItems(getLocalFoodItems().map(f => (f.id === id ? { ...f, ...updates } : f)));
   } catch (err) {
     console.warn('updateFoodItem Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalFoodItems(getLocalFoodItems().map(f => (f.id === id ? { ...f, ...updates } : f)));
   }
 }
@@ -88,7 +88,7 @@ export async function deleteFoodItem(id: string): Promise<void> {
     saveLocalFoodItems(getLocalFoodItems().filter(f => f.id !== id));
   } catch (err) {
     console.warn('deleteFoodItem Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalFoodItems(getLocalFoodItems().filter(f => f.id !== id));
   }
 }
@@ -120,7 +120,7 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
     saveLocalFoodItems(after.docs.map(d => ({ id: d.id, ...d.data() } as MealItem)));
   } catch (err) {
     console.warn('seedFoodItems Firestore failed, seeding local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     if (getLocalFoodItems().length === 0) {
       saveLocalFoodItems(seeded);
     }
@@ -181,7 +181,7 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
     localStorage.setItem(localKey, JSON.stringify(data));
   } catch (err) {
     console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     localStorage.setItem(localKey, JSON.stringify(data));
   }
 }
@@ -214,7 +214,7 @@ export async function getDietsForAthlete(athleteEmail: string): Promise<Diet[]> 
     return diets;
   } catch (err) {
     console.warn('getDietsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getDietsFromLocal().filter(d => d.athleteId === athleteEmail);
   }
 }
@@ -232,7 +232,7 @@ export async function createDiet(data: Omit<Diet, 'id'>): Promise<Diet> {
     return diet;
   } catch (err) {
     console.warn('createDiet Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const diet: Diet = { id: `diet_${Date.now()}`, ...data };
     setDietsToLocal([...getDietsFromLocal(), diet]);
     return diet;
@@ -248,7 +248,7 @@ export async function updateDiet(id: string, updates: Partial<Diet>): Promise<vo
     setDietsToLocal(updated);
   } catch (err) {
     console.warn('updateDiet Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setDietsToLocal(updated);
   }
 }
@@ -261,7 +261,7 @@ export async function deleteDiet(id: string): Promise<void> {
     setDietsToLocal(filtered);
   } catch (err) {
     console.warn('deleteDiet Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setDietsToLocal(filtered);
   }
 }
@@ -301,7 +301,7 @@ export async function getWeeklyMenusForAthlete(athleteEmail: string): Promise<We
     return menus;
   } catch (err) {
     console.warn('getWeeklyMenusForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getWeeklyMenusFromLocal().filter(m => m.athleteId === athleteEmail);
   }
 }
@@ -322,7 +322,7 @@ export async function getPublishedMenu(athleteEmail: string): Promise<WeeklyMenu
     return menu;
   } catch (err) {
     console.warn('getPublishedMenu Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getWeeklyMenusFromLocal().find(m => m.athleteId === athleteEmail && m.status === 'published') ?? null;
   }
 }
@@ -340,7 +340,7 @@ export async function createWeeklyMenu(data: Omit<WeeklyMenu, 'id'>): Promise<We
     return menu;
   } catch (err) {
     console.warn('createWeeklyMenu Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const menu: WeeklyMenu = { id: `menu_${Date.now()}`, ...data };
     setWeeklyMenusToLocal([...getWeeklyMenusFromLocal(), menu]);
     return menu;
@@ -356,7 +356,7 @@ export async function updateWeeklyMenu(id: string, updates: Partial<WeeklyMenu>)
     setWeeklyMenusToLocal(updated);
   } catch (err) {
     console.warn('updateWeeklyMenu Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setWeeklyMenusToLocal(updated);
   }
 }
@@ -369,7 +369,7 @@ export async function deleteWeeklyMenu(id: string): Promise<void> {
     setWeeklyMenusToLocal(filtered);
   } catch (err) {
     console.warn('deleteWeeklyMenu Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setWeeklyMenusToLocal(filtered);
   }
 }
@@ -416,7 +416,7 @@ export async function getDietCompletionLog(athleteId: string, date: string): Pro
     return log;
   } catch (err) {
     console.warn('getDietCompletionLog Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
   }
 }
@@ -433,7 +433,7 @@ export async function getDietCompletionLogsForAthlete(athleteId: string): Promis
     return list;
   } catch (err) {
     console.warn('getDietCompletionLogsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
@@ -451,7 +451,7 @@ export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>)
     return log;
   } catch (err) {
     console.warn('saveDietCompletionLog Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
@@ -481,7 +481,7 @@ export async function getMenuCompletionLog(athleteId: string, date: string): Pro
     return log;
   } catch (err) {
     console.warn('getMenuCompletionLog Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalMenuCompletionLogs().find(l => l.id === docId) ?? null;
   }
 }
@@ -498,7 +498,7 @@ export async function getMenuCompletionLogsForAthlete(athleteId: string): Promis
     return list;
   } catch (err) {
     console.warn('getMenuCompletionLogsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalMenuCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
@@ -516,7 +516,7 @@ export async function saveMenuCompletionLog(data: Omit<MenuCompletionLog, 'id'>)
     return log;
   } catch (err) {
     console.warn('saveMenuCompletionLog Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
@@ -547,7 +547,7 @@ export async function getAthleteDietConfig(athleteEmail: string): Promise<Athlet
     return defaultCfg;
   } catch (err) {
     console.warn('getAthleteDietConfig Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     try {
       const raw = localStorage.getItem(localKey);
       return raw ? JSON.parse(raw) : defaultCfg;
@@ -563,7 +563,7 @@ export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<
     localStorage.setItem(localKey, JSON.stringify(config));
   } catch (err) {
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     localStorage.setItem(localKey, JSON.stringify(config));
   }
 }
@@ -589,7 +589,7 @@ export async function getNutritionProgram(athleteEmail: string): Promise<Nutriti
     return { athleteId: athleteEmail, ...snap.data() } as NutritionProgram;
   } catch (err) {
     console.warn('getNutritionProgram Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalNutProgs().find(p => p.athleteId === athleteEmail) ?? null;
   }
 }
@@ -608,7 +608,7 @@ export async function saveNutritionProgram(program: NutritionProgram): Promise<v
     saveLocalNutProgs([...list, program]);
   } catch (err) {
     console.warn('saveNutritionProgram Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const list = getLocalNutProgs().filter(p => p.athleteId !== athleteId);
     saveLocalNutProgs([...list, program]);
   }
@@ -644,7 +644,7 @@ export async function deleteNutritionProgram(athleteEmail: string): Promise<void
     saveLocalNutProgs(getLocalNutProgs().filter(p => p.athleteId !== athleteEmail));
   } catch (err) {
     console.warn('deleteNutritionProgram Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalNutProgs(getLocalNutProgs().filter(p => p.athleteId !== athleteEmail));
   }
 }

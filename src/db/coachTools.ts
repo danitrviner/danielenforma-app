@@ -22,7 +22,7 @@ export async function getCoachNotes(): Promise<CoachNote[]> {
     return notes;
   } catch (err) {
     console.warn('getCoachNotes Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalCoachNotes();
   }
 }
@@ -40,7 +40,7 @@ export async function createCoachNote(data: Omit<CoachNote, 'id'>): Promise<Coac
     return note;
   } catch (err) {
     console.warn('createCoachNote Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const note: CoachNote = { ...data, id: `local_cn_${Date.now()}` };
     saveLocalCoachNotes([...getLocalCoachNotes(), note]);
     return note;
@@ -55,7 +55,7 @@ export async function updateCoachNote(id: string, updates: Partial<CoachNote>): 
     saveLocalCoachNotes(updated);
   } catch (err) {
     console.warn('updateCoachNote Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCoachNotes(updated);
   }
 }
@@ -68,7 +68,7 @@ export async function deleteCoachNote(id: string): Promise<void> {
     saveLocalCoachNotes(filtered);
   } catch (err) {
     console.warn('deleteCoachNote Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCoachNotes(filtered);
   }
 }
@@ -97,7 +97,7 @@ export async function getCoachClientTasks(athleteEmail: string): Promise<CoachCl
     return tasks;
   } catch (err) {
     console.warn('getCoachClientTasks Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalCoachClientTasks().filter(t => t.athleteId === athleteEmail);
   }
 }
@@ -116,7 +116,7 @@ export async function setSeededTaskDone(athleteEmail: string, itemId: string, ti
     saveLocalCoachClientTasks(updated);
   } catch (err) {
     console.warn('setSeededTaskDone Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCoachClientTasks(updated);
   }
 }
@@ -134,7 +134,7 @@ export async function createCoachClientTask(data: Omit<CoachClientTask, 'id'>): 
     return task;
   } catch (err) {
     console.warn('createCoachClientTask Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const task: CoachClientTask = { ...data, id: `local_cct_${Date.now()}` };
     saveLocalCoachClientTasks([...getLocalCoachClientTasks(), task]);
     return task;
@@ -149,7 +149,7 @@ export async function updateCoachClientTask(id: string, updates: Partial<CoachCl
     saveLocalCoachClientTasks(updated);
   } catch (err) {
     console.warn('updateCoachClientTask Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCoachClientTasks(updated);
   }
 }
@@ -162,7 +162,7 @@ export async function deleteCoachClientTask(id: string): Promise<void> {
     saveLocalCoachClientTasks(filtered);
   } catch (err) {
     console.warn('deleteCoachClientTask Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalCoachClientTasks(filtered);
   }
 }
@@ -193,7 +193,7 @@ export async function getAllResources(): Promise<Resource[]> {
     return resources;
   } catch (err) {
     console.warn('getAllResources Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalResources();
   }
 }
@@ -211,7 +211,7 @@ export async function createResource(data: Omit<Resource, 'id'>): Promise<Resour
     return resource;
   } catch (err) {
     console.warn('createResource Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const resource: Resource = { ...data, id: `local_resource_${Date.now()}` };
     saveLocalResources([...getLocalResources(), resource]);
     return resource;
@@ -226,7 +226,7 @@ export async function deleteResource(id: string): Promise<void> {
     saveLocalResources(filtered);
   } catch (err) {
     console.warn('deleteResource Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalResources(filtered);
   }
 }

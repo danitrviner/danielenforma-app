@@ -54,10 +54,62 @@ try {
   }
 } catch (e) {}
 
-export function setLocalBypassMode(enabled: boolean) {
-  forceLocalOnly = enabled;
+/**
+ * Último error de Firestore que provocó una caída a local, tal cual. Lo lee
+ * `mensajeDeErrorFirestore` para poder decir la verdad en pantalla en vez de
+ * "revisa tu conexión" (hallazgo P1-6 de la auditoría visual).
+ */
+export let ultimoErrorFirestore: unknown = null;
+
+/**
+ * Un fallo de permisos NO es un fallo de red.
+ *
+ * La distinción importa porque el modo local existe para una sola cosa:
+ * sobrevivir a que Firestore no esté accesible, encolando lo que el usuario
+ * haga hasta que vuelva. Ante un `permission-denied` eso es justo lo contrario
+ * de lo que hay que hacer — la escritura no se va a sincronizar nunca, por
+ * mucho que se reintente, y guardarla en localStorage solo sirve para que el
+ * usuario crea que sus datos están a salvo cuando no lo están.
+ */
+export function esFalloDePermisos(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return code === 'permission-denied' || code === 'unauthenticated';
+}
+
+/**
+ * Activa el modo local. `err` es el error que lo provocó — pásalo siempre que
+ * lo tengas.
+ *
+ * Con un error de permisos NO se activa, y ese es el arreglo de P0-2: una
+ * lectura denegada de `user_profiles` ponía esta bandera a nivel de módulo y
+ * bloqueaba TODAS las escrituras posteriores de la sesión, incluida la del
+ * onboarding, con un mensaje de "sin conexión" que era mentira. Un atleta se
+ * quedaba sin poder darse de alta y sin forma de saber por qué. La lectura que
+ * falla sigue cayendo a su copia local (eso lo hace cada `catch` por su cuenta,
+ * y está bien); lo que ya no hace es envenenar el resto de la sesión.
+ */
+export function setLocalBypassMode(enabled: boolean, err?: unknown) {
+  if (!enabled) {
+    forceLocalOnly = false;
+    ultimoErrorFirestore = null;
+    return;
+  }
+  ultimoErrorFirestore = err ?? ultimoErrorFirestore;
+  if (err !== undefined && esFalloDePermisos(err)) return;
+  forceLocalOnly = true;
 }
 
 export function isLocalBypassActive(): boolean {
   return forceLocalOnly;
+}
+
+/**
+ * Hay un fallo de permisos vivo en esta sesión. No activa el modo local (ver
+ * arriba), pero tampoco puede quedar en silencio: las escrituras que fallen por
+ * esto se guardan solo en local y el usuario se cree que están a salvo. El aviso
+ * de LocalModeBanner es distinto al de "sin conexión" porque el problema, la
+ * causa y quién puede arreglarlo también lo son.
+ */
+export function hayFalloDePermisos(): boolean {
+  return !forceLocalOnly && esFalloDePermisos(ultimoErrorFirestore);
 }

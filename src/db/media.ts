@@ -71,7 +71,7 @@ export async function assignPhotoCheckIn(data: Omit<PhotoAssignment, 'id'>): Pro
     return { ...safeData, id: ref.id };
   } catch (err) {
     console.warn('assignPhotoCheckIn Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
     localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
     return a;
@@ -85,7 +85,7 @@ export async function getPhotoAssignmentsForAthlete(email: string): Promise<Phot
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as PhotoAssignment));
   } catch (err) {
     console.warn('getPhotoAssignmentsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalPhotoAssignments().filter(a => a.athleteId === email);
   }
 }
@@ -99,7 +99,7 @@ export async function deactivatePhotoAssignment(id: string): Promise<void> {
     await updateDoc(doc(db, 'photoAssignments', id), { active: false });
   } catch (err) {
     console.warn('deactivatePhotoAssignment Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
   }
 }

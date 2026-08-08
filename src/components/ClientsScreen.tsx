@@ -14,6 +14,7 @@ import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
 import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
@@ -109,11 +110,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       loadInvites();
     } catch (err: any) {
       console.error('inviteClient error:', err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setInviteError('El acceso por enlace no está activado en Firebase (Authentication → Sign-in method → Email link).');
-      } else {
-        setInviteError(err.message || 'No se pudo enviar la invitación.');
-      }
+      // El copy vive en utils/erroresFirestore, no aquí: es el mismo catálogo de
+      // fallos que ve el atleta al darse de alta, y tener dos redacciones del
+      // mismo error en dos pantallas es como se acaba arreglando solo una.
+      setInviteError(mensajeDeErrorFirestore(err, 'enviar la invitación'));
     } finally {
       setInviting(false);
     }

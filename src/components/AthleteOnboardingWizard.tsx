@@ -3,6 +3,7 @@ import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
   ActivityLevel, DietType,
 } from '../types';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding } from '../dbService';
 import { Icon, Button, Input } from './ui';
 
@@ -176,7 +177,10 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       onComplete();
     } catch (err) {
       console.error('saveOnboarding failed:', err);
-      setError('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.');
+      // P1-6: el mensaje sale del error real. Antes era siempre "revisa tu
+      // conexión", que en el caso más frecuente —permisos denegados— mandaba al
+      // atleta a mirar su wifi mientras el problema estaba en su cuenta.
+      setError(mensajeDeErrorFirestore(err, 'guardar tu ficha'));
     } finally {
       setSaving(false);
     }

@@ -35,7 +35,7 @@ export async function getExercises(): Promise<Exercise[]> {
     return exercises;
   } catch (err) {
     console.warn('getExercises Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalExercises();
   }
 }
@@ -58,7 +58,7 @@ export async function createExercise(data: Omit<Exercise, 'id'>): Promise<Exerci
     return newEx;
   } catch (err) {
     console.warn('createExercise Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const newEx: Exercise = { ...data, id: `local_ex_${Date.now()}` };
     const list = getLocalExercises();
     list.push(newEx);
@@ -80,7 +80,7 @@ export async function updateExercise(id: string, updates: Partial<Exercise>): Pr
     saveLocalExercises(list);
   } catch (err) {
     console.warn('updateExercise Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const list = getLocalExercises().map(ex => (ex.id === id ? { ...ex, ...updates } : ex));
     saveLocalExercises(list);
   }
@@ -97,7 +97,7 @@ export async function deleteExercise(id: string): Promise<void> {
     saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
   } catch (err) {
     console.warn('deleteExercise Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
   }
 }
@@ -125,7 +125,7 @@ export async function getExerciseNotesForAthlete(athleteId: string): Promise<Exe
     return notes;
   } catch (err) {
     console.warn('getExerciseNotesForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalExerciseNotes().filter(n => n.athleteId === athleteId);
   }
 }
@@ -143,7 +143,7 @@ export async function saveExerciseNote(data: Omit<ExercisePersonalNote, 'id'>): 
     return note;
   } catch (err) {
     console.warn('saveExerciseNote Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalExerciseNotes([...getLocalExerciseNotes().filter(n => n.id !== docId), note]);
     return note;
   }
@@ -170,7 +170,7 @@ export async function seedExercisesIfEmpty(): Promise<void> {
     saveLocalExercises(seeded);
   } catch (err) {
     console.warn('seedExercises Firestore failed, seeding local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     if (getLocalExercises().length === 0) {
       const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
       saveLocalExercises(seeded);
@@ -210,7 +210,7 @@ export async function getWorkouts(): Promise<Workout[]> {
     return workouts;
   } catch (err) {
     console.warn('getWorkouts Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalWorkouts();
   }
 }
@@ -233,7 +233,7 @@ export async function createWorkout(data: Omit<Workout, 'id'>): Promise<Workout>
     return newW;
   } catch (err) {
     console.warn('createWorkout Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const newW: Workout = { ...data, id: `local_w_${Date.now()}` };
     const list = getLocalWorkouts();
     list.push(newW);
@@ -253,7 +253,7 @@ export async function updateWorkout(id: string, updates: Partial<Workout>): Prom
     saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
   } catch (err) {
     console.warn('updateWorkout Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
   }
 }
@@ -273,7 +273,7 @@ export async function deleteWorkout(id: string): Promise<void> {
     dropLocal();
   } catch (err) {
     console.warn('deleteWorkout Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     dropLocal();
   }
 }
@@ -313,7 +313,7 @@ export async function getWorkoutAssignments(athleteId?: string): Promise<Workout
     return assignments;
   } catch (err) {
     console.warn('getWorkoutAssignments Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const all = getLocalAssignments();
     return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
   }
@@ -350,7 +350,7 @@ export async function getWorkoutAssignmentsByMesocycleIds(mesocycleIds: string[]
     return results;
   } catch (err) {
     console.warn('getWorkoutAssignmentsByMesocycleIds Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalAssignments().filter(a => a.mesocycleId && mesocycleIds.includes(a.mesocycleId));
   }
 }
@@ -372,7 +372,7 @@ export async function createWorkoutAssignment(data: Omit<WorkoutAssignment, 'id'
     return newA;
   } catch (err) {
     console.warn('createWorkoutAssignment Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const newA: WorkoutAssignment = { ...data, id: `local_a_${Date.now()}` };
     const list = getLocalAssignments();
     list.push(newA);
@@ -391,7 +391,7 @@ export async function updateWorkoutAssignment(id: string, updates: Partial<Worko
     saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
   } catch (err) {
     console.warn('updateWorkoutAssignment Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
   }
 }
@@ -406,7 +406,7 @@ export async function deleteWorkoutAssignment(id: string): Promise<void> {
     saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
   } catch (err) {
     console.warn('deleteWorkoutAssignment Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAssignments(getLocalAssignments().filter(a => a.id !== id));
   }
 }
@@ -445,7 +445,7 @@ export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> 
     return logs;
   } catch (err) {
     console.warn('getWorkoutLogs Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const all = getLocalWorkoutLogs();
     return athleteId ? all.filter(l => l.athleteId === athleteId) : all;
   }
@@ -468,7 +468,7 @@ export async function createWorkoutLog(data: Omit<WorkoutLog, 'id'>): Promise<Wo
     return newL;
   } catch (err) {
     console.warn('createWorkoutLog Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const newL: WorkoutLog = { ...data, id: `local_log_${Date.now()}` };
     const list = getLocalWorkoutLogs();
     list.push(newL);
@@ -487,7 +487,7 @@ export async function deleteWorkoutLog(id: string): Promise<void> {
     saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
   } catch (err) {
     console.warn('deleteWorkoutLog Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalWorkoutLogs(getLocalWorkoutLogs().filter(l => l.id !== id));
   }
 }
@@ -500,7 +500,7 @@ export async function updateWorkoutLog(id: string, updates: Partial<WorkoutLog>)
     saveLocalWorkoutLogs(updated);
   } catch (err) {
     console.warn('updateWorkoutLog Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalWorkoutLogs(updated);
   }
 }
@@ -700,7 +700,7 @@ export async function getMesocycles(athleteId: string): Promise<Mesocycle[]> {
     return list;
   } catch (err) {
     console.warn('getMesocycles Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalMesocycles().filter(m => m.athleteId === athleteId);
   }
 }
@@ -718,7 +718,7 @@ export async function createMesocycle(data: Omit<Mesocycle, 'id'>): Promise<Meso
     return m;
   } catch (err) {
     console.warn('createMesocycle Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const m: Mesocycle = { id: `meso_${Date.now()}`, ...data };
     setLocalMesocycles([...getLocalMesocycles(), m]);
     return m;
@@ -734,7 +734,7 @@ export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycl
     setLocalMesocycles(next);
   } catch (err) {
     console.warn('updateMesocycle Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalMesocycles(next);
   }
 }
@@ -747,7 +747,7 @@ export async function deleteMesocycle(id: string): Promise<void> {
     setLocalMesocycles(filtered);
   } catch (err) {
     console.warn('deleteMesocycle Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalMesocycles(filtered);
   }
 }
@@ -802,7 +802,7 @@ export async function getMesocycleTemplates(ownerId: string): Promise<MesocycleT
     return list;
   } catch (err) {
     console.warn('getMesocycleTemplates Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalMesoTemplates().filter(t => t.ownerId === ownerId).map(t => migrateTemplate(t as unknown as Record<string, unknown>));
   }
 }
@@ -820,7 +820,7 @@ export async function createMesocycleTemplate(data: Omit<MesocycleTemplate, 'id'
     return t;
   } catch (err) {
     console.warn('createMesocycleTemplate Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const t: MesocycleTemplate = { id: `tpl_${Date.now()}`, ...data };
     setLocalMesoTemplates([...getLocalMesoTemplates(), t]);
     return t;
@@ -836,7 +836,7 @@ export async function updateMesocycleTemplate(id: string, updates: Partial<Omit<
     setLocalMesoTemplates(next);
   } catch (err) {
     console.warn('updateMesocycleTemplate Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalMesoTemplates(next);
   }
 }
@@ -849,7 +849,7 @@ export async function deleteMesocycleTemplate(id: string): Promise<void> {
     setLocalMesoTemplates(filtered);
   } catch (err) {
     console.warn('deleteMesocycleTemplate Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalMesoTemplates(filtered);
   }
 }

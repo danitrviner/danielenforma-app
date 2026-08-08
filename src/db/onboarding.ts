@@ -47,7 +47,7 @@ export async function updateOnboardingFoods(
     await updateDoc(doc(db, 'onboarding', email), { likedFoods, dislikedFoods });
   } catch (err) {
     console.warn('updateOnboardingFoods Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -57,6 +57,9 @@ export async function saveOnboarding(data: OnboardingData): Promise<void> {
   if (forceLocalOnly) {
     throw new Error('Sin conexión con Firestore. Recarga la página e inténtalo de nuevo.');
   }
+  // El error de Firestore sube tal cual, con su `code`: es lo que permite a la
+  // pantalla decir la verdad (permisos, sesión caducada, red) en vez del
+  // «revisa tu conexión» genérico de antes. Ver utils/erroresFirestore.
   await setDoc(doc(db, 'onboarding', data.athleteId), stripUndefined(data));
 }
 
@@ -114,7 +117,7 @@ export async function saveOnboardingTemplate(coachEmail: string, tpl: Onboarding
     await setDoc(doc(db, 'onboardingTemplates', coachEmail), stripUndefined(tpl));
   } catch (err) {
     console.warn('saveOnboardingTemplate Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 

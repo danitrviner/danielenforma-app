@@ -187,6 +187,29 @@ usuario («revisa tu conexión») es falso y engañoso en cualquier escenario do
 el que SÍ puede pasarle a un cliente real (un enlace de invitación caducado, abrirlo en un
 navegador/dispositivo distinto al que lo recibió, etc.). Ver P1-6 más abajo.
 
+**CORREGIDO en la parte que es código (8 ago 2026) — el bloqueo de Firebase sigue pendiente.**
+
+El fallo tenía dos mitades. La de configuración (activar el vínculo de correo en la Consola de
+Firebase) sigue siendo de Dani, no se puede tocar desde el repo. La de código sí estaba, y era peor
+de lo que parecía: **una lectura denegada bloqueaba todas las escrituras de la sesión**.
+
+`setLocalBypassMode` se llamaba con `true` desde 171 sitios ante *cualquier* error, incluido
+`permission-denied`. Pero el modo local existe para sobrevivir a que Firestore no esté accesible; ante
+un fallo de permisos es justo lo contrario de lo que hay que hacer, porque esa escritura no se va a
+sincronizar nunca y guardarla en localStorage solo sirve para que el usuario crea que sus datos están
+a salvo. Ahora la función recibe el error y **no activa el modo local ante permisos**: la lectura que
+falla sigue cayendo a su copia local (correcto), pero ya no envenena el resto de la sesión.
+
+Alguien ya había llegado a la misma conclusión y lo parcheó a mano en un único sitio —
+`getAthleteNutritionConfig` en `src/db/nutrition.ts` lleva el comentario *«Do NOT call
+setLocalBypassMode(true) here: a rules failure on this collection must not poison writes for
+unrelated collections»*. El arreglo generaliza esa idea al núcleo en vez de repetirla colección a
+colección.
+
+Con esto, un atleta con un problema de permisos ve **qué** le pasa y puede seguir usando el resto de
+la app; antes se quedaba con la sesión inutilizada y un mensaje falso. Cubierto por
+`src/db/core.test.ts`.
+
 **Camino para desbloquear el resto de la auditoría (recomendado, no probado todavía en esta
 sesión):** en vez de arreglar la cuenta rota, usar el formulario «Invitar nuevo atleta» de
 `ClientHub` (coach) con un email de prueba nuevo, y completar el flujo del enlace sin contraseña
@@ -383,6 +406,19 @@ sin contraseña de Firebase pide confirmar el email si detecta esto), o cualquie
 que él — ni el coach, sin mirar la consola del navegador — distinga un fallo de red real de un
 problema de acceso. Vale la pena, cuando se corrija el resto, distinguir en el mensaje al menos
 entre «sin conexión» y «no se pudo verificar tu acceso, contacta con tu entrenador».
+
+**CORREGIDO (8 ago 2026).** Los textos viven ahora en `src/utils/erroresFirestore.ts`, un único
+catálogo por código de error que usan tanto el asistente del atleta como el formulario de invitación
+del coach. Tres cosas:
+
+- El mensaje sale del `code` real (`permission-denied`, `unauthenticated`, `auth/operation-not-allowed`…).
+  Ante permisos ya no se menciona la conexión.
+- Sin código reconocible, solo se culpa a la red **si el modo local está activo de verdad**. Si no,
+  se enseña el mensaje del error en vez de inventarse una causa.
+- `LocalModeBanner` distingue las dos situaciones, y ante un fallo de permisos **no ofrece
+  «Reintentar»**: recargar da el mismo resultado y solo consigue que la persona lo pulse cinco veces.
+
+Cubierto por `src/db/core.test.ts`.
 
 ---
 

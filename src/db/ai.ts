@@ -27,7 +27,7 @@ export async function getAiChats(): Promise<AiChat[]> {
     return chats.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch (err) {
     console.warn('getAiChats Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalAiChats().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 }
@@ -42,7 +42,7 @@ export async function saveAiChat(chat: AiChat): Promise<void> {
     await setDoc(doc(db, 'aiChats', chat.id), stripUndefined(chat));
   } catch (err) {
     console.warn('saveAiChat Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -54,7 +54,7 @@ export async function deleteAiChat(id: string): Promise<void> {
     saveLocalAiChats(filtered);
   } catch (err) {
     console.warn('deleteAiChat Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAiChats(filtered);
   }
 }
@@ -81,7 +81,7 @@ export async function getAiProposalsForAthlete(athleteEmail: string): Promise<Ai
     return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   } catch (err) {
     console.warn('getAiProposalsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalAiProposals().filter(p => p.athleteId === athleteEmail);
   }
 }
@@ -99,7 +99,7 @@ export async function createAiProposal(data: Omit<AiProposal, 'id'>): Promise<Ai
     return proposal;
   } catch (err) {
     console.warn('createAiProposal Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const proposal: AiProposal = { id: `aiprop_${Date.now()}`, ...data };
     saveLocalAiProposals([...getLocalAiProposals(), proposal]);
     return proposal;
@@ -114,7 +114,7 @@ export async function updateAiProposal(id: string, updates: Partial<AiProposal>)
     saveLocalAiProposals(updated);
   } catch (err) {
     console.warn('updateAiProposal Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAiProposals(updated);
   }
 }
@@ -145,7 +145,7 @@ export async function getKnowledgeNotes(): Promise<KnowledgeNote[]> {
     return notes;
   } catch (err) {
     console.warn('getKnowledgeNotes Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalKnowledge();
   }
 }
@@ -168,7 +168,7 @@ export async function bulkUpsertKnowledgeNotes(notes: KnowledgeNote[]): Promise<
     return notes.length;
   } catch (err) {
     console.warn('bulkUpsertKnowledgeNotes Firestore failed, kept local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return notes.length;
   }
 }

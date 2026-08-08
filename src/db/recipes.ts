@@ -29,7 +29,7 @@ export async function getRecipes(): Promise<Recipe[]> {
     return recipes;
   } catch (err) {
     console.warn('getRecipes Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalRecipes();
   }
 }
@@ -108,7 +108,7 @@ export async function createRecipe(data: Omit<Recipe, 'id'>): Promise<Recipe> {
     return recipe;
   } catch (err) {
     console.warn('createRecipe Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const recipe: Recipe = { id: `recipe_${Date.now()}`, ...data };
     setLocalRecipes([...getLocalRecipes(), recipe]);
     return recipe;
@@ -124,7 +124,7 @@ export async function updateRecipe(id: string, updates: Partial<Omit<Recipe, 'id
     setLocalRecipes(updated);
   } catch (err) {
     console.warn('updateRecipe Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalRecipes(updated);
   }
 }
@@ -137,7 +137,7 @@ export async function deleteRecipe(id: string): Promise<void> {
     setLocalRecipes(filtered);
   } catch (err) {
     console.warn('deleteRecipe Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     setLocalRecipes(filtered);
   }
 }
@@ -167,7 +167,7 @@ export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFa
     return defaultFav;
   } catch (err) {
     console.warn('getRecipeFavorites Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     try {
       const raw = localStorage.getItem(localKey);
       return raw ? JSON.parse(raw) : defaultFav;
@@ -183,7 +183,7 @@ export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> 
     localStorage.setItem(localKey, JSON.stringify(favs));
   } catch (err) {
     console.warn('saveRecipeFavorites Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     localStorage.setItem(localKey, JSON.stringify(favs));
   }
 }

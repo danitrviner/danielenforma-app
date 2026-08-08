@@ -33,7 +33,7 @@ export async function getCardioProfile(athleteId: string): Promise<AthleteCardio
     return profile;
   } catch (err) {
     console.warn('getCardioProfile Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalProfileMap()[athleteId] ?? null;
   }
 }
@@ -47,7 +47,7 @@ export async function saveCardioProfile(profile: AthleteCardioProfile): Promise<
     saveLocalProfileMap(map);
   } catch (err) {
     console.warn('saveCardioProfile Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalProfileMap(map);
   }
 }
@@ -73,7 +73,7 @@ export async function getCardioAssignmentsForAthlete(athleteId: string): Promise
     return list;
   } catch (err) {
     console.warn('getCardioAssignmentsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalAssignments().filter(a => a.athleteId === athleteId);
   }
 }
@@ -91,7 +91,7 @@ export async function createCardioAssignment(data: Omit<CardioAssignment, 'id'>)
     return a;
   } catch (err) {
     console.warn('createCardioAssignment Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const a: CardioAssignment = { ...data, id: `local_ca_${Date.now()}` };
     saveLocalAssignments([...getLocalAssignments(), a]);
     return a;
@@ -106,7 +106,7 @@ export async function updateCardioAssignment(id: string, updates: Partial<Cardio
     saveLocalAssignments(updated);
   } catch (err) {
     console.warn('updateCardioAssignment Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAssignments(updated);
   }
 }
@@ -119,7 +119,7 @@ export async function deleteCardioAssignment(id: string): Promise<void> {
     saveLocalAssignments(filtered);
   } catch (err) {
     console.warn('deleteCardioAssignment Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalAssignments(filtered);
   }
 }
@@ -145,7 +145,7 @@ export async function getCardioSessionsForAthlete(athleteId: string): Promise<Ca
     return list;
   } catch (err) {
     console.warn('getCardioSessionsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalSessions().filter(s => s.athleteId === athleteId);
   }
 }
@@ -163,7 +163,7 @@ export async function createCardioSession(data: Omit<CardioSession, 'id'>): Prom
     return s;
   } catch (err) {
     console.warn('createCardioSession Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const s: CardioSession = { ...data, id: `local_cs_${Date.now()}` };
     saveLocalSessions([...getLocalSessions(), s]);
     return s;
@@ -181,7 +181,7 @@ export async function updateCardioSession(id: string, updates: Partial<Omit<Card
     saveLocalSessions(updated);
   } catch (err) {
     console.warn('updateCardioSession Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalSessions(updated);
   }
 }
@@ -207,7 +207,7 @@ export async function getHrTestsForAthlete(athleteId: string): Promise<HrTest[]>
     return list;
   } catch (err) {
     console.warn('getHrTestsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalHrTests().filter(t => t.athleteId === athleteId);
   }
 }
@@ -219,7 +219,7 @@ export async function getAllPendingHrTests(): Promise<HrTest[]> {
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as HrTest));
   } catch (err) {
     console.warn('getAllPendingHrTests Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalHrTests().filter(t => !t.approvedByCoach);
   }
 }
@@ -237,7 +237,7 @@ export async function createHrTest(data: Omit<HrTest, 'id'>): Promise<HrTest> {
     return t;
   } catch (err) {
     console.warn('createHrTest Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const t: HrTest = { ...data, id: `local_hrt_${Date.now()}` };
     saveLocalHrTests([...getLocalHrTests(), t]);
     return t;
@@ -252,7 +252,7 @@ export async function updateHrTest(id: string, updates: Partial<HrTest>): Promis
     saveLocalHrTests(updated);
   } catch (err) {
     console.warn('updateHrTest Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalHrTests(updated);
   }
 }
@@ -280,7 +280,7 @@ export async function getCardioWeeklyGoal(athleteId: string, isoWeek: string): P
     return goal;
   } catch (err) {
     console.warn('getCardioWeeklyGoal Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalWeeklyGoals()[id] ?? null;
   }
 }
@@ -294,7 +294,7 @@ export async function saveCardioWeeklyGoal(goal: CardioWeeklyGoal): Promise<void
     saveLocalWeeklyGoals(map);
   } catch (err) {
     console.warn('saveCardioWeeklyGoal Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalWeeklyGoals(map);
   }
 }
@@ -320,7 +320,7 @@ export async function getHrvReadingsForAthlete(athleteId: string): Promise<HrvRe
     return list;
   } catch (err) {
     console.warn('getHrvReadingsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalHrvReadings().filter(r => r.athleteId === athleteId);
   }
 }
@@ -338,7 +338,7 @@ export async function createHrvReading(data: Omit<HrvReading, 'id'>): Promise<Hr
     return r;
   } catch (err) {
     console.warn('createHrvReading Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const r: HrvReading = { ...data, id: `local_hrv_${Date.now()}` };
     saveLocalHrvReadings([...getLocalHrvReadings(), r]);
     return r;

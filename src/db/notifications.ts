@@ -70,7 +70,7 @@ export async function markNotificationRead(id: string, recipientEmail: string): 
     await updateDoc(doc(db, 'notifications', id), { read: true });
   } catch (err) {
     console.warn('markNotificationRead Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -87,7 +87,7 @@ export async function markAllNotificationsRead(recipientEmail: string): Promise<
     await Promise.all(snap.docs.map(d => updateDoc(d.ref, { read: true })));
   } catch (err) {
     console.warn('markAllNotificationsRead Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 

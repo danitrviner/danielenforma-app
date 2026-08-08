@@ -25,7 +25,7 @@ export async function getBodyweightForAthlete(email: string): Promise<Bodyweight
     return list;
   } catch (err) {
     console.warn('getBodyweightForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalBw().filter(b => b.athleteId === email).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
@@ -43,7 +43,7 @@ export async function addBodyweight(data: Omit<BodyweightLog, 'id'>): Promise<Bo
     return entry;
   } catch (err) {
     console.warn('addBodyweight Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const entry: BodyweightLog = { ...data, id: `local_bw_${Date.now()}` };
     saveLocalBw([...getLocalBw(), entry]);
     return entry;
@@ -59,7 +59,7 @@ export async function updateBodyweight(id: string, updates: Partial<Pick<Bodywei
     saveLocalBw(updated);
   } catch (err) {
     console.warn('updateBodyweight Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalBw(updated);
   }
 }
@@ -72,7 +72,7 @@ export async function deleteBodyweight(id: string): Promise<void> {
     saveLocalBw(updated);
   } catch (err) {
     console.warn('deleteBodyweight Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalBw(updated);
   }
 }
@@ -102,7 +102,7 @@ export async function getStepsForAthlete(email: string): Promise<StepLog[]> {
     return list;
   } catch (err) {
     console.warn('getStepsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalSteps().filter(s => s.athleteId === email).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
@@ -120,7 +120,7 @@ export async function addSteps(data: Omit<StepLog, 'id'>): Promise<StepLog> {
     return entry;
   } catch (err) {
     console.warn('addSteps Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const entry: StepLog = { ...data, id: `local_steps_${Date.now()}` };
     saveLocalSteps([...getLocalSteps(), entry]);
     return entry;
@@ -135,7 +135,7 @@ export async function updateSteps(id: string, updates: Partial<Pick<StepLog, 'st
     saveLocalSteps(updated);
   } catch (err) {
     console.warn('updateSteps Firestore failed, updating local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalSteps(updated);
   }
 }

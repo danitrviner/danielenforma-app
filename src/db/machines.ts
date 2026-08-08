@@ -54,7 +54,7 @@ async function fetchOverrides(): Promise<MaquinaOverride[]> {
     return list;
   } catch (err) {
     console.warn('fetchOverrides Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalOverrides();
   }
 }
@@ -120,7 +120,7 @@ export async function upsertOverrideMaquina(id: string, cambios: Partial<Maquina
     await setDoc(doc(db, MAQUINAS_COL, id), stripUndefined(payload), { merge: true });
   } catch (err) {
     console.warn('upsertOverrideMaquina Firestore failed, saved local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -262,7 +262,7 @@ export async function guardarGimnasio(email: string, cambios: Partial<Omit<Gimna
     );
   } catch (err) {
     console.warn('guardarGimnasio Firestore failed, saved local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 

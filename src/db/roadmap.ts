@@ -24,7 +24,7 @@ export async function getRoadmap(athleteEmail: string): Promise<Roadmap> {
     return { athleteId: athleteEmail, ...snap.data() } as Roadmap;
   } catch (err) {
     console.warn('getRoadmap Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalRoadmaps().find(r => r.athleteId === athleteEmail) ?? empty;
   }
 }
@@ -43,7 +43,7 @@ export async function saveRoadmap(roadmap: Roadmap): Promise<void> {
     saveLocalRoadmaps([...list, roadmap]);
   } catch (err) {
     console.warn('saveRoadmap Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const list = getLocalRoadmaps().filter(r => r.athleteId !== athleteId);
     saveLocalRoadmaps([...list, roadmap]);
   }
@@ -99,7 +99,7 @@ export async function getWeeklyChallenge(athleteEmail: string, isoWeek: string):
     return { ...snap.data(), id } as WeeklyChallenge;
   } catch (err) {
     console.warn('getWeeklyChallenge Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalChallenges().find(c => c.id === id) ?? null;
   }
 }
@@ -118,7 +118,7 @@ export async function saveWeeklyChallenge(challenge: WeeklyChallenge): Promise<v
     upsertLocalChallenge(challenge);
   } catch (err) {
     console.warn('saveWeeklyChallenge Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     upsertLocalChallenge(challenge);
   }
 }
@@ -138,7 +138,7 @@ export async function getWeeklyChallengesForAthlete(athleteEmail: string): Promi
     return list;
   } catch (err) {
     console.warn('getWeeklyChallengesForAthlete Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalChallenges()
       .filter(c => c.athleteId === athleteEmail)
       .sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
@@ -166,7 +166,7 @@ export async function getChallengeTemplates(): Promise<ChallengeTemplate[]> {
     return list;
   } catch (err) {
     console.warn('getChallengeTemplates Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalChallengeTemplates();
   }
 }
@@ -184,7 +184,7 @@ export async function saveChallengeTemplate(template: ChallengeTemplate): Promis
     upsertLocal();
   } catch (err) {
     console.warn('saveChallengeTemplate Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     upsertLocal();
   }
 }
@@ -201,7 +201,7 @@ export async function deleteChallengeTemplate(templateId: string): Promise<void>
     removeLocal();
   } catch (err) {
     console.warn('deleteChallengeTemplate Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     removeLocal();
   }
 }

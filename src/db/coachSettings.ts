@@ -18,7 +18,7 @@ export async function getCoachInstructions(): Promise<string> {
     return text;
   } catch (err) {
     console.warn('getCoachInstructions Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return localStorage.getItem(COACH_INSTRUCTIONS_LOCAL_KEY) ?? '';
   }
 }
@@ -40,7 +40,7 @@ export async function getAthleteStatusNote(email: string): Promise<string> {
     return snap.exists() ? ((snap.data().note as string) ?? '') : '';
   } catch (err) {
     console.warn('getAthleteStatusNote Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalStatusNotes()[email] ?? '';
   }
 }
@@ -54,7 +54,7 @@ export async function saveAthleteStatusNote(email: string, note: string): Promis
     await setDoc(doc(db, 'athleteStatus', email), { note, updatedAt: new Date().toISOString() });
   } catch (err) {
     console.warn('saveAthleteStatusNote Firestore failed, kept local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -66,7 +66,7 @@ export async function saveCoachInstructions(text: string): Promise<void> {
     await setDoc(doc(db, 'coachSettings', COACH_INSTRUCTIONS_DOC_ID), data);
   } catch (err) {
     console.warn('saveCoachInstructions Firestore failed, kept local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }
 
@@ -89,7 +89,7 @@ export async function getQuickReplies(): Promise<string[]> {
     return replies;
   } catch (err) {
     console.warn('getQuickReplies Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return local();
   }
 }
@@ -102,6 +102,6 @@ export async function saveQuickReplies(replies: string[]): Promise<void> {
     await setDoc(doc(db, 'coachSettings', QUICK_REPLIES_DOC_ID), data);
   } catch (err) {
     console.warn('saveQuickReplies Firestore failed, kept local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
   }
 }

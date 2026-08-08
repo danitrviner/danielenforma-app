@@ -39,7 +39,7 @@ export async function inviteClient(email: string): Promise<Invite> {
     return invite;
   } catch (err) {
     console.warn('inviteClient Firestore write failed (email was still sent):', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
     return invite;
   }
@@ -54,7 +54,7 @@ export async function getPendingInvites(): Promise<Invite[]> {
     return invites;
   } catch (err) {
     console.warn('getPendingInvites Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalInvites().filter(i => i.status === 'pending');
   }
 }
