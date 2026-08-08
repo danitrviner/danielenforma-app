@@ -147,7 +147,8 @@ function cuerposAsync(src: string): string[] {
   const out: string[] = [];
   const re = /(async\s*\([^)]*\)\s*=>\s*\{|async function \w*\s*\([^)]*\)\s*\{)/g;
   for (let m = re.exec(src); m; m = re.exec(src)) {
-    let i = m.index + m[0].length - 1, prof = 0, j = i;
+    const i = m.index + m[0].length - 1;
+    let prof = 0, j = i;
     for (; j < src.length; j++) {
       if (src[j] === '{') prof++;
       else if (src[j] === '}' && --prof === 0) break;

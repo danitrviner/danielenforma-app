@@ -10,11 +10,8 @@ coverage/
 .env.*
 !.env.example
 
-# Firebase CLI cache and deploy artefacts
+# Firebase CLI cache y artefactos de deploy (los *-debug.log ya los cubre *.log)
 .firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
 
 # Vercel CLI project link (project/org ids, local-only)
 .vercel
@@ -26,7 +23,5 @@ service-account*.json
 *-adminsdk-*.json
 
 # OS / editor
-.DS_Store
 Thumbs.db
 .vscode/settings.json
-.env*

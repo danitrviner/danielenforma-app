@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import type { Maquina } from '../../types';
 import { MARCA_LABELS } from '../../types';
 import { haptics } from '../../services/haptics';
+import { useReducedMotion } from '../../components/ui/internal/useReducedMotion';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Tarjeta de máquina con arrastre real.
@@ -34,11 +35,8 @@ type Props = {
   key?: React.Key;
 };
 
-function reduceMovimiento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-
 export default function MachineCard({ maquina, profundidad, onDecidir, salidaForzada }: Props) {
+  const suave = useReducedMotion();
   const [dx, setDx] = useState(0);
   const [arrastrando, setArrastrando] = useState(false);
   const inicio = useRef(0);
@@ -53,9 +51,9 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
       haptics.light();
       setArrastrando(false);
       setDx(tengo ? VUELO : -VUELO);
-      window.setTimeout(() => onDecidir(tengo), reduceMovimiento() ? 0 : SALIDA_MS);
+      window.setTimeout(() => onDecidir(tengo), suave ? 0 : SALIDA_MS);
     },
-    [onDecidir]
+    [onDecidir, suave]
   );
 
   // Los botones de abajo reutilizan la misma animación de salida.
@@ -87,7 +85,6 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
   const rotacion = esArriba ? dx / 18 : 0;
 
   const intensidad = Math.min(Math.abs(dx) / UMBRAL, 1);
-  const suave = reduceMovimiento();
 
   return (
     <div

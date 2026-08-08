@@ -1,9 +1,9 @@
 {
-  "generado": "2026-08-08T13:16:11.907Z",
-  "commit": "6125521",
+  "generado": "2026-08-08T14:09:44.172Z",
+  "commit": "3e08f73",
   "totales": {
     "archivosTsx": 183,
-    "lineasTsx": 45391
+    "lineasTsx": 45388
   },
   "metricas": {
     "hexLiterales": 73,
@@ -24,7 +24,7 @@
     "ariaLabel": 60,
     "htmlFor": 1,
     "focusVisible": 50,
-    "reducedMotion": 4,
+    "reducedMotion": 3,
     "roundedSm": 0,
     "roundedMd": 0,
     "roundedLg": 2,
@@ -1244,7 +1244,7 @@
       "clasesTokenEnUso": 11,
       "fontMono": 4,
       "pesosProhibidos": 1,
-      "reducedMotion": 2
+      "reducedMotion": 1
     },
     "src/features/gimnasio/MiGimnasioPanel.tsx": {
       "clasesTokenEnUso": 14,

@@ -1008,3 +1008,16 @@ con revisión visual detrás, no algo que deba colarse dentro de un commit de in
 La línea base se actualiza para que `ds:inventario` vuelva a detectar regresiones NUEVAS. Esta tabla
 es el registro de lo que se acepta a sabiendas; es el siguiente trozo de migración, no deuda
 olvidada.
+
+### Y una quinta vez: centralizar baja el contador
+
+`prefers-reduced-motion` bajó de 4 a 3 al hacer que `MachineCard` use el hook
+`ui/internal/useReducedMotion` en vez de su propia llamada a `matchMedia`. El comportamiento
+**mejora** —el hook reacciona si la preferencia cambia durante la sesión, la versión inline era de
+un solo disparo al montar— pero el literal deja de estar en el componente y la métrica solo cuenta
+apariciones del string.
+
+Es el mismo mecanismo ya documentado en `htmlFor` (F11) y `aria-label` (F9): cuando la deuda se
+resuelve *metiéndola en una primitiva*, el contador de "usos" cae. Para estas tres métricas el
+número alto significa "repetido en muchos sitios", no "bien hecho en muchos sitios". Se acepta la
+bajada.
