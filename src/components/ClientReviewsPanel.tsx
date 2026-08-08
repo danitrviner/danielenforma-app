@@ -1394,7 +1394,8 @@ export default function ClientReviewsPanel({
                                     type="button"
                                     onClick={() => setAssignHidden(prev => {
                                       const next = new Set(prev);
-                                      next.has(q.id) ? next.delete(q.id) : next.add(q.id);
+                                      if (next.has(q.id)) next.delete(q.id);
+                                      else next.add(q.id);
                                       return next;
                                     })}
                                     title={hidden ? 'Mostrar de nuevo' : 'Ocultar para este cliente'}

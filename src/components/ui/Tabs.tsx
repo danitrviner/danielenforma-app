@@ -63,7 +63,7 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
 
   const alPulsarTecla = (e: React.KeyboardEvent, indice: number) => {
     const salto = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    let destino = -1;
+    let destino: number;
 
     if (salto !== 0) destino = (indice + salto + items.length) % items.length;
     else if (e.key === 'Home') destino = 0;

@@ -282,7 +282,8 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   const toggleSelected = (email: string) => {
     setSelected(prev => {
       const next = new Set(prev);
-      next.has(email) ? next.delete(email) : next.add(email);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
       return next;
     });
   };

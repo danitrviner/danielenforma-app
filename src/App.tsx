@@ -251,6 +251,56 @@ function AppContent() {
     };
   }, []);
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     TODOS los hooks van aquí, por encima del primer `return` condicional.
+
+     Este componente tiene cuatro salidas tempranas (escaparate, banco de
+     pruebas, splash de carga y pantalla de bienvenida) y debajo de ellas vivían
+     tres hooks. Eso rompe la regla de orden de React: en el render donde
+     `loading` es true no se llamaban, y en el siguiente sí — que es
+     exactamente lo que produce el «change in the order of Hooks» y, con él,
+     estado leído de la posición equivocada. `eslint` lo marcaba como error.
+
+     El precio de subirlos es que `profile` todavía puede ser null aquí, así que
+     cada uno se escribe a prueba de eso y las consultas van con `enabled`. No
+     disparan nada hasta que hay perfil.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  // Null-safe a propósito: se evalúa antes de la puerta de sesión.
+  const isCoach = !!profile && (profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL);
+
+  // F3.13e: tipos que el coach silenció en Ajustes › Notificaciones. Vacío
+  // para el atleta (ese panel es coach-only, ver ProfileScreen).
+  const mutedNotifTypes = useMemo(() => {
+    const prefs = profile?.notificationPrefs;
+    if (!prefs) return undefined;
+    const muted = (Object.entries(prefs) as [NotificationType, boolean | undefined][])
+      .filter(([, on]) => on === false)
+      .map(([type]) => type);
+    return muted.length ? new Set(muted) : undefined;
+  }, [profile?.notificationPrefs]);
+
+  // Mismo query key que HomeScreen — comparten caché, esto no dispara una
+  // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
+  // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
+  const athleteUserId = profile?.userId;
+  const { data: tutorialGateAssignments = [] } = useQuery({
+    queryKey: ['workoutAssignments', athleteUserId],
+    queryFn: () => getWorkoutAssignmentsForAthlete(athleteUserId!),
+    enabled: !!athleteUserId && !isCoach,
+  });
+
+  // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
+  // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
+  // competiría con el de revisiones, que sí es trabajo que le llega de fuera.
+  // Comparte queryKey con MiGimnasioPanel, así que no añade una lectura.
+  const { pendiente: gimnasioPendiente } = useGimnasioPendiente(profile?.email ?? '', !!profile && !isCoach);
+
+  // `useTourTarget` no llama a ningún hook —devuelve una callback de ref— pero
+  // se llama `use*`, así que la regla lo trata como uno. Se resuelve aquí en vez
+  // de en el JSX de la barra de navegación, que está detrás de los gates.
+  const navTabsRef = useTourTarget('nav-tabs');
+
   const handleRefreshData = async () => {
     if (currentUser) {
       try {
@@ -314,37 +364,6 @@ function AppContent() {
   if (!currentUser || !profile) {
     return <WelcomeScreen onLoginSuccess={handleLoginSuccess} />;
   }
-
-  const isCoach = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
-
-  // F3.13e: tipos que el coach silenció en Ajustes › Notificaciones. Vacío
-  // para el atleta (ese panel es coach-only, ver ProfileScreen).
-  const mutedNotifTypes = useMemo(() => {
-    const prefs = profile.notificationPrefs;
-    if (!prefs) return undefined;
-    const muted = (Object.entries(prefs) as [NotificationType, boolean | undefined][])
-      .filter(([, on]) => on === false)
-      .map(([type]) => type);
-    return muted.length ? new Set(muted) : undefined;
-  }, [profile.notificationPrefs]);
-
-  // Mismo query key que HomeScreen — comparten caché, esto no dispara una
-  // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
-  // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
-  const { data: tutorialGateAssignments = [] } = useQuery({
-    queryKey: ['workoutAssignments', profile.userId],
-    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
-    enabled: !isCoach,
-  });
-
-  // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
-  // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
-  // competiría con el de revisiones, que sí es trabajo que le llega de fuera.
-  // Va aquí y no junto a `pendingCount`, que es donde se usa: allí ya estamos
-  // por debajo de los `return` de los gates y un hook no puede vivir tras un
-  // return condicional. Comparte queryKey con MiGimnasioPanel, así que no
-  // añade una lectura.
-  const { pendiente: gimnasioPendiente } = useGimnasioPendiente(profile.email, !isCoach);
 
   // Primer login del atleta: onboarding guiado obligatorio antes de ver la app.
   if (!isCoach && onboardingGate !== 'done') {
@@ -564,7 +583,7 @@ function AppContent() {
           sus 7 (R10 sigue abierto, se resuelve en F3.13) — la excepción de
           10 px sigue viva mientras tanto. */}
       <nav
-        ref={useTourTarget('nav-tabs')}
+        ref={navTabsRef}
         className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
       >
