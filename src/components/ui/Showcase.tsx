@@ -509,6 +509,25 @@ export default function Showcase() {
           </div>
         </Card>
 
+        {/* El caso que ha roto DOS veces (P0-3): acción ancha —insignia + botón con
+            etiqueta larga— a 375 px. Los otros dos ejemplos usan acciones cortas
+            y no lo reproducían, que es justo por lo que la regresión volvió sin
+            que nadie la viera. */}
+        <Card padding="none">
+          <div className="p-4">
+            <PageHeader
+              title="Revisiones"
+              subtitle="Historial cronológico de check-ins y respuestas de cuestionarios."
+              action={
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge tone="warning" icon="pending_actions">1 pendiente</Badge>
+                  <Button icon="rate_review">Empezar a revisar</Button>
+                </div>
+              }
+            />
+          </div>
+        </Card>
+
         <Card padding="none">
           <div className="p-4">
             <PageHeader

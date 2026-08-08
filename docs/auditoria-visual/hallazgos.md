@@ -295,6 +295,28 @@ revisar check-ins. Un título de un carácter no es un detalle de pulido, es la 
 
 ---
 
+## P0-3 (segunda vuelta) · El título seguía aplastándose, y el primer arreglo no podía funcionar
+
+**Reabierto y CORREGIDO el 8 ago 2026**, con captura de Dani en `/reviews`: «REVISIONES» reducido a
+una columna con la «R» sola, y el subtítulo cayendo a una palabra por línea.
+
+**Por qué el primer arreglo no servía.** Añadió `flex-wrap` a la fila y dejó el título con
+`flex-1 min-w-0` y la acción con `shrink-0`. Pero `min-w-0` es exactamente el permiso para
+encogerse hasta la nada: flexbox prefiere reducir el título a un carácter antes que envolver la
+fila, así que el `flex-wrap` **nunca llegaba a dispararse**. Medido de nuevo a 375 px en la
+pantalla real: título 23 px, acción 343.
+
+**El arreglo que sí funciona** no depende de que el wrap salte. Por debajo de `sm` la cabecera se
+apila —título arriba a todo el ancho, acción debajo— y a partir de ahí vuelve a la fila con la
+acción a la derecha. A ese ancho ya no comparten renglón, así que no hay nada que repartir.
+Verificado en `/reviews` a 375 px: título 343 px, sin desbordamiento horizontal.
+
+Se añadió al escaparate (`/ui`) el caso que ha roto las dos veces —insignia + botón de etiqueta
+larga—. Los dos ejemplos que había usaban acciones cortas y por eso la regresión volvió sin que
+nadie la viera.
+
+---
+
 ## P1-3 · El botón flotante de Asistente IA tapa contenido y botones interactivos
 
 **Pantallas:** confirmado repetidamente en el lado coach a 375 px — `ClientHub` (tapa el texto de

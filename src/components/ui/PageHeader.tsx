@@ -19,12 +19,20 @@ import Button from './Button';
    porque la pantalla es quien sabe si "atrás" significa `navigate(-1)`, una
    ruta concreta o cerrar un modal.
 
-   Corrige P0-3 de la auditoría visual (docs/auditoria-visual/hallazgos.md):
-   a 375 px la fila título/acción no llevaba `flex-wrap` y la zona `action`
-   iba `shrink-0`, así que un botón con etiqueta larga se comía 307 de 343 px
-   y el título —de verdad "Revisiones"— quedaba en "R." Ahora el título es
-   quien tiene prioridad (`flex-1 min-w-0`, se trunca él primero) y la fila
-   entera puede pasar a dos líneas antes de recortar la acción.
+   Corrige P0-3 de la auditoría visual (docs/auditoria-visual/hallazgos.md),
+   dos veces.
+
+   El primer intento añadió `flex-wrap` a la fila y dejó el título con
+   `flex-1 min-w-0` y la acción con `shrink-0`. No sirvió, y el motivo es que
+   `min-w-0` es precisamente el permiso para encogerse hasta la nada: flexbox
+   prefiere reducir el título a una columna de un carácter antes que envolver,
+   así que el `flex-wrap` nunca llegaba a dispararse. Medido de nuevo a 375 px
+   en `/reviews`: título 23 px, acción 343.
+
+   La regla ahora no depende de que el wrap se dispare: en móvil la cabecera se
+   apila —título arriba, acción debajo, cada uno con todo el ancho— y a partir
+   de `sm` vuelve a la fila con la acción a la derecha. El título ya no compite
+   con la acción por el espacio, porque a ese ancho no comparten renglón.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
@@ -47,8 +55,8 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, c
           {eyebrow}
         </span>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2 sm:flex-1">
           {onBack && (
             // 36 px — el retroceso de cabecera del handoff, más pequeño que
             // el botón de icono estándar (48, Button `m`) porque comparte
@@ -62,7 +70,9 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, c
             {subtitle && <p className="font-sans text-body-s text-ink-2">{subtitle}</p>}
           </div>
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        {/* `flex-wrap` dentro de la acción: si trae insignia + botón y aun así
+            no cabe a lo ancho, se parten entre ellos en vez de desbordar. */}
+        {action && <div className="flex flex-wrap items-center gap-3 sm:shrink-0">{action}</div>}
       </div>
     </header>
   );
