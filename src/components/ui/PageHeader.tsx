@@ -64,7 +64,14 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, c
             <Button variant="ghost" size="s" icon="arrow_back" onClick={onBack} label="Volver" className="-ml-1 shrink-0" />
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <h1 className="truncate font-display text-hero font-black uppercase tracking-tight text-ink">
+            {/* `text-hero` son 46 px FIJOS, y con `truncate` eso significa que
+                cualquier título de más de ~10 caracteres se corta en un móvil
+                de 375 px: "TrainingLab" salía como "TRAININGLA…". El ancho
+                útil ahí es de 343 px y a 46 px black uppercase no da.
+                Los dos tamaños son tokens del Design System, así que la
+                cabecera baja a `text-display` (32 px) en móvil y recupera los
+                46 a partir de `sm`, donde sí caben. */}
+            <h1 className="truncate font-display text-display sm:text-hero font-black uppercase tracking-tight text-ink">
               {title}
             </h1>
             {subtitle && <p className="font-sans text-body-s text-ink-2">{subtitle}</p>}
