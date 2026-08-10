@@ -57,14 +57,18 @@ service firebase.storage {
     // vídeo). Mismo patrón de ownership que progressPhotos. Tope duro de 50MB
     // en el servidor (QuestionnaireQuestion.maxSizeMb es solo un límite blando
     // sugerido al cliente).
+    // 04-3: este bloque era el único que comparaba el email a mano en vez de
+    // usar isOwnerEmail(), y por tanto el único que NO exigía email_verified.
+    // Una cuenta registrada con el correo de un invitado que todavía no ha
+    // entrado podía leer, sobrescribir y borrar sus vídeos y fotos. Es el mismo
+    // agujero que se cerró en bodyMeasurements el 8 ago 2026, y quedaba aquí.
     match /questionnaireMedia/{email}/{fileName} {
-      allow read: if isCoach() || (request.auth != null && request.auth.token.email == email);
-      allow write: if request.auth != null
-                   && request.auth.token.email == email
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isOwnerEmail(email)
                    && request.resource.size < 50 * 1024 * 1024
                    && (request.resource.contentType.matches('image/.*')
                        || request.resource.contentType.matches('video/.*'));
-      allow delete: if isCoach() || (request.auth != null && request.auth.token.email == email);
+      allow delete: if isCoach() || isOwnerEmail(email);
     }
 
     // Default deny — cualquier path no cubierto explícitamente arriba.
