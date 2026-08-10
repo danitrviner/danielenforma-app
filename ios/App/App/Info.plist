@@ -5,7 +5,7 @@
     <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>es</string>
 	<key>CFBundleDisplayName</key>
         <string>En Forma</string>
 	<key>CFBundleExecutable</key>
@@ -28,10 +28,6 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>armv7</string>
-	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -47,6 +43,26 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Purpose strings de cámara, fototeca y micrófono. Sin ellas iOS mata el
+	     proceso en seco (no lanza excepción: termina la app) la primera vez que
+	     el atleta toca "Hacer foto". Las cuatro pantallas que lo disparan son
+	     PhotosScreen (foto de progreso), AddOwnMachineSheet (máquina que falta),
+	     AdminMaquinasTab (catálogo) y QuestionnaireWizard (respuesta en vídeo).
+	     Apple rechaza los textos genéricos: cada uno dice qué se abre, cuándo y
+	     para qué se usa lo que se captura. -->
+	<key>NSCameraUsageDescription</key>
+	<string>En Forma abre la cámara solo cuando pulsas «Hacer foto», para que puedas enviar a tu entrenador tu foto de progreso, la foto de una máquina de tu gimnasio o el vídeo de un ejercicio que te haya pedido.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>En Forma accede a tus fotos solo cuando eliges una de la galería, para enviar a tu entrenador tu foto de progreso, una máquina de tu gimnasio o la respuesta a un cuestionario.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>En Forma usa el micrófono únicamente mientras grabas un vídeo de un ejercicio para responder a un cuestionario de tu entrenador, para que el vídeo lleve sonido.</string>
+	<!-- Declaración de cifrado (EAR, Category 5 Part 2, nota 4): la app solo usa
+	     HTTPS/TLS del sistema y no implementa criptografía propia, así que entra
+	     en la exención. Sin esta clave cada build queda en "Missing Compliance" y
+	     no se puede enviar a revisión ni repartir por TestFlight. Si algún día se
+	     añade cifrado propio en reposo, este valor deja de ser correcto. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
