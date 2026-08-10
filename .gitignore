@@ -16,6 +16,12 @@ coverage/
 # Vercel CLI project link (project/org ids, local-only)
 .vercel
 
+# Firma de Android — contraseñas del keystore de subida. Solo se commitea el
+# ejemplo (android/keystore.properties.example).
+android/keystore.properties
+*.jks
+*.keystore
+
 # Service account / admin credentials — NEVER commit these
 serviceAccount.json
 service-account*.json
