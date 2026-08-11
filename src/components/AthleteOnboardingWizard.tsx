@@ -3,6 +3,7 @@ import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
   ActivityLevel, DietType,
 } from '../types';
+import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding } from '../dbService';
 import { Icon, Button, Input } from './ui';
@@ -138,8 +139,23 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
     setSaving(true);
     setError('');
     try {
-      const targetCalories = 2000;
-      const split = { hc: 40, prot: 30, grasa: 30 };
+      // 05-8. Aquí había `targetCalories = 2000` fijo y un reparto 40/30/30
+      // inventado, iguales para todo el mundo: unas 700 kcal por encima del
+      // mantenimiento de una mujer de 55 kg, 52 años y sedentaria. Y ese número
+      // no se queda quieto — es el que ella ve en Nutrición, el que aparece en
+      // el hub del coach y el que lee el asistente de IA.
+      //
+      // Ahora se calcula con la misma función que usa el formulario del coach
+      // (computeAuto: Mifflin-St Jeor × factor de actividad × ajuste de meta).
+      // La validación del paso 1 y del paso 5 ya garantiza sexo, fecha de
+      // nacimiento, peso, altura y nivel de actividad, así que en la práctica
+      // siempre hay datos; si alguno faltara, se deja `targetCalories`
+      // SIN ESCRIBIR en vez de inventar una cifra, y las pantallas muestran que
+      // está pendiente del coach.
+      const auto = sex && birthDate && activityLevel && goalBody
+        && Number(weightKg) > 0 && Number(heightCm) > 0
+        ? computeAuto(sex, birthDate, Number(weightKg), Number(heightCm), activityLevel, goalBody)
+        : null;
       const data: OnboardingData = {
         athleteId: profile.email,
         sex: sex || undefined,
@@ -151,13 +167,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         goalCapacity: goalCapacity || undefined,
         goalFreeText: goalFreeText.trim() || undefined,
         dietType: (dietType || 'omnivoro') as DietType,
-        targetCalories,
-        macroSplit: split,
-        macroGrams: {
-          hc: Math.round(targetCalories * split.hc / 100 / 4),
-          prot: Math.round(targetCalories * split.prot / 100 / 4),
-          grasa: Math.round(targetCalories * split.grasa / 100 / 9),
-        },
+        targetCalories: auto ? auto.kcal : undefined,
+        macroSplit: auto
+          ? { hc: auto.hcPct, prot: auto.protPct, grasa: auto.grasaPct }
+          : undefined,
+        macroGrams: auto
+          ? { hc: auto.hcG, prot: auto.protG, grasa: auto.grasaG }
+          : undefined,
         likedFoods: [],
         dislikedFoods: dislikedFoods.split(',').map(s => s.trim()).filter(Boolean),
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),

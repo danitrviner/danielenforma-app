@@ -6,7 +6,8 @@ import {
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
 import { saveOnboarding, updateOnboarding } from '../dbService';
-import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
+import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
+import type { AutoCalc } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Icon, Button } from './ui';
@@ -67,32 +68,6 @@ function macroGrams(cal: number, pct: number, factor: 4 | 9) {
   return Math.round((cal * pct) / 100 / factor);
 }
 
-interface AutoCalc {
-  bmr: number; tdee: number; kcal: number;
-  protG: number; grasaG: number; hcG: number;
-  protPct: number; grasaPct: number; hcPct: number;
-}
-
-function computeAuto(
-  sex: 'male' | 'female', birthDate: string,
-  w: number, h: number, level: ActivityLevel, goal: GoalBody,
-): AutoCalc {
-  const age    = calcAge(birthDate);
-  const bmr    = mifflinBMR(sex, w, h, age);
-  const tdee   = Math.round(bmr * ACTIVITY_FACTORS[level]);
-  const kcal   = Math.round(tdee * GOAL_ADJUSTMENTS[goal]);
-  const protG  = Math.round(2 * w);
-  const pKcal  = protG * 4;
-  const gKcal  = Math.round(kcal * 0.25);
-  const grasaG = Math.round(gKcal / 9);
-  const hcKcal = Math.max(0, kcal - pKcal - gKcal);
-  const hcG    = Math.round(hcKcal / 4);
-  const tot    = pKcal + gKcal + hcKcal;
-  const protPct  = Math.round((pKcal / tot) * 100);
-  const grasaPct = Math.round((gKcal / tot) * 100);
-  const hcPct    = 100 - protPct - grasaPct;
-  return { bmr, tdee, kcal, protG, grasaG, hcG, protPct, grasaPct, hcPct };
-}
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
