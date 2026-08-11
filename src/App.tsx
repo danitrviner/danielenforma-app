@@ -12,7 +12,7 @@ import { useTourTarget, registerTourTarget } from './features/tutorial/TourTarge
 
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
-import { ToastProvider } from './hooks/useToast';
+import { ToastProvider, useToast } from './hooks/useToast';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
@@ -158,6 +158,10 @@ const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'road
 // para no romper enlaces antiguos ni las notificaciones que navegan ahí.
 const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'library', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
 
+// Techo para cualquier carga de sesión (login manual o restauración al
+// abrir la app): sin él, un hipo de red deja el logo pulsando para siempre.
+const LOGIN_TIMEOUT_MS = 12_000;
+
 export default function App() {
   return (
     <ToastProvider>
@@ -167,6 +171,7 @@ export default function App() {
 }
 
 function AppContent() {
+  const { showToast } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
@@ -251,7 +256,16 @@ function AppContent() {
   // existing Firebase session. Does NOT re-run on manual logins (those go through
   // handleLoginSuccess directly, avoiding a Firebase null response wiping mock users).
   useEffect(() => {
-    const safetyTimeout = setTimeout(() => setLoading(false), 8000);
+    // El `clearTimeout` vivía dentro del callback de `onAuthStateChanged`, así
+    // que se cancelaba en cuanto Firebase confirmaba el usuario — ANTES de
+    // esperar a `loadUserSession`. Si esa lectura de Firestore se colgaba, ya
+    // no quedaba ningún salvavidas y la sesión no se restauraba nunca. Ahora el
+    // timeout cubre la operación completa, con Promise.race, igual que en
+    // handleLoginSuccess.
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+      showToast('Ha tardado demasiado en cargar tu sesión. Recarga la página.', 'error');
+    }, LOGIN_TIMEOUT_MS);
 
     // Antes había aquí un `getRedirectResult` para resolver la vuelta del
     // redirect de Google, con una bandera `sessionLoaded` para que
@@ -260,7 +274,6 @@ function AppContent() {
     // también 03-8: aquel `catch` mandaba el error solo a la consola, así que un
     // fallo de acceso por redirect no producía ni un mensaje en pantalla.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      clearTimeout(safetyTimeout);
       try {
         if (user) {
           setCurrentUser(user);
@@ -275,6 +288,7 @@ function AppContent() {
         setCurrentUser(null);
         setProfile(null);
       } finally {
+        clearTimeout(safetyTimeout);
         setLoading(false);
       }
     });
@@ -350,13 +364,31 @@ function AppContent() {
     }
   };
 
+  // El login por credenciales llamaba directo a loadUserSession sin ningún
+  // salvavidas: si la primera lectura de Firestore se quedaba colgada (hipo de
+  // red, token todavía no propagado), el `finally` de abajo no se ejecutaba
+  // nunca y la persona se quedaba viendo el logo pulsando para siempre, sin
+  // mensaje y sin forma de reintentar. La restauración automática de sesión
+  // (el otro useEffect, arriba) sí tenía un `setTimeout` de 8 s para esto
+  // mismo — este era el único camino de login sin red de seguridad.
   const handleLoginSuccess = async (user: any) => {
     setLoading(true);
     setCurrentUser(user);
     try {
-      await loadUserSession(user);
-    } catch (err) {
+      await Promise.race([
+        loadUserSession(user),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout-cargando-sesion')), LOGIN_TIMEOUT_MS)
+        ),
+      ]);
+    } catch (err: any) {
       console.error('Error loading profile after login:', err);
+      showToast(
+        err?.message === 'timeout-cargando-sesion'
+          ? 'Ha tardado demasiado en cargar tu sesión. Vuelve a intentarlo.'
+          : 'No se pudo cargar tu perfil. Vuelve a intentarlo.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
