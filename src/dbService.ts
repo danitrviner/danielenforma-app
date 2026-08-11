@@ -2,7 +2,6 @@ import {
   db,
   auth,
   onAuthStateChanged,
-  sendSignInLinkToEmail,
   collection,
   doc,
   getDoc,

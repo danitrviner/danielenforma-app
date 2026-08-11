@@ -24,20 +24,24 @@ import {
   waitForPendingWrites,
   onSnapshot
 } from 'firebase/firestore';
+// Un solo camino de acceso: correo y contraseña. Se han retirado
+// GoogleAuthProvider / signInWithPopup / signInWithRedirect / getRedirectResult
+// (B-3 guideline 4.8 y B-4 popup imposible en WKWebView) y el trío del enlace
+// mágico sendSignInLinkToEmail / isSignInWithEmailLink / signInWithEmailLink
+// (B-5 sin Universal Links, B-9 ajuste de consola nunca activado). Las cuentas
+// las crea el coach desde api/create-athlete.ts y el atleta elige su contraseña
+// desde el correo que manda Firebase, así que createUserWithEmailAndPassword
+// tampoco pinta nada aquí: no hay autorregistro.
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink
+  // Reautenticación para el borrado de cuenta: una acción irreversible no puede
+  // depender solo de que el móvil esté desbloqueado.
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 
 import {
@@ -71,7 +75,6 @@ try {
 }
 const auth = getAuth(app);
 const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
 
 // App Check (reCAPTCHA v3): corta el uso de la API key fuera de esta app una
 // vez se active "Enforce" en la consola Firebase para Firestore/Storage. Sin
@@ -108,18 +111,12 @@ export {
   uploadBytes,
   getDownloadURL,
   deleteObject,
-  googleProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   collection,
   doc,
   getDoc,

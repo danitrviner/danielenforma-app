@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { onAuthStateChanged, getRedirectResult, auth } from './firebase';
+import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
@@ -252,29 +252,14 @@ function AppContent() {
   // handleLoginSuccess directly, avoiding a Firebase null response wiping mock users).
   useEffect(() => {
     const safetyTimeout = setTimeout(() => setLoading(false), 8000);
-    // Track whether the redirect path already loaded the session, so
-    // onAuthStateChanged doesn't call loadUserSession a second time.
-    let sessionLoaded = false;
 
-    // Resolve any pending Google redirect before subscribing to auth state.
-    // onAuthStateChanged fires AFTER Firebase processes the redirect, so this
-    // call completes first and sets sessionLoaded, preventing a double-load.
-    getRedirectResult(auth)
-      .then(async result => {
-        if (result?.user) {
-          clearTimeout(safetyTimeout);
-          sessionLoaded = true;
-          setCurrentUser(result.user);
-          await loadUserSession(result.user);
-          setLoading(false);
-        }
-      })
-      .catch(err => {
-        console.error('getRedirectResult error:', err);
-      });
-
+    // Antes había aquí un `getRedirectResult` para resolver la vuelta del
+    // redirect de Google, con una bandera `sessionLoaded` para que
+    // onAuthStateChanged no cargara la sesión dos veces. Al quitar Google
+    // Sign-In (B-3/B-4) ya no hay ningún redirect que resolver, y con él se va
+    // también 03-8: aquel `catch` mandaba el error solo a la consola, así que un
+    // fallo de acceso por redirect no producía ni un mensaje en pantalla.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (sessionLoaded) return; // already handled by getRedirectResult
       clearTimeout(safetyTimeout);
       try {
         if (user) {

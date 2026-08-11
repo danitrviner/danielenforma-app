@@ -1,6 +1,6 @@
-import { db, auth, sendSignInLinkToEmail, collection, doc, getDoc, setDoc, getDocs, updateDoc, query, where } from '../firebase';
+import { db, auth, sendPasswordResetEmail, collection, doc, getDoc, getDocs, updateDoc, query, where } from '../firebase';
 import { Invite } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { forceLocalOnly, setLocalBypassMode } from './core';
 
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 
@@ -13,53 +13,82 @@ function saveLocalInvites(list: Invite[]): void {
   localStorage.setItem(LOCAL_INVITES, JSON.stringify(list));
 }
 
-// Sends the passwordless sign-in link (the actual "invite email", handled by
-// Firebase Auth itself) and records the invite so the coach can see who's
-// pending. Requires "Email link (passwordless sign-in)" enabled in the
-// Firebase console — see WelcomeScreen.tsx for the receiving side.
+const ENDPOINT_ALTA: string =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)
+    ? `${(import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')}/api/create-athlete`
+    : '/api/create-athlete';
+
+/**
+ * Da de alta a un atleta y le manda el correo para que cree su contraseña.
+ *
+ * Antes esto mandaba un enlace mágico (`sendSignInLinkToEmail`) y escribía el
+ * documento de `invites` desde el cliente. Ese diseño tenía tres fallos, y los
+ * tres se han eliminado de raíz al mover el alta al servidor:
+ *
+ *  1. Dependía de «Vínculo del correo electrónico», un ajuste de la consola que
+ *     nunca se activó: fallaba con `auth/operation-not-allowed` para cualquier
+ *     correo, así que NADIE podía darse de alta (B-9).
+ *  2. El enlace no podía completarse dentro de la app nativa, porque no hay
+ *     Universal Links ni escucha de deep link: se abría en Safari (B-5).
+ *  3. El correo salía ANTES de escribir el documento de `invites`. Si esa
+ *     escritura fallaba por permisos, la persona recibía el acceso y luego
+ *     chocaba con un permission-denied al darse de alta, porque
+ *     `firestore.rules` exige `exists(/invites/{email})`. El propio flujo de
+ *     invitación servía el encierro de P0-2.
+ *
+ * Ahora el servidor crea la cuenta y escribe `invites` con el Admin SDK, que no
+ * pasa por las reglas: o se hacen las dos cosas, o no se hace ninguna. Solo
+ * cuando eso ha ido bien se pide el correo de contraseña.
+ */
 export async function inviteClient(email: string): Promise<Invite> {
   const normalized = email.trim().toLowerCase();
-  await sendSignInLinkToEmail(auth, normalized, {
-    url: window.location.origin,
-    handleCodeInApp: true,
+
+  const idToken = await auth.currentUser?.getIdToken();
+  if (!idToken) {
+    throw Object.assign(new Error('Tu sesión ha caducado. Vuelve a entrar.'), {
+      code: 'unauthenticated',
+    });
+  }
+
+  const respuesta = await fetch(ENDPOINT_ALTA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ email: normalized }),
   });
+
+  if (!respuesta.ok) {
+    const detalle = await respuesta.json().catch(() => ({}));
+    throw Object.assign(
+      new Error((detalle as { error?: string }).error || 'No se pudo dar de alta al atleta.'),
+      { code: 'invite/alta-fallida' }
+    );
+  }
+
+  // La cuenta ya existe y la invitación está registrada. Este correo lo manda
+  // Firebase con su propia plantilla, así que no hace falta ningún servicio de
+  // envío contratado: al restablecer la contraseña, el atleta demuestra que
+  // controla el buzón y elige una clave que no ha viajado nunca por correo.
+  //
+  // Si esto falla, el alta NO se deshace: la cuenta es válida y el coach puede
+  // reenviar el correo con «volver a invitar». Por eso el error lo dice así.
+  try {
+    await sendPasswordResetEmail(auth, normalized);
+  } catch (err) {
+    console.error('sendPasswordResetEmail tras el alta falló:', err);
+    throw Object.assign(
+      new Error('La cuenta se creó, pero no salió el correo para crear la contraseña. Vuelve a invitarle.'),
+      { code: 'invite/correo-fallido' }
+    );
+  }
+
   const invite: Invite = {
     id: normalized,
     email: normalized,
     invitedAt: new Date().toISOString(),
     status: 'pending',
   };
-  if (forceLocalOnly) {
-    saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
-    return invite;
-  }
-  try {
-    await setDoc(doc(db, 'invites', normalized), stripUndefined(invite));
-    saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
-    return invite;
-  } catch (err) {
-    console.warn('inviteClient Firestore write failed (email was still sent):', err);
-    setLocalBypassMode(true, err);
-    // Ante permisos no se relanza `err` crudo —diría «no se pudo enviar» y el
-    // correo SÍ salió, fuera del try— pero tampoco se puede devolver éxito.
-    //
-    // Perder el documento de `invites` no es cosmético: `firestore.rules` exige
-    // `exists(/invites/{email})` para que el atleta pueda crear su perfil (línea
-    // 65). Sin él, el enlace llega, el atleta entra... y choca contra un
-    // permission-denied al darse de alta. Es exactamente el encierro de P0-2,
-    // servido por el propio flujo de invitación.
-    //
-    // Tampoco se guarda la copia local: pintaría una fila en "Pendientes" que
-    // solo existe en este navegador y que nunca va a reconciliarse.
-    if (esFalloDePermisos(err)) {
-      throw Object.assign(
-        new Error('El correo se envió, pero la invitación no quedó registrada.'),
-        { code: 'invite/registro-denegado' }
-      );
-    }
-    saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
-    return invite;
-  }
+  saveLocalInvites([...getLocalInvites().filter(i => i.id !== normalized), invite]);
+  return invite;
 }
 
 export async function getPendingInvites(): Promise<Invite[]> {

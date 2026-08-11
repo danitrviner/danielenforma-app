@@ -105,7 +105,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     setInviting(true);
     try {
       await inviteClient(inviteEmail.trim());
-      setInviteSuccess(`Invitación enviada a ${inviteEmail.trim()}.`);
+      setInviteSuccess(`Cuenta creada para ${inviteEmail.trim()}. Le hemos mandado el correo para que elija su contraseña.`);
       setInviteEmail('');
       loadInvites();
     } catch (err: any) {
@@ -123,7 +123,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     try {
       await inviteClient(email);
       loadInvites();
-      showToast(`Invitación reenviada a ${email}.`, 'success');
+      showToast(`Correo reenviado a ${email} para que cree su contraseña.`, 'success');
     } catch (err) {
       console.error('resend invite error:', err);
       // Mismo catálogo que el alta: si el correo salió y lo que falló fue el

@@ -32,24 +32,25 @@ const POR_CODIGO: Record<string, string> = {
     'Falta configurar algo en la base de datos para guardar esto. Avisa a Dani.',
   'not-found':
     'No encontramos el documento que hay que actualizar. Avisa a Dani.',
-  // Auth — el alta de un atleta pasa por un enlace de correo, y estos son los
-  // fallos reales que se ven ahí.
+  // Auth — fallos que se ven al dar de alta a un atleta desde el panel.
   'auth/operation-not-allowed':
-    'El acceso por enlace de correo está desactivado en Firebase. Hay que activarlo en Authentication › Método de acceso › Correo electrónico/contraseña › Vínculo del correo electrónico.',
+    'El método de acceso por correo y contraseña está desactivado en Firebase. Hay que activarlo en Authentication › Método de acceso.',
   'auth/invalid-email':
     'Ese correo no tiene un formato válido.',
-  'auth/expired-action-code':
-    'El enlace de acceso ha caducado. Pide uno nuevo.',
-  'auth/invalid-action-code':
-    'Ese enlace de acceso ya no vale. Suele pasar si se abre en un dispositivo distinto al que lo recibió, o si ya se usó. Pide uno nuevo.',
   'auth/too-many-requests':
     'Demasiados intentos seguidos. Espera un momento y vuelve a probar.',
-  // Caso propio: el correo de invitación sí salió, pero el documento en
-  // `invites` no se pudo escribir. No es cosmético — `firestore.rules` exige
-  // que ese documento exista para que el atleta pueda crear su perfil, así que
-  // sin él la invitación llega y no sirve.
-  'invite/registro-denegado':
-    'El correo se ha enviado, pero no se pudo registrar la invitación, y sin ese registro el atleta no podrá completar el alta. Vuelve a invitarle cuando se resuelva.',
+  // ── Casos propios del alta ────────────────────────────────────────────────
+  // El alta la hace api/create-athlete.ts, que crea la cuenta y registra el
+  // documento de `invites` en la misma operación con el Admin SDK. Si falla, no
+  // ha pasado nada: no hay cuenta a medias que limpiar.
+  'invite/alta-fallida':
+    'No se pudo crear la cuenta del atleta. No ha quedado nada a medias: vuelve a intentarlo.',
+  // Aquí sí ha quedado algo hecho: la cuenta existe y la invitación está
+  // registrada, pero el correo para elegir contraseña no salió. Decir «no se
+  // pudo dar de alta» sería mentir, y llevaría a intentarlo otra vez pensando
+  // que no existe.
+  'invite/correo-fallido':
+    'La cuenta se creó correctamente, pero no salió el correo para que elija su contraseña. Pulsa «reenviar» y solo se repetirá el envío.',
 };
 
 /**

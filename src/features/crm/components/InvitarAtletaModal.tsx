@@ -8,14 +8,15 @@ interface Props {
 }
 
 /**
- * Invitar una cuenta de app real (enlace de acceso sin contraseña por
- * email) — DISTINTO de "Nuevo cliente" (contacto CRM sin cuenta,
- * `NuevoClienteModal`). Reutiliza `inviteClient` de `db/invites.ts`, la
- * misma función que `ClientsScreen.tsx`; no se duplica lógica de envío.
+ * Da de alta una cuenta de app real — DISTINTO de "Nuevo cliente" (contacto CRM
+ * sin cuenta, `NuevoClienteModal`). Reutiliza `inviteClient` de `db/invites.ts`,
+ * la misma función que `ClientsScreen.tsx`; no se duplica lógica de alta.
  *
- * `auth/operation-not-allowed` es el error esperado hasta que Dani active
- * «Vínculo del correo electrónico» en Firebase Console (P0-2) — se muestra
- * tal cual, no como un fallo genérico, porque el arreglo no es de código.
+ * Antes esto mandaba un enlace de acceso sin contraseña y fallaba siempre con
+ * `auth/operation-not-allowed`, porque dependía de un ajuste de la consola de
+ * Firebase que nunca se activó. Ahora la cuenta la crea el servidor y Firebase
+ * manda un correo para que el atleta elija su contraseña, así que no depende de
+ * ningún ajuste pendiente.
  */
 export default function InvitarAtletaModal({ onCerrar }: Props) {
   const [email, setEmail] = useState('');
@@ -61,7 +62,9 @@ export default function InvitarAtletaModal({ onCerrar }: Props) {
     >
       {enviado ? (
         <p className="font-sans text-caption text-ink">
-          Invitación enviada a <span className="font-bold">{enviado}</span>. Cuando entre con ese enlace, tendrá cuenta de app.
+          Cuenta creada para <span className="font-bold">{enviado}</span>. Le hemos mandado un correo
+          para que elija su contraseña; con ella entra en la app. Si no lo encuentra, dile que mire en
+          spam o vuelve a invitarle desde aquí.
         </p>
       ) : (
         <Campo label="Email del atleta *" error={error || undefined}>

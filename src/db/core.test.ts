@@ -119,9 +119,10 @@ describe('mensajeDeErrorFirestore', () => {
     expect(mensajeDeErrorFirestore(errorDe('unavailable'))).toMatch(/conexi[óo]n/i);
   });
 
-  it('explica qué activar cuando el enlace de correo está desactivado', () => {
+  it('explica qué activar cuando el método de acceso está desactivado', () => {
     const msg = mensajeDeErrorFirestore(errorDe('auth/operation-not-allowed'));
-    expect(msg).toMatch(/Vínculo del correo electrónico/);
+    expect(msg).toMatch(/Authentication/);
+    expect(msg).toMatch(/Método de acceso/);
   });
 
   it('con un error desconocido y sin modo local, no inventa un problema de red', () => {
@@ -140,18 +141,33 @@ describe('mensajeDeErrorFirestore', () => {
   });
 });
 
-describe('invitación con el registro denegado', () => {
-  it('no dice que el correo no se envió, porque sí se envió', () => {
-    const msg = mensajeDeErrorFirestore(errorDe('invite/registro-denegado'), 'enviar la invitación');
-    expect(msg).toMatch(/se ha enviado/i);
-    expect(msg).not.toMatch(/no se pudo enviar/i);
+// El alta la hace api/create-athlete.ts, que crea la cuenta de Auth y escribe el
+// documento de `invites` en la misma operación con el Admin SDK. Eso parte los
+// fallos en dos mundos con consecuencias opuestas, y el mensaje tiene que
+// distinguirlos: si se confunden, el coach o reintenta cuando no debe o no
+// reintenta cuando sí.
+describe('mensajes del alta de un atleta', () => {
+  it('cuando falla el alta, deja claro que no ha quedado nada a medias', () => {
+    const msg = mensajeDeErrorFirestore(errorDe('invite/alta-fallida'), 'dar de alta');
+    expect(msg).toMatch(/no ha quedado nada a medias/i);
+    expect(msg).toMatch(/vuelve a intentarlo/i);
   });
 
-  it('avisa de que el atleta no podrá completar el alta', () => {
-    // firestore.rules exige exists(/invites/{email}) para que el atleta cree su
-    // perfil: sin ese documento el enlace llega y no sirve.
-    expect(mensajeDeErrorFirestore(errorDe('invite/registro-denegado')))
-      .toMatch(/no podrá completar el alta/i);
+  it('cuando solo falla el correo, NO dice que la cuenta no se creó', () => {
+    // La cuenta existe y la invitación está registrada: lo único que faltó fue
+    // el correo. Decir «no se pudo dar de alta» llevaría al coach a intentarlo
+    // otra vez creyendo que el atleta no existe.
+    const msg = mensajeDeErrorFirestore(errorDe('invite/correo-fallido'), 'dar de alta');
+    expect(msg).toMatch(/se creó correctamente/i);
+    expect(msg).not.toMatch(/no se pudo (crear|dar de alta)/i);
+    expect(msg).toMatch(/reenviar/i);
+  });
+
+  it('los dos casos del alta tienen mensajes distintos', () => {
+    // Blindaje contra el atajo de mapearlos al mismo texto: son estados del
+    // mundo opuestos (no existe nada / existe todo menos el correo).
+    expect(mensajeDeErrorFirestore(errorDe('invite/alta-fallida')))
+      .not.toBe(mensajeDeErrorFirestore(errorDe('invite/correo-fallido')));
   });
 });
 
