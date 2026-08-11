@@ -10,6 +10,7 @@ import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
+import EliminarCuentaDialog from './EliminarCuentaDialog';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
@@ -80,6 +81,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const settingsActionRef = useTourTarget('profile-settings-action');
   const [showCoaches, setShowCoaches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
   const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
@@ -509,12 +511,60 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             />
           )}
 
+          {/* Legales. Apple (5.1.1.i) y Google exigen el enlace a la política de
+              privacidad DENTRO de la app, no solo en la ficha de la tienda; y
+              Google exige además que el camino de borrado sea accesible desde
+              aquí. Son páginas estáticas fuera de la SPA, así que se abren en el
+              navegador del sistema: `target="_blank"` con `rel="noopener"` para
+              no dejarles acceso a `window.opener`. */}
+          <div className="pt-2 mt-2 border-t border-hairline flex flex-col">
+            <a
+              href="/privacidad"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
+            >
+              <Icon name="shield" size="s" />
+              Política de privacidad
+            </a>
+            <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
+            >
+              <Icon name="gavel" size="s" />
+              Términos de uso
+            </a>
+          </div>
+
           <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">
             <Icon name="logout" size="m" />
             Cerrar sesión
           </button>
+
+          {/* B-1. Apple (5.1.1.v) exige que una app que crea cuentas ofrezca
+              borrarlas DENTRO de la app, y no admite «desactivar» ni «escríbenos».
+              Va debajo de «Cerrar sesión» y en tono apagado a propósito: tiene
+              que ser encontrable sin esfuerzo, pero no competir con la acción que
+              casi todo el mundo viene a hacer aquí. */}
+          {!isCoach && (
+            <button
+              onClick={() => setShowEliminarCuenta(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 text-body-s font-sans text-ink-3 hover:text-danger transition-colors"
+            >
+              <Icon name="delete_forever" size="s" />
+              Eliminar mi cuenta
+            </button>
+          )}
         </div>
       </Sheet>
+
+      <EliminarCuentaDialog
+        open={showEliminarCuenta}
+        onClose={() => setShowEliminarCuenta(false)}
+        email={profile.email}
+      />
     </div>
   );
 }
