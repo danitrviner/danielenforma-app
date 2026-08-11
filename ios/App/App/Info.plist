@@ -28,19 +28,29 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- 07-14/02-10, decisión de Dani (§6.4, 11 ago 2026): bloquear a vertical.
+	     A partir de 768px el layout salta a la maqueta de escritorio con barra
+	     lateral de altura completa, y un iPhone en horizontal mide ~430pt de
+	     alto — no hay sitio. Confirmado con capturas reales del panel de coach a
+	     932×430 (se rompe) frente a los tamaños de iPad (aguantan, ver informe).
+	     Declarar landscape sin soportarlo de verdad era además riesgo de
+	     rechazo por la guideline 2.1. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Apple exige esta clave cuando TARGETED_DEVICE_FAMILY incluye iPad (hoy
+	     "1,2", §6.4 sigue sin decidir) y no se soportan todas las orientaciones:
+	     sin ella Xcode avisa "All interface orientations must be supported
+	     unless the app requires full screen" y el envío puede rechazarse. Solo
+	     quita Slide Over/Split View en iPad — no decide si se distribuye a
+	     iPad, eso sigue abierto. -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<!-- Purpose strings de cámara, fototeca y micrófono. Sin ellas iOS mata el

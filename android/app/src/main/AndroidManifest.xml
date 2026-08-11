@@ -10,12 +10,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <!-- Bloqueado a vertical (07-14/02-10, decisión de Dani §6.4, 11 ago
+             2026): sin `screenOrientation` Android permite girar libremente, y
+             a partir de 768px el layout salta a la maqueta de escritorio con
+             barra lateral de altura completa — en horizontal no cabe. Mismo
+             criterio que iOS (Info.plist). -->
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
