@@ -12,7 +12,9 @@
     "lint:eslint": "eslint src",
     "ds:inventario": "node scripts/ds-inventario.mjs",
     "export:vault": "tsx scripts/export-vault.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync:native": "npm run build && npx cap sync ios && npx cap sync android",
+    "prerelease": "npm run lint && npm run test && npm run sync:native"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
