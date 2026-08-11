@@ -112,9 +112,24 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
     return () => clearTimeout(t);
   }, [answers, stepIdx, assignment.id]);
 
+  // 05-7. Las preguntas numéricas llamaban a `setAnswer(parseFloat(value))`, y
+  // `parseFloat('')` es NaN. Vaciar el campo —o escribir «72,5», que en un
+  // <input type="number"> con teclado español el navegador entrega como cadena
+  // vacía— metía NaN en el estado, y de ahí a Firestore. Firestore no tiene NaN:
+  // lo guarda como un doble NaN que después rompe cualquier media, gráfica o
+  // comparación que toque ese campo, y encima la pregunta consta como
+  // respondida. Se filtra en el único sitio por el que pasan todas las
+  // respuestas, para que ninguna vía futura pueda saltárselo: un número no
+  // finito significa «sin responder», y lo correcto es borrar la clave.
   const setAnswer = (value: string | number | boolean) => {
     setError('');
-    setAnswers(prev => ({ ...prev, [question.id]: value }));
+    setAnswers(prev => {
+      if (typeof value === 'number' && !Number.isFinite(value)) {
+        const { [question.id]: _descartado, ...resto } = prev;
+        return resto;
+      }
+      return { ...prev, [question.id]: value };
+    });
   };
 
   const prefillFor = (q: QuestionnaireQuestion): number | undefined => {
