@@ -16,6 +16,11 @@
     "sync:native": "npm run build && npx cap sync ios && npx cap sync android",
     "prerelease": "npm run lint && npm run test && npm run sync:native"
   },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "^5"
+    }
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
     "@capacitor-community/bluetooth-le": "^8.2.0",
