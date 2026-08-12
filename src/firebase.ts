@@ -65,10 +65,18 @@ const FIRESTORE_DB_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870';
 // try/catch cubre el caso de HMR en dev, donde este módulo puede reevaluarse
 // dos veces para la misma app+base y `initializeFirestore` lanza si ya se
 // llamó antes — en ese caso basta con recuperar la instancia ya creada.
+// experimentalAutoDetectLongPolling: el transporte por defecto (WebChannel)
+// se cuelga en silencio dentro del WKWebView de Capacitor — no lanza error,
+// no rechaza la promesa, simplemente nunca resuelve. Es lo que producía el
+// "se queda cargando" en el simulador: el login por Firebase Auth funcionaba,
+// pero la lectura del perfil en Firestore se quedaba colgada para siempre.
+// Esta opción detecta el caso y cambia solo, sin coste apreciable cuando el
+// streaming normal sí funciona (web de escritorio).
 let db;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    experimentalAutoDetectLongPolling: true,
   }, FIRESTORE_DB_ID);
 } catch {
   db = getFirestore(app, FIRESTORE_DB_ID);
