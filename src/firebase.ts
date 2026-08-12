@@ -22,7 +22,12 @@ import {
   writeBatch,
   runTransaction,
   waitForPendingWrites,
-  onSnapshot
+  onSnapshot,
+  // 03-5. Cerrar sesión tiene que poder vaciar la caché persistente: ahí viven
+  // peso, perímetros, cuestionarios, dietas y notas del coach del usuario que
+  // se va. Ver utils/cierreDeSesion.ts.
+  terminate,
+  clearIndexedDbPersistence
 } from 'firebase/firestore';
 // Un solo camino de acceso: correo y contraseña. Se han retirado
 // GoogleAuthProvider / signInWithPopup / signInWithRedirect / getRedirectResult
@@ -156,6 +161,8 @@ export {
   writeBatch,
   runTransaction,
   waitForPendingWrites,
-  onSnapshot
+  onSnapshot,
+  terminate,
+  clearIndexedDbPersistence
 };
 export default app;

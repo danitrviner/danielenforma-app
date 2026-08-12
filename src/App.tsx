@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
@@ -16,6 +16,7 @@ import { ToastProvider, useToast } from './hooks/useToast';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
+import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -172,6 +173,7 @@ export default function App() {
 
 function AppContent() {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkins, setCheckins] = useState<WeightCheckIn[]>([]);
@@ -685,7 +687,17 @@ function AppContent() {
                 isCoach={isCoach}
                 checkins={checkins}
                 onRefreshProfile={handleRefreshData}
-                onLogOut={() => setCurrentUser(null)}
+                // 03-5 / 04-14. Esto era literalmente `() => setCurrentUser(null)`:
+                // la caché de react-query, ~50 claves enforma_* (muchas globales,
+                // no por usuario) y la caché persistente de Firestore con peso,
+                // perímetros, cuestionarios y dietas se quedaban en el dispositivo.
+                // En un móvil compartido, fuga real de datos de salud de otra
+                // persona. La limpieza termina recargando; setCurrentUser se
+                // queda como red por si la recarga no llegara a ocurrir.
+                onLogOut={() => {
+                  setCurrentUser(null);
+                  void limpiarDatosDeSesion(queryClient);
+                }}
               />
             )}
           />

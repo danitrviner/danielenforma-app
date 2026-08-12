@@ -168,11 +168,17 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   };
 
   const handleSignOut = async () => {
+    // 03-5. `onLogOut` estaba DENTRO del try, así que un `signOut` que lanzara
+    // —sesión ya caducada en el servidor, por ejemplo— dejaba a la persona
+    // dentro de la app, con todos sus datos en pantalla y sin más aviso que una
+    // línea en una consola que nadie mira. Ahora el cierre ocurre pase lo que
+    // pase: es justo el caso en el que más falta hace.
     try {
       await signOut(auth);
-      onLogOut();
     } catch (err) {
-      console.error(err);
+      console.error('signOut falló; se cierra la sesión en local igualmente:', err);
+    } finally {
+      onLogOut();
     }
   };
 
