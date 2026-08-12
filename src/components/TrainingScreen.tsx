@@ -723,36 +723,50 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               )}
 
-              {/* Set table */}
+              {/* Set table
+                  07-4. Era `min-w-[480px]` dentro de un ancho útil de 343-361 px,
+                  así que en CUALQUIER iPhone la última columna quedaba fuera de
+                  pantalla — y la última columna es «Hecha», la casilla que el
+                  atleta pulsa una vez por serie, de pie, con las manos ocupadas y
+                  el pulso a 150. Había que arrastrar la tabla en horizontal cada
+                  vez, dentro de una página que ya scrollea en vertical.
+
+                  Ahora en móvil la tabla CABE, en vez de caber a medias: se
+                  esconde la columna «Anterior» y se aprietan paddings y campos.
+                  Esconder «Anterior» no pierde el dato: la tabla llega
+                  prerrellenada con lo del último día (utils/setPrefill.ts) y ese
+                  mismo valor está de placeholder en cada campo, así que la
+                  columna era la tercera vez que se decía lo mismo. En pantallas
+                  anchas no cambia nada. */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[480px]">
+                <table className="w-full text-left sm:min-w-[480px]">
                   <thead>
                     <tr className="bg-bg border-b border-hairline">
-                      <th className="px-4 py-2 font-mono text-caption text-ink-2 uppercase w-12">Serie</th>
-                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">Peso (kg)</th>
-                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">Reps</th>
-                      <th className="px-3 py-2 font-mono text-caption text-ink-2 uppercase">RIR</th>
-                      <th className="px-3 py-2 font-mono text-caption text-ink-3 uppercase">Anterior</th>
-                      <th className="px-4 py-2 font-mono text-caption text-ink-2 uppercase text-center">Hecha</th>
+                      <th className="px-2 sm:px-4 py-2 font-mono text-caption text-ink-2 uppercase w-12">Serie</th>
+                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Peso</th>
+                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Reps</th>
+                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">RIR</th>
+                      <th className="hidden sm:table-cell px-3 py-2 font-mono text-caption text-ink-3 uppercase">Anterior</th>
+                      <th className="px-2 sm:px-4 py-2 font-mono text-caption text-ink-2 uppercase text-center">Hecha</th>
                     </tr>
                   </thead>
                   <tbody>
                     {warmup.sets.map((w, wIdx) => (
                       <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-warning/6">
-                        <td className="px-4 py-3">
+                        <td className="px-2 sm:px-4 py-3">
                           <span className="font-mono text-label font-bold text-warning flex items-center gap-1">
                             🔥 W{wIdx + 1}
                           </span>
                         </td>
-                        <td className="px-3 py-2">
-                          <span className="w-20 inline-block text-center text-warning font-mono text-body-s">{w.weight}</span>
+                        <td className="px-2 sm:px-3 py-2">
+                          <span className="w-16 sm:w-20 inline-block text-center text-warning font-mono text-body-s">{w.weight}</span>
                         </td>
-                        <td className="px-3 py-2">
-                          <span className="w-16 inline-block text-center text-warning font-mono text-body-s">{w.reps}</span>
+                        <td className="px-2 sm:px-3 py-2">
+                          <span className="w-14 sm:w-16 inline-block text-center text-warning font-mono text-body-s">{w.reps}</span>
                         </td>
-                        <td className="px-3 py-2 text-center text-warning/50 font-mono text-body-s">—</td>
-                        <td className="px-3 py-2 text-center text-warning/50 font-mono text-caption">Warm-up</td>
-                        <td className="px-4 py-2 text-center text-warning/40 font-mono text-body-s">—</td>
+                        <td className="px-2 sm:px-3 py-2 text-center text-warning/50 font-mono text-body-s">—</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-center text-warning/50 font-mono text-caption">Warm-up</td>
+                        <td className="px-2 sm:px-4 py-2 text-center text-warning/40 font-mono text-body-s">—</td>
                       </tr>
                     ))}
                     {exSets.map((setInput, sIdx) => {
@@ -769,7 +783,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                             setInput.done ? 'bg-accent/6' : shouldRecord ? 'bg-accent/5' : esSiguiente ? 'bg-accent/[.03]' : 'hover:bg-raised'
                           }`}
                         >
-                          <td className="px-4 py-3">
+                          <td className="px-2 sm:px-4 py-3">
                             <span className={`font-mono text-label font-bold flex items-center gap-1 ${setInput.done || esSiguiente ? 'text-accent' : 'text-ink-2'}`}>
                               {String(sIdx + 1).padStart(2, '0')}
                               {shouldRecord && <Icon name="videocam" size="s" className="text-accent" label="Grabar con el móvil" />}
@@ -778,7 +792,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
                             )}
                           </td>
-                          <td className="px-3 py-2" ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-set-editor', el); }}>
+                          <td className="px-2 sm:px-3 py-2" ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-set-editor', el); }}>
                             <input
                               type="number"
                               min={0}
@@ -787,10 +801,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
                               placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
                               disabled={setInput.done}
-                              className={`w-20 rounded-control border bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
+                              className={`w-16 sm:w-20 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-2 sm:px-3 py-2">
                             <input
                               type="number"
                               min={0}
@@ -798,10 +812,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
                               placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
                               disabled={setInput.done}
-                              className={`w-16 rounded-control border bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
+                              className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-2 sm:px-3 py-2">
                             {/* FALLO no es RIR 0: es un séptimo valor, no un número
                                 reservado — de ahí el <select> en vez de un <input
                                 type="number"> con min/max 0-5. La rueda nativa es
@@ -811,14 +825,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               value={setInput.rir}
                               onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
                               disabled={setInput.done}
-                              className={`w-16 appearance-none bg-field border border-hairline rounded-control px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
+                              className={`w-14 sm:w-16 appearance-none bg-field border border-hairline rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
                             >
                               {RIR_OPCIONES.map(v => (
                                 <option key={v} value={v}>{rirTexto(v)}</option>
                               ))}
                             </select>
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="hidden sm:table-cell px-3 py-2">
                             {prev ? (
                               <span className="font-mono text-caption text-ink-3 whitespace-nowrap">
                                 {prev.weight > 0 ? `${prev.weight}kg` : '—'} × {prev.repsDone > 0 ? `${prev.repsDone}r` : '—'}
@@ -827,7 +841,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               <span className="font-mono text-caption text-ink-3">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-2 text-center">
+                          <td className="px-2 sm:px-4 py-2 text-center">
                             {/* Casilla oro con check en on-accent al completar (handoff,
                                 Componentes 06) — desmarcar es tocar otra vez, sin confirmar. */}
                             <button
