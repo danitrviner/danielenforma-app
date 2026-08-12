@@ -5,6 +5,7 @@ import {
   conTimeout, EscrituraEncolada,
 } from './core';
 import { SYSTEM_EXERCISES } from '../data';
+import { combinarLogs } from './combinarLogs';
 
 // ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
 
@@ -469,9 +470,18 @@ export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> 
     const q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : colRef;
     const snap = await getDocs(q);
     const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutLog));
-    const local = getLocalWorkoutLogs().filter(l => !logs.find(b => b.id === l.id));
-    saveLocalWorkoutLogs([...local, ...logs]);
-    return logs;
+
+    // 03-6. Aquí estaba el agujero: se guardaba `[...locales, ...logs]` y se
+    // devolvía SOLO `logs`. Las dos reglas de la mezcla —y el filtro por atleta,
+    // que es un guardarraíl de privacidad— viven en `combinarLogs`, con pruebas.
+    const { visibles, paraGuardar } = combinarLogs(logs, getLocalWorkoutLogs(), athleteId);
+    saveLocalWorkoutLogs(paraGuardar);
+
+    // Lo que quedó de antes de que las escrituras encoladas llevaran id
+    // definitivo (05-2) se reenvía en segundo plano.
+    void reenviarLogsHuérfanos();
+
+    return visibles;
   } catch (err) {
     console.warn('getWorkoutLogs Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
@@ -480,14 +490,60 @@ export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> 
   }
 }
 
-export async function createWorkoutLog(data: Omit<WorkoutLog, 'id'>): Promise<WorkoutLog> {
-  if (forceLocalOnly) {
-    const newL: WorkoutLog = { ...data, id: `local_log_${Date.now()}` };
-    const list = getLocalWorkoutLogs();
-    list.push(newL);
-    saveLocalWorkoutLogs(list);
-    return newL;
+/* ── Reenvío de los logs que se quedaron solo en el dispositivo ──────────────
+   `03-6`. Antes de 05-2, un entrenamiento guardado sin conexión recibía un id
+   `local_log_<timestamp>` que no correspondía a ningún documento de Firestore,
+   y no había en todo el repo ningún mecanismo que lo subiera después: se
+   quedaba ahí para siempre.
+
+   Los nuevos ya nacen con su id definitivo y con la mutación encolada en
+   IndexedDB, así que suben solos. Esto es para los viejos, los que un cliente
+   real puede tener ahora mismo en su móvil. Se ejecuta una vez por sesión,
+   detrás de una lectura que ya ha demostrado que hay servidor al otro lado, y
+   nunca bloquea a quien lo llama. */
+
+const PREFIJO_HUÉRFANO = 'local_log_';
+let reenvíoHecho = false;
+
+async function reenviarLogsHuérfanos(): Promise<void> {
+  if (reenvíoHecho) return;
+  reenvíoHecho = true;
+
+  const huérfanos = getLocalWorkoutLogs().filter(l => l.id.startsWith(PREFIJO_HUÉRFANO));
+  if (huérfanos.length === 0) return;
+
+  console.info(`Reenviando ${huérfanos.length} entrenamiento(s) que se habían quedado en el móvil`);
+
+  for (const log of huérfanos) {
+    try {
+      const { id: _viejo, ...datos } = log;
+      const ref = doc(collection(db, 'workoutLogs'));
+      await conTimeout('Reenviar entrenamiento', setDoc(ref, stripUndefined(datos)));
+
+      // Solo se sustituye el id cuando el servidor ha confirmado. Si venció el
+      // plazo, se deja como está y se reintenta en la siguiente sesión: cambiar
+      // el id de algo que quizá no llegó dejaría un log invisible otra vez.
+      saveLocalWorkoutLogs(
+        getLocalWorkoutLogs().map(l => (l.id === log.id ? { ...l, id: ref.id } : l))
+      );
+    } catch (err) {
+      // Un fallo aquí no puede tumbar la pantalla: el log sigue en el
+      // dispositivo, que es donde estaba, y se reintentará.
+      console.warn('No se pudo reenviar un entrenamiento local:', log.id, err);
+    }
   }
+}
+
+export async function createWorkoutLog(data: Omit<WorkoutLog, 'id'>): Promise<WorkoutLog> {
+  // 03-6. Aquí había un atajo `if (forceLocalOnly)` que escribía SOLO en
+  // localStorage con un id `local_log_<timestamp>`, y ese era el origen del
+  // entrenamiento que nunca llegaba al coach. La bandera de modo local pasa a
+  // gobernar únicamente las LECTURAS: para escribir siempre se intenta
+  // Firestore, porque con la caché persistente activa el intento no se pierde
+  // —queda encolado en IndexedDB y sube al recuperar conexión—, mientras que
+  // el atajo garantizaba que no subiera nunca. Cuesta los 8 s del timeout de
+  // 05-2 en el peor caso; el atajo costaba el entrenamiento entero.
+
   // 05-2. El id se reserva ANTES de escribir, con `doc()` en vez de `addDoc()`.
   // Firestore genera los ids en el cliente, así que esto no cuesta una vuelta a
   // la red y a cambio da algo que antes no existía: saber cómo se llama el
