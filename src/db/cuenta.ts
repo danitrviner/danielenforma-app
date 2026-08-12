@@ -1,4 +1,5 @@
 import { auth, EmailAuthProvider, reauthenticateWithCredential, signOut } from '../firebase';
+import { apiUrl } from './apiBase';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Borrado de cuenta desde la app (B-1).
@@ -13,10 +14,7 @@ import { auth, EmailAuthProvider, reauthenticateWithCredential, signOut } from '
    Aquí solo vive lo que tiene que pasar en el cliente: la reautenticación.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const ENDPOINT_BORRADO: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)
-    ? `${(import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')}/api/delete-account`
-    : '/api/delete-account';
+const ENDPOINT_BORRADO: string = apiUrl('/api/delete-account');
 
 export interface ResultadoBorrado {
   documentos: number;

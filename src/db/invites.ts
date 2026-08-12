@@ -1,6 +1,7 @@
 import { db, auth, sendPasswordResetEmail, collection, doc, getDoc, getDocs, updateDoc, query, where } from '../firebase';
 import { Invite } from '../types';
 import { forceLocalOnly, setLocalBypassMode } from './core';
+import { apiUrl } from './apiBase';
 
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 
@@ -13,10 +14,7 @@ function saveLocalInvites(list: Invite[]): void {
   localStorage.setItem(LOCAL_INVITES, JSON.stringify(list));
 }
 
-const ENDPOINT_ALTA: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)
-    ? `${(import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')}/api/create-athlete`
-    : '/api/create-athlete';
+const ENDPOINT_ALTA: string = apiUrl('/api/create-athlete');
 
 /**
  * Da de alta a un atleta y le manda el correo para que cree su contraseña.

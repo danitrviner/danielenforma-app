@@ -6,11 +6,14 @@ import { auth } from '../firebase';
 import { AiChatMessage, AiContentBlock, AiToolUseBlock } from '../types';
 import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt';
 import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools';
+import { apiUrl } from '../db/apiBase';
 
-// En dev el front corre en vite (localhost:3000) sin funciones de Vercel:
-// apunta VITE_AI_PROXY_URL al proxy desplegado (https://<proyecto>.vercel.app/api/ai-chat).
-// En producción (misma origin de Vercel) basta el default relativo.
-const PROXY_URL: string = (import.meta.env.VITE_AI_PROXY_URL as string | undefined) ?? '/api/ai-chat';
+// VITE_AI_PROXY_URL sigue teniendo prioridad (dev contra un despliegue
+// concreto). Sin ella, `apiUrl` decide: ruta relativa en web, y absoluta a
+// producción en la app nativa — donde una relativa apuntaría al bundle local
+// del WebView y la llamada no saldría del móvil.
+const PROXY_URL: string =
+  (import.meta.env.VITE_AI_PROXY_URL as string | undefined)?.trim() || apiUrl('/api/ai-chat');
 
 const DEFAULT_MODEL = 'claude-sonnet-5';
 const MAX_TOOL_ROUNDS = 12;
