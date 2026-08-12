@@ -37,6 +37,91 @@ export async function withAuthRetry<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Escrituras con timeout · `05-2`
+
+   Con `persistentLocalCache` activo (src/firebase.ts), la promesa de
+   `addDoc`/`setDoc` NO resuelve hasta que el servidor confirma. Sin red no
+   resuelve nunca **y tampoco lanza**: el `await` se queda colgado para siempre.
+   En pantalla eso era un botón «Terminar sesión» en spinner indefinido, sin
+   toast, sin celebración y sin error, hasta que el atleta mataba la app.
+
+   El repo ya había resuelto esto, pero solo en `crm.ts` y para el dinero del
+   coach; los otros 18 ficheros de `src/db/`, incluidos los que guardan el
+   entrenamiento y el alta del atleta, se quedaron sin ello. Por eso vive aquí
+   ahora: es infraestructura, no una particularidad del CRM.
+
+   Importante: `EscrituraEncolada` NO es pérdida de dato. La mutación está en
+   IndexedDB y Firestore la enviará sola al recuperar conexión. La UI debe
+   decir «guardado, pendiente de sincronizar», nunca «error al guardar».
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Se lanza cuando una escritura no recibe confirmación del servidor a tiempo.
+ * NO significa que se haya perdido: Firestore la tiene encolada en IndexedDB y
+ * la enviará al recuperar conexión.
+ */
+export class EscrituraEncolada extends Error {
+  constructor(operacion: string) {
+    super(`«${operacion}» está guardado en este dispositivo pero aún no ha llegado al servidor. Se enviará solo al recuperar la conexión.`);
+    this.name = 'EscrituraEncolada';
+  }
+}
+
+const TIMEOUT_MS = 8000;
+
+/** Escrituras que vencieron el plazo y siguen sin confirmar. Es un número real,
+ *  no una estimación: `Promise.race` no cancela la promesa original, así que se
+ *  sigue esperando a la de verdad y se descuenta cuando por fin llega. */
+let pendientesDeSincronizar = 0;
+const oyentesPendientes = new Set<() => void>();
+
+function notificarPendientes(): void {
+  for (const f of oyentesPendientes) f();
+}
+
+export function escriturasPendientes(): number {
+  return pendientesDeSincronizar;
+}
+
+/** Suscripción para React (`useSyncExternalStore`). Devuelve la baja. */
+export function suscribirEscriturasPendientes(oyente: () => void): () => void {
+  oyentesPendientes.add(oyente);
+  return () => { oyentesPendientes.delete(oyente); };
+}
+
+/**
+ * Envuelve una escritura para que deje de esperar indefinidamente. Pasados
+ * `TIMEOUT_MS` lanza `EscrituraEncolada`, pero **sigue esperando a la promesa
+ * original por detrás** para poder descontarla del contador cuando sincronice.
+ * Eso es lo que permite que el aviso de «pendiente de sincronizar» se apague
+ * solo, sin que nadie tenga que sondear nada.
+ */
+export function conTimeout<T>(operacion: string, p: Promise<T>): Promise<T> {
+  let vencida = false;
+
+  // Se registra un manejador propio sobre `p` por dos motivos: descontar el
+  // contador cuando la escritura llegue de verdad, y evitar el
+  // «unhandled rejection» de una `p` que falle DESPUÉS de que la carrera ya se
+  // haya resuelto por timeout.
+  p.then(
+    () => { if (vencida) { pendientesDeSincronizar--; notificarPendientes(); } },
+    () => { if (vencida) { pendientesDeSincronizar--; notificarPendientes(); } },
+  );
+
+  let temporizador: ReturnType<typeof setTimeout>;
+  const vencimiento = new Promise<never>((_, reject) => {
+    temporizador = setTimeout(() => {
+      vencida = true;
+      pendientesDeSincronizar++;
+      notificarPendientes();
+      reject(new EscrituraEncolada(operacion));
+    }, TIMEOUT_MS);
+  });
+
+  return Promise.race([p, vencimiento]).finally(() => clearTimeout(temporizador));
+}
+
 // Let's have a state flag for Local Storage fallback
 // Session-only flag: never persisted to localStorage.
 // Each page load starts fresh and tries Firestore. Bypass only activates

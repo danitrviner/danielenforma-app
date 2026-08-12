@@ -26,7 +26,7 @@ import type {
   CrmContacto, CrmServicio, CrmPago, CrmSuscripcion, CrmReunion,
 } from '../features/crm/types';
 import type { UserProfile } from '../types';
-import { stripUndefined, authReady } from './core';
+import { stripUndefined, authReady, conTimeout } from './core';
 import { avanzarPeriodo, sumarMeses } from '../features/crm/lib/fechas';
 import { repartirEnCuotas } from '../features/crm/lib/dinero';
 
@@ -37,30 +37,13 @@ const COL_SUSCRIPCIONES = 'crmSuscripciones';
 const COL_REUNIONES = 'crmReuniones';
 
 // ── Escrituras con timeout ───────────────────────────────────────────────────
-
-/**
- * Se lanza cuando una escritura no recibe confirmación del servidor a tiempo.
- * NO significa que se haya perdido: Firestore la tiene encolada en IndexedDB y
- * la enviará al recuperar conexión. La UI debe decir «pendiente de sincronizar»,
- * no «error al guardar».
- */
-export class EscrituraEncolada extends Error {
-  constructor(operacion: string) {
-    super(`«${operacion}» está guardado en este dispositivo pero aún no ha llegado al servidor. Se enviará solo al recuperar la conexión.`);
-    this.name = 'EscrituraEncolada';
-  }
-}
-
-const TIMEOUT_MS = 8000;
-
-function conTimeout<T>(operacion: string, p: Promise<T>): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new EscrituraEncolada(operacion)), TIMEOUT_MS)
-    ),
-  ]);
-}
+//
+// `conTimeout` y `EscrituraEncolada` nacieron aquí, para el dinero del coach, y
+// desde `05-2` viven en `./core` porque el problema no era del CRM: era de
+// cualquier escritura de la app con la caché persistente activa. Se reexporta
+// la clase para que los seis modales del CRM que hacen `instanceof` sigan
+// importándola de donde siempre — es el mismo objeto, no una copia.
+export { EscrituraEncolada } from './core';
 
 function ahora(): string {
   return new Date().toISOString();

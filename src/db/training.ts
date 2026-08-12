@@ -1,6 +1,9 @@
 import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MuscleGroup, Mesocycle, MesocycleTemplate, MuscleGroupConfig, TemplateDay } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import {
+  forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
+  conTimeout, EscrituraEncolada,
+} from './core';
 import { SYSTEM_EXERCISES } from '../data';
 
 // ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
@@ -398,14 +401,26 @@ export async function updateWorkoutAssignment(id: string, updates: Partial<Worko
     saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
     return;
   }
-  try {
-    await updateDoc(doc(db, 'workoutAssignments', id), stripUndefined(updates) as Record<string, unknown>);
+  const aplicarEnLocal = () =>
     saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
+
+  try {
+    await conTimeout('Actualizar la sesión',
+      updateDoc(doc(db, 'workoutAssignments', id), stripUndefined(updates) as Record<string, unknown>));
+    aplicarEnLocal();
   } catch (err) {
+    // 05-2. Es la segunda escritura de «Terminar sesión», justo después de
+    // createWorkoutLog: sin timeout aquí, el arreglo de arriba no serviría de
+    // nada porque el spinner se quedaba colgado igual, una línea más abajo.
+    if (err instanceof EscrituraEncolada) {
+      console.info('updateWorkoutAssignment encolada, sube al recuperar conexión:', id);
+      aplicarEnLocal();
+      return;
+    }
     console.warn('updateWorkoutAssignment Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    saveLocalAssignments(getLocalAssignments().map(a => (a.id === id ? { ...a, ...updates } : a)));
+    aplicarEnLocal();
   }
 }
 
@@ -473,21 +488,42 @@ export async function createWorkoutLog(data: Omit<WorkoutLog, 'id'>): Promise<Wo
     saveLocalWorkoutLogs(list);
     return newL;
   }
-  try {
-    const ref = await addDoc(collection(db, 'workoutLogs'), stripUndefined(data));
-    const newL: WorkoutLog = { ...data, id: ref.id };
+  // 05-2. El id se reserva ANTES de escribir, con `doc()` en vez de `addDoc()`.
+  // Firestore genera los ids en el cliente, así que esto no cuesta una vuelta a
+  // la red y a cambio da algo que antes no existía: saber cómo se llama el
+  // documento aunque el servidor todavía no haya contestado. Es lo que permite
+  // que una escritura encolada guarde su copia local con su id DEFINITIVO y no
+  // con un `local_log_<timestamp>` que después nadie sabía reconciliar (03-6).
+  const ref = doc(collection(db, 'workoutLogs'));
+  const newL: WorkoutLog = { ...data, id: ref.id };
+  const guardarCopiaLocal = () => {
     const list = getLocalWorkoutLogs();
     list.push(newL);
     saveLocalWorkoutLogs(list);
+  };
+
+  try {
+    await conTimeout('Guardar el entrenamiento', setDoc(ref, stripUndefined(data)));
+    guardarCopiaLocal();
     return newL;
   } catch (err) {
+    // 05-2. Sin red, `setDoc` no resolvía NUNCA: el botón «Terminar sesión» se
+    // quedaba en spinner indefinido y el atleta acababa matando la app. Ahora
+    // vence a los 8 s, pero vencer no es fallar — la mutación está en IndexedDB
+    // con su id y Firestore la subirá sola. Por eso NO se activa el modo local
+    // (envenenaría el resto de la sesión) y NO se crea un log paralelo: sería
+    // un duplicado del que ya está encolado. Se devuelve como éxito, y quien
+    // avisa de que falta sincronizar es el banner, con el contador real de
+    // escrituras pendientes.
+    if (err instanceof EscrituraEncolada) {
+      console.info('createWorkoutLog encolada, sube al recuperar conexión:', ref.id);
+      guardarCopiaLocal();
+      return newL;
+    }
     console.warn('createWorkoutLog Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    const newL: WorkoutLog = { ...data, id: `local_log_${Date.now()}` };
-    const list = getLocalWorkoutLogs();
-    list.push(newL);
-    saveLocalWorkoutLogs(list);
+    guardarCopiaLocal();
     return newL;
   }
 }

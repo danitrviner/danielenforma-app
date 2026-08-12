@@ -1,6 +1,9 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import {
+  forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
+  conTimeout, EscrituraEncolada,
+} from './core';
 
 // ─── QUESTIONNAIRES ──────────────────────────────────────────────────────────
 // Collection: questionnaires  (owned by coach — ownerId == coachUid)
@@ -145,16 +148,29 @@ export async function submitResponse(data: Omit<QuestionnaireResponse, 'id'>): P
     localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify([...getLocalQResponses(), r]));
     return r;
   }
+  // 05-2. Igual que en createWorkoutLog: el id se reserva en el cliente para
+  // que una escritura encolada guarde su copia local con el id definitivo, y no
+  // con un `local_qr_<timestamp>` imposible de reconciliar después.
+  const ref = doc(collection(db, 'questionnaireResponses'));
+  const r: QuestionnaireResponse = { ...data, id: ref.id };
+
   try {
-    const ref = await addDoc(collection(db, 'questionnaireResponses'), stripUndefined(data));
-    return { ...data, id: ref.id };
+    await conTimeout('Enviar el cuestionario', setDoc(ref, stripUndefined(data)));
+    return r;
   } catch (err) {
+    // El check-in es lo que el coach lee para corregir la semana. Sin timeout,
+    // enviarlo sin cobertura dejaba el botón girando y la persona repitiéndolo.
+    if (err instanceof EscrituraEncolada) {
+      console.info('submitResponse encolada, sube al recuperar conexión:', ref.id);
+      localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify([...getLocalQResponses(), r]));
+      return r;
+    }
     console.warn('submitResponse Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    const r: QuestionnaireResponse = { ...data, id: `local_qr_${Date.now()}` };
-    localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify([...getLocalQResponses(), r]));
-    return r;
+    const local: QuestionnaireResponse = { ...data, id: `local_qr_${Date.now()}` };
+    localStorage.setItem(LOCAL_Q_RESPONSES, JSON.stringify([...getLocalQResponses(), local]));
+    return local;
   }
 }
 

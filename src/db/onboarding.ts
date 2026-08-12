@@ -1,6 +1,9 @@
 import { db, doc, getDoc, setDoc, updateDoc } from '../firebase';
 import { OnboardingData, OnboardingTemplate } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import {
+  forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
+  conTimeout, EscrituraEncolada,
+} from './core';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
@@ -61,7 +64,20 @@ export async function saveOnboarding(data: OnboardingData): Promise<void> {
   // El error de Firestore sube tal cual, con su `code`: es lo que permite a la
   // pantalla decir la verdad (permisos, sesión caducada, red) en vez del
   // «revisa tu conexión» genérico de antes. Ver utils/erroresFirestore.
-  await setDoc(doc(db, 'onboarding', data.athleteId), stripUndefined(data));
+  try {
+    await conTimeout('Guardar tu ficha', setDoc(doc(db, 'onboarding', data.athleteId), stripUndefined(data)));
+  } catch (err) {
+    // 05-2. Sin red esto no resolvía nunca y el alta se quedaba en «Guardando»
+    // para siempre, en el último paso de los seis. La copia local ya está
+    // escrita arriba y la mutación está encolada en IndexedDB con la misma
+    // clave (el email), así que el alta está completa a todos los efectos:
+    // se deja pasar en vez de mandar al atleta a repetirla.
+    if (err instanceof EscrituraEncolada) {
+      console.info('saveOnboarding encolada, sube al recuperar conexión:', data.athleteId);
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function updateOnboarding(data: OnboardingData): Promise<void> {
