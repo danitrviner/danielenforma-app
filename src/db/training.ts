@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit } from '../firebase';
 import { Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MuscleGroup, Mesocycle, MesocycleTemplate, MuscleGroupConfig, TemplateDay } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
@@ -460,16 +460,52 @@ function saveLocalWorkoutLogs(logs: WorkoutLog[]) {
   } catch (e) {}
 }
 
-export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> {
+/**
+ * `06-2`. La ventana es OPCIONAL y por defecto no se aplica, a propósito.
+ *
+ * Un `limit` global habría sido un desastre silencioso: `allTimeBestBefore` y
+ * el motor de reportes calculan récords sobre TODO el historial, así que
+ * recortar la lectura por defecto habría hecho que un atleta con dos años de
+ * entrenamientos «batiera» récords que ya tenía batidos, sin que nada fallara.
+ * Por eso la ventana la pide quien sabe que le vale con lo reciente, y no la
+ * sufre quien necesita el historial entero.
+ */
+export interface VentanaDeLogs {
+  /** Fecha mínima, `YYYY-MM-DD`. */
+  desde: string;
+  /** Techo de documentos. Segundo cinturón por si un atleta entrena a diario. */
+  limite?: number;
+}
+
+export async function getWorkoutLogs(
+  athleteId?: string,
+  ventana?: VentanaDeLogs,
+): Promise<WorkoutLog[]> {
   if (forceLocalOnly) {
     const all = getLocalWorkoutLogs();
-    return athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+    const propios = athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+    return ventana ? propios.filter(l => l.date >= ventana.desde) : propios;
   }
   try {
     const colRef = collection(db, 'workoutLogs');
-    const q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : colRef;
+    let q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : query(colRef);
+    if (ventana) {
+      // Necesita el índice compuesto workoutLogs (athleteId ASC, date DESC),
+      // declarado en firestore.indexes.json.
+      q = query(q, where('date', '>=', ventana.desde), orderBy('date', 'desc'), limit(ventana.limite ?? 200));
+    }
     const snap = await getDocs(q);
     const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutLog));
+
+    // Una lectura con ventana NO puede tocar la copia local: sobrescribiría el
+    // espejo completo del dispositivo con un trozo, y de paso `combinarLogs`
+    // creería que todo lo que queda fuera de la ventana está «solo en el móvil»
+    // y lo mostraría como pendiente de subir. La copia local solo la actualiza
+    // quien ha leído entero.
+    if (ventana) {
+      void reenviarLogsHuérfanos();
+      return logs;
+    }
 
     // 03-6. Aquí estaba el agujero: se guardaba `[...locales, ...logs]` y se
     // devolvía SOLO `logs`. Las dos reglas de la mezcla —y el filtro por atleta,
@@ -486,7 +522,8 @@ export async function getWorkoutLogs(athleteId?: string): Promise<WorkoutLog[]> 
     console.warn('getWorkoutLogs Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
     const all = getLocalWorkoutLogs();
-    return athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+    const propios = athleteId ? all.filter(l => l.athleteId === athleteId) : all;
+    return ventana ? propios.filter(l => l.date >= ventana.desde) : propios;
   }
 }
 

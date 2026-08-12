@@ -49,20 +49,47 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // which never matched, so every athlete's adherence score silently ignored
   // their training data. allAssignments below is still keyed by .email for
   // lookup convenience against the athlete list.
+  // 06-2. `enabled: !athleteId` — con la ficha de un cliente abierta, esta
+  // pantalla no se ve: la ocupa ClientHub. Sin esto, abrir un cliente seguía
+  // manteniendo vivas y refrescándose las N consultas de la lista entera.
   const assignmentsQueries = useQueries({
     queries: athletes.map(a => ({
       queryKey: ['workoutAssignments', a.userId],
       queryFn: () => getWorkoutAssignments(a.userId),
+      enabled: !athleteId,
     })),
   });
   const allAssignments = new Map<string, WorkoutAssignment[]>();
   athletes.forEach((a, i) => allAssignments.set(a.email, assignmentsQueries[i]?.data ?? []));
   const loadingAssignments = assignmentsQueries.some(q => q.isPending);
 
+  /* 06-2. Esta pantalla leía TODOS los entrenamientos de TODOS los atletas —un
+     `where athleteId ==` sin `limit`, historial completo— y lo único que hacía
+     con ellos era contar notas sin leer para el badge de la tarjeta. Con 30
+     atletas eran ~5.700 documentos por montaje, y con el `refetchOnWindowFocus`
+     de antes, otra vez en cada vuelta al primer plano.
+
+     Ahora pide solo la ventana que necesita, y bajo una CLAVE DE CACHÉ PROPIA
+     (`recientes`): compartir la clave con ClientHub —que sí necesita el
+     historial entero para récords y reportes— le habría servido una lista
+     recortada desde la caché, y los récords del atleta habrían salido mal sin
+     que nada diera error.
+
+     Lo que se pierde: una nota sin leer de hace más de 120 días deja de contar
+     en el badge. Si una nota lleva cuatro meses sin abrirse, el badge no es el
+     problema. */
+  // Se calcula una vez por montaje, no por render: forma parte de la clave de
+  // caché, y una clave que cambia en cada render vuelve a leer en cada render.
+  const desdeVentana = useMemo(() => {
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    return new Date(hoy.getTime() - 120 * 86_400_000).toISOString().slice(0, 10);
+  }, []);
+
   const workoutLogsQueries = useQueries({
     queries: athletes.map(a => ({
-      queryKey: ['workoutLogs', a.email],
-      queryFn: () => getWorkoutLogs(a.email),
+      queryKey: ['workoutLogs', a.email, 'recientes', desdeVentana],
+      queryFn: () => getWorkoutLogs(a.email, { desde: desdeVentana, limite: 200 }),
+      enabled: !athleteId,
     })),
   });
   const allWorkoutLogs = new Map<string, WorkoutLog[]>();
