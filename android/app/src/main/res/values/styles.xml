@@ -1,22 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
+    <!-- 07-6. El padre era `Theme.AppCompat.Light.DarkActionBar` y el de abajo
+         `DayNight`, así que con el teléfono en modo claro Android resolvía la
+         barra de estado a STYLE_LIGHT: reloj, batería y cobertura en NEGRO
+         sobre el #050505 de la app, es decir, invisibles. La app es oscura
+         siempre —no tiene modo claro y no lo va a tener—, así que el tema no
+         puede seguir al sistema: se fija en oscuro y se acabó la ambigüedad. -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+
+        <!-- `windowLightStatusBar=false` es lo que de verdad arregla 07-6: le
+             dice a Android que pinte los iconos de la barra en CLARO. Sin esto,
+             heredar un tema oscuro no basta en todos los fabricantes. -->
+        <item name="android:statusBarColor">@color/statusBar</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/navigationBar</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- Mismo criterio durante el splash: sin esto hay un parpadeo con los
+             iconos en negro entre que aparece la ventana y carga el WebView. -->
+        <item name="android:statusBarColor">@color/statusBar</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

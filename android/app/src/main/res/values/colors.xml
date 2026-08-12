@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Este fichero FALTABA. `styles.xml` referenciaba @color/colorPrimary,
+  @color/colorPrimaryDark y @color/colorAccent, y no existía ningún colors.xml
+  en todo el proyecto Android: aapt2 no puede resolver esas tres referencias, o
+  sea que la compilación de Android fallaba antes de empezar. No se había
+  detectado porque en esta máquina no hay JDK y Android no se ha compilado
+  nunca (§3.1 del checklist).
+
+  Los valores son los tokens reales del design system (src/index.css):
+  --color-bg #050505 y --color-accent #FFC72C.
+-->
+<resources>
+    <color name="colorPrimary">#050505</color>
+    <color name="colorPrimaryDark">#050505</color>
+    <color name="colorAccent">#FFC72C</color>
+
+    <!-- 07-6. La barra de estado va del color del fondo de la app, no del que
+         el sistema decida según el modo claro/oscuro del teléfono. -->
+    <color name="statusBar">#050505</color>
+    <color name="navigationBar">#050505</color>
+</resources>

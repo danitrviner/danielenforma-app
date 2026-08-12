@@ -51,8 +51,19 @@
 	     iPad, eso sigue abierto. -->
 	<key>UIRequiresFullScreen</key>
 	<true/>
+	<!-- 07-6. Sin estas tres claves, `CAPBridgeViewController` se quedaba con
+	     el estilo `.default`, que SIGUE AL SISTEMA: con el iPhone en modo claro,
+	     el reloj, la batería y la cobertura se pintaban en negro sobre el
+	     #050505 de la app, o sea invisibles. La app es oscura siempre y no tiene
+	     modo claro, así que la interfaz se fija en oscuro (`UIUserInterfaceStyle`)
+	     y el estilo de la barra se declara a nivel de app en vez de dejarlo en
+	     manos de cada view controller. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
+	<false/>
 	<!-- Purpose strings de cámara, fototeca y micrófono. Sin ellas iOS mata el
 	     proceso en seco (no lanza excepción: termina la app) la primera vez que
 	     el atleta toca "Hacer foto". Las cuatro pantallas que lo disparan son
