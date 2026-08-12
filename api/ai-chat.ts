@@ -10,7 +10,7 @@
 // viven en ./_lib/auth para que no haya dos definiciones de «quién es el coach».
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth';
+import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth.js';
 
 export const config = { maxDuration: 60 };
 

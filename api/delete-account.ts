@@ -31,7 +31,7 @@ import {
   setCors,
   tokenDeLaCabecera,
   verifyFirebaseIdToken,
-} from './_lib/auth';
+} from './_lib/auth.js';
 
 export const config = { maxDuration: 60 };
 
