@@ -24,6 +24,10 @@ import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
+import {
+  guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
+  limpiarSesionesCaducadas,
+} from '../utils/sesionEnCurso';
 import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Dialog, Button, Icon, ProgressBar, SegmentedControl, Chip, EmptyState } from './ui';
 
@@ -175,6 +179,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+
+  // 05-5. Barrido de borradores de sesión caducados: una sesión que se abre y
+  // nunca se termina deja su clave, y sin esto se acumularían una por semana.
+  useEffect(() => { limpiarSesionesCaducadas(profile.email); }, [profile.email]);
   // Vídeo demo abierto (F3.13, "ficha de ejercicio" — el tutorial ya promete
   // "aquí tienes el vídeo a 0,5× o velocidad normal" señalando esta tarjeta,
   // pero hasta ahora solo había una miniatura estática sin reproducir nada).
@@ -275,13 +283,43 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
     }
 
+    const prerrellenadas = prefillWorkoutSets(wo, entries);
+
+    // 05-5. Si esta misma sesión quedó a medias —la app murió en segundo plano,
+    // o el atleta salió a la lista entre series— se recupera lo que ya había
+    // marcado en vez de volver a empezar. `cargarSesion` solo devuelve algo si
+    // la rutina sigue teniendo la misma forma; si el coach la cambió, prefiere
+    // perder el borrador antes que colocar los kilos en el ejercicio de al lado.
+    const borrador = cargarSesion(profile.email, assignment.id, wo.id, formaDeSesion(prerrellenadas));
+
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
-    setPlayerSets(prefillWorkoutSets(wo, entries));
-    setExerciseNoteInputs(wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
-    setWorkoutNoteInput('');
+    setPlayerSets(borrador?.playerSets ?? prerrellenadas);
+    setExerciseNoteInputs(borrador?.exerciseNoteInputs
+      ?? wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
+    setWorkoutNoteInput(borrador?.workoutNoteInput ?? '');
     setCelebration(null);
     setPrevEntries(entries);
+
+    if (borrador && tieneSeriesHechas(borrador)) {
+      const hechas = borrador.playerSets.reduce((n, ex) => n + ex.filter(s => s.done).length, 0);
+      showToast(`Recuperamos tu sesión: ${hechas} ${hechas === 1 ? 'serie marcada' : 'series marcadas'}.`);
+    }
+  };
+
+  /** Cierra el player y deja el estado como estaba antes de abrirlo. **No borra
+   *  el borrador a propósito**: salir a la lista a mitad de sesión es algo que
+   *  se hace para mirar otra cosa, no para tirar 20 minutos de trabajo, así que
+   *  volver a entrar en la misma sesión la recupera. El borrador solo se borra
+   *  cuando la sesión se cierra de verdad: al terminarla o al saltarla. */
+  const cerrarPlayer = () => {
+    setActiveAssignment(null);
+    setActiveWorkout(null);
+    setPlayerSets([]);
+    setPrevEntries([]);
+    setExerciseNoteInputs([]);
+    setWorkoutNoteInput('');
+    setRestTimer(null);
   };
 
   const updateSet = (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => {
@@ -301,6 +339,37 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   };
 
   const canFinish = playerSets.some(exSets => exSets.some(s => s.done));
+
+  // 05-5. Autoguardado del entrenamiento en curso: cada serie marcada y cada
+  // nota persiste al instante en el dispositivo. Antes, la única escritura era
+  // «Terminar sesión», así que 40 minutos de gimnasio con la pantalla apagada
+  // entre series desaparecían si iOS decidía matar la app en segundo plano.
+  useEffect(() => {
+    if (!activeAssignment || !activeWorkout || celebration) return;
+
+    const hayTrabajo = canFinish
+      || workoutNoteInput.trim() !== ''
+      || exerciseNoteInputs.some(n => n.trim() !== '');
+
+    // Una tabla solo prerrellenada, sin nada marcado, no es trabajo que
+    // proteger: guardarla dejaría una clave por cada sesión que se abre y se
+    // cierra sin entrenar. Y si el atleta desmarca todo, el borrador se va con
+    // ello en vez de quedarse resucitando series que él mismo quitó.
+    if (!hayTrabajo) {
+      borrarSesion(profile.email, activeAssignment.id);
+      return;
+    }
+
+    guardarSesion(profile.email, {
+      assignmentId:      activeAssignment.id,
+      workoutId:         activeWorkout.id,
+      playerSets,
+      exerciseNoteInputs,
+      workoutNoteInput,
+      guardadoEn:        new Date().toISOString(),
+    });
+  }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, workoutNoteInput,
+      celebration, canFinish, profile.email]);
 
   const handleFinish = async () => {
     if (!activeAssignment || !activeWorkout || !canFinish) return;
@@ -357,6 +426,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ));
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
       setRestTimer(null);
+      // 05-5. El entrenamiento ya está en Firestore: el borrador local sobra.
+      // Va después de las dos escrituras y no antes, para que un fallo al
+      // guardar deje el trabajo del atleta donde estaba.
+      borrarSesion(profile.email, activeAssignment.id);
       void haptics.success();
       // El modal de celebración se muestra ANTES de cerrar el player — el
       // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
@@ -371,11 +444,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   const dismissCelebration = () => {
     setCelebration(null);
-    setActiveAssignment(null);
-    setActiveWorkout(null);
-    setPrevEntries([]);
-    setExerciseNoteInputs([]);
-    setWorkoutNoteInput('');
+    cerrarPlayer();
   };
 
   const handleSkip = async (assignment: WorkoutAssignment) => {
@@ -468,7 +537,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             size="s"
             icon="arrow_back"
             label="Volver"
-            onClick={() => { setActiveAssignment(null); setActiveWorkout(null); setPrevEntries([]); setExerciseNoteInputs([]); setWorkoutNoteInput(''); setRestTimer(null); }}
+            onClick={cerrarPlayer}
             className="shrink-0"
           />
           <div className="flex-1 min-w-0">
@@ -850,12 +919,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               label="Saltar sesión"
               onClick={async () => {
                 await handleSkip(activeAssignment);
-                setActiveAssignment(null);
-                setActiveWorkout(null);
-                setPrevEntries([]);
-                setExerciseNoteInputs([]);
-                setWorkoutNoteInput('');
-                setRestTimer(null);
+                // Saltar la sesión sí es abandonarla: aquí el borrador se va.
+                borrarSesion(profile.email, activeAssignment.id);
+                cerrarPlayer();
               }}
             />
             <Button
