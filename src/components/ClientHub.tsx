@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
@@ -30,16 +30,22 @@ import {
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
   getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete,
 } from '../dbService';
-import ClientRoadmapPanel from './ClientRoadmapPanel';
-import ClientAnalysisPanel from './ClientAnalysisPanel';
-import ClientDietsPanel from './ClientDietsPanel';
-import ClientWorkoutsPanel from './ClientWorkoutsPanel';
-import ClientReviewsPanel from './ClientReviewsPanel';
-import ClientSetupPanel from './ClientSetupPanel';
+/* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
+   recharts entrando por Análisis y Entrenamientos. Los seis paneles se
+   importaban en estático aunque el Hub solo pinta UNO cada vez —es una pantalla
+   de pestañas—, así que abrir la ficha de un cliente para mirar el setup
+   descargaba también los gráficos de correlaciones que quizá no se abren nunca.
+   En diferido, cada pestaña trae lo suyo la primera vez que se toca. */
+const ClientRoadmapPanel = lazy(() => import('./ClientRoadmapPanel'));
+const ClientAnalysisPanel = lazy(() => import('./ClientAnalysisPanel'));
+const ClientDietsPanel = lazy(() => import('./ClientDietsPanel'));
+const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
+const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
+const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientStatusCard from './ClientStatusCard';
 import ClientHubSummary from './ClientHubSummary';
-import { Badge, Tabs } from './ui';
+import { Badge, Tabs, Skeleton } from './ui';
 
 export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
 export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
@@ -513,6 +519,10 @@ export default function ClientHub({
         )}
       </div>
 
+      {/* Un solo Suspense para las seis pestañas: solo hay una montada a la
+          vez, así que seis serían seis veces el mismo hueco. */}
+      <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
+
       {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
         <ClientSetupPanel
@@ -619,6 +629,8 @@ export default function ClientHub({
           onAnalisisTabChange={onAnalisisTabChange}
         />
       )}
+
+      </Suspense>
     </div>
   );
 }

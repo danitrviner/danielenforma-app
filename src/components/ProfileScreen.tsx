@@ -1,12 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
-import BodyweightPanel from './BodyweightPanel';
-import BodyMeasurementsPanel from './BodyMeasurementsPanel';
-import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
+/* 06-6. Estos tres paneles arrastran recharts —344 KB— y se importaban en
+   estático, así que el atleta los descargaba y evaluaba aunque entrase a
+   Perfil solo a cambiarse el avatar. Van en diferido: además de los bloques,
+   Perfil es una pantalla con orden configurable donde varios de ellos ni
+   siquiera se renderizan si el atleta los tiene ocultos. */
+const BodyweightPanel = lazy(() => import('./BodyweightPanel'));
+const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
+const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
@@ -18,7 +23,7 @@ import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
-import { Icon, Button, PageHeader, ListRow, Input, Sheet } from './ui';
+import { Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -55,6 +60,13 @@ const COACH_NOTIF_TYPES: { type: NotificationType; label: string; sub: string }[
   { type: 'questionnaire_submitted', label: 'Cuestionario enviado', sub: 'Un atleta envía una revisión' },
   { type: 'hrtest_pending', label: 'Test de FC pendiente', sub: 'Un atleta espera tu aprobación de zonas' },
 ];
+
+/** Hueco mientras baja el trozo de recharts. Alto fijo para que el bloque no
+ *  dé un salto cuando el panel real entra — el orden de bloques de esta
+ *  pantalla lo configura el atleta, y un reflow aquí desplaza todo lo de abajo. */
+function PanelCargando() {
+  return <Skeleton className="w-full h-48 rounded-surface" />;
+}
 
 function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -227,7 +239,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'bodyweight':
         return (
           <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-            <BodyweightPanel athleteEmail={profile.email} />
+            <Suspense fallback={<PanelCargando />}><BodyweightPanel athleteEmail={profile.email} /></Suspense>
           </div>
         );
 
@@ -238,7 +250,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
               Mediciones
             </h3>
-            <BodyMeasurementsPanel athleteEmail={profile.email} />
+            <Suspense fallback={<PanelCargando />}><BodyMeasurementsPanel athleteEmail={profile.email} /></Suspense>
           </div>
         );
 
@@ -283,7 +295,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'questionnaires':
         return (
           <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-            <QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} />
+            <Suspense fallback={<PanelCargando />}><QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} /></Suspense>
           </div>
         );
 
