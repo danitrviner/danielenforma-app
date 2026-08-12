@@ -515,7 +515,7 @@ function AppContent() {
       <LocalModeBanner />
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
+      <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
@@ -536,7 +536,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
+      <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>

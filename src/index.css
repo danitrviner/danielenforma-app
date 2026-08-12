@@ -439,7 +439,18 @@
    número a mano.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --header-h: 70px;
+  /* Safe area superior: 0 en escritorio y en un iPhone SE, ~59 px en uno con
+     isla dinámica. Se declara como token para que la cabecera, el aviso rojo y
+     el alta del atleta lean el MISMO valor — antes ninguna de las tres
+     reservaba nada y las tres se metían debajo de la barra de estado (07-1,
+     07-2, 07-3): la hora del sistema se solapaba con "EN FORMA". */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* Altura TOTAL de la cabecera, safe area incluida. El contenido interno
+     sigue midiendo 70 px porque la cabecera lleva `padding-top: var(--safe-top)`
+     y `box-sizing: border-box`. Así lo que se posiciona contra la cabecera
+     (el `main` de escritorio, las barras sticky) no necesita saber nada de
+     safe areas: le basta con --header-h, como hasta ahora. */
+  --header-h: calc(70px + var(--safe-top));
   /* 78 px de contenido (Fase 3, F3.4: antes 59) + la safe area del iPhone,
      que en escritorio son 20 px. */
   --nav-h: calc(78px + max(20px, env(safe-area-inset-bottom, 20px)));
@@ -452,7 +463,7 @@
 
 @media (min-width: 768px) {
   :root {
-    --header-h: 78px;
+    --header-h: calc(78px + var(--safe-top));
     --nav-h: 0px; /* en escritorio la navegación es lateral, no inferior */
   }
 }

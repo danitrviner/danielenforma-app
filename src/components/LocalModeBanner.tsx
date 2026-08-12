@@ -47,7 +47,10 @@ export default function LocalModeBanner() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-e1">
+    // pt: el aviso va por encima de todo (z-100) y en fixed top-0, así que sin
+    // reservar la safe area su texto quedaba debajo de la barra de estado —
+    // justo el aviso que más se tiene que leer (07-2).
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1">
       <Icon name={estado === 'permisos' ? 'lock' : 'cloud_off'} size="m" />
       <p className="font-sans text-label font-bold">
         {estado === 'permisos'

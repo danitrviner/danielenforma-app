@@ -219,7 +219,10 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
       {/* Progreso — corrige P2-1: pista más visible (track, no white/5) y
           "Paso N de M" explícito en vez de solo la fracción junto al logo. */}
-      <div className="w-full max-w-lg mx-auto px-6 pt-8">
+      {/* pt: es la PRIMERA pantalla que ve un atleta nuevo, y sin reservar la
+          safe area el "Paso N de 6" y el logo se metían bajo la isla dinámica
+          (07-3). El calc mantiene los 2rem de aire original por debajo. */}
+      <div className="w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
