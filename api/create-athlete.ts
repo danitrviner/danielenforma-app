@@ -40,10 +40,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── Solo el coach da de alta ──────────────────────────────────────────────
   const idToken = tokenDeLaCabecera(req.headers.authorization);
-  if (!idToken) { res.status(401).json({ error: 'Falta el token de autenticación' }); return; }
+  if (!idToken) {
+    console.warn('create-athlete: sin cabecera Authorization utilizable');
+    res.status(401).json({ error: 'Falta el token de autenticación' });
+    return;
+  }
   const decoded = await verifyFirebaseIdToken(idToken);
   if (!decoded) { res.status(401).json({ error: 'Token inválido o caducado' }); return; }
   if (!esCoach(decoded)) {
+    // Sin el email en claro no hay forma de saber si el rechazo fue por cuenta
+    // equivocada o por email sin verificar, y son dos arreglos distintos.
+    console.warn(
+      `create-athlete: 403 para ${decoded.email || '(sin email)'} — emailVerified=${decoded.emailVerified}`
+    );
     res.status(403).json({ error: 'Solo el coach puede dar de alta a un atleta' });
     return;
   }

@@ -41,7 +41,12 @@ const ENDPOINT_ALTA: string = apiUrl('/api/create-athlete');
 export async function inviteClient(email: string): Promise<Invite> {
   const normalized = email.trim().toLowerCase();
 
-  const idToken = await auth.currentUser?.getIdToken();
+  // `true` fuerza renovar el token contra el servidor en vez de usar el que hay
+  // en caché. Era el único de los tres endpoints que no lo hacía (cuenta.ts sí,
+  // aiClient.ts reintenta con refresco ante un 401): un token cacheado que el
+  // servidor rechaza produce un 401 indistinguible de "no has iniciado sesión",
+  // y aquí es barato porque invitar no es una operación que se repita en bucle.
+  const idToken = await auth.currentUser?.getIdToken(true);
   if (!idToken) {
     throw Object.assign(new Error('Tu sesión ha caducado. Vuelve a entrar.'), {
       code: 'unauthenticated',
@@ -56,9 +61,17 @@ export async function inviteClient(email: string): Promise<Invite> {
 
   if (!respuesta.ok) {
     const detalle = await respuesta.json().catch(() => ({}));
+    const delServidor = (detalle as { error?: string }).error;
+    console.error(`create-athlete respondió ${respuesta.status}:`, delServidor ?? '(sin cuerpo)');
+    // El servidor SÍ dice qué ha pasado ("Token inválido o caducado", "Solo el
+    // coach puede dar de alta…", "falta FIREBASE_SERVICE_ACCOUNT…"). Antes se
+    // descartaba ese texto y se sustituía por un genérico de "vuelve a
+    // intentarlo", que además de no ayudar es un mal consejo cuando reintentar
+    // no puede funcionar. Se conserva el motivo real y se marca con un código
+    // aparte para no mapearlo al texto genérico.
     throw Object.assign(
-      new Error((detalle as { error?: string }).error || 'No se pudo dar de alta al atleta.'),
-      { code: 'invite/alta-fallida' }
+      new Error(delServidor || 'No se pudo dar de alta al atleta.'),
+      { code: delServidor ? 'invite/alta-rechazada' : 'invite/alta-fallida' }
     );
   }
 

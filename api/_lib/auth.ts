@@ -15,9 +15,15 @@ export const FIRESTORE_DATABASE_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883
 // CJS de `jose` (ESM-only) y revienta con ERR_REQUIRE_ESM en el runtime de
 // Vercel. La verificación manual sigue el esquema documentado por Firebase
 // (JWKS público de Google + comprobación de iss/aud/exp) sin esa dependencia rota.
-const FIREBASE_JWKS = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.google.com')
-);
+// OJO con esta URL. La que había aquí antes —.../service_accounts/v1/jwk/
+// securetoken@system.google.com— devuelve 404: ni el dominio de la cuenta de
+// servicio ni la ruta son los correctos. El efecto era que jose no podía
+// descargar NUNCA las claves públicas, así que TODOS los tokens se rechazaban
+// con "Token inválido o caducado" aunque fueran perfectamente válidos. La buena
+// es `/robot/v1/metadata/jwk/` con el dominio `@system.gserviceaccount.com`,
+// que es la que documenta Firebase para verificar ID tokens.
+const JWKS_URL = 'https://www.googleapis.com/robot/v1/metadata/jwk/securetoken@system.gserviceaccount.com';
+const FIREBASE_JWKS = createRemoteJWKSet(new URL(JWKS_URL));
 
 export interface TokenVerificado {
   uid: string;
@@ -48,7 +54,12 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<TokenVerif
       emailVerified: payload.email_verified === true,
       authTimeMs: typeof payload.auth_time === 'number' ? payload.auth_time * 1000 : 0,
     };
-  } catch {
+  } catch (err) {
+    // Este catch estaba vacío, y con él un 401 no dejaba ni rastro de POR QUÉ:
+    // desde fuera es indistinguible un token caducado de un `aud` que no
+    // cuadra o de un JWKS que no se pudo descargar. Se registra el motivo (no
+    // el token) para que el log sirva de algo.
+    console.warn('verifyFirebaseIdToken rechazó el token:', (err as Error)?.message ?? err);
     return null;
   }
 }
