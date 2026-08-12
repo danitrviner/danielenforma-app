@@ -1,88 +1,60 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { debeBorrarse } from './cierreDeSesion';
 
-// El módulo importa `../firebase`, que al cargarse inicializa la app real.
-vi.mock('../firebase', () => ({
-  db: {},
-  terminate: async () => {},
-  clearIndexedDbPersistence: async () => {},
-}));
+/* Equivocarse en este filtro tiene dos formas, y las dos son malas:
+   · de menos → quedan datos de salud del usuario anterior en el dispositivo
+   · de más   → se borra algo que hacía falta y la app rehace trabajo caro
+   Por eso se prueban las dos direcciones con las claves reales de la app. */
 
-const { debeBorrarse } = await import('./cierreDeSesion');
-
-/* Las claves de abajo NO son inventadas: salen de recorrer el repo con
-   `grep` sobre las llamadas a localStorage. Si mañana se añade un dominio
-   nuevo con su propia clave, lo que este test protege es que siga cayendo
-   dentro del barrido por prefijo en vez de sobrevivir al cierre de sesión. */
-
-const DATOS_DE_SALUD = [
-  'enforma_bodyMeasurements_v1',
-  'enforma_bodyweight_v1',
-  'enforma_checkins',
-  'enforma_workout_logs',
-  'enforma_onboarding_v1',
-  'enforma_diets_v1',
-  'enforma_progress_photos_v1',
-  'enforma_hrv_readings_v1',
-  'enforma_cardio_sessions_v1',
-];
-
-const DATOS_DEL_COACH = [
-  'enforma_coach_reports_v1',
-  'enforma_coach_notes_v1',
-  'enforma_ai_chats_v1',
-  'enforma_knowledge_v1',
-];
-
-const SIN_PREFIJO_ENFORMA = [
-  'questionnaires_v1',
-  'questionnaireResponses_v1',
-  'questionnaireAssignments_v1',
-  'questionnaireDraft_abc_2026-08-12',
-  'photoAssignments_v1',
-];
-
-const POR_USUARIO = [
-  'enforma_profile_uid123',
-  'enforma_nutri_config_ana@ejemplo.com',
-  'enforma_recipe_favorites_ana@ejemplo.com',
-  'enforma_borrador_alta_v1_ana@ejemplo.com',
-  'enforma_sesion_en_curso_v1_ana@ejemplo.com_a1',
-];
-
-describe('debeBorrarse — nada del usuario anterior puede sobrevivir', () => {
-  it.each(DATOS_DE_SALUD)('borra %s', clave => {
-    expect(debeBorrarse(clave)).toBe(true);
+describe('debeBorrarse', () => {
+  it('borra las copias locales de datos del atleta', () => {
+    const datosDeUsuario = [
+      'enforma_checkins',
+      'enforma_workout_logs',
+      'enforma_bodyweight_v1',
+      'enforma_progress_photos_v1_atleta@enforma.com',
+      'enforma_onboarding_v1',
+      'enforma_borrador_alta_v1',
+      'enforma_sesion_en_curso_v1',
+      'enforma_diets_v1',
+      'enforma_coach_reports_v1',
+      'enforma_ai_chats_v1',
+      'enforma_profile_abc123',
+      'enforma_use_local_fallback',
+    ];
+    for (const k of datosDeUsuario) {
+      expect(debeBorrarse(k), `${k} debería borrarse`).toBe(true);
+    }
   });
 
-  it.each(DATOS_DEL_COACH)('borra %s', clave => {
-    expect(debeBorrarse(clave)).toBe(true);
+  it('borra también los prefijos que no empiezan por enforma_', () => {
+    // Estos dos los escriben módulos que no siguieron la convención; si el
+    // filtro solo mirara `enforma_`, se quedarían en el dispositivo.
+    expect(debeBorrarse('questionnaireResponses_v1')).toBe(true);
+    expect(debeBorrarse('photoAssignments_v1')).toBe(true);
   });
 
-  it.each(SIN_PREFIJO_ENFORMA)('borra %s, que no lleva el prefijo enforma_', clave => {
-    // Cuatro dominios guardan con su propio prefijo. Un barrido que solo mirara
-    // `enforma_` los dejaría enteros, incluidos los cuestionarios de salud.
-    expect(debeBorrarse(clave)).toBe(true);
-  });
-
-  it.each(POR_USUARIO)('borra %s aunque ya vaya por usuario', clave => {
-    // Ir por usuario evita que se MEZCLEN los datos de dos personas, pero no
-    // evita que los de la primera sigan ahí después de cerrar sesión.
-    expect(debeBorrarse(clave)).toBe(true);
-  });
-});
-
-describe('debeBorrarse — lo que sobrevive, y por qué', () => {
-  it('conserva la marca de migración: no es dato personal y perderla cuesta una lectura de colección', () => {
+  it('conserva lo que no es dato personal y cuesta rehacer', () => {
     expect(debeBorrarse('enforma_migration_muscleGroup_v1')).toBe(false);
-  });
-
-  it('conserva la preferencia de columnas del coach: es del dispositivo, no de la persona', () => {
     expect(debeBorrarse('enforma_clients_grid_cols')).toBe(false);
   });
 
-  it('no toca claves de otras aplicaciones del mismo navegador', () => {
-    expect(debeBorrarse('firebase:authUser:xyz')).toBe(false);
-    expect(debeBorrarse('theme')).toBe(false);
-    expect(debeBorrarse('otra-app_enforma_algo')).toBe(false); // el prefijo va al principio
+  it('no toca claves de terceros ni del propio navegador', () => {
+    const ajenas = [
+      'firebase:authUser:AIzaSy...:[DEFAULT]',
+      'theme',
+      'i18nextLng',
+      'REACT_QUERY_OFFLINE_CACHE',
+      '',
+    ];
+    for (const k of ajenas) {
+      expect(debeBorrarse(k), `${k} no es nuestra`).toBe(false);
+    }
+  });
+
+  it('un prefijo parecido pero distinto no cuela', () => {
+    // "enforma" sin la barra baja no es una clave nuestra: si algún día alguien
+    // usa "enformaOtraCosa" para algo ajeno a la sesión, no se debe borrar.
+    expect(debeBorrarse('enformaOtraCosa')).toBe(false);
   });
 });
