@@ -17,6 +17,7 @@ import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
+import { iniciarBotonAtras, fijarManejadorDeRuta, salirDeLaApp } from './services/botonAtras';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -189,6 +190,36 @@ function AppContent() {
   const [gimnasioGate, setGimnasioGate] = useState<'checking' | 'missing' | 'done'>('checking');
   const navigate = useNavigate();
   const location = useLocation();
+
+  /* 07-9. Botón Atrás de Android. Las capas (Sheet, Dialog) se cierran solas
+     porque la primitiva los apila; aquí se decide lo que pasa cuando NO hay
+     ninguna capa abierta.
+
+     En la raíz se usa el doble-Atrás con aviso, que es la convención de Android
+     y no necesita un diálogo propio. Importa más de lo que parece: hasta ahora
+     una pulsación distraída en la pantalla de inicio cerraba la app en seco, y
+     eso pasaba también en mitad de un entrenamiento. */
+  const salidaArmada = React.useRef(false);
+
+  useEffect(() => { iniciarBotonAtras(); }, []);
+
+  useEffect(() => {
+    fijarManejadorDeRuta(() => {
+      if (location.pathname !== '/') {
+        navigate(-1);
+        return;
+      }
+      if (salidaArmada.current) {
+        salirDeLaApp();
+        return;
+      }
+      salidaArmada.current = true;
+      showToast('Pulsa Atrás otra vez para salir de En Forma.');
+      // La ventana es corta a propósito: si fuera larga, dos pulsaciones
+      // separadas por medio minuto contarían como una intención de salir.
+      setTimeout(() => { salidaArmada.current = false; }, 2500);
+    });
+  }, [location.pathname, navigate, showToast]);
 
   // La pestaña activa se lee directo de la URL (primer segmento) en vez de
   // guardarse en estado — así un refresh o el botón atrás de móvil recuperan

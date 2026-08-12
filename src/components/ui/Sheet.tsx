@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks';
+import { useBotonAtras } from '../../services/botonAtras';
 import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -84,6 +85,9 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
   useScrollLock(open);
   useFocusTrap(ref, open);
   useEscape(onClose, open);
+  // 07-9. Atrás en Android es el Escape del móvil: cierra esta capa en vez de
+  // navegar por debajo y dejar el overlay flotando sobre otra pantalla.
+  useBotonAtras(onClose, open);
 
   // Arrastrar el asa: `arrastreY` es el desplazamiento en vivo (0 = en su
   // sitio); se aplica como `transform` en línea porque cambia en cada evento

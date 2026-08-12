@@ -24,6 +24,7 @@ import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { startRestTimer, stopRestTimer } from '../services/restTimer';
+import { useBotonAtras } from '../services/botonAtras';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
   limpiarSesionesCaducadas,
@@ -337,6 +338,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       return next;
     });
   };
+
+  // 07-9. El player no es una ruta, es estado de esta pantalla, así que sin
+  // esto el Atrás de Android navegaba fuera del entrenamiento —o cerraba la
+  // app— en vez de volver a la lista de sesiones. Se apila igual que un
+  // overlay, y mientras la celebración esté abierta manda ella.
+  useBotonAtras(cerrarPlayer, !!activeAssignment && !celebration);
 
   const canFinish = playerSets.some(exSets => exSets.some(s => s.done));
 
