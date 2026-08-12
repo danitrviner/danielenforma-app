@@ -5,17 +5,61 @@ import { compressImage } from '../utils/compressImage';
 
 // ─── PROGRESS PHOTOS ──────────────────────────────────────────────────────────
 
+/* 05-11. Este era el único módulo del atleta sin respaldo local: el `catch` de
+   la lectura hacía `console.warn` y devolvía `[]`, y la pantalla no tiene forma
+   de distinguir «no tienes fotos» de «no he podido leerlas». El atleta veía
+   «Sube tu primera foto para empezar a registrar tu evolución» encima de sus
+   seis meses de fotos y se creía que se habían borrado. Son, además, las fotos
+   de su cuerpo: el dato más sensible que guarda la app.
+
+   Ahora hay copia local, como en el resto de dominios, y el array vacío vuelve
+   a significar una sola cosa. Cuando la lectura falla y NO hay copia de la que
+   tirar, la función relanza: es mejor que la pantalla enseñe un error a que
+   afirme algo que no sabe. */
+
+const LOCAL_PROGRESS_PHOTOS = 'enforma_progress_photos_v1';
+
+function clavePorAtleta(athleteEmail: string): string {
+  return `${LOCAL_PROGRESS_PHOTOS}_${athleteEmail}`;
+}
+
+function getLocalProgressPhotos(athleteEmail: string): ProgressPhoto[] | null {
+  try {
+    const raw = localStorage.getItem(clavePorAtleta(athleteEmail));
+    // `null` (nunca se leyó en este dispositivo) y `[]` (se leyó y no había
+    // fotos) NO son lo mismo, y toda la corrección depende de distinguirlos.
+    return raw ? (JSON.parse(raw) as ProgressPhoto[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLocalProgressPhotos(athleteEmail: string, photos: ProgressPhoto[]): void {
+  try {
+    localStorage.setItem(clavePorAtleta(athleteEmail), JSON.stringify(photos));
+  } catch {
+    // best-effort
+  }
+}
+
 export async function getProgressPhotos(athleteEmail: string): Promise<ProgressPhoto[]> {
   try {
     const snap = await getDocs(
       query(collection(db, 'progressPhotos'), where('athleteId', '==', athleteEmail))
     );
-    return snap.docs
+    const photos = snap.docs
       .map(d => d.data() as ProgressPhoto)
       .sort((a, b) => a.date.localeCompare(b.date));
+    saveLocalProgressPhotos(athleteEmail, photos);
+    return photos;
   } catch (err) {
     console.warn('getProgressPhotos failed:', err);
-    return [];
+    setLocalBypassMode(true, err);
+    const local = getLocalProgressPhotos(athleteEmail);
+    if (local) return local;
+    // Sin copia local no se puede afirmar nada. Relanzar hace que la pantalla
+    // diga «no hemos podido cargar tus fotos» en vez de «no tienes fotos».
+    throw err;
   }
 }
 
@@ -39,6 +83,16 @@ export async function uploadProgressPhoto(
     uploadedAt: new Date().toISOString(),
   };
   await setDoc(doc(db, 'progressPhotos', photo.id), stripUndefined(photo));
+  // 05-11. La copia local se mantiene al día aquí y en el borrado; si no, tras
+  // subir una foto y perder la conexión, la pantalla tiraría de una copia que
+  // no la incluye y parecería que la subida no se hizo.
+  const local = getLocalProgressPhotos(athleteEmail);
+  if (local) {
+    saveLocalProgressPhotos(athleteEmail, [
+      ...local.filter(p => p.id !== photo.id),
+      photo,
+    ].sort((a, b) => a.date.localeCompare(b.date)));
+  }
   return photo;
 }
 
@@ -46,6 +100,8 @@ export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
   const path = `progressPhotos/${photo.athleteId}/${photo.date}_${photo.view}`;
   await deleteObject(storageRef(storage, path)).catch(() => {});
   await deleteDoc(doc(db, 'progressPhotos', photo.id));
+  const local = getLocalProgressPhotos(photo.athleteId);
+  if (local) saveLocalProgressPhotos(photo.athleteId, local.filter(p => p.id !== photo.id));
 }
 
 // ─── QUESTIONNAIRE MEDIA (respuestas tipo 'media') ────────────────────────────

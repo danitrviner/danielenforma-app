@@ -32,7 +32,11 @@ export default function PhotosScreen({ profile }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const photosKey = ['progressPhotos', profile.email] as const;
-  const { data: photos = [], isPending: loading } = useQuery({
+  // 05-11. `isError` importa tanto como `data`: la lectura solo falla cuando no
+  // hay ni respuesta del servidor ni copia local en este dispositivo, y en ese
+  // caso la pantalla NO puede decir «no tienes fotos» — es justo la frase que
+  // hacía creer a un atleta que se habían borrado seis meses de fotos suyas.
+  const { data: photos = [], isPending: loading, isError, refetch } = useQuery({
     queryKey: photosKey,
     queryFn: () => getProgressPhotos(profile.email),
   });
@@ -150,7 +154,20 @@ export default function PhotosScreen({ profile }: Props) {
       </div>
 
       {/* Gallery */}
-      {visiblePhotos.length === 0 ? (
+      {isError ? (
+        // 05-11. Un fallo de lectura NO es una galería vacía. Se dice lo que ha
+        // pasado, se deja claro que las fotos siguen ahí, y se ofrece reintentar
+        // — que aquí sí sirve, a diferencia del aviso de permisos.
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="cloud_off"
+            title="No hemos podido cargar tus fotos."
+            description="Es un problema de conexión, no de tus fotos: siguen guardadas. Inténtalo otra vez en un momento."
+            actionLabel="Reintentar"
+            onAction={() => { void refetch(); }}
+          />
+        </div>
+      ) : visiblePhotos.length === 0 ? (
         <div className="border border-dashed border-hairline rounded-surface">
           <EmptyState
             icon="photo_camera"
