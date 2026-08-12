@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
   ActivityLevel, DietType,
@@ -6,6 +6,7 @@ import {
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding } from '../dbService';
+import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
 import { Icon, Button, Input } from './ui';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
@@ -93,30 +94,81 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
 
 const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-body-s text-white placeholder-ink-2/40 outline-none transition-colors';
 
+/** 05-4. Lo que se guarda entre sesión y sesión. Es exactamente el estado del
+ *  wizard: si mañana se añade un paso, el campo nuevo entra aquí y en el efecto
+ *  de autoguardado, y nada más. */
+interface BorradorCampos {
+  step: number;
+  sex: 'male' | 'female' | '';
+  birthDate: string;
+  weightKg: string;
+  heightCm: string;
+  goalBody: GoalBody | '';
+  goalCapacity: GoalCapacity | '';
+  goalFreeText: string;
+  experienceLevel: ExperienceLevel | '';
+  equipment: string[];
+  injuries: string;
+  noInjuries: boolean;
+  dietType: DietType | '';
+  mealCount: number | null;
+  menuVariety: number;
+  batchCookingPreferred: boolean;
+  allergies: string;
+  dislikedFoods: string;
+  activityLevel: ActivityLevel | '';
+}
+
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
-  const [step, setStep] = useState(0);
+  // 05-4. El alta ya no empieza en blanco si quedó a medias. Se lee UNA vez, en
+  // el inicializador perezoso de un `useState`, y no en un efecto: leerlo
+  // después obligaría a pisar 18 campos en un segundo render, con el riesgo de
+  // borrar lo que el atleta hubiera empezado a escribir mientras tanto.
+  const [borrador] = useState(() => cargarBorradorAlta<BorradorCampos>(profile.email));
+
+  const [step, setStep] = useState(borrador?.step ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  /** Puerta de un solo sentido: una vez la ficha está en Firestore, este
+   *  componente no vuelve a escribir borrador nunca. Hace falta porque el
+   *  `finally` de `finish` devuelve `saving` a false DESPUÉS de `onComplete()`,
+   *  y si el wizard sigue montado un instante más, el efecto de autoguardado
+   *  volvería a crear el borrador que se acaba de borrar. */
+  const [enviado, setEnviado] = useState(false);
 
   // ── Respuestas ──────────────────────────────────────────────────────────────
-  const [sex, setSex] = useState<'male' | 'female' | ''>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [weightKg, setWeightKg] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [goalBody, setGoalBody] = useState<GoalBody | ''>('');
-  const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>('');
-  const [goalFreeText, setGoalFreeText] = useState('');
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>('');
-  const [equipment, setEquipment] = useState<string[]>([]);
-  const [injuries, setInjuries] = useState('');
-  const [noInjuries, setNoInjuries] = useState(false);
-  const [dietType, setDietType] = useState<DietType | ''>('');
-  const [mealCount, setMealCount] = useState<number | null>(null);
-  const [menuVariety, setMenuVariety] = useState<number>(3);
-  const [batchCookingPreferred, setBatchCookingPreferred] = useState(false);
-  const [allergies, setAllergies] = useState('');
-  const [dislikedFoods, setDislikedFoods] = useState('');
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>('');
+  const [sex, setSex] = useState<'male' | 'female' | ''>(borrador?.sex ?? '');
+  const [birthDate, setBirthDate] = useState(borrador?.birthDate ?? '');
+  const [weightKg, setWeightKg] = useState(borrador?.weightKg ?? '');
+  const [heightCm, setHeightCm] = useState(borrador?.heightCm ?? '');
+  const [goalBody, setGoalBody] = useState<GoalBody | ''>(borrador?.goalBody ?? '');
+  const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>(borrador?.goalCapacity ?? '');
+  const [goalFreeText, setGoalFreeText] = useState(borrador?.goalFreeText ?? '');
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>(borrador?.experienceLevel ?? '');
+  const [equipment, setEquipment] = useState<string[]>(borrador?.equipment ?? []);
+  const [injuries, setInjuries] = useState(borrador?.injuries ?? '');
+  const [noInjuries, setNoInjuries] = useState(borrador?.noInjuries ?? false);
+  const [dietType, setDietType] = useState<DietType | ''>(borrador?.dietType ?? '');
+  const [mealCount, setMealCount] = useState<number | null>(borrador?.mealCount ?? null);
+  const [menuVariety, setMenuVariety] = useState<number>(borrador?.menuVariety ?? 3);
+  const [batchCookingPreferred, setBatchCookingPreferred] = useState(borrador?.batchCookingPreferred ?? false);
+  const [allergies, setAllergies] = useState(borrador?.allergies ?? '');
+  const [dislikedFoods, setDislikedFoods] = useState(borrador?.dislikedFoods ?? '');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(borrador?.activityLevel ?? '');
+
+  // 05-4. Autoguardado: cada respuesta y cada cambio de paso persisten al
+  // instante. No se guarda mientras se está enviando, para que un `finish` en
+  // vuelo no reescriba el borrador que está a punto de borrarse.
+  useEffect(() => {
+    if (saving || enviado) return;
+    guardarBorradorAlta<BorradorCampos>(profile.email, {
+      step, sex, birthDate, weightKg, heightCm, goalBody, goalCapacity, goalFreeText,
+      experienceLevel, equipment, injuries, noInjuries, dietType, mealCount,
+      menuVariety, batchCookingPreferred, allergies, dislikedFoods, activityLevel,
+    });
+  }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, goalBody, goalCapacity,
+      goalFreeText, experienceLevel, equipment, injuries, noInjuries, dietType, mealCount,
+      menuVariety, batchCookingPreferred, allergies, dislikedFoods, activityLevel]);
 
   const firstName = (profile.displayName || 'atleta').split(' ')[0];
 
@@ -190,6 +242,11 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         completedAt: new Date().toISOString(),
       };
       await saveOnboarding(data);
+      // 05-4. La ficha ya está guardada: el borrador sobra. Va después del
+      // await, para que un fallo al guardar no se lleve por delante los seis
+      // pasos que el atleta acaba de rellenar.
+      borrarBorradorAlta(profile.email);
+      setEnviado(true);
       onComplete();
     } catch (err) {
       console.error('saveOnboarding failed:', err);
