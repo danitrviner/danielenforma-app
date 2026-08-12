@@ -34,6 +34,8 @@ import {
 // tampoco pinta nada aquí: no hay autorregistro.
 import {
   getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -43,6 +45,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 
 import {
   getStorage,
@@ -65,13 +68,14 @@ const FIRESTORE_DB_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870';
 // try/catch cubre el caso de HMR en dev, donde este módulo puede reevaluarse
 // dos veces para la misma app+base y `initializeFirestore` lanza si ya se
 // llamó antes — en ese caso basta con recuperar la instancia ya creada.
-// experimentalAutoDetectLongPolling: el transporte por defecto (WebChannel)
-// se cuelga en silencio dentro del WKWebView de Capacitor — no lanza error,
-// no rechaza la promesa, simplemente nunca resuelve. Es lo que producía el
-// "se queda cargando" en el simulador: el login por Firebase Auth funcionaba,
-// pero la lectura del perfil en Firestore se quedaba colgada para siempre.
-// Esta opción detecta el caso y cambia solo, sin coste apreciable cuando el
-// streaming normal sí funciona (web de escritorio).
+// experimentalAutoDetectLongPolling: el transporte por defecto de Firestore
+// (WebChannel, streaming) es conocido por colgarse en silencio dentro de un
+// WKWebView — no lanza error, no rechaza, simplemente nunca resuelve. Esta
+// opción prueba el streaming normal y cae a long-polling solo si hace falta,
+// sin coste apreciable en la web de escritorio, donde sí funciona.
+// (Se añadió persiguiendo el «se queda cargando» del simulador. NO era la
+//  causa de aquello —lo era la persistencia de Auth, ver más abajo— pero es
+//  un endurecimiento correcto por sí mismo para el WebView, así que se queda.)
 let db;
 try {
   db = initializeFirestore(app, {
@@ -81,7 +85,18 @@ try {
 } catch {
   db = getFirestore(app, FIRESTORE_DB_ID);
 }
-const auth = getAuth(app);
+// `getAuth()` resuelve la persistencia probando localStorage primero. Dentro
+// del WKWebView de Capacitor el origen es `capacitor://localhost`, un esquema
+// propio con el almacenamiento particionado, y ahí esa resolución se queda
+// colgada: `signInWithEmailAndPassword` no resuelve NI rechaza nunca, así que
+// el botón se queda en «Entrando…» para siempre y ningún `catch` se entera.
+// En nativo hay que inicializar el auth a mano fijando IndexedDB como única
+// persistencia — es lo que documentan tanto Firebase como Capacitor para este
+// caso. En web se deja `getAuth()`, que allí funciona y respeta el
+// comportamiento multi-pestaña de siempre.
+const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : getAuth(app);
 const storage = getStorage(app);
 
 // App Check (reCAPTCHA v3): corta el uso de la API key fuera de esta app una

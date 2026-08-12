@@ -79,12 +79,27 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
     setResetMessage('');
     setLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+      // Red de seguridad: `signInWithEmailAndPassword` puede quedarse sin
+      // resolver ni rechazar (pasó de verdad en el WKWebView de Capacitor, por
+      // la persistencia de Auth — ver src/firebase.ts). Sin este tope, el botón
+      // se queda en «Entrando…» indefinidamente y la persona no tiene ni error
+      // ni forma de reintentar. El arreglo de fondo está en firebase.ts; esto
+      // es el cinturón por si vuelve a pasar por otra causa.
+      const result = await Promise.race([
+        signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout-login')), 20_000)
+        ),
+      ]);
       setLocalBypassMode(false);
       onLoginSuccess(result.user);
     } catch (err: any) {
       console.error('signInWithEmailAndPassword error:', err);
-      setError(mensajeDeErrorAuth(err));
+      setError(
+        err?.message === 'timeout-login'
+          ? 'El servidor no ha respondido. Revisa tu conexión e inténtalo de nuevo.'
+          : mensajeDeErrorAuth(err)
+      );
     } finally {
       setLoading(false);
     }
