@@ -8,13 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && npm run iconos:comprobar",
     "lint:eslint": "eslint src",
     "ds:inventario": "node scripts/ds-inventario.mjs",
     "export:vault": "tsx scripts/export-vault.ts",
     "test": "vitest run",
     "sync:native": "npm run build && npx cap sync ios && npx cap sync android",
-    "prerelease": "npm run lint && npm run test && npm run sync:native"
+    "prerelease": "npm run lint && npm run test && npm run sync:native",
+    "iconos:generar": "node scripts/generar-fuente-iconos.mjs",
+    "iconos:comprobar": "node scripts/comprobar-iconos.mjs"
   },
   "overrides": {
     "jwks-rsa": {
