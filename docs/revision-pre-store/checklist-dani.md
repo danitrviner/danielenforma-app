@@ -52,11 +52,39 @@ La § 0.2 de más abajo («Activar el enlace de correo en Firebase Auth») **que
 Actualización 2: el enlace mágico se retiró y el alta ya no depende de ese ajuste. Se conserva el
 texto por historial. **No lo hagas.**
 
+### ⚠️ Reglas de Firestore escritas pero SIN DESPLEGAR — léelo antes de desplegar nada
+
+`04-10` está **escrito y compilando, pero no desplegado**, y no debe desplegarse a ciegas.
+
+Doce colecciones de catálogo (`exercises`, `recipes`, `maquinas`, `workouts`, `foodItems`…) se leían
+con solo estar autenticado. Crear una cuenta es gratis, así que cualquiera del mundo podía montar un
+bucle de lecturas **facturables**. Ahora exigen además tener documento en `user_profiles`, que es lo
+que distingue a un usuario real de un UID recién registrado por REST.
+
+- [ ] **Antes de desplegar:** instalar el JDK (§ 3.1) y probar con
+      `firebase emulators:start --only firestore`, comprobando **el caso del atleta recién
+      invitado**: entre que se autentica y que `getOrCreateUserProfile` le crea el perfil, sus
+      lecturas de catálogo caen. En teoría no ocurre porque el arranque de sesión crea el perfil
+      primero, pero eso es teoría y no se ha podido comprobar.
+- [ ] Después: `firebase deploy --only firestore:rules`.
+
+**Por qué no lo he probado yo:** el emulador de Firestore necesita Java, y en esta máquina no hay
+(`java -version` falla). Es el mismo JDK que ya bloquea Android en § 3.1.
+
+**Qué se rompe si lo despliegas sin probar:** si el caso del recién invitado falla, un cliente nuevo
+entra en la app y no ve ni ejercicios, ni recetas, ni rutinas. `firebase deploy --only
+firestore:rules` con el fichero anterior lo revierte en un minuto, pero mejor no llegar ahí.
+
 ### Lo que queda abierto de código, y no bloquea publicar
 
-- `A-2` — casilla de consentimiento de IA y Anthropic declarado en la política. Va con § 6.1.
-- `A-3` — restringir la lectura de 12 colecciones (`04-10`) y pasar la CSP entera a *enforce*.
-  La CSP sigue en `Report-Only` **a propósito**, esperando un par de días de tráfico real.
+- ~~`A-2` — consentimiento de IA~~ — **HECHO** el 13 ago. Pendiente tuyo: aceptar el **DPA de
+  Anthropic** en la consola de tu cuenta de API, y declararlo en App Privacy (§ 4.2) y Data
+  safety (§ 5.2).
+- `A-3` — queda desplegar `04-10` (arriba) y pasar la CSP entera a *enforce*. La CSP sigue en
+  `Report-Only` **a propósito**: la decisión del 10 de agosto fue mirar antes un par de días de
+  tráfico real, porque al completarla ya apareció que `img-src` no incluía `blob:` y pasar a enforce
+  a ciegas habría roto la previsualización de fotos. Esa espera sigue teniendo sentido, así que no
+  se ha tocado.
 - `6.4` — quedan dos decisiones tuyas: iPad sí o no, y Live Activity sí o no (§ 6.4).
 
 ---
