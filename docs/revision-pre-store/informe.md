@@ -1227,9 +1227,24 @@ que el revisor va a ver.
    **Sigue abierto de `A-7`** (no bloquea publicar): `06-5` arranque en serie del atleta, los
    re-renders `06-11`/`06-12`/`06-13` —`React.memo` sigue apareciendo cero veces— y `06-15` las
    miniaturas de la galería.
-5. **`A-2`** — casilla de consentimiento de IA y Anthropic declarado. Va con 2.1. `~4 h`
-6. **`A-3`, casi cerrado** — solo queda `04-10` (restringir la lectura de las 12 colecciones a quien
-   tiene perfil, probándolo en el emulador) y pasar la CSP a enforce. `~4 h`
+5. **`A-2` — HECHO el 13 ago** (`652f9fa`). Consentimiento explícito del atleta, guardado como
+   `consentimientoIA` en `onboarding/{email}`, y puerta **fail-closed** en `executeTool`, que es el
+   único punto por el que pasan las nueve tools que leen datos de un atleta.
+   **El coste, dicho claro:** al desplegarse, ningún cliente actual tiene decisión guardada, así que
+   el asistente no podrá analizar a nadie hasta que cada uno conteste. Por eso la solicitud se le
+   enseña también a quien terminó su alta hace meses, y por eso el mensaje al coach explica la
+   situación y le dice que no reintente, en vez de parecer un fallo técnico.
+   `list_clients` mandaba el nombre y apellidos de TODOS los clientes en cada conversación; ahora
+   manda el alias. El email se queda como identificador y **la política lo dice**, en vez de dar a
+   entender que esto anonimiza.
+   Sigue siendo de Dani: aceptar el **DPA de Anthropic** y declararlo en App Privacy y Data safety.
+6. **`A-3`** — `04-10` **escrito el 13 ago pero SIN DESPLEGAR** (`b85df1a`): las 12 colecciones de
+   catálogo exigen ahora `exists(user_profiles/$(uid))`. Compila, pero el informe pedía probarlo en
+   el emulador por el caso del atleta recién invitado y **el emulador de Firestore necesita Java**,
+   que no hay en la máquina — el mismo JDK que bloquea Android (`02-4`). Orden en el checklist.
+   La CSP **sigue en `Report-Only` a propósito**: la decisión del 10 de agosto fue mirar antes un
+   par de días de tráfico real, después de descubrir que `img-src` no incluía `blob:` y que pasar a
+   enforce a ciegas habría roto la previsualización de fotos.
    **Ya hecho de este grupo:** `01-8`/`02-13` `allowBackup=false` más reglas de extracción de datos,
    que hacían falta porque en Android 12+ `allowBackup=false` por sí solo no corta la transferencia
    directa entre dispositivos; `04-11` `email_verified` en el endpoint de IA; `04-12` CORS con lista
