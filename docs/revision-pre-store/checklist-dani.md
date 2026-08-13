@@ -85,7 +85,24 @@ firestore:rules` con el fichero anterior lo revierte en un minuto, pero mejor no
   tráfico real, porque al completarla ya apareció que `img-src` no incluía `blob:` y pasar a enforce
   a ciegas habría roto la previsualización de fotos. Esa espera sigue teniendo sentido, así que no
   se ha tocado.
-- `6.4` — quedan dos decisiones tuyas: iPad sí o no, y Live Activity sí o no (§ 6.4).
+- ~~`6.4` — iPad y Live Activity~~ — **DECIDIDAS el 13 ago**, ver abajo.
+
+### § 6.4 · Tus dos decisiones, tomadas el 13 ago 2026
+
+| Decisión | Qué implica |
+|---|---|
+| **iPad: SÍ, se mantiene** (`TARGETED_DEVICE_FAMILY = "1,2"`) | No hay cambio de código: ya estaba así, y la orientación quedó bloqueada a vertical con `UIRequiresFullScreen`, que es lo que Apple exige para no soportar todas las orientaciones. **Lo que sí implica: te hace falta el juego de capturas de iPad 13" (§ 5.8)**, y que el revisor va a abrir la app en una pantalla para la que nadie diseñó nada — todo el layout se hizo a 375 px. |
+| **Live Activity: SÍ, construida** | Hecha y compilando (`f478ece`). Ver la nota de abajo. |
+
+**Sobre la Live Activity.** El código Swift estaba escrito desde julio pero no
+pertenecía a ningún target, así que nunca había pasado por el compilador. Al meterlo salieron
+**cuatro fallos reales** que llevaban ahí desde entonces (dos de versión mínima de iOS, uno de no
+consultar si el usuario tiene las Live Activities desactivadas, y un `Info.plist` sin
+`CFBundleExecutable` que hacía fallar la instalación). Todos corregidos.
+
+- [ ] **Queda por comprobar en tu QA (§ 3.4):** que la Live Activity APAREZCA. Dispararla exige
+      marcar una serie como hecha con sesión de atleta iniciada, y yo no puedo entrar. Marca una
+      serie, bloquea el móvil y mira la pantalla de bloqueo y la isla dinámica.
 
 ---
 
