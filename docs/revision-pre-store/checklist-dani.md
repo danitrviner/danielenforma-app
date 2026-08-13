@@ -1,13 +1,69 @@
 # Lo que solo puede hacer Dani para publicar en las tiendas
 
-Estado a 10 ago 2026, rama `ds/f3-experiencia`. Todo lo de abajo está fuera del alcance de Claude: o
-exige una sesión iniciada en una consola, o es una contraseña, o es un dispositivo físico, o es una
-decisión tuya. El detalle técnico de cada punto está en
+Estado a **13 ago 2026**, rama `ds/f3-experiencia`. Todo lo de abajo está fuera del alcance de
+Claude: o exige una sesión iniciada en una consola, o es una contraseña, o es un dispositivo
+físico, o es una decisión tuya. El detalle técnico de cada punto está en
 [`informe.md`](./informe.md); aquí solo va lo que hay que hacer, dónde, y qué se rompe si no.
 
-**Orden recomendado:** primero los dos bloqueantes conocidos (§ 0), luego lo que bloquea a los demás
-por plazo (D-U-N-S y Team ID), y al final los formularios de las fichas, que se rellenan cuando ya
-hay build.
+> **Cómo se lee este documento.** Está escrito por capas: la actualización más reciente va arriba y
+> **manda sobre todo lo que venga después**. Si una sección de más abajo contradice a una de más
+> arriba, la de arriba es la buena. Las secciones viejas se conservan a propósito, para que se vea
+> qué se pensó y por qué cambió.
+
+---
+
+## Actualización 3 · 13 ago 2026 — no queda nada de código bloqueando, y el índice ya está puesto
+
+**Ni un solo bloqueante abierto de los que dependían de código.** Lo que queda para publicar son
+trámites de tienda, la cuenta de Apple, el JDK y cuatro decisiones tuyas. Detalle abajo.
+
+### Lo que ha caído en esta tanda (25 commits, 12-13 ago)
+
+| Grupo | Qué se ha cerrado |
+|---|---|
+| **Nativo / acceso** | `getAuth()` se colgaba para siempre dentro del WebView · el WebView colgaba las lecturas de Firestore en silencio · las llamadas a `/api/*` no salían del móvil · el login manual se quedaba cargando · la cabecera se metía debajo de la barra de estado |
+| **API en Vercel** | Las tres funciones reventaban al arrancar por un import sin extensión · la URL de las claves públicas de Google daba 404 (y con ella **todo** token) · `firebase-admin/auth` reventaba por un conflicto ESM/CJS |
+| **`A-5` Pérdida de datos** | **Cerrado entero.** Series que se perdían al morir la app · el alta perdía los seis pasos · «Terminar sesión» colgado para siempre sin cobertura · el aviso de sin conexión que nunca salía · fotos que mentían · lo registrado en local que no volvía · cerrar sesión que no borraba nada del dispositivo |
+| **`A-8` Presentación** | **Cerrado entero.** Barra de estado invisible en modo claro (iOS y Android) · la casilla «Hecha» fuera de pantalla · el botón Atrás de Android cerrando la app en mitad de un entrenamiento · orientación bloqueada a vertical |
+| **`A-7` Arranque y coste** | Mínimo viable hecho. `ClientsScreen` de 334 a 65 kB · recharts fuera del arranque de Perfil y Hub · sin refetch al volver al primer plano · fin de la lectura del historial completo de cada atleta · **fuente de iconos empaquetada**, cero peticiones a Google al arrancar |
+
+### 0.5 y el índice: ya no tienes que hacer nada
+
+- [x] ~~`FIREBASE_SERVICE_ACCOUNT` en Vercel~~ — sigue siendo tuyo, ver § 0.5. **Es el único
+      bloqueante de configuración que queda.**
+- [x] **Índice compuesto `workoutLogs (athleteId ASC, date DESC)`: DESPLEGADO** el 13 ago.
+      Comprobado contra producción: 14 índices publicados, el nuevo entre ellos. No hay que hacer
+      nada más aquí.
+
+### Hallazgo nuevo, y era un bloqueante de Google Play que nadie había visto
+
+`android/app/src/main/res/values/styles.xml` referenciaba `@color/colorPrimary`, `colorPrimaryDark`
+y `colorAccent`, y **no existía ningún `colors.xml` en todo el proyecto Android**. `aapt2` no puede
+resolver esas tres referencias: **la compilación de Android fallaba antes de empezar**. No se había
+detectado porque en esta máquina no hay JDK y Android no se ha compilado nunca (§ 3.1). Ya está
+creado con los tokens reales del design system.
+
+Sigue en pie lo que dice § 3.1: **«Android compila» sigue siendo una suposición**, no un hecho, hasta
+que instales el JDK. Lo que ha cambiado es que ahora hay un motivo conocido por el que no compilaba.
+
+### Aviso sobre § 0.2, que ya no aplica
+
+La § 0.2 de más abajo («Activar el enlace de correo en Firebase Auth») **quedó anulada** por la
+Actualización 2: el enlace mágico se retiró y el alta ya no depende de ese ajuste. Se conserva el
+texto por historial. **No lo hagas.**
+
+### Lo que queda abierto de código, y no bloquea publicar
+
+- `A-2` — casilla de consentimiento de IA y Anthropic declarado en la política. Va con § 6.1.
+- `A-3` — restringir la lectura de 12 colecciones (`04-10`) y pasar la CSP entera a *enforce*.
+  La CSP sigue en `Report-Only` **a propósito**, esperando un par de días de tráfico real.
+- `6.4` — quedan dos decisiones tuyas: iPad sí o no, y Live Activity sí o no (§ 6.4).
+
+---
+
+**Orden recomendado:** primero el bloqueante que queda (§ 0.5), luego lo que bloquea a los demás
+por plazo (Team ID), después el JDK, y al final los formularios de las fichas, que se rellenan
+cuando ya hay build.
 
 ---
 
@@ -95,8 +151,9 @@ lo bloquea), no lo mandes por WhatsApp y no lo pegues en ningún chat.
 
 ## Actualización 1 · 10 ago 2026, tarde — lo que ya está arreglado en código
 
-Se ha cerrado toda la Fase 1 del plan de remediación y varias Altas. **Nada de esto está desplegado
-ni commiteado todavía**: son cambios en el árbol de trabajo de `ds/f3-experiencia`.
+Se ha cerrado toda la Fase 1 del plan de remediación y varias Altas. ~~**Nada de esto está desplegado
+ni commiteado todavía**: son cambios en el árbol de trabajo de `ds/f3-experiencia`.~~
+**Corregido el 13 ago: todo está commiteado en `ds/f3-experiencia`.**
 
 | Hallazgo | Estado |
 |---|---|
@@ -128,8 +185,12 @@ JDK (§ 3.1).
 
 Lo que sigue abierto y por qué está en la lista de abajo: § 0.2 (consola), § 1.1 (desplegar), § 2
 entera (cuenta de Apple), § 3 (JDK, keystore, dispositivo), § 4 y § 5 (fichas) y § 6 (decisiones).
-Los tres trabajos grandes —borrado de cuenta, política de privacidad y enlace mágico— siguen sin
-empezar: los tres dependen de decisiones tuyas de § 6.
+~~Los tres trabajos grandes —borrado de cuenta, política de privacidad y enlace mágico— siguen sin
+empezar: los tres dependen de decisiones tuyas de § 6.~~
+
+**Corregido el 13 ago:** los tres están resueltos. Borrado de cuenta y política de privacidad,
+hechos (Actualización 2); el enlace mágico **se retiró**, así que dejó de ser un trabajo pendiente
+para ser código que ya no existe.
 
 ---
 
@@ -147,7 +208,10 @@ del 8 de agosto solo han cambiado cinco comentarios del bloque `recipes`, ningun
 como confirmación de un minuto porque es lo único que no se puede leer desde el repo.
 · `01-15` / `04-2`
 
-### 0.2 — BLOQUEANTE · Activar el enlace de correo en Firebase Auth
+### 0.2 — ~~BLOQUEANTE · Activar el enlace de correo en Firebase Auth~~ · **ANULADO**
+
+> **NO HAGAS NADA DE ESTA SECCIÓN.** El enlace mágico se retiró (Actualización 2) y el alta ya no
+> depende de este ajuste. Se conserva el texto por historial, tachado abajo.
 
 - [ ] Consola de Firebase → `Authentication` → `Método de acceso` →
       `Correo electrónico/contraseña` → `Editar` → activar
@@ -277,7 +341,13 @@ y el enlace mágico de invitación seguirá abriéndose en Safari aunque el cód
 
 ## 3. Máquina local y dispositivo físico
 
-### 3.1 — Instalar el JDK
+### 3.1 — Instalar el JDK · **sigue siendo el punto que más tapa**
+
+> **Actualización 3.** Al arreglar la barra de estado apareció que `styles.xml` referenciaba tres
+> colores de un `colors.xml` **que no existía en el proyecto**. `aapt2` no puede resolverlos: la
+> compilación de Android fallaba antes de empezar, y nadie lo sabía porque nunca se ha compilado.
+> Ya está creado. Pero eso refuerza lo de abajo: hasta que no haya JDK, cada cosa que se dé por
+> buena en Android es una suposición.
 
 - [ ] Instalar Android Studio (trae JDK 21 embebido) o Temurin 21, y exportar `JAVA_HOME`.
 - [ ] Comprobar: `java -version` debe responder algo.
@@ -334,8 +404,26 @@ descubrirlo al subirlo a Play. Lo único que falta es lo que solo puedes hacer t
 
 ### 3.4 — QA en dispositivo, con sesión de atleta de prueba
 
-Solo se puede hacer **después** de § 0.2. Crea un atleta de prueba con datos **ficticios**: nunca
-datos reales de un cliente, son datos de salud y las capturas son públicas.
+Solo se puede hacer **después** de § 0.5 (§ 0.2 está anulada). Crea un atleta de prueba con datos
+**ficticios**: nunca datos reales de un cliente, son datos de salud y las capturas son públicas.
+
+> **Actualización 3.** Seis de los puntos de abajo eran fallos conocidos y **ya están arreglados en
+> código**, así que dejan de ser «busca el fallo» y pasan a ser «confirma el arreglo»: coma decimal,
+> alta del atleta, kcal del alta, entrenamiento interrumpido, modo avión y sesión. En cada uno,
+> «Fallo =» describe lo que pasaba ANTES; si eso sigue pasando en el dispositivo, es una regresión y
+> hay que decirlo.
+>
+> Dos puntos **han dejado de existir**: «Enlace mágico» (se retiró, ya no hay ese camino de acceso)
+> y la parte de Google Sign-In (retirado de las tres plataformas). Ignóralos.
+>
+> Y hay dos comprobaciones **nuevas** que antes no tenían sentido porque el arreglo no existía:
+>
+> - [ ] **Entreno a medias.** Marca 3 series, mata la app desde el conmutador y reábrela **entrando
+>       otra vez en esa misma sesión**. Deben estar las 3 series. Vuelve a la lista con «Volver» y
+>       entra otra vez: también deben estar. `05-5`
+> - [ ] **Iconos sin red.** Pon el móvil en modo avión y abre la app desde cero. La barra inferior y
+>       las cabeceras deben salir con **iconos**, no con las palabras `fitness_center`, `arrow_back`
+>       o `close`. `06-1`
 
 **Lo anterior al login ya se recorrió (10 ago, simulador de iPhone 17 Pro, iOS 26.5), sin necesidad
 de sesión.** Confirmó en vivo, con capturas: el icono de Google roto (`03-9`/`07-17`) y que tocar
@@ -641,19 +729,34 @@ clientes pasan de 45. · `07-13`
 
 ---
 
-## Resumen del camino crítico
+## Resumen del camino crítico · actualizado 13 ago 2026
+
+**Ya no queda trabajo de código bloqueando la publicación.** Esta tabla sustituye a la de las
+versiones anteriores del documento.
 
 | Bloquea | Quién | Plazo |
 |---|---|---|
-| D-U-N-S, si publicas como organización | Dani, § 2.1 | **semanas** |
-| Vínculo de correo en Firebase Auth | Dani, § 0.2 | 2 min |
-| Team ID + dominio definitivo + SHA-256 | Dani, § 2.2, 5.1, 6.1 | 1 h |
-| Decisión CRM (borrar vs anonimizar) | Dani, § 6.3 | decisión |
-| Decisión Sign in with Apple | Dani, § 6.2 | decisión |
-| Política de privacidad publicada | Dani + Claude | 1 día |
-| Borrado de cuenta completo | Claude | 4-6 días |
-| Enlace mágico end-to-end | Claude + § 2.2 | 1-1,5 días |
+| `FIREBASE_SERVICE_ACCOUNT` en Vercel | **Dani, § 0.5** | **5 min — es el único bloqueante vivo** |
+| D-U-N-S, solo si publicas como organización | Dani, § 2.1 | decidido: **persona física**, sin espera |
+| Tus tres datos en las páginas legales | Dani, § 0.4 | 10 min |
+| Team ID + certificados + perfil | Dani, § 2.2 | 1 h |
+| JDK, para que Android compile por primera vez | Dani, § 3.1 | 1 h |
+| Keystore de subida | Dani, § 3.2 | 30 min |
+| Decisión iPad y Live Activity | Dani, § 6.4 | decisión |
+| QA en dispositivo con sesión de atleta | Dani, § 3.4 | medio día |
 | Cuenta de demo y formularios de las fichas | Dani, § 4 y 5 | 1-2 días |
+| Capturas y gráficos | Dani, § 5.8 | medio día |
 
-**Sin lo de arriba no se envía nada.** Todo lo demás está priorizado en el plan de remediación de
-[`informe.md`](./informe.md).
+### Lo que ya NO está en esta tabla, y por qué
+
+| Estaba | Qué pasó |
+|---|---|
+| Vínculo de correo en Firebase Auth | **Anulado**: el enlace mágico se retiró (§ 0.2) |
+| Decisión CRM (borrar vs anonimizar) | **Decidida**: anonimizar, e implementada |
+| Decisión Sign in with Apple | **Decidida**: se retiró Google, así que la 4.8 ya no aplica |
+| Política de privacidad publicada | **Hecha**: `/privacidad` y `/terminos`, a falta de tus tres datos (§ 0.4) |
+| Borrado de cuenta completo | **Hecho**: `api/delete-account.ts` con la cascada entera |
+| Enlace mágico end-to-end | **Ya no existe**: se retiró el camino entero |
+| Índice de `workoutLogs` | **Desplegado** el 13 ago y verificado contra producción |
+
+Todo lo demás está priorizado en el plan de remediación de [`informe.md`](./informe.md).

@@ -1,16 +1,41 @@
 # Revisión pre-publicación · App Store y Google Play
 
-**Fecha:** 10 ago 2026 · **Repo:** `/Users/dani/en-forma` · **Rama:** `ds/f3-experiencia`
+**Fecha del informe:** 10 ago 2026 · **Última actualización:** 13 ago 2026
+**Repo:** `/Users/dani/en-forma` · **Rama:** `ds/f3-experiencia`
 **Alcance:** siete bloques en paralelo (cumplimiento, build nativo, auth, seguridad, QA funcional,
-rendimiento, visual/UX). Nada se compiló ni se ejecutó en simulador: la sección
-[Qué quedó fuera](#qué-quedó-fuera) dice exactamente qué no se miró y por qué.
+rendimiento, visual/UX). El informe original se escribió **sin compilar ni ejecutar nada**; la
+sección [Qué quedó fuera](#qué-quedó-fuera) dice qué no se miró y por qué. Desde entonces sí se ha
+compilado y ejecutado en iOS —y eso destapó la Fase 1b entera—, pero **Android sigue sin compilarse
+ni una vez**.
 
 ---
 
-> **Estado a 10 ago 2026, noche. De los nueve bloqueantes queda uno, y no es de código.**
+> ## Estado a 13 ago 2026 · lo que hay que leer primero
 >
-> Este informe se escribió por la mañana. Después se ejecutó la Fase 1 entera, las Fases 2 y 3 en
-> buena parte, y Dani tomó las cinco decisiones de producto que bloqueaban el resto.
+> **De los nueve bloqueantes queda uno, es de configuración, y son cinco minutos de consola:**
+> `FIREBASE_SERVICE_ACCOUNT` en Vercel (`checklist-dani.md` § 0.5).
+>
+> **Ya no queda trabajo de código bloqueando la publicación.** Además de los nueve bloqueantes,
+> están cerrados **enteros** los dos grupos de Altas con más riesgo para un cliente de pago —`A-5`
+> pérdida de datos y `A-8` presentación— y el mínimo viable de `A-7` (arranque y coste). El índice
+> compuesto de `workoutLogs` está **desplegado y verificado en producción**.
+>
+> **Todo commiteado y en la rama `ds/f3-experiencia`.** El aviso de «nada está commiteado ni
+> desplegado» que había aquí ya no aplica.
+>
+> **Lo que sigue abierto, y no bloquea:** `A-2` (consentimiento de IA), el resto de `A-3` (las 12
+> colecciones y pasar la CSP a *enforce*, que sigue en `Report-Only` a propósito), y las partes de
+> `A-7` de rendimiento fino. Más las decisiones § 6.4 de Dani (iPad, Live Activity).
+>
+> **Lo que este informe todavía NO puede afirmar:** que Android compile. Sigue sin haber JDK en la
+> máquina, y al arreglar `07-6` apareció que faltaba `colors.xml` entero, con lo que hasta ahora
+> **no compilaba**. Ver Fase 1b y `02-4`.
+>
+> ---
+>
+> *Contexto de las capas anteriores, 10 ago 2026:* este informe se escribió por la mañana. Después
+> se ejecutó la Fase 1 entera, las Fases 2 y 3 en buena parte, y Dani tomó las cinco decisiones de
+> producto que bloqueaban el resto.
 >
 > **Cerrados:** `B-1` borrado de cuenta (endpoint con cascada + UI + página pública), `B-2` política
 > de privacidad y términos, `B-3` y `B-4` Google Sign-In, `B-5` enlace mágico, `B-6` purpose strings,
@@ -25,10 +50,12 @@ rendimiento, visual/UX). Nada se compiló ni se ejecutó en simulador: la secci�
 >
 > **Lo único que queda es configuración:** `FIREBASE_SERVICE_ACCOUNT` en Vercel, sin la cual los dos
 > endpoints nuevos devuelven 503. Cinco minutos de consola. Detalle en `checklist-dani.md` § 0.5.
->
-> Nada está commiteado ni desplegado.
 
 ## Resumen ejecutivo
+
+> **Lo de abajo es el diagnóstico original del 10 ago y se conserva como registro de lo que se
+> encontró.** Para el estado de hoy, lee el recuadro de arriba. Los nueve bloqueantes de este
+> apartado están cerrados salvo la variable de entorno.
 
 **No. Hoy la app no se puede subir a ninguna de las dos tiendas.** No es cuestión de pulido: hay
 nueve bloqueantes y ninguno es opinable. Dos impiden siquiera *rellenar el formulario* de envío
@@ -1064,6 +1091,27 @@ descrito: `capacitor.build.gradle` tenía el bloque `dependencies` **vacío** y
 es que fallara en Android: no estaba compilada. El sync lo ha cableado, pero sigue **sin compilarse
 nunca** hasta que haya JDK (0.6).
 
+### Fase 1b · Lo nativo que impedía siquiera entrar en la app — **COMPLETADA el 12 ago 2026**
+
+No estaba en el plan original porque el informe se escribió sin compilar ni ejecutar nada en
+nativo (ver «Qué quedó fuera», punto 1). Al probar la app de verdad en el dispositivo aparecieron
+seis fallos que hacían **imposible usarla**, ninguno visible desde el código en frío:
+
+| Hallazgo | Estado |
+|---|---|
+| `getAuth()` se colgaba para siempre dentro del WebView | ✅ `7a5335c` |
+| El WebView de Capacitor colgaba las lecturas de Firestore en silencio | ✅ `3b46c33` |
+| Las llamadas a `/api/*` no salían del móvil | ✅ `084fd2f` |
+| El login manual podía quedarse cargando indefinidamente | ✅ `5928019` |
+| Las tres funciones de API reventaban al arrancar por un import sin extensión | ✅ `4eab823` |
+| La URL de las claves públicas de Google daba 404, y con ella **todo** token | ✅ `98a5fdf` |
+| `firebase-admin/auth` reventaba en Vercel por un conflicto ESM/CJS | ✅ `2a0a339` |
+| La cabecera se metía debajo de la barra de estado (`07-1`) | ✅ `23c8c44` |
+| Orientación bloqueada a vertical (decisión § 6.4) | ✅ `e82253e` |
+
+**La lección, que conviene no perder:** siete de estos nueve son fallos que solo existen al ejecutar
+en nativo. El informe los había marcado como «no verificado» y tenía razón en marcarlos.
+
 ### Fase 2 · Bloqueantes con trabajo real
 
 | # | Acción | Depende de | Esfuerzo |
@@ -1080,11 +1128,33 @@ nunca** hasta que haya JDK (0.6).
 Estas no son bloqueantes formales, pero subir sin ellas es subir algo que pierde datos de clientes o
 que el revisor va a ver.
 
-1. **`A-5`, parcialmente hecho** — sigue abierto lo gordo: timeout en escrituras (`05-2`), banner de
-   «sin conexión» honesto (`05-3`), borrador del alta (`05-4`), persistencia de la sesión de
-   entrenamiento (`05-5`), fotos que no mienten (`05-11`), resincronización del modo local (`03-6`) y
-   limpieza al cerrar sesión (`03-5` `04-14`). Es el grupo con más riesgo real para un cliente de
-   pago. `~3 días`
+1. **`A-5` — CERRADO ENTERO el 12 ago 2026.** Era el grupo con más riesgo real para un cliente de
+   pago y ya no queda nada abierto. Siete arreglos, y en cuatro de ellos lo importante fue lo que
+   se decidió NO hacer:
+
+   - `05-5` **Sesión de entrenamiento persistida** (`35ed061`). Cada serie y cada nota se guardan al
+     instante. La clave lleva el email del atleta —no se suma otra clave global de las que `03-5`
+     documenta como fuga—, el borrador se descarta si la rutina cambió de forma (restaurar por
+     índice pondría los kilos en otro ejercicio) y caduca a las 20 h. Volver a la lista no lo borra;
+     terminar o saltar sí.
+   - `05-4` **Borrador del alta** (`e57b375`). Autoguardado por atleta con el paso incluido y
+     caducidad de 30 días. Se lee en el inicializador perezoso de `useState` y no en un efecto:
+     leerlo después pisaría 18 campos en un segundo render.
+   - `05-2` **Timeout en las escrituras** (`660110f`). `conTimeout` y `EscrituraEncolada` suben de
+     `crm.ts` a `core.ts`, que es donde tenían que estar desde el principio. **La trampa que había
+     que esquivar:** dejar que `EscrituraEncolada` cayera en el `catch` existente habría activado el
+     modo local y creado un `local_log_*` duplicado del que ya estaba encolado — es decir, el arreglo
+     de `05-2` habría reintroducido `03-6`. Se trata aparte. Además el id se reserva en cliente con
+     `doc()` en vez de `addDoc()`, para que lo encolado lleve ya su id definitivo.
+   - `05-3` **Banner honesto** (`9427b43`). Tercer estado «encolado», alimentado por los listeners
+     `online`/`offline` y por un contador **real** de escrituras pendientes: `Promise.race` no
+     cancela la promesa original, así que se sigue esperando a la de verdad y el aviso se apaga solo
+     cuando Firestore confirma. En tono aviso, no rojo de error.
+   - `05-11` **Las fotos ya no mienten** (`ac8372d`).
+   - `03-6` **Lo escrito en modo local vuelve** (`a1f3edf`). La mezcla y el filtro por atleta —que es
+     un guardarraíl de privacidad— viven en `combinarLogs`, con pruebas.
+   - `03-5` / `04-14` **Limpieza al cerrar sesión** (`8344db0`, `2e1b1b4`).
+   - `05-7` el `NaN`, ya cerrado antes (ver abajo).
    **Ya hecho de este grupo:** `05-7`, el `NaN`. Se filtró en `setAnswer` de `QuestionnaireWizard`,
    que es el único punto por el que pasan todas las respuestas, en vez de en las dos llamadas a
    `parseFloat`: así ninguna vía futura puede saltárselo. Un número no finito significa «sin
@@ -1100,9 +1170,25 @@ que el revisor va a ver.
    separan, el atleta ve un número en Nutrición y el coach otro en periodización). **Sigue abierta la
    decisión § 6.5**: calcular (lo que hace ahora) frente a no escribir nada y mostrar «pendiente de
    tu coach».
-3. **`A-8`, parcialmente hecho** — siguen abiertas las safe areas (`07-1` `07-2` `07-3`), la barra de
-   estado en modo claro (`07-6`), la tabla de series en móvil (`07-4`) y el botón Atrás de Android
-   (`07-9`). `~1,5 días`
+3. **`A-8` — CERRADO ENTERO el 12 ago 2026.**
+   - `07-1` `07-2` `07-3` **Safe areas** — cerradas (`23c8c44` y anteriores).
+   - `07-6` **Barra de estado en modo claro** (`18b0679`). No declarar `UIStatusBarStyle` ni
+     `UIUserInterfaceStyle` dejaba a `CAPBridgeViewController` en `.default`, que sigue al sistema:
+     con el iPhone en claro, reloj y batería en negro sobre el `#050505` de la app. En Android igual,
+     por heredar de `Theme.AppCompat.Light`. Además el `LaunchScreen` usaba `systemBackgroundColor`,
+     blanco puro en modo claro → destello a pantalla completa al arrancar y al rotar.
+     **Hallazgo nuevo y grave al tocar esto:** `styles.xml` referenciaba `@color/colorPrimary`,
+     `colorPrimaryDark` y `colorAccent`, y **no existía ningún `colors.xml` en el proyecto Android**.
+     `aapt2` no puede resolverlas: la compilación de Android fallaba antes de empezar, y no se había
+     visto porque nunca se ha compilado (`02-4`). Verificado en iOS con build de Release real:
+     `BUILD SUCCEEDED`, `validate-for-store` OK, las tres claves presentes en el `Info.plist` del
+     binario, y captura del simulador **en modo claro** con la barra en blanco.
+   - `07-4` **La tabla de series** (`6161ff0`). En vez de dejar «Hecha» fuera y obligar a arrastrar,
+     la tabla **cabe**: se esconde la columna «Anterior» en móvil y se aprietan paddings y campos.
+     Esconderla no pierde el dato — la tabla llega prerrellenada con lo del último día y ese mismo
+     valor está de *placeholder* en cada campo, así que era la tercera vez que se decía lo mismo.
+   - `07-9` **Botón Atrás de Android** (`47872a0`).
+   - `07-7` los códigos crudos de Firebase, ya cerrado antes (ver abajo).
    **Ya hecho de este grupo:** `07-7`, los errores de acceso. Nuevo `utils/erroresAuth.ts` con el
    mismo criterio que el `erroresFirestore.ts` que ya existía: la persona lee qué ha pasado y cuál es
    el siguiente paso, y el error crudo sigue yendo a la consola. Cubre los 19 códigos que puede
@@ -1110,9 +1196,37 @@ que el revisor va a ver.
    —antes los dos daban «confirma que el correo es el mismo», que con un enlace caducado manda a la
    persona a reescribir su correo indefinidamente—. Verificado en el navegador: credenciales falsas
    dan un mensaje en cristiano y el `auth/invalid-credential` queda en la consola.
-4. **`A-7` mínimo viable** — empaquetar Material Symbols (el arranque sin red depende de ello),
-   `limit` en `getWorkoutLogs`, `staleTime`/`refetchOnWindowFocus`, `lazy` de recharts en Perfil y
-   Hub. `~1 día`
+4. **`A-7` mínimo viable — HECHO el 12-13 ago 2026** (`cc14b61`, `ddaf2f1`, `7a9d5a4`).
+   - `06-1` `07-5` **Material Symbols empaquetada.** Subconjunto de los **204 iconos** que la app usa
+     de verdad: **63 KB**, frente a los ~4 MB de la fuente completa con sus ~3.000 iconos. Se genera
+     con `npm run iconos:generar` (paso manual a propósito: la fuente se commitea y el build sigue
+     sin red). **Lo que casi se rompe:** la clase `.material-symbols-outlined` la servía la hoja de
+     Google y la siguen usando **281 iconos en 33 ficheros**; se replica en `index.css` tal cual,
+     incluido `font-size: 24px` y **sin capa**, porque meterla en una capa habría hecho que las
+     utilidades de Tailwind ganaran y habría cambiado de golpe el tamaño de esos 281 iconos.
+     Verificado en el navegador: cero peticiones a googleapis/gstatic, familia en estado `loaded` y
+     el glifo de `arrow_back` midiendo **24×24 px** en vez de los 113 px que mide el texto.
+     Con `npm run iconos:comprobar` dentro de `lint`, porque subsetear se pudre en silencio: usar un
+     icono nuevo sin regenerar no rompe el build, solo saca la palabra dentro del botón.
+   - `06-2` `06-20` **Lecturas de la pantalla del coach.** `enabled: !athleteId` en las dos
+     `useQueries`, ventana de 120 días con `limit(200)` **bajo una clave de caché propia**, e índice
+     compuesto `workoutLogs (athleteId ASC, date DESC)` — **desplegado y verificado en producción el
+     13 ago**. **La trampa esquivada, y no es menor:** el plan original decía «`limit(60)`» a secas.
+     Un `limit` por defecto habría roto `allTimeBestBefore` y el motor de reportes, que calculan
+     récords sobre TODO el historial: un atleta con dos años de entrenamientos habría «batido»
+     récords que ya tenía, **sin que nada fallara ni diera error**. Por eso la ventana es un
+     parámetro opcional, y de los siete puntos que llaman a `getWorkoutLogs` solo lo usa este.
+     Segunda trampa: una lectura con ventana **no** actualiza la copia local, o sobrescribiría el
+     espejo completo con un trozo y `combinarLogs` pintaría el resto como pendiente de subir.
+   - `06-6` `06-7` **recharts en diferido** en Perfil y Hub. Medido: `ClientsScreen` de
+     **334,06 kB a 65,09 kB** (gzip 83,01 → 19,13).
+   - **`staleTime` 10 min, `gcTime` 30 min, `refetchOnWindowFocus: false`.** Estaba en 60 s y sin
+     sobrescribir el `refetchOnWindowFocus`, así que cada vuelta al primer plano pasado un minuto
+     repetía entero el abanico de lecturas de la pantalla.
+
+   **Sigue abierto de `A-7`** (no bloquea publicar): `06-5` arranque en serie del atleta, los
+   re-renders `06-11`/`06-12`/`06-13` —`React.memo` sigue apareciendo cero veces— y `06-15` las
+   miniaturas de la galería.
 5. **`A-2`** — casilla de consentimiento de IA y Anthropic declarado. Va con 2.1. `~4 h`
 6. **`A-3`, casi cerrado** — solo queda `04-10` (restringir la lectura de las 12 colecciones a quien
    tiene perfil, probándolo en el emulador) y pasar la CSP a enforce. `~4 h`
@@ -1156,6 +1270,20 @@ táctiles y contraste (`07-10`, `07-11`), Dynamic Type (`07-13`), pruebas de reg
 **Esta sección no se suaviza. Es tan importante como los hallazgos.**
 
 ### 1. Nada se compiló y nada se ejecutó — actualizado tras la síntesis, solo para iOS
+
+> **Actualización 13 ago 2026.** Esta limitación resultó ser la más cara del informe. Al ejecutar de
+> verdad en nativo aparecieron **nueve fallos** que hacían imposible usar la app y que ninguna
+> lectura del código en frío iba a encontrar: `getAuth()` colgado dentro del WebView, las lecturas de
+> Firestore colgadas en silencio, las llamadas a `/api/*` que no salían del móvil, y tres formas
+> distintas de que las funciones de Vercel reventaran al arrancar. Están en la **Fase 1b** del plan.
+>
+> Desde entonces sí se compila y se ejecuta en iOS de forma rutinaria: la verificación de `07-6`
+> incluye un build de Release con `validate-for-store`, comprobación de las claves en el `Info.plist`
+> del binario resultante, y captura del simulador en modo claro.
+>
+> **Android sigue sin compilarse ni una sola vez**, y ahora se sabe que además faltaba `colors.xml`
+> entero (ver `07-6`), o sea que hasta el 12 de agosto **no habría compilado aunque se hubiera
+> intentado**. Todo lo que este informe dice sobre Android sigue siendo lectura de código.
 
 Los siete bloques corrieron en paralelo y Xcode, Gradle y el simulador son un recurso único: compilar
 en ese momento habría dado resultados inválidos. Los pasos manuales que el maestro deja fuera a
