@@ -1,9 +1,10 @@
 import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
-import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
+import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding, updateOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
+import { estadoConsentimiento, registrarConsentimiento } from '../ai/consentimientoIA';
 /* 06-6. Estos tres paneles arrastran recharts —344 KB— y se importaban en
    estático, así que el atleta los descargaba y evaluaba aunque entrase a
    Perfil solo a cambiarse el avatar. Van en diferido: además de los bloques,
@@ -152,6 +153,26 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     queryFn: () => getOnboarding(profile.email),
   });
   const [editingFicha,  setEditingFicha]  = useState(false);
+
+  // A-2. Retirar el consentimiento tiene que ser tan fácil como darlo.
+  const consentimientoIA = estadoConsentimiento(onboarding);
+  const cambiarConsentimientoIA = async (aceptado: boolean) => {
+    if (!onboarding) return;
+    const anterior = onboarding.consentimientoIA;
+    const consentimiento = registrarConsentimiento(aceptado, new Date().toISOString());
+    queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev =>
+      prev ? { ...prev, consentimientoIA: consentimiento } : prev);
+    try {
+      await updateOnboarding({ ...onboarding, consentimientoIA: consentimiento });
+      showToast(aceptado ? 'Guardado. Tu entrenador ya puede usar el asistente.' : 'Guardado. Tus datos dejan de enviarse.');
+    } catch (err) {
+      console.error('No se pudo guardar el consentimiento de IA:', err);
+      queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev =>
+        prev ? { ...prev, consentimientoIA: anterior } : prev);
+      showToast('No se pudo guardar. Inténtalo otra vez.');
+    }
+  };
+
 
   // Block reordering
   const [reorderMode, setReorderMode] = useState(false);
@@ -474,6 +495,35 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
             {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
           </form>
+
+          {/* A-2. El aviso de consentimiento promete «puedes cambiarlo en
+              Perfil → Ajustes», así que tiene que estar aquí de verdad. Un
+              consentimiento que no se puede retirar con la misma facilidad con
+              la que se dio no es un consentimiento válido (art. 7.3 RGPD). */}
+          {!isCoach && onboarding && (
+            <div className="space-y-2">
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <Icon name="smart_toy" size="m" className="text-accent" />
+                Análisis con IA
+              </h3>
+              <div className="bg-surface border border-hairline rounded-surface p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-sans text-caption font-bold text-white">
+                    {consentimientoIA === 'aceptado' ? 'Permitido' : 'No permitido'}
+                  </p>
+                  <p className="font-sans text-caption text-ink-3">
+                    {consentimientoIA === 'aceptado'
+                      ? 'Tu entrenador puede analizar tus datos con el asistente de IA.'
+                      : 'Tus datos no se envían al asistente de IA. La app funciona igual.'}
+                  </p>
+                </div>
+                <Switch
+                  on={consentimientoIA === 'aceptado'}
+                  onToggle={() => cambiarConsentimientoIA(consentimientoIA !== 'aceptado')}
+                />
+              </div>
+            </div>
+          )}
 
           {isCoach && (
             <div className="space-y-2">

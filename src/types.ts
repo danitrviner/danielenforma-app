@@ -606,6 +606,11 @@ export type SleepRoutineOrScreen = 'rutina' | 'pantalla';
 
 export interface OnboardingData {
   athleteId:          string;         // email
+  /** A-2. Consentimiento explícito para que sus datos se analicen con IA
+   *  (Anthropic). Ausente = no ha contestado, y sin respuesta NO se envía nada:
+   *  son datos de salud, art. 9 del RGPD. La lógica y el porqué, en
+   *  `src/ai/consentimientoIA.ts`. */
+  consentimientoIA?:  { aceptado: boolean; fecha: string; version: number };
   // ── Composición corporal ──────────────────────────────────────────────────
   sex?:               'male' | 'female';
   birthDate?:         string;         // YYYY-MM-DD

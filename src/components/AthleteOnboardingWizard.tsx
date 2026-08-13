@@ -8,6 +8,7 @@ import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding } from '../dbService';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
 import { Icon, Button, Input } from './ui';
+import { registrarConsentimiento } from '../ai/consentimientoIA';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
 // bloquea la app hasta completarse (gating en App.tsx). Recoge lo esencial del
@@ -187,6 +188,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
   const TOTAL_STEPS = 7; // 0 bienvenida … 6 final
 
+  /* A-2. Ni premarcada ni obligatoria. Si el atleta no elige aquí, se queda
+     `null` y HomeScreen se lo preguntará: mejor eso que meter una decisión
+     sobre datos de salud en el último paso de un alta que la persona quiere
+     terminar cuanto antes, donde cualquiera pulsa lo que sea por salir. */
+  const [consienteIA, setConsienteIA] = useState<boolean | null>(null);
+
   const finish = async () => {
     setSaving(true);
     setError('');
@@ -240,6 +247,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         hasCurrentInjury: !noInjuries && injuries.trim().length > 0,
         currentInjuryLocation: noInjuries ? undefined : (injuries.trim() || undefined),
         completedAt: new Date().toISOString(),
+        consentimientoIA: consienteIA === null
+          ? undefined
+          : registrarConsentimiento(consienteIA, new Date().toISOString()),
       };
       await saveOnboarding(data);
       // 05-4. La ficha ya está guardada: el borrador sobra. Va después del
@@ -497,6 +507,28 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 );
               })}
             </div>
+            {/* A-2. Consentimiento para el análisis con IA. Se pregunta aquí,
+                y no en un paso propio, para no alargar un alta de seis pasos;
+                pero con las dos opciones al mismo peso y sin nada premarcado.
+                Si no contesta, se le vuelve a preguntar desde Inicio. */}
+            <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3 text-left">
+              <p className="font-sans font-bold text-body text-ink">Análisis con IA</p>
+              <p className="text-body-s text-ink-2">
+                Tu entrenador usa un asistente de IA para preparar tus planes más rápido. Para eso
+                enviaría tu ficha, tus lesiones y alergias, tus entrenos, tu dieta y tus revisiones
+                a <strong className="text-ink">Anthropic PBC</strong>, que no los usa para entrenar
+                sus modelos. Sin tu nombre completo. ¿Nos dejas?
+              </p>
+              <div className="flex gap-3">
+                <Chip selected={consienteIA === false} onClick={() => setConsienteIA(false)}>No, gracias</Chip>
+                <Chip selected={consienteIA === true} onClick={() => setConsienteIA(true)}>Sí, acepto</Chip>
+              </div>
+              <p className="text-caption text-ink-3">
+                Puedes cambiarlo cuando quieras en Perfil → Ajustes. Si dices que no, la app funciona
+                exactamente igual.
+              </p>
+            </div>
+
             {error && (
               <div className="bg-danger/7 border border-danger/24 text-danger p-3 rounded-surface text-body-s text-center">{error}</div>
             )}

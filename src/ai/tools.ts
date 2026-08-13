@@ -4,6 +4,7 @@
 // solo lectura; los datos numéricos salen de los motores deterministas de
 // src/utils (la IA narra sobre ellos, no los recalcula).
 import { auth } from '../firebase';
+import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from './consentimientoIA';
 import {
   getAllUserProfiles,
   getCheckIns,
@@ -321,13 +322,30 @@ function checkinsOf(all: WeightCheckIn[], email: string): WeightCheckIn[] {
 async function listClients(): Promise<string> {
   const [profiles, allCheckins] = await Promise.all([getAllUserProfiles(), getCheckIns()]);
   const clients = profiles.filter(p => p.role === 'client');
-  const rows = clients.map(p => {
+
+  /* A-2 punto 4. `name` era el nombre completo de cada cliente, y esta tool
+     manda la lista ENTERA en cada conversación. Pasa a ser el alias («Ana G.»).
+
+     El email se queda, y conviene decir por qué en vez de dar a entender que
+     esto anonimiza: es la clave con la que el asistente llama al resto de
+     tools, así que quitarlo exigiría un identificador opaco por sesión y una
+     tabla de equivalencia en las nueve tools. Lo que se consigue aquí es no
+     mandar el nombre y apellidos de todos los clientes por sistema; el email
+     sigue viajando como identificador y así está declarado en la política. */
+  const consentimientos = await Promise.all(
+    clients.map(p => getOnboarding(p.email).then(estadoConsentimiento).catch(() => 'sin_responder' as const)),
+  );
+
+  const rows = clients.map((p, i) => {
     const checks = checkinsOf(allCheckins, p.email);
     const last = checks[0];
     const pending = checks.filter(c => !c.coachFeedback && !c.approved).length;
     return {
-      name: p.displayName,
+      name: aliasDeAtleta(p.displayName, p.email),
       email: p.email,
+      // Para que el asistente sepa de antemano a quién NO puede analizar, en
+      // vez de descubrirlo tool a tool y volver a intentarlo.
+      analisisConIA: consentimientos[i] === 'aceptado' ? 'permitido' : 'no permitido',
       lastCheckin: last ? isoDate(last.timestamp) : null,
       pendingCheckins: pending,
       latestWeight: last?.weight ?? p.actualWeight ?? null,
@@ -364,7 +382,8 @@ async function getClientOverview(email: string): Promise<string> {
 
   return toResult({
     profile: {
-      name: profile.displayName,
+      // A-2 punto 4: alias, no nombre y apellidos. Ver listClients.
+      name: aliasDeAtleta(profile.displayName, profile.email),
       email: profile.email,
       actualWeight: latestWeight ?? null,
       targetWeight: profile.targetWeight || null,
@@ -595,6 +614,10 @@ async function generateReportDraft(email: string, periodDaysInput: number, intro
     periodStart, periodEnd,
     comparison: { mode: 'weeks', n: comparisonWeeks },
     extras: {
+      // Aquí NO se pone alias, y es a propósito: esto alimenta al motor de
+      // reportes LOCAL, cuyo texto lo va a leer el atleta («Marta, esta semana
+      // has…»), y `reportNarrative` se queda solo con el nombre de pila. Lo que
+      // vuelve al modelo es `introUsed`, que ya solo lleva ese nombre de pila.
       athleteName: profile.displayName,
       assignments, bodyweightLogs: bwLogs, dietLogs, diets, challenges,
       targetWeight: profile.targetWeight || undefined,
@@ -835,11 +858,44 @@ async function proposeMesocycle(
 
 // ── Dispatcher ────────────────────────────────────────────────────────────────
 
+/* A-2. Toda tool que lea datos de UN atleta concreto pasa por aquí. Se pone la
+   puerta en este punto y no en cada función por el mismo motivo por el que el
+   filtro de NaN de `05-7` se puso en `setAnswer`: es el único sitio por el que
+   pasan todas, así que ninguna tool futura puede saltárselo por descuido.
+
+   Se falla cerrado: sin decisión registrada no sale nada. El coste es real y
+   conocido —el día del despliegue ningún cliente actual tiene decisión, así que
+   el asistente no podrá analizarlos hasta que contesten— y por eso el mensaje
+   explica la situación en vez de parecer un error. */
+const TOOLS_CON_DATOS_DE_ATLETA = new Set([
+  'get_client_overview', 'get_training_history', 'get_diet', 'get_checkins',
+  'get_questionnaire_trends', 'generate_report_draft', 'draft_checkin_feedback',
+  'propose_diet_update', 'propose_mesocycle',
+]);
+
+async function comprobarConsentimiento(email: string): Promise<string | null> {
+  const [onboarding, profiles] = await Promise.all([getOnboarding(email), getAllUserProfiles()]);
+  const estado = estadoConsentimiento(onboarding);
+  if (estado === 'aceptado') return null;
+
+  const perfil = profiles.find(p => p.email.toLowerCase() === email.toLowerCase());
+  return motivoParaElCoach(estado, aliasDeAtleta(perfil?.displayName, email));
+}
+
 export async function executeTool(
   name: string, input: Record<string, unknown>, chatId: string,
 ): Promise<{ content: string; isError: boolean }> {
   try {
     const email = typeof input.athlete_email === 'string' ? input.athlete_email.trim() : '';
+
+    if (email && TOOLS_CON_DATOS_DE_ATLETA.has(name)) {
+      const bloqueo = await comprobarConsentimiento(email);
+      // `isError: false` a propósito: no ha fallado nada. Marcarlo como error
+      // empuja al modelo a reintentar, y aquí reintentar es justo lo que no
+      // debe hacer — el mensaje ya le dice que no insista.
+      if (bloqueo) return { content: bloqueo, isError: false };
+    }
+
     switch (name) {
       case 'list_clients':
         return { content: await listClients(), isError: false };

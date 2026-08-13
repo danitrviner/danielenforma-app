@@ -45,6 +45,7 @@ contacts
 content_copy
 content_cut
 dashboard
+database
 delete
 delete_forever
 description

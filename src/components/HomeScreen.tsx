@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkouts, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkouts, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
 import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
+import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
+import { debePedirseConsentimiento } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
@@ -89,12 +91,31 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const todaysDiet = pickTodaysDiet(diets, dietConfig, TODAY_WD);
   const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
 
+  /* A-2. Se le pregunta aquí, en la primera pantalla que abre, porque los
+     atletas que ya están dentro terminaron su alta hace meses y no van a volver
+     a verla. Sin esto el consentimiento solo llegaría a los clientes nuevos.
+
+     `aplazado` vive en el estado del componente y no en localStorage a
+     propósito: «Ahora no» vale para esta sesión, no para siempre. Guardarlo
+     sería convertir un aplazamiento en un rechazo silencioso, que es la
+     diferencia que todo este arreglo intenta respetar. */
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email),
+  });
+  const [aplazado, setAplazado] = useState(false);
+  const pedirConsentimiento = !aplazado && !!onboarding && debePedirseConsentimiento(onboarding);
+
   const cardioIsPrimary = isRestDay && !!cardioRx;
   const primaryCardRef = useTourTarget('home-primary-card');
   const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
     <div className="space-y-6">
+      {pedirConsentimiento && onboarding && (
+        <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={() => setAplazado(true)} />
+      )}
+
       <PageHeader title="Hoy" subtitle="Tu tarea del día." />
 
       {!loadingTraining && assignments.length === 0 && (
