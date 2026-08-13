@@ -313,8 +313,19 @@ el plazo más largo de toda la lista. · `01-22`
 
 ### 2.2 — Team ID, App ID y capacidades
 
-- [ ] `Membership` → copiar el **Team ID** (10 caracteres). Pasárselo a Claude: sin él no se pueden
-      escribir el `apple-app-site-association` ni los entitlements con valores reales.
+> **Actualización 3 · 13 ago 2026 — el Team ID ya existe y el archive ya sale.**
+> Al compilar para el simulador, Xcode escribió `DEVELOPMENT_TEAM = CTHTC98W9A` en el
+> `project.pbxproj`: tu cuenta de Apple Developer ya está conectada a Xcode. Con eso,
+> `xcodebuild ... archive` **termina con `** ARCHIVE SUCCEEDED **`** y produce un `.xcarchive` de
+> 35 MB que pasa `validate-for-store`.
+>
+> **Ojo con lo que esto NO significa.** El binario está firmado con
+> `Apple Development: danielbriz8@gmail.com`, que es un certificado de **desarrollo**. Para subirlo a
+> App Store Connect hace falta el certificado de **distribución** y el perfil de **App Store**, que
+> siguen sin crearse (los dos últimos puntos de esta sección). Lo que ha caído es el bloqueo: ya no
+> hace falta esperar a nada para compilar y probar.
+
+- [x] ~~`Membership` → copiar el **Team ID**~~ — hecho: **`CTHTC98W9A`**, ya escrito en el proyecto.
 - [ ] `Certificates, Identifiers & Profiles` → `Identifiers` → registrar el App ID
       **`com.danielenforma.app`**.
 - [ ] En ese App ID, activar la capability **Associated Domains**.
@@ -394,8 +405,10 @@ descubrirlo al subirlo a Play. Lo único que falta es lo que solo puedes hacer t
 - [ ] `cd android && ./gradlew bundleRelease --warning-mode all 2>&1 | tee /tmp/android-bundle.log` —
       sigue sin poderse ni intentar: no hay JDK ni Android Studio en esta máquina (§ 3.1, confirmado
       con `java -version` y `/usr/libexec/java_home -V`, ambos fallan).
-- [ ] Anotar tiempo, todos los warnings y el tamaño del `.xcarchive` y del `.aab` — pendiente para
-      Android; para iOS falta repetir el archive real una vez tengas el Team ID.
+- [x] **iOS: archive real HECHO** (13 ago). `** ARCHIVE SUCCEEDED **`, `.xcarchive` de **35 MB**,
+      `validate-for-store` OK, firmado con `Apple Development` y `TeamIdentifier=CTHTC98W9A`. Para
+      subirlo a App Store Connect falta el certificado de distribución (§ 2.2).
+- [ ] Lo mismo para el `.aab` de Android: sigue sin poder intentarse hasta el JDK (§ 3.1).
 - [ ] `./gradlew :app:processReleaseManifest` y leer
       `android/app/build/intermediates/merged_manifests/release/AndroidManifest.xml` para confirmar que
       `ACCESS_FINE_LOCATION` ya no aparece sin `maxSdkVersion`.
@@ -739,7 +752,7 @@ versiones anteriores del documento.
 | `FIREBASE_SERVICE_ACCOUNT` en Vercel | **Dani, § 0.5** | **5 min — es el único bloqueante vivo** |
 | D-U-N-S, solo si publicas como organización | Dani, § 2.1 | decidido: **persona física**, sin espera |
 | Tus tres datos en las páginas legales | Dani, § 0.4 | 10 min |
-| Team ID + certificados + perfil | Dani, § 2.2 | 1 h |
+| Certificado de **distribución** + perfil de App Store | Dani, § 2.2 | 30 min — el Team ID ya está |
 | JDK, para que Android compile por primera vez | Dani, § 3.1 | 1 h |
 | Keystore de subida | Dani, § 3.2 | 30 min |
 | Decisión iPad y Live Activity | Dani, § 6.4 | decisión |
