@@ -1,4 +1,7 @@
 apply plugin: 'com.android.application'
+// Sin esto los .kt del módulo (RestTimerPlugin, RestTimerService) no entran en
+// la compilación y MainActivity.java no encuentra la clase del plugin.
+apply plugin: 'org.jetbrains.kotlin.android'
 
 // Firma de subida (02-3). Las credenciales viven en android/keystore.properties,
 // que está en .gitignore y NO se commitea nunca: el fichero lo crea Dani a mano

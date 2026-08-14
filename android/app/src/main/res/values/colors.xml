@@ -8,7 +8,11 @@
   nunca (§3.1 del checklist).
 
   Los valores son los tokens reales del design system (src/index.css):
-  --color-bg #050505 y --color-accent #FFC72C.
+  el color de fondo #050505 y el de acento #FFC72C.
+
+  OJO: en un comentario XML no puede aparecer un guion doble. Aquí estaban
+  escritos los nombres de las variables CSS tal cual y aapt2 abortaba la
+  compilación entera con "La cadena no está permitida en los comentarios".
 -->
 <resources>
     <color name="colorPrimary">#050505</color>
