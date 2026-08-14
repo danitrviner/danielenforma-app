@@ -1,6 +1,6 @@
 # Lo que solo puede hacer Dani para publicar en las tiendas
 
-Estado a **13 ago 2026**, rama `ds/f3-experiencia`. Todo lo de abajo está fuera del alcance de
+Estado a **13 ago 2026 (tarde)**, rama `ds/f3-experiencia`. Todo lo de abajo está fuera del alcance de
 Claude: o exige una sesión iniciada en una consola, o es una contraseña, o es un dispositivo
 físico, o es una decisión tuya. El detalle técnico de cada punto está en
 [`informe.md`](./informe.md); aquí solo va lo que hay que hacer, dónde, y qué se rompe si no.
@@ -9,6 +9,59 @@ físico, o es una decisión tuya. El detalle técnico de cada punto está en
 > **manda sobre todo lo que venga después**. Si una sección de más abajo contradice a una de más
 > arriba, la de arriba es la buena. Las secciones viejas se conservan a propósito, para que se vea
 > qué se pensó y por qué cambió.
+
+---
+
+## Actualización 4 · 13 ago 2026, tarde — el JDK ya no bloquea nada, y Android NO compilaba
+
+**Se acabaron los dos puntos que más tapaban.** El entorno de Android está montado y las reglas de
+Firestore desplegadas. Lo que decía la Actualización 3 sobre el JDK y sobre `04-10` **ya no aplica**.
+
+### El JDK y el SDK: instalados, y no te ha costado nada
+
+Los dos **sin contraseña y sin sudo**: `openjdk@21` por Homebrew (fórmula, no cask) y el SDK por
+`android-commandlinetools`. Si abres una terminal nueva:
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+```
+
+### Y al compilar por fin: Android no compilaba
+
+«Android compila» llevaba meses siendo una suposición. Era falsa. Tres fallos encadenados, ya
+corregidos, que solo aparecen al ejecutar el build de verdad:
+
+1. Un comentario de `colors.xml` llevaba un **guion doble** (los nombres de las variables CSS), que
+   en XML está prohibido dentro de un comentario. `aapt2` abortaba la compilación entera.
+2. `MainActivity.java` no encontraba `RestTimerPlugin`: los dos ficheros del temporizador de
+   descanso son Kotlin y **el proyecto no tenía el plugin de Kotlin en Gradle**. Los `.kt` nunca
+   entraban en la compilación — justo la deuda que el informe daba por probable en `02-4`.
+3. Con Kotlin ya activo, la versión chocaba con la que arrastra el plugin BLE (2.2.20).
+
+**Estado real, verificado y no supuesto:** `./gradlew bundleRelease` → `BUILD SUCCESSFUL`,
+`app-release.aab` de 11 MB, y las clases del temporizador **dentro del `.dex`** (9 referencias a
+`RestTimer`). El AAB sale **sin firmar**, que es lo correcto mientras no exista tu keystore, y el
+aviso que avisa de eso salta como debe.
+
+### `04-10`: probado en el emulador y DESPLEGADO
+
+Ya no hay nada que hacer aquí. Con Java disponible se escribieron **seis pruebas contra el emulador**
+(`npm run test:reglas`) que cubren las dos direcciones, incluida la que bloqueaba el despliegue: **el
+atleta recién invitado puede crear su perfil y, acto seguido, leer los catálogos**. Las seis pasan, y
+las reglas están desplegadas a producción. Comprobado además que la app sigue cargando con ellas.
+
+### Lo que queda ahora mismo
+
+| Qué | De quién |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` en Vercel (§ 0.5) | **Tuyo** — único bloqueante de configuración |
+| Keystore de subida (§ 3.2) — el build ya lo espera | **Tuyo**, lleva tu contraseña |
+| Team ID, cuenta de Apple, fichas de tienda, capturas | **Tuyo** |
+| DPA de Anthropic + declararlo en ambas tiendas | **Tuyo** |
+| CSP a *enforce* | Esperando un par de días de tráfico real, **a propósito** |
+| Live Activity: comprobar que APARECE | **Tuyo**, exige sesión de atleta (§ 3.4) |
 
 ---
 
@@ -397,21 +450,33 @@ y el enlace mágico de invitación seguirá abriéndose en Safari aunque el cód
 
 ## 3. Máquina local y dispositivo físico
 
-### 3.1 — Instalar el JDK · **sigue siendo el punto que más tapa**
+### 3.1 — ~~Instalar el JDK~~ · **HECHO, y ya no te toca**
 
-> **Actualización 3.** Al arreglar la barra de estado apareció que `styles.xml` referenciaba tres
-> colores de un `colors.xml` **que no existía en el proyecto**. `aapt2` no puede resolverlos: la
-> compilación de Android fallaba antes de empezar, y nadie lo sabía porque nunca se ha compilado.
-> Ya está creado. Pero eso refuerza lo de abajo: hasta que no haya JDK, cada cosa que se dé por
-> buena en Android es una suposición.
+> **Resuelto el 13 ago.** El JDK y el SDK de Android están instalados **sin contraseña y sin sudo**:
+> `openjdk@21` por Homebrew (fórmula, no cask, va a `/opt/homebrew`) y el SDK por
+> `android-commandlinetools`. Para usarlos desde una terminal nueva:
+>
+> ```bash
+> export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+> export PATH="$JAVA_HOME/bin:$PATH"
+> export ANDROID_HOME="$HOME/Library/Android/sdk"
+> ```
+>
+> Añádelas a tu `~/.zshrc` si quieres que estén siempre.
 
-- [ ] Instalar Android Studio (trae JDK 21 embebido) o Temurin 21, y exportar `JAVA_HOME`.
-- [ ] Comprobar: `java -version` debe responder algo.
+**Y al compilar por fin, Android NO compilaba.** «Android compila» llevaba meses siendo una
+suposición, y era falsa. Tres fallos encadenados, ya corregidos:
 
-**Qué se rompe si no:** `./gradlew bundleRelease` aborta sin JVM. Hoy no hay ningún JDK en la máquina
-(`/usr/libexec/java_home` falla, `$JAVA_HOME` vacío), lo que significa que **`RestTimerService.kt` y
-`RestTimerPlugin.kt` no han pasado nunca por el compilador**. «Android compila» es hoy una suposición,
-no un hecho. · `02-4`
+1. Un comentario de `colors.xml` llevaba un guion doble (los nombres de las variables CSS), que en
+   XML está prohibido: `aapt2` abortaba la compilación entera.
+2. `MainActivity.java` no encontraba `RestTimerPlugin`, porque los dos ficheros del temporizador son
+   Kotlin y **el proyecto no tenía el plugin de Kotlin en Gradle**: los `.kt` no se compilaban.
+3. Al activarlo, la versión chocaba con la que arrastra el plugin BLE (2.2.20).
+
+**Estado real ahora:** `./gradlew bundleRelease` da `BUILD SUCCESSFUL`, produce un `app-release.aab`
+de 11 MB y las clases del temporizador están dentro del `.dex` (comprobado). El AAB sale **sin
+firmar**, que es lo correcto mientras no exista tu keystore — y el aviso que avisa de eso funciona.
+· `02-4` `02-25`
 
 ### 3.2 — Crear el keystore de subida
 
