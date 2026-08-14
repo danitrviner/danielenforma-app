@@ -18,6 +18,13 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
+    // Las pruebas de `firestore.rules` corren contra el emulador, que necesita
+    // Java y un puerto abierto: no pueden formar parte del `npm test` de todos
+    // los días ni de un CI que no lo levante. Van aparte, con `npm run
+    // test:reglas`, que arranca el emulador, las pasa y lo apaga.
+    test: {
+      exclude: ['**/node_modules/**', '**/dist/**', '**/*.emulador.test.ts'],
+    },
     build: {
       rollupOptions: {
         output: {

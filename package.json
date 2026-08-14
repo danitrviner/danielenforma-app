@@ -16,7 +16,8 @@
     "sync:native": "npm run build && npx cap sync ios && npx cap sync android",
     "prerelease": "npm run lint && npm run test && npm run sync:native",
     "iconos:generar": "node scripts/generar-fuente-iconos.mjs",
-    "iconos:comprobar": "node scripts/comprobar-iconos.mjs"
+    "iconos:comprobar": "node scripts/comprobar-iconos.mjs",
+    "test:reglas": "firebase emulators:exec --only firestore --project enforma-reglas-test 'vitest run --config vitest.emulador.config.ts'"
   },
   "overrides": {
     "jwks-rsa": {
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/node": "^22.14.0",
     "@types/papaparse": "^5.5.2",
     "@vercel/node": "^5.8.23",
