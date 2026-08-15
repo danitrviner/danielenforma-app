@@ -17,6 +17,7 @@
     "prerelease": "npm run lint && npm run test && npm run sync:native",
     "iconos:generar": "node scripts/generar-fuente-iconos.mjs",
     "iconos:comprobar": "node scripts/comprobar-iconos.mjs",
+    "iconos:catalogo": "node scripts/actualizar-catalogo-iconos.mjs",
     "test:reglas": "firebase emulators:exec --only firestore --project enforma-reglas-test 'vitest run --config vitest.emulador.config.ts'"
   },
   "overrides": {
