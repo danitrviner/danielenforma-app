@@ -46,9 +46,32 @@ service cloud.firestore {
        el riesgo de bucle, y NO en las rutas por documento del atleta, que ya
        están acotadas por email o por UID.
        ────────────────────────────────────────────────────────────────────── */
+    // Se acepta el perfil bajo el UID actual O la invitación del coach (14-08).
+    //
+    // Exigir solo `user_profiles/{uid}` dejaba fuera a clientes legítimos, y de
+    // una forma que no se veía venir: `getOrCreateUserProfile`
+    // (src/db/profiles.ts:141-149), cuando encuentra un perfil con ese email
+    // bajo OTRO docId —un UID de un registro anterior de la misma persona—, lo
+    // devuelve tal cual y NUNCA crea el documento bajo el UID nuevo. A partir de
+    // ahí, para las reglas esa persona «no existe»: se le deniegan de golpe las
+    // 13 colecciones compartidas (recetas, ejercicios, alimentos, máquinas…),
+    // mientras sus datos propios —que filtran por email— siguen funcionando. En
+    // pantalla eso era «no se pudieron cargar las recetas» con el aviso rojo de
+    // permisos encima, y un «Reintentar» que no podía arreglar nada.
+    //
+    // La alternativa era migrar el perfil al UID nuevo, pero eso son datos de
+    // producción: el atleta no puede borrar el documento viejo (el delete es
+    // solo del coach), así que la migración deja DOS perfiles con el mismo
+    // email y el coach se encuentra el cliente duplicado en su lista.
+    //
+    // `invites/{email}` da la misma garantía sin tocar un solo dato: el
+    // documento lo crea el coach al invitar y `markInviteJoined` lo marca como
+    // usado en vez de borrarlo, así que sigue ahí. Esto NO abre las bibliotecas
+    // a cualquiera con una cuenta: hay que estar invitado por el coach.
     function esUsuarioDeLaApp() {
       return request.auth != null
-          && exists(/databases/$(database)/documents/user_profiles/$(request.auth.uid));
+          && (exists(/databases/$(database)/documents/user_profiles/$(request.auth.uid))
+              || exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
     }
 
     // ── user_profiles (docId = UID) ──────────────────────────────────────────
@@ -90,11 +113,30 @@ service cloud.firestore {
                                      'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
+      // `xp` y `level` SALEN de la lista bloqueada (14-08). Estaban aquí como
+      // antitrampas, pero quien los escribe es el propio atleta desde su móvil:
+      // `grantXp` (src/utils/xp.ts) hace `updateUserProfile(uid, { xp, level })`
+      // al terminar una lección de Academia o una sesión de cardio. O sea que la
+      // regla prohibía justo lo que el código hacía: cada vez que el atleta
+      // ganaba XP le saltaba un `permission-denied`, y con él el aviso rojo de
+      // «tu cuenta no tiene permiso para guardar — los cambios NO se están
+      // guardando». Nunca se llegó a guardar un solo punto: los perfiles se
+      // quedaban en 0 XP y nivel 1 para siempre.
+      //
+      // El riesgo de dejarlos pasar es que alguien se infle el XP desde la
+      // consola. No abre ninguna puerta: XP y nivel son gamificación y no tocan
+      // plan, cobros ni estado comercial. Todo eso —planStartDate,
+      // planDurationMonths, role, setupSummary, estadoCrm, fechaBaja,
+      // motivoBaja, motivoBajaDetalle, origen— sigue bloqueado, que es donde
+      // hacer trampas sí tendría consecuencias.
+      //
+      // `currentStreak`/`maxStreak` se quedan bloqueados: el cliente no los
+      // escribe en ningún sitio, solo se inicializan al crear el perfil.
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
+                                     'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen']));
       allow delete: if isCoach();
     }
