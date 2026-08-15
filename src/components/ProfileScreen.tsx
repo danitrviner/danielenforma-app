@@ -174,9 +174,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   };
 
 
-  // Block reordering
-  const [reorderMode, setReorderMode] = useState(false);
-
   const streakDays = profile.currentStreak;
   const maxStreakDays = profile.maxStreak;
 
@@ -185,20 +182,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     const missing = DEFAULT_BLOCK_ORDER.filter(id => !saved.includes(id));
     return [...saved, ...missing];
   }, [profile.dashboardOrder]);
-
-  const moveBlock = async (visibleIds: BlockId[], id: BlockId, dir: -1 | 1) => {
-    const from = visibleIds.indexOf(id);
-    const to = from + dir;
-    if (to < 0 || to >= visibleIds.length) return;
-    const reordered = [...visibleIds];
-    [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
-    // Splice the reordered visible ids back into the full order, keeping any
-    // currently-hidden blocks in their existing relative position.
-    let vi = 0;
-    const nextOrder = blockOrder.map(bid => visibleIds.includes(bid) ? reordered[vi++] : bid);
-    await updateUserProfile(profile.userId, { dashboardOrder: nextOrder }).catch(console.error);
-    onRefreshProfile();
-  };
 
   const handleSignOut = async () => {
     // 03-5. `onLogOut` estaba DENTRO del try, así que un `signOut` que lanzara
@@ -429,44 +412,17 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         </div>
       )}
 
-      {/* ── Reorder toggle ───────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setReorderMode(v => !v)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-            reorderMode
-              ? 'bg-accent/10 border-accent/40 text-accent'
-              : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
-          }`}
-        >
-          <Icon name={reorderMode ? 'check' : 'reorder'} size="s" />
-          {reorderMode ? 'Listo' : 'Reordenar bloques'}
-        </button>
-      </div>
+      {/* ── Bloques de contenido ─────────────────────────────────────────────
+          Aquí había un «Reordenar bloques» que abría flechas de subir/bajar en
+          cada bloque. Se retira por petición de Dani (rastreo del 14-08): el
+          botón se veía roto —`reorder` no estaba en la fuente empaquetada y
+          salía la palabra REORDER— y reordenar el perfil no es algo que el
+          atleta necesite hacer.
 
-      {/* ── Reorderable content blocks ───────────────────────────────────────── */}
-      {visibleBlocks.map((id, idx) => (
-        <div key={id}>
-          {reorderMode && (
-            <div className="flex items-center justify-end gap-1 mb-2">
-              <Button
-                variant="secondary" size="s"
-                onClick={() => moveBlock(visibleBlocks, id, -1)}
-                disabled={idx === 0}
-                icon="arrow_upward"
-                label="Subir"
-              />
-              <Button
-                variant="secondary" size="s"
-                onClick={() => moveBlock(visibleBlocks, id, 1)}
-                disabled={idx === visibleBlocks.length - 1}
-                icon="arrow_downward"
-                label="Bajar"
-              />
-            </div>
-          )}
-          {renderBlock(id)}
-        </div>
+          `blockOrder` se conserva a propósito: quien ya hubiera guardado un
+          orden lo sigue viendo. Deja de poder cambiarse, no se reinicia. */}
+      {visibleBlocks.map(id => (
+        <div key={id}>{renderBlock(id)}</div>
       ))}
 
       {/* ── Ajustes (F3.11, módulo 11: "vive detrás de un icono en la
