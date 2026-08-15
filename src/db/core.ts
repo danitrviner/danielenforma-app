@@ -27,7 +27,21 @@ export const authReady: Promise<void> = new Promise(resolve => {
 // firing and the auth token arriving in Firestore's request headers.
 export async function withAuthRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
-    return await fn();
+    const resultado = await fn();
+    // Una operación que sale bien es la prueba de que Firestore está accesible,
+    // así que se apaga el modo local. Sin esto la bandera solo sabía encenderse:
+    // un fallo puntual del arranque —normalmente una lectura lanzada antes de
+    // que la autenticación estuviera lista— dejaba la sesión ENTERA en local
+    // aunque todo lo siguiente funcionara. Medido el 14-08 en el simulador: la
+    // consola del coach abría con «0 deportistas registrados» y el aviso de
+    // «sin conexión», y al reiniciar sin tocar nada salía 1 deportista y todos
+    // los datos. El usuario veía una app vacía y un aviso que era mentira.
+    //
+    // Solo se limpia esta bandera, no `ultimoErrorFirestore`: un denegado por
+    // permisos NO se arregla porque otra operación distinta funcione, y su
+    // aviso ya tiene su propio botón para descartarlo.
+    if (forceLocalOnly) setLocalBypassMode(false);
+    return resultado;
   } catch (err: any) {
     if ((err?.code === 'permission-denied' || err?.code === 'unauthenticated') && auth.currentUser) {
       await new Promise(r => setTimeout(r, 400));

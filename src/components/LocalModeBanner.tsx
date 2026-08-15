@@ -86,13 +86,27 @@ export default function LocalModeBanner() {
   };
 
   return (
-    // pt: el aviso va por encima de todo (z-100) y en fixed top-0, así que sin
+    // pt: el aviso va por encima de todo (z-100) y pegado arriba, así que sin
     // reservar la safe area su texto quedaba debajo de la barra de estado —
     // justo el aviso que más se tiene que leer (07-2).
+    //
+    // En el flujo, ni `fixed` ni `sticky` (14-08). Con `fixed` el aviso se
+    // salía del flujo y se comía la cabecera entera: mientras hubiera aviso
+    // —sin conexión o sin permisos— desaparecían el logo, la campana, el avatar
+    // y, en coach, el botón del asistente. Justo cuando algo va mal, la persona
+    // perdía media app, y como la bandera no se limpia sola se quedaba así toda
+    // la sesión.
+    //
+    // `sticky` tampoco vale, y se probó: la cabecera de móvil también es sticky
+    // top-0, así que los dos peleaban por el mismo sitio y ganaba el aviso por
+    // z-index — el mismo solape de antes. En el flujo normal el aviso ocupa su
+    // hueco arriba, la cabecera se coloca debajo, y al bajar el aviso se va y la
+    // cabecera se queda pegada, que es lo que se espera. El aviso se ve al abrir
+    // —cuando importa— y no secuestra la navegación el resto de la sesión.
     <div
       role="status"
       aria-live="polite"
-      className={`fixed top-0 left-0 right-0 z-[100] text-white px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1 ${
+      className={`relative z-[100] text-white px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1 ${
         // Ámbar, no rojo: un dato encolado no se ha perdido, y pintar de rojo de
         // error algo que sí está guardado enseña a la persona a ignorar el rojo.
         aviso === 'encolado' ? 'bg-amber-600' : 'bg-red-600'
