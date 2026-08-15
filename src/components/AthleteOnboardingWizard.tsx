@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
   ActivityLevel, DietType,
@@ -128,6 +128,15 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [borrador] = useState(() => cargarBorradorAlta<BorradorCampos>(profile.email));
 
   const [step, setStep] = useState(borrador?.step ?? 0);
+  /** 14-08. El único contenedor con scroll de verdad (ver el `overflow-y-auto`
+   *  de abajo). Sin resetearlo al cambiar de paso, si el atleta bajaba en un
+   *  paso largo (p. ej. Alimentación) y pulsaba «Siguiente», aterrizaba a
+   *  media altura del paso nuevo — el título y la barra de progreso quedaban
+   *  fuera de vista y la pantalla parecía clavada/rota. */
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    contentRef.current?.scrollTo(0, 0);
+  }, [step]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   /** Puerta de un solo sentido: una vez la ficha está en Firestore, este
@@ -272,7 +281,15 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const pct = Math.round((step / (TOTAL_STEPS - 1)) * 100);
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col relative overflow-hidden">
+    // 14-08. `h-[100dvh]`, no `min-h-screen`: con min-height el div podía
+    // crecer más alto que la pantalla y el documento entero se desplazaba
+    // (lateral incluido, porque un hijo `flex` de sobra —p. ej. una fila de
+    // chips sin `min-w-0`— ya no quedaba contenido por ningún `overflow-hidden`
+    // de altura fija). Fijar la altura al viewport y mover el scroll a un único
+    // contenedor interno (ver más abajo) dejan la cabecera y los botones
+    // siempre en su sitio, y el `overflow-hidden` de aquí sí llega a recortar
+    // cualquier desbordamiento en vez de solo maquillarlo.
+    <div className="h-[100dvh] bg-bg flex flex-col relative overflow-hidden">
       <style>{`@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }`}</style>
       {/* Corrige P0-1 de la auditoría visual (docs/auditoria-visual/hallazgos.md):
           los brillos con offset negativo (-10%) inflaban el scrollWidth del
@@ -289,7 +306,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       {/* pt: es la PRIMERA pantalla que ve un atleta nuevo, y sin reservar la
           safe area el "Paso N de 6" y el logo se metían bajo la isla dinámica
           (07-3). El calc mantiene los 2rem de aire original por debajo. */}
-      <div className="w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
+      <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
@@ -308,8 +325,14 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           quedaba pegado arriba y dejaba ~600 px muertos hasta los botones en
           los pasos cortos (bienvenida, "Tu día a día"). En los pasos largos
           (Alimentación) no cambia nada: no hay hueco que centrar, así que el
-          contenido sigue empezando arriba y la página scrollea igual. */}
-      <div className="flex-1 w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center" key={step}>
+          contenido sigue empezando arriba y hace scroll dentro de este
+          contenedor.
+          `min-h-0` es obligatorio en un hijo `flex-1` para que su propio
+          `overflow-y-auto` funcione: sin él, un hijo flex nunca se encoge por
+          debajo de la altura de su contenido (mínimo automático), así que
+          jamás llegaba a desbordar y el scroll se lo comía el documento
+          entero — el mismo bug que ya se vio en el CRM, aquí en vertical. */}
+      <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center" key={step}>
         {step === 0 && (
           <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
@@ -538,8 +561,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
       {/* Navegación — corrige P1-2: la jerarquía estaba invertida porque
           "Siguiente" no llevaba variant="primary" (el default de Button es
-          "secondary", igual que "Atrás" — ambos pesaban lo mismo). */}
-      <div className="w-full max-w-lg mx-auto px-6 pb-10 flex gap-3">
+          "secondary", igual que "Atrás" — ambos pesaban lo mismo).
+          `flex-none`: con la altura ahora fija al viewport, sin esto el
+          `flex-1` del contenido de arriba se comería el hueco de estos
+          botones en vez de dejárselo. `pb` reserva la safe area de abajo,
+          igual que el resto de paneles fijos de la app. */}
+      <div className="flex-none w-full max-w-lg mx-auto px-6 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] flex gap-3">
         {step > 0 && step < TOTAL_STEPS - 1 && (
           <Button variant="ghost" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
         )}

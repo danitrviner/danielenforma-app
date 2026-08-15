@@ -448,6 +448,24 @@ function AppContent() {
     );
   }
 
+  // Banco de pruebas del wizard de alta: sin esto había que crear una cuenta
+  // nueva de verdad cada vez que se quería ver un paso concreto. Misma poda
+  // en producción que UiShowcase/GimnasioHarness.
+  if (AthleteOnboardingWizard && import.meta.env.DEV && location.pathname === '/dev/onboarding') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AthleteOnboardingWizard
+          profile={{
+            userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
+            role: 'client', avatarUrl: '', level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+            initialWeight: 0, targetWeight: 0, actualWeight: 0,
+          } as UserProfile}
+          onComplete={() => console.log('onComplete')}
+        />
+      </Suspense>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
