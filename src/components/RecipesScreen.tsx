@@ -13,7 +13,7 @@ import { classifyRecipe } from '../utils/foodPrefs';
 import { BUDGET_CATS, roundQuarter } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Skeleton } from './ui';
-import { EmptyState, Badge, Chip, SearchField, Button } from './ui';
+import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -434,7 +434,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
           <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">recipe</span>
+            <span className="material-symbols-outlined text-accent text-title-s">grocery</span>
             Ingredientes
           </h2>
 
@@ -803,28 +803,29 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </h2>
 
         {/* Category filter */}
-        <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="flex gap-2 w-max">
-            {RECETAS_CATS.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setRecetasCat(cat)}
-                className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
-                  recetasCat === cat
-                    ? 'bg-data text-black'
-                    : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-white'
-                }`}
-              >{cat}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Intake type filter */}
-        <div className="flex flex-wrap gap-2">
-          <Chip selected={recetasIntake === null} onClick={() => setRecetasIntake(null)}>Todos los momentos</Chip>
-          {Object.entries(INTAKE_LABELS).map(([k, label]) => (
-            <Chip key={k} selected={recetasIntake === Number(k)} onClick={() => setRecetasIntake(Number(k))}>{label}</Chip>
-          ))}
+        {/* Dos desplegables en vez de dos filas de chips (petición de Dani,
+            14-08). Entre la tira de categorías —que además se cortaba a la
+            derecha con su barra de scroll— y los seis chips de momento se iba
+            media pantalla del móvil antes de enseñar una sola receta. Con
+            `Select` la lista la dibuja iOS como rueda a pantalla completa, que
+            para elegir una de seis opciones va mejor que una fila que hay que
+            arrastrar. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Select
+            label="Categoría"
+            value={recetasCat}
+            onChange={setRecetasCat}
+            options={RECETAS_CATS.map(cat => ({ value: cat, label: cat }))}
+          />
+          <Select
+            label="Momento del día"
+            value={recetasIntake === null ? '' : String(recetasIntake)}
+            onChange={v => setRecetasIntake(v === '' ? null : Number(v))}
+            options={[
+              { value: '', label: 'Todos los momentos' },
+              ...Object.entries(INTAKE_LABELS).map(([k, label]) => ({ value: k, label })),
+            ]}
+          />
         </div>
 
         {/* Name search */}
