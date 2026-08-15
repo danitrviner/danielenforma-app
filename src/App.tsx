@@ -593,6 +593,20 @@ function AppContent() {
               <Icon name="smart_toy" size="m" filled />
             </button>
           )}
+          {/* Cardio, atajo del atleta. Su sitio en la barra inferior se lo
+              quedaron los cinco destinos de siempre, así que para llegar había
+              que entrar por Perfil: demasiados pasos para algo que se abre
+              nada más subirse a la cinta. Ocupa el hueco del botón de IA, que
+              es solo del coach, y así ninguna de las dos cabeceras crece. */}
+          {!isCoach && (
+            <button
+              onClick={() => goToTab('cardio')}
+              aria-label="Cardio"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+            >
+              <Icon name="monitor_heart" size="m" filled />
+            </button>
+          )}
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
           <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
             <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
