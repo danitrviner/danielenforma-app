@@ -124,8 +124,6 @@ const COACH_NAV_GROUPS: NavGroup[] = [
   { title: 'Día a día',  items: COACH_DIA_A_DIA  },
   { title: 'Biblioteca', items: COACH_BIBLIOTECA },
 ];
-const ATHLETE_NAV_GROUPS: NavGroup[] = [{ items: ATHLETE_TABS }];
-
 // Barra inferior de móvil: cuatro destinos para el coach. Con los siete de
 // antes las etiquetas no cabían a los 11 px del Design System y había que
 // bajarlas a 10 (la excepción R10 de DESIGN_SYSTEM_STATUS.md); con cuatro
@@ -365,11 +363,23 @@ function AppContent() {
   // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
   // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
   const athleteUserId = profile?.userId;
-  const { data: tutorialGateAssignments = [] } = useQuery({
+  const { data: tutorialGateAssignments = [], isPending: cargandoPlanGate } = useQuery({
     queryKey: ['workoutAssignments', athleteUserId],
     queryFn: () => getWorkoutAssignmentsForAthlete(athleteUserId!),
     enabled: !!athleteUserId && !isCoach,
   });
+  // 14-08 (tarea 8). El atleta terminaba el wizard y caía en una app vacía:
+  // Rutinas, Academia y Nutrición sin nada que enseñar hasta que el coach
+  // publicara el plan. `hasPlan` ya existía para el tutorial (F3.12); se
+  // reutiliza aquí para lo mismo que allí — "el coach ya le asignó algo" — en
+  // vez de inventar una segunda señal que pudiera desincronizarse de la
+  // primera.
+  const hasPlan = !isCoach && tutorialGateAssignments.length > 0;
+  // Solo redirige cuando la consulta YA resolvió: mientras está en vuelo,
+  // `hasPlan` vale `false` por el default de `tutorialGateAssignments = []`,
+  // y sin esta guarda un atleta con plan real que entrara por un enlace
+  // directo a /training rebotaría a Hoy durante ese primer instante.
+  const bloquearSinPlan = !cargandoPlanGate && !hasPlan;
 
   // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
   // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
@@ -520,8 +530,12 @@ function AppContent() {
     );
   }
 
-  const mobileTabs = isCoach ? COACH_TABS_MOBILE : ATHLETE_TABS;
-  const navGroups = isCoach ? COACH_NAV_GROUPS : ATHLETE_NAV_GROUPS;
+  // Sin plan, Rutinas/Academia/Nutrición no tienen nada que enseñar — eran
+  // pantallas vacías detrás de un tab que invitaba a entrar. Se ocultan y solo
+  // quedan Hoy (con la sala de espera, PlanInPreparationCard) y Perfil.
+  const athleteTabsVisibles = bloquearSinPlan ? ATHLETE_TABS.filter(t => t.id === 'home' || t.id === 'profile') : ATHLETE_TABS;
+  const mobileTabs = isCoach ? COACH_TABS_MOBILE : athleteTabsVisibles;
+  const navGroups = isCoach ? COACH_NAV_GROUPS : [{ items: athleteTabsVisibles }];
   const pendingCount = getPendingReviews(checkins).length;
 
   // Pestaña activa para resaltar la nav — el primer segmento de la URL, ya
@@ -557,7 +571,7 @@ function AppContent() {
     <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[calc(var(--nav-h)+1rem)] md:pb-0">
     <TutorialEngine
       profile={profile}
-      hasPlan={!isCoach && tutorialGateAssignments.length > 0}
+      hasPlan={hasPlan}
       currentTab={pathTab}
       onNavigate={goToTab}
       onProfileChanged={updates => setProfile(p => p ? { ...p, ...updates } as UserProfile : p)}
@@ -616,7 +630,7 @@ function AppContent() {
               que entrar por Perfil: demasiados pasos para algo que se abre
               nada más subirse a la cinta. Ocupa el hueco del botón de IA, que
               es solo del coach, y así ninguna de las dos cabeceras crece. */}
-          {!isCoach && (
+          {!isCoach && !bloquearSinPlan && (
             <button
               onClick={() => goToTab('cardio')}
               aria-label="Cardio"
@@ -692,12 +706,16 @@ function AppContent() {
 
           {/* ATHLETE */}
           {!isCoach && <Route path="/home" element={<HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />} />}
-          {!isCoach && <Route path="/training" element={<TrainingScreen profile={profile} />} />}
-          {!isCoach && <Route path="/nutrition" element={<NutritionHubScreen profile={profile} />} />}
+          {/* Sin plan, estas cuatro no tienen nada que enseñar (tarea 8): un
+              enlace viejo, una notificación o el botón Atrás del navegador
+              podían aterrizar aquí igualmente, así que el guardado va en la
+              propia ruta, no solo en ocultar el tab. */}
+          {!isCoach && <Route path="/training" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <TrainingScreen profile={profile} />} />}
+          {!isCoach && <Route path="/nutrition" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <NutritionHubScreen profile={profile} />} />}
           {!isCoach && <Route path="/checkin" element={<CheckInScreen profile={profile} checkins={checkins} />} />}
           {!isCoach && <Route path="/roadmap" element={<AthleteRoadmapScreen profile={profile} />} />}
-          {!isCoach && <Route path="/academy" element={<AcademyScreen profile={profile} />} />}
-          {!isCoach && <Route path="/cardio" element={<CardioScreen profile={profile} />} />}
+          {!isCoach && <Route path="/academy" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <AcademyScreen profile={profile} />} />}
+          {!isCoach && <Route path="/cardio" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <CardioScreen profile={profile} />} />}
 
           {/* COACH */}
           {isCoach && (() => {
