@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
@@ -380,6 +381,25 @@ function AppContent() {
   // y sin esta guarda un atleta con plan real que entrara por un enlace
   // directo a /training rebotaría a Hoy durante ese primer instante.
   const bloquearSinPlan = !cargandoPlanGate && !hasPlan;
+
+  /* 14-08 (tarea 9). El tour automático (TutorialEngine) arranca solo en
+     cuanto `hasPlan` pasa a `true` — la lógica en sí ya estaba bien. El
+     bug real está aquí: esta consulta comparte los valores por defecto
+     globales del QueryClient (`main.tsx`: staleTime 10 min,
+     refetchOnWindowFocus apagado, a propósito para no multiplicar
+     lecturas de Firestore en el resto de la app). Un atleta que termina el
+     wizard, deja la app en segundo plano y vuelve cuando el coach YA
+     publicó el plan se encontraba con que `hasPlan` seguía en `false` de
+     una sesión que nunca refrescaba sola — ni el tour saltaba, ni la
+     sala de espera se abría. Se refresca a mano solo esta consulta, y
+     solo mientras hace falta: en cuanto hay plan, deja de suscribirse. */
+  useEffect(() => {
+    if (isCoach || hasPlan || !athleteUserId) return;
+    const sub = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athleteUserId] });
+    });
+    return () => { sub.then(h => h.remove()); };
+  }, [isCoach, hasPlan, athleteUserId, queryClient]);
 
   // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
   // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
