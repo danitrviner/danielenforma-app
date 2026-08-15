@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
-  ActivityLevel, DietType,
+  ActivityLevel, DietType, OnboardingMeal,
 } from '../types';
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
-import { saveOnboarding } from '../dbService';
+import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
 import { Icon, Button, Input } from './ui';
 import { registrarConsentimiento } from '../ai/consentimientoIA';
+import FoodPreferencesPanel from './FoodPreferencesPanel';
+import VegetableSelector from './VegetableSelector';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
 // bloquea la app hasta completarse (gating en App.tsx). Recoge lo esencial del
@@ -55,6 +57,34 @@ const ACTIVITY: { id: ActivityLevel; label: string; desc: string }[] = [
   { id: 'activo', label: 'Activo', desc: 'En movimiento gran parte del día' },
   { id: 'muy_activo', label: 'Muy activo', desc: 'Trabajo físico o mucho deporte' },
 ];
+
+// Mismos presets que el cuestionario largo del coach (OnboardingForm), pero
+// duplicados a propósito: el wizard es un subconjunto deliberadamente aparte,
+// no comparte estado con el formulario del coach.
+const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
+  3: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+  4: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+  5: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 4, name: 'Merienda', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+};
+
+const INTAKE_ICONS: Record<number, string> = {
+  1: 'free_breakfast', 2: 'coffee', 3: 'restaurant', 4: 'bakery_dining', 5: 'dinner_dining',
+};
 
 // Chip seleccionable reutilizado en todos los pasos.
 interface ChipProps {
@@ -104,6 +134,8 @@ interface BorradorCampos {
   birthDate: string;
   weightKg: string;
   heightCm: string;
+  occupation: string;
+  referralSource: string;
   goalBody: GoalBody | '';
   goalCapacity: GoalCapacity | '';
   goalFreeText: string;
@@ -111,12 +143,24 @@ interface BorradorCampos {
   equipment: string[];
   injuries: string;
   noInjuries: boolean;
+  hadPastInjuries: boolean;
+  pastInjuriesDetail: string;
+  takesMedication: boolean;
+  medicationDetail: string;
+  recentSurgery: boolean;
+  recentSurgeryDetail: string;
   dietType: DietType | '';
   mealCount: number | null;
   menuVariety: number;
   batchCookingPreferred: boolean;
   allergies: string;
   dislikedFoods: string;
+  meals: OnboardingMeal[];
+  cookingLevel: number;
+  cookingMaxTime: number;
+  prefLiked: string[];
+  prefDisliked: string[];
+  vegTypes: string[];
   activityLevel: ActivityLevel | '';
 }
 
@@ -151,6 +195,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [birthDate, setBirthDate] = useState(borrador?.birthDate ?? '');
   const [weightKg, setWeightKg] = useState(borrador?.weightKg ?? '');
   const [heightCm, setHeightCm] = useState(borrador?.heightCm ?? '');
+  const [occupation, setOccupation] = useState(borrador?.occupation ?? '');
+  const [referralSource, setReferralSource] = useState(borrador?.referralSource ?? '');
   const [goalBody, setGoalBody] = useState<GoalBody | ''>(borrador?.goalBody ?? '');
   const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>(borrador?.goalCapacity ?? '');
   const [goalFreeText, setGoalFreeText] = useState(borrador?.goalFreeText ?? '');
@@ -158,13 +204,38 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [equipment, setEquipment] = useState<string[]>(borrador?.equipment ?? []);
   const [injuries, setInjuries] = useState(borrador?.injuries ?? '');
   const [noInjuries, setNoInjuries] = useState(borrador?.noInjuries ?? false);
+  const [hadPastInjuries, setHadPastInjuries] = useState(borrador?.hadPastInjuries ?? false);
+  const [pastInjuriesDetail, setPastInjuriesDetail] = useState(borrador?.pastInjuriesDetail ?? '');
+  const [takesMedication, setTakesMedication] = useState(borrador?.takesMedication ?? false);
+  const [medicationDetail, setMedicationDetail] = useState(borrador?.medicationDetail ?? '');
+  const [recentSurgery, setRecentSurgery] = useState(borrador?.recentSurgery ?? false);
+  const [recentSurgeryDetail, setRecentSurgeryDetail] = useState(borrador?.recentSurgeryDetail ?? '');
   const [dietType, setDietType] = useState<DietType | ''>(borrador?.dietType ?? '');
   const [mealCount, setMealCount] = useState<number | null>(borrador?.mealCount ?? null);
   const [menuVariety, setMenuVariety] = useState<number>(borrador?.menuVariety ?? 3);
   const [batchCookingPreferred, setBatchCookingPreferred] = useState(borrador?.batchCookingPreferred ?? false);
   const [allergies, setAllergies] = useState(borrador?.allergies ?? '');
   const [dislikedFoods, setDislikedFoods] = useState(borrador?.dislikedFoods ?? '');
+  const [meals, setMeals] = useState<OnboardingMeal[]>(borrador?.meals ?? []);
+  const [cookingLevel, setCookingLevel] = useState(borrador?.cookingLevel ?? 3);
+  const [cookingMaxTime, setCookingMaxTime] = useState(borrador?.cookingMaxTime ?? 45);
+  const [prefLiked, setPrefLiked] = useState<string[]>(borrador?.prefLiked ?? []);
+  const [prefDisliked, setPrefDisliked] = useState<string[]>(borrador?.prefDisliked ?? []);
+  const [vegTypes, setVegTypes] = useState<string[]>(borrador?.vegTypes ?? []);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(borrador?.activityLevel ?? '');
+
+  // Las ingestas dependen de cuántas se hayan elegido en el paso de
+  // Alimentación: si `mealCount` cambia, se regenera el preset (Desayuno,
+  // Comida, Cena…), conservando los tupper ya marcados cuando el número de
+  // ingestas no cambia realmente (p.ej. al volver «Atrás» y «Siguiente»).
+  useEffect(() => {
+    if (mealCount !== 3 && mealCount !== 4 && mealCount !== 5) return;
+    setMeals(prev => {
+      const preset = MEAL_PRESETS[mealCount];
+      const yaCoincide = prev.length === preset.length && prev.every((m, i) => m.intakeType === preset[i].intakeType);
+      return yaCoincide ? prev : preset.map(m => ({ ...m }));
+    });
+  }, [mealCount]);
 
   // 05-4. Autoguardado: cada respuesta y cada cambio de paso persisten al
   // instante. No se guarda mientras se está enviando, para que un `finish` en
@@ -172,30 +243,42 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   useEffect(() => {
     if (saving || enviado) return;
     guardarBorradorAlta<BorradorCampos>(profile.email, {
-      step, sex, birthDate, weightKg, heightCm, goalBody, goalCapacity, goalFreeText,
-      experienceLevel, equipment, injuries, noInjuries, dietType, mealCount,
-      menuVariety, batchCookingPreferred, allergies, dislikedFoods, activityLevel,
+      step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+      goalBody, goalCapacity, goalFreeText,
+      experienceLevel, equipment, injuries, noInjuries,
+      hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
+      recentSurgery, recentSurgeryDetail,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, dislikedFoods,
+      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, vegTypes,
+      activityLevel,
     });
-  }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, goalBody, goalCapacity,
-      goalFreeText, experienceLevel, equipment, injuries, noInjuries, dietType, mealCount,
-      menuVariety, batchCookingPreferred, allergies, dislikedFoods, activityLevel]);
+  }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+      goalBody, goalCapacity, goalFreeText, experienceLevel, equipment, injuries, noInjuries,
+      hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, dislikedFoods,
+      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, vegTypes, activityLevel]);
 
   const firstName = (profile.displayName || 'atleta').split(' ')[0];
 
-  // Validación por paso: el atleta no avanza sin responder lo obligatorio.
+  // Validación por paso: el atleta no avanza sin responder lo obligatorio. Los
+  // pasos nuevos (14-08: datos personales, salud, comidas, cocina,
+  // preferencias, verduras) son todos opcionales a propósito — nada de eso
+  // bloquea el alta, el coach lo completa si falta.
   const stepValid = (): boolean => {
     switch (step) {
-      case 0: return true;
       case 1: return !!sex && !!birthDate && Number(weightKg) >= 30 && Number(heightCm) >= 100;
-      case 2: return !!goalBody && !!goalCapacity;
-      case 3: return !!experienceLevel && equipment.length > 0 && (noInjuries || injuries.trim().length > 0);
-      case 4: return !!dietType && mealCount != null;
-      case 5: return !!activityLevel;
+      case 3: return !!goalBody && !!goalCapacity;
+      case 4: return !!experienceLevel && equipment.length > 0 && (noInjuries || injuries.trim().length > 0);
+      case 6: return !!dietType && mealCount != null;
+      case 11: return !!activityLevel;
       default: return true;
     }
   };
 
-  const TOTAL_STEPS = 7; // 0 bienvenida … 6 final
+  // 0 bienvenida, 1 sobre ti, 2 datos personales, 3 objetivo, 4 entrenamiento,
+  // 5 salud, 6 alimentación, 7 comidas, 8 cocina, 9 preferencias alimentarias,
+  // 10 verduras habituales, 11 día a día, 12 final.
+  const TOTAL_STEPS = 13;
 
   /* A-2. Ni premarcada ni obligatoria. Si el atleta no elige aquí, se queda
      `null` y HomeScreen se lo preguntará: mejor eso que meter una decisión
@@ -224,16 +307,31 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         && Number(weightKg) > 0 && Number(heightCm) > 0
         ? computeAuto(sex, birthDate, Number(weightKg), Number(heightCm), activityLevel, goalBody)
         : null;
+      // 14-08. `dislikedFoods` mezcla dos fuentes: el texto libre del paso de
+      // Alimentación (rápido de escribir, no exige elegir de un catálogo) y
+      // las categorías concretas marcadas en Preferencias alimentarias
+      // (FoodPreferencesPanel, catálogo de FOOD_GROUPS). Son complementarias,
+      // no duplicadas — se juntan sin perder ninguna.
+      const dislikedFoodsTexto = dislikedFoods.split(',').map(s => s.trim()).filter(Boolean);
+      const dislikedFoodsFinal = [...new Set([...dislikedFoodsTexto, ...prefDisliked])];
       const data: OnboardingData = {
         athleteId: profile.email,
         sex: sex || undefined,
         birthDate: birthDate || undefined,
         weightKg: Number(weightKg) || undefined,
         heightCm: Number(heightCm) || undefined,
+        occupation: occupation.trim() || undefined,
+        referralSource: referralSource.trim() || undefined,
         activityLevel: activityLevel || undefined,
         goalBody: goalBody || undefined,
         goalCapacity: goalCapacity || undefined,
         goalFreeText: goalFreeText.trim() || undefined,
+        hadPastInjuries,
+        pastInjuriesDetail: hadPastInjuries ? (pastInjuriesDetail.trim() || undefined) : undefined,
+        takesMedication,
+        medicationDetail: takesMedication ? (medicationDetail.trim() || undefined) : undefined,
+        recentSurgery,
+        recentSurgeryDetail: recentSurgery ? (recentSurgeryDetail.trim() || undefined) : undefined,
         dietType: (dietType || 'omnivoro') as DietType,
         targetCalories: auto ? auto.kcal : undefined,
         macroSplit: auto
@@ -242,10 +340,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         macroGrams: auto
           ? { hc: auto.hcG, prot: auto.protG, grasa: auto.grasaG }
           : undefined,
-        likedFoods: [],
-        dislikedFoods: dislikedFoods.split(',').map(s => s.trim()).filter(Boolean),
+        likedFoods: prefLiked,
+        dislikedFoods: dislikedFoodsFinal,
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
         mealCount: mealCount ?? undefined,
+        meals: meals.length > 0 ? meals : undefined,
+        cookingLevel,
+        cookingMaxTime,
         menuVariety,
         batchCookingPreferred,
         equipment,
@@ -261,9 +362,21 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           : registrarConsentimiento(consienteIA, new Date().toISOString()),
       };
       await saveOnboarding(data);
+      // Las verduras habituales viven aparte, en AthleteNutritionConfig (las
+      // comparte con NutritionHubScreen y el panel de análisis del coach), no
+      // en el documento de onboarding. Best-effort: si falla, el atleta puede
+      // marcarlas después desde Nutrición — no es motivo para bloquear el alta.
+      if (vegTypes.length > 0) {
+        try {
+          const config = await getAthleteNutritionConfig(profile.email);
+          await saveAthleteNutritionConfig({ ...config, vegTypes });
+        } catch (err) {
+          console.warn('No se pudieron guardar las verduras habituales:', err);
+        }
+      }
       // 05-4. La ficha ya está guardada: el borrador sobra. Va después del
-      // await, para que un fallo al guardar no se lleve por delante los seis
-      // pasos que el atleta acaba de rellenar.
+      // await, para que un fallo al guardar no se lleve por delante los pasos
+      // que el atleta acaba de rellenar.
       borrarBorradorAlta(profile.email);
       setEnviado(true);
       onComplete();
@@ -334,14 +447,15 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           entero — el mismo bug que ya se vio en el CRM, aquí en vertical. */}
       <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center" key={step}>
         {step === 0 && (
-          <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
+          <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte bien: tómate tu tiempo, tu coach usará todo esto para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
                 <video src="..." controls poster="..." className="rounded-surface w-full" /> */}
             <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
               {[
                 { icon: 'person', text: 'Cuéntanos sobre ti y tu objetivo' },
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
-                { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
+                { icon: 'health_and_safety', text: 'Tu salud, para entrenarte seguro' },
+                { icon: 'restaurant', text: 'Cómo comes, cocinas y qué evitas' },
               ].map(i => (
                 <p key={i.icon} className="flex items-center gap-3 text-body-s text-ink">
                   <Icon name={i.icon} size="m" className="text-accent" />
@@ -378,6 +492,25 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         )}
 
         {step === 2 && (
+          <StepShell title="Sobre ti (II)" subtitle="Un par de cosas más para conocerte.">
+            <Input
+              label="¿A qué te dedicas?"
+              hint="Opcional."
+              value={occupation}
+              onChange={setOccupation}
+              placeholder="Ej: profesor, comercial…"
+            />
+            <Input
+              label="¿Cómo nos has conocido?"
+              hint="Opcional."
+              value={referralSource}
+              onChange={setReferralSource}
+              placeholder="Ej: Instagram, recomendación…"
+            />
+          </StepShell>
+        )}
+
+        {step === 3 && (
           <StepShell title="Tu objetivo" subtitle="¿Qué quieres conseguir? Esto marca todo el plan.">
             <div className="space-y-3">
               {GOALS.map(g => (
@@ -408,7 +541,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <StepShell title="Tu entrenamiento" subtitle="Para ajustar el plan a tu nivel y tu material.">
             <div className="space-y-3">
               {EXPERIENCE.map(x => (
@@ -444,7 +577,51 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
+          <StepShell title="Salud" subtitle="Para que tu coach entrene y programe tu dieta con seguridad.">
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones anteriores? (ya curadas)</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={hadPastInjuries} onClick={() => setHadPastInjuries(true)}>Sí</Chip>
+                  <Chip selected={!hadPastInjuries} onClick={() => { setHadPastInjuries(false); setPastInjuriesDetail(''); }}>No</Chip>
+                </div>
+                {hadPastInjuries && (
+                  <input value={pastInjuriesDetail} onChange={e => setPastInjuriesDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Tomas algún medicamento o fármaco?</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={takesMedication} onClick={() => setTakesMedication(true)}>Sí</Chip>
+                  <Chip selected={!takesMedication} onClick={() => { setTakesMedication(false); setMedicationDetail(''); }}>No</Chip>
+                </div>
+                {takesMedication && (
+                  <input value={medicationDetail} onChange={e => setMedicationDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Cirugía reciente?</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={recentSurgery} onClick={() => setRecentSurgery(true)}>Sí</Chip>
+                  <Chip selected={!recentSurgery} onClick={() => { setRecentSurgery(false); setRecentSurgeryDetail(''); }}>No</Chip>
+                </div>
+                {recentSurgery && (
+                  <input value={recentSurgeryDetail} onChange={e => setRecentSurgeryDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+          </StepShell>
+        )}
+
+        {step === 6 && (
           <StepShell title="Tu alimentación" subtitle="Tu coach montará la dieta respetando esto.">
             <div className="grid grid-cols-2 gap-2">
               {DIET_TYPES.map(d => (
@@ -499,7 +676,77 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {step === 5 && (
+        {step === 7 && (
+          <StepShell title="Tus comidas" subtitle="¿Cuáles necesitas llevar preparadas, en tupper?">
+            <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
+              {meals.map((meal, i) => (
+                <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-surface">
+                  <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-2" />
+                  <span className="flex-1 font-sans text-body-s text-white">{meal.name}</span>
+                  <button type="button"
+                    onClick={() => setMeals(prev => prev.map((m, idx) => idx === i ? { ...m, needsTupper: !m.needsTupper } : m))}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all active:scale-95 ${
+                      meal.needsTupper
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-raised border-hairline text-ink-3 hover:text-ink-2'
+                    }`}
+                  >
+                    <Icon name="lunch_dining" size="s" />
+                    Tupper
+                  </button>
+                </div>
+              ))}
+            </div>
+          </StepShell>
+        )}
+
+        {step === 8 && (
+          <StepShell title="Cómo cocinas" subtitle="Para que las recetas de tu menú se ajusten a tu maña y tu tiempo.">
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nivel de cocina</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <Chip key={n} selected={cookingLevel === n} onClick={() => setCookingLevel(n)}>{n}</Chip>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="font-sans text-caption text-ink-3">Básico (hervir agua)</span>
+                <span className="font-mono text-caption text-ink-3">Chef avanzado</span>
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tiempo máximo por receta</p>
+              <div className="flex flex-wrap gap-2">
+                {[15, 30, 45, 60, 90].map(n => (
+                  <Chip key={n} selected={cookingMaxTime === n} onClick={() => setCookingMaxTime(n)}>{n} min</Chip>
+                ))}
+              </div>
+            </div>
+          </StepShell>
+        )}
+
+        {step === 9 && (
+          <StepShell title="Preferencias alimentarias" subtitle="Marca lo que te encanta y lo que no quieres ver en tu menú.">
+            <FoodPreferencesPanel
+              athleteEmail={profile.email}
+              initialLiked={prefLiked}
+              initialDisliked={prefDisliked}
+              allergies={allergies.split(',').map(s => s.trim()).filter(Boolean)}
+              onSaveOverride={(liked, disliked) => { setPrefLiked(liked); setPrefDisliked(disliked); }}
+            />
+          </StepShell>
+        )}
+
+        {step === 10 && (
+          <StepShell title="Tus verduras habituales" subtitle="Así tu coach afina la estimación de vitaminas y minerales.">
+            <VegetableSelector
+              selected={vegTypes}
+              onToggle={id => setVegTypes(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id])}
+            />
+          </StepShell>
+        )}
+
+        {step === 11 && (
           <StepShell title="Tu día a día" subtitle="Fuera del entrenamiento, ¿cómo te mueves?">
             <div className="space-y-3">
               {ACTIVITY.map(a => (
@@ -512,7 +759,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {step === 6 && (
+        {step === 12 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
             <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-3">
               {[

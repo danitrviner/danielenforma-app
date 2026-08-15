@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FOOD_GROUPS, FoodGroup } from '../data/alimentos_anamnesis';
 import { updateOnboardingFoods } from '../dbService';
 import { EmptyState } from './ui';
@@ -13,6 +13,12 @@ interface Props {
   initialDisliked: string[];
   allergies?: string[];
   onSaved?: (liked: string[], disliked: string[]) => void;
+  /** El wizard de alta lo usa ANTES de que exista el documento de onboarding:
+   *  `updateOnboardingFoods` hace `updateDoc`, que falla sin un doc ya creado.
+   *  Con esto puesto, cada toque sincroniza al padre en vez de escribir en
+   *  Firestore, y se oculta el botón «Guardar» — el wizard guarda todo junto
+   *  al final, con su propio «Siguiente». */
+  onSaveOverride?: (liked: string[], disliked: string[]) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -23,6 +29,7 @@ export default function FoodPreferencesPanel({
   initialDisliked,
   allergies = [],
   onSaved,
+  onSaveOverride,
 }: Props) {
   const [prefs, setPrefs] = useState<Record<string, FoodPref>>(() => {
     const init: Record<string, FoodPref> = {};
@@ -54,6 +61,18 @@ export default function FoodPreferencesPanel({
     setSaved(false);
   };
 
+  // Avisa al padre DESPUÉS de que el cambio se confirme, no dentro del propio
+  // updater de `setPrefs` — llamar a un `setState` del wizard en mitad del
+  // cálculo de otro componente es justo lo que React avisa que no se debe
+  // hacer ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!onSaveOverride) return;
+    const liked    = Object.entries(prefs).filter(([, v]) => v === 'favorite').map(([k]) => k);
+    const disliked = Object.entries(prefs).filter(([, v]) => v === 'dislike').map(([k]) => k);
+    onSaveOverride(liked, disliked);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs]);
+
   const handleSave = async () => {
     const liked    = Object.entries(prefs).filter(([, v]) => v === 'favorite').map(([k]) => k);
     const disliked = Object.entries(prefs).filter(([, v]) => v === 'dislike').map(([k]) => k);
@@ -84,14 +103,16 @@ export default function FoodPreferencesPanel({
               No quiero ({totalDislike})
             </span>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
-            {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
-          </button>
+          {!onSaveOverride && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+              {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
+            </button>
+          )}
         </div>
 
         {/* Allergies reminder */}
@@ -171,14 +192,16 @@ export default function FoodPreferencesPanel({
             <span className="text-red-400">➖ {totalDislike}</span>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
-        >
-          <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
-          {saving ? '…' : saved ? 'OK' : 'Guardar'}
-        </button>
+        {!onSaveOverride && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+            {saving ? '…' : saved ? 'OK' : 'Guardar'}
+          </button>
+        )}
       </div>
 
       {/* Search */}
