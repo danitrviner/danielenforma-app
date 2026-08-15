@@ -135,7 +135,14 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         </div>
       </header>
 
-      <nav className="flex items-center gap-1" role="tablist">
+      {/* Las seis pestañas no caben en 402 pt. Sin `overflow-x-auto` la fila
+          desbordaba su contenedor y el scroll horizontal se lo comía el
+          documento entero: al arrastrar hacia la izquierda se movía TODA la
+          pantalla —cabecera, pestañas de CRM y campos— y quedaba media
+          pantalla en negro. `min-w-0` es lo que impide que la fila estire a su
+          padre flex; sin él, `overflow-x-auto` no llega a activarse nunca.
+          `hide-scrollbar` quita la barra gris, que aquí sobra. */}
+      <nav className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="tablist">
         {TABS.map(t => (
           <button
             key={t.id}
@@ -143,7 +150,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => irATab(t.id)}
-            className={`flex items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
+            className={`flex shrink-0 items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
               tab === t.id
                 ? 'bg-accent/15 text-accent border border-accent/30'
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'

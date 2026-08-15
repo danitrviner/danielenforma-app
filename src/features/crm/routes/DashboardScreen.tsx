@@ -106,7 +106,7 @@ export default function DashboardScreen() {
 
       <div className="grid grid-cols-3 gap-2">
         <MetricCard
-          icon="trending_up" label="Conversión continuidad"
+          icon="trending_up" label="Continuidad"
           value={reunionesSinDato ? '—' : conversionContinuidad !== null ? `${conversionContinuidad}%` : '—'}
           sub={conversionContinuidad === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
         />

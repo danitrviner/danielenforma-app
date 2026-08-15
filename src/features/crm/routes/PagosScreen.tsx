@@ -104,14 +104,14 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
-          <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="group" aria-label="Filtrar por estado">
             {(['todos', 'pendiente', 'pagado'] as const).map(f => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setParam('estado', f === 'todos' ? '' : f)}
                 aria-pressed={filtro === f}
-                className={`px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
+                className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === f
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
