@@ -129,26 +129,26 @@ export default function StepsWidget({ athleteEmail }: Props) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2 mb-2 font-mono text-center">
-            <div>
-              <span className="block text-caption text-ink-2 uppercase">Realizados</span>
-              <span className="block text-body-s font-bold text-white">{steps.toLocaleString('es-ES')}</span>
-            </div>
-            <div>
-              <span className="block text-caption text-ink-2 uppercase">Objetivo</span>
-              <span className="block text-body-s font-bold text-data">{goal.toLocaleString('es-ES')}</span>
-            </div>
-            <div>
-              <span className="block text-caption text-ink-2 uppercase">Restantes</span>
-              <span className="block text-body-s font-bold text-accent">{remaining.toLocaleString('es-ES')}</span>
-            </div>
+          {/* Una línea y la barra, en vez de tres columnas rotuladas + barra +
+              pie de kcal (petición de Dani, 14-08: «dejarlo un poco más bajo»).
+              No se pierde ni un dato: realizados y objetivo van en la cifra
+              partida, lo que falta y las kcal a la derecha. Cuatro alturas de
+              texto pasan a una. */}
+          <div className="mb-2 flex items-baseline justify-between gap-3 font-mono">
+            <p className="whitespace-nowrap">
+              <span className="text-title-s font-bold text-white">{steps.toLocaleString('es-ES')}</span>
+              <span className="text-caption text-ink-2"> / {goal.toLocaleString('es-ES')}</span>
+            </p>
+            <p className="truncate text-caption text-ink-2">
+              {remaining > 0
+                ? <>Faltan <span className="font-bold text-accent">{remaining.toLocaleString('es-ES')}</span></>
+                : <span className="font-bold text-success">Objetivo cumplido</span>}
+              <span className="text-ink-3"> · +{kcalEarned.toLocaleString('es-ES')} kcal</span>
+            </p>
           </div>
           <div className="h-1.5 bg-raised rounded-full overflow-hidden">
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
-          <p className="font-sans text-caption text-ink-2 uppercase tracking-widest mt-2 text-center">
-            +{kcalEarned.toLocaleString('es-ES')} kcal por actividad
-          </p>
         </>
       )}
     </div>
