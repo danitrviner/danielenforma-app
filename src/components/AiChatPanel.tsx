@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote } from '../types';
 import {
@@ -32,6 +33,21 @@ interface SpeechRecognitionLike {
 }
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  // En la app nativa el botón no se ofrece, aunque el objeto exista.
+  //
+  // El WKWebView de iOS SÍ expone `webkitSpeechRecognition`, así que la
+  // comprobación de abajo daba `true` y el micrófono aparecía en el móvil —
+  // y no dictaba nada. iOS pide DOS permisos para el dictado,
+  // `NSMicrophoneUsageDescription` y `NSSpeechRecognitionUsageDescription`, y
+  // el Info.plist solo declara el primero: la API existe, se deja llamar y
+  // muere sin decir nada. Detectarlo por capacidades es justo lo que no
+  // funciona aquí, porque la capacidad está y lo que falta es el permiso.
+  //
+  // Se ofrece solo en web, que es donde el dictado funciona de verdad. Si
+  // algún día se quiere en el móvil, no basta con volver a enseñar el botón:
+  // hay que añadir esa clave al Info.plist y comprobarlo en un iPhone real.
+  if (Capacitor.isNativePlatform()) return null;
+
   const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
@@ -267,8 +283,15 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
   return (
     <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-e2">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
+      {/* Header
+          El `pt-` no es cosmético: es por lo que no se podía cerrar el panel en
+          el móvil. El contenedor va `fixed inset-y-0`, o sea que empieza en el
+          borde FÍSICO de la pantalla, y en un iPhone con Dynamic Island toda
+          esta fila —incluido el botón de cerrar— quedaba tapada por la barra de
+          estado. No había forma de salir del asistente salvo matando la app.
+          El resto de cabeceras de la app ya reservan `--safe-top`; esta se
+          quedó fuera por ser un panel flotante y no una cabecera de pantalla. */}
+      <div className="flex items-center gap-2 px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] border-b border-hairline">
         <Icon name="smart_toy" size="m" filled className="text-accent" />
         <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
@@ -447,8 +470,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             </div>
           )}
 
-          {/* Input */}
-          <div className="p-3 border-t border-hairline">
+          {/* Input — mismo motivo que la cabecera, por el otro extremo: el panel
+              llega al borde inferior físico y la barra de gestos del iPhone se
+              comía parte del campo y del botón de enviar. */}
+          <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-hairline">
             {chatFull ? (
               <button onClick={startNew}
                 className="w-full py-3 rounded-control bg-accent/10 border border-accent/30 text-accent text-label font-bold uppercase tracking-wider">

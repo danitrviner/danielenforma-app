@@ -47,7 +47,13 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+    // El padding de arriba y abajo reserva las safe areas (14-08). Con `p-4` a
+    // secas, un diálogo alto —el consentimiento de IA, sin ir más lejos— se
+    // comía la Dynamic Island: el título salía partido por la isla y la hora, y
+    // la X de cerrar caía debajo del indicador de batería. Centrar con
+    // `max-h-[85vh]` no basta, porque el 85 % del viewport se mide desde el
+    // borde FÍSICO de la pantalla, isla incluida.
+    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
       <div
         className="fixed inset-0 z-[var(--z-overlay)] bg-black/70 backdrop-blur-sm"
         onClick={onClose}

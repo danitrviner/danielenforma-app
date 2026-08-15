@@ -116,7 +116,10 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center">
+    // `pt` con la safe area: el sheet se ancla abajo, pero puede crecer hasta
+    // `max-h-[85vh]` medido desde el borde físico, así que uno alto se metía
+    // debajo de la Dynamic Island y su asa de arrastre quedaba fuera de alcance.
+    <div className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center pt-[var(--safe-top)]">
       <div
         className="fixed inset-0 z-[var(--z-overlay)] bg-black/70 backdrop-blur-sm"
         onClick={onClose}
