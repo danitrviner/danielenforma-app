@@ -3,7 +3,7 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
-import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
+import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
@@ -16,7 +16,6 @@ import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
-const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -27,7 +26,7 @@ interface ClientsScreenProps {
 
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
   const navigate = useNavigate();
-  const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
+  const { athleteId, hubTab } = useParams<{ athleteId?: string; hubTab?: string }>();
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
   const { data: athletes = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
@@ -125,22 +124,19 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     }
   }, [athleteId, loadingAthletes, selectedAthlete, navigate]);
 
-  // The "/clients/:athleteId/analisis/:subTab" route (needed for the extra sub-tab
-  // segment) doesn't capture a `hubTab` param at all, so `subTab` being present is
-  // what actually means "we're on the Análisis tab" — falling back to `hubTab` alone
-  // would default to DEFAULT_HUB_TAB and silently bounce back to Revisiones.
-  const activeHubTab: HubTab = subTab
-    ? 'analisis'
-    : hubTab === 'periodizacion'
-      // Pestaña retirada: la periodización vive ahora dentro de Entrenamientos.
-      // Los enlaces/bookmarks antiguos aterrizan ahí en vez de en Revisiones.
-      ? 'entrenamientos'
+  // Alias de pestañas retiradas: los enlaces/bookmarks antiguos siguen vivos,
+  // solo redirigen. "periodizacion" vive ahora dentro de Entrenamientos.
+  // "analisis" (la pestaña única de antes, sin sub-pestaña en la URL) aterriza
+  // en Reportes, la primera de las tres pestañas en que se dividió — el caso
+  // CON sub-pestaña (/clients/:id/analisis/:subTab) lo resuelve un redirect
+  // propio en App.tsx antes de llegar aquí (ver AnalisisSubTabRedirect).
+  const activeHubTab: HubTab = hubTab === 'periodizacion'
+    ? 'entrenamientos'
+    : hubTab === 'analisis'
+      ? 'reportes'
       : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
         ? (hubTab as HubTab)
         : DEFAULT_HUB_TAB;
-  const activeAnalisisTab: AnalisisTab = (subTab && (ANALISIS_TABS as readonly string[]).includes(subTab))
-    ? (subTab as AnalisisTab)
-    : DEFAULT_ANALISIS_TAB;
 
   const todayMs = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
@@ -211,11 +207,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     [enrichedAthletes]
   );
 
-  const totalPendingNotes = useMemo(
-    () => enrichedAthletes.reduce((n, a) => n + a.pendingNotesCount, 0),
-    [enrichedAthletes]
-  );
-
   // Emit coach notifications for urgent clients (once per unique condition)
   useEffect(() => {
     if (enrichedAthletes.length === 0) return;
@@ -269,9 +260,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         onRefreshCheckIns={onRefreshCheckIns}
         onBack={() => navigate('/clients')}
         activeTab={activeHubTab}
-        onTabChange={tab => navigate(`/clients/${athleteId}${tab === 'analisis' ? `/analisis/${DEFAULT_ANALISIS_TAB}` : `/${tab}`}`)}
-        analisisTab={activeAnalisisTab}
-        onAnalisisTabChange={sub => navigate(`/clients/${athleteId}/analisis/${sub}`)}
+        onTabChange={tab => navigate(`/clients/${athleteId}/${tab}`)}
       />
     );
   }
@@ -305,9 +294,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
+      <div className="grid grid-cols-1 gap-6 pb-2">
         {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -342,46 +331,17 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             )}
           </div>
         </div>
-
-        {/* Pending reviews + notes */}
-        <div className="lg:col-span-7 flex flex-col gap-4">
-          {/* Pending notes */}
-          <div className="bg-surface border border-hairline p-5 rounded-surface">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-amber-300 text-title-m">sticky_note_2</span>
-                <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Notas Pendientes</h2>
-              </div>
-              {totalPendingNotes > 0 ? (
-                <span className="text-caption bg-amber-500/10 text-amber-300 px-3 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
-                  {totalPendingNotes} por leer
-                </span>
-              ) : (
-                <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
-              )}
-            </div>
-            {totalPendingNotes === 0 ? (
-              <p className="text-label text-ink-3 font-sans">Sin notas nuevas de ejercicios o entrenamientos.</p>
-            ) : (
-              <div className="space-y-2">
-                {enrichedAthletes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
-                  <button
-                    key={a.userId}
-                    onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-2 rounded-control border border-hairline text-left transition-colors"
-                  >
-                    <span className="text-label text-white font-sans truncate">{a.displayName}</span>
-                    <span className="text-caption font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Coach's own private to-do list — separate from Revisiones Pendientes */}
-      <CoachNotesPanel athletes={athletes} />
+      {/* Pendientes: notas del atleta sin leer + to-do privado del coach, en una sola tarjeta */}
+      <CoachNotesPanel
+        athletes={athletes}
+        athletesWithPendingNotes={enrichedAthletes}
+        onOpenAthleteNotes={userId => {
+          const athlete = enrichedAthletes.find(a => a.userId === userId);
+          if (athlete) openAthleteHub(athlete, 'entrenamientos');
+        }}
+      />
 
       {/* Athlete list */}
       <div className="space-y-4">

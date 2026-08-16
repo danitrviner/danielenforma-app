@@ -9,7 +9,6 @@ import {
   submitCoachFeedback, updateCheckIn, deleteCheckIn,
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
   assignQuestionnaire, deactivateAssignment, createQuestionnaire,
-  assignPhotoCheckIn, deactivatePhotoAssignment,
 } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
 import { suggestedScheduleForTitle } from '../data/questionnairePresets';
@@ -17,13 +16,11 @@ import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import ScheduleFields from './ScheduleFields';
 import OnboardingForm from './OnboardingForm';
-import FoodPreferencesPanel from './FoodPreferencesPanel';
 import ProgressRing from './ProgressRing';
 import BodyweightPanel from './BodyweightPanel';
 import BodyMeasurementsPanel from './BodyMeasurementsPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm, newQuestion, applyTypeChange } from './QuestionnaireEditor';
-import ExercisePersonalNotesPanel from './ExercisePersonalNotesPanel';
 import TaskManagerPanel from './TaskManagerPanel';
 import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Badge, Sheet } from './ui';
@@ -114,15 +111,6 @@ export default function ClientReviewsPanel({
   // Photos
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
 
-  // Photo check-in assignments
-  const [assignPhotoViews, setAssignPhotoViews]         = useState<PhotoView[]>(['front']);
-  const [assignPhotoSchedType, setAssignPhotoSchedType] = useState<QScheduleType>('once');
-  const [assignPhotoWeekdays, setAssignPhotoWeekdays]   = useState<number[]>([]);
-  const [assignPhotoIntervalDays, setAssignPhotoIntervalDays] = useState(7);
-  const [assignPhotoDayOfMonth, setAssignPhotoDayOfMonth]     = useState(1);
-  const [assignPhotoStartDate, setAssignPhotoStartDate] = useState(new Date().toISOString().slice(0, 10));
-  const [assigningPhoto, setAssigningPhoto] = useState(false);
-
   // Questionnaires
   const [assignQId, setAssignQId] = useState('');
   const [assignSchedType, setAssignSchedType] = useState<QScheduleType>('once');
@@ -170,17 +158,6 @@ export default function ClientReviewsPanel({
   const [responseEditAnswers, setResponseEditAnswers] = useState<QuestionnaireResponse['answers']>([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingReviewKey, setDeletingReviewKey] = useState<string | null>(null);
-
-  // Ejercicios del programa actual del atleta (rutinas asignadas) — acota el
-  // selector de observaciones por ejercicio a lo que realmente entrena.
-  const programExerciseIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const a of assignments) {
-      const wo = workouts.find(w => w.id === a.workoutId);
-      wo?.exercises.forEach(e => ids.add(e.exerciseId));
-    }
-    return [...ids];
-  }, [assignments, workouts]);
 
   const handleUnifiedSendFeedback = async (checkInId: string, e: React.FormEvent) => {
     e.preventDefault();
@@ -297,37 +274,6 @@ export default function ClientReviewsPanel({
     setAthleteQAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
   };
 
-  // ── Photo check-in assignment ───────────────────────────────────────────────
-  const handleAssignPhotoCheckIn = async () => {
-    if (assignPhotoViews.length === 0) return;
-    if (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0) return;
-    setAssigningPhoto(true);
-    try {
-      const schedule: QSchedule = { type: assignPhotoSchedType };
-      if (assignPhotoSchedType === 'weekdays')  schedule.weekdays     = assignPhotoWeekdays;
-      if (assignPhotoSchedType === 'interval')  schedule.intervalDays = assignPhotoIntervalDays;
-      if (assignPhotoSchedType === 'monthly')   schedule.dayOfMonth   = assignPhotoDayOfMonth;
-      const a = await assignPhotoCheckIn({
-        athleteId: athlete.email,
-        schedule,
-        startDate: assignPhotoStartDate,
-        views: assignPhotoViews,
-        active: true,
-        createdAt: new Date().toISOString(),
-      });
-      setAthletePhotoAssignments(prev => [...prev, a]);
-      setAssignPhotoViews(['front']);
-      setAssignPhotoSchedType('once');
-      setAssignPhotoWeekdays([]);
-    } catch (err) { console.error(err); showToast('No se pudo asignar el check-in de fotos.'); }
-    finally { setAssigningPhoto(false); }
-  };
-
-  const handleDeactivatePhoto = async (id: string) => {
-    await deactivatePhotoAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el check-in de fotos.'); });
-    setAthletePhotoAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
-  };
-
   const handleCreateNewQ = async () => {
     if (!newQForm.title.trim()) return;
     setSavingNewQ(true);
@@ -423,85 +369,9 @@ export default function ClientReviewsPanel({
                   )}
                 </div>
               )}
-
-              {/* ── Asignar fotos de check-in (vive dentro del historial fotográfico) ── */}
-              <div className="p-4 border-t border-hairline space-y-4">
-                <h4 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent text-body-s">edit_calendar</span>
-                  Asignar fotos de check-in
-                </h4>
-
-                <div className="space-y-3">
-                  <div className="flex gap-2 flex-wrap">
-                    {([
-                      { id: 'front', label: 'Frente' },
-                      { id: 'side',  label: 'Lateral' },
-                      { id: 'back',  label: 'Espalda' },
-                    ] as { id: PhotoView; label: string }[]).map(v => {
-                      const active = assignPhotoViews.includes(v.id);
-                      return (
-                        <button
-                          key={v.id}
-                          onClick={() => setAssignPhotoViews(prev => active ? prev.filter(x => x !== v.id) : [...prev, v.id])}
-                          className={`px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
-                            active
-                              ? 'bg-accent border-accent text-black'
-                              : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
-                          }`}
-                        >{v.label}</button>
-                      );
-                    })}
-                  </div>
-
-                  <ScheduleFields
-                    schedType={assignPhotoSchedType}
-                    onSchedTypeChange={setAssignPhotoSchedType}
-                    weekdays={assignPhotoWeekdays}
-                    onWeekdaysChange={setAssignPhotoWeekdays}
-                    intervalDays={assignPhotoIntervalDays}
-                    onIntervalDaysChange={setAssignPhotoIntervalDays}
-                    dayOfMonth={assignPhotoDayOfMonth}
-                    onDayOfMonthChange={setAssignPhotoDayOfMonth}
-                    startDate={assignPhotoStartDate}
-                    onStartDateChange={setAssignPhotoStartDate}
-                  />
-
-                  <button
-                    onClick={handleAssignPhotoCheckIn}
-                    disabled={assignPhotoViews.length === 0 || assigningPhoto || (assignPhotoSchedType === 'weekdays' && assignPhotoWeekdays.length === 0)}
-                    className="px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-                  >
-                    {assigningPhoto ? '…' : 'Asignar'}
-                  </button>
-                </div>
-
-                {athletePhotoAssignments.filter(a => a.active).length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-hairline">
-                    <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Asignados activos</p>
-                    {athletePhotoAssignments.filter(a => a.active).map(a => {
-                      const schedLabel = scheduleLabel(a.schedule);
-                      const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
-                      return (
-                        <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                          <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-sans font-bold text-white text-label truncate">{viewsLabel}</p>
-                            <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
-                          </div>
-                          <button onClick={() => handleDeactivatePhoto(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
-                            <span className="material-symbols-outlined text-body-s">close</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </div>
           );
         })()}
-
-        <ExercisePersonalNotesPanel athleteEmail={athlete.email} programExerciseIds={programExerciseIds} />
 
         {/* ── Ficha de iniciación ─────────────────────────────────────────── */}
         <div className="bg-surface border border-hairline rounded-surface p-5">
@@ -891,25 +761,6 @@ export default function ClientReviewsPanel({
             </div>
           )}
         </div>
-
-        {/* ── Preferencias alimentarias ────────────────────────────────── */}
-        {onboardingData && (
-          <div className="bg-surface border border-hairline rounded-surface p-5">
-            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
-              Preferencias alimentarias
-            </h3>
-            <FoodPreferencesPanel
-              athleteEmail={athlete.email}
-              initialLiked={onboardingData.likedFoods}
-              initialDisliked={onboardingData.dislikedFoods}
-              allergies={onboardingData.allergies}
-              onSaved={(liked, disliked) =>
-                setOnboardingData(prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : null)
-              }
-            />
-          </div>
-        )}
 
         {/* ── Quick stats + weekly compliance ────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

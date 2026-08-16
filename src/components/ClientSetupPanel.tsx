@@ -12,7 +12,7 @@ import {
 } from '../dbService';
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
-import { HubTab, AnalisisTab } from './ClientHub';
+import { HubTab } from './ClientHub';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Icon, Button, ListRow, RingSeal, Skeleton } from './ui';
@@ -31,7 +31,6 @@ interface Props {
   photos: ProgressPhoto[];
   workoutLogs: WorkoutLog[];
   onGoToTab: (tab: HubTab) => void;
-  onGoToAnalisis: (sub: AnalisisTab) => void;
 }
 
 const STATUS_ICON: Record<SetupItem['status'], string> = {
@@ -54,7 +53,7 @@ function todayISO(): string {
 export default function ClientSetupPanel({
   athlete, checkins, onboarding, mesocycles, workoutAssignments, diets,
   dietConfig, nutritionConfig, qAssignments, photoAssignments, photos,
-  workoutLogs, onGoToTab, onGoToAnalisis,
+  workoutLogs, onGoToTab,
 }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -117,7 +116,6 @@ export default function ClientSetupPanel({
 
   const goToItem = (item: SetupItem) => {
     if (!item.link) return;
-    if (item.link.analisisSub) onGoToAnalisis(item.link.analisisSub);
     onGoToTab(item.link.tab);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, auth } from './firebase';
@@ -9,7 +9,7 @@ import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCa
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
 import TutorialEngine from './features/tutorial/TutorialEngine';
-import { useTourTarget, registerTourTarget } from './features/tutorial/TourTargetContext';
+import { useTourTarget } from './features/tutorial/TourTargetContext';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
@@ -73,6 +73,23 @@ const GimnasioHarness = import.meta.env.DEV
 
 function ScreenFallback() {
   return <ScreenSkeleton />;
+}
+
+// Ruta retirada (reorganización del Hub, F1): Análisis dejó de tener
+// sub-pestañas propias — Reportes/Nutrición/Correlaciones son ahora pestañas
+// de zona directas del Hub (ver HubTab en ClientHub.tsx). Los enlaces y
+// bookmarks antiguos a /clients/:id/analisis/:subTab siguen vivos, solo
+// redirigen a la pestaña equivalente — misma convención que las rutas legacy
+// de /training, /nutrition, /academy, /cardio más abajo.
+const ANALISIS_SUBTAB_TO_HUBTAB: Record<string, string> = {
+  reportes: 'reportes',
+  nutricion: 'analisis-nutricion',
+  correlaciones: 'correlaciones',
+};
+function AnalisisSubTabRedirect() {
+  const { athleteId, subTab } = useParams<{ athleteId: string; subTab: string }>();
+  const target = (subTab && ANALISIS_SUBTAB_TO_HUBTAB[subTab]) ?? 'reportes';
+  return <Navigate to={`/clients/${athleteId}/${target}`} replace />;
 }
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
@@ -420,6 +437,13 @@ function AppContent() {
   // se llama `use*`, así que la regla lo trata como uno. Se resuelve aquí en vez
   // de en el JSX de la barra de navegación, que está detrás de los gates.
   const navTabsRef = useTourTarget('nav-tabs');
+  // Mismo motivo por el que estas tres no pueden resolverse dentro del
+  // .map() de mobileTabs más abajo: una ref inline nueva en cada render
+  // reengancha el elemento y dispara un bucle de renders (Maximum update
+  // depth exceeded) en cuanto un paso del tour está escuchando el registro.
+  const navTabTrainingRef = useTourTarget('nav-tab-training');
+  const navTabNutritionRef = useTourTarget('nav-tab-nutrition');
+  const navTabAcademyRef = useTourTarget('nav-tab-academy');
 
   const handleRefreshData = async () => {
     if (currentUser) {
@@ -781,7 +805,7 @@ function AppContent() {
                 <Route path="/clients" element={clientsScreen} />
                 <Route path="/clients/:athleteId" element={clientsScreen} />
                 <Route path="/clients/:athleteId/:hubTab" element={clientsScreen} />
-                <Route path="/clients/:athleteId/analisis/:subTab" element={clientsScreen} />
+                <Route path="/clients/:athleteId/analisis/:subTab" element={<AnalisisSubTabRedirect />} />
                 {/* El CRM monta sus propias rutas anidadas (ver CrmShell) */}
                 <Route path="/crm/*" element={<CrmShell coachEmail={profile.email} />} />
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
@@ -863,7 +887,12 @@ function AppContent() {
           return (
             <button
               key={tab.id}
-              ref={el => { if (['training', 'nutrition', 'academy'].includes(tab.id)) registerTourTarget(`nav-tab-${tab.id}`, el); }}
+              ref={
+                tab.id === 'training' ? navTabTrainingRef
+                : tab.id === 'nutrition' ? navTabNutritionRef
+                : tab.id === 'academy' ? navTabAcademyRef
+                : undefined
+              }
               onClick={() => goToNav(tab.id)}
               className="relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1"
             >

@@ -172,10 +172,26 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const photoAssignments = useMemo(() => rawPhotoAssignments.filter(a => a.active), [rawPhotoAssignments]);
   const loadingPhotoAssignments = loadingPhotoAssignmentsQ || loadingProgressPhotos;
 
-  const pendingPhotoAssignments = photoAssignments.filter(
+  // Sin asignación explícita del coach (ya no es configurable desde su UI):
+  // por defecto se piden las 3 vistas cada semana, para que el flujo de fotos
+  // de check-in nunca dependa de que alguien lo active a mano.
+  const effectivePhotoAssignments = useMemo<PhotoAssignment[]>(() => {
+    if (photoAssignments.length > 0) return photoAssignments;
+    return [{
+      id: 'implicit-default',
+      athleteId: profile.email,
+      schedule: { type: 'interval', intervalDays: 7 },
+      startDate: todayStr(),
+      views: ['front', 'side', 'back'],
+      active: true,
+      createdAt: new Date().toISOString(),
+    }];
+  }, [photoAssignments, profile.email]);
+
+  const pendingPhotoAssignments = effectivePhotoAssignments.filter(
     a => isDueToday(a) && !hasUploadedThisOccurrence(a, progressPhotos)
   );
-  const upcomingPhotoAssignments = photoAssignments.filter(a => isUpcoming(a));
+  const upcomingPhotoAssignments = effectivePhotoAssignments.filter(a => isUpcoming(a));
 
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
     queryClient.setQueryData<QuestionnaireResponse[]>(responsesKey, prev => [...(prev ?? []), r]);

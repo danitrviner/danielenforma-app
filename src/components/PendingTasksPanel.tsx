@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, TaskType, Questionnaire } from '../types';
+import { UserProfile, WeightCheckIn, TaskType, Questionnaire, PhotoAssignment } from '../types';
 import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
 import { isDueToday, isOverdue, hasAnsweredThisOccurrence, todayStr, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
@@ -80,7 +80,23 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     title: (questionnaireQueries[i]?.data as Questionnaire | null | undefined)?.title ?? 'Cuestionario',
   }));
 
-  const duePhotos = photoAssignments.filter(a => a.active && isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
+  // Sin asignación explícita del coach: por defecto se piden las 3 vistas
+  // cada semana (mismo criterio que CheckInScreen).
+  const effectivePhotoAssignments: PhotoAssignment[] = useMemo(() => {
+    const active = photoAssignments.filter(a => a.active);
+    if (active.length > 0) return active;
+    return [{
+      id: 'implicit-default',
+      athleteId: profile.email,
+      schedule: { type: 'interval', intervalDays: 7 },
+      startDate: todayStr(),
+      views: ['front', 'side', 'back'],
+      active: true,
+      createdAt: new Date().toISOString(),
+    }];
+  }, [photoAssignments, profile.email]);
+
+  const duePhotos = effectivePhotoAssignments.filter(a => isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
   const pendingPhotos = duePhotos.map(a => ({
     id: a.id,
     viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),

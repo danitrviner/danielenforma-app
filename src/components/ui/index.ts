@@ -72,6 +72,8 @@ export { default as SearchField } from './SearchField';
 
 export { default as CollapsingHeader } from './CollapsingHeader';
 
+export { default as Collapsible } from './Collapsible';
+
 export {
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA,
   EJE_GRAFICA, TOOLTIP_GRAFICA, LEYENDA_GRAFICA, SERIES_GRAFICA, colorSerie,

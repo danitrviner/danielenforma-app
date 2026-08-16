@@ -14,7 +14,7 @@ import { parseTargetReps } from '../utils/warmup/WarmupEngine';
 import { expandSetGroups } from '../utils/setGroups';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { useToast } from '../hooks/useToast';
-import { registerTourTarget } from '../features/tutorial/TourTargetContext';
+import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import Coachmark from './Coachmark';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
@@ -116,6 +116,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const tutorial = useTutorialEngine();
+
+  // Objetivos del tour dentro de la tabla de ejercicios (solo el primer
+  // ejercicio/primera fila importa). `useTourTarget` da una referencia
+  // ESTABLE (useCallback) — llamarlo aquí, fuera del .map(), es obligatorio:
+  // una función inline nueva en cada render (`el => registerTourTarget(...)`)
+  // hace que React reenganche el ref en CADA render, y cada reenganche
+  // notifica al registro y dispara un re-render → bucle infinito ("Maximum
+  // update depth exceeded", ver el comentario en TourTargetContext.tsx).
+  const videoTargetRef = useTourTarget('training-exercise-video');
+  const setEditorTargetRef = useTourTarget('training-set-editor');
+  const firstSetRowTargetRef = useTourTarget('training-first-set-row');
   const [mainTab, setMainTab] = useState<MainTab>('programa');
 
   // Data
@@ -538,31 +549,34 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div className="space-y-6 pb-14">
         {/* Player header */}
-        <header className="flex items-center gap-3 pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2">
-          <Button
-            variant="ghost"
-            size="s"
-            icon="arrow_back"
-            label="Volver"
-            onClick={cerrarPlayer}
-            className="shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display text-title-l font-black uppercase tracking-tight text-ink truncate">{activeWorkout.name}</h1>
-            <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · EJERCICIO {orderedExercises.length}</p>
+        <header className="pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="s"
+              icon="arrow_back"
+              label="Volver"
+              onClick={cerrarPlayer}
+              className="shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display text-title-l font-black uppercase tracking-tight text-ink truncate">{activeWorkout.name}</h1>
+              <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · EJERCICIO {orderedExercises.length}</p>
+            </div>
+            <div className="flex-shrink-0 text-right">
+              <span className="font-mono text-label text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
+              <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
+            </div>
           </div>
-          <div className="flex-shrink-0 text-right">
-            <span className="font-mono text-label text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
-            <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
-          </div>
-        </header>
 
-        {/* Cronómetro de descanso — flotante, no bloquea el resto de la UI.
-            Pastilla oro con punto que late mientras cuenta (handoff, Sesión
-            módulo 3): al llegar a 0 el icono deja de latir y el texto pasa a
-            "¡Listo!" un instante antes de cerrarse sola. */}
-        {restTimer && (
-          <div className="fixed top-20 right-4 z-[var(--z-fab)] flex items-center gap-3 rounded-full border border-accent-line bg-surface py-2 pl-4 pr-2 shadow-e1">
+          {/* Cronómetro de descanso — dentro de la cabecera sticky, no flotando
+              encima del contenido: antes era un pill `fixed` con un `top`
+              adivinado a ojo que según la pantalla tapaba las stat tiles o el
+              propio título. Pastilla oro con punto que late mientras cuenta
+              (handoff, Sesión módulo 3): al llegar a 0 el icono deja de latir
+              y el texto pasa a "¡Listo!" un instante antes de cerrarse sola. */}
+          {restTimer && (
+            <div className="mt-3 flex items-center gap-3 rounded-full border border-accent-line bg-surface py-2 pl-4 pr-2 shadow-e1 w-fit">
             <span className="relative flex h-2 w-2" aria-hidden>
               {restTimer.secondsLeft > 0 && (
                 <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-accent" />
@@ -578,8 +592,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               </p>
             </div>
             <Button variant="ghost" size="s" icon="close" label="Saltar descanso" onClick={() => setRestTimer(null)} />
-          </div>
-        )}
+            </div>
+          )}
+        </header>
 
         {/* Progress bar */}
         <ProgressBar value={totalSets > 0 ? (doneSetsTotal / totalSets) * 100 : 0} label={`${doneSetsTotal} de ${totalSets} series hechas`} />
@@ -626,7 +641,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {/* Exercise header — nombre en Archivo 900 (handoff, Sesión): es
                   el único titular de la tarjeta, todo lo demás es dato o chip. */}
               <div
-                ref={el => { if (exIdx === 0) registerTourTarget('training-exercise-video', el); }}
+                ref={exIdx === 0 ? videoTargetRef : undefined}
                 className="flex items-center gap-3 p-4 bg-surface border-b border-hairline"
               >
                 <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
@@ -799,7 +814,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                               <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
                             )}
                           </td>
-                          <td className="px-2 sm:px-3 py-2" ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-set-editor', el); }}>
+                          <td className="px-2 sm:px-3 py-2" ref={exIdx === 0 && sIdx === 0 ? setEditorTargetRef : undefined}>
                             <input
                               type="number"
                               min={0}
@@ -852,7 +867,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                             {/* Casilla oro con check en on-accent al completar (handoff,
                                 Componentes 06) — desmarcar es tocar otra vez, sin confirmar. */}
                             <button
-                              ref={el => { if (exIdx === 0 && sIdx === 0) registerTourTarget('training-first-set-row', el); }}
+                              ref={exIdx === 0 && sIdx === 0 ? firstSetRowTargetRef : undefined}
                               onClick={() => {
                                 const markingDone = !setInput.done;
                                 void haptics.light();

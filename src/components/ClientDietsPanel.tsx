@@ -11,6 +11,7 @@ import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete } from '
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
+import FoodPreferencesPanel from './FoodPreferencesPanel';
 import { EmptyState } from './ui';
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
@@ -30,6 +31,7 @@ interface Props {
   athlete: UserProfile;
   coachId: string;
   onboardingData: OnboardingData | null;
+  setOnboardingData: React.Dispatch<React.SetStateAction<OnboardingData | null>>;
   athleteDiets: Diet[];
   setAthleteDiets: React.Dispatch<React.SetStateAction<Diet[]>>;
   athleteDietConfig: AthleteDietConfig | null;
@@ -45,7 +47,7 @@ interface Props {
 }
 
 export default function ClientDietsPanel({
-  athlete, coachId, onboardingData, athleteDiets, setAthleteDiets, athleteDietConfig,
+  athlete, coachId, onboardingData, setOnboardingData, athleteDiets, setAthleteDiets, athleteDietConfig,
   nutritionConfig, weeklyMenus, setWeeklyMenus, menuCompletionLogs, bodyweightLogs,
   onToggleDiet, onScheduleDay, onToggleDietMode, onSaveStepConfig,
 }: Props) {
@@ -184,6 +186,25 @@ export default function ClientDietsPanel({
           </div>
         )}
       </div>
+
+      {/* Preferencias alimentarias */}
+      {onboardingData && (
+        <div className="bg-surface border border-hairline rounded-surface p-5">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
+            Preferencias alimentarias
+          </h3>
+          <FoodPreferencesPanel
+            athleteEmail={athlete.email}
+            initialLiked={onboardingData.likedFoods}
+            initialDisliked={onboardingData.dislikedFoods}
+            allergies={onboardingData.allergies}
+            onSaved={(liked, disliked) =>
+              setOnboardingData(prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : null)
+            }
+          />
+        </div>
+      )}
 
       {/* Weekly schedule grid */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">

@@ -8,13 +8,20 @@ import {
   getRoadmap, getNutritionProgram, computeActivePhase,
   getAthleteStatusNote, saveAthleteStatusNote,
 } from '../dbService';
-import { Icon, Button } from './ui';
+import { ScoreStyle } from '../utils/adherence';
+import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import { Icon, Button, Banner, Collapsible } from './ui';
 
-// Panel de estado del cliente — lo primero que ve el coach al abrir su ficha:
-// en qué fase está, qué objetivo persigue, qué ha cambiado últimamente y una
-// nota libre del coach ("qué está haciendo ahora"). Los datos derivados salen
-// de props que ClientHub ya tiene cargadas; fase de roadmap/nutrición y la nota
-// se cargan aquí para no engordar más el fetch inicial del Hub.
+/* ═══════════════════════════════════════════════════════════════════════════
+   ClientOverviewCard
+
+   Fusión de lo que eran dos tarjetas separadas (ClientHubSummary +
+   ClientStatusCard) — mostraban señales solapadas (peso, fase/plan) siempre
+   visibles a la vez en la cabecera del Hub. Ahora es una sola tarjeta:
+   KPIs + fase + objetivo siempre visibles arriba, "últimos cambios" y la nota
+   del coach plegados abajo, y un acceso directo al resumen del asistente IA
+   para no tener que ir a buscarlo aparte.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
   athlete: UserProfile;
@@ -24,6 +31,13 @@ interface Props {
   coachReports: CoachReport[];
   athleteLogs: WorkoutLog[];
   bodyweightLogs: BodyweightLog[];
+  adherenceScore: number | null;
+  adherenceStyle: ScoreStyle;
+  averageRir: number | null;
+  planUnpublished: boolean;
+  pendingReviewsCount: number;
+  onGoToEntrenamientos: () => void;
+  onGoToRevisiones: () => void;
 }
 
 const GOAL_LABEL: Record<GoalBody, string> = {
@@ -31,6 +45,10 @@ const GOAL_LABEL: Record<GoalBody, string> = {
   reducir_grasa: 'Reducir grasa',
   mantener: 'Mantener',
 };
+
+function esFormat(n: number): string {
+  return String(n).replace('.', ',');
+}
 
 function daysAgo(iso: string): string {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -41,8 +59,10 @@ function daysAgo(iso: string): string {
 
 interface ChangeEvent { date: string; icon: string; text: string }
 
-export default function ClientStatusCard({
+export default function ClientOverviewCard({
   athlete, onboardingData, mesocycles, checkins, coachReports, athleteLogs, bodyweightLogs,
+  adherenceScore, adherenceStyle, averageRir, planUnpublished, pendingReviewsCount,
+  onGoToEntrenamientos, onGoToRevisiones,
 }: Props) {
   const queryClient = useQueryClient();
   const statusNoteKey = ['athleteStatusNote', athlete.email] as const;
@@ -73,7 +93,6 @@ export default function ClientStatusCard({
   const [noteDraft, setNoteDraft] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
-  // Mesociclo en curso + semana actual dentro de él.
   const activeMeso = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const started = mesocycles.filter(m => m.startDate <= today);
@@ -83,13 +102,10 @@ export default function ClientStatusCard({
     return { meso: current, week: Math.min(Math.max(week, 1), current.weeks), inRange: week <= current.weeks };
   }, [mesocycles]);
 
-  // Últimos cambios: eventos recientes derivados de datos ya cargados.
   const recentChanges = useMemo(() => {
     const events: ChangeEvent[] = [];
     const lastCheckin = [...checkins].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
     if (lastCheckin) {
-      // Legacy/cached checkins can carry an unparseable timestamp — toISOString()
-      // throws on an Invalid Date, so guard before calling it (crashed the whole card otherwise).
       const ts = new Date(lastCheckin.timestamp);
       if (!isNaN(ts.getTime())) events.push({ date: ts.toISOString(), icon: 'monitor_weight', text: `Check-in (${lastCheckin.weight} kg)` });
     }
@@ -124,39 +140,61 @@ export default function ClientStatusCard({
     ? [...bodyweightLogs].sort((a, b) => b.date.localeCompare(a.date))[0].weight
     : athlete.actualWeight || null;
 
+  const openAiSummary = () => {
+    window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT, {
+      detail: { prompt: 'Resume la situación de este cliente' },
+    }));
+  };
+
   return (
     <div className="bg-gradient-to-br from-surface to-bg border border-accent/20 rounded-surface p-5 space-y-4">
-      {/* Nota del coach — editable, lo más visible del panel */}
-      <div className="flex items-start gap-3">
-        <Icon name="sticky_note_2" size="l" filled className="text-accent" />
-        {editingNote ? (
-          <div className="flex-1 space-y-2">
-            <textarea
-              value={noteDraft}
-              onChange={e => setNoteDraft(e.target.value)}
-              rows={2}
-              autoFocus
-              placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-              className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-title-s text-ink placeholder-ink-2/50 outline-none"
-            />
-            <div className="flex gap-2">
-              <Button size="s" onClick={saveNote} disabled={savingNote}>{savingNote ? 'Guardando…' : 'Guardar'}</Button>
-              <Button variant="secondary" size="s" onClick={() => setEditingNote(false)} disabled={savingNote}>Cancelar</Button>
-            </div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="grid grid-cols-3 gap-2 flex-1">
+          <div className="bg-field border border-hairline rounded-field p-3">
+            <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Adherencia</p>
+            <p className={`font-display font-black text-title-m mt-2 ${adherenceStyle.text}`}>
+              {adherenceScore != null ? `${adherenceScore}%` : '—'}
+            </p>
+            <p className={`font-mono text-caption uppercase mt-1 ${adherenceStyle.text}`}>{adherenceStyle.label}</p>
           </div>
-        ) : (
-          <button onClick={() => { setNoteDraft(note); setEditingNote(true); }} className="flex-1 text-left group">
-            {note ? (
-              <p className="text-body-s text-ink leading-relaxed">{note}</p>
-            ) : (
-              <p className="text-body-s text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
-            )}
-            <span className="text-caption font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
-          </button>
-        )}
+          <div className="bg-field border border-hairline rounded-field p-3">
+            <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Peso</p>
+            <p className="font-display font-black text-title-m text-ink mt-2">
+              {latestWeight != null ? esFormat(Math.round(latestWeight * 10) / 10) : '—'}
+            </p>
+          </div>
+          <div className="bg-field border border-hairline rounded-field p-3">
+            <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">RIR med.</p>
+            <p className="font-display font-black text-title-m text-accent mt-2">
+              {averageRir != null ? esFormat(averageRir) : '—'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 border-t border-hairline">
+      <Button variant="ghost" size="s" icon="smart_toy" onClick={openAiSummary}>
+        Ver resumen IA
+      </Button>
+
+      {planUnpublished && (
+        <Banner tone="danger" actionLabel="Ir a Entrenamientos" onAction={onGoToEntrenamientos}>
+          Esperando plan — todavía no hay entrenamientos asignados.
+        </Banner>
+      )}
+
+      {pendingReviewsCount > 0 && (
+        <div className="rounded-field border border-accent-line bg-accent-bg p-4 space-y-3">
+          <p className="font-mono text-caption font-semibold text-accent uppercase tracking-wider">Próxima revisión</p>
+          <p className="font-sans text-body-s font-semibold text-ink">
+            {pendingReviewsCount === 1 ? '1 check-in por revisar' : `${pendingReviewsCount} check-ins por revisar`}
+          </p>
+          <Button variant="primary" size="m" fullWidth onClick={onGoToRevisiones}>
+            Ver el hilo de revisiones
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 border-t border-hairline">
         {/* Fase */}
         <div className="space-y-2 pt-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
@@ -203,27 +241,64 @@ export default function ClientStatusCard({
             </p>
           ) : null}
         </div>
-
-        {/* Últimos cambios */}
-        <div className="space-y-2 pt-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
-            <Icon name="history" size="s" className="text-accent" /> Últimos cambios
-          </p>
-          {recentChanges.length === 0 ? (
-            <p className="text-label text-ink-2/60 italic">Sin actividad registrada aún</p>
-          ) : (
-            <ul className="space-y-1">
-              {recentChanges.map((e, i) => (
-                <li key={i} className="flex items-center gap-2 text-caption text-ink">
-                  <Icon name={e.icon} size="s" className="text-ink-2" />
-                  <span className="flex-1 truncate">{e.text}</span>
-                  <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
+
+      <Collapsible
+        className="pt-1 border-t border-hairline"
+        trigger={<span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Más detalles</span>}
+      >
+        <div className="space-y-4 pb-1">
+          {/* Nota del coach */}
+          <div className="flex items-start gap-3">
+            <Icon name="sticky_note_2" size="l" filled className="text-accent" />
+            {editingNote ? (
+              <div className="flex-1 space-y-2">
+                <textarea
+                  value={noteDraft}
+                  onChange={e => setNoteDraft(e.target.value)}
+                  rows={2}
+                  autoFocus
+                  placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
+                  className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-title-s text-ink placeholder-ink-2/50 outline-none"
+                />
+                <div className="flex gap-2">
+                  <Button size="s" onClick={saveNote} disabled={savingNote}>{savingNote ? 'Guardando…' : 'Guardar'}</Button>
+                  <Button variant="secondary" size="s" onClick={() => setEditingNote(false)} disabled={savingNote}>Cancelar</Button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => { setNoteDraft(note); setEditingNote(true); }} className="flex-1 text-left group">
+                {note ? (
+                  <p className="text-body-s text-ink leading-relaxed">{note}</p>
+                ) : (
+                  <p className="text-body-s text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
+                )}
+                <span className="text-caption font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
+              </button>
+            )}
+          </div>
+
+          {/* Últimos cambios */}
+          <div className="space-y-2">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1">
+              <Icon name="history" size="s" className="text-accent" /> Últimos cambios
+            </p>
+            {recentChanges.length === 0 ? (
+              <p className="text-label text-ink-2/60 italic">Sin actividad registrada aún</p>
+            ) : (
+              <ul className="space-y-1">
+                {recentChanges.map((e, i) => (
+                  <li key={i} className="flex items-center gap-2 text-caption text-ink">
+                    <Icon name={e.icon} size="s" className="text-ink-2" />
+                    <span className="flex-1 truncate">{e.text}</span>
+                    <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </Collapsible>
     </div>
   );
 }

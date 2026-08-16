@@ -8,7 +8,7 @@ import {
   getCoachInstructions, saveCoachInstructions,
 } from '../dbService';
 import { runAgentTurn, messageText } from '../ai/aiClient';
-import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Icon, Button, ListRow, Badge, Dialog } from './ui';
 
@@ -164,7 +164,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   };
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = (e: Event) => {
+      setOpen(true);
+      const prompt = (e as CustomEvent<OpenAiPanelDetail>).detail?.prompt;
+      if (prompt) setInput(prompt);
+    };
     window.addEventListener(OPEN_AI_PANEL_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_AI_PANEL_EVENT, onOpen);
   }, []);

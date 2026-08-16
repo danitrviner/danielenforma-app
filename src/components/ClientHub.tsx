@@ -31,49 +31,71 @@ import {
   getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete,
 } from '../dbService';
 /* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
-   recharts entrando por Análisis y Entrenamientos. Los seis paneles se
-   importaban en estático aunque el Hub solo pinta UNO cada vez —es una pantalla
-   de pestañas—, así que abrir la ficha de un cliente para mirar el setup
+   recharts entrando por Análisis y Entrenamientos. Los paneles se importaban
+   en estático aunque el Hub solo pinta UNO cada vez —es una pantalla de
+   pestañas—, así que abrir la ficha de un cliente para mirar el setup
    descargaba también los gráficos de correlaciones que quizá no se abren nunca.
-   En diferido, cada pestaña trae lo suyo la primera vez que se toca. */
+   En diferido, cada pestaña trae lo suyo la primera vez que se toca.
+   Reportes/Nutrición-análisis/Correlaciones se importan aquí por separado
+   (antes iban juntos dentro de ClientAnalysisPanel, retirado): abrir
+   Reportes ya no descarga también CorrelationPanel. */
 const ClientRoadmapPanel = lazy(() => import('./ClientRoadmapPanel'));
-const ClientAnalysisPanel = lazy(() => import('./ClientAnalysisPanel'));
+const ReportsPanel = lazy(() => import('./ReportsPanel'));
+const NutritionAnalysisPanel = lazy(() => import('./NutritionAnalysisPanel'));
+const CorrelationPanel = lazy(() => import('./CorrelationPanel'));
 const ClientDietsPanel = lazy(() => import('./ClientDietsPanel'));
 const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
 const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
-import ClientStatusCard from './ClientStatusCard';
-import ClientHubSummary from './ClientHubSummary';
+import ClientOverviewCard from './ClientOverviewCard';
 import { Badge, Tabs, Skeleton } from './ui';
 
-export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
-export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
-export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'roadmap', 'analisis'];
-export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', 'correlaciones'];
+export type HubTab =
+  | 'setup' | 'revisiones'
+  | 'ficha' | 'cuerpo'
+  | 'entrenamientos' | 'dietas' | 'roadmap'
+  | 'reportes' | 'analisis-nutricion' | 'correlaciones';
+export const HUB_TABS: readonly HubTab[] = [
+  'setup', 'revisiones', 'ficha', 'cuerpo',
+  'entrenamientos', 'dietas', 'roadmap',
+  'reportes', 'analisis-nutricion', 'correlaciones',
+];
 
-// Las 6 pestañas se agrupan en 3 zonas para responder a una pregunta distinta
-// cada una: qué reviso (Hoy), qué programo (Plan), cómo va (Análisis). La URL
-// sigue direccionando por HubTab — la zona es puramente de navegación/UI, así
-// que los deep links y ClientSetupPanel.onGoToTab no cambian.
-type Zone = 'hoy' | 'plan' | 'analisis';
+// Las 10 pestañas se agrupan en 4 zonas para responder a una pregunta distinta
+// cada una: qué reviso (Hoy), quién es y cómo está (Atleta), qué programo
+// (Plan), cómo va (Análisis). La URL sigue direccionando por HubTab — la zona
+// es puramente de navegación/UI, así que los deep links y
+// ClientSetupPanel.onGoToTab no cambian.
+//
+// Análisis perdió su tercer nivel: antes era zona → pestaña única "Análisis"
+// → 3 sub-pestañas (reportes/nutricion/correlaciones) con estado propio
+// (AnalisisTab). Ahora esas tres viven como pestañas de zona normales — un
+// nivel menos para llegar a Reportes, y AnalisisTab desaparece del todo.
+type Zone = 'hoy' | 'atleta' | 'plan' | 'analisis';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
   hoy: ['revisiones', 'setup'],
+  atleta: ['ficha', 'cuerpo'],
   plan: ['entrenamientos', 'dietas', 'roadmap'],
-  analisis: ['analisis'],
+  analisis: ['reportes', 'analisis-nutricion', 'correlaciones'],
 };
 const ZONE_META: Record<Zone, { label: string; icon: string }> = {
   hoy: { label: 'Hoy', icon: 'today' },
+  atleta: { label: 'Atleta', icon: 'person' },
   plan: { label: 'Plan', icon: 'event_note' },
   analisis: { label: 'Análisis', icon: 'insights' },
 };
 const TAB_META: Record<HubTab, { label: string; icon: string }> = {
-  setup:          { label: 'Setup',          icon: 'checklist' },
-  revisiones:     { label: 'Revisiones',     icon: 'rate_review' },
-  entrenamientos: { label: 'Entrenamientos', icon: 'fitness_center' },
-  dietas:         { label: 'Dietas',         icon: 'nutrition' },
-  roadmap:        { label: 'Road map',       icon: 'map' },
-  analisis:       { label: 'Análisis',       icon: 'insights' },
+  setup:                { label: 'Setup',          icon: 'checklist' },
+  revisiones:           { label: 'Revisiones',     icon: 'rate_review' },
+  ficha:                { label: 'Ficha',          icon: 'badge' },
+  cuerpo:               { label: 'Cuerpo',         icon: 'monitor_weight' },
+  entrenamientos:       { label: 'Entrenamientos', icon: 'fitness_center' },
+  dietas:               { label: 'Dietas',         icon: 'nutrition' },
+  roadmap:              { label: 'Road map',       icon: 'map' },
+  reportes:             { label: 'Reportes',       icon: 'analytics' },
+  'analisis-nutricion': { label: 'Nutrición',      icon: 'restaurant' },
+  correlaciones:        { label: 'Correlaciones',  icon: 'insights' },
 };
 function zoneOf(tab: HubTab): Zone {
   return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
@@ -91,13 +113,11 @@ interface ClientHubProps {
   // deep-linking lands on the exact same tab instead of always resetting.
   activeTab: HubTab;
   onTabChange: (tab: HubTab) => void;
-  analisisTab: AnalisisTab;
-  onAnalisisTabChange: (tab: AnalisisTab) => void;
 }
 
 export default function ClientHub({
   athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack,
-  activeTab, onTabChange, analisisTab, onAnalisisTabChange,
+  activeTab, onTabChange,
 }: ClientHubProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -308,11 +328,8 @@ export default function ClientHub({
   const adh        = adherence.hasData ? scoreStyle(adherence.score) : SIN_DATOS_ADHERENCIA;
 
   // ── Resumen del Hub (F3.13b) ──────────────────────────────────────────────
-  // Fila de KPIs de la cabecera: peso más reciente (con el mismo fallback que
-  // ClientStatusCard) y RIR medio de las últimas 4 semanas (rirStats.ts).
-  const latestWeight = bodyweightLogs.length > 0
-    ? [...bodyweightLogs].sort((a, b) => b.date.localeCompare(a.date))[0].weight
-    : athlete.actualWeight || null;
+  // RIR medio de las últimas 4 semanas (rirStats.ts) — el peso más reciente lo
+  // calcula ClientOverviewCard internamente con el mismo criterio.
   const avgRir = computeAverageRir(athleteLogs);
   // "Próxima revisión" del handoff = el próximo check-in que el coach aún no
   // ha revisado (sin feedback ni aprobar) — es exactamente lo que Revisiones
@@ -431,12 +448,18 @@ export default function ClientHub({
           </div>
         </div>
 
-        {/* Resumen: adherencia / peso / RIR medio + plan sin publicar / próxima
-            revisión (F3.13b, "Hub del atleta") */}
-        <ClientHubSummary
+        {/* Resumen: KPIs + fase/objetivo siempre visibles, últimos cambios y
+            nota del coach plegados, acceso directo al resumen IA */}
+        <ClientOverviewCard
+          athlete={athlete}
+          onboardingData={onboardingData}
+          mesocycles={mesocycles}
+          checkins={athleteCheckins}
+          coachReports={coachReports}
+          athleteLogs={athleteLogs}
+          bodyweightLogs={bodyweightLogs}
           adherenceScore={adherence.hasData ? adherence.score : null}
           adherenceStyle={adh}
-          latestWeight={latestWeight}
           averageRir={avgRir}
           planUnpublished={assignments.length === 0}
           pendingReviewsCount={pendingCheckins.length}
@@ -479,19 +502,8 @@ export default function ClientHub({
         coachReports={coachReports}
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
-        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
+        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('reportes'); }}
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
-      />
-
-      {/* Estado del cliente — fase, objetivo, últimos cambios y nota del coach */}
-      <ClientStatusCard
-        athlete={athlete}
-        onboardingData={onboardingData}
-        mesocycles={mesocycles}
-        checkins={athleteCheckins}
-        coachReports={coachReports}
-        athleteLogs={athleteLogs}
-        bodyweightLogs={bodyweightLogs}
       />
 
       {/* Equipamiento del gimnasio del cliente — colapsado por defecto: el
@@ -519,13 +531,14 @@ export default function ClientHub({
         )}
       </div>
 
-      {/* Un solo Suspense para las seis pestañas: solo hay una montada a la
-          vez, así que seis serían seis veces el mismo hueco. */}
+      {/* Un solo Suspense para las diez pestañas: solo hay una montada a la
+          vez, así que diez serían diez veces el mismo hueco. */}
       <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
 
       {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
         <ClientSetupPanel
+          key={athlete.email}
           athlete={athlete}
           checkins={athleteCheckins}
           onboarding={onboardingData}
@@ -539,13 +552,13 @@ export default function ClientHub({
           photos={athletePhotos}
           workoutLogs={athleteLogs}
           onGoToTab={guardedTabChange}
-          onGoToAnalisis={onAnalisisTabChange}
         />
       )}
 
       {/* ── Tab: Revisiones ────────────────────────────────────────────────── */}
       {activeTab === 'revisiones' && (
         <ClientReviewsPanel
+          key={athlete.email}
           athlete={athlete}
           coachId={coachId}
           athleteCheckins={athleteCheckins}
@@ -571,6 +584,22 @@ export default function ClientHub({
         />
       )}
 
+      {/* ── Tab: Ficha ───────────────────────────────────────────────────── */}
+      {/* TODO(F2): extraer de ClientReviewsPanel — ficha de iniciación,
+          preferencias alimentarias, notas de ejercicios, equipamiento y el
+          formulario de plan (hoy en la cabecera). Placeholder mientras tanto
+          para que el esqueleto de navegación compile y navegue. */}
+      {activeTab === 'ficha' && (
+        <div className="text-ink-2 text-body-s font-sans p-5">Ficha — en construcción.</div>
+      )}
+
+      {/* ── Tab: Cuerpo ──────────────────────────────────────────────────── */}
+      {/* TODO(F3): extraer de ClientReviewsPanel — peso, mediciones, fotos +
+          comparador, gráficas de evolución. */}
+      {activeTab === 'cuerpo' && (
+        <div className="text-ink-2 text-body-s font-sans p-5">Cuerpo — en construcción.</div>
+      )}
+
       {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
       {activeTab === 'entrenamientos' && (
         <ClientWorkoutsPanel
@@ -594,6 +623,7 @@ export default function ClientHub({
           athlete={athlete}
           coachId={coachId}
           onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
           athleteDiets={athleteDiets}
           setAthleteDiets={setAthleteDiets}
           athleteDietConfig={athleteDietConfig}
@@ -614,19 +644,39 @@ export default function ClientHub({
         <ClientRoadmapPanel athleteEmail={athlete.email} />
       )}
 
-      {/* ── Tab: Análisis ─────────────────────────────────────────────────── */}
-      {activeTab === 'analisis' && (
-        <ClientAnalysisPanel
-          athlete={athlete}
+      {/* ── Tab: Reportes ────────────────────────────────────────────────── */}
+      {activeTab === 'reportes' && (
+        <ReportsPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
           coachId={coachId}
-          athleteLogs={athleteLogs}
+          logs={athleteLogs}
           exercises={exercises}
           assignments={assignments}
           bodyweightLogs={bodyweightLogs}
-          athleteQResponses={athleteQResponses}
-          coachQuestionnaires={coachQuestionnaires}
-          analisisTab={analisisTab}
-          onAnalisisTabChange={onAnalisisTabChange}
+          targetWeight={athlete.targetWeight}
+        />
+      )}
+
+      {/* ── Tab: Nutrición (análisis) ────────────────────────────────────── */}
+      {activeTab === 'analisis-nutricion' && (
+        <NutritionAnalysisPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          targetWeight={athlete.targetWeight}
+        />
+      )}
+
+      {/* ── Tab: Correlaciones ───────────────────────────────────────────── */}
+      {activeTab === 'correlaciones' && (
+        <CorrelationPanel
+          athleteEmail={athlete.email}
+          logs={athleteLogs}
+          exercises={exercises}
+          responses={athleteQResponses}
+          questionnaires={coachQuestionnaires}
+          bodyweightLogs={bodyweightLogs}
+          assignments={assignments}
         />
       )}
 

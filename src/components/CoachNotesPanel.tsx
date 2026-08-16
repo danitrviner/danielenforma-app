@@ -6,15 +6,25 @@ import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { ListRow, Button } from './ui';
 
-interface Props {
-  athletes: UserProfile[];
+interface AthleteWithPendingNotes {
+  userId: string;
+  displayName: string;
+  pendingNotesCount: number;
 }
 
-// Coach's own private to-do list — "enviar mensaje a X", "cambiar rutina a Y".
-// Fully separate from TaskItem (tasks the coach assigns TO an athlete, which the
-// athlete can see) and from "Revisiones Pendientes" (check-ins awaiting feedback).
-// Nothing here is ever visible to athletes.
-export default function CoachNotesPanel({ athletes }: Props) {
+interface Props {
+  athletes: UserProfile[];
+  /** Atletas con notas de entreno sin leer — sección "Del atleta". */
+  athletesWithPendingNotes?: AthleteWithPendingNotes[];
+  onOpenAthleteNotes?: (userId: string) => void;
+}
+
+// Tarjeta unificada de "Pendientes": dos fuentes de datos separadas por
+// diseño — notas del atleta sin leer (WorkoutLog.note/noteCoachSeen) y el
+// to-do privado del coach (CoachNote, colección `coachNotes`) — pero una
+// sola tarjeta visual para no fragmentar la atención del coach en el
+// dashboard. Nada de esta sección es visible para los atletas.
+export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [], onOpenAthleteNotes }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const queryKey = ['coachNotes'] as const;
@@ -66,16 +76,55 @@ export default function CoachNotesPanel({ athletes }: Props) {
   const pending = notes.filter(n => !n.done);
   const done = notes.filter(n => n.done);
 
+  const totalPendingAthleteNotes = athletesWithPendingNotes.reduce((n, a) => n + a.pendingNotesCount, 0);
+
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">edit_note</span>
-          Mis notas
+          <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
+          Pendientes
+        </h3>
+      </div>
+
+      {/* Del atleta — notas de entreno sin leer (WorkoutLog.note/noteCoachSeen) */}
+      <div className="mb-4 pb-4 border-b border-hairline">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-sans text-label uppercase tracking-wider font-bold text-ink-2">Del atleta</span>
+          {totalPendingAthleteNotes > 0 ? (
+            <span className="text-caption bg-amber-500/10 text-amber-300 px-3 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
+              {totalPendingAthleteNotes} por leer
+            </span>
+          ) : (
+            <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+          )}
+        </div>
+        {totalPendingAthleteNotes === 0 ? (
+          <p className="text-label text-ink-3 font-sans">Sin notas nuevas de ejercicios o entrenamientos.</p>
+        ) : (
+          <div className="space-y-2">
+            {athletesWithPendingNotes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
+              <button
+                key={a.userId}
+                onClick={() => onOpenAthleteNotes?.(a.userId)}
+                className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-2 rounded-control border border-hairline text-left transition-colors"
+              >
+                <span className="text-label text-white font-sans truncate">{a.displayName}</span>
+                <span className="text-caption font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mías — to-do privado del coach */}
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-sans font-bold text-label uppercase tracking-wider text-ink-2 flex items-center gap-2">
+          Mías
           {pending.length > 0 && (
             <span className="bg-accent text-black text-caption font-bold px-2 rounded-full">{pending.length}</span>
           )}
-        </h3>
+        </h4>
         <button
           onClick={() => setShowForm(v => !v)}
           className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
