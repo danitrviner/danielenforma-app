@@ -104,26 +104,32 @@ service cloud.firestore {
       // fechaBaja/motivoBaja/motivoBajaDetalle/origen se añaden 2026-08-02 con
       // el mismo razonamiento: son hechos de negocio (por qué se fue, por qué
       // canal llegó) que el atleta no debe poder reescribir.
-      // 16-08: `xp`/`level` SÍ estaban ya fuera de la lista bloqueada de
-      // `allow update` (ver el porqué justo abajo) pero el `allow create` de
-      // aquí arriba se quedó con la lista vieja — y `getOrCreateUserProfile`
-      // (src/db/profiles.ts) manda `level: 1, xp: 0` en el PRIMER documento
-      // que crea, siempre. O sea que la creación del perfil de CUALQUIER
-      // atleta nuevo denegaba permiso desde el primer momento, sin excepción:
-      // el error se tragaba en silencio (el único `catch` de todo `src/db`
+      // 16-08: bug de dos capas, las dos con la misma forma — un campo que
+      // `getOrCreateUserProfile` (src/db/profiles.ts) manda SIEMPRE en el
+      // primer documento de cualquier atleta, bloqueado en la lista de
+      // `allow create`. `xp`/`level` ya se sabían (comentario de abajo, "SALEN
+      // de la lista bloqueada") pero el arreglo solo tocó `allow update`, no
+      // este `create`; y `currentStreak`/`maxStreak` tenían el MISMO problema
+      // sin que nadie lo hubiera notado — el propio comentario de la regla de
+      // `update` decía "el cliente no los escribe en ningún sitio, solo se
+      // inicializan al crear el perfil", que es exactamente la operación que
+      // esta lista bloqueaba. Resultado: la creación del perfil de CUALQUIER
+      // atleta nuevo denegaba permiso desde el primer momento, sin excepción.
+      // El error se tragaba en silencio (el único `catch` de todo `src/db`
       // que no relanza, para no dejar a nadie fuera de la app) y la sesión
       // seguía en modo local — funcionando para esa persona, invisible para
       // el coach, porque el documento real nunca llegaba a Firestore.
       // Encontrado al investigar por qué danielbriz8@gmail.com no aparecía en
-      // «Atletas del Entrenador» pese a haber iniciado sesión días antes.
+      // «Atletas del Entrenador» pese a haber iniciado sesión días antes: en
+      // TODA la producción solo había 2 documentos en user_profiles.
       allow create: if isCoach()
                     || (isOwnerUid(userId)
                         && request.resource.data.role == 'client'
                         && request.auth.token.email_verified == true
                         && !request.resource.data.keys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'setupSummary',
-                                     'currentStreak', 'maxStreak', 'estadoCrm',
-                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen'])
+                                     'estadoCrm', 'fechaBaja', 'motivoBaja',
+                                     'motivoBajaDetalle', 'origen'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
       // `xp` y `level` SALEN de la lista bloqueada (14-08). Estaban aquí como
       // antitrampas, pero quien los escribe es el propio atleta desde su móvil:
