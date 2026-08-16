@@ -48,6 +48,7 @@ const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScree
 const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
 const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
 const CoachLibraryScreen   = lazy(() => import('./components/CoachLibraryScreen'));
+const ResourcesPanel       = lazy(() => import('./components/ResourcesPanel'));
 const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
 const CatalogoSwipe        = lazy(() => import('./features/gimnasio/CatalogoSwipe'));
 
@@ -765,6 +766,7 @@ function AppContent() {
                   <Route path="nutricion" element={<NutritionCoachScreen coachId={profile.userId} />} />
                   <Route path="academia" element={<AcademyCoachScreen coachId={profile.userId} coachEmail={profile.email} />} />
                   <Route path="cardio" element={<CardioCoachScreen coachEmail={profile.email} />} />
+                  <Route path="recursos" element={<ResourcesPanel isCoach coachId={profile.userId} />} />
                   <Route path="*" element={<Navigate to="/library/ejercicios" replace />} />
                 </Route>
 

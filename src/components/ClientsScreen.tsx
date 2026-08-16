@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
-import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
+import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
 import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
-import ResourcesPanel from './ResourcesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
@@ -13,8 +12,6 @@ import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import ProgressRing from './ProgressRing';
-import { useToast } from '../hooks/useToast';
-import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
@@ -30,10 +27,7 @@ interface ClientsScreenProps {
 
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
   const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
-  const inviteInputRef = useRef<HTMLInputElement>(null);
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
   const { data: athletes = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
@@ -109,54 +103,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
     4: 'md:grid-cols-2 lg:grid-cols-4',
-  };
-
-  // Invite a new client by email
-  const pendingInvitesKey = ['pendingInvites'] as const;
-  const { data: pendingInvites = [] } = useQuery({
-    queryKey: pendingInvitesKey,
-    queryFn: getPendingInvites,
-  });
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviting, setInviting] = useState(false);
-  const [inviteError, setInviteError] = useState('');
-  const [inviteSuccess, setInviteSuccess] = useState('');
-
-  const loadInvites = () => queryClient.invalidateQueries({ queryKey: pendingInvitesKey });
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setInviteError('');
-    setInviteSuccess('');
-    if (!inviteEmail.trim()) return;
-    setInviting(true);
-    try {
-      await inviteClient(inviteEmail.trim());
-      setInviteSuccess(`Cuenta creada para ${inviteEmail.trim()}. Le hemos mandado el correo para que elija su contraseña.`);
-      setInviteEmail('');
-      loadInvites();
-    } catch (err: any) {
-      console.error('inviteClient error:', err);
-      // El copy vive en utils/erroresFirestore, no aquí: es el mismo catálogo de
-      // fallos que ve el atleta al darse de alta, y tener dos redacciones del
-      // mismo error en dos pantallas es como se acaba arreglando solo una.
-      setInviteError(mensajeDeErrorFirestore(err, 'enviar la invitación'));
-    } finally {
-      setInviting(false);
-    }
-  };
-
-  const handleResendInvite = async (email: string) => {
-    try {
-      await inviteClient(email);
-      loadInvites();
-      showToast(`Correo reenviado a ${email} para que cree su contraseña.`, 'success');
-    } catch (err) {
-      console.error('resend invite error:', err);
-      // Mismo catálogo que el alta: si el correo salió y lo que falló fue el
-      // registro, decir "no se pudo reenviar" volvería a mentir.
-      showToast(mensajeDeErrorFirestore(err, `reenviar la invitación a ${email}`), 'error');
-    }
   };
 
   const openAthleteHub = (athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
@@ -437,8 +383,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {/* Coach's own private to-do list — separate from Revisiones Pendientes */}
       <CoachNotesPanel athletes={athletes} />
 
-      <ResourcesPanel isCoach coachId={coachId} />
-
       {/* Athlete list */}
       <div className="space-y-4">
         <div className="bg-surface border border-hairline p-4 rounded-surface flex flex-col md:flex-row md:items-center gap-3">
@@ -484,7 +428,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             icon="group"
             title="No hay atletas registrados todavía."
             actionLabel="Invitar a tu primer atleta"
-            onAction={() => inviteInputRef.current?.focus()}
+            onAction={() => navigate('/crm/clientes')}
           />
         ) : filteredAthletes.length === 0 ? (
           <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
@@ -593,61 +537,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               );
             })}
 
-          </div>
-        )}
-      </div>
-
-      {/* Invite a new client by email */}
-      <div className="bg-surface border border-hairline p-5 rounded-surface">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="material-symbols-outlined text-accent text-title-m">person_add</span>
-          <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Invitar nuevo atleta</h2>
-        </div>
-        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
-          <input
-            ref={inviteInputRef}
-            type="email"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            placeholder="correo del nuevo cliente"
-            className="flex-1 bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-          >
-            <span className="material-symbols-outlined text-body-s">mail</span>
-            {inviting ? 'Enviando...' : 'Invitar'}
-          </button>
-        </form>
-        {inviteError && <p className="font-sans text-caption text-red-400 mt-2">{inviteError}</p>}
-        {inviteSuccess && <p className="font-mono text-caption text-accent mt-2">{inviteSuccess}</p>}
-
-        {pendingInvites.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-hairline">
-            <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">
-              Invitaciones pendientes ({pendingInvites.length})
-            </p>
-            <div className="space-y-2">
-              {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                  <span className="material-symbols-outlined text-ink-2 text-body-s">mail</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-sans text-label text-white truncate">{inv.email}</p>
-                    <p className="font-mono text-caption text-ink-3">
-                      Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleResendInvite(inv.email)}
-                    className="font-mono text-caption text-data hover:underline uppercase tracking-wide flex-shrink-0"
-                  >
-                    Reenviar
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>

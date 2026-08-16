@@ -14,6 +14,7 @@ import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import NuevoClienteModal from '../components/NuevoClienteModal';
 import InvitarAtletaModal from '../components/InvitarAtletaModal';
+import InvitacionesPendientesPanel from '../components/InvitacionesPendientesPanel';
 import type { Cliente, EstadoCrm, CrmServicio } from '../types';
 import { Icon } from '../../../components/ui';
 
@@ -165,6 +166,18 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
             <Icon name="upload_file" size="s" />
             Importar
           </button>
+          {/* 14-08 (tarea 13). Antes solo se podía invitar a un atleta desde
+              el estado vacío de la tabla — invisible en cuanto el coach ya
+              tenía un solo cliente. Botón propio, siempre a la vista, igual
+              que Importar/Nuevo cliente. */}
+          <button
+            type="button"
+            onClick={() => setInvitarAbierto(true)}
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+          >
+            <Icon name="person_add" size="s" />
+            Invitar atleta
+          </button>
           <button
             type="button"
             onClick={() => setModalAbierto(true)}
@@ -175,6 +188,8 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
           </button>
         </div>
       </header>
+
+      <InvitacionesPendientesPanel />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">

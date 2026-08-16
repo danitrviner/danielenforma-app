@@ -33,6 +33,11 @@ export const LIBRARY_SECTIONS = [
   { id: 'nutricion',  label: 'Nutrición',  icon: 'restaurant'     },
   { id: 'academia',   label: 'Academia',   icon: 'school'         },
   { id: 'cardio',     label: 'Cardio',     icon: 'favorite'       },
+  // 14-08 (tarea 13). Vivía en el Inicio del coach (ClientsScreen), mezclado
+  // con las tarjetas de seguimiento de atletas. Es justo el mismo tipo de
+  // cosa que los otros cuatro — una biblioteca donde se entra, se gestiona
+  // algo y se sale — así que se une a ellos en vez de tener sitio propio.
+  { id: 'recursos',   label: 'Recursos',   icon: 'folder_open'    },
 ] as const;
 
 export type LibrarySection = typeof LIBRARY_SECTIONS[number]['id'];
