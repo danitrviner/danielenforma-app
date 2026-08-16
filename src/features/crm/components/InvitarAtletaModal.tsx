@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { inviteClient } from '../../../dbService';
 import { mensajeDeErrorFirestore } from '../../../utils/erroresFirestore';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 
 interface Props {
   onCerrar: () => void;
+  /** 14-08 (tarea 11). Cuando se abre desde la ficha de un contacto sin
+   *  cuenta (ClienteDetail), precarga su email — así el alta usa el MISMO
+   *  correo que el contacto y `api/create-athlete` puede enlazarlos por
+   *  email sin que el coach tenga que volver a teclearlo (y arriesgarse a
+   *  una mayúscula o un espacio distintos que rompan el enlace). */
+  emailInicial?: string;
 }
 
 /**
@@ -18,8 +25,9 @@ interface Props {
  * manda un correo para que el atleta elija su contraseña, así que no depende de
  * ningún ajuste pendiente.
  */
-export default function InvitarAtletaModal({ onCerrar }: Props) {
-  const [email, setEmail] = useState('');
+export default function InvitarAtletaModal({ onCerrar, emailInicial }: Props) {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState(emailInicial ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [enviado, setEnviado] = useState<string | null>(null);
@@ -32,6 +40,12 @@ export default function InvitarAtletaModal({ onCerrar }: Props) {
     try {
       await inviteClient(limpio);
       setEnviado(limpio);
+      // `api/create-athlete` puede haber enlazado un contacto del CRM
+      // existente (mismo email) con el `userId` recién creado — sin esto, el
+      // coach vería el alta confirmada pero «Ficha de entreno» seguiría sin
+      // aparecer hasta recargar.
+      queryClient.invalidateQueries({ queryKey: ['crmContactos'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
     } catch (err) {
       console.error('inviteClient error:', err);
       // El copy vive en utils/erroresFirestore: es el mismo catálogo que usa el

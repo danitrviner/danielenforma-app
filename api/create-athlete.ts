@@ -133,6 +133,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { merge: true }
     );
 
+    // ── 3. Enlazar con el contacto del CRM, si ya existía ───────────────────
+    // `crmContactos.userId` es lo que decide si un contacto sale como atleta
+    // programable (ClienteDetail solo enseña «Ficha de entreno» cuando existe).
+    // Nadie lo escribía nunca: las reglas dejan crmContactos como coach-only,
+    // así que el atleta no puede enlazarse solo al registrarse (el diseño
+    // original suponía eso, ver el comentario de CrmContacto en
+    // features/crm/types.ts) y el alta pasó a hacerla siempre este endpoint —
+    // así que este es el único sitio con permiso Y con el email y el uid a la
+    // vez. Se compara en minúsculas porque los contactos del CRM los escribe
+    // un humano a mano y no se normalizan al guardarlos.
+    try {
+      const contactosSnap = await adminDb.collection('crmContactos').get();
+      const batch = adminDb.batch();
+      let coincidencias = 0;
+      for (const docSnap of contactosSnap.docs) {
+        const contactoEmail = (docSnap.data().email as string | undefined)?.trim().toLowerCase();
+        if (contactoEmail === email && docSnap.data().userId !== uid) {
+          batch.update(docSnap.ref, { userId: uid, updatedAt: new Date().toISOString() });
+          coincidencias++;
+        }
+      }
+      if (coincidencias > 0) await batch.commit();
+    } catch (err) {
+      // Best-effort: el alta ya está hecha y es lo que de verdad no puede
+      // fallar. Un contacto sin enlazar se corrige reinvitando desde el CRM.
+      console.warn('create-athlete: no se pudo enlazar crmContactos:', err);
+    }
+
     res.status(200).json({ ok: true, uid, creada });
   } catch (err) {
     const e = err as { code?: string; message?: string };

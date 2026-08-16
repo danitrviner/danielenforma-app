@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCliente } from '../hooks/useClientes';
 import { useSuscripcionesDe, useRegistrarCobro } from '../hooks/useSuscripciones';
@@ -11,6 +11,7 @@ import PagosTab from '../components/PagosTab';
 import RenovacionesTab from '../components/RenovacionesTab';
 import ReunionesTab from '../components/ReunionesTab';
 import HistorialTab from '../components/HistorialTab';
+import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import { enlaceWhatsApp, formatTelefono } from '../lib/identidad';
 import { Icon } from '../../../components/ui';
 
@@ -38,6 +39,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const [invitando, setInvitando] = useState(false);
 
   const { cliente, isPending } = useCliente(id);
   const { data: suscripciones = [] } = useSuscripcionesDe(id);
@@ -122,7 +124,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
           )}
           {/* Puente con la app de entrenamiento: solo tiene sentido si la
               persona tiene cuenta. Un contacto importado no tiene ClientHub. */}
-          {cliente.userId && (
+          {cliente.userId ? (
             <button
               type="button"
               onClick={() => navigate(`/clients/${cliente.userId}`)}
@@ -130,6 +132,18 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             >
               <Icon name="fitness_center" size="s" />
               Ficha de entreno
+            </button>
+          ) : cliente.email && (
+            // 14-08 (tarea 11). Antes no había forma, desde esta ficha, de
+            // convertir un contacto en atleta programable: solo se podía
+            // desde el alta genérica, tecleando el email otra vez a mano.
+            <button
+              type="button"
+              onClick={() => setInvitando(true)}
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent/12 text-accent font-sans font-bold text-caption hover:bg-accent/20 transition-colors"
+            >
+              <Icon name="person_add" size="s" />
+              Dar de alta en la app
             </button>
           )}
         </div>
@@ -168,6 +182,10 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       {tab === 'renovaciones' && <RenovacionesTab cliente={cliente} coachEmail={coachEmail} />}
       {tab === 'reuniones' && <ReunionesTab cliente={cliente} coachEmail={coachEmail} />}
       {tab === 'historial' && <HistorialTab cliente={cliente} />}
+
+      {invitando && cliente.email && (
+        <InvitarAtletaModal emailInicial={cliente.email} onCerrar={() => setInvitando(false)} />
+      )}
     </div>
   );
 }
