@@ -389,12 +389,12 @@ function NumberField({
   label: string; value: number | ''; onChange: (v: number | '') => void; unit?: string; min?: number; max?: number;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
-      <div className="flex items-center gap-2">
+    <div className="space-y-2 min-w-0">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide truncate">{label}</p>
+      <div className="flex items-center gap-2 min-w-0">
         <input type="number" min={min} max={max} value={value}
           onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-          className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+          className="w-full min-w-0 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
         {unit && <span className="font-mono text-caption text-ink-3 flex-shrink-0">{unit}</span>}
       </div>
     </div>
@@ -1192,9 +1192,6 @@ export default function OnboardingForm({
             { value: 'avanzado',     label: 'Avanzado'     },
           ]}
         />
-        <TagInput label="Material disponible" placeholder="p.ej. mancuernas, barra…"
-          helpText="Equipamiento al que tienes acceso"
-          tags={form.equipment} onChange={v => set('equipment', v)} />
         <TagInput label="Ejercicios favoritos" placeholder="p.ej. sentadilla, press banca…"
           tags={form.favoriteExercises} onChange={v => set('favoriteExercises', v)} />
         <TagInput label="Ejercicios que prefieres evitar" placeholder="p.ej. remo con barra…"
@@ -1205,7 +1202,6 @@ export default function OnboardingForm({
             placeholder="p.ej. rodilla derecha operada (menisco)…"
             className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>
-        <NumberField label="Múltiplo de levantamiento total (press banca + sentadilla + peso muerto)" value={form.oneRepMaxTotal} onChange={v => set('oneRepMaxTotal', v)} unit="kg" min={0} />
         <PillSelect<ProgressFrequency>
           label="¿Cada cuánto progresas?" value={form.progressFrequency} onChange={v => set('progressFrequency', v)}
           options={[

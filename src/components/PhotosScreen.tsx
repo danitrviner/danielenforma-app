@@ -128,17 +128,17 @@ export default function PhotosScreen({ profile }: Props) {
       )}
 
       {/* Upload bar */}
-      <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Icon name="calendar_today" size="s" className="text-ink-2" />
+      <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon name="calendar_today" size="s" className="text-ink-2 flex-shrink-0" />
           <input
             type="date"
             value={uploadDate}
             onChange={e => setUploadDate(e.target.value)}
-            className="bg-transparent border-none text-white font-mono text-title-s focus:outline-none focus:ring-0 min-w-0"
+            className="bg-transparent border-none text-white font-mono text-title-s focus:outline-none focus:ring-0 min-w-0 max-w-full"
           />
         </div>
-        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload">
+        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload" className="sm:ml-auto">
           {uploading ? 'Subiendo…' : `Subir foto (${VIEW_LABELS[selectedView]})`}
         </Button>
         <input

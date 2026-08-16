@@ -237,7 +237,11 @@ export async function getGimnasio(email: string): Promise<Gimnasio | null> {
     // devolver null aquí le borraría de golpe todas las máquinas que ya había
     // decidido. El respaldo local manda mientras el remoto esté vacío.
     if (!snap.exists()) return local;
-    const gym = { ...(snap.data() as Gimnasio), atletaId: email };
+    // Docs viejos (o creados por un guardarGimnasio parcial, p.ej. el primer
+    // volcado del swipe solo escribe `maquinas` y `progresoCatalogo`) pueden no
+    // tener todos los campos. Sin estos defaults, un atleta nuevo que aún no ha
+    // añadido máquinas propias rompe cualquier pantalla que lea `maquinasPropias`.
+    const gym = { ...gimnasioVacio(email), ...(snap.data() as Gimnasio), atletaId: email };
     setLocalGimnasio(gym);
     return gym;
   } catch (err) {
