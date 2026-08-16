@@ -9,7 +9,6 @@ import {
   OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
-import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
@@ -40,6 +39,8 @@ import {
    (antes iban juntos dentro de ClientAnalysisPanel, retirado): abrir
    Reportes ya no descarga también CorrelationPanel. */
 const ClientRoadmapPanel = lazy(() => import('./ClientRoadmapPanel'));
+const ClientFichaPanel = lazy(() => import('./ClientFichaPanel'));
+const ClientBodyPanel = lazy(() => import('./ClientBodyPanel'));
 const ReportsPanel = lazy(() => import('./ReportsPanel'));
 const NutritionAnalysisPanel = lazy(() => import('./NutritionAnalysisPanel'));
 const CorrelationPanel = lazy(() => import('./CorrelationPanel'));
@@ -336,23 +337,6 @@ export default function ClientHub({
   // resuelve, así que el CTA salta directo ahí.
   const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
 
-  // ── Weekly compliance ──────────────────────────────────────────────────────
-  const getWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const daysFromMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - daysFromMonday);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
-  };
-  const { start: weekStart, end: weekEnd } = getWeekRange();
-  const weekAssignments = assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
-  const weekCompleted   = weekAssignments.filter(a => a.status === 'completed').length;
-  const weekTotal       = weekAssignments.length;
-  const weekPct         = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
-
   // ── Exercise history ───────────────────────────────────────────────────────
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
 
@@ -418,12 +402,18 @@ export default function ClientHub({
     }
   };
 
-  const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
+  const { daysLeft, weekNumber, totalWeeks } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
+  // "Semana 11 de 24" (patrón HubFit) en vez de solo días restantes — dice
+  // más al programar. El vencimiento, que sí es accionable/urgente, se queda
+  // como texto secundario junto al email en vez de desaparecer del todo.
   const planBadge = daysLeft !== null ? (
     <Badge tone={daysLeft > 30 ? 'success' : daysLeft >= 0 ? 'warning' : 'danger'}>
-      {daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`}
+      {weekNumber !== null && totalWeeks !== null ? `Semana ${weekNumber} de ${totalWeeks}` : (daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`)}
     </Badge>
   ) : null;
+  const planExpiryCaption = daysLeft !== null
+    ? (daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`)
+    : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -444,7 +434,10 @@ export default function ClientHub({
               <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
-            <p className="font-mono text-caption text-ink-2">{athlete.email}</p>
+            <p className="font-mono text-caption text-ink-2">
+              {athlete.email}
+              {planExpiryCaption && <span className="text-ink-3"> · {planExpiryCaption}</span>}
+            </p>
           </div>
         </div>
 
@@ -466,33 +459,6 @@ export default function ClientHub({
           onGoToEntrenamientos={() => guardedTabChange('entrenamientos')}
           onGoToRevisiones={() => guardedTabChange('revisiones')}
         />
-
-        {/* Plan duration config */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-caption text-ink-2 uppercase">Plan:</span>
-          <input
-            type="date"
-            value={planStart}
-            onChange={e => setPlanStart(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
-          />
-          <select
-            value={planMonths}
-            onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
-          >
-            <option value={3}>3 meses</option>
-            <option value={6}>6 meses</option>
-            <option value={12}>12 meses</option>
-          </select>
-          <button
-            onClick={handleSavePlan}
-            disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
-          >
-            {savingPlan ? '...' : 'Guardar'}
-          </button>
-        </div>
       </div>
 
       {/* Pendientes de hoy — lo accionable, independiente de la zona/pestaña activa */}
@@ -505,11 +471,6 @@ export default function ClientHub({
         onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('reportes'); }}
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
       />
-
-      {/* Equipamiento del gimnasio del cliente — colapsado por defecto: el
-          handoff pide que "no compita con KPIs ni con la revisión". Se
-          consulta al montar el plan, no en cada visita a la ficha. */}
-      <EquipoClienteCard athleteEmail={athlete.email} />
 
       {/* Nav de zonas (nivel 1) */}
       <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 ">
@@ -563,41 +524,44 @@ export default function ClientHub({
           coachId={coachId}
           athleteCheckins={athleteCheckins}
           onRefreshCheckIns={onRefreshCheckIns}
-          athletePhotos={athletePhotos}
-          loadingPhotos={loadingPhotos}
-          athletePhotoAssignments={athletePhotoAssignments}
-          setAthletePhotoAssignments={setAthletePhotoAssignments}
-          onboardingData={onboardingData}
-          setOnboardingData={setOnboardingData}
-          onboardingTemplate={onboardingTemplate}
-          assignments={assignments}
-          workouts={workouts}
           athleteQResponses={athleteQResponses}
           setAthleteQResponses={setAthleteQResponses}
           coachQuestionnaires={coachQuestionnaires}
           setCoachQuestionnaires={setCoachQuestionnaires}
           athleteQAssignments={athleteQAssignments}
           setAthleteQAssignments={setAthleteQAssignments}
-          weekTotal={weekTotal}
-          weekCompleted={weekCompleted}
-          weekPct={weekPct}
         />
       )}
 
       {/* ── Tab: Ficha ───────────────────────────────────────────────────── */}
-      {/* TODO(F2): extraer de ClientReviewsPanel — ficha de iniciación,
-          preferencias alimentarias, notas de ejercicios, equipamiento y el
-          formulario de plan (hoy en la cabecera). Placeholder mientras tanto
-          para que el esqueleto de navegación compile y navegue. */}
       {activeTab === 'ficha' && (
-        <div className="text-ink-2 text-body-s font-sans p-5">Ficha — en construcción.</div>
+        <ClientFichaPanel
+          key={athlete.email}
+          athlete={athlete}
+          onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
+          onboardingTemplate={onboardingTemplate}
+          planStart={planStart}
+          onPlanStartChange={setPlanStart}
+          planMonths={planMonths}
+          onPlanMonthsChange={setPlanMonths}
+          savingPlan={savingPlan}
+          onSavePlan={handleSavePlan}
+        />
       )}
 
       {/* ── Tab: Cuerpo ──────────────────────────────────────────────────── */}
-      {/* TODO(F3): extraer de ClientReviewsPanel — peso, mediciones, fotos +
-          comparador, gráficas de evolución. */}
       {activeTab === 'cuerpo' && (
-        <div className="text-ink-2 text-body-s font-sans p-5">Cuerpo — en construcción.</div>
+        <ClientBodyPanel
+          key={athlete.email}
+          athlete={athlete}
+          athletePhotos={athletePhotos}
+          loadingPhotos={loadingPhotos}
+          athletePhotoAssignments={athletePhotoAssignments}
+          setAthletePhotoAssignments={setAthletePhotoAssignments}
+          athleteQResponses={athleteQResponses}
+          coachQuestionnaires={coachQuestionnaires}
+        />
       )}
 
       {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
