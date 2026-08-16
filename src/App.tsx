@@ -13,6 +13,7 @@ import { useTourTarget, registerTourTarget } from './features/tutorial/TourTarge
 
 import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
+import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
@@ -349,6 +350,12 @@ function AppContent() {
 
   // Null-safe a propósito: se evalúa antes de la puerta de sesión.
   const isCoach = !!profile && (profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL);
+  // 14-08 (tarea 23). Necesario aquí, no solo en LocalModeBanner: con aviso
+  // visible, la cabecera de móvil ya no es lo primero pegado al borde físico
+  // (el aviso se cuela delante en el flujo, ver LocalModeBanner) y no debe
+  // reservar la Dynamic Island otra vez — el aviso ya la reserva en su propio
+  // `pt`. Sin esto quedaba un hueco negro entre el aviso y la cabecera.
+  const { aviso: avisoConexion } = useAvisoConexion();
 
   // F3.13e: tipos que el coach silenció en Ajustes › Notificaciones. Vacío
   // para el atleta (ese panel es coach-only, ver ProfileScreen).
@@ -622,7 +629,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)]">
+      <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
         <div className="flex items-center gap-2 text-accent">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>

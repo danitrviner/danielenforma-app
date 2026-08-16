@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import {
-  isLocalBypassActive, setLocalBypassMode, hayFalloDePermisos, descartarAvisoDePermisos,
-  escriturasPendientes, suscribirEscriturasPendientes,
-} from '../dbService';
-import { decidirAviso, textoDelAviso } from '../utils/avisoConexion';
+import React from 'react';
+import { setLocalBypassMode, descartarAvisoDePermisos } from '../dbService';
+import { textoDelAviso } from '../utils/avisoConexion';
+import { useAvisoConexion } from '../hooks/useAvisoConexion';
 import { Icon } from './ui';
 
 // Aviso persistente cuando lo que el usuario guarda NO está llegando al
@@ -32,41 +30,8 @@ import { Icon } from './ui';
 // así que va por `useSyncExternalStore` y se apaga en el mismo instante en que
 // la última escritura sincroniza.
 export default function LocalModeBanner() {
-  const [estado, setEstado] = useState<'ok' | 'red' | 'permisos'>(
-    () => (isLocalBypassActive() ? 'red' : hayFalloDePermisos() ? 'permisos' : 'ok')
-  );
-
-  useEffect(() => {
-    const id = setInterval(
-      () => setEstado(isLocalBypassActive() ? 'red' : hayFalloDePermisos() ? 'permisos' : 'ok'),
-      3000
-    );
-    return () => clearInterval(id);
-  }, []);
-
-  const pendientes = useSyncExternalStore(suscribirEscriturasPendientes, escriturasPendientes, () => 0);
-
-  // `navigator.onLine` es la única detección de conectividad de toda la app —
-  // un `grep navigator.onLine` sobre src/ daba cero resultados antes de esto.
-  // No es infalible (dice "sí" con un wifi de hotel que no enruta a ninguna
-  // parte), y precisamente por eso no se usa solo: el aviso también se enciende
-  // con escrituras encoladas, que es la señal que sí viene de haber intentado
-  // hablar con el servidor de verdad.
-  const [sinRed, setSinRed] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
-
-  useEffect(() => {
-    const desconectado = () => setSinRed(true);
-    const conectado = () => setSinRed(false);
-    window.addEventListener('offline', desconectado);
-    window.addEventListener('online', conectado);
-    return () => {
-      window.removeEventListener('offline', desconectado);
-      window.removeEventListener('online', conectado);
-    };
-  }, []);
-
   // La prioridad y los textos viven en utils/avisoConexion.ts, con pruebas.
-  const aviso = decidirAviso({ estado, pendientes, sinRed });
+  const { aviso, pendientes, refrescar } = useAvisoConexion();
   if (aviso === 'ok') return null;
 
   const retry = () => {
@@ -82,7 +47,7 @@ export default function LocalModeBanner() {
   // sigue vivo, la siguiente operación denegada lo devuelve a los 3 s.
   const descartar = () => {
     descartarAvisoDePermisos();
-    setEstado('ok');
+    refrescar();
   };
 
   return (
