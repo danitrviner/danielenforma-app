@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardioAssignment, CardioSessionType, CardioZones } from '../../types';
+import { CardioAssignment, CardioSessionType } from '../../types';
 import { HeartRateStatus } from '../../services/bleHeartRate';
 import { ZONE_LABEL } from '../../utils/cardioZones';
 import DeviceChip from './DeviceChip';

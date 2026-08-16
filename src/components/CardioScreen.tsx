@@ -17,7 +17,7 @@ import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
 import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
 import { haptics } from '../services/haptics';
-import { speak, cancelSpeech } from '../services/cardioVoice';
+import { speak, speakUrgent, cancelSpeech } from '../services/cardioVoice';
 import { grantXp } from '../utils/xp';
 import { Skeleton } from './ui';
 import HrTestsPanel from './HrTestsPanel';
@@ -163,6 +163,11 @@ export default function CardioScreen({ profile }: Props) {
   const currentBlockIndexRef = useRef(0);
   const blockStartedAtSecRef = useRef(0);
 
+  // Prescripción activa de la sesión en curso, fijada al arrancar (§F1, bug
+  // 3): antes solo se guardaba en modo 'zona2' y en 'intervalos' se perdía,
+  // así que esas sesiones no se podían enlazar con su prescripción.
+  const activeAssignmentIdRef = useRef<string | undefined>(undefined);
+
   // Vuelta a la calma (§5.6): mientras está activa, las muestras van aquí en
   // vez de al acumulador de zonas — el entreno ya terminó, esto es otra cosa.
   const cooldownActiveRef = useRef(false);
@@ -280,12 +285,14 @@ export default function CardioScreen({ profile }: Props) {
       currentBlockIndexRef.current = 0;
       blockStartedAtSecRef.current = 0;
       sessionTargetZoneRef.current = intervalAssignment.intervals[0].targetZone;
+      activeAssignmentIdRef.current = intervalAssignment.id;
       setDisplayBlockIndex(0);
       setDisplayBlockRemainingSec(intervalAssignment.intervals[0].durationSec);
-      speak(`Empieza: ${intervalAssignment.intervals[0].label}`);
+      speakUrgent(`Empieza: ${intervalAssignment.intervals[0].label}`);
     } else {
       intervalBlocksRef.current = null;
       sessionTargetZoneRef.current = targetZone ?? null;
+      activeAssignmentIdRef.current = sessionType === 'zona2' ? zona2Assignment?.id : undefined;
     }
     setState('live');
 
@@ -310,7 +317,7 @@ export default function CardioScreen({ profile }: Props) {
             setDisplayBlockIndex(nextIndex);
             setDisplayBlockRemainingSec(blocks[nextIndex].durationSec);
             void haptics.heavy();
-            speak(blocks[nextIndex].label);
+            speakUrgent(blocks[nextIndex].label);
           } else {
             // Último bloque completado: la secuencia ha terminado sola.
             setDisplayBlockRemainingSec(0);
@@ -438,7 +445,7 @@ export default function CardioScreen({ profile }: Props) {
 
     const session = await createCardioSession({
       athleteId: profile.email,
-      assignmentId: sessionType === 'zona2' ? zona2Assignment?.id : undefined,
+      assignmentId: activeAssignmentIdRef.current,
       type: sessionType,
       date: new Date().toISOString().slice(0, 10),
       startedAt: draft.startedAtIso,
