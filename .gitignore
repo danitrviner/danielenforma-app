@@ -5,6 +5,10 @@ coverage/
 .DS_Store
 *.log
 
+# Salida de los scripts de diagnóstico (scripts/diagnostico*.mjs) — datos
+# generados en la máquina de quien lo corre, nunca hace falta versionarlos.
+scripts/out/
+
 # Env files — only the example template is committed
 .env
 .env.*
