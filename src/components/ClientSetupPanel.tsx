@@ -261,9 +261,15 @@ export default function ClientSetupPanel({
                 className="w-full flex items-center gap-3 p-4"
               >
                 <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="font-sans font-bold text-body-s text-white">{phase.title}</p>
-                    {phase.subtitle && <span className="font-sans text-caption text-ink-2">{phase.subtitle}</span>}
+                  {/* `min-w-0` + `truncate` en el título, y el subtítulo con
+                      `shrink-0`: sin esto, un título de fase largo se salía
+                      de esta columna y se metía debajo del porcentaje y la
+                      flecha de al lado — el mismo desbordamiento horizontal
+                      que ya se vio en las pestañas del CRM y en el wizard de
+                      alta, aquí con texto en vez de una fila de chips. */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="min-w-0 truncate font-sans font-bold text-body-s text-white">{phase.title}</p>
+                    {phase.subtitle && <span className="shrink-0 font-sans text-caption text-ink-2">{phase.subtitle}</span>}
                   </div>
                   <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div
