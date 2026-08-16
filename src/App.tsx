@@ -43,6 +43,7 @@ const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
 const CommandPalette       = lazy(() => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
+const PlanEnEsperaScreen     = lazy(() => import('./components/PlanEnEsperaScreen'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
 const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
@@ -558,12 +559,28 @@ function AppContent() {
     );
   }
 
-  // Sin plan, Rutinas/Academia/Nutrición no tienen nada que enseñar — eran
-  // pantallas vacías detrás de un tab que invitaba a entrar. Se ocultan y solo
-  // quedan Hoy (con la sala de espera, PlanInPreparationCard) y Perfil.
-  const athleteTabsVisibles = bloquearSinPlan ? ATHLETE_TABS.filter(t => t.id === 'home' || t.id === 'profile') : ATHLETE_TABS;
-  const mobileTabs = isCoach ? COACH_TABS_MOBILE : athleteTabsVisibles;
-  const navGroups = isCoach ? COACH_NAV_GROUPS : [{ items: athleteTabsVisibles }];
+  // Tercer gate: sin plan publicado, bloqueo total — mismo patrón que el
+  // wizard de alta y el catálogo de gimnasio arriba, no la barra reducida a
+  // Hoy/Perfil que hubo aquí antes (16-08, a petición de Dani: nada de
+  // navegación, una única pantalla de espera hasta que haya plan).
+  if (!isCoach && bloquearSinPlan) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PlanEnEsperaScreen
+          profile={profile}
+          checkins={checkins}
+          onRefreshProfile={handleRefreshData}
+          onLogOut={() => {
+            setCurrentUser(null);
+            void limpiarDatosDeSesion(queryClient);
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  const mobileTabs = isCoach ? COACH_TABS_MOBILE : ATHLETE_TABS;
+  const navGroups = isCoach ? COACH_NAV_GROUPS : [{ items: ATHLETE_TABS }];
   const pendingCount = getPendingReviews(checkins).length;
 
   // Pestaña activa para resaltar la nav — el primer segmento de la URL, ya
@@ -657,8 +674,11 @@ function AppContent() {
               quedaron los cinco destinos de siempre, así que para llegar había
               que entrar por Perfil: demasiados pasos para algo que se abre
               nada más subirse a la cinta. Ocupa el hueco del botón de IA, que
-              es solo del coach, y así ninguna de las dos cabeceras crece. */}
-          {!isCoach && !bloquearSinPlan && (
+              es solo del coach, y así ninguna de las dos cabeceras crece.
+              Sin `bloquearSinPlan` aquí: quien llega a esta cabecera ya pasó
+              el gate de la sala de espera (más arriba), así que si es
+              atleta es porque ya tiene plan. */}
+          {!isCoach && (
             <button
               onClick={() => goToTab('cardio')}
               aria-label="Cardio"
@@ -734,16 +754,17 @@ function AppContent() {
 
           {/* ATHLETE */}
           {!isCoach && <Route path="/home" element={<HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />} />}
-          {/* Sin plan, estas cuatro no tienen nada que enseñar (tarea 8): un
-              enlace viejo, una notificación o el botón Atrás del navegador
-              podían aterrizar aquí igualmente, así que el guardado va en la
-              propia ruta, no solo en ocultar el tab. */}
-          {!isCoach && <Route path="/training" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <TrainingScreen profile={profile} />} />}
-          {!isCoach && <Route path="/nutrition" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <NutritionHubScreen profile={profile} />} />}
+          {/* Sin `bloquearSinPlan` aquí (16-08): el gate de la sala de espera,
+              más arriba, ya sustituye TODO este árbol de rutas por
+              PlanEnEsperaScreen mientras no haya plan — un atleta nunca llega
+              a este <Routes> en ese estado, así que no hace falta guardarlo
+              dos veces. */}
+          {!isCoach && <Route path="/training" element={<TrainingScreen profile={profile} />} />}
+          {!isCoach && <Route path="/nutrition" element={<NutritionHubScreen profile={profile} />} />}
           {!isCoach && <Route path="/checkin" element={<CheckInScreen profile={profile} checkins={checkins} />} />}
           {!isCoach && <Route path="/roadmap" element={<AthleteRoadmapScreen profile={profile} />} />}
-          {!isCoach && <Route path="/academy" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <AcademyScreen profile={profile} />} />}
-          {!isCoach && <Route path="/cardio" element={bloquearSinPlan ? <Navigate to="/home" replace /> : <CardioScreen profile={profile} />} />}
+          {!isCoach && <Route path="/academy" element={<AcademyScreen profile={profile} />} />}
+          {!isCoach && <Route path="/cardio" element={<CardioScreen profile={profile} />} />}
 
           {/* COACH */}
           {isCoach && (() => {
