@@ -361,8 +361,20 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
           </div>
         )}
 
-        {/* Exchange badges */}
+        {/* Exchange badges — kcal al lado y NO en la fila de metadata de más
+            arriba (14-08, tarea 24): esa de arriba usa `recipe.kcal` sin
+            escalar, fijo aunque se mueva ESCALA; aquí, junto a los
+            intercambios (que sí ya usan `scaledRecipe` vía calcExchanges),
+            se mueve con el mismo slider — las dos cifras que cambian juntas
+            quedan juntas, en vez de una viva y otra congelada en la ración
+            original. */}
         <div className="flex flex-wrap gap-2">
+          {scaledRecipe.kcal != null && (
+            <span className="flex items-center gap-1 px-3 py-1 rounded-surface border font-mono text-label font-bold text-accent border-accent/30 bg-accent/10">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>local_fire_department</span>
+              {scaledRecipe.kcal} kcal
+            </span>
+          )}
           {(Object.entries(exch) as [FoodCategory, number][])
             .filter(([, v]) => v > 0)
             .map(([cat, val]) => (

@@ -861,8 +861,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`);
   };
 
+  // 14-08 (tarea 24). React #185 «Maximum update depth exceeded» al añadir
+  // una receta a Intercambios. El guardado `!pendingRecipe` de abajo no basta
+  // por sí solo: `onConsumedPendingRecipe` limpia `pendingRecipe` en el PADRE
+  // (NutritionHubScreen), y hasta que ese cambio de prop vuelve a bajar aquí
+  // este efecto puede volver a dispararse con el MISMO objeto — por ejemplo
+  // si `loading` cambia de valor en ese hueco, que es justo el otro elemento
+  // de sus dependencias. Cada disparo repetido con la misma receta ejecuta
+  // `handleSelectDiet`/`setChooseDietForRecipe` otra vez, lo que puede volver
+  // a cambiar algo que retrigueree el efecto antes de que React llegue a
+  // pintar — el patrón clásico del error 185. Un ref que recuerda la ÚLTIMA
+  // receta ya procesada (mismo patrón que `initFor` más arriba) hace el
+  // efecto idempotente sin importar cuántas veces se dispare de más.
+  const pendingRecipeProcesadaRef = useRef<Recipe | null>(null);
   useEffect(() => {
     if (!pendingRecipe || loading) return;
+    if (pendingRecipeProcesadaRef.current === pendingRecipe) return;
+    pendingRecipeProcesadaRef.current = pendingRecipe;
     if (allDietsList.length === 0) {
       // Athlete has no diets at all yet — nothing to choose from, start a blank one
       const blank = blankDiet(profile.email);
