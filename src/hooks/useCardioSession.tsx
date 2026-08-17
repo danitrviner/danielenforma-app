@@ -75,12 +75,14 @@ interface CardioSessionContextValue {
   bpm: number | null;
   deviceStatus: HeartRateStatus;
   error: string | null;
+  paused: boolean;
   displayElapsedSec: number;
   displaySamples: number[];
   displayTimeInZone: Record<keyof CardioZones, number>;
   displayBelowZoneSec: number;
   displayBlockIndex: number;
   displayBlockRemainingSec: number;
+  displayLive: { caloriesKcal?: number; caloriesActiveKcal?: number; mets?: number; points?: number };
   justSavedSession: CardioSession | null;
   weekJustClosed: boolean;
   /** Bloques de intervalos de la sesión en curso, o null fuera de modo intervalos. Ref: se lee en cada render, no dispara uno propio. */
@@ -91,6 +93,8 @@ interface CardioSessionContextValue {
   connect: () => Promise<void>;
   cancelReady: () => Promise<void>;
   start: () => void;
+  pause: () => void;
+  resume: () => void;
   save: () => Promise<void>;
   discard: () => Promise<void>;
   finishCooldown: () => Promise<void>;
@@ -157,6 +161,15 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const [displayBlockRemainingSec, setDisplayBlockRemainingSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Capa de cálculo en vivo (F4 del plan de réplica FITIV — fila de 3
+  // métricas y página 2 del carrusel: FC PROM · METS · FC MAX y CAL ACTIVA ·
+  // CAL TOTAL · PUNTOS). El motor de F4 del análisis (Keytel, METs, Points)
+  // hasta ahora solo corría una vez al cerrar la sesión, en `confirmEffort`;
+  // aquí se repite cada submuestreo con lo grabado hasta el momento. Sin
+  // peso/edad/sexo en la anamnesis, simplemente no hay cifra — nunca se
+  // inventa un valor.
+  const [displayLive, setDisplayLive] = useState<{ caloriesKcal?: number; caloriesActiveKcal?: number; mets?: number; points?: number }>({});
+
   const monitorRef = useRef<HeartRateMonitor | null>(null);
   const cardioProfileRef = useRef(cardioProfile);
   cardioProfileRef.current = cardioProfile;
@@ -210,6 +223,23 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
 
   const sampleTickRef = useRef<number | null>(null);
   const clockTickRef = useRef<number | null>(null);
+
+  // Pausa (F4 del plan de réplica FITIV: el botón ámbar de la barra
+  // inferior). `pausedRef` es la fuente de verdad para los callbacks (nunca
+  // el estado de React, que llegaría con retraso a un closure); `paused` es
+  // solo para pintar el botón. Mientras está pausada: se sigue viendo el BPM
+  // en vivo (la banda sigue midiendo), pero no se acumula tiempo de sesión,
+  // ni tiempo en zona, ni avance de bloque de intervalos, ni muestras.
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
+  const pausedAtMsRef = useRef<number | null>(null);
+  const pausedTotalMsRef = useRef(0);
+
+  /** Milisegundos pausados hasta `nowMs`, incluida la pausa en curso si la hay. */
+  function totalPausedMs(nowMs: number): number {
+    const current = pausedRef.current && pausedAtMsRef.current !== null ? nowMs - pausedAtMsRef.current : 0;
+    return pausedTotalMsRef.current + current;
+  }
 
   // Este cleanup ya NO se dispara al navegar fuera de /cardio (el Provider
   // vive por encima del router) — solo al desmontar la app entera (logout).
@@ -273,8 +303,10 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
         const zone = profileForZones ? getZoneForBpm(sample.bpm, profileForZones.zones) : null;
 
         // Solo se acumula/alerta si la sesión ya está grabando (§ready vs
-        // live): conectar antes de empezar no debe contaminar la sesión.
-        if (startedAtRef.current !== null) {
+        // live) y no está en pausa: conectar antes de empezar, o una pausa a
+        // mitad de sesión, no deben contaminar el tiempo en zona ni las
+        // muestras — el BPM se sigue viendo (arriba, `setBpm`), pero no cuenta.
+        if (startedAtRef.current !== null && !pausedRef.current) {
           bpmBufferRef.current.push(sample.bpm);
           zoneAccRef.current = setActiveZone(flushZoneTime(zoneAccRef.current, sample.at), zone);
 
@@ -312,10 +344,15 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     zoneAccRef.current = createZoneAccumulator(now);
     bpmBufferRef.current = [];
     lastAlertAtRef.current = 0;
+    pausedRef.current = false;
+    pausedAtMsRef.current = null;
+    pausedTotalMsRef.current = 0;
+    setPaused(false);
     setDisplayElapsedSec(0);
     setDisplaySamples([]);
     setDisplayTimeInZone({ ...ZERO_TIME_IN_ZONE });
     setDisplayBelowZoneSec(0);
+    setDisplayLive({});
 
     if (sessionType === 'intervalos' && intervalAssignment?.intervals?.length) {
       intervalBlocksRef.current = intervalAssignment.intervals;
@@ -339,8 +376,14 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     // verdad al bolsillo es F5, que además necesita UIBackgroundModes).
     clockTickRef.current = window.setInterval(() => {
       if (startedAtRef.current === null) return;
-      const elapsedSec = Math.floor((Date.now() - startedAtRef.current) / 1000);
+      const nowMs = Date.now();
+      const elapsedSec = Math.floor((nowMs - startedAtRef.current - totalPausedMs(nowMs)) / 1000);
       setDisplayElapsedSec(elapsedSec);
+
+      // En pausa no avanza ni el cronómetro visible (arriba) más allá de lo
+      // ya descontado, ni los bloques de intervalos: se congela el entreno,
+      // no se salta un bloque mientras el atleta está parado.
+      if (pausedRef.current) return;
 
       const blocks = intervalBlocksRef.current;
       if (blocks) {
@@ -379,7 +422,46 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       }
       setDisplayTimeInZone(roundTimeInZone(zoneAccRef.current.timeInZoneSec));
       setDisplayBelowZoneSec(Math.round(zoneAccRef.current.belowZoneSec));
+
+      // Capa de cálculo en vivo — mismo cálculo que `confirmEffort`, repetido
+      // con lo grabado hasta ahora. No corre en pausa: no tiene sentido subir
+      // calorías con el cronómetro congelado.
+      if (!pausedRef.current) {
+        const nowMs = Date.now();
+        const durationMin = elapsedSecFromWallClock(startedAtRef.current! + totalPausedMs(nowMs), nowMs) / 60;
+        const { avgHR } = summarizeSamples(samplesRef.current);
+        const ob = onboardingRef.current;
+        if (avgHR && durationMin > 0 && ob?.weightKg && ob?.sex && ob?.birthDate) {
+          const ageYears = calcAge(ob.birthDate);
+          const caloriesKcal = caloriesKeytel({ avgHR, weightKg: ob.weightKg, ageYears, sex: ob.sex, durationMin });
+          let caloriesActiveKcal: number | undefined;
+          if (ob.heightCm) {
+            const bmrPerDay = mifflinBMR(ob.sex, ob.weightKg, ob.heightCm, ageYears);
+            caloriesActiveKcal = caloriesActive(caloriesKcal, bmrPerDay, durationMin);
+          }
+          const mets = metsFromCalories(caloriesActiveKcal ?? caloriesKcal, durationMin, ob.weightKg);
+          setDisplayLive({ caloriesKcal, caloriesActiveKcal, mets, points: fitivPoints(mets, durationMin) });
+        }
+      }
     }, SAMPLE_INTERVAL_SEC * 1000);
+  };
+
+  const pause = () => {
+    if (startedAtRef.current === null || pausedRef.current) return;
+    pausedRef.current = true;
+    pausedAtMsRef.current = Date.now();
+    setPaused(true);
+    // También se congela la alerta de zona: al reanudar no debe saltar de
+    // inmediato con el BPM que tenía justo antes de pararse.
+    lastAlertAtRef.current = Date.now();
+  };
+
+  const resume = () => {
+    if (!pausedRef.current || pausedAtMsRef.current === null) return;
+    pausedTotalMsRef.current += Date.now() - pausedAtMsRef.current;
+    pausedAtMsRef.current = null;
+    pausedRef.current = false;
+    setPaused(false);
   };
 
   /**
@@ -395,13 +477,19 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
 
     const now = Date.now();
     zoneAccRef.current = flushZoneTime(zoneAccRef.current, now);
-    const elapsedSec = elapsedSecFromWallClock(startedAtRef.current, now);
+    // Si se guarda/descarta con la sesión en pausa (p.ej. desde el cajón sin
+    // reanudar antes), el tiempo pausado hasta este instante también se
+    // descuenta — igual que hace el cronómetro en vivo.
+    const elapsedSec = elapsedSecFromWallClock(startedAtRef.current + totalPausedMs(now), now);
     const samples = samplesRef.current;
     const timeInZoneSec = roundTimeInZone(zoneAccRef.current.timeInZoneSec);
     const startedAtIso = new Date(startedAtRef.current).toISOString();
     startedAtRef.current = null; // marca "cerrado" antes de cualquier await
     sessionTargetZoneRef.current = null;
     intervalBlocksRef.current = null;
+    pausedRef.current = false;
+    pausedAtMsRef.current = null;
+    setPaused(false);
 
     if (shouldDiscardSession(elapsedSec, mode)) {
       await teardownMonitor();
@@ -537,11 +625,11 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   };
 
   const value: CardioSessionContextValue = {
-    state, sessionType, setSessionType, bpm, deviceStatus, error,
+    state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
-    displayBlockIndex, displayBlockRemainingSec, justSavedSession, weekJustClosed,
+    displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
     intervalBlocksRef, sessionTargetZoneRef,
-    connect, cancelReady, start,
+    connect, cancelReady, start, pause, resume,
     save: () => finishSession('save'),
     discard: () => finishSession('discard'),
     finishCooldown, confirmEffort, closeSummary,

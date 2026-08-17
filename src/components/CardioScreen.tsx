@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioSessionType } from '../types';
 import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForAthlete, getAthleteNutritionConfig } from '../dbService';
@@ -13,7 +14,7 @@ import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday'
 import { useCardioSession, SAMPLE_INTERVAL_SEC } from '../hooks/useCardioSession';
 import { Skeleton } from './ui';
 import HrTestsPanel from './HrTestsPanel';
-import LiveSession from './cardio/LiveSession';
+import LiveSession from './cardio/live/LiveSession';
 import EffortPrompt from './cardio/EffortPrompt';
 import CooldownPrompt from './cardio/CooldownPrompt';
 import TrainingLoadPanel from './cardio/TrainingLoadPanel';
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export default function CardioScreen({ profile }: Props) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cardio = useCardioSession();
 
@@ -92,11 +94,11 @@ export default function CardioScreen({ profile }: Props) {
   const zona2Assignment = pickActiveZona2Assignment(assignments);
   const intervalAssignment = pickActiveIntervalAssignment(assignments);
 
-  const { state, sessionType, setSessionType, bpm, deviceStatus, error,
+  const { state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
-    displayBlockIndex, displayBlockRemainingSec, justSavedSession, weekJustClosed,
+    displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
     intervalBlocksRef, sessionTargetZoneRef,
-    connect, cancelReady, start, save, discard, finishCooldown, confirmEffort, closeSummary,
+    connect, cancelReady, start, pause, resume, save, discard, finishCooldown, confirmEffort, closeSummary,
   } = cardio;
 
   const targetZone = sessionType === 'zona2' ? (zona2Assignment?.targetZone ?? 'z2') : undefined;
@@ -187,6 +189,13 @@ export default function CardioScreen({ profile }: Props) {
         intervalBlocks={intervalBlocksRef.current ?? undefined}
         currentBlockIndex={intervalBlocksRef.current ? displayBlockIndex : undefined}
         blockRemainingSec={displayBlockRemainingSec}
+        paused={paused}
+        onTogglePause={paused ? resume : pause}
+        onHide={() => navigate('/home')}
+        liveMets={displayLive.mets}
+        liveCaloriesKcal={displayLive.caloriesKcal}
+        liveCaloriesActiveKcal={displayLive.caloriesActiveKcal}
+        livePoints={displayLive.points}
         onSave={save}
         onDiscard={discard}
       />

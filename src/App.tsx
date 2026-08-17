@@ -64,6 +64,13 @@ const UiShowcase = import.meta.env.DEV
   ? lazy(() => import('./components/ui/Showcase'))
   : null;
 
+// Banco de pruebas de la pantalla de cardio en vivo (F4 del plan de réplica
+// FITIV): ni login ni banda BLE real hacen falta para verla. Misma poda que
+// el resto de harnesses — ver components/cardio/live/CardioLiveDemo.tsx.
+const CardioLiveDemo = import.meta.env.DEV
+  ? lazy(() => import('./components/cardio/live/CardioLiveDemo'))
+  : null;
+
 // Banco de pruebas del catálogo de máquinas, misma poda que el escaparate. El
 // swipe solo enseña máquinas publicadas y el importador las deja sin publicar a
 // propósito, así que sin esto el flujo no se puede recorrer hasta que un admin
@@ -501,6 +508,14 @@ function AppContent() {
           <UiShowcase />
         </Suspense>
       </div>
+    );
+  }
+
+  if (CardioLiveDemo && location.pathname === '/dev/cardio-live') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CardioLiveDemo />
+      </Suspense>
     );
   }
 
