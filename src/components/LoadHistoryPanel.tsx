@@ -373,7 +373,11 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Metric toggles + overlay buttons ── */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-        <div className="overflow-x-auto -mx-1 px-1">
+        {/* min-w-0 + w-full: a partir de `sm` este scroller es hijo de un flex
+            row y por defecto no puede encogerse (min-width:auto), así que
+            overflow-x-auto nunca entraba en juego y los chips desbordaban la
+            tarjeta en vez de scrollear dentro de ella. */}
+        <div className="min-w-0 w-full overflow-x-auto -mx-1 px-1">
           <div className="flex items-center gap-2 min-w-max">
             {METRICS.map(m => (
               <button
@@ -434,8 +438,12 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             <p className="font-mono text-caption uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
-            <div className="flex items-center gap-2">
-              <div className="flex bg-raised border border-hairline rounded-surface ">
+            {/* min-w-0: el <select> de abajo toma como ancho intrínseco su
+                opción más larga (texto libre del coach, "Macrociclo N · objetivo"),
+                y sin min-w-0 en toda la cadena de flex ni él ni este wrapper
+                podían encogerse — reventaban la tarjeta en vez de truncar. */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex bg-raised border border-hairline rounded-surface flex-shrink-0">
                 {(['week', 'day'] as const).map(g => (
                   <button
                     key={g}
@@ -452,7 +460,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
+                  className="min-w-0 max-w-full truncate bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (

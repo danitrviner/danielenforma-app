@@ -4,7 +4,7 @@ import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutE
 import LoadHistoryPanel from './LoadHistoryPanel';
 import StatTile from './StatTile';
 import {
-  getWorkoutAssignmentsForAthlete, getWorkouts, getExercises, seedExercisesIfEmpty,
+  getWorkoutAssignmentsForAthlete, getWorkouts, getExercises,
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
 } from '../dbService';
 import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
@@ -139,12 +139,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: ['workouts'],
     queryFn: getWorkouts,
   });
+  // Sembrar el catálogo de ejercicios es mantenimiento del coach (escribe en
+  // `exercises`, colección de solo-coach) — ya se hace desde ExerciseLibraryScreen,
+  // WorkoutsScreen y ClientHub. Aquí, en la pantalla del atleta, solo se lee:
+  // llamar a seedExercisesIfEmpty() en una sesión de atleta encendía el banner
+  // de "sin permiso para guardar" sin que el atleta tocara nada.
   const { data: exercises = [], isPending: loadingExercises } = useQuery({
     queryKey: ['exercises'],
-    queryFn: async () => {
-      await seedExercisesIfEmpty();
-      return getExercises();
-    },
+    queryFn: getExercises,
   });
   const logsKey = ['workoutLogs', profile.email] as const;
   const { data: logs = [], isPending: loadingLogs } = useQuery({
@@ -437,18 +439,33 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         note: workoutNoteInput.trim() || undefined,
       });
 
-      await updateWorkoutAssignment(activeAssignment.id, { status: 'completed' });
+      // El entrenamiento ya está a salvo en `workoutLogs` en este punto. Marcar
+      // la asignación como completada es una segunda escritura independiente
+      // — si falla, el atleta no debe pensar que ha perdido la sesión (bug
+      // real: antes las dos escrituras compartían el mismo mensaje de error,
+      // así que un fallo aquí decía "no se pudo guardar el entrenamiento"
+      // aunque el entreno sí estuviera guardado).
+      let assignmentUpdateFailed = false;
+      try {
+        await updateWorkoutAssignment(activeAssignment.id, { status: 'completed' });
+        queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a =>
+          a.id === activeAssignment.id ? { ...a, status: 'completed' } : a
+        ));
+      } catch (err) {
+        console.error('No se pudo marcar la asignación como completada:', err);
+        assignmentUpdateFailed = true;
+      }
 
-      queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a =>
-        a.id === activeAssignment.id ? { ...a, status: 'completed' } : a
-      ));
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
       setRestTimer(null);
       // 05-5. El entrenamiento ya está en Firestore: el borrador local sobra.
-      // Va después de las dos escrituras y no antes, para que un fallo al
+      // Va después de las escrituras y no antes, para que un fallo al
       // guardar deje el trabajo del atleta donde estaba.
       borrarSesion(profile.email, activeAssignment.id);
       void haptics.success();
+      if (assignmentUpdateFailed) {
+        showToast('Entreno guardado, pero no se pudo marcar como completado.');
+      }
       // El modal de celebración se muestra ANTES de cerrar el player — el
       // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
       setCelebration({ isFirstEver, totalSets, tonnage, prs });
@@ -547,7 +564,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     const totalSets = playerSets.flat().length;
 
     return (
-      <div className="space-y-6 pb-14">
+      // pb reservado para la action bar fija de más abajo (nota + botones):
+      // bug real — pb-14 (56px) se quedaba corto frente a los ~184px que ocupa
+      // la barra (bottom-nav + pt-8 + botón size="l"), así que la nota del
+      // entrenamiento quedaba tapada por "Saltar sesión"/"Terminar sesión".
+      <div className="space-y-6 pb-[calc(var(--nav-h)+7rem)]">
         {/* Player header */}
         <header className="pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2">
           <div className="flex items-center gap-3">
@@ -945,8 +966,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Player action bar — pie fijo con degradado al fondo (handoff): el
             retroceso es un botón cuadrado y el primario es quien lleva la
-            acción de verdad. */}
-        <div className="fixed bottom-24 md:bottom-6 left-0 right-0 z-[var(--z-fab)] px-4 pt-8 bg-gradient-to-t from-bg via-bg/90 to-transparent">
+            acción de verdad. bottom usa --nav-h (bug real: bottom-24 = 96px
+            era siempre menor que la bottom-nav, ~98-112px con safe-area, así
+            que la barra quedaba pisada por/pisando la nav). */}
+        <div className="fixed bottom-[calc(var(--nav-h)+0.5rem)] md:bottom-6 left-0 right-0 z-[var(--z-fab)] px-4 pt-8 bg-gradient-to-t from-bg via-bg/90 to-transparent">
           <div className="flex justify-center gap-3">
             <Button
               variant="secondary"
