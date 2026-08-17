@@ -16,6 +16,7 @@ import LocalModeBanner from './components/LocalModeBanner';
 import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
 import { CardioSessionProvider } from './hooks/useCardioSession';
+import CardioMiniPlayer from './components/cardio/CardioMiniPlayer';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
@@ -69,6 +70,12 @@ const UiShowcase = import.meta.env.DEV
 // el resto de harnesses — ver components/cardio/live/CardioLiveDemo.tsx.
 const CardioLiveDemo = import.meta.env.DEV
   ? lazy(() => import('./components/cardio/live/CardioLiveDemo'))
+  : null;
+
+// Banco de pruebas del mini-reproductor persistente (F6): contexto simulado,
+// sin CardioSessionProvider real ni Firestore — ver CardioMiniPlayerDemo.tsx.
+const CardioMiniPlayerDemo = import.meta.env.DEV
+  ? lazy(() => import('./components/cardio/CardioMiniPlayerDemo'))
   : null;
 
 // Banco de pruebas del catálogo de máquinas, misma poda que el escaparate. El
@@ -519,6 +526,14 @@ function AppContent() {
     );
   }
 
+  if (CardioMiniPlayerDemo && location.pathname === '/dev/cardio-mini-player') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CardioMiniPlayerDemo />
+      </Suspense>
+    );
+  }
+
   if (GimnasioHarness && location.pathname === '/dev/gimnasio') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -668,6 +683,7 @@ function AppContent() {
     >
 
       <LocalModeBanner />
+      {!isCoach && <CardioMiniPlayer currentPath={location.pathname} onOpen={() => navigate('/cardio')} />}
 
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">

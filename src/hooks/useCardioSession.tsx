@@ -103,7 +103,12 @@ interface CardioSessionContextValue {
   closeSummary: () => void;
 }
 
-const CardioSessionContext = createContext<CardioSessionContextValue | null>(null);
+// Exportado (solo) para que el banco de pruebas de desarrollo
+// (CardioMiniPlayerDemo.tsx) pueda suministrar un valor simulado sin pasar
+// por Firestore — nadie más debería importar esto: las pantallas reales
+// consumen `useCardioSession()`, nunca el contexto en crudo.
+export const CardioSessionContext = createContext<CardioSessionContextValue | null>(null);
+export type { CardioSessionContextValue };
 
 interface ProviderProps {
   profile: UserProfile | null;
