@@ -97,7 +97,7 @@ export default function CardioScreen({ profile }: Props) {
   const { state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
     displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
-    intervalBlocksRef, sessionTargetZoneRef,
+    intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
     connect, cancelReady, start, pause, resume, save, discard, finishCooldown, confirmEffort, closeSummary,
   } = cardio;
 
@@ -198,6 +198,12 @@ export default function CardioScreen({ profile }: Props) {
         livePoints={displayLive.points}
         onSave={save}
         onDiscard={discard}
+        locked={locked}
+        onRegisterActivity={registerActivity}
+        onUnlock={unlock}
+        onLock={lock}
+        livePrefs={livePrefs}
+        onChangePrefs={setLivePrefs}
       />
     );
   }

@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { CardioZones, CardioIntervalBlock } from '../../../types';
 import { HeartRateStatus } from '../../../services/bleHeartRate';
 import { ZONE_COLOR, BELOW_ZONE_COLOR } from '../../../utils/cardioZones';
+import { CardioLivePrefs } from '../../../utils/cardioLivePrefs';
 import { Icon, Pager } from '../../ui';
 import TopBar from './TopBar';
 import MetricRow from './MetricRow';
 import BottomBar from './BottomBar';
 import ActionDrawer from './ActionDrawer';
+import LockOverlay from './LockOverlay';
+import LiveSettingsSheet from './LiveSettingsSheet';
 import PageObjetivo from './pages/PageObjetivo';
 import PageCalorias from './pages/PageCalorias';
 import PageZonas from './pages/PageZonas';
@@ -61,6 +64,12 @@ interface Props {
   livePoints?: number;
   onSave: () => void;
   onDiscard: () => void;
+  locked: boolean;
+  onRegisterActivity: () => void;
+  onUnlock: () => void;
+  onLock: () => void;
+  livePrefs: CardioLivePrefs;
+  onChangePrefs: (patch: Partial<CardioLivePrefs>) => void;
 }
 
 export default function LiveSession({
@@ -70,15 +79,17 @@ export default function LiveSession({
   paused, onTogglePause, onHide,
   liveMets, liveCaloriesKcal, liveCaloriesActiveKcal, livePoints,
   onSave, onDiscard,
+  locked, onRegisterActivity, onUnlock, onLock, livePrefs, onChangePrefs,
 }: Props) {
   const [pagina, setPagina] = useState(0);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const zoneColor = currentZone ? ZONE_COLOR[currentZone] : BELOW_ZONE_COLOR;
   const targetProgressSec = targetZone ? timeInZone[targetZone] : 0;
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-bg">
+    <div className="fixed inset-0 z-[90] flex flex-col bg-bg" onPointerDown={onRegisterActivity}>
       <div
         className="flex flex-1 min-h-0 flex-col transition-colors duration-700"
         style={{ background: `linear-gradient(180deg, ${zoneColor}f2, ${zoneColor}cc)` }}
@@ -131,7 +142,24 @@ export default function LiveSession({
         expanded={drawerExpanded}
         onToggleExpanded={() => setDrawerExpanded(v => !v)}
       />
-      <ActionDrawer expanded={drawerExpanded} saving={saving} onSave={onSave} onDiscard={onDiscard} />
+      <ActionDrawer
+        expanded={drawerExpanded}
+        saving={saving}
+        onSave={onSave}
+        onDiscard={onDiscard}
+        onLock={onLock}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+
+      {locked && <LockOverlay onUnlock={onUnlock} />}
+
+      <LiveSettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        deviceStatus={deviceStatus}
+        prefs={livePrefs}
+        onChangePrefs={onChangePrefs}
+      />
     </div>
   );
 }

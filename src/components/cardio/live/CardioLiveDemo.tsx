@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import LiveSession from './LiveSession';
 import { CardioZones } from '../../../types';
 import { ZONE_ORDER } from '../../../utils/cardioZones';
+import { DEFAULT_LIVE_PREFS, CardioLivePrefs } from '../../../utils/cardioLivePrefs';
 
 /* Banco de pruebas SOLO de desarrollo (misma poda que UiShowcase/
    GimnasioHarness — ver App.tsx) para ver `LiveSession` con datos, sin
@@ -23,6 +24,8 @@ export default function CardioLiveDemo() {
   const [paused, setPaused] = useState(false);
   const [chartData, setChartData] = useState(() => Array.from({ length: 20 }, (_, i) => ({ t: i * 4, bpm: 120 + Math.round(Math.sin(i / 3) * 20) })));
   const [mode, setMode] = useState<'libre' | 'zona2' | 'intervalos'>('zona2');
+  const [locked, setLocked] = useState(false);
+  const [prefs, setPrefs] = useState<CardioLivePrefs>(DEFAULT_LIVE_PREFS);
 
   const zone = ZONE_ORDER[zoneIndex];
   const bpm = MOCK_ZONES[zone].min + 5;
@@ -46,6 +49,9 @@ export default function CardioLiveDemo() {
         <button onClick={() => setMode('libre')} className="rounded-full bg-black/70 px-3 py-1 text-caption font-mono text-white">libre</button>
         <button onClick={() => setMode('zona2')} className="rounded-full bg-black/70 px-3 py-1 text-caption font-mono text-white">zona2</button>
         <button onClick={() => setMode('intervalos')} className="rounded-full bg-black/70 px-3 py-1 text-caption font-mono text-white">intervalos</button>
+        <button onClick={() => setLocked(l => !l)} className="rounded-full bg-black/70 px-3 py-1 text-caption font-mono text-white">
+          {locked ? 'desbloquear (debug)' : 'bloquear (debug)'}
+        </button>
       </div>
 
       <LiveSession
@@ -78,6 +84,12 @@ export default function CardioLiveDemo() {
         livePoints={194}
         onSave={() => window.alert('onSave')}
         onDiscard={() => window.alert('onDiscard')}
+        locked={locked}
+        onRegisterActivity={() => {}}
+        onUnlock={() => setLocked(false)}
+        onLock={() => setLocked(true)}
+        livePrefs={prefs}
+        onChangePrefs={(patch) => setPrefs(p => ({ ...p, ...patch }))}
       />
     </div>
   );

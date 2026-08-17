@@ -16,8 +16,9 @@ import {
 } from '../utils/cardioMetrics';
 import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { haptics } from '../services/haptics';
-import { speak, speakUrgent, cancelSpeech } from '../services/cardioVoice';
+import { speak, speakUrgent, cancelSpeech, setVoiceEnabled } from '../services/cardioVoice';
 import { grantXp } from '../utils/xp';
+import { loadLivePrefs, saveLivePrefs, CardioLivePrefs } from '../utils/cardioLivePrefs';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El motor de la sesión de cardio en vivo (F2 del plan de réplica FITIV).
@@ -90,6 +91,14 @@ interface CardioSessionContextValue {
   intervalBlocksRef: React.MutableRefObject<CardioIntervalBlock[] | null>;
   /** Zona objetivo activa en este instante (cambia por bloque en modo intervalos). */
   sessionTargetZoneRef: React.MutableRefObject<keyof CardioZones | null>;
+  livePrefs: CardioLivePrefs;
+  setLivePrefs: (patch: Partial<CardioLivePrefs>) => void;
+  locked: boolean;
+  /** Reinicia el temporizador de auto-lock — la UI la llama en cualquier toque de la pantalla en vivo. */
+  registerActivity: () => void;
+  unlock: () => void;
+  /** Candado manual del cajón: bloquear ya, sin esperar al temporizador. */
+  lock: () => void;
 
   connect: () => Promise<void>;
   cancelReady: () => Promise<void>;
@@ -181,6 +190,49 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // inventa un valor.
   const [displayLive, setDisplayLive] = useState<{ caloriesKcal?: number; caloriesActiveKcal?: number; mets?: number; points?: number }>({});
 
+  // Preferencias de la pantalla en vivo (F8): localStorage, no Firestore —
+  // ver cardioLivePrefs.ts. `voiceEnabled` se aplica de inmediato al
+  // servicio de voz nada más montar el Provider, no solo al cambiarlo.
+  const [livePrefs, setLivePrefsState] = useState<CardioLivePrefs>(() => loadLivePrefs());
+  useEffect(() => { setVoiceEnabled(livePrefs.voiceEnabled); }, [livePrefs.voiceEnabled]);
+
+  function setLivePrefs(patch: Partial<CardioLivePrefs>) {
+    setLivePrefsState(prev => {
+      const next = { ...prev, ...patch };
+      saveLivePrefs(next);
+      return next;
+    });
+  }
+
+  // Auto-lock (F8, §4bis.2 del análisis: "Auto Lock Workout Controls",
+  // apagado por defecto en FITIV). `lockTimerRef` se reinicia con cada toque
+  // en la pantalla en vivo (`registerActivity`, que llama la propia UI) —
+  // sin actividad durante `autoLockDelaySec`, se bloquea.
+  const [locked, setLocked] = useState(false);
+  const lockTimerRef = useRef<number | null>(null);
+
+  function armLockTimer() {
+    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
+    if (!livePrefs.autoLockEnabled) return;
+    lockTimerRef.current = window.setTimeout(() => setLocked(true), livePrefs.autoLockDelaySec * 1000);
+  }
+
+  function registerActivity() {
+    if (locked) return; // desbloquear es un gesto aparte (el SlideAction), no un toque cualquiera
+    armLockTimer();
+  }
+
+  function unlock() {
+    setLocked(false);
+    armLockTimer();
+  }
+
+  /** Candado manual del cajón — bloquear ya, sin esperar al temporizador de inactividad. */
+  function lock() {
+    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
+    setLocked(true);
+  }
+
   const monitorRef = useRef<HeartRateMonitor | null>(null);
   const cardioProfileRef = useRef(cardioProfile);
   cardioProfileRef.current = cardioProfile;
@@ -263,7 +315,12 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // vive por encima del router) — solo al desmontar la app entera (logout).
   // Es justo el cambio que hace F2: antes esto mataba la sesión al salir de
   // la pantalla.
-  useEffect(() => () => { stopTicking(); cancelSpeech(); monitorRef.current?.disconnect(); }, []);
+  useEffect(() => () => {
+    stopTicking();
+    cancelSpeech();
+    monitorRef.current?.disconnect();
+    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
+  }, []);
 
   function stopTicking() {
     if (sampleTickRef.current !== null) { window.clearInterval(sampleTickRef.current); sampleTickRef.current = null; }
@@ -272,6 +329,8 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
 
   async function teardownMonitor() {
     stopTicking();
+    if (lockTimerRef.current !== null) { window.clearTimeout(lockTimerRef.current); lockTimerRef.current = null; }
+    setLocked(false);
     if (activityStartedRef.current) {
       activityStartedRef.current = false;
       void stopCardioActivity();
@@ -396,6 +455,8 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     setDisplayTimeInZone({ ...ZERO_TIME_IN_ZONE });
     setDisplayBelowZoneSec(0);
     setDisplayLive({});
+    setLocked(false);
+    armLockTimer();
 
     if (sessionType === 'intervalos' && intervalAssignment?.intervals?.length) {
       intervalBlocksRef.current = intervalAssignment.intervals;
@@ -704,7 +765,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
     displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
-    intervalBlocksRef, sessionTargetZoneRef,
+    intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
     connect, cancelReady, start, pause, resume,
     save: () => finishSession('save'),
     discard: () => finishSession('discard'),

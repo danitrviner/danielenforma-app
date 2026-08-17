@@ -11,6 +11,16 @@ export function isVoiceAvailable(): boolean {
   return synth() !== null;
 }
 
+// F8 del plan de réplica FITIV: toggle "Entrenamiento por voz" de la hoja de
+// ajustes en vivo. Vive aquí y no en el llamador — un solo interruptor, no
+// uno por cada punto que hoy llama a speak()/speakUrgent().
+let voiceEnabled = true;
+
+export function setVoiceEnabled(value: boolean): void {
+  voiceEnabled = value;
+  if (!value) cancelSpeech();
+}
+
 // Cola de frases pendientes (§F1, bug 4): antes `speak()` cancelaba cualquier
 // frase en curso, así que el aviso de cambio de bloque y la alerta de salir
 // de zona se pisaban entre sí — el que llegaba segundo se comía al primero.
@@ -43,13 +53,14 @@ function speakNext(myGeneration: number): void {
 
 /** Encola la frase — se dice en cuanto termina la anterior, sin pisarla. */
 export function speak(text: string): void {
-  if (!synth()) return;
+  if (!synth() || !voiceEnabled) return;
   queue.push(text);
   if (!speaking) speakNext(generation);
 }
 
 /** Para lo que no puede esperar (cambio de bloque): vacía la cola, corta lo que se esté diciendo y habla ya. */
 export function speakUrgent(text: string): void {
+  if (!voiceEnabled) return;
   const s = synth();
   if (!s) return;
   generation += 1; // invalida el onend/onerror de lo que estuviera sonando
