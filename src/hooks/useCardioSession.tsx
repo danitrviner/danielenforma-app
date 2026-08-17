@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock, CardioSession, CardioWeeklyGoal } from '../types';
 import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getCardioWeeklyGoal, saveCardioWeeklyGoal } from '../dbService';
 import { HeartRateMonitor, HeartRateStatus, isBleAvailable } from '../services/bleHeartRate';
-import { getZoneForBpm, getZoneAlertDirection } from '../utils/cardioZones';
+import { getZoneForBpm, getZoneAlertDirection, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR } from '../utils/cardioZones';
+import { startCardioActivity, updateCardioActivity, stopCardioActivity } from '../services/cardioLiveActivity';
 import {
   ZERO_TIME_IN_ZONE, ZoneAccumulator, createZoneAccumulator, flushZoneTime, setActiveZone,
   roundTimeInZone, elapsedSecFromWallClock, shouldDiscardSession, summarizeSamples, pickActiveZona2Assignment,
@@ -152,6 +153,11 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const [weekJustClosed, setWeekJustClosed] = useState(false);
   const [sessionType, setSessionType] = useState<CardioSessionType>('libre');
   const [bpm, setBpm] = useState<number | null>(null);
+  // Espejo en ref del BPM (F5): el tick del cronómetro que manda datos a la
+  // Live Activity / foreground service se creó una sola vez dentro de
+  // `start()`, así que leer el `bpm` de React ahí sería el valor del
+  // instante en que se creó el intervalo, no el de ahora.
+  const bpmRef = useRef<number | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<HeartRateStatus>('connected');
   const [displayElapsedSec, setDisplayElapsedSec] = useState(0);
   const [displaySamples, setDisplaySamples] = useState<number[]>([]);
@@ -201,6 +207,13 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const sessionTargetZoneRef = useRef<keyof CardioZones | null>(null);
   const lastAlertAtRef = useRef(0);
   const draftRef = useRef<SessionDraft | null>(null);
+
+  // Throttle de la Live Activity / foreground service (F5): "como mucho
+  // cada 2 s, y solo si cambió algo que se vea" — en iOS, pasarse de
+  // actualizaciones hace que el sistema deje de refrescarla sin avisar.
+  const lastActivitySentSecRef = useRef(-1);
+  const lastActivityZoneRef = useRef<keyof CardioZones | 'below' | null>(null);
+  const activityStartedRef = useRef(false);
 
   // Prescripción activa de la sesión en curso, fijada al arrancar (§F1, bug
   // 3): antes solo se guardaba en modo 'zona2' y en 'intervalos' se perdía,
@@ -254,6 +267,10 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
 
   async function teardownMonitor() {
     stopTicking();
+    if (activityStartedRef.current) {
+      activityStartedRef.current = false;
+      void stopCardioActivity();
+    }
     await monitorRef.current?.stopListening();
     await monitorRef.current?.disconnect();
     monitorRef.current = null;
@@ -293,6 +310,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       });
       await monitor.startListening((sample) => {
         setBpm(sample.bpm);
+        bpmRef.current = sample.bpm;
 
         if (cooldownActiveRef.current) {
           cooldownSamplesRef.current.push({ bpm: sample.bpm, atMs: sample.at });
@@ -336,6 +354,26 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     setBpm(null);
   };
 
+  /** Zona actual a partir del BPM en vivo, con el mismo fallback "fuera de zona" que ya usa la UI. */
+  function zoneInfoFor(bpmValue: number | null): { key: keyof CardioZones | 'below'; label: string; color: string } {
+    const profile = cardioProfileRef.current;
+    const zone = bpmValue !== null && profile ? getZoneForBpm(bpmValue, profile.zones) : null;
+    return zone ? { key: zone, label: ZONE_LABEL[zone], color: ZONE_COLOR[zone] } : { key: 'below', label: BELOW_ZONE_LABEL, color: BELOW_ZONE_COLOR };
+  }
+
+  /** Lo que se manda como `phaseText` a la Live Activity/foreground service: bloque de intervalos, objetivo de Z2, o vacío en libre. */
+  function currentPhaseText(): string {
+    const blocks = intervalBlocksRef.current;
+    if (blocks) {
+      const block = blocks[currentBlockIndexRef.current];
+      return `Bloque ${currentBlockIndexRef.current + 1}/${blocks.length} · ${block.label}`;
+    }
+    if (sessionTargetZoneRef.current && sessionType === 'zona2') {
+      return `Objetivo: ${ZONE_LABEL[sessionTargetZoneRef.current]}`;
+    }
+    return '';
+  }
+
   /** Paso 2: la banda ya está conectada — arranca el cronómetro y el registro. */
   const start = () => {
     const now = Date.now();
@@ -370,6 +408,20 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     }
     setState('live');
 
+    const sessionTitle = sessionType === 'intervalos' ? 'Intervalos' : sessionType === 'zona2' ? 'Zona 2' : 'Libre';
+    const initialZone = zoneInfoFor(bpmRef.current);
+    lastActivitySentSecRef.current = 0;
+    lastActivityZoneRef.current = initialZone.key;
+    activityStartedRef.current = true;
+    void startCardioActivity({
+      sessionTitle,
+      elapsedSec: 0,
+      bpm: bpmRef.current ?? 0,
+      zoneLabel: initialZone.label,
+      zoneColorHex: initialZone.color,
+      phaseText: currentPhaseText(),
+    });
+
     // Reloj de pared: el tiempo mostrado sale de Date.now() - startedAt, no
     // de un contador de ticks, así no se atrasa si el SO estrangula el
     // intervalo con la pantalla bloqueada (§F1 del plan; sobrevivir de
@@ -379,6 +431,25 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       const nowMs = Date.now();
       const elapsedSec = Math.floor((nowMs - startedAtRef.current - totalPausedMs(nowMs)) / 1000);
       setDisplayElapsedSec(elapsedSec);
+
+      // Live Activity / foreground service: como mucho cada 2 s, y solo si
+      // cambió el segundo mostrado o la zona — corre en pausa también (el
+      // BPM en la pantalla de bloqueo se queda fresco), pero el propio
+      // freno de "cambió el segundo" ya evita spam porque el cronómetro no
+      // avanza mientras está pausado.
+      const zoneNow = zoneInfoFor(bpmRef.current);
+      if (elapsedSec - lastActivitySentSecRef.current >= 2 || zoneNow.key !== lastActivityZoneRef.current) {
+        lastActivitySentSecRef.current = elapsedSec;
+        lastActivityZoneRef.current = zoneNow.key;
+        void updateCardioActivity({
+          sessionTitle,
+          elapsedSec,
+          bpm: bpmRef.current ?? 0,
+          zoneLabel: zoneNow.label,
+          zoneColorHex: zoneNow.color,
+          phaseText: currentPhaseText(),
+        });
+      }
 
       // En pausa no avanza ni el cronómetro visible (arriba) más allá de lo
       // ya descontado, ni los bloques de intervalos: se congela el entreno,

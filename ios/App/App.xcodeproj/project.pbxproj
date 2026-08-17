@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		030D98617FE7B01281AC7687 /* CardioActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */; };
+		0EFBE8AFEBCB00A128680199 /* CardioLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F7B35506F290C6FDD5C25E /* CardioLiveActivity.swift */; };
 		23394A955940E75FB0EEADB8 /* RestTimerWidgetLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50D38FA13E2E54FA156DF24 /* RestTimerWidgetLiveActivity.swift */; };
 		25D8A59F52646A91E9944F63 /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C2806051CCF886490BC562 /* RestTimerAttributes.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -19,7 +21,9 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		7707F3587ED4F30DDCC5432D /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD13151F426F72F204A717 /* LiveActivityPlugin.swift */; };
+		7DA11A106F7375208BE718AF /* CardioActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */; };
 		A630671BEA4067B88BB4BDAA /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C2806051CCF886490BC562 /* RestTimerAttributes.swift */; };
+		A91F987A75D11D4C3858CB2D /* CardioActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */; };
 		CCDE8EF637DAE065C176BA7E /* RestTimerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0CC747C913804D9E1D5F369 /* RestTimerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EF01A1012E48000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EF01A1002E48000000000001 /* PrivacyInfo.xcprivacy */; };
 		F9C855E992A665F411E2BB0C /* RestTimerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC7AF07887BD879571457F1C /* RestTimerWidgetBundle.swift */; };
@@ -51,6 +55,9 @@
 
 /* Begin PBXFileReference section */
 		05C2806051CCF886490BC562 /* RestTimerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestTimerAttributes.swift; sourceTree = "<group>"; };
+		53F7B35506F290C6FDD5C25E /* CardioLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardioLiveActivity.swift; sourceTree = "<group>"; };
+		7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardioActivityPlugin.swift; sourceTree = "<group>"; };
+		C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardioActivityAttributes.swift; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -130,6 +137,7 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 				96BD13151F426F72F204A717 /* LiveActivityPlugin.swift */,
+				7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -148,6 +156,8 @@
 				05C2806051CCF886490BC562 /* RestTimerAttributes.swift */,
 				AC7AF07887BD879571457F1C /* RestTimerWidgetBundle.swift */,
 				A50D38FA13E2E54FA156DF24 /* RestTimerWidgetLiveActivity.swift */,
+				C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */,
+				53F7B35506F290C6FDD5C25E /* CardioLiveActivity.swift */,
 			);
 			name = RestTimerWidget;
 			path = RestTimerWidget;
@@ -265,6 +275,8 @@
 				A630671BEA4067B88BB4BDAA /* RestTimerAttributes.swift in Sources */,
 				F9C855E992A665F411E2BB0C /* RestTimerWidgetBundle.swift in Sources */,
 				23394A955940E75FB0EEADB8 /* RestTimerWidgetLiveActivity.swift in Sources */,
+				030D98617FE7B01281AC7687 /* CardioActivityAttributes.swift in Sources */,
+				0EFBE8AFEBCB00A128680199 /* CardioLiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,6 +287,8 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				25D8A59F52646A91E9944F63 /* RestTimerAttributes.swift in Sources */,
 				7707F3587ED4F30DDCC5432D /* LiveActivityPlugin.swift in Sources */,
+				A91F987A75D11D4C3858CB2D /* CardioActivityAttributes.swift in Sources */,
+				7DA11A106F7375208BE718AF /* CardioActivityPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

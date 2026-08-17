@@ -45,6 +45,22 @@
                 android:value="Cuenta atrás de descanso durante el entrenamiento"
             />
         </service>
+
+        <!-- F5 del plan de réplica FITIV: la sesión de cardio sobrevive al
+             bolsillo — notificación persistente con FC y cronómetro.
+             `foregroundServiceType="connectedDevice"`, NO "health": el plan
+             inicial proponía "health", pero exige el permiso EN TIEMPO DE
+             EJECUCIÓN `BODY_SENSORS` (y `BODY_SENSORS_BACKGROUND` si el
+             servicio arranca con la app ya en segundo plano — justo nuestro
+             caso), y si no está concedido el sistema LANZA UNA EXCEPCIÓN al
+             crear el servicio: habría crasheado en cuanto se bloqueara la
+             pantalla. No usamos la API de sensores de Android — la FC llega
+             por BLE directo — así que pedir BODY_SENSORS solo para esto
+             habría sido desproporcionado. "connectedDevice" es el tipo que
+             de verdad cubre "hablar con un dispositivo Bluetooth conectado"
+             y solo pide BLUETOOTH_CONNECT, que la app ya solicita para la
+             banda. -->
+        <service android:name=".CardioSessionService" android:exported="false" android:foregroundServiceType="connectedDevice" />
     </application>
 
     <!-- Permissions -->
@@ -75,4 +91,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- F5 del plan de réplica FITIV: foreground service de la sesión de
+         cardio — "connectedDevice", no "health" (ver el porqué junto al
+         <service> más arriba). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 </manifest>

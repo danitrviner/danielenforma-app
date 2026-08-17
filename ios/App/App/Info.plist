@@ -88,13 +88,26 @@
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
-	<!-- Live Activity del temporizador de descanso (pantalla de bloqueo) — la
-	     extensión ActivityKit (widget extension target) aún no existe en este
-	     proyecto; hay que añadirla desde Xcode (File > New > Target > Widget
-	     Extension, activando "Include Live Activity"). Esta clave por sí sola
-	     no basta, pero es el prerrequisito de Info.plist para que el sistema
-	     permita presentar Live Activities de esta app. -->
+	<!-- Live Activity del temporizador de descanso (pantalla de bloqueo). El
+	     target de Widget Extension "RestTimerWidget" ya existe en el proyecto
+	     (creado en Xcode con "Include Live Activity" — ver el .pbxproj), así
+	     que esta clave ya no es un prerrequisito pendiente sino la que de
+	     verdad habilita presentar Live Activities de esta app. -->
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<!-- F5 del plan de réplica FITIV — la pieza real que faltaba para que una
+	     sesión de cardio sobreviva al bolsillo. Sin `bluetooth-central` aquí,
+	     iOS suspende el WebView entero al bloquear la pantalla: la banda deja
+	     de entregar notificaciones GATT y ni la Live Activity ni el
+	     cronómetro reciben datos frescos, tengan Live Activity o no. Con este
+	     modo declarado, cada notificación de la característica 0x2A37 (FC)
+	     despierta la app lo justo para procesar la muestra — es el mecanismo
+	     real, no la Live Activity, el que mantiene viva la sesión.
+	     Justificación para App Review: registro continuo de frecuencia
+	     cardíaca durante el ejercicio, con banda BLE de pecho/brazo. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 </dict>
 </plist>
