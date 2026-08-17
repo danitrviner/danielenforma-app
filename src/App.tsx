@@ -15,6 +15,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import LocalModeBanner from './components/LocalModeBanner';
 import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
+import { CardioSessionProvider } from './hooks/useCardioSession';
 import { ScreenSkeleton } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
@@ -638,6 +639,11 @@ function AppContent() {
   // solo el de la barra de navegación y el contenido recupera 60 px.
   return (
     <div className="min-h-screen text-ink bg-bg flex flex-col md:flex-row pb-[calc(var(--nav-h)+1rem)] md:pb-0">
+    {/* Por encima del router (F2 del plan de réplica FITIV): el motor de la
+        sesión de cardio en vivo tiene que sobrevivir a navegar fuera de
+        /cardio, así que se monta aquí, no dentro de CardioScreen. Deshabilitado
+        para coach — el módulo de cardio es solo del atleta. */}
+    <CardioSessionProvider profile={profile} enabled={!isCoach}>
     <TutorialEngine
       profile={profile}
       hasPlan={hasPlan}
@@ -951,6 +957,7 @@ function AppContent() {
       )}
 
     </TutorialEngine>
+    </CardioSessionProvider>
     </div>
   );
 }
