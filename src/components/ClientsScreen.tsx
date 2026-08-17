@@ -5,6 +5,7 @@ import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../ty
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
 import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
+import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
@@ -284,6 +285,21 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         </div>
       </header>
 
+      {/* Contador + próximos a finalizar + buscador + invitar/invitaciones
+          pendientes, unificados y arriba del todo (antes: contador y
+          buscador en dos tarjetas separadas más abajo, e invitar solo
+          alcanzable desde CRM > Clientes). */}
+      <AthletesBar
+        count={athletes.length}
+        finishingSoon={athletesFinishingSoon}
+        onOpenAthlete={userId => {
+          const athlete = enrichedAthletes.find(a => a.userId === userId);
+          if (athlete) openAthleteHub(athlete);
+        }}
+        search={search}
+        onSearchChange={setSearch}
+      />
+
       {!loadingAthletes && (
         <HomeCoachScreen
           athletes={athletes}
@@ -292,46 +308,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           loadingAssignments={loadingAssignments}
         />
       )}
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-6 pb-2">
-        {/* Athletes count + finishing soon */}
-        <div className="bg-gradient-to-br from-field to-bg border border-hairline p-5 rounded-surface relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full pointer-events-none" />
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-title-m">group</span>
-                <h2 className="font-sans font-bold text-ink-2 text-label uppercase tracking-wider">Atletas del Entrenador</h2>
-              </div>
-              <span className="text-caption bg-teal-500/15 text-data px-2 border border-teal-500/20 rounded-control font-sans font-bold uppercase">Activos</span>
-            </div>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-sans font-extrabold text-display text-white tracking-tight">{athletes.length}</span>
-              <span className="text-label text-ink-2 font-sans pb-1">deportistas registrados</span>
-            </div>
-          </div>
-          <div className="mt-6 pt-4 border-t border-hairline">
-            <span className="block text-caption text-ink-2 uppercase font-sans mb-2">Próximos a finalizar planificación</span>
-            {athletesFinishingSoon.length === 0 ? (
-              <p className="text-label text-ink-3 font-sans">Ninguno por ahora.</p>
-            ) : (
-              <div className="space-y-2">
-                {athletesFinishingSoon.slice(0, 3).map(a => (
-                  <button
-                    key={a.userId}
-                    onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-2 rounded-control border border-hairline text-left transition-colors"
-                  >
-                    <span className="text-label text-white font-sans truncate">{a.displayName}</span>
-                    <span className="text-caption font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Pendientes: notas del atleta sin leer + to-do privado del coach, en una sola tarjeta */}
       <CoachNotesPanel
@@ -345,36 +321,24 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {/* Athlete list */}
       <div className="space-y-4">
-        <div className="bg-surface border border-hairline p-4 rounded-surface flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-bg border border-hairline rounded-control pl-10 pr-3 py-3 text-title-s text-white font-sans focus:outline-none focus:border-accent transition-colors"
-            />
+        <div className="flex items-center justify-end gap-3">
+          <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
+            {([2, 3, 4] as const).map(n => (
+              <button
+                key={n}
+                onClick={() => changeGridCols(n)}
+                title={`${n} columnas`}
+                className={`w-7 h-7 rounded-control font-sans text-label font-bold transition-all ${
+                  gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
-              {([2, 3, 4] as const).map(n => (
-                <button
-                  key={n}
-                  onClick={() => changeGridCols(n)}
-                  title={`${n} columnas`}
-                  className={`w-7 h-7 rounded-control font-sans text-label font-bold transition-all ${
-                    gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <span className="text-caption bg-teal-500/10 text-teal-300 px-3 py-2 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
-              {filteredAthletes.length} ATLETAS
-            </span>
-          </div>
+          <span className="text-caption bg-teal-500/10 text-teal-300 px-3 py-2 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
+            {filteredAthletes.length} ATLETAS
+          </span>
         </div>
 
         {loadingAthletes ? (

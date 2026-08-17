@@ -16,6 +16,8 @@ type Props = {
   children: React.ReactNode;
   defaultOpen?: boolean;
   className?: string;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip). */
+  key?: React.Key;
 };
 
 export default function Collapsible({ trigger, children, defaultOpen = false, className = '' }: Props) {

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
   Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
@@ -27,7 +28,7 @@ import {
   getOnboarding,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
-  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete,
+  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfiles,
 } from '../dbService';
 /* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
    recharts entrando por Análisis y Entrenamientos. Los paneles se importaban
@@ -50,7 +51,7 @@ const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientOverviewCard from './ClientOverviewCard';
-import { Badge, Tabs, Skeleton } from './ui';
+import { Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 
 export type HubTab =
   | 'setup' | 'revisiones'
@@ -122,6 +123,25 @@ export default function ClientHub({
 }: ClientHubProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // ── Selector de atleta — saltar a otro sin volver a /clients. Comparte la
+  // clave de caché ['userProfiles'] con ClientsScreen/CommandPalette, así que
+  // normalmente ya está en caché al llegar aquí.
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [switcherSearch, setSwitcherSearch] = useState('');
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+    enabled: switcherOpen,
+  });
+  const switcherAthletes = useMemo(() => {
+    const q = switcherSearch.trim().toLowerCase();
+    return allProfiles
+      .filter(p => p.role === 'client' && p.email !== athlete.email)
+      .filter(p => !q || p.displayName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [allProfiles, switcherSearch, athlete.email]);
 
   // ── Onboarding ─────────────────────────────────────────────────────────────
   const onboardingKey = ['onboarding', athlete.email] as const;
@@ -428,6 +448,14 @@ export default function ClientHub({
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
           </button>
+          <button
+            onClick={() => { if (confirmDiscardPlanChanges()) setSwitcherOpen(true); }}
+            title="Cambiar de atleta"
+            aria-label="Cambiar de atleta"
+            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent border border-hairline rounded-control flex items-center active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-body-s">swap_horiz</span>
+          </button>
           <img src={athlete.avatarUrl} alt="" className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -645,6 +673,30 @@ export default function ClientHub({
       )}
 
       </Suspense>
+
+      {/* Selector de atleta — la key={athlete.email} del padre (ClientsScreen)
+          ya garantiza un remonte limpio del Hub entero al navegar aquí. */}
+      {switcherOpen && (
+        <Sheet open onClose={() => setSwitcherOpen(false)} title="Cambiar de atleta" size="m">
+          <div className="space-y-3">
+            <SearchField value={switcherSearch} onChange={setSwitcherSearch} placeholder="Buscar atleta..." label="Buscar atleta" />
+            <div className="space-y-1">
+              {switcherAthletes.length === 0 ? (
+                <p className="font-sans text-body-s text-ink-2 text-center py-6">Ningún atleta coincide.</p>
+              ) : switcherAthletes.map(a => (
+                <ListRow
+                  key={a.userId}
+                  title={a.displayName}
+                  subtitle={a.email}
+                  leading={<img src={a.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
+                  trailing={<Icon name="chevron_right" size="m" className="text-ink-4" />}
+                  onClick={() => { setSwitcherOpen(false); navigate(`/clients/${encodeURIComponent(a.email)}`); }}
+                />
+              ))}
+            </div>
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }

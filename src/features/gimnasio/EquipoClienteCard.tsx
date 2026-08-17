@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Icon } from '../../components/ui';
+import { Icon, Collapsible, SearchField } from '../../components/ui';
 import { MARCA_LABELS, MUSCLE_LABELS } from '../../types';
-import type { MuscleGroup } from '../../types';
+import type { MuscleGroup, Maquina } from '../../types';
 import { getEstadoCatalogo } from '../../dbService';
 import { gimnasioQueryKey } from './MiGimnasioPanel';
 import { ORDEN_CATEGORIAS } from './useCatalogoSwipe';
@@ -15,8 +15,9 @@ import { ORDEN_CATEGORIAS } from './useCatalogoSwipe';
    cuando va a montar el plan, no cada vez que abre la ficha.
 
    Cerrada solo hace una lectura y enseña el recuento. El desglose por grupo
-   muscular es lo que de verdad usa el coach: no le sirve saber que el atleta
-   tiene 47 máquinas, le sirve saber que no tiene NINGUNA de isquios.
+   muscular es lo que de verdad usa el coach — antes solo enseñaba CUÁNTAS
+   máquinas tiene por grupo, nunca CUÁLES; para elegir un ejercicio concreto el
+   coach necesita el nombre, no solo saber que hay "3 de espalda".
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
@@ -27,6 +28,7 @@ type Props = {
 
 export default function EquipoClienteCard({ athleteEmail }: Props) {
   const [abierta, setAbierta] = useState(false);
+  const [buscar, setBuscar] = useState('');
 
   // Mismo queryKey que MiGimnasioPanel: si el coach ya abrió otra vista que lo
   // pidió, esto no dispara una lectura nueva.
@@ -40,8 +42,12 @@ export default function EquipoClienteCard({ athleteEmail }: Props) {
     const tiene = new Set(data.gimnasio.maquinas.filter(d => d.tengo).map(d => d.maquinaId));
     const disponibles = data.catalogo.filter(m => tiene.has(m.id));
 
-    const porGrupo = new Map<MuscleGroup, number>();
-    for (const m of disponibles) porGrupo.set(m.categoria, (porGrupo.get(m.categoria) ?? 0) + 1);
+    const porGrupo = new Map<MuscleGroup, Maquina[]>();
+    for (const m of disponibles) {
+      const lista = porGrupo.get(m.categoria);
+      if (lista) lista.push(m); else porGrupo.set(m.categoria, [m]);
+    }
+    for (const lista of porGrupo.values()) lista.sort((a, b) => a.nombreMostrado.localeCompare(b.nombreMostrado));
 
     const porMarca = new Map<string, number>();
     for (const m of disponibles) {
@@ -61,7 +67,7 @@ export default function EquipoClienteCard({ athleteEmail }: Props) {
       total: data.catalogo.length,
       revisadas: data.gimnasio.progresoCatalogo.revisadas,
       completado: data.gimnasio.progresoCatalogo.completado,
-      porGrupo: ORDEN_CATEGORIAS.filter(c => porGrupo.has(c)).map(c => ({ categoria: c, n: porGrupo.get(c)! })),
+      porGrupo: ORDEN_CATEGORIAS.filter(c => porGrupo.has(c)).map(c => ({ categoria: c, maquinas: porGrupo.get(c)! })),
       porMarca: [...porMarca.entries()].sort((a, b) => b[1] - a[1]),
       sinNada,
     };
@@ -101,13 +107,43 @@ export default function EquipoClienteCard({ athleteEmail }: Props) {
 
       {abierta && resumen && (
         <div className="px-4 pb-4 space-y-4 border-t border-hairline pt-4">
+          {resumen.disponibles > 20 && (
+            <SearchField value={buscar} onChange={setBuscar} placeholder="Buscar máquina..." label="Buscar máquina" />
+          )}
+
           <div className="space-y-2">
-            {resumen.porGrupo.map(({ categoria, n }) => (
-              <div key={categoria} className="flex items-baseline gap-3">
-                <span className="flex-1 font-sans text-body-s text-ink-2">{MUSCLE_LABELS[categoria]}</span>
-                <span className="font-mono text-caption text-ink tabular-nums">{n}</span>
-              </div>
-            ))}
+            {(() => {
+              const q = buscar.trim().toLowerCase();
+              const hayResultados = !q || resumen.porGrupo.some(({ maquinas }) => maquinas.some(m => m.nombreMostrado.toLowerCase().includes(q)));
+              if (!hayResultados) return <p className="font-sans text-body-s text-ink-3">Ninguna máquina coincide.</p>;
+              return null;
+            })()}
+            {resumen.porGrupo.map(({ categoria, maquinas }) => {
+              const q = buscar.trim().toLowerCase();
+              const filtradas = q ? maquinas.filter(m => m.nombreMostrado.toLowerCase().includes(q)) : maquinas;
+              if (q && filtradas.length === 0) return null;
+              return (
+                <Collapsible
+                  key={categoria}
+                  className="rounded-control border border-hairline bg-raised/40"
+                  trigger={
+                    <div className="flex items-baseline gap-3 px-3 py-2">
+                      <span className="flex-1 font-sans text-body-s text-ink-2">{MUSCLE_LABELS[categoria]}</span>
+                      <span className="font-mono text-caption text-ink tabular-nums">{filtradas.length}</span>
+                    </div>
+                  }
+                >
+                  <ul className="px-3 pb-3 space-y-1.5">
+                    {filtradas.map(m => (
+                      <li key={m.id} className="flex items-center gap-2">
+                        <span className="w-1 h-1 rounded-full bg-ink-4 flex-shrink-0" />
+                        <span className="font-sans text-body-s text-ink-2">{m.nombreMostrado}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Collapsible>
+              );
+            })}
             {resumen.porGrupo.length === 0 && (
               <p className="font-sans text-body-s text-ink-3">No ha marcado ninguna máquina como disponible.</p>
             )}
