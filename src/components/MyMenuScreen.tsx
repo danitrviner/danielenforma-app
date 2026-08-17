@@ -1,18 +1,19 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  UserProfile, WeeklyMenu, AthleteNutritionConfig, RecipeFavorites, MenuCompletionLog,
+  UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
 } from '../types';
 import {
-  getPublishedMenu, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
+  getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryRecetasForGenerator, getRecipes, getRecipeById,
   getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
-import { DISH_TYPES, DishType } from '../utils/dishTypes';
+import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog } from './ui';
 
@@ -45,6 +46,7 @@ interface Props {
 
 export default function MyMenuScreen({ profile }: Props) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const menuKey = ['publishedMenu', profile.email] as const;
   const { data: menu = null, isPending: loadingMenu } = useQuery({
     queryKey: menuKey,
@@ -89,10 +91,6 @@ export default function MyMenuScreen({ profile }: Props) {
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
-  const [savingVariety, setSavingVariety] = useState(false);
-  const [savingBatchPref, setSavingBatchPref] = useState(false);
-  const [dishPrefsOpen, setDishPrefsOpen] = useState(false);
-
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
@@ -127,13 +125,6 @@ export default function MyMenuScreen({ profile }: Props) {
     fetched.forEach((r, i) => { if (r) map.set(ids[i], r); });
     setShoppingItems(buildShoppingList(menu.days, map));
     setShoppingLoading(false);
-  }
-
-  async function handleBatchPrefChange(value: boolean) {
-    setSavingBatchPref(true);
-    const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), batchCookingPreferred: value };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    try { await saveAthleteNutritionConfig(next); } finally { setSavingBatchPref(false); }
   }
 
   // Menu tick-offs live in their own collection (keys = `${day}_${mealId}`), so
@@ -205,28 +196,6 @@ export default function MyMenuScreen({ profile }: Props) {
     if (!disliked && meal) openSwap(meal);
   }
 
-  // Athlete's preferred / excluded dish types (tri-state cycle: neutral → más → evitar).
-  async function cycleDishType(id: DishType) {
-    const pref = new Set((nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[]);
-    const excl = new Set((nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[]);
-    if (pref.has(id)) { pref.delete(id); excl.add(id); }
-    else if (excl.has(id)) { excl.delete(id); }
-    else { pref.add(id); }
-    const next: AthleteNutritionConfig = {
-      ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }),
-      preferredDishTypes: Array.from(pref), excludedDishTypes: Array.from(excl),
-    };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    await saveAthleteNutritionConfig(next).catch(() => {});
-  }
-  function dishState(id: string): 'pref' | 'excl' | 'neutral' {
-    const pref = (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[];
-    const excl = (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[];
-    if (pref.includes(id)) return 'pref';
-    if (excl.includes(id)) return 'excl';
-    return 'neutral';
-  }
-
   // Swap one ingredient of the current meal for a same-group equivalent (approximate
   // equivalence, so exchanges/kcal stay the same). Persisted on the meal via `days`.
   async function applySubstitution(from: string, to: string) {
@@ -278,13 +247,6 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapFor(null);
     setShoppingItems(null); // cached list is now stale
     await updateWeeklyMenu(menu.id, { days: nextDays, swapHistory: nextMenu.swapHistory }).catch(() => {});
-  }
-
-  async function handleVarietyChange(v: number) {
-    setSavingVariety(true);
-    const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), menuVariety: v };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    try { await saveAthleteNutritionConfig(next); } finally { setSavingVariety(false); }
   }
 
   if (loading) {
@@ -402,66 +364,82 @@ export default function MyMenuScreen({ profile }: Props) {
           {day.meals.map(meal => {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
-              <div key={meal.id} className={`bg-surface border rounded-surface p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-hairline'}`}>
-                <button
-                  onClick={() => toggleDone(meal.id)}
-                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
-                  title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
-                >
-                  {done && <Icon name="check" size="m" className="text-black" />}
-                </button>
-
+              <div key={meal.id} className={`bg-surface border rounded-surface overflow-hidden transition-all ${done ? 'border-emerald-400/30' : 'border-hairline'}`}>
+                {/* Foto a sangre, mismo patrón que RecetaCard en la Biblioteca de
+                    recetas — antes era una miniatura de 64px, demasiado pequeña
+                    para verse bien (queja real de Dani). */}
                 <button
                   onClick={() => openDetail(meal)}
-                  className="w-16 h-16 rounded-control overflow-hidden flex-shrink-0 bg-raised border border-hairline"
+                  className="relative block w-full aspect-[21/9] bg-raised"
                 >
-                  {meal.recipeImage
-                    ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><Icon name="skillet" size="l" className="text-ink-3" /></div>}
+                  {meal.recipeImage ? (
+                    <img src={meal.recipeImage} alt={meal.recipeName} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                    <span className="font-sans text-caption text-white/70 uppercase tracking-wider">
+                      {meal.name}{meal.scale !== 1 ? ` · ×${meal.scale}` : ''}
+                    </span>
+                    <p className={`font-sans font-bold text-title-s leading-tight ${done ? 'text-white/60 line-through' : 'text-white'}`}>
+                      {meal.recipeName}
+                    </p>
+                  </div>
+                  {done && (
+                    <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center">
+                      <Icon name="check" size="m" className="text-black" />
+                    </span>
+                  )}
                 </button>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-sans text-caption text-ink-3 uppercase">{meal.name}</span>
-                    {meal.scale !== 1 && <span className="font-mono text-caption text-accent">×{meal.scale}</span>}
-                  </div>
-                  <p className={`font-sans font-bold text-body-s leading-tight ${done ? 'text-ink-2 line-through' : 'text-white'}`}>{meal.recipeName}</p>
-                  <p className="font-mono text-caption text-ink-2 ">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
-                  {meal.complements.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {meal.complements.map((c, ci) => (
-                        <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      onClick={() => openSwap(meal)}
-                      className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
-                    >
-                      <Icon name="swap_horiz" size="s" />
-                      Intercambiar
-                    </button>
-                    {meal.recipeId && (
-                      <>
-                        <button
-                          onClick={() => toggleFavorite(meal.recipeId)}
-                          title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
-                          className="flex items-center transition-colors"
-                          style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
-                        >
-                          <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
-                        </button>
-                        <button
-                          onClick={() => toggleDislike(meal.recipeId, meal)}
-                          title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
-                          className="flex items-center transition-colors"
-                          style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
-                        >
-                          <Icon name="thumb_down" size="m" filled={isDisliked(meal.recipeId)} />
-                        </button>
-                      </>
+                <div className="p-3 flex gap-3">
+                  <button
+                    onClick={() => toggleDone(meal.id)}
+                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
+                    title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
+                  >
+                    {done && <Icon name="check" size="m" className="text-black" />}
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                    {meal.complements.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {meal.complements.map((c, ci) => (
+                          <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
+                        ))}
+                      </div>
                     )}
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        onClick={() => openSwap(meal)}
+                        className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
+                      >
+                        <Icon name="swap_horiz" size="s" />
+                        Intercambiar
+                      </button>
+                      {meal.recipeId && (
+                        <>
+                          <button
+                            onClick={() => toggleFavorite(meal.recipeId)}
+                            title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
+                            className="flex items-center transition-colors"
+                            style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
+                          >
+                            <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
+                          </button>
+                          <button
+                            onClick={() => toggleDislike(meal.recipeId, meal)}
+                            title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
+                            className="flex items-center transition-colors"
+                            style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
+                          >
+                            <Icon name="thumb_down" size="m" filled={isDisliked(meal.recipeId)} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -470,83 +448,22 @@ export default function MyMenuScreen({ profile }: Props) {
         </div>
       )}
 
-      {/* Dish-type preferences (tri-state) */}
-      <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
-        <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
-          <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
-            <Icon name="tune" size="m" className="text-accent" />
-            Tipos de comida que prefieres
-          </span>
-          <Icon name={dishPrefsOpen ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />
-        </button>
-        {dishPrefsOpen && (
-          <div className="px-4 pb-4 space-y-3">
-            <p className="font-sans text-caption text-ink-3">
-              Toca una vez para que salga <span className="text-accent">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
-                const st = dishState(dt.id);
-                const cls = st === 'pref'
-                  ? 'bg-accent border-accent text-black'
-                  : st === 'excl'
-                    ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                    : 'bg-raised border-hairline text-ink-2 hover:text-white';
-                return (
-                  <button
-                    key={dt.id}
-                    onClick={() => cycleDishType(dt.id)}
-                    className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
-                    {dt.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="font-sans text-caption text-ink-3">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Variety preference */}
-      <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-        <p className="font-sans text-caption text-ink-2 uppercase">¿Cómo prefieres tu menú?</p>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map(v => (
-            <button
-              key={v}
-              disabled={savingVariety}
-              onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-accent text-black' : 'bg-raised border border-hairline text-ink-2 hover:text-white'}`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          <span className="font-sans text-caption text-ink-3">Repetitivo, más sencillo</span>
-          <span className="font-mono text-caption text-ink-3">Muy variado</span>
-        </div>
-
+      {/* Tipos de comida que prefieres / variedad / batch cooking / verduras se
+          movieron a Perfil > Preferencias — no tenía sentido tenerlos aquí,
+          en la pantalla de "ya está hecho", cuando no cambian el menú
+          publicado hasta la próxima generación del coach. */}
+      <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3">
+        <p className="font-sans text-caption text-ink-2">
+          Tipos de comida, variedad y batch cooking se editan ahora en tu perfil.
+        </p>
         <button
-          onClick={() => handleBatchPrefChange(!(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false))}
-          disabled={savingBatchPref}
-          className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-hairline text-left disabled:opacity-50"
+          type="button"
+          onClick={() => navigate('/profile')}
+          className="flex-shrink-0 flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
         >
-          <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) ? 'bg-accent border-accent' : 'border-hairline'}`}>
-            {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-          </span>
-          <span className="flex-1">
-            <span className="flex items-center gap-2 font-sans font-bold text-label text-white">
-              <Icon name="inventory_2" size="s" className="text-accent" />
-              Prefiero batch cooking
-            </span>
-            <span className="block font-sans text-caption text-ink-2 ">Cocinar todo de una vez y repartirlo por días.</span>
-          </span>
+          <Icon name="tune" size="s" />
+          Ajustar mis preferencias
         </button>
-
-        <p className="font-sans text-caption text-ink-3">Se aplicará la próxima vez que tu entrenador genere el menú.</p>
       </div>
 
       {/* Swap sheet */}

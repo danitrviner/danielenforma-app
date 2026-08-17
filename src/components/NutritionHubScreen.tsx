@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, AthleteNutritionConfig, Recipe } from '../types';
-import { getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
-import VegetableSelector from './VegetableSelector';
+import { useQuery } from '@tanstack/react-query';
+import { UserProfile, Recipe } from '../types';
+import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';
-import MyDietsScreen from './MyDietsScreen';
 import RecipesScreen from './RecipesScreen';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 import { Tabs } from './ui';
@@ -14,20 +12,22 @@ interface NutritionHubScreenProps {
   profile: UserProfile;
 }
 
-type NutritionTab = 'intercambios' | 'mi-menu' | 'mis-dietas' | 'recetas' | 'periodizacion';
+// Antes 5 pestañas: "Intercambios" y "Mis Dietas" eran dos editores del mismo
+// objeto (Diet) — se fusionan en "Mi plan" (NutritionScreen ahora absorbe la
+// gestión de dietas). "Tus verduras habituales" se movió a Perfil >
+// Preferencias, junto con el resto de config de menú de MyMenuScreen.
+type NutritionTab = 'mi-plan' | 'mi-menu' | 'recetas' | 'periodizacion';
 
 const TABS: { id: NutritionTab; label: string; icon: string }[] = [
-  { id: 'intercambios',  label: 'Intercambios',  icon: 'restaurant' },
+  { id: 'mi-plan',       label: 'Mi Plan',        icon: 'restaurant' },
   { id: 'mi-menu',       label: 'Mi Menú',        icon: 'menu_book' },
-  { id: 'mis-dietas',    label: 'Mis Dietas',     icon: 'bookmark' },
   { id: 'recetas',       label: 'Recetas',        icon: 'skillet' },
   { id: 'periodizacion', label: 'Periodización',  icon: 'monitoring' },
 ];
 
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
-  const queryClient = useQueryClient();
   const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
-  const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('intercambios');
+  const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('mi-plan');
   const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
 
   const { data: nutritionConfig = null } = useQuery({
@@ -37,7 +37,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
 
   const handleAddToIntercambios = (recipe: Recipe) => {
     setPendingRecipe(recipe);
-    setActiveSubTab('intercambios');
+    setActiveSubTab('mi-plan');
   };
 
   return (
@@ -61,42 +61,14 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
 
       <Tabs items={TABS} value={activeSubTab} onChange={id => setActiveSubTab(id as NutritionTab)} label="Secciones de Nutrición" />
 
-      {activeSubTab === 'intercambios' && (
-        <>
-          <NutritionScreen
-            profile={profile}
-            pendingRecipe={pendingRecipe}
-            onConsumedPendingRecipe={() => setPendingRecipe(null)}
-          />
-          {/* Config al final, tras el contenido del día (visual arriba, ajustes abajo) */}
-          <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-            <div>
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-accent text-title-s">eco</span>
-                Tus verduras habituales
-              </h3>
-              <p className="font-sans text-caption text-ink-2 mt-1">
-                Marca las verduras que sueles comer en tu día a día — así tu entrenador afina la estimación de vitaminas y minerales.
-              </p>
-            </div>
-            <VegetableSelector
-              selected={nutritionConfig?.vegTypes ?? []}
-              onToggle={id => {
-                if (!nutritionConfig) return;
-                const cur = nutritionConfig.vegTypes ?? [];
-                const next: AthleteNutritionConfig = {
-                  ...nutritionConfig,
-                  vegTypes: cur.includes(id) ? cur.filter(v => v !== id) : [...cur, id],
-                };
-                queryClient.setQueryData(nutritionConfigKey, next);
-                saveAthleteNutritionConfig(next).catch(() => {});
-              }}
-            />
-          </div>
-        </>
+      {activeSubTab === 'mi-plan' && (
+        <NutritionScreen
+          profile={profile}
+          pendingRecipe={pendingRecipe}
+          onConsumedPendingRecipe={() => setPendingRecipe(null)}
+        />
       )}
       {activeSubTab === 'mi-menu'      && <MyMenuScreen profile={profile} />}
-      {activeSubTab === 'mis-dietas'   && <MyDietsScreen profile={profile} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}
       {activeSubTab === 'periodizacion' && (
         <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />

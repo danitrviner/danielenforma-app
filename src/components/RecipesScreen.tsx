@@ -535,7 +535,7 @@ interface Props {
 export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const queryClient = useQueryClient();
 
-  // Coach/athlete recipes — shared cache keys with RecipeBuilderScreen/MyDietsScreen
+  // Coach/athlete recipes — shared cache keys with RecipeBuilderScreen/NutritionScreen
   // ('recipes'), WeeklyMenuEditor/MyMenuScreen ('recipeFavorites'), and
   // StepsWidget/NutritionAnalysisPanel/NutritionHubScreen ('athleteNutritionConfig').
   const { data: recipes = [], isPending: loadingRecipes } = useQuery({

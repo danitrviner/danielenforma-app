@@ -88,7 +88,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'intercambiar-alimento', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-first-meal-row',
     title: 'Si no tienes un alimento, lo cambias',
-    body: 'Mantén pulsada una ingesta para abrir el ajuste, o entra en el detalle para intercambiar un alimento por otro sin perder tus intercambios.',
+    body: 'Toca Cambiar junto a un alimento para sustituirlo por otro sin perder tus intercambios, o el icono de ajuste para repartir la ingesta por macro.',
   },
   {
     id: 'recetas', section: 'Recetas', tab: 'nutrition', targetId: 'nav-tab-nutrition',

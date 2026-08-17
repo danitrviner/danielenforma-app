@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
@@ -12,52 +12,16 @@ import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { Skeleton } from './ui';
-import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper } from './ui';
+import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
-const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-
-function blankDiet(athleteId: string): Diet {
-  return {
-    id: `draft_${makeId()}`,
-    athleteId,
-    name: 'Mi menú',
-    budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
-    meals: [{ id: makeId(), name: 'Comida 1', items: [] }],
-    selfManaged: true,
-  };
-}
-
-function dietSnapshot(dt: Pick<Diet, 'name' | 'budget' | 'meals'>): string {
-  return JSON.stringify({ name: dt.name, budget: dt.budget, meals: dt.meals });
-}
-
-// ── Weekly schedule constants ──────────────────────────────────────────────────
-
-const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
-const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
-const TODAY_DATE: string = new Date().toISOString().split('T')[0];
-const WD_ORDER: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
-const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function mealLabel(name: string, n: number): string {
-  const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
-  return stripped || `Comida ${n}`;
-}
-
-// Etiquetas del tracker (panel 01): el handoff usa el nombre completo en mono
-// para las tres barras de presupuesto, distinto del CAT_LABEL compartido
-// ("Proteína") que usan el resto de pantallas de intercambios.
-const BAR_LABEL: Record<'HC' | 'PROT' | 'GRASA', string> = { HC: 'HIDRATOS', PROT: 'PROTEÍNA', GRASA: 'GRASA' };
-const CHIP_LABEL: Record<'HC' | 'PROT' | 'GRASA', string> = { HC: 'HC', PROT: 'PR', GRASA: 'GR' };
+import {
+  COACH_EMAIL, makeId, blankDiet, dietSnapshot,
+  TODAY_WD, TODAY_DATE, WD_ORDER, WD_SHORT, WD_FULL,
+  mealLabel, BAR_LABEL, CHIP_LABEL, ItemState,
+} from './nutrition/dietHelpers';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-
-type ItemState = { foodLabel: string; done: boolean };
-// key = `${mealId}_${itemIdx}`
+// (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
 
 interface Props {
   profile: UserProfile;
@@ -139,9 +103,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
-  const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [flashMsg, setFlashMsg] = useState('');
+  // "Mis dietas" — gestión de las dietas del atleta (crear/duplicar/borrar),
+  // absorbida aquí en la fusión de Intercambios + Mis Dietas ("Mi plan").
+  const [misDietasOpen, setMisDietasOpen] = useState(false);
 
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
@@ -186,11 +151,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // por macro, sin elegir alimentos concretos.
   const [adjustMealId, setAdjustMealId] = useState<string | null>(null);
   const [adjustDraft, setAdjustDraft] = useState<{ HC: number; PROT: number; GRASA: number }>({ HC: 0, PROT: 0, GRASA: 0 });
-
-  function flash(msg: string) {
-    setFlashMsg(msg);
-    setTimeout(() => setFlashMsg(''), 3000);
-  }
 
   // ── One-time init once Phase 1 has loaded ───────────────────────────────────
   // Applies the active nutrition-program phase (writes + notifications), then
@@ -443,6 +403,91 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     handleSelectDiet(blankDiet(profile.email));
   };
 
+  // ── "Mis dietas": crear/duplicar/borrar (absorbido de la antigua pestaña
+  // Mis Dietas en la fusión Intercambios + Mis Dietas → "Mi plan") ──────────
+
+  const handleStartBlankFromSheet = () => {
+    // Nombre vacío a propósito (a diferencia de handleStartBlank, que pone
+    // "Mi menú") — al crearla desde el gestor, el atleta espera ponerle
+    // nombre él mismo, como en la antigua pantalla "Nueva dieta".
+    handleSelectDiet(blankDiet(profile.email, ''), { skipDirtyCheck: true });
+    setMisDietasOpen(false);
+  };
+
+  const handleDuplicateDiet = async (dt: Diet) => {
+    try {
+      const created = await createDiet({
+        athleteId: profile.email,
+        name: `${dt.name} (copia)`,
+        budget: dt.budget,
+        meals: dt.meals.map(m => ({ ...m, id: makeId() })),
+        selfManaged: true,
+      });
+      setAllDietsList(prev => [...prev, created]);
+      handleSelectDiet(created, { skipDirtyCheck: true });
+      setMisDietasOpen(false);
+      showToast('Copia creada.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar la dieta.');
+    }
+  };
+
+  const [dietPendingDelete, setDietPendingDelete] = useState<Diet | null>(null);
+  const [deletingDiet, setDeletingDiet] = useState(false);
+
+  const confirmDeleteDiet = async () => {
+    const dt = dietPendingDelete;
+    if (!dt) return;
+    setDeletingDiet(true);
+    try {
+      await deleteDiet(dt.id);
+      setAllDietsList(prev => prev.filter(d => d.id !== dt.id));
+
+      // deleteDiet() no limpia las referencias a esta dieta en la config del
+      // atleta — sin esto, "activeDietIds"/"weeklySchedule" seguirían
+      // apuntando a un id que ya no existe.
+      const activeIds = dietConfigRaw?.activeDietIds ?? [];
+      const schedule: Partial<Record<WeekDay, string | null>> = { ...(dietConfigRaw?.weeklySchedule ?? {}) };
+      const hadActiveRef = activeIds.includes(dt.id);
+      let hadScheduleRef = false;
+      WD_ORDER.forEach(day => { if (schedule[day] === dt.id) { schedule[day] = null; hadScheduleRef = true; } });
+      if (hadActiveRef || hadScheduleRef) {
+        const nextConfig = {
+          ...(dietConfigRaw ?? { athleteId: profile.email }),
+          activeDietIds: activeIds.filter(id => id !== dt.id),
+          weeklySchedule: schedule,
+        };
+        await saveAthleteDietConfig(nextConfig).catch(() => {});
+        queryClient.setQueryData(athleteDietConfigKey, nextConfig);
+        setWeeklySchedule(schedule);
+      }
+
+      if (selectedDiet?.id === dt.id) {
+        const fallback = allDietsList.find(d => d.id !== dt.id) ?? null;
+        if (fallback) handleSelectDiet(fallback, { skipDirtyCheck: true });
+        else { setSelectedDiet(null); setSavedDietSnapshot(''); }
+      }
+      showToast('Dieta eliminada.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo eliminar la dieta.');
+    } finally {
+      setDeletingDiet(false);
+      setDietPendingDelete(null);
+    }
+  };
+
+  // Unifica el guardado del registro de "hecho" del día — antes cada sitio
+  // que lo llamaba (checkbox de un alimento, comida entera, ajuste rápido,
+  // primer guardado, cambio de comida) fallaba en silencio con
+  // `.catch(() => {})`: el atleta marcaba algo y, si no había red, nunca se
+  // enteraba de que no se había guardado nada.
+  const persistCompletion = (dietId: string, doneItemIds: string[]) => {
+    saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId, doneItemIds })
+      .catch(() => showToast('No se pudo guardar el registro de hoy. Se reintentará al recargar.', 'error'));
+  };
+
   const handleToggleDone = (mealId: string, itemIdx: number) => {
     const key = `${mealId}_${itemIdx}`;
     setItemStates(prev => {
@@ -451,7 +496,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const next = { ...prev, [key]: { ...cur, done: !cur.done } };
       if (selectedDiet) {
         const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+        persistCompletion(selectedDiet.id, doneItemIds);
       }
       return next;
     });
@@ -473,9 +518,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       });
       if (selectedDiet) {
         const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+        persistCompletion(selectedDiet.id, doneItemIds);
       }
       return next;
+    });
+    const mealName = mealLabel(meal.name, (selectedDiet?.meals.findIndex(m => m.id === meal.id) ?? -1) + 1);
+    showToast(nextDone ? `${mealName} registrada.` : `${mealName} desmarcada.`, 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => handleToggleMealDone(meal),
     });
   };
 
@@ -505,7 +555,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       Object.keys(next).forEach(k => { if (k.startsWith(`${mealId}_`)) delete next[k]; });
       newItems.forEach((item, i) => { next[`${mealId}_${i}`] = { foodLabel: item.foodLabel, done: true }; });
       const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-      saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      persistCompletion(selectedDiet.id, doneItemIds);
       return next;
     });
 
@@ -519,9 +569,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSearchTerm('');
   };
 
-  const handleOpenAddPicker = (mealId: string) => {
-    setPickerItem({ mealId, itemIdx: null, category: 'HC' });
-    setPickerCategory('HC');
+  const handleOpenAddPicker = (mealId: string, category: FoodCategory = 'HC') => {
+    setPickerItem({ mealId, itemIdx: null, category });
+    setPickerCategory(category);
     setSearchTerm('');
   };
 
@@ -558,6 +608,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         };
       });
       setPickerItem(null);
+      void haptics.light();
+      showToast(`Cambiado por ${food.label}.`, 'success');
     }
   };
 
@@ -598,7 +650,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         kcal: Math.round(exchangeToKcal(exchanges)),
       });
       setRecipes(prev => [...prev, saved]);
-      flash(`"${name}" guardada como receta — ya está disponible en Recetas.`);
+      showToast(`"${name}" guardada como receta — ya está disponible en Recetas.`, 'success');
       setSavingMealAsRecipeId(null);
     } finally {
       setSavingRecipe(false);
@@ -716,7 +768,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
     if (selectedDiet) {
       const doneItemIds = (Object.entries(nextStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-      saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      persistCompletion(selectedDiet.id, doneItemIds);
     }
 
     setSwapContext(null);
@@ -774,9 +826,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         // so checkmarks made before the first save survive a reload.
         const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
         if (doneItemIds.length > 0) {
-          saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds }).catch(() => {});
+          persistCompletion(created.id, doneItemIds);
         }
-        flash('Menú guardado en Mis Dietas.');
+        showToast('Menú guardado.', 'success');
       } catch (err) {
         console.error(err);
         showToast('No se pudo guardar el menú.');
@@ -791,7 +843,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
         setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
         setSavedDietSnapshot(dietSnapshot(selectedDiet));
-        flash('Cambios guardados.');
+        showToast('Cambios guardados.', 'success');
       } catch (err) {
         console.error(err);
         showToast('No se pudieron guardar los cambios.');
@@ -800,46 +852,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       }
       return;
     }
-    setSaveChoiceOpen(true);
+    // Dieta del entrenador: las reglas de Firestore prohíben que el atleta la
+    // actualice (solo puede update/delete si selfManaged=true) — antes había
+    // aquí una hoja "¿Cómo quieres guardar?" con un botón "Actualizar esta
+    // dieta" que SIEMPRE fallaba con permission-denied. En vez de ofrecer una
+    // opción que nunca funciona, se guarda como copia propia directamente
+    // (el `Banner` del header ya avisa de esto antes de que el atleta guarde).
+    await handleForkCoachDiet();
   };
 
-  const handleUpdateInPlace = async () => {
-    if (!selectedDiet) return;
-    setSaving(true);
-    try {
-      await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
-      setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
-      setSavedDietSnapshot(dietSnapshot(selectedDiet));
-      flash('Dieta actualizada.');
-    } catch (err) {
-      console.error(err);
-      showToast('No se pudo actualizar la dieta.');
-    } finally {
-      setSaving(false);
-      setSaveChoiceOpen(false);
-    }
-  };
-
-  const handleSaveAsNew = async () => {
+  const handleForkCoachDiet = async () => {
     if (!selectedDiet) return;
     setSaving(true);
     try {
       const created = await createDiet({
         athleteId: profile.email,
-        name: `${selectedDiet.name} (copia)`,
+        name: `${selectedDiet.name} (mi versión)`,
         budget: selectedDiet.budget,
         meals: selectedDiet.meals.map(m => ({ ...m, id: makeId() })),
         selfManaged: true,
       });
       setAllDietsList(prev => [...prev, created]);
       handleSelectDiet(created, { skipDirtyCheck: true });
-      flash('Guardado como nueva dieta en Mis Dietas.');
+      showToast('Guardada como copia tuya — la dieta de tu coach sigue intacta.', 'success');
     } catch (err) {
       console.error(err);
-      showToast('No se pudo guardar la nueva dieta.');
+      showToast('No se pudo guardar la copia.');
     } finally {
       setSaving(false);
-      setSaveChoiceOpen(false);
     }
   };
 
@@ -853,7 +893,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!meal) return;
     const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
-      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
     }
     const startIdx = meal.items.length;
@@ -864,7 +904,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const newStates: Record<string, ItemState> = {};
     newItems.forEach((item, i) => { newStates[`${mealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false }; });
     setItemStates(prev => ({ ...prev, ...newStates }));
-    flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`);
+    showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`, 'success');
   };
 
   // 14-08 (tarea 24). React #185 «Maximum update depth exceeded» al añadir
@@ -905,7 +945,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
     const newItems = recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
-      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
     }
 
@@ -913,7 +953,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const blank = blankDiet(profile.email);
       blank.meals[0].items = newItems;
       handleSelectDiet(blank, { skipDirtyCheck: true });
-      flash(`"${recipe.name}" añadida a un nuevo menú.`);
+      showToast(`"${recipe.name}" añadida a un nuevo menú.`, 'success');
       return;
     }
 
@@ -921,7 +961,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const meal = target.meals[0];
       const updated: Diet = { ...target, meals: [{ ...meal, items: [...meal.items, ...newItems] }] };
       handleSelectDiet(updated, { skipDirtyCheck: true });
-      flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`);
+      showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`, 'success');
     } else {
       handleSelectDiet(target, { skipDirtyCheck: true });
       setChooseMealForRecipe(recipe);
@@ -933,16 +973,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-display text-white tracking-tight">Nutrición</h1>
-        <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
+        <h1 className="font-sans font-extrabold text-display text-white tracking-tight">Mi plan</h1>
+        <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios.</p>
       </div>
-
-      {flashMsg && (
-        <div className="flex items-center gap-2 bg-accent/10 border border-accent/25 text-white px-4 py-3 rounded-surface text-body-s">
-          <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
-          {flashMsg}
-        </div>
-      )}
 
       {/* Phase change banner */}
       {phaseBanner && (
@@ -1097,32 +1130,39 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         );
       })() : (
         <>
-          {/* Diet selector — free choice among all of the athlete's diets (own + coach's) */}
-          {allDietsList.length > 0 && (
-            <div className="flex gap-2 flex-wrap items-center">
-              {allDietsList.map(dt => (
-                <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
-                    selectedDiet?.id === dt.id
-                      ? 'bg-accent text-black'
-                      : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
-                  }`}
-                >
-                  {!dt.selfManaged && (
-                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }} title="De tu entrenador">military_tech</span>
-                  )}
-                  {dt.name}
-                </button>
-              ))}
+          {/* Selector de dieta — sustituye la fila de chips (desbordaba con
+              varias dietas). Un solo control que resume la dieta activa y
+              abre "Mis dietas" para cambiar, crear, duplicar o borrar. */}
+          {allDietsList.length > 0 && selectedDiet && (() => {
+            const isScheduledToday = weeklySchedule[TODAY_WD] === selectedDiet.id;
+            const subtitle = isScheduledToday
+              ? `Programada para hoy (${WD_FULL[TODAY_WD]}) por tu coach`
+              : !selectedDiet.selfManaged
+              ? 'De tu entrenador'
+              : 'Tuya';
+            const otherCount = allDietsList.length - 1;
+            return (
               <button
-                onClick={handleStartBlank}
-                className="flex items-center gap-1 px-3 py-3 rounded-control border border-dashed border-hairline text-ink-2 hover:border-accent/40 hover:text-accent font-sans text-label font-bold uppercase tracking-wider transition-all"
+                type="button"
+                onClick={() => setMisDietasOpen(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-control bg-raised border border-hairline hover:border-accent/40 transition-all text-left"
               >
-                <span className="material-symbols-outlined text-body-s">add</span>
-                Nuevo
+                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                  <Icon name={selectedDiet.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-accent" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-sans font-bold text-body-s text-white truncate">{selectedDiet.name}</span>
+                  <span className="block font-mono text-caption text-ink-2 truncate">{subtitle}</span>
+                </span>
+                {otherCount > 0 && (
+                  <span className="flex-shrink-0 font-mono text-caption font-bold text-ink-2 bg-bg border border-hairline rounded-full px-2 py-0.5">
+                    +{otherCount}
+                  </span>
+                )}
+                <Icon name="expand_more" size="s" className="text-ink-2 flex-shrink-0" />
               </button>
-            </div>
-          )}
+            );
+          })()}
 
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
@@ -1251,12 +1291,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </span>
                   <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
                 </div>
-                <input
-                  type="text"
-                  value={selectedDiet.name}
-                  onChange={e => renameDiet(e.target.value)}
-                  className="block w-full bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={selectedDiet.name}
+                    onChange={e => renameDiet(e.target.value)}
+                    aria-label="Nombre de la dieta"
+                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                  />
+                  <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
+                </div>
                 {selectedDiet.coachNote && (
                   <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
                 )}
@@ -1264,6 +1308,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>
               </div>
+
+              {/* Aviso de fork: editar una dieta del coach nunca la actualiza in
+                  situ (las reglas de Firestore lo prohíben) — al guardar se crea
+                  una copia propia. Avisar aquí, antes de que el atleta guarde,
+                  en vez de que se entere por el texto del botón. */}
+              {!selectedDiet.selfManaged && isDirty && (
+                <div className="flex items-start gap-2 bg-data/10 border border-data/25 text-data px-4 py-3 rounded-surface text-body-s">
+                  <Icon name="info" size="s" className="flex-shrink-0 mt-0.5" />
+                  <span>Esta dieta la creó tu coach. Si la editas, se guardará como copia tuya y la original no se toca.</span>
+                </div>
+              )}
 
               {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
                   en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
@@ -1305,7 +1360,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 id="nutrition_swap_hint"
                 email={profile.email}
                 icon="swap_horiz"
-                text="¿No te apetece algo? Toca el icono 🔁 junto a cualquier alimento para cambiarlo por un equivalente."
+                text="¿No te apetece algo? Toca Cambiar junto a cualquier alimento para sustituirlo por un equivalente."
               />
 
               <div className="space-y-4">
@@ -1397,34 +1452,40 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         </div>
                       )}
 
-                      {/* Per-meal target + progress (only when targets are set) */}
+                      {/* Per-meal target + progress (only when targets are set) — antes
+                          salía sin rótulo, al contrario que el lado coach ("Objetivo
+                          comida"), y las barras eran hechas a mano en vez del
+                          ProgressBar compartido. */}
                       {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
-                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline flex flex-wrap gap-x-3 gap-y-2 items-center">
-                            {targetCats.map(cat => {
-                              const tgt = meal.target![cat]!;
-                              const d = mDone[cat] ?? 0;
-                              const isOk = round2(d) >= round2(tgt);
-                              const isOver = d > tgt;
-                              return (
-                                <div key={cat} className="flex items-center gap-1">
-                                  <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
-                                    {cat.replace('_', ' ')}
-                                  </span>
-                                  <span className={`font-mono text-caption ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
-                                    {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
-                                  </span>
-                                  <div className="w-10 h-1 bg-raised rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full transition-all duration-300 ${isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-accent'}`}
-                                      style={{ width: `${tgt > 0 ? Math.min(100, (d / tgt) * 100) : 0}%` }}
+                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline">
+                            <p className="font-mono text-caption text-ink-3 uppercase tracking-wider mb-2">Objetivo comida</p>
+                            <div className="flex flex-wrap gap-x-3 gap-y-2 items-center">
+                              {targetCats.map(cat => {
+                                const tgt = meal.target![cat]!;
+                                const d = mDone[cat] ?? 0;
+                                const isOk = round2(d) >= round2(tgt);
+                                const isOver = d > tgt;
+                                const pct = tgt > 0 ? (d / tgt) * 100 : 0;
+                                return (
+                                  <div key={cat} className="flex items-center gap-1">
+                                    <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
+                                      {cat.replace('_', ' ')}
+                                    </span>
+                                    <span className={`font-mono text-caption ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
+                                      {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
+                                    </span>
+                                    <ProgressBar
+                                      value={pct}
+                                      label={`${CAT_LABEL[cat]} de esta comida, ${fmtQty(d)} de ${fmtQty(tgt)} intercambios`}
+                                      className="w-10 flex-shrink-0"
                                     />
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })()}
@@ -1434,7 +1495,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {meal.items.length === 0 ? (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}
-                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors"
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors active:scale-[0.99]"
                           >
                             <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
                               <Icon name="add" size="s" className="text-accent" />
@@ -1444,19 +1505,19 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         ) : meal.items.map((item, idx) => {
                           const key = `${meal.id}_${idx}`;
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
-                          // Toque en la fila = intercambiar (handoff, panel 02b); el
-                          // checkbox y el botón "quitar" paran la propagación para no
-                          // disparar el picker a la vez.
+                          // El botón "Cambiar" es lo único que abre el intercambiador —
+                          // antes era la fila entera con un icono decorativo sin ningún
+                          // affordance (queja real: "no da feedback ni info al tocar").
+                          const canDelete = selectedDiet.selfManaged || idx >= (origItemCounts[meal.id] ?? Infinity);
                           return (
                             <div key={key}
-                              onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                              className={`flex items-center gap-3 p-3 rounded-surface border cursor-pointer transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline hover:border-accent/30'}`}
+                              className={`flex items-center gap-3 p-3 rounded-surface border transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
                             >
                               {/* Checkbox */}
                               <button
-                                onClick={e => { e.stopPropagation(); handleToggleDone(meal.id, idx); }}
+                                onClick={() => handleToggleDone(meal.id, idx)}
                                 title={st.done ? 'Desmarcar' : 'Marcar'}
-                                className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
+                                className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
                               >
                                 {st.done && <span className="material-symbols-outlined text-body-s font-bold">check</span>}
                               </button>
@@ -1466,8 +1527,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 <span className="font-mono text-caption font-bold text-ink-3">{item.category.replace('_', '')}</span>
                               </span>
 
-                              {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana */}
-                              <div className="flex-1 min-w-0">
+                              {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana.
+                                  También abre el intercambiador — misma acción que "Cambiar", dos zonas táctiles para el mismo gesto. */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                                className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
+                              >
                                 <div className="flex items-baseline gap-2">
                                   <span className={`text-body-s font-sans font-semibold leading-snug truncate ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
                                     {st.foodLabel}
@@ -1479,25 +1545,37 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 <span className="block font-sans text-caption text-ink-3 mt-1">
                                   {fmtQty(item.quantity)} intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
                                 </span>
-                              </div>
+                              </button>
 
                               {/* Cambiar comida — only on the first item of a recipe-derived group */}
                               {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
                                 <button
-                                  onClick={e => { e.stopPropagation(); handleOpenSwapPicker(meal.id, item.originRecipeId!); }}
+                                  onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
                                   title="Cambiar comida"
-                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5"
+                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">skillet</span>
                                 </button>
                               )}
-                              <Icon name="swap_horiz" size="s" className="text-accent/65 flex-shrink-0" />
-                              {/* Delete button — only for recipe-added items */}
-                              {idx >= (origItemCounts[meal.id] ?? Infinity) && (
+
+                              {/* Botón "Cambiar" real — antes era un icono decorativo sin onClick */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                                aria-label={`Cambiar ${st.foodLabel}`}
+                                className="flex-shrink-0 flex items-center gap-1 rounded-control border border-accent-line bg-accent-bg px-2 py-2 text-accent transition-transform duration-(--duration-state) hover:bg-accent/20 active:scale-95"
+                              >
+                                <Icon name="swap_horiz" size="s" />
+                                <span className="hidden sm:inline font-mono text-caption uppercase tracking-wider">Cambiar</span>
+                              </button>
+
+                              {/* Delete button — dietas propias: cualquier alimento; dietas
+                                  del coach: solo los que se añadieron aquí (no los originales) */}
+                              {canDelete && (
                                 <button
-                                  onClick={e => { e.stopPropagation(); handleRemoveItem(meal.id, idx); }}
+                                  onClick={() => handleRemoveItem(meal.id, idx)}
                                   title="Quitar"
-                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5"
+                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">close</span>
                                 </button>
@@ -1505,10 +1583,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             </div>
                           );
                         })}
+                        {/* Alta rápida por categoría — solo cuando la comida tiene objetivo
+                            fijado por el coach, para ir directo a lo que falta. */}
+                        {meal.items.length > 0 && CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
+                          const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
+                          return (
+                            <div className="flex gap-2 flex-wrap pt-1">
+                              {BUDGET_CATS.filter(cat => (meal.target?.[cat] ?? 0) > 0).map(cat => {
+                                const missing = (meal.target![cat]! - (mDone[cat] ?? 0)) > 0;
+                                return (
+                                  <button
+                                    key={cat}
+                                    onClick={() => handleOpenAddPicker(meal.id, cat)}
+                                    className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold uppercase tracking-wider border transition-all active:scale-95 ${
+                                      missing
+                                        ? 'bg-accent-bg border-accent-line text-accent hover:bg-accent/20'
+                                        : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
+                                    }`}
+                                  >+ {CHIP_LABEL[cat]}</button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                         {meal.items.length > 0 && (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}
-                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors"
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors active:scale-[0.99]"
                           >
                             <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
                               <Icon name="add" size="s" className="text-accent" />
@@ -1534,23 +1635,129 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </button>
               </div>
 
-              {/* Guardar */}
-              <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
-                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
-                  {!isPersisted || isDirty ? 'Cambios sin guardar' : 'Todo guardado'}
-                </span>
-                <button
-                  onClick={handleSaveDiet}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
-                >
-                  <span className="material-symbols-outlined text-body-s">save</span>
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
+              {/* Guardar — el estado y la etiqueta del botón distinguen el caso
+                  de fork (dieta del coach, editada) del resto, para que el
+                  atleta sepa de antemano qué va a pasar al tocar "Guardar". */}
+              {(() => {
+                const willFork = !selectedDiet.selfManaged && isDirty;
+                const statusLabel = !isPersisted
+                  ? 'Menú nuevo sin guardar'
+                  : willFork
+                  ? 'Se guardará como copia tuya'
+                  : isDirty
+                  ? 'Cambios sin guardar'
+                  : 'Todo guardado';
+                return (
+                  <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
+                    <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
+                      {statusLabel}
+                    </span>
+                    <button
+                      onClick={handleSaveDiet}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-body-s">save</span>
+                      {saving ? 'Guardando...' : willFork ? 'Guardar copia' : 'Guardar'}
+                    </button>
+                  </div>
+                );
+              })()}
             </React.Fragment>
           )}
         </>
+      )}
+
+      {/* "Mis dietas" — gestión de todas las dietas del atleta (programada
+          hoy / del coach / propias), sustituye la antigua pestaña separada. */}
+      {misDietasOpen && (() => {
+        const scheduledTodayId = weeklySchedule[TODAY_WD] ?? null;
+        const scheduledToday = allDietsList.filter(d => d.id === scheduledTodayId);
+        const fromCoach = allDietsList.filter(d => d.id !== scheduledTodayId && !d.selfManaged);
+        const own = allDietsList.filter(d => d.id !== scheduledTodayId && d.selfManaged);
+        const renderGroup = (label: string, list: Diet[]) => list.length === 0 ? null : (
+          <div className="space-y-1">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider px-1">{label}</p>
+            {list.map(dt => {
+              const dPlaced = computeDietPlaced(dt.meals);
+              const chips = BUDGET_CATS.filter(cat => dt.budget[cat] > 0)
+                .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}/${fmtQty(dt.budget[cat])}`)
+                .join(' · ');
+              return (
+                <ListRow
+                  key={dt.id}
+                  title={dt.name}
+                  subtitle={chips || 'Sin alimentos todavía'}
+                  leading={
+                    <span className="w-9 h-9 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                      <Icon name={dt.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-ink-2" />
+                    </span>
+                  }
+                  trailing={
+                    <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicateDiet(dt)}
+                        title="Duplicar"
+                        aria-label={`Duplicar ${dt.name}`}
+                        className="text-ink-2 hover:text-accent transition-colors p-2"
+                      >
+                        <Icon name="content_copy" size="s" />
+                      </button>
+                      {dt.selfManaged && (
+                        <button
+                          type="button"
+                          onClick={() => setDietPendingDelete(dt)}
+                          title="Eliminar"
+                          aria-label={`Eliminar ${dt.name}`}
+                          className="text-ink-2 hover:text-red-400 transition-colors p-2"
+                        >
+                          <Icon name="delete" size="s" />
+                        </button>
+                      )}
+                    </div>
+                  }
+                  onClick={() => { handleSelectDiet(dt); setMisDietasOpen(false); }}
+                />
+              );
+            })}
+          </div>
+        );
+        return (
+          <Sheet
+            open
+            onClose={() => setMisDietasOpen(false)}
+            title="Mis dietas"
+            size="l"
+            footer={<Button variant="primary" icon="add" fullWidth onClick={handleStartBlankFromSheet}>Nueva dieta</Button>}
+          >
+            <div className="space-y-4">
+              {renderGroup(`Programada hoy (${WD_FULL[TODAY_WD]})`, scheduledToday)}
+              {renderGroup('De tu entrenador', fromCoach)}
+              {renderGroup('Tuyas', own)}
+            </div>
+          </Sheet>
+        );
+      })()}
+
+      {/* Confirmar borrado de una dieta propia */}
+      {dietPendingDelete && (
+        <Dialog
+          open
+          onClose={() => setDietPendingDelete(null)}
+          title="¿Eliminar esta dieta?"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setDietPendingDelete(null)} variant="secondary">Cancelar</Button>
+              <Button onClick={confirmDeleteDiet} variant="danger" loading={deletingDiet}>Eliminar</Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2">
+            Se eliminará «{dietPendingDelete.name}». Si estaba programada algún día de la semana, dejará de estarlo.
+          </p>
+        </Dialog>
       )}
 
       {/* Recipe picker sheet */}
@@ -1825,39 +2032,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         );
       })()}
 
-      {/* Save-choice sheet — only when saving edits to a diet the coach created */}
-      {saveChoiceOpen && (
-        <Sheet
-          open
-          onClose={() => setSaveChoiceOpen(false)}
-          title="¿Cómo quieres guardar?"
-          size="m"
-          footer={<Button variant="ghost" onClick={() => setSaveChoiceOpen(false)} fullWidth>Cancelar</Button>}
-        >
-          <div className="space-y-3">
-            <p className="text-label text-ink-2">
-              Esta dieta la creó tu entrenador. Puedes actualizarla directamente o guardar tus
-              cambios como una dieta nueva tuya, sin tocar la original.
-            </p>
-            <button
-              onClick={handleUpdateInPlace}
-              disabled={saving}
-              className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
-            >
-              <Icon name="edit" size="m" className="text-accent" />
-              <span className="text-body-s text-white font-sans">Actualizar esta dieta</span>
-            </button>
-            <button
-              onClick={handleSaveAsNew}
-              disabled={saving}
-              className="w-full flex items-center gap-2 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40"
-            >
-              <Icon name="bookmark_add" size="m" className="text-data" />
-              <span className="text-body-s text-white font-sans">Guardar como nueva dieta mía</span>
-            </button>
-          </div>
-        </Sheet>
-      )}
 
       {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}
       {chooseDietForRecipe && (
