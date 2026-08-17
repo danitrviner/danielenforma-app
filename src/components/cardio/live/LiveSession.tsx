@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CardioZones, CardioIntervalBlock } from '../../../types';
 import { HeartRateStatus } from '../../../services/bleHeartRate';
 import { ZONE_COLOR, BELOW_ZONE_COLOR } from '../../../utils/cardioZones';
 import { CardioLivePrefs } from '../../../utils/cardioLivePrefs';
+import { useScrollLock } from '../../ui/internal/overlayHooks';
 import { Icon, Pager } from '../../ui';
 import TopBar from './TopBar';
 import MetricRow from './MetricRow';
@@ -35,6 +37,17 @@ import PageAvanzado from './pages/PageAvanzado';
    Deliberadamente IGUAL que antes: los colores de zona (Z2 cian, no verde),
    y que esto sigue siendo una vista a pantalla completa, no un modal — F9 de
    la migración del DS ya lo clasificó así a propósito.
+
+   Portal a `document.body` (rastreo móvil, 17-08): antes se montaba en su
+   sitio normal dentro de `<main>`, y en el iPhone físico de Dani la cabecera
+   y la barra de navegación se quedaban visibles por encima/debajo, con el
+   contenido de la sesión encogido entre medias en vez de a pantalla
+   completa — el mismo fallo silencioso que el docstring de `Sheet.tsx` ya
+   describe para overlays no portados: el `fixed inset-0` deja de cubrir el
+   viewport real si algo por el camino le rompe el containing block, y en un
+   WKWebView eso puede pasar sin que ninguna regla de `index.css` lo delate
+   en el navegador de escritorio. Mismo remedio que ya usa `Sheet`: portal +
+   `useScrollLock`, para que quede fuera del árbol de `AppContent` del todo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -88,11 +101,12 @@ export default function LiveSession({
   const [pagina, setPagina] = useState(0);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useScrollLock(true);
 
   const zoneColor = currentZone ? ZONE_COLOR[currentZone] : BELOW_ZONE_COLOR;
   const targetProgressSec = targetZone ? timeInZone[targetZone] : 0;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex flex-col bg-bg" onPointerDown={onRegisterActivity}>
       <div
         className="flex flex-1 min-h-0 flex-col transition-colors duration-700"
@@ -119,7 +133,7 @@ export default function LiveSession({
           )}
         </div>
 
-        <MetricRow avgHR={avgHR} mets={liveMets} maxHR={maxHRSoFar} />
+        <MetricRow bpm={bpm} mets={liveMets} maxHR={maxHRSoFar} />
 
         <div className="flex-1 min-h-0 mt-3">
           <Pager value={pagina} onChange={setPagina} label="Métricas de la sesión" dots="inside" className="h-full">
@@ -175,6 +189,7 @@ export default function LiveSession({
         prefs={livePrefs}
         onChangePrefs={onChangePrefs}
       />
-    </div>
+    </div>,
+    document.body
   );
 }

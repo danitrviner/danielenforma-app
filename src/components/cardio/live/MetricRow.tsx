@@ -3,10 +3,14 @@ import React from 'react';
 /* Fila de 3 métricas de FITIV (§4bis.1: "FC PROM. · METS · FC MAX"). Antes
    solo había 2 (faltaba METs, que ahora calcula el motor en vivo — ver
    displayLive en useCardioSession.tsx). Cifras en mono, regla del DS para
-   datos frente a prosa. */
+   datos frente a prosa.
+
+   FC PROM. → FC actual (rastreo móvil, 17-08, a petición de Dani): el
+   promedio de toda la sesión es poco útil mientras entrenas — lo que se
+   mira de un vistazo es el pulso de ESTE momento. */
 
 interface Props {
-  avgHR?: number;
+  bpm: number | null;
   mets?: number;
   maxHR?: number;
 }
@@ -20,10 +24,10 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function MetricRow({ avgHR, mets, maxHR }: Props) {
+export default function MetricRow({ bpm, mets, maxHR }: Props) {
   return (
     <div className="flex gap-3 px-5">
-      <Metric label="FC prom." value={avgHR !== undefined ? String(avgHR) : '--'} />
+      <Metric label="FC actual" value={bpm !== null ? String(bpm) : '--'} />
       <Metric label="METs" value={mets !== undefined ? mets.toFixed(1).replace('.', ',') : '--'} />
       <Metric label="FC máx." value={maxHR !== undefined ? String(maxHR) : '--'} />
     </div>

@@ -93,7 +93,16 @@ export default function ClientBodyPanel({
           <div className="p-3 bg-bg/90">
             {viewPhotos.length === 1 ? (
               <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                <div className="absolute top-2 left-2 z-10 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
+                {/* Sin z-index explícito: al llevar la misma cifra (10) que
+                    `--z-sticky` del nav de zonas de ClientHub.tsx, y sin que
+                    este contenedor `relative` abra su propio contexto de
+                    apilamiento (no tiene z-index propio), el badge competía
+                    en el MISMO contexto que ese nav — empate a 10 lo gana
+                    quien va después en el DOM, y esto va después. Rastreo
+                    móvil 17-08: por eso tapaba las pestañas Ficha/Cuerpo al
+                    hacer scroll. z-index:auto ya pinta por encima de la
+                    <img> hermana sin necesidad de competir con nada global. */}
+                <div className="absolute top-2 left-2 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
                   Actual · {fmtDate(latest.date)}
                 </div>
                 <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />

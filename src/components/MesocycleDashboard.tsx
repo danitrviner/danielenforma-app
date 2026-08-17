@@ -8,7 +8,7 @@ import {
 import { Mesocycle, MuscleGroup } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
 import {
-  Icon, EmptyState,
+  Icon, EmptyState, SegmentedControl,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
   TOOLTIP_GRAFICA,
 } from './ui';
@@ -90,6 +90,18 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   // Group-filter state for Chart 2
   const [hiddenGroups, setHiddenGroups] = useState<Set<MuscleGroup>>(new Set());
 
+  // Rastreo móvil 17-08, a petición de Dani: las 3 gráficas de este
+  // dashboard vivían apiladas por separado; ahora comparten una sola
+  // tarjeta con un selector para verlas de una en una. Mismo patrón a
+  // extender más adelante al resto de pantallas con varias gráficas — hoy
+  // solo se aplica aquí, que es la pantalla que pidió.
+  const [chartView, setChartView] = useState<'series' | 'adherencia' | 'grupo'>('series');
+  const CHART_VIEW_META: Record<typeof chartView, { label: string; icon: string; title: string }> = {
+    series:     { label: 'Series',    icon: 'bar_chart',     title: 'Series totales programadas' },
+    adherencia: { label: 'Adherencia', icon: 'task_alt',      title: 'Adherencia por mesociclo' },
+    grupo:      { label: 'Por grupo', icon: 'fitness_center', title: 'Series semanales por grupo muscular' },
+  };
+
   // ── Sorted mesocycles ──────────────────────────────────────────────────────
   const sorted = useMemo(
     () => [...mesocycles].sort((a, b) => a.number - b.number),
@@ -162,11 +174,17 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
         )}
       </div>
 
-      {/* ── Row 1: Series totales + Adherencia ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Las 3 gráficas comparten una tarjeta con un selector en vez de ir
+          apiladas por separado — se ve una a la vez, la que interese. */}
+      <ChartCard title={CHART_VIEW_META[chartView].title} icon={CHART_VIEW_META[chartView].icon}>
+        <SegmentedControl
+          label="Gráfica del dashboard"
+          value={chartView}
+          onChange={v => setChartView(v as typeof chartView)}
+          options={(Object.keys(CHART_VIEW_META) as (typeof chartView)[]).map(id => ({ value: id, label: CHART_VIEW_META[id].label }))}
+        />
 
-        {/* Chart 1 */}
-        <ChartCard title="Series totales programadas" icon="bar_chart">
+        {chartView === 'series' && (
           <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
             <BarChart data={totalSeriesData} margin={MARGEN_GRAFICA}>
               <CartesianGrid {...REJILLA_GRAFICA} />
@@ -176,11 +194,10 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               <Bar dataKey="series" fill="var(--color-accent)" radius={[3, 3, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
-        </ChartCard>
+        )}
 
-        {/* Chart 5 */}
-        <ChartCard title="Adherencia por mesociclo" icon="task_alt">
-          {!hasAdherence ? (
+        {chartView === 'adherencia' && (
+          !hasAdherence ? (
             <EmptyChart message="Sin sesiones asignadas todavía" />
           ) : (
             <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
@@ -199,73 +216,72 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                 <Bar dataKey="adherencia" fill="var(--color-success)" radius={[3, 3, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
-          )}
-        </ChartCard>
-      </div>
+          )
+        )}
 
-      {/* ── Row 2: Series por grupo muscular ── */}
-      <ChartCard title="Series semanales por grupo muscular" icon="fitness_center">
-        {activeGroups.length === 0 ? (
-          <EmptyChart message="Sin grupos configurados" />
-        ) : (
-          <div className="space-y-3">
-            {/* Group toggle pills */}
-            <div className="flex flex-wrap gap-2">
-              {activeGroups.map(g => {
-                const hidden = hiddenGroups.has(g);
-                return (
+        {chartView === 'grupo' && (
+          activeGroups.length === 0 ? (
+            <EmptyChart message="Sin grupos configurados" />
+          ) : (
+            <div className="space-y-3">
+              {/* Group toggle pills */}
+              <div className="flex flex-wrap gap-2">
+                {activeGroups.map(g => {
+                  const hidden = hiddenGroups.has(g);
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => setHiddenGroups(prev => {
+                        const next = new Set(prev);
+                        if (next.has(g)) next.delete(g); else next.add(g);
+                        return next;
+                      })}
+                      className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
+                        hidden
+                          ? 'bg-transparent border-hairline text-ink-3'
+                          : 'border-transparent text-black'
+                      }`}
+                      style={hidden ? {} : { backgroundColor: GROUP_COLOR[g] }}
+                    >
+                      {MUSCLE_LABELS[g]}
+                    </button>
+                  );
+                })}
+                {hiddenGroups.size > 0 && (
                   <button
-                    key={g}
-                    onClick={() => setHiddenGroups(prev => {
-                      const next = new Set(prev);
-                      if (next.has(g)) next.delete(g); else next.add(g);
-                      return next;
-                    })}
-                    className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
-                      hidden
-                        ? 'bg-transparent border-hairline text-ink-3'
-                        : 'border-transparent text-black'
-                    }`}
-                    style={hidden ? {} : { backgroundColor: GROUP_COLOR[g] }}
+                    onClick={() => setHiddenGroups(new Set())}
+                    className="px-2 rounded-control font-mono text-caption text-ink-2 hover:text-white border border-hairline transition-colors"
                   >
-                    {MUSCLE_LABELS[g]}
+                    Mostrar todos
                   </button>
-                );
-              })}
-              {hiddenGroups.size > 0 && (
-                <button
-                  onClick={() => setHiddenGroups(new Set())}
-                  className="px-2 rounded-control font-mono text-caption text-ink-2 hover:text-white border border-hairline transition-colors"
-                >
-                  Mostrar todos
-                </button>
-              )}
-            </div>
+                )}
+              </div>
 
-            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.m}>
-              <LineChart data={groupSeriesData} margin={MARGEN_GRAFICA}>
-                <CartesianGrid {...REJILLA_GRAFICA} />
-                <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
-                <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} />
-                <Tooltip
-                  {...TOOLTIP_GRAFICA}
-                  formatter={(v: number, key: string) => [`${v} series`, MUSCLE_LABELS[key as MuscleGroup] ?? key]}
-                />
-                {visibleGroups.map(g => (
-                  <Line
-                    key={g}
-                    type="monotone"
-                    dataKey={g}
-                    stroke={GROUP_COLOR[g]}
-                    strokeWidth={2}
-                    dot={{ fill: GROUP_COLOR[g], stroke: 'var(--color-bg)', strokeWidth: 1.5, r: 3 }}
-                    activeDot={{ r: 4 }}
-                    connectNulls
+              <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.m}>
+                <LineChart data={groupSeriesData} margin={MARGEN_GRAFICA}>
+                  <CartesianGrid {...REJILLA_GRAFICA} />
+                  <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
+                  <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} />
+                  <Tooltip
+                    {...TOOLTIP_GRAFICA}
+                    formatter={(v: number, key: string) => [`${v} series`, MUSCLE_LABELS[key as MuscleGroup] ?? key]}
                   />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+                  {visibleGroups.map(g => (
+                    <Line
+                      key={g}
+                      type="monotone"
+                      dataKey={g}
+                      stroke={GROUP_COLOR[g]}
+                      strokeWidth={2}
+                      dot={{ fill: GROUP_COLOR[g], stroke: 'var(--color-bg)', strokeWidth: 1.5, r: 3 }}
+                      activeDot={{ r: 4 }}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )
         )}
       </ChartCard>
 
