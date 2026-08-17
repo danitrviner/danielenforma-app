@@ -13,7 +13,7 @@ import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory
 import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
 import { useCardioSession, SAMPLE_INTERVAL_SEC } from '../hooks/useCardioSession';
 import { Skeleton } from './ui';
-import HrTestsPanel from './HrTestsPanel';
+import CardioZonesSettingsCard from './cardio/CardioZonesSettingsCard';
 import LiveSession from './cardio/live/LiveSession';
 import EffortPrompt from './cardio/EffortPrompt';
 import CooldownPrompt from './cardio/CooldownPrompt';
@@ -350,7 +350,7 @@ export default function CardioScreen({ profile }: Props) {
         />
       )}
 
-      <HrTestsPanel profile={profile} cardioProfile={cardioProfile ?? null} />
+      <CardioZonesSettingsCard profile={profile} />
     </div>
   );
 }
