@@ -4,8 +4,12 @@ import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingD
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
+import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL } from '../utils/mealDistribution';
+import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
+
+const SLOT_OPTIONS = [1, 2, 3, 4, 5].map(s => ({ value: String(s), label: SLOT_LABEL[s] }));
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -46,15 +50,6 @@ function computeMealPlaced(meal: DietMeal): Record<FoodCategory, number> {
   const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
   for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
   return p;
-}
-
-// Distributes `total` across `n` slots in 0.25 steps; extras go to the first slots
-function distributeEvenly(total: number, n: number): number[] {
-  if (n === 0) return [];
-  const units = Math.round(total / 0.25);
-  const base = Math.floor(units / n);
-  const extra = units - base * n;
-  return Array.from({ length: n }, (_, i) => round2((base + (i < extra ? 1 : 0)) * 0.25));
 }
 
 function blankBudget(): Record<FoodCategory, number> {
@@ -103,6 +98,7 @@ interface Props {
 export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, embeddedDiet, onSaved, onCancelled, onboardingData }: Props) {
   const isEmbedded = athleteEmail !== undefined;
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Athlete selector
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
@@ -135,6 +131,14 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(blankForm());
   const [saving, setSaving] = useState(false);
+
+  // Reparto automático de objetivos por comida — franjas elegidas a mano por
+  // el coach (para que la inferencia por nombre nunca las pise), la última
+  // explicación de reparto (se limpia al tocar un objetivo a mano) y el
+  // aviso antes de pisar objetivos ya puestos.
+  const [manualSlotMealIds, setManualSlotMealIds] = useState<Set<string>>(new Set());
+  const [lastDistribution, setLastDistribution] = useState<DistributeResult | null>(null);
+  const [confirmDistributeOpen, setConfirmDistributeOpen] = useState(false);
 
   // Preview view mode (shared localStorage key with athlete)
   const [showPreview, setShowPreview] = useState(false);
@@ -287,8 +291,23 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const removeMeal = (mealId: string) =>
     setForm(f => ({ ...f, meals: f.meals.filter(m => m.id !== mealId) }));
 
+  // Infiere la franja al escribir el nombre — pero nunca pisa una franja que
+  // el coach ya haya elegido a mano en el `Select` de abajo (manualSlotMealIds).
   const setMealName = (mealId: string, name: string) =>
-    setForm(f => ({ ...f, meals: f.meals.map(m => m.id === mealId ? { ...m, name } : m) }));
+    setForm(f => ({
+      ...f,
+      meals: f.meals.map(m => {
+        if (m.id !== mealId) return m;
+        if (manualSlotMealIds.has(mealId)) return { ...m, name };
+        const inferred = inferSlot(name);
+        return inferred != null ? { ...m, name, slot: inferred } : { ...m, name };
+      }),
+    }));
+
+  const setMealSlot = (mealId: string, slot: number | undefined) => {
+    setManualSlotMealIds(prev => new Set(prev).add(mealId));
+    setForm(f => ({ ...f, meals: f.meals.map(m => m.id === mealId ? { ...m, slot } : m) }));
+  };
 
   const removeItem = (mealId: string, idx: number) =>
     setForm(f => ({
@@ -315,7 +334,10 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const setBudget = (cat: FoodCategory, val: number) =>
     setForm(f => ({ ...f, budget: { ...f.budget, [cat]: Math.max(0, round2(val)) } }));
 
-  const setMealTarget = (mealId: string, cat: FoodCategory, delta: number) =>
+  const setMealTarget = (mealId: string, cat: FoodCategory, delta: number) => {
+    // Una explicación de reparto ("repartido según sus preferencias…") no
+    // puede quedarse flotando sobre números que el coach acaba de tocar a mano.
+    setLastDistribution(null);
     setForm(f => ({
       ...f,
       meals: f.meals.map(m => {
@@ -324,22 +346,37 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         return { ...m, target: { ...cur, [cat]: Math.max(0, round2(cur[cat] + delta)) } };
       }),
     }));
+  };
 
-  const autoDistribute = () => {
-    const n = form.meals.length;
-    if (n === 0) return;
+  const runAutoDistribute = () => {
+    const result = distributeMealTargets({
+      budget: form.budget,
+      meals: form.meals,
+      hungerProfile: nutConfig?.hungerProfile,
+      trainingSlot: nutConfig?.trainingSlot,
+    });
+    const prevMeals = form.meals;
     setForm(f => ({
       ...f,
-      meals: f.meals.map((meal, idx) => {
-        const target = blankBudget();
-        for (const cat of CATS) {
-          if (f.budget[cat] > 0) {
-            target[cat] = distributeEvenly(f.budget[cat], n)[idx];
-          }
-        }
-        return { ...meal, target };
-      }),
+      // Persiste también la franja resuelta (si la comida no tenía una ya)
+      // para que el Badge de "Deducido del nombre" salga sin tener que volver
+      // a repartir.
+      meals: f.meals.map((m, idx) => ({ ...m, target: result.targets[idx], slot: m.slot ?? result.slots[idx] })),
     }));
+    setLastDistribution(result);
+    showToast('Objetivos repartidos.', 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => { setForm(f => ({ ...f, meals: prevMeals })); setLastDistribution(null); },
+    });
+  };
+
+  const autoDistribute = () => {
+    if (form.meals.length === 0) return;
+    // autoDistribute pisa CUALQUIER objetivo manual sin avisar — si ya hay
+    // alguno puesto a mano, confirmar antes en vez de borrarlo de golpe.
+    const hasManualTargets = form.meals.some(m => CATS.some(c => (m.target?.[c] ?? 0) > 0));
+    if (hasManualTargets) { setConfirmDistributeOpen(true); return; }
+    runAutoDistribute();
   };
 
   // ── Food picker ──────────────────────────────────────────────────────────────
@@ -674,7 +711,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 className="flex items-center gap-2 px-3 py-2 bg-raised border border-data/40 text-data hover:border-data/70 font-sans text-caption uppercase rounded-control transition-all"
               >
                 <Icon name="auto_fix_high" size="s" />
-                Repartir
+                Repartir objetivos
               </button>
             )}
             <button
@@ -685,6 +722,20 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </button>
           </div>
         </div>
+
+        {/* Por qué se repartió así — o por qué NO se personalizó, para que
+            quede claro que falta pedirle esa preferencia al atleta. */}
+        {lastDistribution && (
+          lastDistribution.personalized && lastDistribution.reasons.length > 0 ? (
+            <p className="text-caption font-mono text-data">
+              Repartido según las preferencias de {selectedAthlete?.displayName ?? 'este atleta'}: {lastDistribution.reasons.join(' · ')}.
+            </p>
+          ) : (
+            <p className="text-caption font-mono text-ink-3">
+              Reparto uniforme — {selectedAthlete?.displayName ?? 'el atleta'} no ha indicado cuándo tiene más hambre.
+            </p>
+          )
+        )}
 
         {form.meals.map((meal, mi) => (
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
@@ -697,8 +748,24 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
                 value={meal.name}
                 onChange={e => setMealName(meal.id, e.target.value)}
                 placeholder="Nombre libre: Desayuno, Pre-entreno…"
-                className="flex-1 bg-transparent text-title-s text-white focus:outline-none placeholder:text-ink-2/40"
+                className="flex-1 min-w-0 bg-transparent text-title-s text-white focus:outline-none placeholder:text-ink-2/40"
               />
+              {/* Franja horaria — alimenta "Repartir objetivos". Atenuada +
+                  título cuando viene de inferir el nombre, para que una
+                  deducción mala se vea ANTES de repartir, no después. */}
+              <select
+                value={meal.slot ?? ''}
+                onChange={e => setMealSlot(meal.id, e.target.value ? Number(e.target.value) : undefined)}
+                title={meal.slot != null && !manualSlotMealIds.has(meal.id) ? 'Deducido del nombre' : undefined}
+                className={`flex-shrink-0 bg-bg border rounded-control px-2 py-1 text-caption font-mono focus:outline-none focus:border-accent/50 ${
+                  meal.slot != null && !manualSlotMealIds.has(meal.id)
+                    ? 'border-hairline text-ink-3'
+                    : 'border-hairline text-white'
+                }`}
+              >
+                <option value="">— sin franja —</option>
+                {SLOT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
               {form.meals.length > 1 && (
                 <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
                   <Icon name="remove_circle" size="s" />
@@ -855,6 +922,24 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           Guardar dieta
         </Button>
       </div>
+
+      {/* Confirmar antes de pisar objetivos manuales con el reparto automático */}
+      {confirmDistributeOpen && (
+        <Dialog
+          open
+          onClose={() => setConfirmDistributeOpen(false)}
+          title="¿Sustituir los objetivos?"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setConfirmDistributeOpen(false)} variant="secondary">Cancelar</Button>
+              <Button onClick={() => { setConfirmDistributeOpen(false); runAutoDistribute(); }} variant="primary">Repartir</Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2">Ya hay objetivos puestos a mano en alguna comida. Se sustituirán por el reparto automático.</p>
+        </Dialog>
+      )}
 
       {/* Food picker sheet */}
       {pickerMealId && (

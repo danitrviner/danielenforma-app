@@ -2,7 +2,8 @@ import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
   BudgetVec, MenuDay, MenuMeal, MenuComplement,
 } from '../types';
-import { addToPlaced, round2, roundQuarter } from './exchangeHelpers';
+import { addToPlaced, round2 } from './exchangeHelpers';
+import { quotaSplit } from './quotaSplit';
 import { ingredientMatch, normalizeStr } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
@@ -52,7 +53,7 @@ const PRESET_PCTS: Record<3 | 4 | 5, number[]> = {
   5: [20, 10, 35, 10, 25],
 };
 
-const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
+export const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
   3: [
     { slot: 1, name: 'Desayuno', pct: 25 },
     { slot: 3, name: 'Comida', pct: 45 },
@@ -100,12 +101,16 @@ export function recipeMatchesSlot(recipe: Recipe, slot: number): boolean {
   return true;
 }
 
+// Antes redondeaba cada franja a 0,25 de forma independiente (roundQuarter),
+// lo que podía desviar la suma de las franjas hasta n·0,125 respecto al
+// presupuesto real del día. quotaSplit reparte por peso (aquí, sl.pct) con
+// suma EXACTA — misma regla que usa el reparto de "Mi plan"/coach.
 export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): BudgetVec[] {
-  return slots.map(sl => ({
-    HC: roundQuarter(dayBudget.HC * sl.pct / 100),
-    PROT: roundQuarter(dayBudget.PROT * sl.pct / 100),
-    GRASA: roundQuarter(dayBudget.GRASA * sl.pct / 100),
-  }));
+  const weights = slots.map(sl => sl.pct);
+  const hc = quotaSplit(dayBudget.HC, weights);
+  const prot = quotaSplit(dayBudget.PROT, weights);
+  const grasa = quotaSplit(dayBudget.GRASA, weights);
+  return slots.map((_, i) => ({ HC: hc[i], PROT: prot[i], GRASA: grasa[i] }));
 }
 
 // ─── Recipe → exchanges ──────────────────────────────────────────────────────

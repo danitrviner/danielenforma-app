@@ -7,6 +7,7 @@ import { isMenuStale } from '../utils/menuEngine';
 import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isDietPending } from '../utils/exchangeHelpers';
+import { SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
 import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
@@ -375,6 +376,19 @@ export default function ClientDietsPanel({
             .catch(console.error);
         }}
       />
+
+      {/* Referencia rápida para "Repartir objetivos" en Mi plan / Dietas —
+          para que el coach vea de un vistazo si ya tiene sentido pulsar el
+          botón o si primero hay que pedirle esto al atleta. */}
+      {nutritionConfig?.hungerProfile && (
+        <div className="flex items-center gap-2 bg-data/10 border border-data/25 text-data px-4 py-3 rounded-surface text-caption font-mono">
+          <span className="material-symbols-outlined text-body-s flex-shrink-0">restaurant</span>
+          <span>
+            Más hambre: {HUNGER_PROFILE_LABEL[nutritionConfig.hungerProfile]}
+            {nutritionConfig.trainingSlot != null && ` · Entreno cerca de: ${SLOT_LABEL[nutritionConfig.trainingSlot]}`}
+          </span>
+        </div>
+      )}
 
       {/* Nutrition mode config */}
       {nutritionConfig && (

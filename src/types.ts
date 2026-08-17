@@ -199,7 +199,16 @@ export interface AthleteNutritionConfig {
   batchCookingPreferred?: boolean; // athlete prefers cooking the whole week at once; pre-fills the coach's batch toggle
   preferredDishTypes?: string[]; // DishType ids the athlete wants to see more of (see utils/dishTypes)
   excludedDishTypes?: string[];  // DishType ids the athlete never wants in the menu
+  /** Cuándo el atleta tiene más hambre — alimenta el reparto automático de
+   *  intercambios por comida (utils/mealDistribution.ts). Sin valor = reparto
+   *  uniforme (comportamiento histórico). */
+  hungerProfile?: HungerProfile;
+  /** Franja (escala 1-5, ver DietMeal.slot) de la ingesta pegada al entreno,
+   *  para cuando ninguna comida de la dieta trae `aroundTraining` explícito. */
+  trainingSlot?: number;
 }
+
+export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
 
 export interface Exercise {
   id: string;
@@ -730,6 +739,13 @@ export interface DietMeal {
   name: string;
   items: DietItem[];
   target?: Record<FoodCategory, number>; // per-meal exchange targets (optional, set by coach)
+  /** Franja horaria: 1=Desayuno 2=Media mañana 3=Comida 4=Merienda 5=Cena.
+   *  Misma escala que OnboardingMeal.intakeType y MenuMeal.slot (utils/menuEngine.ts).
+   *  Ausente en dietas antiguas — se resuelve con utils/mealDistribution.ts:resolveSlots(). */
+  slot?: number;
+  /** Ingesta pegada al entreno (pre/post) — como mucho una por dieta. El
+   *  reparto automático (utils/mealDistribution.ts) sesga hidratos hacia ella. */
+  aroundTraining?: boolean;
 }
 
 export interface Diet {
