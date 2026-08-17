@@ -14,6 +14,7 @@ const BodyweightPanel = lazy(() => import('./BodyweightPanel'));
 const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
 const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
 import FoodPreferencesPanel from './FoodPreferencesPanel';
+import MenuPreferencesPanel from './MenuPreferencesPanel';
 import OnboardingForm from './OnboardingForm';
 import CoachesScreen from './CoachesScreen';
 import EliminarCuentaDialog from './EliminarCuentaDialog';
@@ -24,7 +25,7 @@ import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
-import { Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton } from './ui';
+import { Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton, Tabs } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -34,20 +35,19 @@ interface ProfileScreenProps {
   onLogOut: () => void;
 }
 
-// Progreso y Road map (F3.11, módulo 11): "Perfil absorbe Check-in y Road
-// map" se cumple embebiendo las pantallas existentes tal cual —son
-// autocontenidas, solo necesitan `profile`/`checkins`— dentro de una sección
-// expandible, no reescribiéndolas ni saltando a otra ruta. Cero riesgo de
-// regresión en su lógica (peso, fotos, cuestionarios, hitos), que se queda
-// intacta; lo único nuevo es DÓNDE vive en la app.
-type ExpandedSection = 'progress' | 'roadmap' | null;
-
-// The reorderable content blocks on this screen — order persisted per-athlete on
-// UserProfile.dashboardOrder. Not every block is visible for every athlete/coach
-// (e.g. "ficha" only shows for athletes), so reorder controls are positioned
-// among only the currently-visible blocks, not this full fixed list.
-type BlockId = 'gamification' | 'bodyweight' | 'measurements' | 'questionnaires' | 'ficha' | 'preferences' | 'gimnasio';
-const DEFAULT_BLOCK_ORDER: BlockId[] = ['gamification', 'bodyweight', 'measurements', 'questionnaires', 'ficha', 'preferences', 'gimnasio'];
+// Perfil del atleta en submenú de pestañas (antes: "Progreso" y "Road map"
+// eran desplegables, y el resto de bloques un scroll único apilado — Dani
+// pidió que fueran seleccionables, no un scroll largo). Las pantallas que se
+// embeben (CheckInScreen, AthleteRoadmapScreen, paneles con gráfica) van tal
+// cual, sin reescribirlas: cero riesgo de regresión en su lógica.
+type ProfileTab = 'resumen' | 'progreso' | 'roadmap' | 'preferencias' | 'gimnasio';
+const PROFILE_TABS: { id: ProfileTab; label: string; icon: string }[] = [
+  { id: 'resumen',      label: 'Resumen',       icon: 'person' },
+  { id: 'progreso',     label: 'Progreso',      icon: 'edit_note' },
+  { id: 'roadmap',      label: 'Road map',      icon: 'map' },
+  { id: 'preferencias', label: 'Preferencias',  icon: 'restaurant' },
+  { id: 'gimnasio',     label: 'Mi gimnasio',   icon: 'fitness_center' },
+];
 
 // Ajustes › Notificaciones (F3.13e) — SOLO los tipos que de verdad se generan
 // hacia el coach hoy (ver los `createNotificationDeduped(..., {recipientEmail:
@@ -95,7 +95,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const [showCoaches, setShowCoaches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<ExpandedSection>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('resumen');
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
@@ -177,12 +177,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const streakDays = profile.currentStreak;
   const maxStreakDays = profile.maxStreak;
 
-  const blockOrder = useMemo<BlockId[]>(() => {
-    const saved = (profile.dashboardOrder ?? []).filter((id): id is BlockId => DEFAULT_BLOCK_ORDER.includes(id as BlockId));
-    const missing = DEFAULT_BLOCK_ORDER.filter(id => !saved.includes(id));
-    return [...saved, ...missing];
-  }, [profile.dashboardOrder]);
-
   const handleSignOut = async () => {
     // 03-5. `onLogOut` estaba DENTRO del try, así que un `signOut` que lanzara
     // —sesión ya caducada en el servidor, por ejemplo— dejaba a la persona
@@ -223,134 +217,128 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     }
   };
 
-  const visibleBlocks = blockOrder.filter(id => {
-    if (id === 'questionnaires') return questionnaires.length > 0 && responses.length > 0;
-    if (id === 'measurements') return bodyMeasurements.some(m => m.metricKey !== 'bodyweight');
-    if (id === 'ficha') return !isCoach;
-    if (id === 'preferences') return !isCoach && !!onboarding && !editingFicha;
-    // F3.13e: 'gamification' (XP/nivel/racha) y 'bodyweight' son datos de
-    // ATLETA — antes se pintaban igual para el coach (bug real, sin sentido:
-    // un coach no tiene meta de peso ni racha de check-ins). La tarjeta de
-    // identidad del coach vive aparte, fuera de este listado reordenable.
-    if (id === 'gamification' || id === 'bodyweight') return !isCoach;
-    // El gimnasio es del atleta: el coach ve el de cada cliente en su Hub, no aquí.
-    if (id === 'gimnasio') return !isCoach;
-    return true;
-  });
-
-  function renderBlock(id: BlockId): React.ReactNode {
-    switch (id) {
-      case 'bodyweight':
+  function renderTab(): React.ReactNode {
+    switch (activeTab) {
+      case 'resumen':
         return (
-          <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-            <Suspense fallback={<PanelCargando />}><BodyweightPanel athleteEmail={profile.email} /></Suspense>
-          </div>
-        );
+          <div className="space-y-4">
+            <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
 
-      case 'measurements':
-        return (
-          <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl space-y-3">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
-              Mediciones
-            </h3>
-            <Suspense fallback={<PanelCargando />}><BodyMeasurementsPanel athleteEmail={profile.email} /></Suspense>
-          </div>
-        );
-
-      case 'gamification':
-        return (
-          <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
-
-            {/* Avatar + XP */}
-            <div className="flex items-center gap-4">
-              <div className="relative inline-block flex-shrink-0">
-                <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
-                  <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>
-                <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                    <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+              {/* Avatar + XP */}
+              <div className="flex items-center gap-4">
+                <div className="relative inline-block flex-shrink-0">
+                  <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
+                    <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   </div>
-                  <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
+                  <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>
+                  <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
+                      <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+                    </div>
+                    <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Streak + level stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
+                <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
+                <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
+                <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="var(--color-data)" />
               </div>
             </div>
 
-            {/* Streak + level stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
-              <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
-              <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
-              <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="var(--color-data)" />
+            {editingFicha ? (
+              <div className="bg-surface border border-hairline p-4 rounded-surface">
+                <OnboardingForm
+                  athleteEmail={profile.email}
+                  initialData={onboarding}
+                  onSaved={data => { queryClient.setQueryData(onboardingKey, data); setEditingFicha(false); }}
+                  onCancel={() => setEditingFicha(false)}
+                />
+              </div>
+            ) : (
+              <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                    <Icon name="assignment_ind" size="m" className="text-accent" />
+                    {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
+                  </h3>
+                  <p className="font-mono text-caption text-ink-3 mt-1">
+                    {onboarding
+                      ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                      : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
+                  </p>
+                </div>
+                <Button onClick={() => setEditingFicha(true)} icon="edit_note" className="shrink-0">
+                  {onboarding ? 'Editar' : 'Completar'}
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'progreso':
+        return (
+          <div className="space-y-4">
+            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+              <CheckInScreen profile={profile} checkins={checkins} />
             </div>
+            <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
+              <Suspense fallback={<PanelCargando />}><BodyweightPanel athleteEmail={profile.email} /></Suspense>
+            </div>
+            {bodyMeasurements.some(m => m.metricKey !== 'bodyweight') && (
+              <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl space-y-3">
+                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
+                  Mediciones
+                </h3>
+                <Suspense fallback={<PanelCargando />}><BodyMeasurementsPanel athleteEmail={profile.email} /></Suspense>
+              </div>
+            )}
+            {questionnaires.length > 0 && responses.length > 0 && (
+              <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
+                <Suspense fallback={<PanelCargando />}><QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} /></Suspense>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'roadmap':
+        return <AthleteRoadmapScreen profile={profile} />;
+
+      case 'preferencias':
+        return (
+          <div className="space-y-4">
+            {onboarding && (
+              <div className="bg-surface border border-hairline p-5 rounded-surface">
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+                  <Icon name="restaurant" size="m" className="text-accent" />
+                  Preferencias alimentarias
+                </h3>
+                <FoodPreferencesPanel
+                  athleteEmail={profile.email}
+                  initialLiked={onboarding.likedFoods}
+                  initialDisliked={onboarding.dislikedFoods}
+                  allergies={onboarding.allergies}
+                  onSaved={(liked, disliked) =>
+                    queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : prev)
+                  }
+                />
+              </div>
+            )}
+            <MenuPreferencesPanel athleteEmail={profile.email} />
           </div>
         );
 
       case 'gimnasio':
         return <MiGimnasioPanel email={profile.email} />;
-
-      case 'questionnaires':
-        return (
-          <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-            <Suspense fallback={<PanelCargando />}><QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} /></Suspense>
-          </div>
-        );
-
-      case 'ficha':
-        return editingFicha ? (
-          <div className="bg-surface border border-hairline p-4 rounded-surface">
-            <OnboardingForm
-              athleteEmail={profile.email}
-              initialData={onboarding}
-              onSaved={data => { queryClient.setQueryData(onboardingKey, data); setEditingFicha(false); }}
-              onCancel={() => setEditingFicha(false)}
-            />
-          </div>
-        ) : (
-          <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
-            <div>
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <Icon name="assignment_ind" size="m" className="text-accent" />
-                {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
-              </h3>
-              <p className="font-mono text-caption text-ink-3 mt-1">
-                {onboarding
-                  ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
-                  : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
-              </p>
-            </div>
-            <Button onClick={() => setEditingFicha(true)} icon="edit_note" className="shrink-0">
-              {onboarding ? 'Editar' : 'Completar'}
-            </Button>
-          </div>
-        );
-
-      case 'preferences':
-        if (!onboarding) return null;
-        return (
-          <div className="bg-surface border border-hairline p-5 rounded-surface">
-            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-              <Icon name="restaurant" size="m" className="text-accent" />
-              Preferencias alimentarias
-            </h3>
-            <FoodPreferencesPanel
-              athleteEmail={profile.email}
-              initialLiked={onboarding.likedFoods}
-              initialDisliked={onboarding.dislikedFoods}
-              allergies={onboarding.allergies}
-              onSaved={(liked, disliked) =>
-                queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : prev)
-              }
-            />
-          </div>
-        );
     }
   }
 
@@ -378,52 +366,16 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         </div>
       )}
 
-      {/* ── Progreso y Road map absorbidos (F3.11, módulo 11: "Perfil absorbe
-          Check-in y Road map") — CheckInScreen/AthleteRoadmapScreen se
-          embeben enteros al expandir, no se reescriben ni se navega fuera. */}
+      {/* Submenú de pestañas (antes: "Progreso" y "Road map" eran desplegables
+          y el resto un scroll único apilado — Dani pidió que fueran
+          seleccionables). Cada pestaña embebe pantallas existentes tal cual,
+          sin reescribirlas. */}
       {!isCoach && (
-        <div className="flex flex-col gap-2" ref={progressRowRef}>
-          <ListRow
-            onClick={() => setExpandedSection(v => v === 'progress' ? null : 'progress')}
-            className="rounded-control border bg-surface border-hairline"
-            leading={<Icon name="edit_note" size="m" className="text-accent" />}
-            title="Progreso"
-            subtitle="Peso, fotos y cuestionarios de revisión"
-            trailing={<Icon name={expandedSection === 'progress' ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />}
-          />
-          {expandedSection === 'progress' && (
-            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-              <CheckInScreen profile={profile} checkins={checkins} />
-            </div>
-          )}
-          <ListRow
-            onClick={() => setExpandedSection(v => v === 'roadmap' ? null : 'roadmap')}
-            className="rounded-control border bg-surface border-hairline"
-            leading={<Icon name="map" size="m" className="text-accent" />}
-            title="Road map"
-            subtitle="Tu plan, fases y retos semanales"
-            trailing={<Icon name={expandedSection === 'roadmap' ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />}
-          />
-          {expandedSection === 'roadmap' && (
-            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-              <AthleteRoadmapScreen profile={profile} />
-            </div>
-          )}
+        <div ref={progressRowRef}>
+          <Tabs items={PROFILE_TABS} value={activeTab} onChange={id => setActiveTab(id as ProfileTab)} label="Secciones de Perfil" />
+          <div className="mt-4">{renderTab()}</div>
         </div>
       )}
-
-      {/* ── Bloques de contenido ─────────────────────────────────────────────
-          Aquí había un «Reordenar bloques» que abría flechas de subir/bajar en
-          cada bloque. Se retira por petición de Dani (rastreo del 14-08): el
-          botón se veía roto —`reorder` no estaba en la fuente empaquetada y
-          salía la palabra REORDER— y reordenar el perfil no es algo que el
-          atleta necesite hacer.
-
-          `blockOrder` se conserva a propósito: quien ya hubiera guardado un
-          orden lo sigue viendo. Deja de poder cambiarse, no se reinicia. */}
-      {visibleBlocks.map(id => (
-        <div key={id}>{renderBlock(id)}</div>
-      ))}
 
       {/* ── Ajustes (F3.11, módulo 11: "vive detrás de un icono en la
           cabecera, nunca en la barra inferior") — nombre/avatar/meta,
