@@ -1,11 +1,12 @@
 import React from 'react';
 import {
   Badge, Banner, Button, Card, Chip, CollapsingHeader, Dialog, EffortScale, EmptyState, Icon, Input,
-  ListRow, PageHeader, ProgressBar, RingSeal, RirScale, SearchField, SegmentedControl, Select, Sheet,
+  ListRow, PageHeader, Pager, ProgressBar, RingSeal, RirScale, SearchField, SegmentedControl, Select, Sheet,
   Skeleton, Sparkline, Stepper, SwipeRow, Tabs,
   type BadgeTone, type ButtonSize, type ButtonVariant, type IconSize, type RirValue,
   type SegmentedOption, type SelectOption, type TabItem,
 } from './index';
+import { ZONE_COLOR } from '../../utils/cardioZones';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escaparate de primitivas — ruta `/ui`, solo en desarrollo
@@ -138,6 +139,8 @@ export default function Showcase() {
   const [pulsaciones, setPulsaciones] = React.useState(0);
   const [pestana, setPestana] = React.useState('resumen');
   const [pestanaLarga, setPestanaLarga] = React.useState('revisiones');
+  const [pagina, setPagina] = React.useState(0);
+  const [paginaOscura, setPaginaOscura] = React.useState(0);
   const [categorias, setCategorias] = React.useState<string[]>(['Pecho']);
   const [tags, setTags] = React.useState(['Sin gluten', 'Vegetariano', 'Rápido']);
   const [filaPulsada, setFilaPulsada] = React.useState('');
@@ -387,6 +390,45 @@ export default function Showcase() {
           No hay tono dorado a propósito. El oro significa «lo siguiente que tienes que hacer», y un
           estado no es una acción: marcar Pendiente en oro es lo que hace que el oro deje de
           significar algo.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Pager"
+        resumen="Carrusel de páginas con puntos (F3 del plan de réplica FITIV), sin ninguna librería nueva: scroll-snap del core de Tailwind v4 + un índice derivado de scrollLeft. Nace aquí porque el inventario del DS excluye ui/ a propósito."
+      >
+        <Pager value={pagina} onChange={setPagina} label="Ejemplo con puntos fuera" dots="outside">
+          {['Uno', 'Dos', 'Tres', 'Cuatro'].map((n) => (
+            <div key={n} className="flex h-28 items-center justify-center rounded-surface border border-hairline bg-surface">
+              <span className="font-mono text-title-l text-ink">{n}</span>
+            </div>
+          ))}
+        </Pager>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Con dedo o trackpad, desliza — los puntos siguen al scroll real, no al revés. Con teclado:
+          tabula hasta el carrusel y usa las flechas, Inicio o Fin.
+        </p>
+
+        <p className="font-sans text-body-s text-ink-2">
+          Página activa: <span className="font-bold text-ink">{pagina + 1} de 4</span>
+        </p>
+
+        <div className="rounded-surface overflow-hidden" style={{ background: `linear-gradient(180deg, ${ZONE_COLOR.z2}f2, ${ZONE_COLOR.z2}cc)` }}>
+          <Pager value={paginaOscura} onChange={setPaginaOscura} label="Ejemplo con puntos dentro, fondo de color" dots="inside">
+            {['FC', 'Calorías', 'Zonas'].map((n) => (
+              <div key={n} className="flex h-40 flex-col items-center justify-center gap-1 pb-6">
+                <span className="font-mono text-caption uppercase text-bg/70">{n}</span>
+                <span className="font-sans text-hero font-bold text-bg">142</span>
+              </div>
+            ))}
+          </Pager>
+        </div>
+
+        <p className="font-sans text-body-s text-ink-3">
+          Con <code className="font-mono text-ink-2">dots=&quot;inside&quot;</code> los puntos se superponen al
+          contenido — el patrón de la pantalla en vivo de cardio, a pantalla completa sobre el color
+          de zona.
         </p>
       </Seccion>
 
