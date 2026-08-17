@@ -21,7 +21,7 @@ import {
   assertSucceeds,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const PROJECT_ID = 'enforma-reglas-test';
 const COACH = 'danitrviner@gmail.com';
@@ -137,5 +137,93 @@ describe('04-10 · el coach sigue entrando', () => {
     });
     const coach = env.authenticatedContext(uid, { email: COACH, email_verified: true }).firestore();
     await assertSucceeds(getDoc(doc(coach, 'recipes', 'r1')));
+  });
+});
+
+describe('workoutAssignments · el atleta puede cerrar/saltar su propia sesión', () => {
+  // Bug real: el atleta no podía marcar su asignación como completada al
+  // terminar un entrenamiento (el log SÍ se guardaba, esta segunda escritura
+  // no) — y el mismo permission-denied encendía el banner "sin permiso para
+  // guardar" en cualquier otra pantalla que tocara después.
+  const uidAtleta = 'uid-atleta-assignment';
+
+  it('puede poner status a completed/skipped/perdido en su propia asignación', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a1'), {
+        athleteId: uidAtleta, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(updateDoc(doc(atleta, 'workoutAssignments', 'a1'), { status: 'completed' }));
+  });
+
+  it('NO puede cambiar otro campo a la vez que status', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a2'), {
+        athleteId: uidAtleta, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(updateDoc(doc(atleta, 'workoutAssignments', 'a2'), { status: 'completed', workoutId: 'w2' }));
+  });
+
+  it('NO puede poner un status fuera de la lista permitida', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a3'), {
+        athleteId: uidAtleta, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(updateDoc(doc(atleta, 'workoutAssignments', 'a3'), { status: 'pending' }));
+  });
+
+  it('NO puede tocar la asignación de otro atleta', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a4'), {
+        athleteId: 'uid-otro-atleta', workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(updateDoc(doc(atleta, 'workoutAssignments', 'a4'), { status: 'completed' }));
+  });
+
+  it('el coach sigue pudiendo crear/editar asignaciones libremente', async () => {
+    const uidCoach = 'uid-coach-2';
+    const coach = env.authenticatedContext(uidCoach, { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(setDoc(doc(coach, 'workoutAssignments', 'a5'), {
+      athleteId: uidAtleta, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+    }));
+  });
+});
+
+describe('athleteCardioProfile · el atleta puede fijar su FCmax a mano', () => {
+  // Bug/gap real: antes solo el coach podía escribir aquí — el modelo FITIV
+  // (zonas automáticas + FCmax editable) exige que el propio atleta pueda
+  // guardar la suya sin depender de que el coach apruebe un test.
+  it('el atleta puede leer y escribir su propio perfil de cardio', async () => {
+    const uid = 'uid-atleta-cardio';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(setDoc(doc(atleta, 'athleteCardioProfile', ATLETA), {
+      athleteId: ATLETA, maxHR: 190, method: 'hrr',
+      zones: { z1: { min: 90, max: 108 }, z2: { min: 108, max: 126 }, z3: { min: 126, max: 144 }, z4: { min: 144, max: 162 }, z5: { min: 162, max: 190 } },
+      updatedAt: new Date().toISOString(), updatedBy: ATLETA,
+    }));
+    await assertSucceeds(getDoc(doc(atleta, 'athleteCardioProfile', ATLETA)));
+  });
+
+  it('NO puede escribir el perfil de cardio de otro atleta', async () => {
+    const uid = 'uid-atleta-cardio-2';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(setDoc(doc(atleta, 'athleteCardioProfile', 'otro@enforma.com'), {
+      athleteId: 'otro@enforma.com', maxHR: 190, method: 'hrr',
+    }));
+  });
+
+  it('el coach sigue pudiendo escribir el perfil de cualquier atleta', async () => {
+    const uidCoach = 'uid-coach-3';
+    const coach = env.authenticatedContext(uidCoach, { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(setDoc(doc(coach, 'athleteCardioProfile', ATLETA), {
+      athleteId: ATLETA, maxHR: 185, method: 'hrr', updatedBy: COACH,
+    }));
   });
 });
