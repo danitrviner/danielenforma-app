@@ -121,7 +121,7 @@ describe('pickActiveZona2Assignment — prescripción del coach para la sesión 
 
 describe('pickActiveIntervalAssignment — prescripción de intervalos del coach (§F6)', () => {
   const base: Omit<CardioAssignment, 'id' | 'type' | 'active' | 'createdAt'> = { athleteId: 'a@x.com' };
-  const someBlocks = [{ label: 'Sprint', durationSec: 30, targetZone: 'z5' as const }];
+  const someBlocks = [{ label: 'Sprint', closeType: 'time' as const, durationSec: 30, targetZone: 'z5' as const }];
 
   it('exige al menos un bloque definido', () => {
     const noBlocks: CardioAssignment = { ...base, id: '1', type: 'intervalos', active: true, createdAt: '2026-01-01', intervals: [] };

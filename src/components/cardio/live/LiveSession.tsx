@@ -14,7 +14,7 @@ import PageObjetivo from './pages/PageObjetivo';
 import PageCalorias from './pages/PageCalorias';
 import PageZonas from './pages/PageZonas';
 import PageGrafica from './pages/PageGrafica';
-import PageOtras from './pages/PageOtras';
+import PageAvanzado from './pages/PageAvanzado';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LiveSession — F4 del plan de réplica FITIV: misma ESTRUCTURA que FITIV
@@ -55,9 +55,13 @@ interface Props {
   intervalBlocks?: CardioIntervalBlock[];
   currentBlockIndex?: number;
   blockRemainingSec?: number;
+  /** Solo relevante si el bloque en curso tiene `closeType: 'calories'` (F9). */
+  blockProgressKcal?: number;
   paused: boolean;
   onTogglePause: () => void;
   onHide: () => void;
+  /** Solo se pasa (y solo se usa) cuando el bloque en curso cierra manualmente (F9). */
+  onAdvanceBlock?: () => void;
   liveMets?: number;
   liveCaloriesKcal?: number;
   liveCaloriesActiveKcal?: number;
@@ -75,8 +79,8 @@ interface Props {
 export default function LiveSession({
   saving, deviceStatus, bpm, currentZone, zones, maxHR, elapsedSec, avgHR, maxHRSoFar,
   chartData, timeInZone, belowZoneSec, targetZone, targetDurationSec,
-  intervalBlocks, currentBlockIndex, blockRemainingSec,
-  paused, onTogglePause, onHide,
+  intervalBlocks, currentBlockIndex, blockRemainingSec, blockProgressKcal,
+  paused, onTogglePause, onHide, onAdvanceBlock,
   liveMets, liveCaloriesKcal, liveCaloriesActiveKcal, livePoints,
   onSave, onDiscard,
   locked, onRegisterActivity, onUnlock, onLock, livePrefs, onChangePrefs,
@@ -123,14 +127,25 @@ export default function LiveSession({
               intervalBlocks={intervalBlocks}
               currentBlockIndex={currentBlockIndex}
               blockRemainingSec={blockRemainingSec}
+              blockProgressKcal={blockProgressKcal}
+              bpm={bpm}
+              currentZone={currentZone}
               targetZone={targetZone}
               targetDurationSec={targetDurationSec}
               targetProgressSec={targetProgressSec}
+              onAdvanceBlock={onAdvanceBlock}
             />
             <PageCalorias caloriesKcal={liveCaloriesKcal} caloriesActiveKcal={liveCaloriesActiveKcal} points={livePoints} />
             <PageZonas timeInZone={timeInZone} belowZoneSec={belowZoneSec} elapsedSec={elapsedSec} currentZone={currentZone} />
             <PageGrafica chartData={chartData} zones={zones} maxHR={maxHR} />
-            <PageOtras elapsedSec={elapsedSec} bpm={bpm} maxHR={maxHR} />
+            <PageAvanzado
+              ctx={{
+                bpm, avgHR, maxHRSoFar, maxHR, currentZone, elapsedSec,
+                caloriesKcal: liveCaloriesKcal, caloriesActiveKcal: liveCaloriesActiveKcal, mets: liveMets,
+              }}
+              layout={livePrefs.advancedLayout}
+              onChangeLayout={next => onChangePrefs({ advancedLayout: next })}
+            />
           </Pager>
         </div>
       </div>

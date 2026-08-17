@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock } from '../types';
+import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock, CardioIntervalCloseType } from '../types';
 import {
   getAllUserProfiles, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getAllPendingHrTests, updateHrTest, createCardioAssignment, createNotificationDeduped,
@@ -196,7 +196,13 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 
 // ─── PRESCRIPCIÓN ────────────────────────────────────────────────────────────
 
-const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', durationSec: 30, targetZone: 'z5' });
+const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', closeType: 'time', durationSec: 30, targetZone: 'z5' });
+
+// F9: etiquetas del selector de tipo de cierre por bloque — 'distance' queda
+// fuera, depende de GPS (F7 aparcado).
+const CLOSE_TYPE_LABEL: Record<CardioIntervalCloseType, string> = {
+  time: 'Por tiempo', zone: 'Al llegar a zona', heartRate: 'Por FC', calories: 'Por calorías', manual: 'Manual',
+};
 
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
@@ -205,7 +211,7 @@ function PrescriptionTab() {
   const [type, setType] = useState<CardioSessionType>('zona2');
   const [durationMin, setDurationMin] = useState('45');
   const [timesPerWeek, setTimesPerWeek] = useState('3');
-  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', durationSec: 30, targetZone: 'z1' }]);
+  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', closeType: 'time', durationSec: 30, targetZone: 'z1' }]);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -265,19 +271,59 @@ function PrescriptionTab() {
         <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
           <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-              <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-              <span className="text-caption text-ink-2 font-mono">s</span>
-              <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-                {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
-              </select>
-              <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
-                <Icon name="close" size="s" />
-              </button>
+            <div key={i} className="flex flex-col gap-2 border-b border-hairline pb-2 last:border-0 last:pb-0">
+              <div className="flex gap-2 items-center">
+                <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
+                  className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                <select value={b.closeType} onChange={e => updateBlock(i, { closeType: e.target.value as CardioIntervalCloseType })}
+                  className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                  {(Object.keys(CLOSE_TYPE_LABEL) as CardioIntervalCloseType[]).map(t => <option key={t} value={t}>{CLOSE_TYPE_LABEL[t]}</option>)}
+                </select>
+                <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
+                  <Icon name="close" size="s" />
+                </button>
+              </div>
+              <div className="flex gap-2 items-center pl-1">
+                {b.closeType === 'time' && (
+                  <>
+                    <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
+                      className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">s</span>
+                    <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
+                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                      {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+                    </select>
+                  </>
+                )}
+                {b.closeType === 'zone' && (
+                  <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
+                    className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                    {ZONE_ORDER.map(z => <option key={z} value={z}>Hasta {z.toUpperCase()}</option>)}
+                  </select>
+                )}
+                {b.closeType === 'heartRate' && (
+                  <>
+                    <select value={b.hrDirection ?? 'above'} onChange={e => updateBlock(i, { hrDirection: e.target.value as 'above' | 'below' })}
+                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                      <option value="above">Sube hasta</option>
+                      <option value="below">Baja hasta</option>
+                    </select>
+                    <input type="number" min={40} value={b.hrThresholdBpm ?? 150} onChange={e => updateBlock(i, { hrThresholdBpm: Number(e.target.value) })}
+                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">ppm</span>
+                  </>
+                )}
+                {b.closeType === 'calories' && (
+                  <>
+                    <input type="number" min={5} value={b.targetKcal ?? 50} onChange={e => updateBlock(i, { targetKcal: Number(e.target.value) })}
+                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">kcal</span>
+                  </>
+                )}
+                {b.closeType === 'manual' && (
+                  <span className="text-caption text-ink-2 font-sans">El atleta lo marca a mano en la pantalla en vivo</span>
+                )}
+              </div>
             </div>
           ))}
           <Button variant="ghost" size="s" onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} icon="add">Añadir bloque</Button>

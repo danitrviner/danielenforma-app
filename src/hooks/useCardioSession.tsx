@@ -84,6 +84,8 @@ interface CardioSessionContextValue {
   displayBelowZoneSec: number;
   displayBlockIndex: number;
   displayBlockRemainingSec: number;
+  /** Solo tiene sentido cuando el bloque en curso cierra por `calories` (F9). */
+  displayBlockProgressKcal: number;
   displayLive: { caloriesKcal?: number; caloriesActiveKcal?: number; mets?: number; points?: number };
   justSavedSession: CardioSession | null;
   weekJustClosed: boolean;
@@ -105,6 +107,8 @@ interface CardioSessionContextValue {
   start: () => void;
   pause: () => void;
   resume: () => void;
+  /** F9: avanza al siguiente bloque a mano — solo tiene efecto real cuando el bloque en curso es `closeType: 'manual'`, pero no se restringe aquí para no acoplar la UI a esa regla. */
+  advanceBlockManually: () => void;
   save: () => Promise<void>;
   discard: () => Promise<void>;
   finishCooldown: () => Promise<void>;
@@ -189,6 +193,16 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // peso/edad/sexo en la anamnesis, simplemente no hay cifra — nunca se
   // inventa un valor.
   const [displayLive, setDisplayLive] = useState<{ caloriesKcal?: number; caloriesActiveKcal?: number; mets?: number; points?: number }>({});
+  // Espejo en ref del mismo motivo que `bpmRef`: el criterio de cierre
+  // `calories` (F9) se evalúa en el tick de 1 s, pero `displayLive` solo se
+  // recalcula cada `SAMPLE_INTERVAL_SEC` — leer el state ahí daría un
+  // closure viejo.
+  const displayLiveRef = useRef(displayLive);
+  displayLiveRef.current = displayLive;
+  // F9: progreso de calorías del bloque en curso (solo relevante si su
+  // `closeType` es 'calories') — para que la UI pueda mostrar una barra sin
+  // reimplementar la resta.
+  const [displayBlockProgressKcal, setDisplayBlockProgressKcal] = useState(0);
 
   // Preferencias de la pantalla en vivo (F8): localStorage, no Firestore —
   // ver cardioLivePrefs.ts. `voiceEnabled` se aplica de inmediato al
@@ -282,6 +296,9 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // actual — el avance también sale del reloj de pared, no de contar ticks.
   const intervalBlocksRef = useRef<CardioIntervalBlock[] | null>(null);
   const currentBlockIndexRef = useRef(0);
+  // F9: calorías acumuladas de la sesión al ARRANCAR el bloque actual — el
+  // criterio de cierre `calories` compara contra la diferencia, no el total.
+  const blockStartCaloriesKcalRef = useRef(0);
   const blockStartedAtSecRef = useRef(0);
 
   // Vuelta a la calma (§5.6): mientras está activa, las muestras van aquí en
@@ -438,6 +455,40 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     return '';
   }
 
+  /**
+   * F9: avanza de bloque — compartida entre el cierre automático (tick de
+   * 1 s, cualquier `closeType`) y el avance manual (`advanceBlockManually`,
+   * para `closeType: 'manual'`). Antes vivía inline solo en el tick.
+   */
+  function goToNextBlock(elapsedSec: number) {
+    const blocks = intervalBlocksRef.current;
+    if (!blocks) return;
+    const nextIndex = currentBlockIndexRef.current + 1;
+    if (nextIndex < blocks.length) {
+      currentBlockIndexRef.current = nextIndex;
+      blockStartedAtSecRef.current = elapsedSec;
+      blockStartCaloriesKcalRef.current = displayLiveRef.current.caloriesKcal ?? 0;
+      sessionTargetZoneRef.current = blocks[nextIndex].targetZone;
+      setDisplayBlockIndex(nextIndex);
+      setDisplayBlockRemainingSec(blocks[nextIndex].durationSec);
+      setDisplayBlockProgressKcal(0);
+      void haptics.heavy();
+      speakUrgent(blocks[nextIndex].label);
+    } else {
+      // Último bloque completado: la secuencia ha terminado sola.
+      setDisplayBlockRemainingSec(0);
+      void finishSession('save');
+    }
+  }
+
+  /** F9: avance manual de un bloque `closeType: 'manual'` — lo llama el botón "Toca para continuar" de `PageObjetivo`. */
+  const advanceBlockManually = () => {
+    if (startedAtRef.current === null || pausedRef.current) return;
+    const nowMs = Date.now();
+    const elapsedSec = Math.floor((nowMs - startedAtRef.current - totalPausedMs(nowMs)) / 1000);
+    goToNextBlock(elapsedSec);
+  };
+
   /** Paso 2: la banda ya está conectada — arranca el cronómetro y el registro. */
   const start = () => {
     const now = Date.now();
@@ -462,6 +513,8 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       intervalBlocksRef.current = intervalAssignment.intervals;
       currentBlockIndexRef.current = 0;
       blockStartedAtSecRef.current = 0;
+      blockStartCaloriesKcalRef.current = 0;
+      setDisplayBlockProgressKcal(0);
       sessionTargetZoneRef.current = intervalAssignment.intervals[0].targetZone;
       activeAssignmentIdRef.current = intervalAssignment.id;
       setDisplayBlockIndex(0);
@@ -526,22 +579,38 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       if (blocks) {
         const block = blocks[currentBlockIndexRef.current];
         const blockElapsed = elapsedSec - blockStartedAtSecRef.current;
-        if (blockElapsed >= block.durationSec) {
-          const nextIndex = currentBlockIndexRef.current + 1;
-          if (nextIndex < blocks.length) {
-            currentBlockIndexRef.current = nextIndex;
-            blockStartedAtSecRef.current = elapsedSec;
-            sessionTargetZoneRef.current = blocks[nextIndex].targetZone;
-            setDisplayBlockIndex(nextIndex);
-            setDisplayBlockRemainingSec(blocks[nextIndex].durationSec);
-            void haptics.heavy();
-            speakUrgent(blocks[nextIndex].label);
-          } else {
-            // Último bloque completado: la secuencia ha terminado sola.
-            setDisplayBlockRemainingSec(0);
-            void finishSession('save');
+        // F9: cada bloque cierra por un criterio distinto — 'distance' queda
+        // fuera (depende de GPS, F7 aparcado).
+        let shouldAdvance = false;
+        switch (block.closeType) {
+          case 'zone':
+            shouldAdvance = block.targetZone !== undefined && zoneNow.key === block.targetZone;
+            break;
+          case 'heartRate':
+            if (bpmRef.current !== null && block.hrThresholdBpm !== undefined) {
+              shouldAdvance = block.hrDirection === 'below'
+                ? bpmRef.current <= block.hrThresholdBpm
+                : bpmRef.current >= block.hrThresholdBpm;
+            }
+            break;
+          case 'calories': {
+            const kcalNow = displayLiveRef.current.caloriesKcal;
+            const progress = kcalNow !== undefined ? Math.max(0, kcalNow - blockStartCaloriesKcalRef.current) : 0;
+            setDisplayBlockProgressKcal(progress);
+            shouldAdvance = block.targetKcal !== undefined && progress >= block.targetKcal;
+            break;
           }
-        } else {
+          case 'manual':
+            shouldAdvance = false; // solo avanza vía advanceBlockManually()
+            break;
+          case 'time':
+          default:
+            shouldAdvance = blockElapsed >= block.durationSec;
+            break;
+        }
+        if (shouldAdvance) {
+          goToNextBlock(elapsedSec);
+        } else if (block.closeType === 'time') {
           setDisplayBlockRemainingSec(block.durationSec - blockElapsed);
         }
       }
@@ -764,9 +833,9 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const value: CardioSessionContextValue = {
     state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
-    displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
+    displayBlockIndex, displayBlockRemainingSec, displayBlockProgressKcal, displayLive, justSavedSession, weekJustClosed,
     intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
-    connect, cancelReady, start, pause, resume,
+    connect, cancelReady, start, pause, resume, advanceBlockManually,
     save: () => finishSession('save'),
     discard: () => finishSession('discard'),
     finishCooldown, confirmEffort, closeSummary,

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CardioSessionContext, CardioSessionContextValue } from '../../hooks/useCardioSession';
+import { DEFAULT_ADVANCED_LAYOUT } from '../../utils/cardioLivePrefs';
 import CardioMiniPlayer from './CardioMiniPlayer';
 
 /* Banco de pruebas SOLO de desarrollo (misma poda que CardioLiveDemo) para
@@ -47,17 +48,19 @@ export default function CardioMiniPlayerDemo() {
     displayBelowZoneSec: 0,
     displayBlockIndex: 0,
     displayBlockRemainingSec: 0,
+    displayBlockProgressKcal: 0,
     displayLive: {},
     justSavedSession: null,
     weekJustClosed: false,
     intervalBlocksRef: { current: null },
     sessionTargetZoneRef: { current: 'z2' },
-    livePrefs: { voiceEnabled: true, autoLockEnabled: false, autoLockDelaySec: 20 },
+    livePrefs: { voiceEnabled: true, autoLockEnabled: false, autoLockDelaySec: 20, advancedLayout: DEFAULT_ADVANCED_LAYOUT },
     setLivePrefs: () => {},
     locked: false,
     registerActivity: () => {},
     unlock: () => {},
     lock: () => {},
+    advanceBlockManually: () => {},
     connect: async () => {},
     cancelReady: async () => {},
     start: () => {},

@@ -96,9 +96,9 @@ export default function CardioScreen({ profile }: Props) {
 
   const { state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
-    displayBlockIndex, displayBlockRemainingSec, displayLive, justSavedSession, weekJustClosed,
+    displayBlockIndex, displayBlockRemainingSec, displayBlockProgressKcal, displayLive, justSavedSession, weekJustClosed,
     intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
-    connect, cancelReady, start, pause, resume, save, discard, finishCooldown, confirmEffort, closeSummary,
+    connect, cancelReady, start, pause, resume, advanceBlockManually, save, discard, finishCooldown, confirmEffort, closeSummary,
   } = cardio;
 
   const targetZone = sessionType === 'zona2' ? (zona2Assignment?.targetZone ?? 'z2') : undefined;
@@ -189,9 +189,11 @@ export default function CardioScreen({ profile }: Props) {
         intervalBlocks={intervalBlocksRef.current ?? undefined}
         currentBlockIndex={intervalBlocksRef.current ? displayBlockIndex : undefined}
         blockRemainingSec={displayBlockRemainingSec}
+        blockProgressKcal={displayBlockProgressKcal}
         paused={paused}
         onTogglePause={paused ? resume : pause}
         onHide={() => navigate('/home')}
+        onAdvanceBlock={advanceBlockManually}
         liveMets={displayLive.mets}
         liveCaloriesKcal={displayLive.caloriesKcal}
         liveCaloriesActiveKcal={displayLive.caloriesActiveKcal}

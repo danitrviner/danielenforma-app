@@ -70,14 +70,16 @@ export default function CardioLiveDemo() {
         targetZone={mode === 'zona2' ? 'z2' : undefined}
         targetDurationSec={mode === 'zona2' ? 2400 : undefined}
         intervalBlocks={mode === 'intervalos' ? [
-          { label: 'Sprint', durationSec: 30, targetZone: 'z5' },
-          { label: 'Recuperación', durationSec: 60, targetZone: 'z1' },
+          { label: 'Sprint', closeType: 'time', durationSec: 30, targetZone: 'z5' },
+          { label: 'Recuperación', closeType: 'time', durationSec: 60, targetZone: 'z1' },
         ] : undefined}
         currentBlockIndex={mode === 'intervalos' ? 0 : undefined}
         blockRemainingSec={mode === 'intervalos' ? 22 : undefined}
+        blockProgressKcal={0}
         paused={paused}
         onTogglePause={() => setPaused(p => !p)}
         onHide={() => window.alert('onHide (en la app real: navigate a /home)')}
+        onAdvanceBlock={() => window.alert('onAdvanceBlock')}
         liveMets={7.8}
         liveCaloriesKcal={244}
         liveCaloriesActiveKcal={210}

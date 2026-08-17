@@ -12,12 +12,17 @@ export interface CardioLivePrefs {
   autoLockEnabled: boolean;
   /** Segundos de inactividad antes de bloquear, si autoLockEnabled. */
   autoLockDelaySec: number;
+  /** Claves del catálogo (`cardioLiveMetrics.ts`) para las 7 posiciones fijas del layout Avanzado (F9). */
+  advancedLayout: string[];
 }
+
+export const DEFAULT_ADVANCED_LAYOUT = ['duration', 'bpm', 'avgHR', 'zone', 'intensity', 'caloriesActive', 'mets'];
 
 export const DEFAULT_LIVE_PREFS: CardioLivePrefs = {
   voiceEnabled: true,
   autoLockEnabled: false,
   autoLockDelaySec: 20,
+  advancedLayout: DEFAULT_ADVANCED_LAYOUT,
 };
 
 export function loadLivePrefs(): CardioLivePrefs {

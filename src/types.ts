@@ -1297,7 +1297,20 @@ export interface AthleteCardioProfile {
 
 export type CardioSessionType = 'libre' | 'zona2' | 'intervalos';
 
-export interface CardioIntervalBlock { label: string; durationSec: number; targetZone: keyof CardioZones }
+// F9 del plan de réplica FITIV (docs/FITIV-analisis-y-plan.md §4.3): un
+// bloque cierra por uno de estos criterios en vez de solo por tiempo.
+// 'distance' se queda fuera — depende de GPS, aparcado en F7.
+export type CardioIntervalCloseType = 'time' | 'zone' | 'heartRate' | 'calories' | 'manual';
+
+export interface CardioIntervalBlock {
+  label: string;
+  closeType: CardioIntervalCloseType;
+  durationSec: number; // estimación mostrada en el resumen aunque el cierre real sea por otro criterio
+  targetZone?: keyof CardioZones; // color/anuncio del bloque en todos los tipos; criterio de cierre solo si closeType === 'zone'
+  hrThresholdBpm?: number; // closeType === 'heartRate'
+  hrDirection?: 'above' | 'below'; // closeType === 'heartRate'
+  targetKcal?: number; // closeType === 'calories', acumulado dentro del bloque
+}
 
 export interface CardioAssignment {
   id: string;
