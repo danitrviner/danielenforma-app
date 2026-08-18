@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { OnboardingData } from '../types';
 import {
   estadoConsentimiento, puedeAnalizarseConIA, debePedirseConsentimiento,
   registrarConsentimiento, motivoParaElCoach, aliasDeAtleta,
+  haSidoAplazado, marcarAplazado,
   VERSION_CONSENTIMIENTO_IA,
 } from './consentimientoIA';
 
@@ -85,6 +86,42 @@ describe('consentimientoIA — lo que se le dice al coach', () => {
     const m = motivoParaElCoach('sin_responder', 'Ana G.');
     expect(m).toMatch(/no es un error/i);
     expect(m).toMatch(/no reintentes/i);
+  });
+});
+
+function montarLocalStorage() {
+  const datos = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => datos.get(k) ?? null,
+    setItem: (k: string, v: string) => { datos.set(k, v); },
+    removeItem: (k: string) => { datos.delete(k); },
+    key: (i: number) => [...datos.keys()][i] ?? null,
+    get length() { return datos.size; },
+  });
+  return datos;
+}
+
+describe('haSidoAplazado / marcarAplazado — T6, no interrumpir a pantalla completa dos veces', () => {
+  beforeEach(() => { montarLocalStorage(); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('nadie ha aplazado nada al principio', () => {
+    expect(haSidoAplazado('ana@ejemplo.com')).toBe(false);
+  });
+
+  it('marcarAplazado hace que haSidoAplazado devuelva true después', () => {
+    marcarAplazado('ana@ejemplo.com');
+    expect(haSidoAplazado('ana@ejemplo.com')).toBe(true);
+  });
+
+  it('es por atleta, no global', () => {
+    marcarAplazado('ana@ejemplo.com');
+    expect(haSidoAplazado('otro@ejemplo.com')).toBe(false);
+  });
+
+  it('no distingue mayúsculas en el email', () => {
+    marcarAplazado('Ana@Ejemplo.com');
+    expect(haSidoAplazado('ana@ejemplo.com')).toBe(true);
   });
 });
 

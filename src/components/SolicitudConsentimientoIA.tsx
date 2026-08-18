@@ -105,8 +105,9 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
     >
       <div className="space-y-4 text-body-s font-sans text-ink-2">
         <p>
-          Tu entrenador usa un asistente de inteligencia artificial para preparar tus
-          entrenamientos, tus dietas y tus revisiones más rápido.
+          Tu entrenador puede usar un asistente de inteligencia artificial para <strong className="text-ink">revisar
+          tu evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
+          los decide y los firma él.
         </p>
 
         <div className="rounded-surface border border-hairline bg-raised p-4 space-y-3">

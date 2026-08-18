@@ -7,7 +7,7 @@ import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../util
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
-import { debePedirseConsentimiento } from '../ai/consentimientoIA';
+import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
@@ -95,15 +95,23 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
      atletas que ya están dentro terminaron su alta hace meses y no van a volver
      a verla. Sin esto el consentimiento solo llegaría a los clientes nuevos.
 
-     `aplazado` vive en el estado del componente y no en localStorage a
-     propósito: «Ahora no» vale para esta sesión, no para siempre. Guardarlo
-     sería convertir un aplazamiento en un rechazo silencioso, que es la
-     diferencia que todo este arreglo intenta respetar. */
+     T6 (18-08): `aplazado` vivía en el estado del componente, así que "Ahora
+     no" solo valía para esa sesión — cada vez que se reabría la app volvía a
+     interrumpir a pantalla completa. Ahora se guarda en localStorage: se
+     pregunta una vez a pantalla completa, y a partir de ahí la única puerta
+     es el interruptor discreto de Perfil → Ajustes → Análisis con IA (que ya
+     existe). No es un rechazo —`debePedirseConsentimiento` sigue devolviendo
+     `true` sobre el dato real y Ajustes lo sigue enseñando— es solo dejar de
+     interrumpir. */
   const { data: onboarding = null } = useQuery({
     queryKey: ['onboarding', profile.email],
     queryFn: () => getOnboarding(profile.email),
   });
-  const [aplazado, setAplazado] = useState(false);
+  const [aplazado, setAplazado] = useState(() => haSidoAplazado(profile.email));
+  const aplazar = () => {
+    marcarAplazado(profile.email);
+    setAplazado(true);
+  };
   const pedirConsentimiento = !aplazado && !!onboarding && debePedirseConsentimiento(onboarding);
 
   const cardioIsPrimary = isRestDay && !!cardioRx;
@@ -113,7 +121,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   return (
     <div className="space-y-6">
       {pedirConsentimiento && onboarding && (
-        <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={() => setAplazado(true)} />
+        <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
 
       <PageHeader title="Hoy" subtitle="Tu tarea del día." />

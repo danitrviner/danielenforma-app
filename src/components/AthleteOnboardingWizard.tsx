@@ -7,7 +7,7 @@ import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
-import { Icon, Button, Input } from './ui';
+import { Icon, Button, Input, Sheet } from './ui';
 import { registrarConsentimiento } from '../ai/consentimientoIA';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import VegetableSelector from './VegetableSelector';
@@ -107,6 +107,24 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+// Mismo patrón que el Switch local de ProfileScreen (Ajustes → Análisis con
+// IA) — no vale la pena subirlo al DS por un solo control repetido dos veces.
+function ConsentSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label="Revisión con apoyo de IA"
+      onClick={onToggle}
+      style={{ padding: '2px' }}
+      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-white/12'}`}
+    >
+      <span className={`block w-5 h-5 rounded-full bg-bg transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   );
 }
@@ -283,11 +301,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   // 10 verduras habituales, 11 día a día, 12 final.
   const TOTAL_STEPS = 13;
 
-  /* A-2. Ni premarcada ni obligatoria. Si el atleta no elige aquí, se queda
-     `null` y HomeScreen se lo preguntará: mejor eso que meter una decisión
-     sobre datos de salud en el último paso de un alta que la persona quiere
-     terminar cuanto antes, donde cualquiera pulsa lo que sea por salir. */
+  /* A-2. Ni premarcada ni obligatoria. Si el atleta no toca el interruptor,
+     se queda `null` y HomeScreen se lo preguntará una vez más (T6): mejor eso
+     que meter una decisión sobre datos de salud en el último paso de un alta
+     que la persona quiere terminar cuanto antes, donde cualquiera pulsa lo
+     que sea por salir. Volver a apagarlo tras encenderlo también vuelve a
+     `null`, no a `false` — un interruptor no puede registrar un "no"
+     explícito y distinguirlo de "no lo he tocado", así que no lo intenta: el
+     "no" de verdad se da desde Ajustes o en la pregunta de Hoy. */
   const [consienteIA, setConsienteIA] = useState<boolean | null>(null);
+  const [mostrarDetalleIA, setMostrarDetalleIA] = useState(false);
 
   const finish = async () => {
     setSaving(true);
@@ -780,27 +803,54 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 );
               })}
             </div>
-            {/* A-2. Consentimiento para el análisis con IA. Se pregunta aquí,
-                y no en un paso propio, para no alargar un alta de seis pasos;
-                pero con las dos opciones al mismo peso y sin nada premarcado.
-                Si no contesta, se le vuelve a preguntar desde Inicio. */}
-            <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3 text-left">
-              <p className="font-sans font-bold text-body text-ink">Análisis con IA</p>
-              <p className="text-body-s text-ink-2">
-                Tu entrenador usa un asistente de IA para preparar tus planes más rápido. Para eso
-                enviaría tu ficha, tus lesiones y alergias, tus entrenos, tu dieta y tus revisiones
-                a <strong className="text-ink">Anthropic PBC</strong>, que no los usa para entrenar
-                sus modelos. Sin tu nombre completo. ¿Nos dejas?
-              </p>
-              <div className="flex gap-3">
-                <Chip selected={consienteIA === false} onClick={() => setConsienteIA(false)}>No, gracias</Chip>
-                <Chip selected={consienteIA === true} onClick={() => setConsienteIA(true)}>Sí, acepto</Chip>
+            {/* T6 (18-08). Antes: bloque destacado con el mismo borde que la
+                tarjeta de arriba, y el texto prometía algo que la app no hace
+                («prepara tus planes más rápido» — la política de privacidad
+                ya decía lo correcto: revisar la evolución, no programar).
+                Son datos de salud (art. 9 RGPD): el consentimiento tiene que
+                ser específico y separado de "acepto los términos", así que
+                esto no se puede esconder dentro del alta — pero sí bajar de
+                rango: una fila discreta, interruptor apagado por defecto
+                (nada premarcado — dejarlo así no es un "no", es "todavía no
+                lo sé": HomeScreen lo pregunta una vez más y luego solo queda
+                el interruptor de Perfil → Ajustes) y el detalle completo
+                detrás de "¿Qué es esto?", no delante. */}
+            <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3 text-left">
+              <div className="min-w-0">
+                <p className="font-sans text-label font-bold text-white">Revisión con apoyo de IA</p>
+                <button
+                  type="button"
+                  onClick={() => setMostrarDetalleIA(true)}
+                  className="font-mono text-caption text-accent underline underline-offset-2"
+                >
+                  ¿Qué es esto?
+                </button>
               </div>
-              <p className="text-caption text-ink-3">
-                Puedes cambiarlo cuando quieras en Perfil → Ajustes. Si dices que no, la app funciona
-                exactamente igual.
-              </p>
+              <ConsentSwitch
+                on={consienteIA === true}
+                onToggle={() => setConsienteIA(prev => prev === true ? null : true)}
+              />
             </div>
+            {mostrarDetalleIA && (
+              <Sheet open onClose={() => setMostrarDetalleIA(false)} title="Revisión con apoyo de IA">
+                <div className="space-y-4 text-body-s font-sans text-ink-2">
+                  <p>
+                    Tu entrenador puede usar un asistente de IA para <strong className="text-ink">revisar tu
+                    evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
+                    los decide y los firma él.
+                  </p>
+                  <p>
+                    Para eso se enviarían esos datos —incluidos lesiones y alergias— a
+                    <strong className="text-ink"> Anthropic PBC</strong>, sin tu nombre completo y sin
+                    usarse para entrenar sus modelos.
+                  </p>
+                  <p className="text-caption text-ink-3">
+                    Puedes cambiarlo cuando quieras en Perfil → Ajustes. Si lo dejas apagado, la app
+                    funciona exactamente igual.
+                  </p>
+                </div>
+              </Sheet>
+            )}
 
             {error && (
               <div className="bg-danger/7 border border-danger/24 text-danger p-3 rounded-surface text-body-s text-center">{error}</div>

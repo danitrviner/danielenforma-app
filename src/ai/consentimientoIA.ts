@@ -69,6 +69,24 @@ export function registrarConsentimiento(aceptado: boolean, ahora: string): Conse
   return { aceptado, fecha: ahora, version: VERSION_CONSENTIMIENTO_IA };
 }
 
+/** ── "Ahora no" en la pantalla de Hoy (T6, 18-08) ────────────────────────────
+ *  No es un rechazo (eso sigue siendo `registrarConsentimiento(false, …)`,
+ *  que se guarda en el propio onboarding): es solo dejar de interrumpir a
+ *  pantalla completa cada vez que se abre la app. Por eso vive en
+ *  localStorage y no en el perfil — no cambia el estado real del
+ *  consentimiento, solo la decisión de VOLVER A PREGUNTAR sin que el atleta
+ *  lo pida. A partir de aquí la única puerta es el interruptor de
+ *  Perfil → Ajustes → Análisis con IA. */
+const clave = (athleteEmail: string) => `enforma_consentimiento_ia_aplazado_${athleteEmail.toLowerCase()}`;
+
+export function haSidoAplazado(athleteEmail: string): boolean {
+  try { return localStorage.getItem(clave(athleteEmail)) === '1'; } catch { return false; }
+}
+
+export function marcarAplazado(athleteEmail: string): void {
+  try { localStorage.setItem(clave(athleteEmail), '1'); } catch { /* best-effort */ }
+}
+
 /**
  * Lo que se le dice al coach cuando no puede analizar a alguien. Va al modelo
  * como `tool_result`, así que tiene que explicar la situación lo bastante bien
