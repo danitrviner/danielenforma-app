@@ -44,18 +44,26 @@ type Props = {
   onBack?: () => void;
   /** Botón de la acción principal de la pantalla, a la derecha. */
   action?: React.ReactNode;
+  /**
+   * La acción se apila debajo del título en móvil por defecto (ver el
+   * comentario de cabecera): correcto para una acción con TEXTO, que a 375 px
+   * competía por espacio con el título. Pero una acción de solo icono no
+   * necesita renglón propio en ningún ancho — con `actionInline` comparte la
+   * fila del título en vez de apilarse, en móvil y en escritorio.
+   */
+  actionInline?: boolean;
   className?: string;
 };
 
-export default function PageHeader({ title, eyebrow, subtitle, onBack, action, className = '' }: Props) {
+export default function PageHeader({ title, eyebrow, subtitle, onBack, action, actionInline = false, className = '' }: Props) {
   return (
-    <header className={`flex flex-col gap-3 border-b border-hairline pb-4 ${className}`}>
+    <header className={`flex flex-col gap-3 border-b border-hairline ${actionInline ? 'pb-3' : 'pb-4'} ${className}`}>
       {eyebrow && (
         <span className="inline-flex w-fit items-center rounded-control border border-accent-line bg-raised px-2 py-1 font-sans text-caption font-bold uppercase tracking-widest text-accent">
           {eyebrow}
         </span>
       )}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className={actionInline ? 'flex items-center gap-3' : 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
         <div className="flex min-w-0 items-center gap-2 sm:flex-1">
           {onBack && (
             // 36 px — el retroceso de cabecera del handoff, más pequeño que
@@ -78,8 +86,14 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, c
           </div>
         </div>
         {/* `flex-wrap` dentro de la acción: si trae insignia + botón y aun así
-            no cabe a lo ancho, se parten entre ellos en vez de desbordar. */}
-        {action && <div className="flex flex-wrap items-center gap-3 sm:shrink-0">{action}</div>}
+            no cabe a lo ancho, se parten entre ellos en vez de desbordar.
+            actionInline: ml-auto shrink-0, comparte fila con el título en vez
+            de apilarse — pensado para una acción de solo icono. */}
+        {action && (
+          <div className={actionInline ? 'flex flex-wrap items-center gap-3 ml-auto shrink-0' : 'flex flex-wrap items-center gap-3 sm:shrink-0'}>
+            {action}
+          </div>
+        )}
       </div>
     </header>
   );
