@@ -39,7 +39,9 @@ pecho 10-15 · dorsal 12-20 (tolera más) · trapecio 6-12 (mucho indirecto) ·
 deltoide_ant 4-8 (los press ya lo cubren) · deltoide_lat 12-20 (poca fatiga) ·
 deltoide_post 8-15 · biceps 8-14 · triceps 8-14 (ambos, descontando tirones y
 press) · antebrazo 0-6 · cuadriceps 10-15 · isquios 8-12 (tolera menos) ·
-gluteo 10-16 · gemelo 8-15 · core 4-10.
+gluteo 10-16 · aductores 6-12 (referencia inicial, pendiente de ajustar con
+la respuesta real del atleta — ya reciben trabajo indirecto de sentadilla,
+zancada y hip thrust) · gemelo 8-15 · core 4-10.
 Rendimientos decrecientes claros a partir de ~15 series/semana/músculo: no subas
 "porque sí", solo si recupera bien y progresa. Progresa de MEV hacia MRV, no
 arranques en el techo. Los grupos prioritarios van a la parte alta del rango y

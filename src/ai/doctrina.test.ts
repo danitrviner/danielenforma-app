@@ -38,15 +38,16 @@ describe('doctrina por defecto', () => {
   // esto, el asistente pautaría volumen para una clave que ya no existe y
   // propose_mesocycle lo rechazaría — mejor que falle aquí.
   //
-  // 'aductores' (T10, 18-08) es la única excepción deliberada: el plan pedía
-  // el rango de series a Dani en vez de inventarlo, y no contestó — así que
-  // se queda fuera de la línea a propósito hasta que lo dé. Si este test
-  // falla por CUALQUIER OTRA clave, es el bug real que describe el comentario
-  // de arriba.
-  it('nombra las 15 claves de MuscleGroup tal y como las valida propose_mesocycle (salvo aductores, pendiente de Dani)', () => {
+  // 'aductores' (T10, 18-08) llevó un rango de referencia (6-12, investigado
+  // — la literatura de hipertrofia no publica landmarks MEV/MRV específicos
+  // para aductores; 6-12 sale de combinar 3-4 series × 2-3 sesiones/semana de
+  // trabajo directo, más bajo que isquios/glúteo porque ya reciben trabajo
+  // indirecto de sentadilla, zancada e hip thrust) hasta que Dani lo ajuste
+  // con la respuesta real de sus atletas — ya no está excluido de este test.
+  it('nombra las 15 claves de MuscleGroup tal y como las valida propose_mesocycle', () => {
     const claves = Object.keys(MUSCLE_LABELS) as MuscleGroup[];
     expect(claves).toHaveLength(15);
-    const faltan = claves.filter(k => k !== 'aductores' && !DOCTRINA_ENTRENAMIENTO_DEFAULT.includes(k));
+    const faltan = claves.filter(k => !DOCTRINA_ENTRENAMIENTO_DEFAULT.includes(k));
     expect(faltan).toEqual([]);
   });
 
