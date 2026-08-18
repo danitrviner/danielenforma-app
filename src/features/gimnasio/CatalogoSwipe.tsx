@@ -87,7 +87,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
 
   if (fase === 'cargando' || fase === 'vacio') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="h-[100dvh] overflow-hidden bg-bg flex items-center justify-center">
         <Skeleton className="h-80 w-full max-w-sm" style={{ margin: '0 20px' }} />
       </div>
     );
@@ -97,8 +97,12 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
   if (fase === 'entrada') {
     const categoriasPreview = porCategoria.slice(0, 6).map(c => MUSCLE_LABELS[c.categoria]);
     return (
-      <div className="min-h-screen bg-bg flex flex-col px-6 py-10 gap-8">
-        <div className="flex-1 flex flex-col justify-center gap-6">
+      // h-[100dvh] + overflow-hidden, no min-h-screen: mismo patrón que
+      // AthleteOnboardingWizard.tsx — fija la altura al viewport y mueve el
+      // scroll a un único contenedor interno, así la cabecera y los botones
+      // no se cuelan bajo la isla dinámica ni se quedan pegados al borde.
+      <div className="h-[100dvh] overflow-hidden bg-bg flex flex-col px-6 gap-8">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center gap-6 pt-[calc(2.5rem+var(--safe-top))]">
           <div className="w-14 h-14 rounded-control bg-accent-bg flex items-center justify-center">
             <Icon name="fitness_center" size="l" className="text-accent" />
           </div>
@@ -132,7 +136,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex-none flex flex-col gap-3 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))]">
           <Button variant="primary" size="l" onClick={empezar}>Empezar</Button>
           {onOmitir && (
             <Button variant="ghost" size="m" onClick={salirOmitiendo}>Ahora no, más tarde</Button>
@@ -146,8 +150,8 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
   if (fase === 'checkpoint' && categoriaCerrada) {
     const cerrada = porCategoria.find(c => c.categoria === categoriaCerrada);
     return (
-      <div className="min-h-screen bg-bg flex flex-col px-6 py-10 gap-8">
-        <div className="flex-1 flex flex-col justify-center gap-6">
+      <div className="h-[100dvh] overflow-hidden bg-bg flex flex-col px-6 gap-8">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center gap-6 pt-[calc(2.5rem+var(--safe-top))]">
           <div className="w-14 h-14 rounded-control bg-success/15 flex items-center justify-center">
             <Icon name="check" size="l" className="text-success" />
           </div>
@@ -176,7 +180,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex-none flex flex-col gap-3 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))]">
           <Button variant="primary" size="l" onClick={continuarCategoria}>
             {siguienteCategoria ? `Seguir con ${MUSCLE_LABELS[siguienteCategoria].toLowerCase()}` : 'Seguir'}
           </Button>
@@ -191,8 +195,8 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
   /* ── 04 Resumen final ───────────────────────────────────────────────────── */
   if (fase === 'resumen') {
     return (
-      <div className="min-h-screen bg-bg flex flex-col px-6 py-10 gap-8">
-        <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
+      <div className="h-[100dvh] overflow-hidden bg-bg flex flex-col px-6 gap-8">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center text-center gap-6 pt-[calc(2.5rem+var(--safe-top))]">
           <RingSeal percent={total ? (tengoTotal / total) * 100 : 0} size={150} label={`${tengoTotal} máquinas en tu gimnasio`}>
             <span className="flex flex-col items-center leading-none">
               <span className="font-display font-black text-feature text-ink">{tengoTotal}</span>
@@ -205,7 +209,9 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
             Perfil › Mi gimnasio.
           </p>
         </div>
-        <Button variant="primary" size="l" onClick={terminar}>Ir a mi plan</Button>
+        <div className="flex-none pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))]">
+          <Button variant="primary" size="l" onClick={terminar}>Ir a mi plan</Button>
+        </div>
       </div>
     );
   }
@@ -215,8 +221,8 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
   const enCategoria = categoriaActual ? porCategoria.find(c => c.categoria === categoriaActual) : null;
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col px-5 py-6">
-      <div className="flex items-center gap-3">
+    <div className="h-[100dvh] overflow-hidden bg-bg flex flex-col px-5">
+      <div className="flex-none pt-[calc(1.5rem+var(--safe-top))] flex items-center gap-3">
         <button
           type="button"
           onClick={deshacer}
@@ -241,12 +247,12 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
       </div>
 
       {enCategoria && (
-        <p className="mt-2 font-mono text-caption text-ink-5 uppercase tracking-wider">
+        <p className="flex-none mt-2 font-mono text-caption text-ink-5 uppercase tracking-wider">
           {enCategoria.decididas}/{enCategoria.total} en esta categoría
         </p>
       )}
 
-      <div className="relative flex-1 my-5">
+      <div className="relative flex-1 min-h-0 my-5">
         {/* Se pinta en orden inverso para que la primera de la cola quede arriba del todo. */}
         {pila.map((m, i) => (
           <MachineCard
@@ -259,32 +265,38 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
         ))}
       </div>
 
-      <div className="flex justify-center gap-6 pb-4">
-        <button
-          type="button"
-          onClick={() => pulsar(false)}
-          aria-label={`No tengo ${cola[0]?.nombreMostrado ?? 'esta máquina'}`}
-          className="w-15 h-15 rounded-full bg-raised border border-danger/40 flex items-center justify-center
-                     text-danger active:scale-95 transition-transform"
-          style={{ width: 60, height: 60 }}
-        >
-          <Icon name="close" size="m" />
-        </button>
-        <button
-          type="button"
-          onClick={() => pulsar(true)}
-          aria-label={`Sí tengo ${cola[0]?.nombreMostrado ?? 'esta máquina'}`}
-          className="rounded-full bg-raised border border-success/45 flex items-center justify-center
-                     text-success active:scale-95 transition-transform"
-          style={{ width: 60, height: 60 }}
-        >
-          <Icon name="check" size="m" />
-        </button>
-      </div>
+      {/* Un único contenedor para los tres controles del pie, con el suelo de
+          seguridad inferior aquí: sea cual sea el último control visible
+          (el botón ✓/✗ o «Cerrar y continuar más tarde», según onOmitir),
+          nunca queda pegado al borde. */}
+      <div className="flex-none flex flex-col items-center gap-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+        <div className="flex justify-center gap-6">
+          <button
+            type="button"
+            onClick={() => pulsar(false)}
+            aria-label={`No tengo ${cola[0]?.nombreMostrado ?? 'esta máquina'}`}
+            className="w-15 h-15 rounded-full bg-raised border border-danger/40 flex items-center justify-center
+                       text-danger active:scale-95 transition-transform"
+            style={{ width: 60, height: 60 }}
+          >
+            <Icon name="close" size="m" />
+          </button>
+          <button
+            type="button"
+            onClick={() => pulsar(true)}
+            aria-label={`Sí tengo ${cola[0]?.nombreMostrado ?? 'esta máquina'}`}
+            className="rounded-full bg-raised border border-success/45 flex items-center justify-center
+                       text-success active:scale-95 transition-transform"
+            style={{ width: 60, height: 60 }}
+          >
+            <Icon name="check" size="m" />
+          </button>
+        </div>
 
-      {onOmitir && (
-        <Button variant="ghost" size="s" onClick={salirOmitiendo}>Cerrar y continuar más tarde</Button>
-      )}
+        {onOmitir && (
+          <Button variant="ghost" size="s" onClick={salirOmitiendo}>Cerrar y continuar más tarde</Button>
+        )}
+      </div>
     </div>
   );
 }
