@@ -85,6 +85,21 @@ function blankForm(): FormState {
   };
 }
 
+// T15: hay algo que merezca crear el documento en Firestore — nombre, algún
+// alimento en alguna comida, o un presupuesto ya distinto de cero.
+function formTieneAlgoQueGuardar(f: FormState): boolean {
+  return f.name.trim().length > 0
+    || f.meals.some(m => m.items.length > 0)
+    || Object.values(f.budget).some(v => v !== 0);
+}
+
+// Más estricto que lo anterior a propósito: un presupuesto tocado sin
+// nombre ni alimentos sigue siendo "nada real que perder" al salir — evita
+// dejar un borrador fantasma solo porque alguien tocó un stepper sin querer.
+function formEstaVacio(f: FormState): boolean {
+  return f.name.trim().length === 0 && !f.meals.some(m => m.items.length > 0);
+}
+
 interface Props {
   coachId: string;
   // Embedded mode (used from ClientHub):
@@ -133,6 +148,14 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(blankForm());
   const [saving, setSaving] = useState(false);
+  // T15 (18-08): true mientras se está montando una dieta que TODAVÍA no se
+  // ha confirmado con "Guardar" — es la ventana en la que el autoguardado
+  // escribe isDraft:true. Se apaga al confirmar (handleSave) y nunca se
+  // enciende al abrir una dieta YA guardada y no-borrador (openEdit de una
+  // dieta real): sin esto, tocar algo en una dieta publicada sin pulsar
+  // Guardar la devolvería a borrador sola.
+  const [isDraftSession, setIsDraftSession] = useState(true);
+  const creatingDraftRef = useRef(false);
 
   // Reparto automático de objetivos por comida — franjas elegidas a mano por
   // el coach (para que la inferencia por nombre nunca las pise), la última
@@ -174,9 +197,11 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         budget: { ...embeddedDiet.budget },
         meals: embeddedDiet.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
       });
+      setIsDraftSession(embeddedDiet.isDraft === true);
     } else {
       setEditingId(null);
       setForm(blankForm());
+      setIsDraftSession(true);
     }
     setView('editor');
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,11 +251,53 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     });
   }, [form.meals, form.budget]);
 
+  // T15 (18-08). Antes NADA tocaba Firestore hasta pulsar "Guardar": salir de
+  // la ficha, cambiar de cliente, la app pasando a segundo plano y Capacitor
+  // reciclando el WebView, o pulsar "Volver" por error perdían el trabajo
+  // entero sin ningún aviso. Silencioso a propósito (sin `saving` global),
+  // mismo patrón que el borrador del alta (utils/borradorAlta.ts).
+  useEffect(() => {
+    if (!selectedEmail || !isDraftSession) return;
+    if (!formTieneAlgoQueGuardar(form)) return;
+
+    const t = setTimeout(async () => {
+      // Un segundo disparo del debounce mientras la primera escritura de
+      // creación sigue en vuelo no debe crear un segundo documento — mismo
+      // patrón de carrera que T14 (siembra de foodItems/exercises).
+      if (creatingDraftRef.current) return;
+      const data: Omit<Diet, 'id'> = {
+        athleteId: selectedEmail,
+        name: form.name.trim(),
+        budget: form.budget,
+        meals: form.meals,
+        coachNote: form.coachNote.trim() || undefined,
+      };
+      try {
+        if (editingId) {
+          await updateDiet(editingId, { ...data, isDraft: true });
+        } else {
+          creatingDraftRef.current = true;
+          const created = await createDiet({ ...data, isDraft: true });
+          setEditingId(created.id);
+          setDiets(prev => prev.some(d => d.id === created.id) ? prev : [...prev, created]);
+        }
+      } catch (err) {
+        console.warn('Autoguardado de la dieta falló (no bloqueante):', err);
+      } finally {
+        creatingDraftRef.current = false;
+      }
+    }, 1500);
+
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, selectedEmail, editingId, isDraftSession]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const openCreate = () => {
     setEditingId(null);
     setForm(blankForm());
+    setIsDraftSession(true);
     setView('editor');
   };
 
@@ -242,6 +309,9 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
       budget: { ...dt.budget },
       meals: dt.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
     });
+    // Reanudar un borrador ya empezado sigue autoguardando como borrador;
+    // abrir una dieta real y publicada no activa el autoguardado.
+    setIsDraftSession(dt.isDraft === true);
     setView('editor');
   };
 
@@ -257,16 +327,22 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         coachNote: form.coachNote.trim() || undefined,
       };
 
+      // "Guardar" confirma — isDraft: false explícito en los dos caminos. Si
+      // el autoguardado ya creó el documento (editingId no es null aunque el
+      // coach nunca pulsó nada), esto es un updateDiet normal, nunca un
+      // segundo createDiet.
       let savedDiet: Diet;
+      const wasEditingExisting = editingId !== null;
       if (editingId) {
         await updateDiet(editingId, { ...data, isDraft: false });
-        savedDiet = { id: editingId, ...data };
+        savedDiet = { id: editingId, isDraft: false, ...data };
       } else {
-        savedDiet = await createDiet(data);
+        savedDiet = await createDiet({ ...data, isDraft: false });
       }
+      setIsDraftSession(false);
 
       setDiets(prev =>
-        editingId
+        wasEditingExisting
           ? prev.map(d => d.id === savedDiet.id ? savedDiet : d)
           : [...prev, savedDiet],
       );
@@ -280,7 +356,15 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     }
   };
 
+  // T15: ya no pierde nada (el autoguardado se ha encargado), pero limpia lo
+  // vacío — si no, cada vez que alguien entra a "Nueva dieta" y sale sin
+  // querer editar nada se acumula un borrador fantasma.
   const handleBack = () => {
+    if (isDraftSession && editingId && formEstaVacio(form)) {
+      const idVacio = editingId;
+      deleteDiet(idVacio).catch(err => console.warn('No se pudo borrar el borrador vacío:', err));
+      setDiets(prev => prev.filter(d => d.id !== idVacio));
+    }
     if (onCancelled) onCancelled();
     else setView('list');
   };
