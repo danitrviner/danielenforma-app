@@ -116,3 +116,29 @@ describe('tourReducer — ejemplos vistos y cierre', () => {
     expect(s.justCompleted).toBe(false);
   });
 });
+
+describe('tourReducer — T7.c reanudación tras interrupción', () => {
+  // TutorialEngine arranca con initialTourState(profile.tutorial?.pasoAlcanzado
+  // ?? 0, ...) y dispatch START — un tutorial con completado:false y
+  // pasoAlcanzado:5 (se cerró la app a medias) tiene que reanudar en el paso
+  // 5, no volver a empezar desde 0.
+  it('un tutorial con pasoAlcanzado:5 reanuda en el paso 5, no en el 0', () => {
+    const s = tourReducer(initialTourState(5), { type: 'START' });
+    expect(s.active).toBe(true);
+    expect(s.stepIndex).toBe(5);
+  });
+
+  // El antibloqueo de TourOverlay (objetivo del paso ausente ~2,5s) llama a
+  // onForceUnblock, que dispatchea exactamente esto — mismo mecanismo que
+  // "el atleta ya hizo la acción", así que NEXT deja de estar bloqueado sin
+  // tocar el reducer.
+  it('un paso con acción obligatoria se desbloquea con MARK_ACTION_DONE aunque el objetivo nunca apareciera', () => {
+    const idx = [...REQUIRED_ACTION_STEPS][0];
+    let s = tourReducer(initialTourState(idx), { type: 'START' });
+    expect(isBlockedByAction(s)).toBe(true);
+    s = tourReducer(s, { type: 'MARK_ACTION_DONE' }); // onForceUnblock
+    expect(isBlockedByAction(s)).toBe(false);
+    s = tourReducer(s, { type: 'NEXT' });
+    expect(s.stepIndex).toBe(idx + 1);
+  });
+});

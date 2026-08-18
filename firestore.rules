@@ -129,7 +129,7 @@ service cloud.firestore {
                         && !request.resource.data.keys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'setupSummary',
                                      'estadoCrm', 'fechaBaja', 'motivoBaja',
-                                     'motivoBajaDetalle', 'origen'])
+                                     'motivoBajaDetalle', 'origen', 'planPublishedAt'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
       // `xp` y `level` SALEN de la lista bloqueada (14-08). Estaban aquí como
       // antitrampas, pero quien los escribe es el propio atleta desde su móvil:
@@ -150,12 +150,17 @@ service cloud.firestore {
       //
       // `currentStreak`/`maxStreak` se quedan bloqueados: el cliente no los
       // escribe en ningún sitio, solo se inicializan al crear el perfil.
+      // `planPublishedAt` se añade (T7.b, 18-08): es el momento en que el
+      // COACH decide mostrarle el plan al atleta — si el atleta pudiera
+      // escribirlo, se abriría su propio plan desde la consola del navegador
+      // sin que el coach hubiera pulsado "Mostrar el plan al atleta".
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
                                      'currentStreak', 'maxStreak', 'estadoCrm',
-                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen']));
+                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
+                                     'planPublishedAt']));
       allow delete: if isCoach();
     }
 

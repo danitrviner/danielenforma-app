@@ -149,6 +149,15 @@ export interface UserProfile {
   // todas las listas de atletas. Ver src/utils/atletas.ts.
   anonimizado?: boolean;
   anonimizadoEn?: string; // ISO
+
+  // ── Publicación del plan (T7.b, 2026-08-18) ────────────────────────────────
+  // Antes la puerta de la sala de espera era `hasPlan` (asignaciones > 0), una
+  // deducción: en cuanto el coach asignaba un mesociclo, el atleta veía su
+  // plan sin que Dani hubiera decidido el momento. `hasPlan` sigue existiendo
+  // como señal separada — es lo que decide si el botón "Mostrar el plan al
+  // atleta" puede pulsarse, y lo que arranca el tour — pero lo que abre la
+  // sala de espera ahora es esto, una decisión explícita del coach.
+  planPublishedAt?: string; // ISO, el día en que el coach le mostró su primer plan
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un

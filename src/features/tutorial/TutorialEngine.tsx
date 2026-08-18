@@ -16,15 +16,29 @@ import type { NavTab } from '../../App';
    dos pantallas con acción obligatoria (marcar una serie, registrar una
    ingesta) avisen al motor sin acoplarse a él más que con una línea.
 
-   Arranca solo cuando: el atleta tiene un plan publicado (`hasPlan`) y
-   `profile.tutorial` no existe todavía. Nunca antes — el tour enseña datos
-   reales, no puede arrancar sobre una pantalla de espera vacía.
+   Arranca solo cuando: el atleta tiene el plan VISIBLE (`planVisible` —
+   T7.b, el coach pulsó "Mostrar el plan al atleta", no solo "hay
+   asignaciones") y `profile.tutorial` no está completado. Nunca antes — el
+   tour enseña datos reales, no puede arrancar sobre una pantalla de espera
+   vacía.
 
-   No arranca solo una segunda vez: una vez `tutorial.completado` es true,
-   la única puerta de entrada es "Repetir el tour" desde Perfil›Ajustes
-   (`TutorialEngineApi.restart()`), que sí puede saltar cualquier paso con
-   "Saltar el tour" — la primera pasada no puede saltarse entera, solo paso
-   a paso o con "Ahora no" en los saltables.
+   T7.c (18-08): antes la condición era "tutorial nunca tocado"
+   (`!profile.tutorial`), y el efecto de persistencia de abajo escribe
+   `tutorial: { completado: false, pasoAlcanzado }` en el PRIMER avance. Con
+   eso, un tour interrumpido una sola vez —cerrar la app, un `planVisible`
+   que tardó en resolver, cualquier cosa— dejaba `profile.tutorial` ya
+   creado, y el tour no volvía a arrancar jamás: quedaba con
+   `completado: false` para siempre, sin puerta de entrada automática ni
+   manual ("Repetir el tour" se dejó fuera a propósito, ver ProfileScreen).
+   Ahora la condición es "no completado" — reanuda en `pasoAlcanzado`
+   (`initialTourState` ya lo hace) en vez de exigir que nunca se haya
+   tocado.
+
+   No arranca solo una vez completado: una vez `tutorial.completado` es
+   true, la única puerta de entrada es "Repetir el tour" desde
+   Perfil›Ajustes (`TutorialEngineApi.restart()`), que sí puede saltar
+   cualquier paso con "Saltar el tour" — la primera pasada no puede
+   saltarse entera, solo paso a paso o con "Ahora no" en los saltables.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface TutorialEngineApi {
@@ -40,14 +54,14 @@ export function useTutorialEngine(): TutorialEngineApi {
 
 interface Props {
   profile: UserProfile;
-  hasPlan: boolean;
+  planVisible: boolean;
   currentTab: NavTab;
   onNavigate: (tab: NavTab) => void;
   onProfileChanged: (updates: Partial<UserProfile>) => void;
   children: React.ReactNode;
 }
 
-export default function TutorialEngine({ profile, hasPlan, currentTab, onNavigate, onProfileChanged, children }: Props) {
+export default function TutorialEngine({ profile, planVisible, currentTab, onNavigate, onProfileChanged, children }: Props) {
   const targetVersion = useTourTargetVersion();
   const startedAutomatically = useRef(false);
   const [state, dispatch] = useReducer(
@@ -56,13 +70,15 @@ export default function TutorialEngine({ profile, hasPlan, currentTab, onNavigat
   );
   const isFirstPass = !profile.tutorial?.completado;
 
-  // Arranque automático: plan publicado + tutorial nunca tocado.
+  // Arranque/reanudación automática: plan visible + tutorial no completado
+  // (reanuda en pasoAlcanzado, no solo arranca de cero — ver comentario de
+  // cabecera).
   useEffect(() => {
     if (startedAutomatically.current) return;
-    if (!hasPlan || profile.tutorial) return;
+    if (!planVisible || profile.tutorial?.completado) return;
     startedAutomatically.current = true;
     dispatch({ type: 'START' });
-  }, [hasPlan, profile.tutorial]);
+  }, [planVisible, profile.tutorial]);
 
   // Navega a la pestaña del paso activo cuando cambia.
   const step = TOUR_STEPS[state.stepIndex];
@@ -115,6 +131,7 @@ export default function TutorialEngine({ profile, hasPlan, currentTab, onNavigat
           onBack={() => dispatch({ type: 'BACK' })}
           onSkipStep={() => dispatch({ type: 'SKIP' })}
           onClose={() => dispatch({ type: 'CLOSE' })}
+          onForceUnblock={() => dispatch({ type: 'MARK_ACTION_DONE' })}
         />
       )}
     </TutorialEngineCtx.Provider>

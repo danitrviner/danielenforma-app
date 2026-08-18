@@ -32,13 +32,18 @@ interface Props {
   onBack: () => void;
   onSkipStep: () => void;
   onClose: () => void;
+  /** Antibloqueo (T7.c): el objetivo de un paso con acción obligatoria no
+   *  apareció a tiempo — el motor marca la acción como hecha igualmente para
+   *  que NEXT deje de estar bloqueado en el reducer. */
+  onForceUnblock: () => void;
 }
 
 const SCREEN_BANNER_MS = 1800;
+const ANTIBLOQUEO_MS = 2500;
 
 export default function TourOverlay({
   step, stepIndex, totalSteps, state, getRect, targetVersion, isFirstPass,
-  onNext, onBack, onSkipStep, onClose,
+  onNext, onBack, onSkipStep, onClose, onForceUnblock,
 }: Props) {
   useScrollLock(true);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -71,6 +76,25 @@ export default function TourOverlay({
   }, [step.id, showBanner, targetVersion]);
 
   const blocked = isBlockedByAction(state);
+
+  // Antibloqueo: un paso con acción obligatoria (marcar una serie, registrar
+  // una ingesta) puede no tener nada que señalar ese día —no hay sesión hoy,
+  // no hay comida programada— y sin esto el atleta se quedaba encerrado en
+  // el primer pase sin ninguna salida. Si el objetivo sigue sin aparecer
+  // ~2,5s después de dejar de mostrar el cartel de sección, se desbloquea
+  // solo: un tour incompleto es mejor que un tour que encierra.
+  const [autoUnblocked, setAutoUnblocked] = useState(false);
+  useEffect(() => { setAutoUnblocked(false); }, [step.id]);
+  useEffect(() => {
+    if (!blocked || showBanner || rect) return;
+    const t = window.setTimeout(() => {
+      setAutoUnblocked(true);
+      onForceUnblock();
+    }, ANTIBLOQUEO_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocked, showBanner, rect, step.id]);
+
   const anchorTop = rect ? rect.top > window.innerHeight / 2 : false;
 
   const clipStyle = useMemo((): React.CSSProperties => {
@@ -91,13 +115,15 @@ export default function TourOverlay({
     };
   }, [rect]);
 
-  const primaryLabel = blocked
-    ? (step.actionLabel ?? 'Completa la acción')
-    : stepIndex === totalSteps - 1
-      ? 'Ir a mi entreno de hoy'
-      : state.actionDone && step.requiresAction
-        ? 'Perfecto, sigue'
-        : 'Siguiente';
+  const primaryLabel = autoUnblocked
+    ? 'Continuar'
+    : blocked
+      ? (step.actionLabel ?? 'Completa la acción')
+      : stepIndex === totalSteps - 1
+        ? 'Ir a mi entreno de hoy'
+        : state.actionDone && step.requiresAction
+          ? 'Perfecto, sigue'
+          : 'Siguiente';
 
   return createPortal(
     <div className="fixed inset-0 z-[var(--z-modal)]" role="dialog" aria-modal="true" aria-label={`Tutorial, paso ${stepIndex + 1} de ${totalSteps}: ${step.title}`}>

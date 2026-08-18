@@ -417,30 +417,46 @@ function AppContent() {
   // vez de inventar una segunda señal que pudiera desincronizarse de la
   // primera.
   const hasPlan = !isCoach && tutorialGateAssignments.length > 0;
+  // T7.b (18-08): la puerta de la sala de espera deja de ser "¿hay
+  // asignaciones?" y pasa a ser "¿el coach pulsó Mostrar el plan al
+  // atleta?" — antes se abría sola en cuanto existía una sola asignación,
+  // y Dani no controlaba el momento. `hasPlan` se conserva tal cual: sigue
+  // siendo la señal de "hay algo que publicar" que decide si el botón del
+  // coach puede pulsarse (ClientWorkoutsPanel) y la que arranca el tour
+  // (TutorialEngine ya se dispara con planVisible, no con hasPlan).
+  const planVisible = !isCoach && !!profile?.planPublishedAt;
   // Solo redirige cuando la consulta YA resolvió: mientras está en vuelo,
   // `hasPlan` vale `false` por el default de `tutorialGateAssignments = []`,
   // y sin esta guarda un atleta con plan real que entrara por un enlace
   // directo a /training rebotaría a Hoy durante ese primer instante.
-  const bloquearSinPlan = !cargandoPlanGate && !hasPlan;
+  const bloquearSinPlan = !cargandoPlanGate && !planVisible;
 
-  /* 14-08 (tarea 9). El tour automático (TutorialEngine) arranca solo en
-     cuanto `hasPlan` pasa a `true` — la lógica en sí ya estaba bien. El
-     bug real está aquí: esta consulta comparte los valores por defecto
-     globales del QueryClient (`main.tsx`: staleTime 10 min,
-     refetchOnWindowFocus apagado, a propósito para no multiplicar
-     lecturas de Firestore en el resto de la app). Un atleta que termina el
-     wizard, deja la app en segundo plano y vuelve cuando el coach YA
-     publicó el plan se encontraba con que `hasPlan` seguía en `false` de
-     una sesión que nunca refrescaba sola — ni el tour saltaba, ni la
-     sala de espera se abría. Se refresca a mano solo esta consulta, y
-     solo mientras hace falta: en cuanto hay plan, deja de suscribirse. */
+  /* 14-08 (tarea 9), ampliado en T7.b (18-08). El tour automático
+     (TutorialEngine) arranca solo en cuanto `hasPlan` pasa a `true` — la
+     lógica en sí ya estaba bien. El bug real está aquí: esta consulta
+     comparte los valores por defecto globales del QueryClient (`main.tsx`:
+     staleTime 10 min, refetchOnWindowFocus apagado, a propósito para no
+     multiplicar lecturas de Firestore en el resto de la app). Un atleta que
+     termina el wizard, deja la app en segundo plano y vuelve cuando el
+     coach YA publicó el plan se encontraba con que `hasPlan` seguía en
+     `false` de una sesión que nunca refrescaba sola — ni el tour saltaba,
+     ni la sala de espera se abría.
+
+     `planPublishedAt` tiene el MISMO problema y encima es peor: vive en
+     `profile`, que aquí es `useState` plano (no una query), así que ni
+     siquiera un `invalidateQueries` lo refresca — hace falta releer el
+     perfil entero con `handleRefreshData`. Se refresca a mano cada pieza
+     mientras haga falta, y cada una deja de pedirse en cuanto se resuelve;
+     el listener entero se quita cuando las dos ya están resueltas. */
   useEffect(() => {
-    if (isCoach || hasPlan || !athleteUserId) return;
+    if (isCoach || !athleteUserId || (hasPlan && planVisible)) return;
     const sub = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athleteUserId] });
+      if (!isActive) return;
+      if (!hasPlan) queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athleteUserId] });
+      if (!planVisible) void handleRefreshData();
     });
     return () => { sub.then(h => h.remove()); };
-  }, [isCoach, hasPlan, athleteUserId, queryClient]);
+  }, [isCoach, hasPlan, planVisible, athleteUserId, queryClient]);
 
   // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
   // el recuento exacto está en la tarjeta de dentro, y un número en la pestaña
@@ -624,7 +640,6 @@ function AppContent() {
         <PlanEnEsperaScreen
           profile={profile}
           checkins={checkins}
-          onRefreshProfile={handleRefreshData}
           onLogOut={() => {
             setCurrentUser(null);
             void limpiarDatosDeSesion(queryClient);
@@ -676,7 +691,7 @@ function AppContent() {
     <CardioSessionProvider profile={profile} enabled={!isCoach}>
     <TutorialEngine
       profile={profile}
-      hasPlan={hasPlan}
+      planVisible={planVisible}
       currentTab={pathTab}
       onNavigate={goToTab}
       onProfileChanged={updates => setProfile(p => p ? { ...p, ...updates } as UserProfile : p)}

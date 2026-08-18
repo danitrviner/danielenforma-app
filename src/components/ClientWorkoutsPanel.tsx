@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
   WorkoutAssignment, Workout,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile } from '../dbService';
 import { invalidateResource } from '../hooks/useResourceCache';
 import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
@@ -44,11 +45,32 @@ export default function ClientWorkoutsPanel({
   onboardingData, assignments, setAssignments, workouts, getWorkout,
 }: Props) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const getExercise = (id: string) => exercises.find(e => e.id === id);
 
   // Lista de entrenamientos asignados plegada por defecto (puede ser muy larga)
   const [assignmentsExpanded, setAssignmentsExpanded] = useState(false);
+
+  // T7.b (18-08): antes la sala de espera se abría sola en cuanto existía
+  // UNA asignación (App.tsx, hasPlan) — Dani no controlaba el momento. Ahora
+  // hace falta este botón, y solo aparece con clientes que NUNCA han tenido
+  // un plan visible: en cuanto se pulsa, desaparece para siempre, aunque se
+  // le monten más mesociclos después.
+  const [publishing, setPublishing] = useState(false);
+  const handlePublishPlan = async () => {
+    setPublishing(true);
+    try {
+      await updateUserProfile(athlete.userId, { planPublishedAt: new Date().toISOString() });
+      queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
+      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo.`, 'success');
+    } catch (err) {
+      console.error('No se pudo publicar el plan:', err);
+      showToast('No se pudo publicar el plan. Inténtalo otra vez.');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   // Assign modal
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -85,6 +107,23 @@ export default function ClientWorkoutsPanel({
 
   return (
     <div className="space-y-6">
+      {assignments.length > 0 && !athlete.planPublishedAt && (
+        <div className="bg-accent/10 border border-accent/30 rounded-surface p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <Icon name="visibility" size="m" className="text-accent" />
+              Plan montado, sin mostrar al atleta
+            </h3>
+            <p className="font-mono text-caption text-ink-3 mt-1">
+              {athlete.displayName} sigue en la sala de espera hasta que pulses este botón.
+            </p>
+          </div>
+          <Button onClick={handlePublishPlan} loading={publishing} icon="visibility" className="shrink-0">
+            Mostrar el plan al atleta
+          </Button>
+        </div>
+      )}
+
       {/* Periodización de entrenamiento — visión analítica */}
       <div>
         <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">

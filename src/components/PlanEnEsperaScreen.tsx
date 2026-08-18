@@ -3,7 +3,8 @@ import { UserProfile, WeightCheckIn } from '../types';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
-import ProfileScreen from './ProfileScreen';
+import MiFichaCard from './MiFichaCard';
+import { signOut, auth } from '../firebase';
 import { Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -18,23 +19,40 @@ import { Icon } from './ui';
 
    Las tres acciones de "mientras tanto" (foto inicial, peso, Road map) y
    "ver mi anamnesis" seguían necesitando pantallas reales —CheckInScreen,
-   AthleteRoadmapScreen, ProfileScreen—, así que en vez de reconstruirlas
-   aquí dentro, este componente es su propio mini-navegador: un `vista`
-   local en vez de rutas de verdad (no hace falta más — solo hay cuatro
-   sitios a los que ir, y todos vuelven al mismo punto).
+   AthleteRoadmapScreen—, así que en vez de reconstruirlas aquí dentro, este
+   componente es su propio mini-navegador: un `vista` local en vez de rutas
+   de verdad (no hace falta más — solo hay cuatro sitios a los que ir, y
+   todos vuelven al mismo punto).
+
+   T7.a (18-08): "ver mi anamnesis" montaba el ProfileScreen COMPLETO, con sus
+   cinco pestañas y el Sheet de Ajustes — un atleta bloqueado podía salir a
+   media app desde ahí (Road map, Mi gimnasio…), rompiendo el bloqueo total
+   que esta pantalla existe para garantizar. Ahora usa MiFichaCard a solas,
+   el único bloque que "ver mi anamnesis" necesitaba de verdad, más un
+   "Cerrar sesión" propio y discreto — la única salida real que hace falta
+   ofrecer aquí, sin abrir Ajustes ni ninguna otra pestaña.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
   profile: UserProfile;
   checkins: WeightCheckIn[];
-  onRefreshProfile: () => void;
   onLogOut: () => void;
 }
 
 type Vista = 'espera' | 'checkin' | 'roadmap' | 'perfil';
 
-export default function PlanEnEsperaScreen({ profile, checkins, onRefreshProfile, onLogOut }: Props) {
+export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Props) {
   const [vista, setVista] = useState<Vista>('espera');
+
+  const cerrarSesion = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('signOut falló; se cierra la sesión en local igualmente:', err);
+    } finally {
+      onLogOut();
+    }
+  };
 
   if (vista !== 'espera') {
     return (
@@ -55,13 +73,17 @@ export default function PlanEnEsperaScreen({ profile, checkins, onRefreshProfile
           {vista === 'checkin' && <CheckInScreen profile={profile} checkins={checkins} />}
           {vista === 'roadmap' && <AthleteRoadmapScreen profile={profile} />}
           {vista === 'perfil' && (
-            <ProfileScreen
-              profile={profile}
-              isCoach={false}
-              checkins={checkins}
-              onRefreshProfile={onRefreshProfile}
-              onLogOut={onLogOut}
-            />
+            <div className="space-y-4">
+              <MiFichaCard profile={profile} />
+              <button
+                type="button"
+                onClick={cerrarSesion}
+                className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger"
+              >
+                <Icon name="logout" size="m" />
+                Cerrar sesión
+              </button>
+            </div>
           )}
         </div>
       </div>

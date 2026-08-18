@@ -16,7 +16,7 @@ const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
 const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MenuPreferencesPanel from './MenuPreferencesPanel';
-import OnboardingForm from './OnboardingForm';
+import MiFichaCard from './MiFichaCard';
 import CoachesScreen from './CoachesScreen';
 import EliminarCuentaDialog from './EliminarCuentaDialog';
 import CheckInScreen from './CheckInScreen';
@@ -156,8 +156,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     queryKey: onboardingKey,
     queryFn: () => getOnboarding(profile.email),
   });
-  const [editingFicha,  setEditingFicha]  = useState(false);
-
   // A-2. Retirar el consentimiento tiene que ser tan fácil como darlo.
   const consentimientoIA = estadoConsentimiento(onboarding);
   const cambiarConsentimientoIA = async (aceptado: boolean) => {
@@ -258,33 +256,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               </div>
             </div>
 
-            {editingFicha ? (
-              <div className="bg-surface border border-hairline p-4 rounded-surface">
-                <OnboardingForm
-                  athleteEmail={profile.email}
-                  initialData={onboarding}
-                  onSaved={data => { queryClient.setQueryData(onboardingKey, data); setEditingFicha(false); }}
-                  onCancel={() => setEditingFicha(false)}
-                />
-              </div>
-            ) : (
-              <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                    <Icon name="assignment_ind" size="m" className="text-accent" />
-                    {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
-                  </h3>
-                  <p className="font-mono text-caption text-ink-3 mt-1">
-                    {onboarding
-                      ? `Actualizada el ${new Date(onboarding.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`
-                      : 'Completa tu ficha para que tu entrenador personalice tu plan.'}
-                  </p>
-                </div>
-                <Button onClick={() => setEditingFicha(true)} icon="edit_note" className="shrink-0">
-                  {onboarding ? 'Editar' : 'Completar'}
-                </Button>
-              </div>
-            )}
+            <MiFichaCard profile={profile} />
           </div>
         );
 
@@ -389,10 +361,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
 
       {/* ── Ajustes (F3.11, módulo 11: "vive detrás de un icono en la
           cabecera, nunca en la barra inferior") — nombre/avatar/meta,
-          entrenadores (coach) y cerrar sesión, la única acción destructiva
-          de la pantalla en texto rojo sobre fondo neutro, no un botón
-          relleno. "Repetir el tour" queda fuera: el motor de tutorial es
-          F3.12, todavía no existe nada que repetir. */}
+          entrenadores (coach), "Repetir el tour" (F3.12/T7.c, más abajo) y
+          cerrar sesión, la única acción destructiva de la pantalla en texto
+          rojo sobre fondo neutro, no un botón relleno. */}
       <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
         <div className="space-y-6">
           <form onSubmit={handleUpdate} className="space-y-4">
