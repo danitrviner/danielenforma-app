@@ -36,7 +36,9 @@ const DIR = new URL('.', import.meta.url).pathname;
 // `crearMaquinaAdmin`...): sin ellos, una escritura futura con su propio catch
 // se clasificaría como LECTURA y el tercer test la marcaría en rojo por
 // relanzar — castigando código correcto.
-const ESCRITURA = /^(create|update|delete|save|add|mark|set|assign|deactivate|submit|invite|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar)/;
+// `reset` está aquí por `resetDoctrina`: volver al criterio por defecto borra el
+// doc del coach, así que es una escritura aunque el verbo no lo parezca.
+const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar)/;
 
 // Excepciones deliberadas. Cada una lleva su comentario en el código explicando
 // por qué; si añades una aquí, añade también el porqué allí.

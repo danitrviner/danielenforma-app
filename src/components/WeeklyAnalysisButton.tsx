@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AiChatMessage } from '../types';
 import { runAgentTurn, messageText } from '../ai/aiClient';
-import { createCoachNote, getCoachInstructions } from '../dbService';
+import { createCoachNote, getCoachInstructions, getDoctrina } from '../dbService';
 import { Icon, Button, Dialog } from './ui';
 
 // Fase 5 — Análisis semanal proactivo. Un botón que lanza al mismo agente IA con
@@ -25,8 +25,15 @@ export default function WeeklyAnalysisButton() {
     setOpen(true); setBusy(true); setResult(null); setError(null); setStatus(null);
     const chatId = `weekly_${Date.now()}`;
     try {
-      const coachInstructions = await getCoachInstructions().catch(() => '');
-      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId, coachInstructions }, {
+      // Mismo contexto que el chat del panel: sin la doctrina, el análisis
+      // semanal razonaría con criterio genérico y contradiría al asistente.
+      const [coachInstructions, entrenamiento, nutricion] = await Promise.all([
+        getCoachInstructions().catch(() => ''),
+        getDoctrina('entrenamiento').catch(() => ''),
+        getDoctrina('nutricion').catch(() => ''),
+      ]);
+      const doctrina = { entrenamiento, nutricion };
+      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId, coachInstructions, doctrina }, {
         onToolStatus: setStatus,
       });
       const last = [...msgs].reverse().find(m => m.role === 'assistant' && messageText(m));
