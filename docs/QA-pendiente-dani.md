@@ -149,5 +149,6 @@ Se va actualizando a medida que se ejecuta el plan. Nada de esto lo puede hacer 
   🌐 en la cabecera del panel del asistente) desde el móvil si el asistente vuelve a fallar — te
   enseña la URL, el código HTTP y el cuerpo de error reales, no un mensaje genérico.
 
-- [ ] **Limpiar los alimentos duplicados en producción** (T14) — pendiente hasta que se ejecute esa
-  tarea del plan; se documentará aquí el botón exacto cuando exista.
+- [ ] **Limpiar los alimentos duplicados en producción** (T14): Biblioteca › Alimentos → el icono
+  📋 junto al buscador (con el número de duplicados en rojo si hay alguno) → revisa la lista →
+  "Eliminar N duplicados". Es un borrado real en Firestore; solo tú puedes confirmarlo.
