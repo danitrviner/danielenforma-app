@@ -430,11 +430,42 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
         <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
       </div>
 
-      <div className="overflow-x-auto rounded-surface border border-hairline">
+      {/* Por debajo de sm la tabla es legítimamente ancha pero inusable: una
+          tarjeta por grupo muscular en su lugar, con el meso actual editable
+          y el historial como texto compacto. Mismos datos, otra presentación. */}
+      <div className="sm:hidden space-y-2">
+        {MUSCLE_GROUPS.map(group => {
+          const cfg = editing.groups[group];
+          const histText = history
+            .map(m => `Meso #${m.number}: ${m.groups[group].series}`)
+            .join(' · ');
+          const lastHistorical = history.length > 0 ? history[history.length - 1].groups[group] : null;
+          const delta = lastHistorical !== null ? cfg.series - lastHistorical.series : null;
+          return (
+            <div key={group} className="bg-bg border border-hairline rounded-surface p-3 space-y-2"
+              style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-label text-white font-bold">{MUSCLE_LABELS[group]}</span>
+                {delta !== null && <Delta delta={delta} showEqual />}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
+                <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
+              </div>
+              {histText && (
+                <p className="font-mono text-caption text-ink-3">{histText}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden sm:block overflow-x-auto rounded-surface border border-hairline">
         <table className="w-full border-collapse text-body-s" style={{ minWidth: `${130 + columns.length * 140}px` }}>
           <thead>
             <tr className="bg-bg">
-              <th className="sticky left-0 z-10 bg-bg text-left px-4 py-3 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-r border-hairline w-[130px]">
+              <th className="sticky left-0 z-[var(--z-sticky)] bg-bg text-left px-4 py-3 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-r border-hairline w-[130px]">
                 Grupo muscular
               </th>
               {columns.map(m => {
@@ -459,7 +490,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           <tbody>
             {MUSCLE_GROUPS.map((group, rowIdx) => (
               <tr key={group} className={rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}>
-                <td className={`sticky left-0 z-10 px-4 py-3 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
+                <td className={`sticky left-0 z-[var(--z-sticky)] px-4 py-3 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
                   {MUSCLE_LABELS[group]}
                 </td>
                 {columns.map((m, mIdx) => {
@@ -507,7 +538,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
           <tfoot>
             <tr><td colSpan={columns.length + 1} className="h-px bg-raised p-0" /></tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
+              <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
               {columns.map((m, mIdx) => {
                 const total = totals[mIdx];
                 const delta = mIdx > 0 ? total - totals[mIdx - 1] : null;
@@ -523,7 +554,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
               })}
             </tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
+              <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.daysPerWeek - columns[mIdx - 1].daysPerWeek : null;
                 return (
@@ -537,7 +568,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
               })}
             </tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-10 bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
+              <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Semanas</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.weeks - columns[mIdx - 1].weeks : null;
                 return (

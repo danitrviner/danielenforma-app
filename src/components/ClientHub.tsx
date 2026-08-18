@@ -500,8 +500,12 @@ export default function ClientHub({
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
       />
 
-      {/* Nav de zonas (nivel 1) */}
-      <div className="sticky top-[var(--header-h)] z-[var(--z-sticky)] bg-field/95 backdrop-blur-sm space-y-2 ">
+      {/* Nav de zonas (nivel 1). z-subnav, no z-sticky: los paneles que se
+          montan dentro (matriz de series, barra de intercambios…) también
+          usan sticky con z-sticky, y a igualdad de z-index gana el que va
+          después en el DOM — las pestañas quedaban tapadas por su propio
+          contenido. */}
+      <div className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-field/95 backdrop-blur-sm space-y-2 ">
         <Tabs
           items={(Object.keys(ZONE_TABS) as Zone[]).map(zone => ({ id: zone, label: ZONE_META[zone].label, icon: ZONE_META[zone].icon }))}
           value={activeZone}

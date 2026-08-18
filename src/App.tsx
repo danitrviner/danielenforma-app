@@ -803,7 +803,13 @@ function AppContent() {
         )}
       </nav>
 
-      <main className="flex-1 mt-0 md:mt-[var(--header-h)] md:ml-[var(--sidebar-w)] p-4 md:p-8 max-w-7xl mx-auto w-full">
+      {/* min-w-0: hijo de un contenedor flex, sin esto nunca se encoge por
+          debajo del max-content de su contenido — cualquier tabla ancha de
+          cualquier pantalla infla el documento entero y arrastra consigo los
+          sticky (que solo fijan en vertical). overflow-x-clip, no -hidden:
+          clip no crea contenedor de scroll, así que los sticky de dentro
+          siguen funcionando. */}
+      <main className="flex-1 min-w-0 overflow-x-clip mt-0 md:mt-[var(--header-h)] md:ml-[var(--sidebar-w)] p-4 md:p-8 max-w-7xl mx-auto w-full">
       <Suspense fallback={<ScreenFallback />}>
         {/* Fundido hacia arriba al cambiar de PESTAÑA (280 ms) — la key es
             pathTab, no la ruta completa, así que navegar dentro de una misma

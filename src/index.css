@@ -503,6 +503,9 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   --z-sticky:   10;  /* barras sticky dentro de una pantalla                  */
+  --z-subnav:   20;  /* pestañas de zona/sub-zona de la ficha de cliente.
+                         Dentro de la ficha de cliente, ningún panel sube por
+                         encima de --z-sticky: por eso este valor va antes.   */
   --z-header:   40;  /* cabecera de la aplicación                             */
   --z-nav:      50;  /* barra de navegación inferior                          */
   --z-fab:      60;  /* botón flotante                                        */

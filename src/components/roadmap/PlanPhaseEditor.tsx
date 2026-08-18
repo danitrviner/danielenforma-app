@@ -195,7 +195,10 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
         <p className="text-ink-2 text-label font-sans flex-1 min-w-[200px]">
           Fases del plan por progresión, no por tiempo. El cliente ve la actual destacada y las siguientes como "lo que le queda por delante".
         </p>
-        <div className="flex gap-2 flex-shrink-0 flex-wrap">
+        {/* Sin flex-shrink-0: contradecía a flex-wrap (shrink-0 fija el ancho
+            al max-content de los tres botones en fila, así que el wrap nunca
+            se disparaba) y el contenedor desbordaba. */}
+        <div className="flex gap-2 flex-wrap">
           <Button variant="secondary" size="s" onClick={useStandardPreset}>
             Usar plan estándar (6 fases)
           </Button>
