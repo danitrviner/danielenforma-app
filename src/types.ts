@@ -235,7 +235,16 @@ export interface Exercise {
   primaryFocus: string;      // legacy free-form label
   muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it)
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
-  enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie
+  enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie (cardio)
+  // Dónde carga más el ejercicio de fuerza dentro de su rango de movimiento —
+  // no es lo mismo que enduranceProfile (esa es la curva de esfuerzo dentro
+  // de UNA serie de cardio; esta es dónde está el pico de tensión mecánica en
+  // el recorrido, un concepto de hipertrofia). 'estiramiento' = carga máxima
+  // en posición alargada (ej. curl femoral, aperturas), 'acortamiento' =
+  // carga máxima en contracción máxima (ej. gemelo en máquina, curl en
+  // polea baja), 'campana' = carga máxima a mitad de recorrido (la mayoría
+  // de ejercicios con peso libre — sentadilla, press banca).
+  strengthCurve?: 'estiramiento' | 'acortamiento' | 'campana';
   equipment?: string[];      // material necesario; undefined/empty = siempre disponible
   videoUrl?: string;
   imageUrl?: string;

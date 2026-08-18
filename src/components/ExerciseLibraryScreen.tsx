@@ -13,6 +13,7 @@ interface ExerciseLibraryScreenProps {
 
 type ExerciseType  = Exercise['type'];
 type EnduranceProfile = NonNullable<Exercise['enduranceProfile']>;
+type StrengthCurve = NonNullable<Exercise['strengthCurve']>;
 
 // ─── Macrocycle muscle groups (the 14 typed keys) ─────────────────────────────
 
@@ -51,6 +52,20 @@ const ENDURANCE_LABELS: Record<EnduranceProfile, string> = {
   ascendente:  'Ascendente',
   campana:     'Campana',
   descendente: 'Descendente',
+};
+
+const STRENGTH_CURVES: StrengthCurve[] = ['estiramiento', 'campana', 'acortamiento'];
+
+const STRENGTH_CURVE_STYLES: Record<StrengthCurve, string> = {
+  estiramiento: 'bg-violet-500/10 text-violet-300',
+  campana:      'bg-blue-500/10 text-blue-300',
+  acortamiento: 'bg-teal-500/10 text-teal-300',
+};
+
+const STRENGTH_CURVE_LABELS: Record<StrengthCurve, string> = {
+  estiramiento: 'Estiramiento',
+  campana:      'Campana',
+  acortamiento: 'Acortamiento',
 };
 
 const EMPTY_FORM: Omit<Exercise, 'id'> = {
@@ -138,6 +153,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       muscleGroup:  ex.muscleGroup,
       type:         ex.type,
       enduranceProfile: ex.enduranceProfile,
+      strengthCurve: ex.strengthCurve,
       equipment:    ex.equipment ?? [],
       videoUrl:     ex.videoUrl || '',
       imageUrl:     ex.imageUrl || '',
@@ -334,7 +350,8 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
                     <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Material</th>
                     <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Tipo</th>
-                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Perfil</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Perfil (cardio)</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Curva</th>
                     <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Origen</th>
                     <th className="p-4 pr-6 font-mono text-caption text-ink-2 uppercase tracking-wider text-right">Acciones</th>
                   </tr>
@@ -389,6 +406,13 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                       <td className="p-4">
                         {ex.enduranceProfile ? (
                           <span className={`px-2 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                        ) : (
+                          <span className="font-mono text-caption text-ink-3">—</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {ex.strengthCurve ? (
+                          <span className={`px-2 rounded-control text-caption font-sans font-bold ${STRENGTH_CURVE_STYLES[ex.strengthCurve]}`}>{STRENGTH_CURVE_LABELS[ex.strengthCurve]}</span>
                         ) : (
                           <span className="font-mono text-caption text-ink-3">—</span>
                         )}
@@ -583,13 +607,25 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   options={TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
                 />
                 <Select
-                  label="Perfil de resistencia"
+                  label="Perfil de esfuerzo (cardio)"
                   value={form.enduranceProfile ?? ''}
                   onChange={v => setForm(f => ({ ...f, enduranceProfile: (v as EnduranceProfile) || undefined }))}
                   placeholder="— Sin asignar —"
                   options={ENDURANCE_PROFILES.map(p => ({ value: p, label: ENDURANCE_LABELS[p] }))}
                 />
               </div>
+
+              {/* Curva de fuerza — dónde carga más el ejercicio dentro de su
+                  rango de movimiento, no confundir con el perfil de esfuerzo
+                  de cardio de arriba (ver comentario en types.ts). */}
+              <Select
+                label="Curva de fuerza"
+                hint="Dónde está el pico de tensión: estirado, en medio, o contraído."
+                value={form.strengthCurve ?? ''}
+                onChange={v => setForm(f => ({ ...f, strengthCurve: (v as StrengthCurve) || undefined }))}
+                placeholder="— Sin asignar —"
+                options={STRENGTH_CURVES.map(c => ({ value: c, label: STRENGTH_CURVE_LABELS[c] }))}
+              />
 
               {/* Equipment multi-select */}
               <div>
