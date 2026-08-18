@@ -152,3 +152,15 @@ Se va actualizando a medida que se ejecuta el plan. Nada de esto lo puede hacer 
 - [ ] **Limpiar los alimentos duplicados en producción** (T14): Biblioteca › Alimentos → el icono
   📋 junto al buscador (con el número de duplicados en rojo si hay alguno) → revisa la lista →
   "Eliminar N duplicados". Es un borrado real en Firestore; solo tú puedes confirmarlo.
+
+- [ ] **Dar el rango de series de aductores** (T10): `src/ai/doctrina.ts` tiene el rango de series
+  semanales de los otros 14 grupos musculares pero no el de aductores — se dejó fuera a propósito
+  en vez de inventarlo. Dime el número (algo tipo "8-12") y lo añado a la línea de doctrina.
+
+- [ ] **Crear 1-2 ejercicios de aductores** (T10): la biblioteca semilla no tiene ninguno. Sin esto
+  el generador de mesociclos avisará "Sin ejercicios para Aductores" al programar ese grupo.
+  Biblioteca › Ejercicios → Añadir (ej. "Aducción en máquina", "Aducción con polea").
+
+- [ ] **Compilar y probar en tu iPhone** — la mayoría de los arreglos de la Tanda 1 (zoom de iOS,
+  safe area, `dvh`) son de comportamiento de WKWebView que no se reproduce en el navegador de
+  escritorio. `npx cap sync ios` y compilar desde Xcode.
