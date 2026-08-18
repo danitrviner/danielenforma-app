@@ -8,15 +8,17 @@ interface Props {
 }
 
 /**
- * "Tu mejor serie" de la ficha de ejercicio (Biblioteca - Experiencia, panel
- * 02) — mejor set histórico + kg de diferencia vs. el mejor anterior +
- * `Sparkline` de las últimas sesiones (la propia primitiva, de F3.3, ya
- * apuntaba a este uso en su comentario).
+ * "Tu mejor serie" — mejor set histórico + kg de diferencia vs. el mejor
+ * anterior + `Sparkline` de las últimas sesiones (la propia primitiva, de
+ * F3.3, ya apuntaba a este uso en su comentario). Ahora vive como contenido
+ * único de su propio Dialog de historial (antes iba embebida bajo la tarjeta
+ * de ejercicio, de ahí que ya no lleve borde/fondo propios — los pone el
+ * Dialog que la envuelve).
  */
 export default function ExerciseBestSetCard({ progress, trend }: Props) {
   const { current, deltaKgVsPrevious } = progress;
   return (
-    <div className="p-4 bg-bg border-t border-hairline space-y-3">
+    <div className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">Tu mejor serie</p>

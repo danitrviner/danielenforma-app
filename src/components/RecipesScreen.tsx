@@ -6,7 +6,7 @@ import {
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
   getAthleteNutritionConfig, queryRecetas, getOnboarding,
-  getDietsForAthlete, getAthleteDietConfig,
+  getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS,
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
@@ -248,7 +248,10 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [scale, setScale] = useState(1);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const isRecetas = recipe.ownerId === 'recetas';
+  // Antes solo comparaba contra 'recetas' — las recetas importadas con el
+  // ownerId heredado 'indya' (miles de ellas, ver comentario en db/recipes.ts)
+  // caían por el hueco y se trataban como receta propia sin ingredientes.
+  const isRecetas = OWNER_RECETARIO_TODOS.includes(recipe.ownerId);
   const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
   const exch = calcExchanges(scaledRecipe);
   const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);

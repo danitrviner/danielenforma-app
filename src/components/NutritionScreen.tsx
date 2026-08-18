@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
-import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
@@ -593,6 +592,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       });
       setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: false } }));
       setSearchTerm('');
+      // El picker se queda abierto para encadenar varias añadidas seguidas
+      // (ver comentario arriba) — sin esto, tocar "+" no daba ninguna señal
+      // de que el toque había hecho algo.
+      void haptics.light();
+      showToast(`${food.label} añadido.`, 'success');
     } else {
       // Swap an existing item in place — a single replacement, so close afterwards.
       const key = `${mealId}_${itemIdx}`;
@@ -1186,6 +1190,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <React.Fragment key={selectedDiet.id}>
               {/* ── 01 · Tracker del día (F3.8) ─────────────────────────────────── */}
               <div ref={trackerTargetRef} className="bg-raised border border-hairline rounded-canvas p-4">
+                {/* Cabecera de la dieta — antes vivía en una tarjeta aparte junto al
+                    cupo diario fijado por el coach; ese cupo se ha quitado del todo
+                    (las barras de abajo ya muestran lo mismo) y Dani pidió juntar
+                    aquí arriba lo que queda: nombre + nota del coach. */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
+                    {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
+                  </span>
+                  <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={selectedDiet.name}
+                    onChange={e => renameDiet(e.target.value)}
+                    aria-label="Nombre de la dieta"
+                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                  />
+                  <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
+                </div>
+                {selectedDiet.coachNote && (
+                  <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
+                )}
+                <span className="block font-mono text-caption text-ink-2 mt-2">
+                  {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
+                </span>
+
+                <div className="border-t border-hairline mt-4 pt-4">
                 {dayClosed ? (
                   <div className="flex flex-col items-center py-4 text-center animate-fade-up">
                     <RingSeal percent={100} complete size={112} strokeWidth={8} label="Día cerrado en presupuesto" />
@@ -1299,65 +1331,35 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </p>
                   </>
                 )}
+                </div>
               </div>
 
-              {/* Diet header + cupo diario — antes eran dos tarjetas separadas con
-                  cabeceras propias; el cupo ya no repite el tracker de arriba
-                  (panel 01), así que ahora es una sola tarjeta: nombre/nota arriba,
-                  objetivo diario abajo, separados por un hairline. */}
-              <div className="bg-raised rounded-surface p-4 border border-hairline">
-                <div className="flex items-center justify-between ">
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
-                    {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
-                  </span>
-                  <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={selectedDiet.name}
-                    onChange={e => renameDiet(e.target.value)}
-                    aria-label="Nombre de la dieta"
-                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
-                  />
-                  <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
-                </div>
-                {selectedDiet.coachNote && (
-                  <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
-                )}
-                <span className="block font-mono text-caption text-ink-2 mt-2">
-                  {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
-                </span>
-
-                {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
-                    en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
-                <div className="border-t border-hairline mt-4 pt-4">
-                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">
-                    {selectedDiet.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
-                  </p>
+              {/* Objetivo diario de intercambios — solo existe como tarjeta aparte en
+                  menús propios (autogestionados): ahí el atleta lo edita a mano y no
+                  hay ningún otro sitio que lo muestre. En dietas del coach el cupo es
+                  fijo y ya lo cubren las barras del tracker de arriba, así que la
+                  tarjeta de "cupo diario fijado por tu entrenador" desaparece del
+                  todo — no solo se resume, se quita. */}
+              {selectedDiet.selfManaged && (
+                <div className="bg-raised rounded-surface p-4 border border-hairline">
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Objetivo diario de intercambios</p>
                   <div className="grid grid-cols-3 gap-3">
                     {BUDGET_CATS.map(cat => (
                       <div key={cat}>
                         <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
-                        {selectedDiet.selfManaged ? (
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.25}
-                            value={selectedDiet.budget[cat]}
-                            onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                            className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
-                          />
-                        ) : (
-                          <div className="w-full bg-surface/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
-                            {fmtQty(selectedDiet.budget[cat])}
-                          </div>
-                        )}
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.25}
+                          value={selectedDiet.budget[cat]}
+                          onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
+                          className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
+                        />
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Aviso de fork: editar una dieta del coach nunca la actualiza in
                   situ (las reglas de Firestore lo prohíben) — al guardar se crea
@@ -1370,12 +1372,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </div>
               )}
 
-              {/* El progreso por categoría y el total de completados hoy ya los
-                  cubre el tracker de arriba (panel 01) — este dashboard duplicaba
-                  las mismas cifras con otro estilo, de la versión pre-Fase 3. */}
-
-              {/* Resumen numérico (colocado/objetivo por comida + total del día) — siempre visible */}
-              <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
+              {/* El desglose numérico por comida (Paco/Comida 2/Comida 3 + total del
+                  día) se ha quitado — duplicaba, con otro estilo, lo que ya muestra
+                  el tracker de arriba (panel 01) y la lista de "Ingestas". */}
 
               <Coachmark
                 id="nutrition_swap_hint"
@@ -1979,7 +1978,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 />
               ) : filteredFoods.map(food => (
                 <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all active:scale-[0.98] group"
                 >
                   {isSearchingFoods && (
                     <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>

@@ -351,7 +351,16 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       <PageHeader
         title="Mi Perfil"
         subtitle={isCoach ? 'Tu cuenta y tus ajustes.' : 'Progreso, gráficas y ficha.'}
-        action={<span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>}
+        action={(
+          // PageHeader apila título/acción en móvil con la acción a ancho
+          // completo — un botón de solo-icono ahí queda pegado a la
+          // izquierda con un hueco enorme a la derecha. Se acota a esta
+          // pantalla (no se toca PageHeader, lo usan más pantallas) con un
+          // wrapper que solo alinea a la derecha por debajo de `sm`.
+          <div className="flex w-full justify-end sm:w-auto">
+            <span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>
+          </div>
+        )}
       />
 
       {/* Tarjeta de identidad del coach (F3.13e) — antes esta pantalla le

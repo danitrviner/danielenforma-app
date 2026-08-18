@@ -30,7 +30,7 @@ import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos }
  */
 export const OWNER_RECETARIO = 'recetas';
 const OWNER_RECETARIO_LEGACY = 'indya';
-const OWNER_RECETARIO_TODOS = [OWNER_RECETARIO, OWNER_RECETARIO_LEGACY];
+export const OWNER_RECETARIO_TODOS = [OWNER_RECETARIO, OWNER_RECETARIO_LEGACY];
 
 const RECIPES_LOCAL_KEY = 'enforma_recipes_v1';
 

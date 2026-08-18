@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote, MUSCLE_LABELS } from '../types';
+import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import StatTile from './StatTile';
 import {
@@ -103,13 +103,6 @@ const STATUS_TONE: Record<WorkoutAssignment['status'], BadgeTone> = {
   perdido:   'danger',
 };
 
-const TYPE_CHIP: Record<string, string> = {
-  fuerza:       'bg-data/10 text-data border border-data/20',
-  cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
-  estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  pliometría:   'bg-accent/10 text-accent border border-accent/20',
-};
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function TrainingScreen({ profile }: TrainingScreenProps) {
@@ -203,6 +196,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // Uno solo a la vez: N iframes de YouTube cargados a la vez en una sesión
   // con varios ejercicios sería peso muerto en cada carga de pantalla.
   const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
+
+  // Historial de peso — antes vivía escondido detrás del mismo botón que el
+  // vídeo (y con un vídeo presente, ni siquiera se podía abrir): ahora es su
+  // propia pantalla, con botón propio, independiente de si hay vídeo o no.
+  const [historyExId, setHistoryExId] = useState<string | null>(null);
 
   // "Tu mejor serie" de la ficha de ejercicio (F3.13, Biblioteca panel 02) —
   // useMemo a nivel de componente, no dentro del .map() de tarjetas de
@@ -666,13 +664,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 className="flex items-center gap-3 p-4 bg-surface border-b border-hairline"
               >
                 <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
-                {ex?.imageUrl ? (
-                  <img src={ex.imageUrl} alt={ex.name} className="w-11 h-11 rounded-full object-cover border border-hairline flex-shrink-0" />
-                ) : (
-                  <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                    <Icon name="fitness_center" size="m" className="text-ink-2" />
-                  </div>
-                )}
+                {/* Icono fijo de mancuerna — antes mostraba la foto del ejercicio si
+                    había una, ahora siempre la mancuerna para dejar la fila más
+                    compacta y consistente (hueco que hacía falta para el nuevo
+                    botón de historial). */}
+                <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                  <Icon name="fitness_center" size="m" className="text-ink-2" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-display text-title-m font-black uppercase tracking-tight text-ink truncate flex items-center gap-2">
                     {ex?.name || we.exerciseId}
@@ -688,16 +686,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
                         : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
                     </span>
-                    {ex?.type && (
-                      <span className={`text-caption font-sans px-2 rounded-control capitalize ${TYPE_CHIP[ex.type] || ''}`}>{ex.type}</span>
-                    )}
-                    {ex?.muscleGroup && (
-                      <span className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-2">{MUSCLE_LABELS[ex.muscleGroup]}</span>
-                    )}
                     {ex?.equipment?.map(eq => (
                       <span key={eq} className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-3">{eq}</span>
                     ))}
-                    {(ex?.videoUrl || exerciseProgressById.has(we.exerciseId)) && (
+                    {ex?.videoUrl && (
                       <button
                         type="button"
                         onClick={() => setOpenVideoIdx(v => v === exIdx ? null : exIdx)}
@@ -705,8 +697,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           openVideoIdx === exIdx ? 'bg-accent text-on-accent border-accent' : 'text-accent border-accent/30 hover:bg-accent/10'
                         }`}
                       >
-                        <Icon name={ex?.videoUrl ? 'play_circle' : 'trending_up'} size="s" filled={openVideoIdx === exIdx} />
-                        {ex?.videoUrl ? 'Vídeo' : 'Progreso'}
+                        <Icon name="play_circle" size="s" filled={openVideoIdx === exIdx} />
+                        Vídeo
+                      </button>
+                    )}
+                    {exerciseProgressById.has(we.exerciseId) && (
+                      <button
+                        type="button"
+                        onClick={() => setHistoryExId(we.exerciseId)}
+                        className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent border-accent/30 hover:bg-accent/10 transition-colors"
+                      >
+                        <Icon name="trending_up" size="s" />
+                        Historial
                       </button>
                     )}
                     {warmup.readiness && (
@@ -736,14 +738,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               </div>
 
-              {openVideoIdx === exIdx && (
-                <>
-                  {ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
-                  {exerciseProgressById.get(we.exerciseId) && (
-                    <ExerciseBestSetCard {...exerciseProgressById.get(we.exerciseId)!} />
-                  )}
-                </>
-              )}
+              {openVideoIdx === exIdx && ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
 
               {we.recordVideoSet && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">
@@ -1043,6 +1038,21 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               )}
             </div>
+          </Dialog>
+        )}
+
+        {/* Historial de peso — pantalla propia, ya no escondida detrás del
+            botón de vídeo (que además la ocultaba del todo si el ejercicio
+            tenía vídeo). Reutiliza ExerciseBestSetCard, la misma pieza que ya
+            existía para esto en la ficha de ejercicio de Biblioteca. */}
+        {historyExId && exerciseProgressById.get(historyExId) && (
+          <Dialog
+            open
+            onClose={() => setHistoryExId(null)}
+            size="s"
+            title={`Historial — ${getExercise(historyExId)?.name ?? 'Ejercicio'}`}
+          >
+            <ExerciseBestSetCard {...exerciseProgressById.get(historyExId)!} />
           </Dialog>
         )}
       </div>
