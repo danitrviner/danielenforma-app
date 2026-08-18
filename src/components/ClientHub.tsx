@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
+import { atletasActivos } from '../utils/atletas';
 import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
@@ -137,7 +138,7 @@ export default function ClientHub({
   });
   const switcherAthletes = useMemo(() => {
     const q = switcherSearch.trim().toLowerCase();
-    return allProfiles
+    return atletasActivos(allProfiles)
       .filter(p => p.role === 'client' && p.email !== athlete.email)
       .filter(p => !q || p.displayName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));

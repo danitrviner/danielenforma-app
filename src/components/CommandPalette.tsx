@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { getAllUserProfiles } from '../dbService';
+import { atletasActivos } from '../utils/atletas';
 import type { NavTab } from '../App';
 import { Icon, ListRow, EmptyState } from './ui';
 
@@ -37,11 +38,12 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   // Shared 'userProfiles' cache key (same as MesocycleManager) — this used to
   // be a hand-rolled module-level cache; the query cache now does the same
   // dedup app-wide, plus shares the fetch with ClientsScreen/ReviewsScreen.
-  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+  const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
     enabled: open,
   });
+  const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

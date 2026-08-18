@@ -16,6 +16,7 @@ import {
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
+import { atletasActivos } from '../utils/atletas';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input } from './ui';
@@ -656,11 +657,12 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   const [genError, setGenError]           = useState('');
 
   // Only load the full athlete list in standalone mode (no athleteEmail prop)
-  const { data: athletes = [] } = useQuery({
+  const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
     enabled: !athleteEmail,
   });
+  const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 
   const mesocyclesQueryKey = ['mesocycles', selectedEmail] as const;
   const { data: mesocyclesRaw, isPending: mesoQueryPending } = useQuery({

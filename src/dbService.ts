@@ -106,7 +106,7 @@ export {
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 // Movido a src/db/invites.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { inviteClient, getPendingInvites, markInviteJoined } from './db/invites';
+export { inviteClient, getPendingInvites, markInviteJoined, cancelInvite } from './db/invites';
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 // Movido a src/db/recipes.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
@@ -196,6 +196,7 @@ export {
 // ningún import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getCoachInstructions, saveCoachInstructions,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
   getAthleteStatusNote, saveAthleteStatusNote,
   getQuickReplies, saveQuickReplies,
 } from './db/coachSettings';

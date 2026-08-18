@@ -9,6 +9,7 @@ import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import { Skeleton } from './ui';
+import { atletasActivos } from '../utils/atletas';
 import { Icon, Button, Tabs, ListRow } from './ui';
 
 const XP_PER_APPROVED_TEST = 30;
@@ -45,7 +46,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 function ZonesTab({ coachEmail }: { coachEmail: string }) {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
   const [selected, setSelected] = useState<string | null>(null);
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
 
   if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
@@ -206,7 +207,7 @@ const CLOSE_TYPE_LABEL: Record<CardioIntervalCloseType, string> = {
 
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [type, setType] = useState<CardioSessionType>('zona2');
   const [durationMin, setDurationMin] = useState('45');

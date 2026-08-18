@@ -140,6 +140,15 @@ export interface UserProfile {
   // importados — sin esto, el CAC por canal es incalculable para cualquiera
   // que ya tenga cuenta en la app.
   origen?: string;                  // 'instagram' | 'referido' | 'ads' | ... (mismo campo libre que CrmContacto.origen)
+
+  // ── Borrado de cuenta (2026-07-23) ─────────────────────────────────────────
+  // api/delete-account.ts ANONIMIZA en vez de borrar (a propósito: el cuadro de
+  // mandos sigue contando altas/bajas sobre estos documentos), y ya escribe
+  // estos dos campos en Firestore — pero el tipo no los tenía, así que nadie en
+  // src/ los leía y el perfil `borrado_…@anonimo.local` seguía apareciendo en
+  // todas las listas de atletas. Ver src/utils/atletas.ts.
+  anonimizado?: boolean;
+  anonimizadoEn?: string; // ISO
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un

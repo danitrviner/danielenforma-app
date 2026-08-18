@@ -12,6 +12,7 @@ import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../util
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
+import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
 import ProgressRing from './ProgressRing';
 import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
@@ -29,10 +30,19 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const navigate = useNavigate();
   const { athleteId, hubTab } = useParams<{ athleteId?: string; hubTab?: string }>();
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
-  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+  // Sin filtrar: el CRM y la sección "Archivados" de abajo necesitan también
+  // las bajas y los anonimizados. `athletes` (abajo) es la vista filtrada
+  // que usa el resto de esta pantalla — el coach entrena hoy a esos, no a
+  // los de baja ni a los perfiles borrados (ver src/utils/atletas.ts).
+  const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
   });
+  const athletes: UserProfile[] = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
+  const archivedAthletes = useMemo(
+    () => allProfiles.filter(p => esBaja(p) && !esAnonimizado(p)),
+    [allProfiles]
+  );
 
   // Per-athlete assignments/logs — same N-parallel-queries pattern as
   // PendingTasksPanel's per-questionnaire lookups, sharing cache keys with
@@ -110,11 +120,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
   };
 
+  // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta
+  // a una baja, que atletasActivos() ya no incluye.
   const selectedAthlete = useMemo(() => {
     if (!athleteId) return null;
     const decoded = decodeURIComponent(athleteId).toLowerCase();
-    return athletes.find(a => a.email.toLowerCase() === decoded) ?? null;
-  }, [athletes, athleteId]);
+    return allProfiles.find(a => a.email.toLowerCase() === decoded) ?? null;
+  }, [allProfiles, athleteId]);
 
   // Deep-linked to an athlete that doesn't exist (typo, deleted account, stale
   // link) — once the athlete list has actually loaded, bounce back to the grid
@@ -464,6 +476,35 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         )}
       </div>
+
+      {/* Bajas no anonimizadas: fuera de la lista principal (no molestan en
+          HOME COACH ni en el contador), pero no desaparecidas — el coach
+          puede volver a abrir su ficha. Los anonimizados no se listan aquí
+          ni en ningún sitio: ya no tienen nombre ni datos, solo cuentan para
+          el churn del CRM. */}
+      {archivedAthletes.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer font-mono text-caption text-ink-3 uppercase tracking-wider py-2 select-none">
+            Archivados ({archivedAthletes.length})
+          </summary>
+          <div className="mt-2 space-y-1">
+            {archivedAthletes.map(a => (
+              <button
+                key={a.userId}
+                onClick={() => openAthleteHub(a)}
+                className="w-full flex items-center gap-3 bg-bg border border-hairline rounded-surface px-4 py-3 text-left hover:border-accent/40 transition-colors"
+              >
+                <img src={a.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-hairline shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-sans text-label text-ink-2 truncate">{a.displayName}</p>
+                  <p className="font-mono text-caption text-ink-4 truncate">{a.email}</p>
+                </div>
+                {a.fechaBaja && <Badge tone="neutral">Baja: {a.fechaBaja}</Badge>}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

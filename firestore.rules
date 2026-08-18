@@ -492,7 +492,14 @@ service cloud.firestore {
     // runs under the newly-created client's own auth session right after they
     // sign in via the invite link, not the coach's.
     match /invites/{email} {
-      allow read: if isCoach();
+      // isOwnerEmail(email) también en el read: markInviteJoined (src/db/invites.ts)
+      // empieza con un getDoc para comprobar el estado antes de escribir, y sin
+      // esto el atleta podía escribir su invitación pero no leerla —
+      // permission-denied silencioso y la invitación se quedaba "pending" para
+      // siempre aunque el alta hubiera terminado bien. Un atleta leyendo SU
+      // PROPIO documento de invitación no abre nada: la regla ya restringe por
+      // email exacto.
+      allow read: if isCoach() || isOwnerEmail(email);
       allow create: if isCoach();
       allow update: if isCoach() || isOwnerEmail(email);
       allow delete: if isCoach();

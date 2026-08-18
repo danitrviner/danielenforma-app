@@ -6,6 +6,7 @@ import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL } from '../utils/mealDistribution';
 import { useToast } from '../hooks/useToast';
+import { atletasActivos } from '../utils/atletas';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
 
@@ -110,7 +111,7 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     queryFn: getAllUserProfiles,
     enabled: !isEmbedded,
   });
-  const athletes = useMemo(() => allProfiles.filter(p => p.role === 'client'), [allProfiles]);
+  const athletes = useMemo(() => atletasActivos(allProfiles).filter(p => p.role === 'client'), [allProfiles]);
 
   // Diet list — deliberately the same ['dietsForAthlete', email, 'coachOnly']
   // key ClientHub uses for the coach-only (non-self-managed) filtered view of

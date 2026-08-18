@@ -6,6 +6,7 @@ import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getR
 import { usePendingReviews } from '../hooks/usePendingReviews';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { atletasActivos } from '../utils/atletas';
 import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
 
 interface ReviewsScreenProps {
@@ -25,10 +26,11 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
   const { showToast } = useToast();
 
   // Shared 'userProfiles' cache key (same as CommandPalette/MesocycleManager).
-  const { data: athletes = [] } = useQuery({
+  const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
   });
+  const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 
   const quickRepliesKey = ['quickReplies'] as const;
   const { data: quickReplies = [] } = useQuery({

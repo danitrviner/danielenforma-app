@@ -227,3 +227,37 @@ describe('athleteCardioProfile · el atleta puede fijar su FCmax a mano', () => 
     }));
   });
 });
+
+describe('invites · T8.b el atleta puede leer su propia invitación', () => {
+  // Bug real: podía ESCRIBIR su invitación pero no LEERLA. markInviteJoined
+  // (src/db/invites.ts) empieza con un getDoc → permission-denied silencioso
+  // → la invitación se quedaba "pending" para siempre aunque el alta hubiera
+  // terminado bien.
+  it('lee su propia invitación por email', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'invites', ATLETA), { id: ATLETA, email: ATLETA, status: 'pending' });
+    });
+    const uid = 'uid-atleta-invite';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(atleta, 'invites', ATLETA)));
+  });
+
+  it('NO puede leer la invitación de otro email', async () => {
+    const otro = 'otro@enforma.com';
+    await sembrar(async db => {
+      await setDoc(doc(db, 'invites', otro), { id: otro, email: otro, status: 'pending' });
+    });
+    const uid = 'uid-atleta-invite-2';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'invites', otro)));
+  });
+
+  it('el coach sigue pudiendo leer cualquier invitación', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'invites', ATLETA), { id: ATLETA, email: ATLETA, status: 'pending' });
+    });
+    const uidCoach = 'uid-coach-4';
+    const coach = env.authenticatedContext(uidCoach, { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(coach, 'invites', ATLETA)));
+  });
+});

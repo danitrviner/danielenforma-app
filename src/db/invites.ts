@@ -1,4 +1,4 @@
-import { db, auth, sendPasswordResetEmail, collection, doc, getDoc, getDocs, updateDoc, query, where } from '../firebase';
+import { db, auth, sendPasswordResetEmail, collection, doc, getDoc, getDocs, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Invite } from '../types';
 import { forceLocalOnly, setLocalBypassMode } from './core';
 import { apiUrl } from './apiBase';
@@ -102,6 +102,17 @@ export async function inviteClient(email: string): Promise<Invite> {
   return invite;
 }
 
+/**
+ * Borra una invitación errónea o que ya no hace falta. Hoy no había forma de
+ * quitar una de la lista de pendientes de ninguna manera: si el coach se
+ * equivocaba de correo, se quedaba ahí para siempre.
+ */
+export async function cancelInvite(email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  await deleteDoc(doc(db, 'invites', normalized));
+  saveLocalInvites(getLocalInvites().filter(i => i.id !== normalized));
+}
+
 export async function getPendingInvites(): Promise<Invite[]> {
   if (forceLocalOnly) return getLocalInvites().filter(i => i.status === 'pending');
   try {
@@ -125,7 +136,18 @@ export async function markInviteJoined(email: string): Promise<void> {
     if (!snap.exists() || (snap.data() as Invite).status !== 'pending') return;
     await updateDoc(doc(db, 'invites', normalized), { status: 'joined', joinedAt: new Date().toISOString() });
   } catch (err) {
-    console.warn('markInviteJoined failed (non-blocking):', err);
+    // El getDoc puede fallar por permisos (reglas viejas sin desplegar en
+    // producción, un token que no ha refrescado, lo que sea) sin que la
+    // escritura esté bloqueada: la regla de `update` ya deja escribir a quien
+    // sea dueño del email, y marcar "joined" dos veces no rompe nada. Sin este
+    // intento a ciegas, un solo permission-denied en la LECTURA dejaba la
+    // invitación en "pending" para siempre aunque el alta hubiera ido bien —
+    // exactamente lo que le pasó a danielbriz8.
+    try {
+      await updateDoc(doc(db, 'invites', normalized), { status: 'joined', joinedAt: new Date().toISOString() });
+    } catch (err2) {
+      console.warn('markInviteJoined failed (non-blocking):', err, err2);
+    }
   }
 }
 

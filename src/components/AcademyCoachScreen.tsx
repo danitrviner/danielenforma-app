@@ -6,6 +6,7 @@ import {
   getAllLessons, createLesson, updateLesson, deleteLesson,
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
+import { atletasActivos } from '../utils/atletas';
 import { Skeleton } from './ui';
 import { Card, Tabs, Button } from './ui';
 
@@ -264,7 +265,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   const { data: accessList = [], isPending: loadingAccess } = useQuery({ queryKey: ['academyAccessAll'], queryFn: getAllAcademyAccess });
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const accessByEmail = new Map(accessList.map(a => [a.athleteId, a]));
 
   const toggle = async (email: string, enabled: boolean) => {
