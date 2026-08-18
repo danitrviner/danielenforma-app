@@ -140,14 +140,15 @@ Se va actualizando a medida que se ejecuta el plan. Nada de esto lo puede hacer 
   sala de espera hasta que lo hagas. No hay backfill automático a propósito — un backfill silencioso
   podría publicar el plan a quien no toca.
 
-- [ ] **Verificar en Vercel** (T9, el asistente de IA):
-  - `ANTHROPIC_API_KEY` presente en *Production*.
-  - `FIREBASE_SERVICE_ACCOUNT` presente en *Production* — sin ella el contador de gasto es
-    fail-closed y el proxy devuelve 503 (`api/ai-chat.ts`).
-  - Que el contador diario `aiUsage/daily_<hoy>` en Firestore no esté en el tope de 400 llamadas.
-  Con las reglas desplegadas y el proxy verificado, usa el botón nuevo "Probar conexión" (icono
-  🌐 en la cabecera del panel del asistente) desde el móvil si el asistente vuelve a fallar — te
-  enseña la URL, el código HTTP y el cuerpo de error reales, no un mensaje genérico.
+- [x] ~~**Verificar en Vercel**~~ — CONFIRMADO el 18 ago vía `vercel env ls production`:
+  `ANTHROPIC_API_KEY` (38 días) y `FIREBASE_SERVICE_ACCOUNT` (6 días) están las dos en *Production*.
+  Descarta el 503 fail-closed por falta de service account.
+  - [ ] Queda por mirar tú: el contador diario `aiUsage/daily_<hoy>` en tu Firestore real (colección
+    `aiUsage`) no esté en el tope de 400 llamadas — este entorno no tiene acceso a tu proyecto real
+    de Firestore, solo a Vercel, así que esto no lo pude comprobar yo.
+  Con las reglas desplegadas, usa el botón nuevo "Probar conexión" (icono 🌐 en la cabecera del
+  panel del asistente) desde el móvil si el asistente vuelve a fallar — te enseña la URL, el código
+  HTTP y el cuerpo de error reales, no un mensaje genérico.
 
 - [ ] **Limpiar los alimentos duplicados en producción** (T14): Biblioteca › Alimentos → el icono
   📋 junto al buscador (con el número de duplicados en rojo si hay alguno) → revisa la lista →
