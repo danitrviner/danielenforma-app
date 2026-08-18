@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig,
   DietMode, WeekDay, WeeklyMenu, BodyweightLog, MenuCompletionLog,
@@ -8,7 +9,7 @@ import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isDietPending } from '../utils/exchangeHelpers';
 import { SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
-import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete } from '../dbService';
+import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutritionProgram, computeActivePhase } from '../dbService';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
@@ -55,6 +56,19 @@ export default function ClientDietsPanel({
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
 
+  // T12 (18-08). Misma clave de caché que NutritionPeriodizationPanel
+  // (['nutritionProgram', email]) — montado justo debajo, ver más abajo —
+  // así que esto no es una lectura nueva, es reutilizar la que ya hace ese
+  // panel (o al revés, según cuál monte primero).
+  const { data: nutritionProgram = null } = useQuery({
+    queryKey: ['nutritionProgram', athlete.email],
+    queryFn: () => getNutritionProgram(athlete.email),
+  });
+  const activePhase = useMemo(
+    () => nutritionProgram ? computeActivePhase(nutritionProgram, new Date().toISOString().split('T')[0]) : null,
+    [nutritionProgram]
+  );
+
   // Weekly menu (recipe-first): editor state. undefined = editor closed,
   // 'new' = fresh generation, WeeklyMenu = editing/reviewing an existing one.
   const [menuEditor, setMenuEditor] = useState<'new' | WeeklyMenu | undefined>(undefined);
@@ -97,6 +111,8 @@ export default function ClientDietsPanel({
       athleteEmail={athlete.email}
       embeddedDiet={dietEditorDiet}
       onboardingData={onboardingData}
+      nutritionProgram={nutritionProgram}
+      activePhase={activePhase}
       onSaved={async (_saved) => {
         setDietEditorDiet(undefined);
         getDietsForAthlete(athlete.email)

@@ -431,6 +431,37 @@ export default function NutritionPeriodizationPanel({
         />
       </div>
 
+      {/* T12 (18-08). Movido aquí desde "Referencia del atleta" en el editor
+          de dietas — es donde se planifica, así que es donde hace falta
+          verlo al fijar el objetivo kcal de cada fase. Solo referencia: no
+          se edita aquí, se edita en Perfil › Onboarding. */}
+      {onboarding && (
+        <div className="bg-bg border border-hairline rounded-surface p-3 space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+            Referencia del onboarding
+          </p>
+          <div className="flex flex-wrap gap-3 text-label font-mono">
+            <span className="text-ink-2">
+              {onboarding.dietType === 'omnivoro' ? 'Omnívoro' : onboarding.dietType === 'vegano' ? 'Vegano' : onboarding.dietType === 'vegetariano' ? 'Vegetariano' : 'Otro'}
+              {' · '}<span className="text-white font-bold">{onboarding.targetCalories} kcal</span>
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { label: 'HC',    g: onboarding.macroGrams.hc,    pct: onboarding.macroSplit.hc,    color: 'text-amber-300',  bg: 'bg-amber-500/10 border-amber-500/20' },
+              { label: 'PROT',  g: onboarding.macroGrams.prot,  pct: onboarding.macroSplit.prot,  color: 'text-blue-300',   bg: 'bg-blue-500/10 border-blue-500/20' },
+              { label: 'GRASA', g: onboarding.macroGrams.grasa, pct: onboarding.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
+            ]).map(m => (
+              <div key={m.label} className={`border rounded-surface px-3 py-2 text-center ${m.bg}`}>
+                <p className={`font-sans text-caption uppercase font-bold ${m.color}`}>{m.label}</p>
+                <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
+                <p className="font-mono text-caption text-ink-3">{m.pct}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (

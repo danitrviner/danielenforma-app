@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile } from '../types';
+import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile, NutritionProgram, NutritionPhase } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
-import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL } from '../utils/mealDistribution';
+import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
+import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
+import { exchangeToKcal } from '../utils/nutritionConstants';
+import { computePhaseStartDate } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { atletasActivos } from '../utils/atletas';
 import { haptics } from '../services/haptics';
@@ -108,11 +111,20 @@ interface Props {
   onSaved?: (diet: Diet) => void;
   onCancelled?: () => void;
   onboardingData?: OnboardingData | null; // athlete intake data for reference panel
+  // T12 (18-08): la periodización manda sobre el presupuesto. Ambos vienen de
+  // ClientDietsPanel, que ya tiene el panel de periodización montado al lado
+  // y comparte la misma clave de caché ['nutritionProgram', email] — no es
+  // una lectura nueva.
+  nutritionProgram?: NutritionProgram | null;
+  activePhase?: NutritionPhase | null;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, embeddedDiet, onSaved, onCancelled, onboardingData }: Props) {
+export default function NutritionPlansScreen({
+  coachId: _coachId, athleteEmail, embeddedDiet, onSaved, onCancelled, onboardingData,
+  nutritionProgram, activePhase,
+}: Props) {
   const isEmbedded = athleteEmail !== undefined;
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -250,6 +262,31 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         : [];
     });
   }, [form.meals, form.budget]);
+
+  // T12 (18-08). La fase manda sobre el presupuesto — cuando la dieta que se
+  // edita está vinculada a una fase con un objetivo kcal EXPLÍCITO (no
+  // derivado del propio presupuesto de esta misma dieta, que sería
+  // circular: "compararla contra sí misma" nunca puede discrepar).
+  const linkedPhaseIndex = nutritionProgram?.phases.findIndex(p => p.dietId === editingId) ?? -1;
+  const linkedPhase = linkedPhaseIndex >= 0 ? nutritionProgram!.phases[linkedPhaseIndex] : null;
+  const phaseResolved = linkedPhase
+    ? resolvePhaseTargetKcal(linkedPhase, diets.find(d => d.id === linkedPhase.dietId))
+    : null;
+  const phaseTargetKcal = phaseResolved?.source === 'manual' ? phaseResolved.kcal : null;
+  const isActivePhaseDiet = !!linkedPhase && !!activePhase && linkedPhase.id === activePhase.id;
+  const phaseWeekInfo = useMemo(() => {
+    if (!isActivePhaseDiet || !nutritionProgram || !linkedPhase || linkedPhaseIndex < 0) return null;
+    const phaseStart = computePhaseStartDate(nutritionProgram, linkedPhaseIndex);
+    const today = new Date().toISOString().split('T')[0];
+    const daysSince = Math.round(
+      (new Date(today + 'T00:00:00').getTime() - new Date(phaseStart + 'T00:00:00').getTime()) / 86_400_000
+    );
+    const week = Math.max(1, Math.min(linkedPhase.weeks, Math.floor(daysSince / 7) + 1));
+    return { week, totalWeeks: linkedPhase.weeks };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActivePhaseDiet, nutritionProgram, linkedPhase, linkedPhaseIndex]);
+  const currentBudgetKcal = exchangeToKcal(form.budget);
+  const phaseKcalMismatch = phaseTargetKcal != null && Math.round(currentBudgetKcal) !== Math.round(phaseTargetKcal);
 
   // T15 (18-08). Antes NADA tocaba Firestore hasta pulsar "Guardar": salir de
   // la ficha, cambiar de cliente, la app pasando a segundo plano y Capacitor
@@ -425,6 +462,19 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
 
   const setBudget = (cat: FoodCategory, val: number) =>
     setForm(f => ({ ...f, budget: { ...f.budget, [cat]: Math.max(0, round2(val)) } }));
+
+  // T12: reparte el objetivo kcal de la FASE (no del onboarding) en
+  // HC/PROT/GRASA con el reparto de macros del atleta. 1 intercambio ≈
+  // 100 kcal es la regla fija del sistema (exchangeHelpers/systemPrompt), así
+  // que repartir por macro y convertir a intercambios es sencillamente
+  // kcal-de-esa-categoría / 100.
+  const ajustarAlObjetivoDeLaFase = () => {
+    if (!onboardingData || phaseTargetKcal == null) return;
+    const { hc, prot, grasa } = onboardingData.macroSplit;
+    setBudget('HC',    roundHalf((phaseTargetKcal * hc    / 100) / 100));
+    setBudget('PROT',  roundHalf((phaseTargetKcal * prot  / 100) / 100));
+    setBudget('GRASA', roundHalf((phaseTargetKcal * grasa / 100) / 100));
+  };
 
   const setMealTarget = (mealId: string, cat: FoodCategory, delta: number) => {
     // Una explicación de reparto ("repartido según sus preferencias…") no
@@ -744,49 +794,31 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         </div>
       </div>
 
-      {/* Onboarding reference panel */}
-      {onboardingData && (
-        <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
-              <Icon name="person_check" size="s" />
-              Referencia del atleta
-            </p>
-          </div>
-
-          {/* Macros */}
-          <div className="flex flex-wrap gap-3 text-label font-mono">
-            <span className="text-ink-2">
-              {onboardingData.dietType === 'omnivoro' ? 'Omnívoro' : onboardingData.dietType === 'vegano' ? 'Vegano' : onboardingData.dietType === 'vegetariano' ? 'Vegetariano' : 'Otro'}
-              {' · '}<span className="text-white font-bold">{onboardingData.targetCalories} kcal</span>
-            </span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {([
-              { label: 'HC',    g: onboardingData.macroGrams.hc,    pct: onboardingData.macroSplit.hc,    color: 'text-amber-300',  bg: 'bg-amber-500/10 border-amber-500/20' },
-              { label: 'PROT',  g: onboardingData.macroGrams.prot,  pct: onboardingData.macroSplit.prot,  color: 'text-blue-300',   bg: 'bg-blue-500/10 border-blue-500/20' },
-              { label: 'GRASA', g: onboardingData.macroGrams.grasa, pct: onboardingData.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
-            ]).map(m => (
-              <div key={m.label} className={`border rounded-surface px-3 py-2 text-center ${m.bg}`}>
-                <p className={`font-sans text-caption uppercase font-bold ${m.color}`}>{m.label}</p>
-                <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
-                <p className="font-mono text-caption text-ink-3">{m.pct}%</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Warnings */}
-          {onboardingData.dislikedFoods.length > 0 && (
-            <p className="font-sans text-caption text-ink-2">
-              <span className="text-ink-3 mr-1">No le gusta:</span>
-              {onboardingData.dislikedFoods.join(', ')}
-            </p>
+      {/* T12 (18-08). Sustituye a "Referencia del atleta": la fase es la
+          fuente de la verdad, no el onboarding. Las kcal/macros del
+          onboarding se movieron al panel de Periodización (donde se
+          planifica); las alergias/no-le-gusta bajan junto al selector de
+          alimentos (donde se necesitan de verdad, ver más abajo). */}
+      {linkedPhase && (
+        <div className="bg-bg border border-accent/15 rounded-surface p-4 flex items-center gap-2 flex-wrap font-mono text-label">
+          <Icon name="timeline" size="s" className="text-accent" />
+          <span className="text-accent font-bold">Fase {linkedPhaseIndex + 1}</span>
+          <span className="text-ink-3">·</span>
+          <span className="text-white">{linkedPhase.name}</span>
+          {phaseWeekInfo && (
+            <>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-2">semana {phaseWeekInfo.week} de {phaseWeekInfo.totalWeeks}</span>
+            </>
           )}
-          {onboardingData.allergies.length > 0 && (
-            <p className="font-mono text-caption text-amber-400">
-              <Icon name="warning" size="s" className="align-middle mr-1" />
-              Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
-            </p>
+          {phaseTargetKcal != null && (
+            <>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-2">
+                objetivo <span className="text-white font-bold">{Math.round(phaseTargetKcal)} kcal</span>
+                {' '}(≈{fmtQty(roundHalf(phaseTargetKcal / 100))} intercambios)
+              </span>
+            </>
           )}
         </div>
       )}
@@ -797,7 +829,19 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           <h3 className="font-sans text-label text-ink-2 uppercase tracking-wider">
             Presupuesto diario (intercambios por categoría)
           </h3>
-          {onboardingData && (
+          {/* T12: si hay una fase con objetivo propio, el botón obedece a la
+              fase, no al onboarding — la fase manda. Si no hay fase (o su
+              objetivo sale del propio presupuesto de esta dieta, circular),
+              se queda el comportamiento de siempre. */}
+          {phaseTargetKcal != null && onboardingData ? (
+            <button
+              onClick={ajustarAlObjetivoDeLaFase}
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+            >
+              <Icon name="timeline" size="s" />
+              Ajustar al objetivo de la fase
+            </button>
+          ) : onboardingData && (
             <button
               onClick={() => {
                 setBudget('HC',    roundHalf(onboardingData.macroGrams.hc    / G_PER_EXCH.HC));
@@ -811,6 +855,26 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </button>
           )}
         </div>
+
+        {/* T12: la dieta no cuadra con lo que pide la fase — se avisa, no se
+            sobreescribe solo: es Dani quien decide. */}
+        {phaseKcalMismatch && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
+            <span className="font-mono text-caption text-amber-300">
+              Esta dieta suma {Math.round(currentBudgetKcal)} kcal y la fase pide {Math.round(phaseTargetKcal!)}
+              {' '}({currentBudgetKcal > phaseTargetKcal! ? '+' : ''}{Math.round(currentBudgetKcal - phaseTargetKcal!)})
+            </span>
+            {onboardingData && (
+              <button
+                onClick={ajustarAlObjetivoDeLaFase}
+                className="font-mono text-caption text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
+              >
+                Cuadrar
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {BUDGET_CATS.map(cat => (
             <div key={cat}>
@@ -832,6 +896,25 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
           ))}
         </div>
       </div>
+
+      {/* T12: alergias y no-le-gusta, movidas aquí desde "Referencia del
+          atleta" — es donde se necesitan de verdad, justo antes de elegir
+          alimentos para cada comida. No desaparecen, cambian de sitio. */}
+      {onboardingData && (onboardingData.allergies.length > 0 || onboardingData.dislikedFoods.length > 0) && (
+        <div className="flex flex-wrap gap-2">
+          {onboardingData.allergies.length > 0 && (
+            <span className="inline-flex items-center gap-1 font-mono text-caption text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-1 rounded-control">
+              <Icon name="warning" size="s" />
+              Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
+            </span>
+          )}
+          {onboardingData.dislikedFoods.length > 0 && (
+            <span className="inline-flex items-center gap-1 font-mono text-caption text-ink-2 bg-surface border border-hairline px-2 py-1 rounded-control">
+              No le gusta: {onboardingData.dislikedFoods.join(', ')}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Meals */}
       <div className="space-y-3">
@@ -857,6 +940,16 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
             </button>
           </div>
         </div>
+
+        {/* T12: visible ANTES de pulsar el botón — el reparto automático ya
+            usa el perfil de hambre del atleta (runAutoDistribute pasa
+            hungerProfile/trainingSlot a distributeMealTargets), pero eso no
+            se veía en ningún sitio hasta que se pulsaba. */}
+        <p className="text-caption font-mono text-ink-3">
+          {nutConfig?.hungerProfile
+            ? `Reparto según su hambre: ${HUNGER_PROFILE_LABEL[nutConfig.hungerProfile]}${nutConfig.trainingSlot != null ? ` · entreno cerca de: ${SLOT_LABEL[nutConfig.trainingSlot]}` : ''}`
+            : 'Sin perfil de hambre — reparto uniforme'}
+        </p>
 
         {/* Por qué se repartió así — o por qué NO se personalizó, para que
             quede claro que falta pedirle esa preferencia al atleta. */}
