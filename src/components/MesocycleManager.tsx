@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  MUSCLE_LABELS,
+  MUSCLE_LABELS, MUSCLE_ORDER,
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
@@ -23,12 +23,7 @@ import { EmptyState, Dialog, Input } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
+const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 
 
 const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>

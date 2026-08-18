@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise } from '../types';
+import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
   getMesocycleTemplates, createMesocycleTemplate,
@@ -15,29 +15,7 @@ function mesocycleTemplatesKey(coachId: string) {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
-
-const MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  pecho:         'Pecho',
-  dorsal:        'Dorsal',
-  trapecio:      'Trapecio',
-  deltoide_ant:  'Deltoides Ant.',
-  deltoide_lat:  'Deltoides Lat.',
-  deltoide_post: 'Deltoides Post.',
-  biceps:        'Bíceps',
-  triceps:       'Tríceps',
-  antebrazo:     'Antebrazo',
-  cuadriceps:    'Cuádriceps',
-  isquios:       'Isquiotibiales',
-  gluteo:        'Glúteo',
-  gemelo:        'Gemelo',
-  core:          'Core',
-};
+const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 
 const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
   Object.fromEntries(

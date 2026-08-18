@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Exercise, MuscleGroup } from '../types';
+import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -16,29 +16,8 @@ type EnduranceProfile = NonNullable<Exercise['enduranceProfile']>;
 
 // ─── Macrocycle muscle groups (the 14 typed keys) ─────────────────────────────
 
-const MACRO_MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
-
-const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  pecho:         'Pecho',
-  dorsal:        'Dorsal',
-  trapecio:      'Trapecio',
-  deltoide_ant:  'Deltoides Ant.',
-  deltoide_lat:  'Deltoides Lat.',
-  deltoide_post: 'Deltoides Post.',
-  biceps:        'Bíceps',
-  triceps:       'Tríceps',
-  antebrazo:     'Antebrazo',
-  cuadriceps:    'Cuádriceps',
-  isquios:       'Isquiotibiales',
-  gluteo:        'Glúteo',
-  gemelo:        'Gemelo',
-  core:          'Core',
-};
+const MACRO_MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
+const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = MUSCLE_LABELS;
 
 const TYPES: ExerciseType[] = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
 const ENDURANCE_PROFILES: EnduranceProfile[] = ['ascendente', 'campana', 'descendente'];

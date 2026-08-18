@@ -225,7 +225,7 @@ export const TOOL_DEFINITIONS = [
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
         groups: {
           type: 'object',
-          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, gemelo, core.',
+          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core.',
           additionalProperties: {
             type: 'object',
             properties: {

@@ -41,7 +41,11 @@ const REGLAS: Array<[RegExp, MuscleGroup]> = [
   // Pierna — lo específico primero
   [/calf|tibia|dorsi-flexion/i, 'gemelo'],
   [/leg curl|nordic ham|glute ham|deadlift|hamstring/i, 'isquios'],
-  [/glute|hip thrust|rear kick|abductor|adductor/i, 'gluteo'],
+  // T10 (18-08): adductor separado de abductor — la abducción es glúteo medio
+  // (eso ya estaba bien), pero la aducción es su propio grupo. Va ANTES que
+  // la regla de glúteo para que "adductor" no caiga en /glute|.../ primero.
+  [/adductor|inner thigh/i, 'aductores'],
+  [/glute|hip thrust|rear kick|abductor/i, 'gluteo'],
   [/leg extension/i, 'cuadriceps'],
   [/squat|leg press|hack|jammer|lunge|step/i, 'cuadriceps'],
 

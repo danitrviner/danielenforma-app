@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Mesocycle, MuscleGroup } from '../types';
+import { Mesocycle, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS_SHORT } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
 import {
   Icon, EmptyState, SegmentedControl,
@@ -15,20 +15,8 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
-
-const MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  pecho: 'Pecho', dorsal: 'Dorsal', trapecio: 'Trapecio',
-  deltoide_ant: 'Delt.Ant', deltoide_lat: 'Delt.Lat', deltoide_post: 'Delt.Post',
-  biceps: 'Bíceps', triceps: 'Tríceps', antebrazo: 'Antebrazo',
-  cuadriceps: 'Cuáds', isquios: 'Isquios', gluteo: 'Glúteo',
-  gemelo: 'Gemelo', core: 'Core',
-};
+const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
+const MUSCLE_LABELS: Record<MuscleGroup, string> = MUSCLE_LABELS_SHORT;
 
 const PALETTE = [
   'var(--color-accent)', 'var(--color-data)', 'var(--color-danger)', 'var(--color-warning)', 'var(--color-chart-3)',

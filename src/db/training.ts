@@ -6,6 +6,7 @@ import {
 } from './core';
 import { SYSTEM_EXERCISES } from '../data';
 import { combinarLogs } from './combinarLogs';
+import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
 
 // ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
 
@@ -686,6 +687,9 @@ const FOCUS_TO_MUSCLE_GROUP: Record<string, MuscleGroup> = {
   'gluteo':          'gluteo',
   'gluteos':         'gluteo',
   'glteos':          'gluteo',
+  'aductores':       'aductores',
+  'aductor':         'aductores',
+  'adductores':      'aductores',
   'gemelo':          'gemelo',
   'gemelos':         'gemelo',
   'pantorrilla':     'gemelo',
@@ -833,51 +837,66 @@ function setLocalMesocycles(m: Mesocycle[]): void {
   try { localStorage.setItem(MESOCYCLES_LOCAL_KEY, JSON.stringify(m)); } catch {}
 }
 
+// T10: nada sale de esta capa con huecos en `groups` — un mesociclo escrito
+// antes de un grupo muscular nuevo (p. ej. "aductores") no tiene esa clave, y
+// el resto del código la lee sin comprobar (`groups[g].series` directo).
+function withNormalizedGroups(m: Mesocycle): Mesocycle {
+  return { ...m, groups: normalizeMuscleGroups(m.groups) };
+}
+
 export async function getMesocycles(athleteId: string): Promise<Mesocycle[]> {
   if (forceLocalOnly) {
-    return getLocalMesocycles().filter(m => m.athleteId === athleteId);
+    return getLocalMesocycles().filter(m => m.athleteId === athleteId).map(withNormalizedGroups);
   }
   try {
     const q = query(collection(db, 'mesocycles'), where('athleteId', '==', athleteId));
     const snap = await getDocs(q);
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Mesocycle));
+    const list = snap.docs.map(d => withNormalizedGroups({ id: d.id, ...d.data() } as Mesocycle));
     const others = getLocalMesocycles().filter(m => m.athleteId !== athleteId);
     setLocalMesocycles([...others, ...list]);
     return list;
   } catch (err) {
     console.warn('getMesocycles Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalMesocycles().filter(m => m.athleteId === athleteId);
+    return getLocalMesocycles().filter(m => m.athleteId === athleteId).map(withNormalizedGroups);
   }
 }
 
 export async function createMesocycle(data: Omit<Mesocycle, 'id'>): Promise<Mesocycle> {
+  const normalized = { ...data, groups: normalizeMuscleGroups(data.groups) };
   if (forceLocalOnly) {
-    const m: Mesocycle = { id: `meso_${Date.now()}`, ...data };
+    const m: Mesocycle = { id: `meso_${Date.now()}`, ...normalized };
     setLocalMesocycles([...getLocalMesocycles(), m]);
     return m;
   }
   try {
-    const ref = await addDoc(collection(db, 'mesocycles'), stripUndefined(data));
-    const m: Mesocycle = { id: ref.id, ...data };
+    const ref = await addDoc(collection(db, 'mesocycles'), stripUndefined(normalized));
+    const m: Mesocycle = { id: ref.id, ...normalized };
     setLocalMesocycles([...getLocalMesocycles(), m]);
     return m;
   } catch (err) {
     console.warn('createMesocycle Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    const m: Mesocycle = { id: `meso_${Date.now()}`, ...data };
+    const m: Mesocycle = { id: `meso_${Date.now()}`, ...normalized };
     setLocalMesocycles([...getLocalMesocycles(), m]);
     return m;
   }
 }
 
 export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycle, 'id'>>): Promise<void> {
+  // Solo normaliza si esta actualización TOCA `groups` — updates.groups ya
+  // viene completo desde MesocycleManager (es el Mesocycle entero menos el
+  // id), así que rellenar huecos aquí no pisa una actualización parcial de
+  // otro campo.
+  const normalizedUpdates = updates.groups
+    ? { ...updates, groups: normalizeMuscleGroups(updates.groups) }
+    : updates;
   const all = getLocalMesocycles();
-  const next = all.map(m => m.id === id ? { ...m, ...updates } : m);
+  const next = all.map(m => m.id === id ? { ...m, ...normalizedUpdates } : m);
   if (forceLocalOnly) { setLocalMesocycles(next); return; }
   try {
-    await updateDoc(doc(db, 'mesocycles', id), stripUndefined(updates) as Record<string, unknown>);
+    await updateDoc(doc(db, 'mesocycles', id), stripUndefined(normalizedUpdates) as Record<string, unknown>);
     setLocalMesocycles(next);
   } catch (err) {
     console.warn('updateMesocycle Firestore failed, saving local:', err);

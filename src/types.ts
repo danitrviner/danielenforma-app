@@ -1123,7 +1123,7 @@ export type MuscleGroup =
   | 'pecho' | 'dorsal' | 'trapecio'
   | 'deltoide_ant' | 'deltoide_lat' | 'deltoide_post'
   | 'biceps' | 'triceps' | 'antebrazo'
-  | 'cuadriceps' | 'isquios' | 'gluteo' | 'gemelo' | 'core';
+  | 'cuadriceps' | 'isquios' | 'gluteo' | 'aductores' | 'gemelo' | 'core';
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   pecho:         'Pecho',
@@ -1138,8 +1138,32 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   cuadriceps:    'Cuádriceps',
   isquios:       'Isquiotibiales',
   gluteo:        'Glúteo',
+  aductores:     'Aductores',
   gemelo:        'Gemelo',
   core:          'Core',
+};
+
+// T10 (18-08). Antes había cuatro copias de este mismo orden repartidas por
+// MesocycleDashboard, MesocycleManager, MesocycleTemplateLibrary y
+// ExerciseLibraryScreen (esta última como MACRO_MUSCLE_GROUPS) — exactamente
+// por eso añadir un grupo nuevo era caro: había que tocar el mismo enum en
+// cinco sitios. Un único origen de verdad.
+export const MUSCLE_ORDER: MuscleGroup[] = [
+  'pecho', 'dorsal', 'trapecio',
+  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
+  'biceps', 'triceps', 'antebrazo',
+  'cuadriceps', 'isquios', 'gluteo', 'aductores', 'gemelo', 'core',
+];
+
+// Etiquetas cortas para tablas y gráficas estrechas (MesocycleDashboard). No
+// son solo MUSCLE_LABELS truncado: "Delt.Ant" no es "Deltoides ant." cortado,
+// es la abreviatura que ya se usaba.
+export const MUSCLE_LABELS_SHORT: Record<MuscleGroup, string> = {
+  pecho: 'Pecho', dorsal: 'Dorsal', trapecio: 'Trapecio',
+  deltoide_ant: 'Delt.Ant', deltoide_lat: 'Delt.Lat', deltoide_post: 'Delt.Post',
+  biceps: 'Bíceps', triceps: 'Tríceps', antebrazo: 'Antebrazo',
+  cuadriceps: 'Cuáds', isquios: 'Isquios', gluteo: 'Glúteo',
+  aductores: 'Aduct.', gemelo: 'Gemelo', core: 'Core',
 };
 
 export interface MuscleGroupConfig {
