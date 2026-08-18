@@ -2,6 +2,7 @@ import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, delete
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
+import { idDeFoodItem } from '../utils/foodItemId';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
@@ -98,8 +99,8 @@ export async function deleteFoodItem(id: string): Promise<void> {
 
 export async function seedFoodItemsIfEmpty(): Promise<void> {
   foodItemsCache = null;
-  const seeded: MealItem[] = SYSTEM_FOODS.map((f, i) => ({
-    id: `system_food_${i + 1}`,
+  const seeded: MealItem[] = SYSTEM_FOODS.map(f => ({
+    id: idDeFoodItem(f),
     mode: f.mode,
     category: f.category,
     label: f.label,
@@ -114,9 +115,12 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
   try {
     const snap = await getDocs(collection(db, 'foodItems'));
     if (snap.empty) {
+      // setDoc con ID determinista, no addDoc: si dos cargas concurrentes
+      // ven ambas la colección vacía, las dos escriben los MISMOS 310
+      // documentos en vez de 620 duplicados — sembrar es idempotente.
       for (const item of seeded) {
         const { id, ...data } = item;
-        await addDoc(collection(db, 'foodItems'), stripUndefined(data));
+        await setDoc(doc(db, 'foodItems', id), stripUndefined(data));
       }
     }
     const after = await getDocs(collection(db, 'foodItems'));

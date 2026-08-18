@@ -7,6 +7,12 @@ import {
 import { SYSTEM_EXERCISES } from '../data';
 import { combinarLogs } from './combinarLogs';
 import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
+import { slugify } from '../utils/maquinaId';
+
+// T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
+// sembrar dos veces sobreescriba en vez de duplicar.
+const idDeSystemExercise = (ex: { primaryFocus?: string; name: string }): string =>
+  `sys_${slugify(ex.primaryFocus ?? '')}_${slugify(ex.name)}`;
 
 // ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
 
@@ -162,7 +168,7 @@ export async function seedExercisesIfEmpty(): Promise<void> {
   exercisesCache = null;
   if (forceLocalOnly) {
     if (getLocalExercises().length === 0) {
-      const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
+      const seeded = SYSTEM_EXERCISES.map(ex => ({ ...ex, id: idDeSystemExercise(ex) }));
       saveLocalExercises(seeded);
     }
     return;
@@ -170,8 +176,12 @@ export async function seedExercisesIfEmpty(): Promise<void> {
   try {
     const snap = await getDocs(collection(db, 'exercises'));
     if (snap.empty) {
+      // setDoc con ID determinista, no addDoc: mismo motivo que foodItems —
+      // dos cargas concurrentes viendo la colección vacía escriben los
+      // MISMOS documentos en vez de duplicarlos. seedExercisesIfEmpty se
+      // llama en cada montaje de ClientHub, así que la carrera es real.
       for (const ex of SYSTEM_EXERCISES) {
-        await addDoc(collection(db, 'exercises'), stripUndefined(ex));
+        await setDoc(doc(db, 'exercises', idDeSystemExercise(ex)), stripUndefined(ex));
       }
     }
     const after = await getDocs(collection(db, 'exercises'));
@@ -185,7 +195,7 @@ export async function seedExercisesIfEmpty(): Promise<void> {
     console.warn('seedExercises Firestore failed, seeding local:', err);
     setLocalBypassMode(true, err);
     if (getLocalExercises().length === 0) {
-      const seeded = SYSTEM_EXERCISES.map((ex, i) => ({ ...ex, id: `system_${i + 1}` }));
+      const seeded = SYSTEM_EXERCISES.map(ex => ({ ...ex, id: idDeSystemExercise(ex) }));
       saveLocalExercises(seeded);
     }
   }
