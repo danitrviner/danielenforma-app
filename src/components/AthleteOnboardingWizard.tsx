@@ -123,7 +123,10 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-body-s text-white placeholder-ink-2/40 outline-none transition-colors';
+// text-title-s (16px), no text-body-s (13px): por debajo de 16px WKWebView
+// amplía la página sola al enfocar el campo y no la devuelve al desenfocar
+// (ver index.html y el suelo de 16px en src/index.css).
+const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-title-s text-white placeholder-ink-2/40 outline-none transition-colors';
 
 /** 05-4. Lo que se guarda entre sesión y sesión. Es exactamente el estado del
  *  wizard: si mañana se añade un paso, el campo nuevo entra aquí y en el efecto

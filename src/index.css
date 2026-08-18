@@ -519,6 +519,19 @@ h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
 }
 
+@layer base {
+  /* iOS amplía la página al enfocar un control con fuente < 16px y no la
+     devuelve (ver index.html). Suelo de 16px en móvil para TODO control de
+     formulario, aunque el diseño le pida un tamaño de texto menor. */
+  @media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+}
+
 @layer utilities {
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
