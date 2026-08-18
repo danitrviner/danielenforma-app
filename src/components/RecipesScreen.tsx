@@ -4,7 +4,7 @@ import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode,
 } from '../types';
 import {
-  getRecipes, getRecipeFavorites, saveRecipeFavorites,
+  getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
   getAthleteNutritionConfig, queryRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig,
 } from '../dbService';
@@ -212,13 +212,17 @@ interface DetailProps {
   recipe: Recipe;
   isFav: boolean;
   isDisliked: boolean;
+  /** Solo el propio dueño puede borrarla — recetas del catálogo o de otro usuario no muestran el botón. */
+  isOwn: boolean;
   enabledModes: DietMode[];
   savingFav: boolean;
+  deletingOwn: boolean;
   /** Cupo diario total del atleta (suma HC+PROT+GRASA); null si no tiene dieta activa. */
   dailyBudgetTotal: number | null;
   onBack: () => void;
   onToggleFav: (id: string) => void;
   onToggleDislike: (id: string) => void;
+  onDelete: (id: string) => void;
   onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
@@ -240,9 +244,10 @@ function scaleRecipe(recipe: Recipe, scale: number): Recipe {
 
 const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
 
-function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onAddToIntercambios }: DetailProps) {
+function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [scale, setScale] = useState(1);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isRecetas = recipe.ownerId === 'recetas';
   const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
   const exch = calcExchanges(scaledRecipe);
@@ -290,8 +295,43 @@ function RecipeDetail({ recipe, isFav, isDisliked, enabledModes, savingFav, dail
               style={{ fontVariationSettings: isDisliked ? "'FILL' 1" : "'FILL' 0" }}
             >thumb_down</span>
           </button>
+          {isOwn && !confirmingDelete && (
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              title="Eliminar esta receta"
+              className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider text-ink-2 hover:text-danger transition-colors"
+            >
+              <span className="material-symbols-outlined text-title-m">delete</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {isOwn && confirmingDelete && (
+        <div className="flex items-start gap-2 bg-danger/10 border border-danger/25 text-danger px-4 py-3 rounded-surface text-body-s">
+          <span className="material-symbols-outlined text-title-s flex-shrink-0">warning</span>
+          <div className="flex-1 space-y-2">
+            <span className="block">
+              Vas a eliminar esta receta. Las comidas ya guardadas que la usan la conservarán, pero no podrás volver a añadirla.
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                className="text-label font-mono uppercase tracking-wider text-ink-2 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => onDelete(recipe.id)}
+                disabled={deletingOwn}
+                className="text-label font-mono font-bold uppercase tracking-wider text-danger disabled:opacity-50"
+              >
+                {deletingOwn ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo */}
       <div className="w-full aspect-[16/7] rounded-surface overflow-hidden bg-raised border border-hairline">
@@ -540,7 +580,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // StepsWidget/NutritionAnalysisPanel/NutritionHubScreen ('athleteNutritionConfig').
   const { data: recipes = [], isPending: loadingRecipes } = useQuery({
     queryKey: ['recipes'],
-    queryFn: getRecipes,
+    queryFn: () => getRecipes(),
   });
   const favoritesKey = ['recipeFavorites', profile.email] as const;
   const { data: favoritesData, isPending: loadingFavorites } = useQuery({
@@ -607,6 +647,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // Detail
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
   const [savingFav, setSavingFav]       = useState(false);
+  const [deletingOwn, setDeletingOwn]   = useState(false);
 
   // ── Recetas paginated load ────────────────────────────────────────────────────
 
@@ -724,6 +765,20 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Las comidas ya guardadas que usan esta receta quedan tal cual (los datos
+  // se copiaron al añadirla, no referencian la receta en vivo) — solo deja de
+  // poder añadirse de nuevo. Se avisa de esto en el propio botón de confirmar.
+  const handleDeleteRecipe = async (recipeId: string) => {
+    setDeletingOwn(true);
+    try {
+      await deleteRecipe(recipeId);
+      queryClient.setQueryData<Recipe[]>(['recipes'], prev => prev?.filter(r => r.id !== recipeId));
+      setActiveRecipe(null);
+    } finally {
+      setDeletingOwn(false);
+    }
+  };
+
   // ── Detail view ─────────────────────────────────────────────────────────────
 
   if (activeRecipe) {
@@ -732,12 +787,15 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         recipe={activeRecipe}
         isFav={favorites.recipeIds.includes(activeRecipe.id)}
         isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
+        isOwn={activeRecipe.ownerId === profile.userId}
         enabledModes={enabledModes}
         savingFav={savingFav}
+        deletingOwn={deletingOwn}
         dailyBudgetTotal={dailyBudgetTotal}
         onBack={() => setActiveRecipe(null)}
         onToggleFav={toggleFavorite}
         onToggleDislike={toggleDislike}
+        onDelete={handleDeleteRecipe}
         onAddToIntercambios={onAddToIntercambios}
       />
     );

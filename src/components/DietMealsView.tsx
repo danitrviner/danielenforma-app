@@ -1,10 +1,18 @@
 import React, { useMemo } from 'react';
 import { DietMeal, FoodCategory } from '../types';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+// HC/PROT/GRASA vienen de la fuente única (nutritionConstants.ts) para no
+// duplicar la tasa kcal/intercambio. MIX_HC/MIX_GRASA (mitad proteína, mitad
+// HC o grasa) no tienen constante compartida — se aproximan a 100 kcal, igual
+// que el resto, tal y como ya hacía esta tabla.
 const KCAL_INT: Record<FoodCategory, number> = {
-  HC: 100, PROT: 100, GRASA: 99, MIX_HC: 100, MIX_GRASA: 100,
+  HC: exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }),
+  PROT: exchangeToKcal({ HC: 0, PROT: 1, GRASA: 0 }),
+  GRASA: exchangeToKcal({ HC: 0, PROT: 0, GRASA: 1 }),
+  MIX_HC: 100, MIX_GRASA: 100,
 };
 
 const DISPLAY_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];

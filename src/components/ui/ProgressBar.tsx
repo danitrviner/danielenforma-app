@@ -25,9 +25,11 @@ type Props = {
   /** Nombre accesible: "Hidratos, 68 de 80 intercambios". */
   label: string;
   className?: string;
+  /** Sustituye el ancho por defecto (`w-full`) — para barras cortas dentro de una fila estrecha. */
+  widthClassName?: string;
 };
 
-export default function ProgressBar({ value, label, className = '' }: Props) {
+export default function ProgressBar({ value, label, className = '', widthClassName = 'w-full' }: Props) {
   const pasado = value > 100;
   const ancho = Math.max(0, Math.min(100, value));
 
@@ -38,7 +40,7 @@ export default function ProgressBar({ value, label, className = '' }: Props) {
       aria-valuenow={Math.round(value)}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={`h-1.5 w-full overflow-hidden rounded-[4px] bg-track ${className}`}
+      className={`h-1.5 overflow-hidden rounded-[4px] bg-track ${widthClassName} ${className}`}
     >
       <div
         className={

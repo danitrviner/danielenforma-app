@@ -92,7 +92,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const queryClient = useQueryClient();
   const { data: recipes = [], isPending: loadingRecipes } = useQuery({
     queryKey: recipesQueryKey,
-    queryFn: getRecipes,
+    queryFn: () => getRecipes(),
   });
   const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
     queryKey: ['foodItems'],

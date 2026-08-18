@@ -8,7 +8,7 @@ import { scheduleLabel } from '../utils/scheduleEngine';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
-import { EmptyState } from './ui';
+import { EmptyState, WeightWheelPicker } from './ui';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
@@ -49,7 +49,6 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const [bwMode, setBwMode] = useState<BwMode>(
     () => (localStorage.getItem(bwModeKey(profile.email)) as BwMode | null) ?? 'daily'
   );
-  const bwInputRef = useRef<HTMLInputElement>(null);
 
   // Igual que el .then() original: abre el editor / adopta el kind de hoy una
   // sola vez por atleta cuando el registro de peso ya cargó, no en cada
@@ -61,10 +60,6 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     if (!bwToday) setBwEditing(true); // start in input mode if nothing logged yet
     else if (bwToday.kind) setBwMode(bwToday.kind); // refleja cómo se registró hoy
   }, [loadingBw, profile.email, bwToday]);
-
-  useEffect(() => {
-    if (bwEditing) bwInputRef.current?.focus();
-  }, [bwEditing]);
 
   const changeBwMode = (mode: BwMode) => {
     setBwMode(mode);
@@ -252,20 +247,11 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
               {bwToday.weight} <span className="text-label text-ink-2 font-normal">kg</span>
             </p>
           ) : (
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                ref={bwInputRef}
-                type="number"
-                step="0.1"
-                min="20"
-                max="300"
-                value={bwInput}
-                onChange={e => { setBwInput(e.target.value); setBwError(''); }}
-                onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
-                placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-data placeholder-ink-3"
+            <div className="mt-1">
+              <WeightWheelPicker
+                value={bwInput && !isNaN(parseFloat(bwInput)) ? parseFloat(bwInput) : (bwToday?.weight ?? latestWeight ?? 70)}
+                onChange={v => { setBwInput(String(v)); setBwError(''); }}
               />
-              <span className="font-mono text-label text-ink-3">kg</span>
             </div>
           )}
           {bwError && <p className="font-sans text-caption text-red-400 mt-1">{bwError}</p>}

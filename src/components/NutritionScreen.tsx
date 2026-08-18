@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
 import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
@@ -780,6 +780,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSelectedDiet(prev => prev ? { ...prev, name } : prev);
   };
 
+  // Cambio rápido de modo (Omnívoro/Vegano/Sin pesar) desde Nutrición — antes
+  // solo el coach podía habilitarlo desde la ficha del cliente. El cambio de
+  // banco de alimentos es instantáneo (activeDietMode), y si el modo no estaba
+  // habilitado se añade también a enabledModes y se persiste, para que quede
+  // disponible la próxima vez y visible como habilitado en el panel del coach.
+  const selectDietMode = (mode: DietMode) => {
+    setActiveDietMode(mode);
+    if (enabledModes.includes(mode)) return;
+    const updated = [...enabledModes, mode];
+    setEnabledModes(updated);
+    if (!nutConfig) return;
+    const next = { ...nutConfig, athleteId: profile.email, enabledModes: updated };
+    queryClient.setQueryData(['athleteNutritionConfig', profile.email], next);
+    saveAthleteNutritionConfig(next).catch(() => {
+      showToast('No se pudo guardar el modo — se activó solo para esta sesión.');
+    });
+  };
+
   const updateBudgetCat = (cat: FoodCategory, value: number) => {
     setSelectedDiet(prev => prev ? { ...prev, budget: { ...prev.budget, [cat]: value } } : prev);
   };
@@ -1006,20 +1024,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       )}
 
-      {/* Diet mode selector */}
-      {enabledModes.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          {enabledModes.map(mode => (
-            <button key={mode} onClick={() => setActiveDietMode(mode)}
-              className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
-                activeDietMode === mode
-                  ? 'bg-accent text-black'
-                  : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
-              }`}
-            >{MODE_LABEL[mode]}</button>
-          ))}
-        </div>
-      )}
+      {/* Diet mode selector — siempre visible (antes solo si el coach había
+          habilitado más de un modo) para que el atleta pueda pasar a "Sin
+          pesar" cualquier día, sin depender de que el coach lo active antes. */}
+      <div className="flex gap-2 flex-wrap">
+        {ALL_DIET_MODES.map(mode => (
+          <button key={mode} onClick={() => selectDietMode(mode)}
+            className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
+              activeDietMode === mode
+                ? 'bg-accent text-black'
+                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
+            }`}
+          >{MODE_LABEL[mode]}</button>
+        ))}
+      </div>
 
       {/* Week schedule navigation */}
       {!loading && WD_ORDER.some(d => typeof weeklySchedule[d] === 'string') && (
@@ -1283,7 +1301,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 )}
               </div>
 
-              {/* Diet header */}
+              {/* Diet header + cupo diario — antes eran dos tarjetas separadas con
+                  cabeceras propias; el cupo ya no repite el tracker de arriba
+                  (panel 01), así que ahora es una sola tarjeta: nombre/nota arriba,
+                  objetivo diario abajo, separados por un hairline. */}
               <div className="bg-raised rounded-surface p-4 border border-hairline">
                 <div className="flex items-center justify-between ">
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
@@ -1307,6 +1328,35 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <span className="block font-mono text-caption text-ink-2 mt-2">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>
+
+                {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
+                    en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
+                <div className="border-t border-hairline mt-4 pt-4">
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">
+                    {selectedDiet.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {BUDGET_CATS.map(cat => (
+                      <div key={cat}>
+                        <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
+                        {selectedDiet.selfManaged ? (
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.25}
+                            value={selectedDiet.budget[cat]}
+                            onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
+                            className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
+                          />
+                        ) : (
+                          <div className="w-full bg-surface/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
+                            {fmtQty(selectedDiet.budget[cat])}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Aviso de fork: editar una dieta del coach nunca la actualiza in
@@ -1319,35 +1369,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   <span>Esta dieta la creó tu coach. Si la editas, se guardará como copia tuya y la original no se toca.</span>
                 </div>
               )}
-
-              {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
-                  en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
-              <div className="bg-surface border border-hairline rounded-surface p-4">
-                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">
-                  {selectedDiet.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {BUDGET_CATS.map(cat => (
-                    <div key={cat}>
-                      <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
-                      {selectedDiet.selfManaged ? (
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.25}
-                          value={selectedDiet.budget[cat]}
-                          onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
-                        />
-                      ) : (
-                        <div className="w-full bg-raised/50 border border-hairline rounded-surface px-2 py-2 text-white text-label">
-                          {fmtQty(selectedDiet.budget[cat])}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               {/* El progreso por categoría y el total de completados hoy ya los
                   cubre el tracker de arriba (panel 01) — este dashboard duplicaba
@@ -1480,7 +1501,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     <ProgressBar
                                       value={pct}
                                       label={`${CAT_LABEL[cat]} de esta comida, ${fmtQty(d)} de ${fmtQty(tgt)} intercambios`}
-                                      className="w-10 flex-shrink-0"
+                                      widthClassName="w-10 flex-shrink-0"
                                     />
                                   </div>
                                 );
@@ -1523,8 +1544,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               </button>
 
                               {/* Category tag — cuadro 44px del handoff */}
-                              <span className="w-11 h-11 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center">
-                                <span className="font-mono text-caption font-bold text-ink-3">{item.category.replace('_', '')}</span>
+                              <span className="w-11 h-11 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
+                                <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[9px] tracking-tight' : 'text-caption'}`}>
+                                  {item.category.replace('_', '')}
+                                </span>
                               </span>
 
                               {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana.

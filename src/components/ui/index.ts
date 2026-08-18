@@ -56,6 +56,8 @@ export type { BannerTone } from './Banner';
 
 export { default as Stepper } from './Stepper';
 
+export { default as WeightWheelPicker } from './WeightWheelPicker';
+
 export { default as SegmentedControl } from './SegmentedControl';
 export type { SegmentedOption } from './SegmentedControl';
 

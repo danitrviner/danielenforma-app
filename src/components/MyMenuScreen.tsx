@@ -12,6 +12,7 @@ import {
   getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
@@ -219,7 +220,7 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapLoading(true);
     setSwapCandidates([]);
     if (day) {
-      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes()]);
+      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes({ ownerId: profile.userId })]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
       const alts = findSwapAlternatives(day, meal.id, pool, prefs, 5);
       setSwapCandidates(alts);
@@ -233,7 +234,7 @@ export default function MyMenuScreen({ profile }: Props) {
     if (!meal) return;
 
     const nextMeals = day.meals.map(m => m.id === meal.id
-      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: candidate.recipe.image ?? candidate.recipe.photoUrl, scale: candidate.scale, exch: candidate.exch, complements: [] }
+      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: candidate.recipe.image ?? candidate.recipe.photoUrl, scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
     const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
@@ -458,7 +459,7 @@ export default function MyMenuScreen({ profile }: Props) {
         </p>
         <button
           type="button"
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate('/profile?tab=preferencias')}
           className="flex-shrink-0 flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
         >
           <Icon name="tune" size="s" />

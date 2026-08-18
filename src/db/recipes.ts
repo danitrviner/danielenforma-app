@@ -45,19 +45,30 @@ function setLocalRecipes(recipes: Recipe[]): void {
   localStorage.setItem(RECIPES_LOCAL_KEY, JSON.stringify(recipes));
 }
 
-export async function getRecipes(): Promise<Recipe[]> {
-  if (forceLocalOnly) return getLocalRecipes();
+export async function getRecipes(opts?: { ownerId?: string }): Promise<Recipe[]> {
+  if (forceLocalOnly) {
+    const local = getLocalRecipes();
+    return opts?.ownerId ? local.filter(r => r.ownerId === opts.ownerId) : local;
+  }
   try {
-    // Excluye el recetario importado (8.850+) para no bajarse la colección entera
-    const q = query(collection(db, 'recipes'), where('ownerId', 'not-in', OWNER_RECETARIO_TODOS));
+    // Excluye el recetario importado (8.850+) para no bajarse la colección entera.
+    // Con `ownerId` se acota además a las recetas propias de ese dueño — usado por
+    // el buscador de "Intercambiar" para que la receta guardada de un atleta no
+    // aparezca como sugerencia para otro (antes no había ningún filtro por dueño).
+    const q = opts?.ownerId
+      ? query(collection(db, 'recipes'), where('ownerId', '==', opts.ownerId))
+      : query(collection(db, 'recipes'), where('ownerId', 'not-in', OWNER_RECETARIO_TODOS));
     const snap = await getDocs(q);
     const recipes = snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
-    setLocalRecipes(recipes);
+    // El caché local es la lista completa sin acotar — una llamada acotada por
+    // dueño no debe sobrescribirlo con un subconjunto parcial.
+    if (!opts?.ownerId) setLocalRecipes(recipes);
     return recipes;
   } catch (err) {
     console.warn('getRecipes Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalRecipes();
+    const local = getLocalRecipes();
+    return opts?.ownerId ? local.filter(r => r.ownerId === opts.ownerId) : local;
   }
 }
 

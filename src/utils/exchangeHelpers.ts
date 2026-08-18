@@ -30,6 +30,8 @@ export const MODE_LABEL: Record<DietMode, string> = {
   OMNIVORO: 'Omnívoro', VEGANO: 'Vegano', SIN_PESAR: 'Sin pesar',
 };
 
+export const ALL_DIET_MODES: DietMode[] = ['OMNIVORO', 'VEGANO', 'SIN_PESAR'];
+
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // Quantities in the exchange system move in quarters (0.25 intercambio):

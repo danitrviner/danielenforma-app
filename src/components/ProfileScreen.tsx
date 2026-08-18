@@ -1,4 +1,5 @@
 import React, { useState, useMemo, Suspense, lazy } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding, updateOnboarding } from '../dbService';
@@ -95,7 +96,10 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const [showCoaches, setShowCoaches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('resumen');
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab: ProfileTab = PROFILE_TABS.some(t => t.id === requestedTab) ? (requestedTab as ProfileTab) : 'resumen';
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
