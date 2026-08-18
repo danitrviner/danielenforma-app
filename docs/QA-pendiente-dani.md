@@ -118,3 +118,36 @@ revisión visual, no trabajo de integración.
 
 Los 12 hallazgos con severidad de la auditoría visual (P0-1 a P2-1) están corregidos, salvo la
 mitad de configuración de P0-2 (punto 1 de este documento) y la confirmación en DOM de P1-7.
+
+---
+
+## 6. Plan de arreglos 18-08-2026 (`docs/plan-arreglos-2026-08-18.md`, rama `feat/nutricion-ux-fixes`)
+
+Se va actualizando a medida que se ejecuta el plan. Nada de esto lo puede hacer Claude por ti.
+
+- [ ] **Desplegar las reglas de Firestore** (T7, T8):
+  `firebase deploy --only firestore:rules`. Sin esto:
+  - las invitaciones pendientes de tus clientes actuales seguirán sin actualizarse (T8.b) —
+    incluida la de `danielbriz8`;
+  - `planPublishedAt` no está protegido todavía (T7.b) — un atleta podría escribírselo él mismo
+    desde la consola del navegador hasta que despliegues.
+  Verificado en el emulador (17 pruebas verdes, `npm run test:reglas`), no en producción.
+
+- [ ] **Pulsar "Mostrar el plan al atleta" en tus 3 clientes actuales** (T7.b), uno por uno, desde
+  la ficha de cada uno → pestaña Entrenamientos. **Hazlo el mismo día que despliegues esta rama, no
+  antes ni mucho después**: en cuanto se despliegue, la puerta de la sala de espera pasa de "¿hay
+  asignaciones?" a "¿el coach pulsó el botón?", y los 3 atletas que ya entrenan hoy volverían a la
+  sala de espera hasta que lo hagas. No hay backfill automático a propósito — un backfill silencioso
+  podría publicar el plan a quien no toca.
+
+- [ ] **Verificar en Vercel** (T9, el asistente de IA):
+  - `ANTHROPIC_API_KEY` presente en *Production*.
+  - `FIREBASE_SERVICE_ACCOUNT` presente en *Production* — sin ella el contador de gasto es
+    fail-closed y el proxy devuelve 503 (`api/ai-chat.ts`).
+  - Que el contador diario `aiUsage/daily_<hoy>` en Firestore no esté en el tope de 400 llamadas.
+  Con las reglas desplegadas y el proxy verificado, usa el botón nuevo "Probar conexión" (icono
+  🌐 en la cabecera del panel del asistente) desde el móvil si el asistente vuelve a fallar — te
+  enseña la URL, el código HTTP y el cuerpo de error reales, no un mensaje genérico.
+
+- [ ] **Limpiar los alimentos duplicados en producción** (T14) — pendiente hasta que se ejecute esa
+  tarea del plan; se documentará aquí el botón exacto cuando exista.

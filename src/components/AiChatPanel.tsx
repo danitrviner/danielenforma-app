@@ -6,8 +6,9 @@ import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
 } from '../dbService';
-import { runAgentTurn, messageText } from '../ai/aiClient';
+import { runAgentTurn, messageText, probarConexionProxy } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Icon, Button, ListRow, Badge, Dialog } from './ui';
@@ -69,6 +70,52 @@ function newChat(athleteId?: string): AiChat {
 // del chat en la colección aiChats.
 const aiChatsKey = ['aiChats'] as const;
 const coachInstructionsKey = ['coachInstructions'] as const;
+const doctrinaKey = ['coachDoctrina'] as const;
+
+type PromptTab = 'instrucciones' | 'entrenamiento' | 'nutricion';
+
+const PROMPT_TABS: { id: PromptTab; label: string }[] = [
+  { id: 'instrucciones', label: 'Reglas fijas' },
+  { id: 'entrenamiento', label: 'Entrenamiento' },
+  { id: 'nutricion',     label: 'Nutrición' },
+];
+
+// Editor de una doctrina. Aparte del textarea, su trabajo real es dejar claro
+// si lo que se está leyendo es el criterio de Dani o el de fábrica: sin ese
+// aviso, editar el default y guardarlo parece lo mismo que no tocar nada.
+function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, disabled }: {
+  descripcion: string;
+  valor: string;
+  onChange: (v: string) => void;
+  esDefault: boolean;
+  onRestaurar: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <p className="text-label text-ink-2">{descripcion}</p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption font-mono text-ink-2">
+          {esDefault ? 'Criterio por defecto (sin editar)' : 'Tu criterio'}
+        </span>
+        {!esDefault && (
+          <Button variant="ghost" size="s" onClick={onRestaurar} disabled={disabled}>
+            Restaurar el de por defecto
+          </Button>
+        )}
+      </div>
+      <textarea
+        value={valor}
+        onChange={e => onChange(e.target.value)}
+        rows={16}
+        className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s font-mono text-ink outline-none"
+      />
+      <p className="text-caption text-ink-2">
+        Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace la IA.
+      </p>
+    </>
+  );
+}
 
 export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: Props) {
   const queryClient = useQueryClient();
@@ -92,15 +139,39 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [diagMsg, setDiagMsg] = useState<string | null>(null);
+  const [diagnosticando, setDiagnosticando] = useState(false);
   const [listening, setListening] = useState(false);
   const { data: coachInstructions = '' } = useQuery({
     queryKey: coachInstructionsKey,
     queryFn: getCoachInstructions,
     enabled: open,
   });
+  // El criterio de Dani viaja en el system prompt de cada turno. Si la lectura
+  // falla se manda el default en vez de nada: operar sin doctrina es peor que
+  // operar con la de fábrica.
+  const { data: doctrina } = useQuery({
+    queryKey: doctrinaKey,
+    queryFn: async () => ({
+      entrenamiento: await getDoctrina('entrenamiento'),
+      nutricion: await getDoctrina('nutricion'),
+    }),
+    enabled: open,
+  });
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [instructionsDraft, setInstructionsDraft] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
+  // Pestaña abierta dentro del editor. Las tres cosas se editan igual (texto
+  // libre que acaba en el system prompt), así que comparten diálogo en vez de
+  // abrir tres modales distintos desde tres botones distintos en la cabecera.
+  const [promptTab, setPromptTab] = useState<PromptTab>('instrucciones');
+  const [entrenoDraft, setEntrenoDraft] = useState('');
+  const [nutricionDraft, setNutricionDraft] = useState('');
+  // true = todavía es el criterio por defecto (Dani no lo ha tocado). Se usa
+  // para avisarlo en el editor y para no ofrecer "restaurar" cuando no hay nada
+  // que restaurar.
+  const [entrenoEsDefault, setEntrenoEsDefault] = useState(true);
+  const [nutricionEsDefault, setNutricionEsDefault] = useState(true);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const vaultInputRef = useRef<HTMLInputElement>(null);
@@ -143,13 +214,71 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     }
   };
 
-  const openInstructionsEditor = () => { setInstructionsDraft(coachInstructions); setEditingInstructions(true); };
+  // T9. El único diagnóstico posible sin acceso a los logs de Vercel: un
+  // OPTIONS y un POST mínimo a PROXY_URL, con URL, código HTTP y cuerpo de
+  // error EN CLARO. No cierra la duda con un "parece que ya va" — enseña el
+  // resultado real, sea cual sea.
+  const probarConexion = async () => {
+    setDiagnosticando(true);
+    setDiagMsg(null);
+    try {
+      const d = await probarConexionProxy();
+      const lineas = [
+        `URL: ${d.url}`,
+        `OPTIONS: ${d.optionsOk ? 'OK' : `falló — ${d.optionsError}`}`,
+        d.postStatus !== undefined
+          ? `POST: HTTP ${d.postStatus} — ${d.postBody}`
+          : `POST: falló — ${d.postError}`,
+      ];
+      setDiagMsg(lineas.join('\n'));
+    } finally {
+      setDiagnosticando(false);
+    }
+  };
+
+  const openInstructionsEditor = async () => {
+    setInstructionsDraft(coachInstructions);
+    setPromptTab('instrucciones');
+    setEditingInstructions(true);
+    // Se cargan al abrir, no con el panel: son textos largos que solo hacen
+    // falta cuando Dani entra a editarlos.
+    const [ent, nut] = await Promise.all([
+      getDoctrinaParaEditar('entrenamiento').catch(() => null),
+      getDoctrinaParaEditar('nutricion').catch(() => null),
+    ]);
+    if (ent) { setEntrenoDraft(ent.text); setEntrenoEsDefault(ent.esDefault); }
+    if (nut) { setNutricionDraft(nut.text); setNutricionEsDefault(nut.esDefault); }
+  };
+
   const saveInstructions = async () => {
     setSavingInstructions(true);
     try {
-      await saveCoachInstructions(instructionsDraft.trim());
-      queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
+      if (promptTab === 'instrucciones') {
+        await saveCoachInstructions(instructionsDraft.trim());
+        queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
+      } else if (promptTab === 'entrenamiento') {
+        await saveDoctrina('entrenamiento', entrenoDraft.trim());
+        setEntrenoEsDefault(false);
+        queryClient.invalidateQueries({ queryKey: doctrinaKey });
+      } else {
+        await saveDoctrina('nutricion', nutricionDraft.trim());
+        setNutricionEsDefault(false);
+        queryClient.invalidateQueries({ queryKey: doctrinaKey });
+      }
       setEditingInstructions(false);
+    } finally {
+      setSavingInstructions(false);
+    }
+  };
+
+  const restaurarDoctrina = async (kind: 'entrenamiento' | 'nutricion') => {
+    setSavingInstructions(true);
+    try {
+      await resetDoctrina(kind);
+      const fresh = await getDoctrinaParaEditar(kind);
+      if (kind === 'entrenamiento') { setEntrenoDraft(fresh.text); setEntrenoEsDefault(true); }
+      else { setNutricionDraft(fresh.text); setNutricionEsDefault(true); }
+      queryClient.invalidateQueries({ queryKey: doctrinaKey });
     } finally {
       setSavingInstructions(false);
     }
@@ -223,11 +352,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     await saveAiChat(updated);
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || busy) return;
-    if (listening) recognitionRef.current?.stop();
-    setInput('');
+  // `userText`: el texto nuevo del atleta en un envío normal, o `null` para
+  // reanudar un turno que falló a mitad de camino (T9) — `chat.messages` ya
+  // tiene el mensaje pendiente (ver el comentario de `runAgentTurn`), así que
+  // pasar texto de nuevo aquí duplicaría el turno en vez de reanudarlo.
+  const runTurn = async (userText: string | null) => {
     setError(null);
     setBusy(true);
     liveMessages.current = chat.messages;
@@ -237,7 +366,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, text, { chatId: chat.id, activeAthlete, coachInstructions }, {
+      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -256,6 +385,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       }
       refreshProposals();
     }
+  };
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || busy) return;
+    if (listening) recognitionRef.current?.stop();
+    setInput('');
+    await runTurn(text);
+  };
+
+  const retry = async () => {
+    if (busy) return;
+    await runTurn(null);
   };
 
   const openChat = (c: AiChat) => { setChat(c); setShowList(false); setError(null); };
@@ -299,6 +441,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <Icon name="smart_toy" size="m" filled className="text-accent" />
         <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
         <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
+        <Button variant="ghost" size="s" onClick={probarConexion} loading={diagnosticando} icon="network_check" label="Probar conexión con el asistente" />
         <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
@@ -310,6 +453,15 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {syncMsg && (
         <div className="px-4 py-2 text-caption font-mono text-data border-b border-hairline bg-data/5">
           {syncMsg}
+        </div>
+      )}
+
+      {diagMsg && (
+        <div className="px-4 py-2 text-caption font-mono text-ink-2 border-b border-hairline bg-surface whitespace-pre-wrap flex items-start justify-between gap-3">
+          <span>{diagMsg}</span>
+          <button onClick={() => setDiagMsg(null)} className="text-ink-3 hover:text-white shrink-0">
+            <Icon name="close" size="s" />
+          </button>
         </div>
       )}
 
@@ -396,8 +548,15 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               </div>
             )}
             {error && (
-              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label">
-                {error}
+              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label space-y-2">
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="font-mono text-caption uppercase tracking-wide underline underline-offset-2"
+                >
+                  Vuelve a intentarlo
+                </button>
               </div>
             )}
           </div>
@@ -517,7 +676,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <Dialog
           open
           onClose={() => { if (!savingInstructions) setEditingInstructions(false); }}
-          title="Instrucciones fijas"
+          title="Lo que sigue la IA"
           footer={(
             <>
               <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
@@ -529,17 +688,60 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             </>
           )}
         >
-            <div className="flex flex-col gap-2">
-              <p className="text-label text-ink-2">
-                Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
-              </p>
-              <textarea
-                value={instructionsDraft}
-                onChange={e => setInstructionsDraft(e.target.value)}
-                rows={8}
-                placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
-              />
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-1 border-b border-hairline">
+                {PROMPT_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPromptTab(t.id)}
+                    className={`px-3 py-2 text-label font-sans uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+                      promptTab === t.id
+                        ? 'border-accent text-accent'
+                        : 'border-transparent text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {promptTab === 'instrucciones' && (
+                <>
+                  <p className="text-label text-ink-2">
+                    Reglas puntuales que el asistente sigue SIEMPRE, por encima de todo lo demás — incluido tu criterio de las otras dos pestañas. Ej: "empieza los mesociclos con una semana de descarga".
+                  </p>
+                  <textarea
+                    value={instructionsDraft}
+                    onChange={e => setInstructionsDraft(e.target.value)}
+                    rows={8}
+                    placeholder="Escribe tus reglas, una por línea…"
+                    className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
+                  />
+                </>
+              )}
+
+              {promptTab === 'entrenamiento' && (
+                <DoctrinaEditor
+                  descripcion="Tu criterio para programar: volumen por grupo, RIR, frecuencia, rangos de reps, orden de la sesión, descansos y progresión. La IA lo aplica al proponer mesociclos y al analizar entrenamientos."
+                  valor={entrenoDraft}
+                  onChange={setEntrenoDraft}
+                  esDefault={entrenoEsDefault}
+                  onRestaurar={() => restaurarDoctrina('entrenamiento')}
+                  disabled={savingInstructions}
+                />
+              )}
+
+              {promptTab === 'nutricion' && (
+                <DoctrinaEditor
+                  descripcion="Tu criterio nutricional: prioridades, cálculo de calorías, superávit/déficit, proteína y distribución. La IA lo aplica al proponer o ajustar dietas."
+                  valor={nutricionDraft}
+                  onChange={setNutricionDraft}
+                  esDefault={nutricionEsDefault}
+                  onRestaurar={() => restaurarDoctrina('nutricion')}
+                  disabled={savingInstructions}
+                />
+              )}
             </div>
         </Dialog>
       )}
