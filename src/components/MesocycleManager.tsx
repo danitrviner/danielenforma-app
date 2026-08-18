@@ -14,12 +14,13 @@ import {
   getMesocycleTemplates,
 } from '../dbService';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
+import ExercisePickerSheet from './ExercisePickerSheet';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { atletasActivos } from '../utils/atletas';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
-import { EmptyState, Dialog, Input } from './ui';
+import { EmptyState, Dialog, Input, Icon } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -325,12 +326,17 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 // Shows what "Generar rutinas" (in Distribución) actually produced for this mesocycle —
 // the meso's volume/priority config and the exercises it generates are the same thing
 // end to end, not two disconnected screens the coach has to reconcile by hand.
-function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExercise, onGoToDistribution }: {
+function MesoExercisesView({
+  groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onGoToDistribution,
+}: {
   groups: MesoWorkoutGroup[];
   loading: boolean;
   weeks: number;
   allExercises: Exercise[];
   onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onAddExercise: (group: MesoWorkoutGroup) => void;
+  onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onGoToDistribution: () => void;
 }) {
   if (loading) {
@@ -378,15 +384,43 @@ function MesoExercisesView({ groups, loading, weeks, allExercises, onUpdateExerc
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   return (
                     <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-3 space-y-2">
-                      <p className="text-label font-sans font-bold text-white truncate">
-                        {ex?.name || we.exerciseId}
-                        {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-label font-sans font-bold text-white truncate">
+                          {ex?.name || we.exerciseId}
+                          {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                        </p>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => onReplaceExercise(group, exIdx)}
+                            title="Cambiar ejercicio"
+                            className="text-ink-3 hover:text-accent transition-colors"
+                          >
+                            <Icon name="swap_horiz" size="s" />
+                          </button>
+                          <button
+                            onClick={() => onRemoveExercise(group, exIdx)}
+                            title="Quitar ejercicio"
+                            className="text-ink-3 hover:text-red-400 transition-colors"
+                          >
+                            <Icon name="close" size="s" />
+                          </button>
+                        </div>
+                      </div>
                       <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
                     </div>
                   );
                 })
               )}
+              <button
+                onClick={() => onAddExercise(group)}
+                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+              >
+                <Icon name="add" size="s" />
+                Añadir ejercicio
+              </button>
+              <p className="font-mono text-caption text-ink-3">
+                Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
+              </p>
             </div>
           </div>
         ))}
@@ -643,6 +677,16 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   const [templates, setTemplates]                   = useState<MesocycleTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates]     = useState(false);
   const [applyingTemplate, setApplyingTemplate]     = useState(false);
+
+  // T11.a: un único picker para las dos pantallas que cambian un ejercicio —
+  // la vista previa del generador y "Ejercicios programados" (mesociclo ya
+  // asignado). `exIdx: null` significa "añadir", un número significa
+  // "cambiar ese índice".
+  const [exercisePicker, setExercisePicker] = useState<
+    | { context: 'preview'; dayIdx: number; exIdx: number | null; group?: MuscleGroup }
+    | { context: 'programado'; group: MesoWorkoutGroup; exIdx: number | null; muscleGroup?: MuscleGroup }
+    | null
+  >(null);
 
   // Generator state
   const [genPhase, setGenPhase]           = useState<GeneratorPhase>('idle');
@@ -1025,6 +1069,22 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     }));
   }
 
+  // T11.a: sustituye exerciseId/name/muscleGroup manteniendo series, reps,
+  // RIR, descanso, notas y técnica — cambiar el ejercicio no debería
+  // obligar a reconfigurar todo lo demás desde cero.
+  function replacePEx(dayIdx: number, exIdx: number, ex: Exercise) {
+    setPreviewDays(prev => prev.map((d, di) => di !== dayIdx ? d : {
+      ...d,
+      exercises: d.exercises.map((e, ei) => ei !== exIdx ? e : {
+        ...e,
+        exerciseId: ex.id,
+        name: ex.name,
+        muscleGroup: ex.muscleGroup ?? e.muscleGroup,
+        equipmentMismatch: undefined,
+      }),
+    }));
+  }
+
   // ── "Ejercicios programados" edit helpers ──────────────────────────────────
   // Since handleAssign now creates one Workout doc per day (reused across every week),
   // a group normally wraps a single workoutId — but old mesocycles generated before this
@@ -1038,6 +1098,64 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
     await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
+  }
+
+  // T11.a: escribe el Workout del día — se aplica a las semanas restantes de
+  // una vez (un solo Workout reutilizado por semana, ver comentario de
+  // handleAssign). Las sesiones YA REGISTRADAS no se tocan: WorkoutLog guarda
+  // su propia copia de lo que se hizo, no una referencia al Workout.
+  async function writeMesoWorkoutExercises(group: MesoWorkoutGroup, updatedExercises: WorkoutExercise[]) {
+    queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
+      group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
+    ));
+    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
+  }
+
+  function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
+    setExercisePicker({ context: 'programado', group, exIdx, muscleGroup: group.exercises[exIdx]?.muscleGroup });
+  }
+
+  function handleAddMesoExercise(group: MesoWorkoutGroup) {
+    setExercisePicker({ context: 'programado', group, exIdx: null });
+  }
+
+  function handleRemoveMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
+    if (!window.confirm('¿Quitar este ejercicio? Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.')) return;
+    void writeMesoWorkoutExercises(group, group.exercises.filter((_, i) => i !== exIdx));
+  }
+
+  // Selección final del picker, compartida por los dos contextos (vista
+  // previa del generador y "Ejercicios programados").
+  function handlePickExercise(ex: Exercise) {
+    if (!exercisePicker) return;
+    if (exercisePicker.context === 'preview') {
+      const { dayIdx, exIdx } = exercisePicker;
+      if (exIdx === null) addPEx(dayIdx, ex.id);
+      else replacePEx(dayIdx, exIdx, ex);
+      setExercisePicker(null);
+      return;
+    }
+    const { group, exIdx } = exercisePicker;
+    if (exIdx === null) {
+      const newEx: WorkoutExercise = {
+        exerciseId: ex.id, order: group.exercises.length, sets: 3, reps: '8-12', rir: 2, restSeconds: 90,
+        muscleGroup: ex.muscleGroup,
+      };
+      void writeMesoWorkoutExercises(group, [...group.exercises, newEx]);
+    } else {
+      // Aviso honesto antes de escribir: aplica a todas las semanas, y por
+      // ahora es un texto fijo — el número real de sesiones ya registradas
+      // con el ejercicio anterior necesitaría leer WorkoutLog, que esta
+      // pantalla no carga hoy; mejor decir la verdad general que inventar
+      // una cifra.
+      if (!window.confirm('Este cambio se aplica a TODAS las semanas de este mesociclo. Las sesiones ya completadas no se tocan (guardan su propia copia). ¿Continuar?')) {
+        setExercisePicker(null);
+        return;
+      }
+      const updated = group.exercises.map((e, i) => i !== exIdx ? e : { ...e, exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? e.muscleGroup });
+      void writeMesoWorkoutExercises(group, updated);
+    }
+    setExercisePicker(null);
   }
 
   // ── Template picker ─────────────────────────────────────────────────────────
@@ -1522,12 +1640,22 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                         )}
                                       </div>
                                     </div>
-                                    <button
-                                      onClick={() => removePEx(dayIdx, peIdx)}
-                                      className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0 "
-                                    >
-                                      <span className="material-symbols-outlined text-body-s">close</span>
-                                    </button>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <button
+                                        onClick={() => setExercisePicker({ context: 'preview', dayIdx, exIdx: peIdx, group: pe.muscleGroup })}
+                                        title="Cambiar ejercicio"
+                                        className="text-ink-3 hover:text-accent transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-body-s">swap_horiz</span>
+                                      </button>
+                                      <button
+                                        onClick={() => removePEx(dayIdx, peIdx)}
+                                        title="Quitar ejercicio"
+                                        className="text-ink-3 hover:text-red-400 transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-body-s">close</span>
+                                      </button>
+                                    </div>
                                   </div>
                                   <ExerciseConfigEditor we={pe} onChange={patch => updatePExPatch(dayIdx, peIdx, patch)} />
                                 </div>
@@ -1536,18 +1664,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                             {/* Add exercise */}
                             <div className="mt-2">
-                              <select
-                                value=""
-                                onChange={e => { if (e.target.value) addPEx(dayIdx, e.target.value); }}
-                                className="w-full bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+                              <button
+                                type="button"
+                                onClick={() => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
+                                className="w-full flex items-center justify-center gap-2 bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
                               >
-                                <option value="">+ Añadir ejercicio…</option>
-                                {allExercises.map(ex => (
-                                  <option key={ex.id} value={ex.id}>
-                                    {ex.name}{ex.muscleGroup ? ` (${MUSCLE_LABELS[ex.muscleGroup]})` : ''}
-                                  </option>
-                                ))}
-                              </select>
+                                <span className="material-symbols-outlined text-body-s">add</span>
+                                Añadir ejercicio
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -1622,6 +1746,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   weeks={editing.weeks}
                   allExercises={allExercises}
                   onUpdateExercise={updateMesoWorkoutExercise}
+                  onReplaceExercise={handleReplaceMesoExercise}
+                  onAddExercise={handleAddMesoExercise}
+                  onRemoveExercise={handleRemoveMesoExercise}
                   onGoToDistribution={() => setEditorTab('distribution')}
                 />
               )}
@@ -1717,6 +1844,18 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               })}
             </div>
         </Dialog>
+      )}
+
+      {exercisePicker && (
+        <ExercisePickerSheet
+          open
+          onClose={() => setExercisePicker(null)}
+          exercises={allExercises}
+          athleteEquipment={athleteEquipment}
+          initialGroup={exercisePicker.context === 'preview' ? exercisePicker.group : exercisePicker.muscleGroup}
+          onSelect={handlePickExercise}
+          title={exercisePicker.exIdx === null ? 'Añadir ejercicio' : 'Cambiar ejercicio'}
+        />
       )}
     </div>
   );

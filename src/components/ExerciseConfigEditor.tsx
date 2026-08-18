@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup } from '../types';
 import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
@@ -8,6 +9,13 @@ interface Props {
   onChange: (patch: Partial<WorkoutExercise>) => void;
 }
 
+// T11.b (18-08). "Top set / back-off" no es un concepto del modelo de datos
+// —WorkoutSetGroup ya hacía exactamente lo que Dani pedía: rangos de reps
+// distintos dentro de un mismo ejercicio— era jerga metida en la interfaz que
+// obligaba a etiquetar algo que no hacía falta etiquetar. Estas cuatro son
+// sugerencias, no la lista cerrada: "Escribir..." abre un campo libre.
+const ETIQUETAS_SUGERIDAS = ['Pesado', 'Ligero', 'Al fallo'];
+
 // Full execution-config editor for one exercise inside a routine — series/reps/rir
 // (uniform or split into top-set/back-off-set blocks), rest, high-intensity technique,
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
@@ -15,14 +23,21 @@ interface Props {
 // so a coach configures an exercise the same way no matter which screen they're on.
 export default function ExerciseConfigEditor({ we, onChange }: Props) {
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
+  // Qué bloques muestran el campo de texto libre en vez del Select de
+  // sugerencias — estado de interfaz, no del ejercicio: una etiqueta
+  // personalizada sigue siendo solo texto en WorkoutSetGroup.label.
+  const [etiquetaLibre, setEtiquetaLibre] = useState<Set<number>>(new Set());
 
   const enableGroups = () => {
-    const seed: WorkoutSetGroup = { label: 'Top set', sets: we.sets, reps: we.reps, rir: we.rir };
+    // Label vacío al crear el primer bloque — antes se rellenaba con "Top
+    // set" sin que nadie lo hubiera pedido; ahora es opcional de verdad.
+    const seed: WorkoutSetGroup = { label: '', sets: we.sets, reps: we.reps, rir: we.rir };
     onChange(syncAggregateFromGroups({ ...we, setGroups: [seed] }));
   };
 
   const disableGroups = () => {
     onChange({ setGroups: undefined });
+    setEtiquetaLibre(new Set());
   };
 
   const updateGroup = (gIdx: number, field: keyof WorkoutSetGroup, value: string | number) => {
@@ -80,9 +95,10 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           <button
             type="button"
             onClick={hasGroups ? disableGroups : enableGroups}
-            className="font-mono text-caption text-accent hover:text-white transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded-control font-sans text-caption font-bold text-accent hover:text-white hover:bg-accent/10 transition-colors"
           >
-            {hasGroups ? '← Volver a series uniformes' : 'Dividir en bloques (top set / back-off)'}
+            <Icon name={hasGroups ? 'undo' : 'add'} size="s" />
+            {hasGroups ? 'Volver a un solo rango' : 'Añadir otro rango de reps'}
           </button>
         </div>
 
@@ -128,17 +144,50 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           </div>
         ) : (
           <div className="space-y-2">
-            {(we.setGroups || []).map((g, gIdx) => (
+            {/* Resumen en vivo — calculado de los bloques, no de we.sets: si
+                alguna vez se desincronizan (datos antiguos, un cambio desde
+                fuera de este editor), esto enseña el número REAL en vez de
+                dejar dos verdades a la vez. */}
+            <p className="font-mono text-caption text-white bg-bg border border-hairline rounded-control px-3 py-2">
+              {(we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0)} series ·{' '}
+              {(we.setGroups || [])
+                .map(g => `${Math.max(1, g.sets || 1)}×${g.reps}${g.rir !== undefined && g.rir !== null ? ` (RIR ${g.rir})` : ''}`)
+                .join(' + ')}
+            </p>
+
+            {(we.setGroups || []).map((g, gIdx) => {
+              const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
+              const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
+              return (
               <div key={gIdx} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end bg-bg border border-hairline rounded-surface p-2">
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta</label>
-                  <input
-                    type="text"
-                    value={g.label || ''}
-                    onChange={e => updateGroup(gIdx, 'label', e.target.value)}
-                    placeholder="Top set, Back-off..."
-                    className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta (opcional)</label>
+                  {mostrarLibre ? (
+                    <input
+                      type="text"
+                      autoFocus={etiquetaLibre.has(gIdx)}
+                      value={g.label || ''}
+                      onChange={e => updateGroup(gIdx, 'label', e.target.value)}
+                      placeholder="Escribe una etiqueta"
+                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                  ) : (
+                    <select
+                      value={g.label || ''}
+                      onChange={e => {
+                        if (e.target.value === '__libre__') {
+                          setEtiquetaLibre(prev => new Set(prev).add(gIdx));
+                          return;
+                        }
+                        updateGroup(gIdx, 'label', e.target.value);
+                      }}
+                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent appearance-none"
+                    >
+                      <option value="">—</option>
+                      {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
+                      <option value="__libre__">Escribir...</option>
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
@@ -170,24 +219,20 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                 <button
                   onClick={() => removeGroup(gIdx)}
                   className="p-2 text-ink-2 hover:text-red-400 transition-colors"
-                  title="Eliminar bloque"
+                  title="Eliminar rango"
                 >
                   <Icon name="delete" size="s" />
                 </button>
               </div>
-            ))}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={addGroup}
-                className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
-              >
-                <Icon name="add" size="s" />
-                Añadir bloque
-              </button>
-              <span className="font-mono text-caption text-ink-3">
-                Total: {we.sets} series · {we.reps}
-              </span>
-            </div>
+              );
+            })}
+            <button
+              onClick={addGroup}
+              className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
+            >
+              <Icon name="add" size="s" />
+              Añadir otro rango de reps
+            </button>
             <div>
               <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
               <input
