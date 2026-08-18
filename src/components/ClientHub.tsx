@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -284,6 +284,24 @@ export default function ClientHub({
     guardedTabChange(lastTabByZone[zone] ?? ZONE_TABS[zone][0]);
   };
 
+  // Altura real del bloque sticky de pestañas (nav de zona + sub-pestañas si
+  // la zona tiene más de una), medida y no escrita a mano: la segunda fila
+  // solo existe a veces, así que la altura cambia según la zona. Publicada
+  // como --hub-sticky-top para que paneles embebidos (p. ej. la barra de
+  // intercambios de nutrición) se peguen justo debajo sin taparla.
+  const subnavRef = useRef<HTMLDivElement>(null);
+  const [subnavHeight, setSubnavHeight] = useState(0);
+  useEffect(() => {
+    const el = subnavRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height;
+      if (h !== undefined) setSubnavHeight(h);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeZone]);
+
   // ── Questionnaires ─────────────────────────────────────────────────────────
   const coachQuestionnairesKey = ['questionnairesByCoach', coachId] as const;
   const { data: coachQuestionnaires = [] } = useQuery({
@@ -505,7 +523,7 @@ export default function ClientHub({
           usan sticky con z-sticky, y a igualdad de z-index gana el que va
           después en el DOM — las pestañas quedaban tapadas por su propio
           contenido. */}
-      <div className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-field/95 backdrop-blur-sm space-y-2 ">
+      <div ref={subnavRef} className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-field/95 backdrop-blur-sm space-y-2 ">
         <Tabs
           items={(Object.keys(ZONE_TABS) as Zone[]).map(zone => ({ id: zone, label: ZONE_META[zone].label, icon: ZONE_META[zone].icon }))}
           value={activeZone}
@@ -525,7 +543,11 @@ export default function ClientHub({
       </div>
 
       {/* Un solo Suspense para las diez pestañas: solo hay una montada a la
-          vez, así que diez serían diez veces el mismo hueco. */}
+          vez, así que diez serían diez veces el mismo hueco.
+          --hub-sticky-top: publica dónde termina el bloque sticky de arriba
+          para que paneles embebidos con su propio sticky (p. ej. la barra de
+          intercambios de nutrición) se peguen justo debajo, sin taparlo. */}
+      <div style={{ ['--hub-sticky-top' as string]: `calc(var(--header-h) + ${subnavHeight}px)` } as React.CSSProperties}>
       <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
 
       {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
@@ -677,6 +699,7 @@ export default function ClientHub({
       )}
 
       </Suspense>
+      </div>
 
       {/* Selector de atleta — la key={athlete.email} del padre (ClientsScreen)
           ya garantiza un remonte limpio del Hub entero al navegar aquí. */}

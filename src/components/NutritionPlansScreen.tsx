@@ -542,8 +542,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         </div>
       </div>
 
-      {/* Live dashboard */}
-      <div className="bg-bg border border-hairline rounded-surface p-4 sticky top-0 z-10">
+      {/* Live dashboard. top-[var(--hub-sticky-top,0px)]: cuando este editor
+          se monta embebido en la ficha del cliente (ClientDietsPanel dentro
+          de ClientHub), top-0 significaba "arriba de la pantalla" y quedaba
+          por debajo de la cabecera pero por encima de las pestañas del hub.
+          El fallback 0px conserva el comportamiento cuando se usa suelto. */}
+      <div className="bg-bg border-b border-hairline p-4 sticky top-[var(--hub-sticky-top,0px)] z-[var(--z-sticky)]">
         <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Distribución en vivo</p>
         <div className="grid grid-cols-3 gap-x-2 gap-y-3">
           {BUDGET_CATS.map(cat => {
