@@ -7,6 +7,7 @@ import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, pa
 import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL } from '../utils/mealDistribution';
 import { useToast } from '../hooks/useToast';
 import { atletasActivos } from '../utils/atletas';
+import { haptics } from '../services/haptics';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
 
@@ -155,6 +156,12 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
+  // T13 (18-08): feedback de "añadido" sin cerrar el sheet — cuántas veces se
+  // añadió cada alimento en esta sesión del picker (para el ×N y el contador
+  // de "Hecho"), y cuál mostró el tick hace menos de ~1,2s.
+  const [pickerAddedCounts, setPickerAddedCounts] = useState<Record<string, number>>({});
+  const [pickerRecentlyAdded, setPickerRecentlyAdded] = useState<string | null>(null);
+  const pickerRecentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // In embedded mode, initialise the form from the diet passed by the parent
   useEffect(() => {
@@ -386,10 +393,16 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     setPickerMealId(mealId);
     setPickerCategory('HC');
     setSearchTerm('');
+    setPickerAddedCounts({});
+    setPickerRecentlyAdded(null);
   };
 
+  // T13 (18-08): ya no cierra el sheet — antes, añadir tres alimentos a una
+  // comida eran tres viajes de ida y vuelta al picker. Feedback en su lugar:
+  // háptico, tick en la fila (con ×N si se repite) y un toast con Deshacer.
   const handleSelectFood = (food: MealItem) => {
     if (!pickerMealId) return;
+    const mealId = pickerMealId;
     const newItem: DietItem = {
       category: food.category,
       foodLabel: food.label,
@@ -398,16 +411,49 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
     };
     setForm(f => ({
       ...f,
-      meals: f.meals.map(m => m.id === pickerMealId ? { ...m, items: [...m.items, newItem] } : m),
+      meals: f.meals.map(m => m.id === mealId ? { ...m, items: [...m.items, newItem] } : m),
     }));
-    setPickerMealId(null);
+
+    haptics.medium();
+    setPickerAddedCounts(prev => ({ ...prev, [food.id]: (prev[food.id] ?? 0) + 1 }));
+    setPickerRecentlyAdded(food.id);
+    if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
+    pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
+
+    showToast(`Añadido: ${food.label}`, 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => {
+        // Filtra por IDENTIDAD del objeto (newItem), no por contenido: dos
+        // alimentos iguales añadidos dos veces son dos objetos distintos en
+        // el array, y solo se deshace el último.
+        setForm(f => ({
+          ...f,
+          meals: f.meals.map(m => m.id === mealId ? { ...m, items: m.items.filter(it => it !== newItem) } : m),
+        }));
+        setPickerAddedCounts(prev => ({ ...prev, [food.id]: Math.max(0, (prev[food.id] ?? 1) - 1) }));
+      },
+    });
   };
 
-  const filteredFoods = foodItems.filter(f =>
-    f.mode === activeDietMode &&
-    f.category === pickerCategory &&
-    (!searchTerm || f.label.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // T13: al buscar, busca en TODAS las categorías del modo activo — igual
+  // que el selector del atleta (NutritionScreen.tsx). Sin esto, el coach
+  // tenía que adivinar en qué categoría vive un alimento antes de poder
+  // buscarlo.
+  const filteredFoods = (() => {
+    const term = searchTerm.trim().toLowerCase();
+    return foodItems.filter(f =>
+      f.mode === activeDietMode &&
+      (term ? f.label.toLowerCase().includes(term) : f.category === pickerCategory)
+    );
+  })();
+
+  // T13: estado del presupuesto de la comida abierta, para la cabecera del
+  // picker — es justo lo que el coach está intentando cuadrar, y antes
+  // quedaba tapado por el propio sheet.
+  const pickerMeal = pickerMealId ? form.meals.find(m => m.id === pickerMealId) : undefined;
+  const pickerMealPlaced = pickerMeal ? computeMealPlaced(pickerMeal) : null;
+  const pickerMealTarget = pickerMeal?.target?.[pickerCategory];
+  const pickerTotalAdded = Object.values<number>(pickerAddedCounts).reduce((a, b) => a + b, 0);
 
   // ── Selected athlete ─────────────────────────────────────────────────────────
   const selectedAthlete = athletes.find(a => a.email === selectedEmail);
@@ -946,16 +992,33 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         </Dialog>
       )}
 
-      {/* Food picker sheet */}
+      {/* Food picker sheet. T13: alto="completo" — con la barra de filtros +
+          modos + buscador, en "auto" (max-h-[85vh]) a la lista le quedaba un
+          tercio de pantalla sobre 311 alimentos. */}
       {pickerMealId && (
         <Sheet
           open
           onClose={() => setPickerMealId(null)}
           title="Añadir alimento"
+          alto="completo"
+          footer={
+            <Button onClick={() => setPickerMealId(null)} fullWidth>
+              {pickerTotalAdded > 0
+                ? `Hecho · ${pickerTotalAdded} añadido${pickerTotalAdded === 1 ? '' : 's'}`
+                : 'Hecho'}
+            </Button>
+          }
           toolbar={(
             <>
-              <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
-                {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
+              <div className="px-4 pb-2 flex items-center justify-between gap-2">
+                <span className="font-sans text-caption text-ink-2 uppercase">
+                  {CAT_LABEL[pickerCategory]} · {MODE_LABEL[activeDietMode]}
+                </span>
+                {pickerMealPlaced && (
+                  <span className="font-mono text-caption text-ink-2">
+                    {fmtQty(pickerMealPlaced[pickerCategory])} / {pickerMealTarget !== undefined ? fmtQty(pickerMealTarget) : '—'} {pickerCategory.replace('_', ' ')}
+                  </span>
+                )}
               </div>
 
             {enabledModes.length > 1 && (
@@ -988,15 +1051,28 @@ export default function NutritionPlansScreen({ coachId: _coachId, athleteEmail, 
         >
             <div className="pt-4 space-y-2">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-sans text-label text-ink-2 italic">Ningún alimento coincide.</div>
-              ) : filteredFoods.map(food => (
-                <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
-                >
-                  <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                  <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent transition-colors select-none flex-shrink-0 ml-3" />
-                </button>
-              ))}
+                <EmptyState icon="search_off" title="Ningún alimento coincide." />
+              ) : filteredFoods.map(food => {
+                const veces = pickerAddedCounts[food.id] ?? 0;
+                const reciente = pickerRecentlyAdded === food.id;
+                return (
+                  <button key={food.id} onClick={() => handleSelectFood(food)}
+                    className={`w-full flex items-center justify-between p-4 rounded-control border text-left transition-all group ${
+                      reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
+                    }`}
+                  >
+                    <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                    {reciente ? (
+                      <span className="flex items-center gap-1 flex-shrink-0 ml-3 text-success">
+                        <Icon name="check_circle" size="m" />
+                        {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
+                      </span>
+                    ) : (
+                      <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent transition-colors select-none flex-shrink-0 ml-3" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
         </Sheet>
       )}

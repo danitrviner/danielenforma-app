@@ -76,9 +76,18 @@ type Props = {
   size?: SheetSize;
   /** Nombre accesible cuando no hay `title` visible. */
   label?: string;
+  /**
+   * T13 (18-08). `auto` (por defecto) es el comportamiento de siempre —
+   * crece hasta `max-h-[85vh]`. `completo` es para los pickers con lista
+   * larga y su propia barra de filtros/buscador (el selector de alimentos:
+   * con 311 alimentos y la toolbar encima, a la lista le quedaba un tercio
+   * de pantalla en `auto`) — ocupa el viewport entero, sin esquinas
+   * redondeadas arriba ni margen inferior en escritorio.
+   */
+  alto?: 'auto' | 'completo';
 };
 
-export default function Sheet({ open, onClose, title, children, footer, toolbar, size = 'l', label }: Props) {
+export default function Sheet({ open, onClose, title, children, footer, toolbar, size = 'l', label, alto = 'auto' }: Props) {
   const ref = React.useRef<HTMLDivElement>(null);
   const idTitulo = React.useId();
 
@@ -134,10 +143,11 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
         tabIndex={-1}
         style={{ transform: arrastreY ? `translateY(${arrastreY}px)` : undefined }}
         className={
-          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
+          `relative z-[var(--z-modal)] flex w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
+          + `${alto === 'completo' ? 'h-[100dvh] max-h-none' : 'max-h-[85vh]'} `
           + `${arrastreY ? '' : 'transition-transform duration-(--duration-state) ease-brand'} `
-          + 'rounded-t-sheet border-t border-x border-strong bg-raised shadow-e2 '
-          + 'focus:outline-none sm:mb-6 sm:rounded-sheet sm:border'
+          + `border-t border-x border-strong bg-raised shadow-e2 focus:outline-none sm:border `
+          + `${alto === 'completo' ? '' : 'rounded-t-sheet sm:mb-6 sm:rounded-sheet'}`
         }
       >
         {/* Asa: arrastrar hacia abajo sigue al dedo/ratón; soltar por encima
@@ -169,7 +179,12 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
 
         {toolbar && <div className="shrink-0">{toolbar}</div>}
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+        <div
+          className="flex-1 overflow-y-auto px-4 pb-4"
+          style={alto === 'completo' && !footer ? { paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' } : undefined}
+        >
+          {children}
+        </div>
 
         {footer && (
           <div

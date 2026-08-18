@@ -117,6 +117,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number | null; category: FoodCategory } | null>(null);
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
+  // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
+  // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
+  // única que cierra al terminar, no hace falta contador ahí.
+  const [pickerAddedCounts, setPickerAddedCounts] = useState<Record<string, number>>({});
+  const [pickerRecentlyAdded, setPickerRecentlyAdded] = useState<string | null>(null);
+  const pickerRecentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recipe picker
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
@@ -572,6 +578,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setPickerItem({ mealId, itemIdx: null, category });
     setPickerCategory(category);
     setSearchTerm('');
+    setPickerAddedCounts({});
+    setPickerRecentlyAdded(null);
   };
 
   const handleSelectFood = (food: MealItem) => {
@@ -596,7 +604,26 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       // (ver comentario arriba) — sin esto, tocar "+" no daba ninguna señal
       // de que el toque había hecho algo.
       void haptics.light();
-      showToast(`${food.label} añadido.`, 'success');
+      // T13: tick + ×N en la fila, y Deshacer en el toast.
+      setPickerAddedCounts(prev => ({ ...prev, [food.id]: (prev[food.id] ?? 0) + 1 }));
+      setPickerRecentlyAdded(food.id);
+      if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
+      pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
+      showToast(`${food.label} añadido.`, 'success', {
+        actionLabel: 'Deshacer',
+        onAction: () => {
+          setSelectedDiet(prev => {
+            if (!prev) return prev;
+            return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: m.items.filter(it => it !== newItem) }) };
+          });
+          setItemStates(prev => {
+            const next = { ...prev };
+            delete next[`${mealId}_${newIdx}`];
+            return next;
+          });
+          setPickerAddedCounts(prev => ({ ...prev, [food.id]: Math.max(0, (prev[food.id] ?? 1) - 1) }));
+        },
+      });
     } else {
       // Swap an existing item in place — a single replacement, so close afterwards.
       const key = `${mealId}_${itemIdx}`;
@@ -1927,12 +1954,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </Sheet>
       )}
 
-      {/* Food picker sheet */}
-      {pickerItem && (
+      {/* Food picker sheet. T13: alto="completo" — mismo motivo que el
+          selector del coach: con la barra de modos/categorías/buscador
+          encima, "auto" dejaba la lista en un tercio de pantalla. */}
+      {pickerItem && (() => {
+        const totalAdded = Object.values<number>(pickerAddedCounts).reduce((a, b) => a + b, 0);
+        return (
         <Sheet
           open
           onClose={() => setPickerItem(null)}
           title={pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}
+          alto="completo"
+          footer={
+            pickerItem.itemIdx === null ? (
+              <Button onClick={() => setPickerItem(null)} fullWidth>
+                {totalAdded > 0 ? `Hecho · ${totalAdded} añadido${totalAdded === 1 ? '' : 's'}` : 'Hecho'}
+              </Button>
+            ) : undefined
+          }
           toolbar={(
             <>
               <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
@@ -1976,22 +2015,36 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   actionLabel={searchTerm ? 'Quitar búsqueda' : undefined}
                   onAction={searchTerm ? () => setSearchTerm('') : undefined}
                 />
-              ) : filteredFoods.map(food => (
-                <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all active:scale-[0.98] group"
-                >
-                  {isSearchingFoods && (
-                    <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
-                      {food.category.replace('_', ' ')}
-                    </span>
-                  )}
-                  <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
-                </button>
-              ))}
+              ) : filteredFoods.map(food => {
+                const veces = pickerAddedCounts[food.id] ?? 0;
+                const reciente = pickerRecentlyAdded === food.id;
+                return (
+                  <button key={food.id} onClick={() => handleSelectFood(food)}
+                    className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all active:scale-[0.98] group ${
+                      reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
+                    }`}
+                  >
+                    {isSearchingFoods && (
+                      <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                        {food.category.replace('_', ' ')}
+                      </span>
+                    )}
+                    <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                    {reciente ? (
+                      <span className="flex items-center gap-1 flex-shrink-0 text-success">
+                        <Icon name="check_circle" size="m" />
+                        {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
+                      </span>
+                    ) : (
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
         </Sheet>
-      )}
+        );
+      })()}
 
       {/* Hoja de ajuste (F3.8, panel 02) — steppers por macro, píldora de encaje en vivo */}
       {adjustMealId && selectedDiet && (() => {
