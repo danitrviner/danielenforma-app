@@ -8,12 +8,10 @@ import HomeCoachScreen from './HomeCoachScreen';
 import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
-import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
-import ProgressRing from './ProgressRing';
 import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
@@ -99,20 +97,38 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const allWorkoutLogs = new Map<string, WorkoutLog[]>();
   athletes.forEach((a, i) => allWorkoutLogs.set(a.email, workoutLogsQueries[i]?.data ?? []));
 
-  // Search + grid density for the athlete list
+  // Search + grid density for the athlete list. Tarjetas más compactas y más
+  // opciones de columnas (hasta 6): antes el máximo eran 4 columnas con
+  // tarjetas grandes, y con más de un puñado de atletas la lista se hacía
+  // larguísima de bajar.
   const [search, setSearch] = useState('');
-  const [gridCols, setGridCols] = useState<2 | 3 | 4>(() => {
+  const [gridCols, setGridCols] = useState<2 | 3 | 4 | 5 | 6>(() => {
     const v = Number(localStorage.getItem('enforma_clients_grid_cols'));
-    return v === 2 || v === 3 || v === 4 ? v : 3;
+    return v === 2 || v === 3 || v === 4 || v === 5 || v === 6 ? v : 4;
   });
-  const changeGridCols = (n: 2 | 3 | 4) => {
+  const changeGridCols = (n: 2 | 3 | 4 | 5 | 6) => {
     localStorage.setItem('enforma_clients_grid_cols', String(n));
     setGridCols(n);
   };
-  const GRID_COLS_CLASS: Record<2 | 3 | 4, string> = {
+  const GRID_COLS_CLASS: Record<2 | 3 | 4 | 5 | 6, string> = {
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
     4: 'md:grid-cols-2 lg:grid-cols-4',
+    5: 'md:grid-cols-3 lg:grid-cols-5',
+    6: 'md:grid-cols-3 lg:grid-cols-6',
+  };
+
+  // Modo de vista: tarjetas (diseño 1a) o fila compacta (diseño 1b, ~80px por
+  // atleta) — para coaches con muchos atletas que prefieren hacer scroll
+  // rápido antes de entrar al detalle de uno. El selector de columnas solo
+  // tiene sentido en modo tarjetas.
+  const [viewMode, setViewMode] = useState<'cards' | 'compact'>(() => {
+    const v = localStorage.getItem('enforma_clients_view_mode');
+    return v === 'compact' ? 'compact' : 'cards';
+  });
+  const changeViewMode = (m: 'cards' | 'compact') => {
+    localStorage.setItem('enforma_clients_view_mode', m);
+    setViewMode(m);
   };
 
   const openAthleteHub = (athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
@@ -170,6 +186,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         : Math.floor((todayMs - lastCheckinMs) / 86_400_000);
       const checkinLate = daysSince === null || daysSince > 7;
 
+      const daysSinceLogin = athlete.lastLoginAt
+        ? Math.floor((todayMs - new Date(athlete.lastLoginAt).getTime()) / 86_400_000)
+        : null;
+
       const { daysLeft: planDaysLeft, expired: planExpired, expiringSoon: planSoon } = calcPlanExpiry(athlete);
 
       const athleteAssignments = allAssignments.get(athlete.email) ?? [];
@@ -182,8 +202,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       if (checkinLate)    sortScore = Math.min(sortScore, 2);
       if (setupPct < 100) sortScore = Math.min(sortScore, 3);
 
-      const adherence = computeAdherenceScore(athleteAssignments, athleteCheckins);
-
       const athleteLogs = allWorkoutLogs.get(athlete.email) ?? [];
       const pendingNotesCount = athleteLogs.reduce((n, log) => {
         let count = n;
@@ -195,14 +213,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       return {
         ...athlete,
         planDaysLeft, planExpired, planSoon,
-        daysSince, checkinLate,
+        daysSince, checkinLate, daysSinceLogin,
         totalCheckCount: athleteCheckins.length,
         pendingCount: getPendingReviews(athleteCheckins).length,
         pendingNotesCount,
         sortScore,
         setupPct,
-        adherenceScore: adherence.score,
-        adherenceHasData: adherence.hasData,
       };
     }).sort((a, b) => a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
@@ -312,6 +328,251 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         onSearchChange={setSearch}
       />
 
+      {/* Athlete list — junto a "Atletas del Entrenador", no al final de la
+          pantalla: es lo primero que el coach quiere ver al entrar. */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-end gap-3">
+          {/* Tarjetas vs. fila compacta (diseño 1b) */}
+          <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
+            <button
+              onClick={() => changeViewMode('cards')}
+              title="Tarjetas"
+              className={`w-7 h-7 rounded-control flex items-center justify-center transition-all ${
+                viewMode === 'cards' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>grid_view</span>
+            </button>
+            <button
+              onClick={() => changeViewMode('compact')}
+              title="Fila compacta"
+              className={`w-7 h-7 rounded-control flex items-center justify-center transition-all ${
+                viewMode === 'compact' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>table_rows</span>
+            </button>
+          </div>
+          {viewMode === 'cards' && (
+            <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
+              {([2, 3, 4, 5, 6] as const).map(n => (
+                <button
+                  key={n}
+                  onClick={() => changeGridCols(n)}
+                  title={`${n} columnas`}
+                  className={`w-7 h-7 rounded-control font-sans text-label font-bold transition-all ${
+                    gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="text-caption bg-teal-500/10 text-teal-300 px-3 py-2 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
+            {filteredAthletes.length} ATLETAS
+          </span>
+        </div>
+
+        {loadingAthletes ? (
+          <div className={viewMode === 'cards' ? `grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4` : 'space-y-px'}>
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+          </div>
+        ) : athletes.length === 0 ? (
+          <EmptyState
+            icon="group"
+            title="No hay atletas registrados todavía."
+            actionLabel="Invitar a tu primer atleta"
+            onAction={() => navigate('/crm/clientes')}
+          />
+        ) : filteredAthletes.length === 0 ? (
+          <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
+        ) : viewMode === 'compact' ? (
+          /* Fila compacta (diseño 1b) — avatar, nombre, un dato clave y el
+             anillo de setup, ~80px por atleta. Pensada para escanear rápido
+             una lista larga antes de entrar al detalle de uno. */
+          <div className="flex flex-col gap-px bg-hairline rounded-surface overflow-hidden border border-hairline">
+            {filteredAthletes.map(athlete => {
+              const { setupPct, totalCheckCount, checkinLate, planExpired, daysSince } = athlete;
+              const isAlert = planExpired || (checkinLate && daysSince !== null && daysSince > 7);
+              const ringR = 13.5, ringCx = 16, ringSize = 32;
+              const ringCirc = 2 * Math.PI * ringR;
+              const ringOffset = ringCirc * (1 - Math.max(0, Math.min(100, setupPct)) / 100);
+              const subtitle = totalCheckCount === 0
+                ? `Sin registros · racha ${athlete.currentStreak || 0} sem`
+                : `${athlete.actualWeight || athlete.initialWeight} kg · racha ${athlete.currentStreak || 0} sem`;
+
+              return (
+                <button
+                  key={athlete.userId}
+                  onClick={() => openAthleteHub(athlete)}
+                  className={`bg-bg flex items-center gap-3 px-4 py-3 text-left hover:bg-raised/50 transition-colors ${
+                    isAlert ? 'shadow-[inset_3px_0_0_var(--color-danger)]' : ''
+                  }`}
+                >
+                  <div className="w-9.5 h-9.5 rounded-full overflow-hidden border border-hairline flex-shrink-0" style={{ width: 38, height: 38 }}>
+                    <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
+                    <p className="font-mono text-caption text-ink-2 truncate">{subtitle}</p>
+                  </div>
+                  <div className="relative flex-none" style={{ width: ringSize, height: ringSize }}>
+                    <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90">
+                      <circle cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="2.5" />
+                      <circle
+                        cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke={setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} strokeWidth="2.5"
+                        strokeLinecap="round" strokeDasharray={ringCirc} strokeDashoffset={ringOffset}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[8.5px] font-semibold text-white/80">{setupPct}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
+            {filteredAthletes.map(athlete => {
+              const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
+                      daysSinceLogin, pendingCount, setupPct, totalCheckCount } = athlete;
+              // Alerta real (diseño 1c) — plan vencido o 7+ días sin actividad,
+              // no "casi vence" ni cualquier otro matiz: eso ya lo dicen los
+              // badges. El borde rojo se reserva a lo urgente de verdad.
+              const isAlert = planExpired || (checkinLate && daysSince !== null && daysSince > 7);
+              const setupRing = setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)';
+
+              // Anillo de progreso del setup — trazo fino (3px), % centrado.
+              // No se reutiliza <ProgressRing/> aquí: esa tiene un trazo fijo de
+              // 9px pensado para el tamaño grande del dashboard del atleta.
+              const ringR = 18, ringCx = 21, ringSize = 42;
+              const ringCirc = 2 * Math.PI * ringR;
+              const ringOffset = ringCirc * (1 - Math.max(0, Math.min(100, setupPct)) / 100);
+
+              return (
+                <div
+                  key={athlete.userId}
+                  onClick={() => openAthleteHub(athlete)}
+                  className={`bg-bg border rounded-surface p-4 hover:border-accent/50 cursor-pointer transition-all flex flex-col gap-3 group relative overflow-hidden ${
+                    isAlert ? 'border-danger/30 shadow-[inset_3px_0_0_var(--color-danger)]' : 'border-hairline'
+                  }`}
+                >
+                  {/* Header: avatar, nombre, email, badge de plan + anillo de setup */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-hairline group-hover:border-accent/60 transition-all flex-shrink-0">
+                        <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-sans font-bold text-white text-label leading-snug group-hover:text-accent transition-colors truncate">{athlete.displayName}</h3>
+                        <p className="font-mono text-caption text-ink-2 truncate">{athlete.email}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {planDaysLeft !== null ? (
+                            <Badge tone={planDaysLeft > 30 ? 'success' : planDaysLeft >= 0 ? 'warning' : 'danger'}>
+                              {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
+                            </Badge>
+                          ) : (
+                            <Badge tone="neutral">Sin plan</Badge>
+                          )}
+                          {checkinLate && (
+                            <Badge tone="warning">
+                              {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
+                      title={`Setup ${setupPct}%`}
+                      className="relative flex-none z-10"
+                      style={{ width: ringSize, height: ringSize }}
+                    >
+                      <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90">
+                        <circle cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="3" />
+                        <circle
+                          cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke={setupRing} strokeWidth="3"
+                          strokeLinecap="round" strokeDasharray={ringCirc} strokeDashoffset={ringOffset}
+                          className="transition-all duration-500"
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center font-mono text-[10.5px] font-semibold text-white/85">{setupPct}%</span>
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-hairline" />
+
+                  {/* Pesos, o el estado real de un atleta sin registros todavía */}
+                  {totalCheckCount === 0 ? (
+                    <div className="flex items-center gap-2 py-0.5">
+                      <span className="material-symbols-outlined text-label text-ink-3">info</span>
+                      <span className="font-mono text-caption text-ink-3">Sin registros de peso todavía</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 text-center font-mono">
+                      <div>
+                        <span className="block text-caption text-ink-2 uppercase">Inicial</span>
+                        <span className="block text-title-s font-bold text-white/85">{athlete.initialWeight}</span>
+                      </div>
+                      <div className="border-l border-hairline">
+                        <span className="block text-caption text-accent uppercase font-bold">Actual</span>
+                        <span className="block text-title-s font-bold text-accent">{athlete.actualWeight || athlete.initialWeight}</span>
+                      </div>
+                      <div className="border-l border-hairline">
+                        <span className="block text-caption text-data uppercase">Meta</span>
+                        <span className="block text-title-s font-bold text-data">{athlete.targetWeight}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="h-px bg-hairline" />
+
+                  {/* Racha + último login, dos columnas separadas por un divisor —
+                      antes iba Nivel aquí, pero el coach ya no lo quiere ver. */}
+                  <div className="flex items-center">
+                    <div className="flex items-center gap-1.5 flex-1 font-mono text-caption">
+                      <span className="material-symbols-outlined text-label text-orange-400">local_fire_department</span>
+                      <span className="text-ink-2 uppercase">Racha</span>
+                      <strong className="ml-auto text-white/85">{athlete.currentStreak || 0} sem</strong>
+                    </div>
+                    <div className="w-px h-[18px] bg-hairline mx-3.5" />
+                    <div className="flex items-center gap-1.5 flex-1 font-mono text-caption">
+                      <span className="material-symbols-outlined text-label text-ink-3">history</span>
+                      <span className="text-ink-2 uppercase">Login</span>
+                      <strong className="ml-auto text-white/85">{daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'Hoy' : `${daysSinceLogin}d`}</strong>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-hairline" />
+
+                  <div className="flex items-center justify-between text-label font-mono">
+                    <div className="flex items-center gap-2 font-mono text-caption text-ink-2">
+                      {isAlert ? (
+                        <span>Última actividad {daysSince === null ? 'desconocida' : `hace ${daysSince}d`}</span>
+                      ) : (
+                        <span>Último reporte · {daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `hace ${daysSince}d`}</span>
+                      )}
+                      {pendingCount > 0 && (
+                        <span className="text-caption bg-red-500/15 text-rose-400 border border-red-500/25 px-2 rounded-control font-sans uppercase">
+                          {pendingCount} pend.
+                        </span>
+                      )}
+                    </div>
+                    <span className={`flex items-center gap-1 group-hover:translate-x-1 transition-transform ${isAlert ? 'text-danger' : 'text-accent'}`}>
+                      <span>{isAlert ? 'Contactar' : 'Abrir Hub'}</span>
+                      <span className="material-symbols-outlined text-caption">arrow_forward</span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
+          </div>
+        )}
+      </div>
+
       {!loadingAthletes && (
         <HomeCoachScreen
           athletes={athletes}
@@ -330,152 +591,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           if (athlete) openAthleteHub(athlete, 'entrenamientos');
         }}
       />
-
-      {/* Athlete list */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-end gap-3">
-          <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
-            {([2, 3, 4] as const).map(n => (
-              <button
-                key={n}
-                onClick={() => changeGridCols(n)}
-                title={`${n} columnas`}
-                className={`w-7 h-7 rounded-control font-sans text-label font-bold transition-all ${
-                  gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          <span className="text-caption bg-teal-500/10 text-teal-300 px-3 py-2 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
-            {filteredAthletes.length} ATLETAS
-          </span>
-        </div>
-
-        {loadingAthletes ? (
-          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
-            <Skeleton className="h-40 w-full rounded-surface" />
-            <Skeleton className="h-40 w-full rounded-surface" />
-            <Skeleton className="h-40 w-full rounded-surface" />
-          </div>
-        ) : athletes.length === 0 ? (
-          <EmptyState
-            icon="group"
-            title="No hay atletas registrados todavía."
-            actionLabel="Invitar a tu primer atleta"
-            onAction={() => navigate('/crm/clientes')}
-          />
-        ) : filteredAthletes.length === 0 ? (
-          <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
-        ) : (
-          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
-            {filteredAthletes.map(athlete => {
-              const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
-                      totalCheckCount, pendingCount, adherenceScore, adherenceHasData, setupPct } = athlete;
-              const adh = adherenceHasData ? scoreStyle(adherenceScore) : SIN_DATOS_ADHERENCIA;
-              const needsAttention = planExpired || planSoon || checkinLate;
-
-              return (
-                <div
-                  key={athlete.userId}
-                  onClick={() => openAthleteHub(athlete)}
-                  className={`bg-bg border rounded-surface p-5 hover:border-accent/50 cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
-                    needsAttention ? 'border-orange-500/30' : 'border-hairline'
-                  }`}
-                >
-                  <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-accent/5 rounded-bl-full pointer-events-none" />
-                  <button
-                    onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
-                    title={`Setup ${setupPct}%`}
-                    className="absolute right-3 top-3 z-10"
-                  >
-                    <ProgressRing pct={setupPct} size={32} color={setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} />
-                  </button>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-hairline group-hover:border-accent/60 transition-all flex-shrink-0">
-                        <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-sans font-bold text-white text-title-s leading-snug group-hover:text-accent transition-colors">{athlete.displayName}</h3>
-                        <p className="font-mono text-caption text-ink-2 truncate">{athlete.email}</p>
-                        {/* Plan badge */}
-                        <div className="flex flex-wrap gap-1 ">
-                          {planDaysLeft !== null ? (
-                            <Badge tone={planDaysLeft > 30 ? 'success' : planDaysLeft >= 0 ? 'warning' : 'danger'}>
-                              {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
-                            </Badge>
-                          ) : (
-                            <Badge tone="neutral">Sin plan</Badge>
-                          )}
-                          {/* Check-in atrasado badge */}
-                          {checkinLate && (
-                            <Badge tone="warning">
-                              {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 bg-raised/50 p-3 rounded-surface border border-hairline text-center font-mono">
-                      <div>
-                        <span className="block text-caption text-ink-2 uppercase">INICIAL</span>
-                        <span className="block text-label font-bold text-white">{athlete.initialWeight} kg</span>
-                      </div>
-                      <div>
-                        <span className="block text-caption text-accent uppercase font-bold">ACTUAL</span>
-                        <span className="block text-label font-bold text-accent">{athlete.actualWeight || athlete.initialWeight} kg</span>
-                      </div>
-                      <div>
-                        <span className="block text-caption text-data uppercase">META</span>
-                        <span className="block text-label font-bold text-data">{athlete.targetWeight} kg</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between font-mono text-caption">
-                        <span className="text-ink-2 uppercase flex items-center gap-1">
-                          <span className="material-symbols-outlined text-label text-orange-400">local_fire_department</span> Racha
-                        </span>
-                        <strong className="text-white">{athlete.currentStreak || 0} sem</strong>
-                      </div>
-                      <div className="flex justify-between font-mono text-caption">
-                        <span className="text-ink-2 uppercase flex items-center gap-1">
-                          <span className="material-symbols-outlined text-label text-teal-400">military_tech</span> Nivel
-                        </span>
-                        <strong className="text-data">Lvl {athlete.level || 1}</strong>
-                      </div>
-                      {/* Adherence score */}
-                      <div className={`flex items-center justify-between px-3 py-2 rounded-surface border font-sans ${adh.bg}`}>
-                        <span className={`text-caption uppercase font-bold flex items-center gap-1 ${adh.text}`}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
-                          {adh.label}
-                        </span>
-                        <span className={`text-body-s font-bold ${adh.text}`}>{adherenceHasData ? adherenceScore : '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-5 pt-4 border-t border-hairline flex items-center justify-between text-label font-mono">
-                    <div className="flex items-center gap-2">
-                      <span className="text-ink-2">{totalCheckCount} Reportes</span>
-                      {pendingCount > 0 && (
-                        <span className="text-caption bg-red-500/15 text-rose-400 border border-red-500/25 px-2 rounded-control font-sans uppercase">
-                          {pendingCount} pend.
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-accent flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      <span>Abrir Hub</span>
-                      <span className="material-symbols-outlined text-caption">arrow_forward</span>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-
-          </div>
-        )}
-      </div>
 
       {/* Bajas no anonimizadas: fuera de la lista principal (no molestan en
           HOME COACH ni en el contador), pero no desaparecidas — el coach

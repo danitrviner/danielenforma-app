@@ -127,7 +127,8 @@ log(`Revisión pre-publicación · ${seleccion.length} bloque(s): ${seleccion.ma
 
 const informes = (await parallel(seleccion.map(b => () =>
   agent(
-    `Trabajas sobre el repo ${REPO} (rama ds/f3-experiencia). Es una app de entrenamiento y
+    `Trabajas sobre el repo ${REPO}, en la rama que esté activa (verifícala con git branch
+--show-current, no la des por hecha). Es una app de entrenamiento y
 nutrición: SPA de React 19 + Vite + Firebase envuelta en Capacitor 8 (iOS + Android), a punto de
 subirse por primera vez a la App Store y a Google Play.
 

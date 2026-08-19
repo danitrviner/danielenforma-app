@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, auth } from './firebase';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
@@ -317,6 +317,13 @@ function AppContent() {
       .then(() => getCheckIns(coachRole ? undefined : user.uid)) // coach: sin filtro; atleta: solo el suyo
       .then(setCheckins)
       .catch(err => console.error('Error cargando check-ins:', err));
+    // Última vez que el atleta abrió la app — solo lectura para el coach (tarjetas
+    // de "Clientes"), sin efecto en gating ni en ninguna otra pantalla. No bloquea
+    // el arranque: si falla (offline, permisos), la sesión sigue igual.
+    if (!coachRole) {
+      updateUserProfile(user.uid, { lastLoginAt: new Date().toISOString() })
+        .catch(err => console.error('Error guardando lastLoginAt:', err));
+    }
   };
 
   // Subscribe once on mount — handles session restore when the page reloads with an

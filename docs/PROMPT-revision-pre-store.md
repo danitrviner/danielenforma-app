@@ -9,7 +9,7 @@ roto— **antes** de mandar la primera build, y para dejarlo escrito con severid
 y el cambio exacto que hay que hacer.
 
 **Esta fase produce un informe, no parches.** Las correcciones se deciden después, con la lista
-delante. Hay dos razones: la rama `ds/f3-experiencia` acaba de integrar doce fases de Design
+delante. Hay dos razones: la rama activa acaba de integrar doce fases de Design
 System y un merge de cuestionarios, y varios hallazgos son decisiones de producto (borrado de
 cuenta, Sign in with Apple, avisos médicos), no arreglos mecánicos.
 
@@ -52,7 +52,8 @@ No todos valen lo mismo ahora mismo:
 
 ## Contexto de la app (verifícalo, no lo asumas)
 
-**Repo:** `~/en-forma`, rama `ds/f3-experiencia`. Trabaja siempre ahí; `~/Desktop/App enforma`
+**Repo:** `~/en-forma`. Trabaja siempre ahí, en la rama que esté activa cuando se lanza la
+revisión (verifica con `git branch --show-current`, no la des por hecha); `~/Desktop/App enforma`
 solo tiene documentos de contexto, no es el código.
 
 - **Web:** React 19 + Vite 6 + Tailwind 4 + TanStack Query + React Router 7. SPA en `src/`

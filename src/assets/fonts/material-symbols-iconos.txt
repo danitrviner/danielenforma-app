@@ -42,6 +42,7 @@ calendar_month
 calendar_today
 calendar_view_month
 capture
+cards
 category
 celebration
 chat
@@ -70,6 +71,7 @@ dining
 dinner_dining
 directions_run
 directions_walk
+distance
 done
 draft
 eco
@@ -148,11 +150,13 @@ menu_book
 message
 mic
 military_tech
+mode
 monitor_heart
 monitor_weight
 monitoring
 mood
 more_vert
+network_check
 notes
 notifications
 notifications_off
@@ -193,7 +197,6 @@ receipt_long
 refresh
 remove
 remove_circle
-reorder
 repeat
 report
 resize
@@ -240,6 +243,7 @@ switch
 sync
 sync_problem
 tab
+table_rows
 takeout_dining
 target
 task_alt

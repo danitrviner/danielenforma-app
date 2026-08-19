@@ -158,6 +158,11 @@ export interface UserProfile {
   // atleta" puede pulsarse, y lo que arranca el tour — pero lo que abre la
   // sala de espera ahora es esto, una decisión explícita del coach.
   planPublishedAt?: string; // ISO, el día en que el coach le mostró su primer plan
+
+  // ISO timestamp de la última vez que el atleta abrió la app (escrito por su
+  // propio cliente en cada arranque de sesión, ver App.tsx loadUserSession).
+  // Solo para mostrarlo en la tarjeta del coach — no gatea nada.
+  lastLoginAt?: string;
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un
